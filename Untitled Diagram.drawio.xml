@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:143.0) Gecko/20100101 Firefox/143.0" version="28.2.5">
+  <diagram name="Fluxo Avancado Projeto Decoracao" id="sIEG35s8rZRK6veSP9U0">
+    <mxGraphModel dx="2175" dy="751" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-1" value="Instructions Project" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#666666;fontColor=#ffffff;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="650" y="20" width="250" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-2" value="Project History page (Melhorado)&#xa;&#xa;• Table with projects, filter by date, simulations, favorites&#xa;• Preview miniatura da imagem e status de aprovação&#xa;• Duplicar projetos rapidamente&#xa;• Campo de feedback do designer&#xa;• Status: created, ongoing, canceled, finished, approved" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#666666;fontColor=#ffffff;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="-403" y="180" width="350" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-3" value="Create Project page (Unificada)&#xa;&#xa;• Tipo de projeto: Decor / Simu (toggle)&#xa;• Formulários inteligentes com autocompletar&#xa;• Upload direto do telemóvel (foto tirada no momento)&#xa;• ✅ Biblioteca visual integrada (JÁ EXISTE)&#xa;• Pesquisa por tags: bola, arco, estrela, pendente&#xa;• ✅ Preview noturno realista (JÁ EXISTE)&#xa;• Sistema de validação visual antes de enviar&#xa;• Job tickets JSON padronizado&#xa;• API para Theaform/Simu-Studio&#xa;• Integração futura com IA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#666666;fontColor=#ffffff;fontSize=9;align=left;" vertex="1" parent="1">
+          <mxGeometry x="525" y="143" width="500" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-4" value="Toggle: Decor ↔ Simu&#xa;&#xa;• Formulário adapta-se automaticamente&#xa;• Decor: foco em decorações visuais&#xa;• Simu: foco em dados técnicos&#xa;• Campos comuns sempre presentes&#xa;• Campos específicos aparecem conforme tipo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E8;fontColor=#2E7D32;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1124" y="196" width="280" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-5" value="Individual Project history page (Detalhado)&#xa;&#xa;• Simulations done with results jpeg/videos&#xa;• Link creator with jpeg/videos&#xa;• Logos done with results, pdf viewer&#xa;• Quantities exported, preview of price&#xa;• Histórico de alterações completo&#xa;• Possibilidade de voltar ao comercial" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#666666;fontColor=#ffffff;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="-403" y="412" width="350" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-6" value="Choose Workflow Mode (Progressive)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#666666;fontColor=#ffffff;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="625" y="406" width="300" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-8" value="Step 1: Commercial Mode (Instructions)&#xa;&#xa;• Coloca produtos base&#xa;• Upload de fotos com IA context detection&#xa;• Sugestões automáticas de decorações&#xa;• Arrastar-e-soltar com snapping inteligente&#xa;• Validação visual automática&#xa;• Guarda coordenadas exatas para Simu-Studio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#666666;fontColor=#ffffff;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="198" y="781" width="350" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-9" value="Step 2: Designer Mode (Refinamento)&#xa;&#xa;• Refina, ajusta luzes e texturas&#xa;• Simula resultados finais&#xa;• ✅ Auto-noite com predefinições (JÁ EXISTE)&#xa;• 🆕 Ajuste de intensidade de luz ambiente&#xa;• Histórico de alterações guardado&#xa;• Possibilidade de voltar ao comercial" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#666666;fontColor=#ffffff;fontSize=10;align=left;" vertex="1" parent="1">
+          <mxGeometry x="625" y="968" width="350" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-10" value="Final Result (API Integration)&#xa;&#xa;• Job tickets JSON padronizado&#xa;• API para Theaform/Simu-Studio&#xa;• Coordenadas exatas guardadas&#xa;• Facilita integração futura com IA&#xa;• Sistema de aprovação e feedback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#cccccc;fontColor=#000000;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1017" y="597" width="350" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-11" value="Biblioteca Visual Integrada (JÁ EXISTE)&#xa;&#xa;✅ Catálogo com miniaturas de decorações&#xa;✅ Preview noturno realista&#xa;🆕 Pesquisa por tags inteligente&#xa;🆕 Auto-sugestões baseadas no contexto&#xa;🆕 Filtros por tipo, cor, tamanho" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2196F3;fontColor=#ffffff;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="13" y="345" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-12" value="Sistema de Validação Visual&#xa;&#xa;• Verifica coordenadas de cada decoração&#xa;• Confirma tamanho definido&#xa;• Validação antes de enviar&#xa;• Alertas de elementos em falta&#xa;• Preview de qualidade" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF9800;fontColor=#ffffff;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="225" y="1021" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-13" value="Fluxo de Dados JSON&#xa;&#xa;• Job tickets padronizados&#xa;• Coordenadas, elementos, metadados&#xa;• API REST para Theaform&#xa;• Logs de alterações&#xa;• Integração futura com IA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9C27B0;fontColor=#ffffff;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1042" y="788" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-14" value="Feedback Loop&#xa;&#xa;• Campo de feedback do designer&#xa;• Status de aprovação&#xa;• Histórico de alterações&#xa;• Possibilidade de voltar atrás&#xa;• Comentários colaborativos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F44336;fontColor=#ffffff;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="-378" y="711" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#666666;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-1" target="H2gQ_c6GnooUbQ7f3RjL-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#666666;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-1" target="H2gQ_c6GnooUbQ7f3RjL-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#666666;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-1" target="H2gQ_c6GnooUbQ7f3RjL-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-2" target="H2gQ_c6GnooUbQ7f3RjL-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#666666;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-3" target="H2gQ_c6GnooUbQ7f3RjL-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#4CAF50;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-7" target="H2gQ_c6GnooUbQ7f3RjL-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#4CAF50;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-7" target="H2gQ_c6GnooUbQ7f3RjL-9">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="609" y="724" />
+              <mxPoint x="800" y="724" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#666666;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-6" target="H2gQ_c6GnooUbQ7f3RjL-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#666666;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-6" target="H2gQ_c6GnooUbQ7f3RjL-9">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="899" y="450" />
+              <mxPoint x="899" y="861" />
+              <mxPoint x="800" y="861" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#2196F3;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-8" target="H2gQ_c6GnooUbQ7f3RjL-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#666666;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-9" target="H2gQ_c6GnooUbQ7f3RjL-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#2196F3;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-3" target="H2gQ_c6GnooUbQ7f3RjL-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#FF9800;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-8" target="H2gQ_c6GnooUbQ7f3RjL-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#9C27B0;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-10" target="H2gQ_c6GnooUbQ7f3RjL-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-29" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#F44336;" edge="1" parent="1" source="H2gQ_c6GnooUbQ7f3RjL-5" target="H2gQ_c6GnooUbQ7f3RjL-14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="H2gQ_c6GnooUbQ7f3RjL-7" value="AI Helpers e Automações (Existentes + Novas)&#xa;&#xa;✅ Auto-noite: converter diurno em noturno (JÁ EXISTE)&#xa;✅ Biblioteca de decorações existentes (JÁ EXISTE)&#xa;&#xa;🆕 Auto-detecção de contexto na imagem (IA leve)&#xa;🆕 Detectar postes, fachadas, árvores&#xa;🆕 Sugestões automáticas compatíveis&#xa;🆕 Predefinições de intensidade de luz&#xa;🆕 Snapping inteligente ao arrastar decorações" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4CAF50;fontColor=#ffffff;fontSize=9;align=left;" vertex="1" parent="1">
+          <mxGeometry x="409" y="510" width="400" height="160" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

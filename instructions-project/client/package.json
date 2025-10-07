@@ -1,0 +1,39 @@
+{
+  "name": "instructions-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 3000"
+  },
+  "dependencies": {
+    "@heroui/badge": "^2.2.17",
+    "@heroui/button": "^2.2.27",
+    "@heroui/card": "^2.2.25",
+    "@heroui/modal": "^2.2.24",
+    "@heroui/react": "^2.8.5",
+    "@heroui/system": "^2.4.23",
+    "@heroui/table": "^2.2.27",
+    "@heroui/tabs": "^2.2.24",
+    "@heroui/theme": "^2.4.23",
+    "@heroui/use-theme": "^2.1.10",
+    "@iconify/react": "^6.0.2",
+    "@tailwindcss/vite": "^4.1.14",
+    "axios": "^1.7.7",
+    "date-fns": "^3.6.0",
+    "framer-motion": "^12.23.22",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^6.26.2",
+    "recharts": "^3.2.1",
+    "tailwindcss": "^4.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.14",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.21",
+    "vite": "^5.4.1"
+  }
+}
