@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "@heroui/react";
+import { Link, Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import {useTheme} from "@heroui/use-theme";
 
@@ -8,7 +8,6 @@ const navigationItems = [
   { name: "Analytics", icon: "lucide:bar-chart", href: "#" },
   { name: "Customers", icon: "lucide:users", href: "#" },
   { name: "Orders", icon: "lucide:shopping-cart", href: "#" },
-  { name: "Settings", icon: "lucide:settings", href: "#" },
 ];
 
 export function SidebarNavigation() {
@@ -35,14 +34,22 @@ export function SidebarNavigation() {
       <div className="flex-1 flex items-center">
         <div className="flex flex-col items-center gap-4">
           {navigationItems.map((item) => (
-            <Link
+            <Tooltip
               key={item.name}
-              href={item.href}
-              aria-label={item.name}
-              className={`w-10 h-10 rounded-xl bg-content2 hover:bg-content3 shadow-sm flex items-center justify-center transition-all`}
+              content={item.name}
+              placement="right"
+              showArrow
+              color="default"
+              delay={300}
             >
-              <Icon icon={item.icon} className={`text-default-600 text-xl`} />
-            </Link>
+              <Link
+                href={item.href}
+                aria-label={item.name}
+                className={`w-10 h-10 rounded-xl bg-content2 hover:bg-content3 shadow-sm flex items-center justify-center transition-all`}
+              >
+                <Icon icon={item.icon} className={`text-default-600 text-xl`} />
+              </Link>
+            </Tooltip>
           ))}
         </div>
       </div>

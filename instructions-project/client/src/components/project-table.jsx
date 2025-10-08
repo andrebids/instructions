@@ -134,10 +134,6 @@ export function ProjectTable() {
     setPage(1);
   };
 
-  const onRowsPerPageChange = (e) => {
-    setRowsPerPage(Number(e.target.value));
-    setPage(1);
-  };
 
   const renderCell = (project, columnKey) => {
     const cellValue = project[columnKey];
@@ -260,9 +256,14 @@ export function ProjectTable() {
               <span className="text-small text-default-400">Rows per page:</span>
               <Select 
                 size="sm"
-                value={rowsPerPage.toString()}
-                onChange={onRowsPerPageChange}
+                selectedKeys={[rowsPerPage.toString()]}
+                onSelectionChange={(keys) => {
+                  const selectedValue = Array.from(keys)[0];
+                  setRowsPerPage(Number(selectedValue));
+                  setPage(1);
+                }}
                 className="w-20"
+                placeholder="Select"
               >
                 <SelectItem key="5" value="5">5</SelectItem>
                 <SelectItem key="10" value="10">10</SelectItem>
