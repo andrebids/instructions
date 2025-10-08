@@ -14,9 +14,12 @@ import {
   Button, 
   Chip, 
   Pagination,
-  DatePicker,
   Select,
-  SelectItem
+  SelectItem,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  Calendar
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
@@ -204,18 +207,43 @@ export function ProjectTable() {
         </Dropdown>
         
         <div className="flex items-center gap-2">
-          <DatePicker 
-            label="Start Date"
-            placeholder="Select"
-            className="w-full md:w-auto"
-            onChange={(date) => onDateRangeChange({ ...dateRange, start: date })}
-          />
-          <DatePicker 
-            label="End Date"
-            placeholder="Select"
-            className="w-full md:w-auto"
-            onChange={(date) => onDateRangeChange({ ...dateRange, end: date })}
-          />
+          <Popover placement="bottom-start">
+            <PopoverTrigger>
+              <Button 
+                variant="flat" 
+                className="w-full md:w-auto justify-start"
+                endContent={<Icon icon="lucide:calendar" />}
+              >
+                {dateRange.start ? new Date(dateRange.start).toLocaleDateString() : "Start Date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                aria-label="Start Date"
+                value={dateRange.start ? new Date(dateRange.start) : null}
+                onChange={(date) => onDateRangeChange({ ...dateRange, start: date })}
+              />
+            </PopoverContent>
+          </Popover>
+          
+          <Popover placement="bottom-start">
+            <PopoverTrigger>
+              <Button 
+                variant="flat" 
+                className="w-full md:w-auto justify-start"
+                endContent={<Icon icon="lucide:calendar" />}
+              >
+                {dateRange.end ? new Date(dateRange.end).toLocaleDateString() : "End Date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                aria-label="End Date"
+                value={dateRange.end ? new Date(dateRange.end) : null}
+                onChange={(date) => onDateRangeChange({ ...dateRange, end: date })}
+              />
+            </PopoverContent>
+          </Popover>
         </div>
 
         <Button variant="light" onPress={clearFilters} className="md:ml-auto">
