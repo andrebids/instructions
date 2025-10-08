@@ -22,6 +22,7 @@ import {
   Calendar
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { projectsAPI } from "../services/api.js";
 
 // Status mapping from API to UI
 const statusColorMap = {
@@ -30,6 +31,7 @@ const statusColorMap = {
   "finished": "success",
   "approved": "secondary",
   "cancelled": "danger",
+  "in_queue": "warning",
 };
 
 const statusLabelMap = {
@@ -38,9 +40,10 @@ const statusLabelMap = {
   "finished": "Finished",
   "approved": "Approved",
   "cancelled": "Cancelled",
+  "in_queue": "In Queue",
 };
 
-export function ProjectTable({ projects: apiProjects = [] }) {
+export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
   // Transform API data to table format
   const projects = React.useMemo(() => {
     return apiProjects.map(project => ({
@@ -57,8 +60,9 @@ export function ProjectTable({ projects: apiProjects = [] }) {
   }, [apiProjects]);
   const [filterValue, setFilterValue] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("all");
+  const [favoriteFilter, setFavoriteFilter] = React.useState("all");
   const [page, setPage] = React.useState(1);
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [dateRange, setDateRange] = React.useState({ start: null, end: null });
 
   // Debounce search using React 18's concurrent rendering hint
@@ -67,6 +71,7 @@ export function ProjectTable({ projects: apiProjects = [] }) {
   const clearFilters = () => {
     setFilterValue("");
     setStatusFilter("all");
+    setFavoriteFilter("all");
     setDateRange({ start: null, end: null });
     setPage(1);
   };
@@ -88,6 +93,13 @@ export function ProjectTable({ projects: apiProjects = [] }) {
       filtered = filtered.filter(project => project.status === statusFilter);
     }
     
+    // Filter by favorite
+    if (favoriteFilter !== "all") {
+      filtered = filtered.filter(project => 
+        favoriteFilter === "favorites" ? project.isFavorite : !project.isFavorite
+      );
+    }
+    
     // Filter by date interval overlap: project [start,end] intersects selected [start,end]
     if (dateRange.start && dateRange.end) {
       const selStart = new Date(dateRange.start);
@@ -102,7 +114,7 @@ export function ProjectTable({ projects: apiProjects = [] }) {
     }
     
     return filtered;
-  }, [deferredFilterValue, statusFilter, dateRange]);
+  }, [deferredFilterValue, statusFilter, favoriteFilter, dateRange]);
 
   // Pagination
   const pages = Math.ceil(filteredProjects.length / rowsPerPage) || 1;
@@ -122,9 +134,26 @@ export function ProjectTable({ projects: apiProjects = [] }) {
     setPage(1);
   };
 
+  const onFavoriteFilterChange = (favorite) => {
+    setFavoriteFilter(favorite);
+    setPage(1);
+  };
+
   const onDateRangeChange = (range) => {
     setDateRange(range);
     setPage(1);
+  };
+
+  const handleToggleFavorite = async (projectId) => {
+    try {
+      await projectsAPI.toggleFavorite(projectId);
+      // Call the callback to refresh projects data
+      if (onProjectsUpdate) {
+        onProjectsUpdate();
+      }
+    } catch (error) {
+      console.error('Erro ao alternar favorito:', error);
+    }
   };
 
 
@@ -132,13 +161,32 @@ export function ProjectTable({ projects: apiProjects = [] }) {
     const cellValue = project[columnKey];
 
     switch (columnKey) {
+      case "favorite":
+        console.log(`DEBUG: Project ${project.name} - isFavorite: ${project.isFavorite}`);
+        return (
+          <Button
+            isIconOnly
+            size="sm"
+            variant="light"
+            onPress={() => handleToggleFavorite(project.id)}
+            title={project.isFavorite ? "Remove from favorites" : "Add to favorites"}
+            className="text-warning hover:text-warning-600"
+          >
+            <Icon 
+              icon={project.isFavorite ? "material-symbols:star" : "material-symbols:star-outline"} 
+              className={`text-lg text-warning ${project.isFavorite ? "opacity-100" : "opacity-50 hover:opacity-100"}`}
+            />
+          </Button>
+        );
       case "name":
         return (
           <div className="flex items-center gap-2">
-            {project.isFavorite && <Icon icon="lucide:star" className="text-warning" />}
             <span className="font-medium">{project.name}</span>
             {project.projectType === 'simu' && (
               <Chip size="sm" color="primary" variant="dot">Simu</Chip>
+            )}
+            {project.projectType === 'logo' && (
+              <Chip size="sm" color="secondary" variant="dot">Logo</Chip>
             )}
           </div>
         );
@@ -206,6 +254,28 @@ export function ProjectTable({ projects: apiProjects = [] }) {
             <DropdownItem key="finished">Finished</DropdownItem>
             <DropdownItem key="approved">Approved</DropdownItem>
             <DropdownItem key="cancelled">Cancelled</DropdownItem>
+            <DropdownItem key="in_queue">In Queue</DropdownItem>
+          </DropdownMenu>
+        </Dropdown>
+
+        <Dropdown>
+          <DropdownTrigger>
+            <Button 
+              variant="flat" 
+              endContent={<Icon icon="lucide:chevron-down" />}
+            >
+              Favorites: {favoriteFilter === "all" ? "All" : favoriteFilter === "favorites" ? "Favorites" : "Non-favorites"}
+            </Button>
+          </DropdownTrigger>
+          <DropdownMenu 
+            aria-label="Favorite Filter"
+            onAction={(key) => onFavoriteFilterChange(key)}
+            selectedKeys={[favoriteFilter]}
+            selectionMode="single"
+          >
+            <DropdownItem key="all">All</DropdownItem>
+            <DropdownItem key="favorites">Favorites</DropdownItem>
+            <DropdownItem key="non-favorites">Non-favorites</DropdownItem>
           </DropdownMenu>
         </Dropdown>
         
@@ -293,13 +363,14 @@ export function ProjectTable({ projects: apiProjects = [] }) {
         }}
       >
         <TableHeader>
+          <TableColumn key="favorite" width="60px">FAVORITE</TableColumn>
           <TableColumn key="name">PROJECT NAME</TableColumn>
           <TableColumn key="client">CLIENT</TableColumn>
           <TableColumn key="status">STATUS</TableColumn>
           <TableColumn key="startDate">START DATE</TableColumn>
           <TableColumn key="endDate">END DATE</TableColumn>
           <TableColumn key="budget">BUDGET</TableColumn>
-          <TableColumn key="actions">ACTIONS</TableColumn>
+          <TableColumn key="actions" width="120px">ACTIONS</TableColumn>
         </TableHeader>
         <TableBody 
           items={items}

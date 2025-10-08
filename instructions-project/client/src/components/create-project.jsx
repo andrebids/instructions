@@ -135,6 +135,7 @@ export function CreateProject({ onClose }) {
               >
                 <SelectItem key="decor" value="decor">Decor</SelectItem>
                 <SelectItem key="simu" value="simu">Simu</SelectItem>
+                <SelectItem key="logo" value="logo">Logo</SelectItem>
               </Select>
               
               <Select
@@ -149,6 +150,8 @@ export function CreateProject({ onClose }) {
                 <SelectItem key="in_progress" value="in_progress">In Progress</SelectItem>
                 <SelectItem key="finished" value="finished">Finished</SelectItem>
                 <SelectItem key="approved" value="approved">Approved</SelectItem>
+                <SelectItem key="cancelled" value="cancelled">Cancelled</SelectItem>
+                <SelectItem key="in_queue" value="in_queue">In Queue</SelectItem>
               </Select>
               
               <Input

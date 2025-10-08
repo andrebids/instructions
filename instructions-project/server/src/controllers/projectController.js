@@ -150,12 +150,16 @@ export async function getStats(req, res) {
     const inProgress = await Project.count({ where: { status: 'in_progress' } });
     const finished = await Project.count({ where: { status: 'finished' } });
     const approved = await Project.count({ where: { status: 'approved' } });
+    const cancelled = await Project.count({ where: { status: 'cancelled' } });
+    const inQueue = await Project.count({ where: { status: 'in_queue' } });
     
     res.json({
       total,
       inProgress,
       finished,
       approved,
+      cancelled,
+      inQueue,
     });
   } catch (error) {
     console.error('Erro ao buscar estatísticas:', error);

@@ -19,12 +19,12 @@ const Project = sequelize.define('Project', {
     type: DataTypes.STRING,
   },
   projectType: {
-    type: DataTypes.ENUM('decor', 'simu'),
+    type: DataTypes.ENUM('decor', 'simu', 'logo'),
     allowNull: false,
     defaultValue: 'decor',
   },
   status: {
-    type: DataTypes.ENUM('created', 'in_progress', 'finished', 'approved', 'cancelled'),
+    type: DataTypes.ENUM('created', 'in_progress', 'finished', 'approved', 'cancelled', 'in_queue'),
     defaultValue: 'created',
   },
   baseImageUrl: {

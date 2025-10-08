@@ -16,6 +16,8 @@ export default function App() {
     inProgress: 0,
     finished: 0,
     approved: 0,
+    cancelled: 0,
+    inQueue: 0,
   });
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
@@ -42,6 +44,8 @@ export default function App() {
         inProgress: statsData.inProgress,
         finished: statsData.finished,
         approved: statsData.approved,
+        cancelled: statsData.cancelled,
+        inQueue: statsData.inQueue,
       });
       
       console.log('✅ Dados carregados:', { projects: projectsData.length, stats: statsData });
@@ -121,7 +125,7 @@ export default function App() {
               ) : (
                 <>
                   {/* Stats Grid */}
-                  <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                     <StatsCard
                       title="Total Projects"
                       value={stats.total.toString()}
@@ -150,11 +154,25 @@ export default function App() {
                       isPositive={true}
                       icon="lucide:thumbs-up"
                     />
+                    <StatsCard
+                      title="In Queue"
+                      value={stats.inQueue.toString()}
+                      change={`${stats.inQueue} waiting`}
+                      isPositive={false}
+                      icon="lucide:clock"
+                    />
+                    <StatsCard
+                      title="Cancelled"
+                      value={stats.cancelled.toString()}
+                      change={`${stats.cancelled} cancelled`}
+                      isPositive={false}
+                      icon="lucide:x-circle"
+                    />
                   </div>
 
                   {/* Project Table */}
                   <div className="mb-6">
-                    <ProjectTable projects={projects} />
+                    <ProjectTable projects={projects} onProjectsUpdate={loadData} />
                   </div>
                 </>
               )}
