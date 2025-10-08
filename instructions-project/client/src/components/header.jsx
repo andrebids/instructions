@@ -12,7 +12,7 @@ export function Header() {
   };
 
   return (
-    <header className="border-default-200 flex items-center justify-between border-b px-6 py-3">
+    <header className="flex items-center justify-between px-6 py-3">
       <div className="flex items-center gap-3">
         {/* Left side empty (previous search icon removed per request) */}
       </div>
