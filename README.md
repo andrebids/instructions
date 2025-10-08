@@ -4,6 +4,25 @@
 
 ---
 
+## 🚀 **ESTADO ATUAL DO PROJETO (8 Out 2025)**
+
+### ✅ **JÁ IMPLEMENTADO:**
+- Frontend React + Vite + HeroUI funcionando em `http://localhost:3003/` ✅
+- Dashboard moderno com dark mode, notificações, e estatísticas ✅
+- Backend Express básico em `http://localhost:5000/` ✅
+- PostgreSQL configurado (Docker) ✅
+
+### 📖 **COMECE AQUI:**
+**[📍 ESTADO ATUAL E PRÓXIMOS PASSOS](./docs/00_ESTADO_ATUAL_PROJETO.md)** ⭐ **LEIA ESTE DOCUMENTO PRIMEIRO!**
+- Resume o que está feito e o que falta
+- Plano de implementação em 5 fases claras
+- Indica que documento usar em cada fase
+
+### 🎯 **PRÓXIMA FASE:**
+**Fase 1:** Conectar Backend ao PostgreSQL com Sequelize (2-3h)
+
+---
+
 ## 📌 Visão Geral
 
 Este projeto é uma **aplicação de demonstração** para gestão de projetos de decoração luminosa, permitindo criar projetos de dois tipos (Decor/Simu) com workflow progressivo do modo comercial ao modo designer.
@@ -14,7 +33,19 @@ Este projeto é uma **aplicação de demonstração** para gestão de projetos d
 
 ## 📚 Documentação Completa
 
-### 1. [Estrutura do Site](./01_ESTRUTURA_SITE.md)
+### 📍 **DOCUMENTO PRINCIPAL:**
+
+#### [🚀 Estado Atual do Projeto](./docs/00_ESTADO_ATUAL_PROJETO.md) ⭐ **COMECE AQUI**
+- ✅ O que já está implementado
+- ⏳ O que falta fazer (5 fases)
+- 🎯 Próximos passos imediatos
+- 📖 Que documento usar em cada fase
+
+---
+
+### 📖 **DOCUMENTOS DE REFERÊNCIA (consulte quando necessário):**
+
+### 1. [Estrutura do Site](./docs/01_ESTRUTURA_SITE.md)
 - Arquitetura completa da aplicação
 - Estrutura de diretórios
 - Páginas e componentes
@@ -22,7 +53,7 @@ Este projeto é uma **aplicação de demonstração** para gestão de projetos d
 - Fluxo de trabalho
 - Formato Job Ticket JSON
 
-### 2. [Guia de Implementação Detalhado](./02_GUIA_IMPLEMENTACAO_DETALHADO.md)
+### 2. [Guia de Implementação Detalhado](./docs/02_GUIA_IMPLEMENTACAO_DETALHADO.md)
 - Setup inicial passo-a-passo
 - Configuração da base de dados
 - Implementação do backend
@@ -33,7 +64,7 @@ Este projeto é uma **aplicação de demonstração** para gestão de projetos d
 - Sistema de validação
 - Export de Job Tickets
 
-### 3. [Tecnologias e Ferramentas](./03_TECNOLOGIAS_E_FERRAMENTAS.md)
+### 3. [Tecnologias e Ferramentas](./docs/03_TECNOLOGIAS_E_FERRAMENTAS.md)
 - Stack tecnológico completo
 - Packages NPM recomendados
 - Ferramentas IA para integração futura
@@ -42,38 +73,27 @@ Este projeto é uma **aplicação de demonstração** para gestão de projetos d
 - Performance e segurança
 - Testing (opcional)
 
-### 4. [Decisões Técnicas e Alternativas](./04_DECISOES_TECNICAS_E_ALTERNATIVAS.md)
+### 4. [Decisões Técnicas e Alternativas](./docs/04_DECISOES_TECNICAS_E_ALTERNATIVAS.md)
 - Justificação das escolhas (React vs Vue, Fabric.js vs Konva, etc.)
 - Comparação de alternativas
 - Migration path de Mock para IA real
 - Algoritmos de snapping
 - Performance tips
 
-### 5. [Dashboard Detalhado](./05_DASHBOARD_DETALHADO.md)
-- Especificação completa do dashboard
-- Layout e secções detalhadas
-- CSS completo com responsivo
-- Fluxos de interação
-- Estados e loading
-- Métricas e analytics
+### 6. [Dashboard com HeroUI](./docs/06_DASHBOARD_COM_HEROUI.md) 📚 *(Apenas referência)*
+- ~~Dashboard já implementado no projeto ✅~~
+- Útil como referência para outros componentes HeroUI
+- Exemplos de código com HeroUI components
 
-### 6. [Dashboard com HeroUI](./06_DASHBOARD_COM_HEROUI.md) ⭐ RECOMENDADO
-- Implementação moderna com [HeroUI](https://www.heroui.com/docs/frameworks/vite)
-- Código React completo (~200 linhas)
-- Componentes prontos a usar
-- 3x mais rápido que CSS custom
-- Dark mode incluído
-
-### 7. [Autenticação e Gestão de Utilizadores](./07_AUTENTICACAO_E_USERS.md)
+### 7. [Autenticação e Gestão de Utilizadores](./docs/07_AUTENTICACAO_E_USERS.md) (Opcional - Fase 5)
 - Sistema completo de login com JWT
 - Tabela `users` e roles (admin/designer/comercial)
 - Página de login com HeroUI
 - Protected routes
 - Gestão de utilizadores (CRUD completo)
 - Middleware de autenticação
-- Hot Reload confirmado ✓
 
-### 8. [Canvas Implementation with Konva](./08_CANVAS_KONVA_GUIDE.md) ⭐
+### 8. [Canvas Implementation with Konva](./docs/08_CANVAS_KONVA_GUIDE.md) ⭐ **IMPORTANTE PARA FASE 4**
 - Complete Konva.js implementation guide
 - Drag & drop, resize, rotate
 - Smart snapping system
