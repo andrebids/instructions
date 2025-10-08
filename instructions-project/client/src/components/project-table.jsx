@@ -23,45 +23,38 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
-// Sample project data
-const projects = [
-  { 
-    id: 1, 
-    name: "Website Redesign", 
-    client: "Tech Solutions Inc.", 
-    status: "In Progress", 
-    startDate: "2023-10-15", 
-    endDate: "2024-01-30", 
-    budget: "$ 45,000"
-  },
-  { 
-    id: 2, 
-    name: "Mobile App Development", 
-    client: "Fitness Connect", 
-    status: "Finished", 
-    startDate: "2023-08-01", 
-    endDate: "2023-12-20", 
-    budget: "$ 75,000"
-  },
-  { 
-    id: 3, 
-    name: "E-commerce Platform", 
-    client: "Fashion Outlet", 
-    status: "Approved", 
-    startDate: "2024-01-10", 
-    endDate: "2024-06-30", 
-    budget: "$ 120,000"
-  },
-  // ... more projects
-];
-
+// Status mapping from API to UI
 const statusColorMap = {
-  "In Progress": "primary",
-  "Finished": "success",
-  "Approved": "secondary",
+  "created": "default",
+  "in_progress": "primary",
+  "finished": "success",
+  "approved": "secondary",
+  "cancelled": "danger",
 };
 
-export function ProjectTable() {
+const statusLabelMap = {
+  "created": "Created",
+  "in_progress": "In Progress",
+  "finished": "Finished",
+  "approved": "Approved",
+  "cancelled": "Cancelled",
+};
+
+export function ProjectTable({ projects: apiProjects = [] }) {
+  // Transform API data to table format
+  const projects = React.useMemo(() => {
+    return apiProjects.map(project => ({
+      id: project.id,
+      name: project.name,
+      client: project.clientName,
+      status: project.status,
+      startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '',
+      endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '',
+      budget: project.budget ? `$ ${parseFloat(project.budget).toLocaleString()}` : '$ 0',
+      projectType: project.projectType,
+      isFavorite: project.isFavorite,
+    }));
+  }, [apiProjects]);
   const [filterValue, setFilterValue] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("all");
   const [page, setPage] = React.useState(1);
@@ -139,23 +132,33 @@ export function ProjectTable() {
     const cellValue = project[columnKey];
 
     switch (columnKey) {
+      case "name":
+        return (
+          <div className="flex items-center gap-2">
+            {project.isFavorite && <Icon icon="lucide:star" className="text-warning" />}
+            <span className="font-medium">{project.name}</span>
+            {project.projectType === 'simu' && (
+              <Chip size="sm" color="primary" variant="dot">Simu</Chip>
+            )}
+          </div>
+        );
       case "status":
         return (
           <Chip 
-            color={statusColorMap[project.status]} 
+            color={statusColorMap[project.status] || "default"} 
             variant="flat"
             size="sm"
           >
-            {project.status}
+            {statusLabelMap[project.status] || project.status}
           </Chip>
         );
       case "actions":
         return (
           <div className="flex items-center gap-2">
-            <Button isIconOnly size="sm" variant="light">
+            <Button isIconOnly size="sm" variant="light" title="View project">
               <Icon icon="lucide:eye" className="text-lg" />
             </Button>
-            <Button isIconOnly size="sm" variant="light">
+            <Button isIconOnly size="sm" variant="light" title="Edit project">
               <Icon icon="lucide:edit-2" className="text-lg" />
             </Button>
           </div>
@@ -167,7 +170,9 @@ export function ProjectTable() {
 
   return (
     <div className="space-y-4">
-      <div className="text-xl font-semibold">Project History</div>
+      <div className="flex justify-between items-center">
+        <div className="text-xl font-semibold">Project History ({projects.length} projects)</div>
+      </div>
       
       {/* Filters */}
       <div className="flex flex-col gap-4 md:flex-row md:items-end">
@@ -196,9 +201,11 @@ export function ProjectTable() {
             selectionMode="single"
           >
             <DropdownItem key="all">All</DropdownItem>
-            <DropdownItem key="In Progress">In Progress</DropdownItem>
-            <DropdownItem key="Finished">Finished</DropdownItem>
-            <DropdownItem key="Approved">Approved</DropdownItem>
+            <DropdownItem key="created">Created</DropdownItem>
+            <DropdownItem key="in_progress">In Progress</DropdownItem>
+            <DropdownItem key="finished">Finished</DropdownItem>
+            <DropdownItem key="approved">Approved</DropdownItem>
+            <DropdownItem key="cancelled">Cancelled</DropdownItem>
           </DropdownMenu>
         </Dropdown>
         

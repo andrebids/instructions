@@ -2,13 +2,56 @@ import React from "react";
 import {Header} from "./components/header";
 import {SidebarNavigation} from "./components/sidebar-navigation";
 import {StatsCard} from "./components/stats-card";
-import {Button} from "@heroui/react";
+import {Button, Spinner} from "@heroui/react";
 import {Icon} from "@iconify/react";
 import {ProjectTable} from "./components/project-table";
 import {CreateProject} from "./components/create-project";
+import {projectsAPI} from "./services/api";
 
 export default function App() {
   const [showCreateProject, setShowCreateProject] = React.useState(false);
+  const [projects, setProjects] = React.useState([]);
+  const [stats, setStats] = React.useState({
+    total: 0,
+    inProgress: 0,
+    finished: 0,
+    approved: 0,
+  });
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+  
+  // Carregar dados ao iniciar
+  React.useEffect(() => {
+    loadData();
+  }, []);
+  
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Carregar projetos e stats em paralelo
+      const [projectsData, statsData] = await Promise.all([
+        projectsAPI.getAll(),
+        projectsAPI.getStats(),
+      ]);
+      
+      setProjects(projectsData);
+      setStats({
+        total: statsData.total,
+        inProgress: statsData.inProgress,
+        finished: statsData.finished,
+        approved: statsData.approved,
+      });
+      
+      console.log('✅ Dados carregados:', { projects: projectsData.length, stats: statsData });
+    } catch (err) {
+      console.error('❌ Erro ao carregar dados:', err);
+      setError('Failed to load data. Please check if the server is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const handleCreateProject = () => {
     setShowCreateProject(true);
@@ -16,6 +59,8 @@ export default function App() {
   
   const handleCloseCreateProject = () => {
     setShowCreateProject(false);
+    // Recarregar dados após criar projeto
+    loadData();
   };
 
   return (
@@ -43,48 +88,76 @@ export default function App() {
                   startContent={<Icon icon="lucide:plus" />}
                   className="font-medium"
                   onPress={handleCreateProject}
+                  isDisabled={loading}
                 >
                   Create New Project
                 </Button>
               </div>
               
-              {/* Stats Grid */}
-              <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatsCard
-                  title="Total Projects"
-                  value="12"
-                  change="+2 from last month"
-                  isPositive={true}
-                  icon="lucide:folder"
-                />
-                <StatsCard
-                  title="In Progress"
-                  value="5"
-                  change="+1 from last month"
-                  isPositive={true}
-                  icon="lucide:loader"
-                />
-                <StatsCard
-                  title="Finished"
-                  value="6"
-                  change="+3 from last month"
-                  isPositive={true}
-                  icon="lucide:check-circle"
-                />
-                <StatsCard
-                  title="Approved"
-                  value="4"
-                  change="+2 from last month"
-                  isPositive={true}
-                  icon="lucide:thumbs-up"
-                />
-              </div>
-
-              {/* Project Table */}
-              <div className="mb-6">
-                <ProjectTable />
-              </div>
+              {/* Error Message */}
+              {error && (
+                <div className="mb-6 p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-600">
+                  <div className="flex items-center gap-2">
+                    <Icon icon="lucide:alert-circle" className="text-xl" />
+                    <span>{error}</span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    color="danger" 
+                    variant="flat"
+                    className="mt-2"
+                    onPress={loadData}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              )}
               
+              {/* Loading State */}
+              {loading ? (
+                <div className="flex justify-center items-center h-64">
+                  <Spinner size="lg" label="Loading data..." />
+                </div>
+              ) : (
+                <>
+                  {/* Stats Grid */}
+                  <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <StatsCard
+                      title="Total Projects"
+                      value={stats.total.toString()}
+                      change={`${stats.total} projects total`}
+                      isPositive={true}
+                      icon="lucide:folder"
+                    />
+                    <StatsCard
+                      title="In Progress"
+                      value={stats.inProgress.toString()}
+                      change={`${stats.inProgress} active`}
+                      isPositive={true}
+                      icon="lucide:loader"
+                    />
+                    <StatsCard
+                      title="Finished"
+                      value={stats.finished.toString()}
+                      change={`${stats.finished} completed`}
+                      isPositive={true}
+                      icon="lucide:check-circle"
+                    />
+                    <StatsCard
+                      title="Approved"
+                      value={stats.approved.toString()}
+                      change={`${stats.approved} approved`}
+                      isPositive={true}
+                      icon="lucide:thumbs-up"
+                    />
+                  </div>
+
+                  {/* Project Table */}
+                  <div className="mb-6">
+                    <ProjectTable projects={projects} />
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

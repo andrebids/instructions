@@ -9,20 +9,26 @@ import {
   Textarea,
   Select,
   SelectItem,
-  DatePicker
+  DatePicker,
+  Spinner
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { projectsAPI } from "../services/api";
 
 export function CreateProject({ onClose }) {
   const [formData, setFormData] = React.useState({
     name: "",
-    client: "",
-    status: "Em Progresso",
+    clientName: "",
+    projectType: "decor",
+    status: "created",
     startDate: null,
     endDate: null,
     budget: "",
-    description: ""
+    description: "",
+    location: ""
   });
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState(null);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({
@@ -31,10 +37,36 @@ export function CreateProject({ onClose }) {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    onClose();
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Preparar dados para API
+      const projectData = {
+        name: formData.name,
+        clientName: formData.clientName,
+        projectType: formData.projectType,
+        status: formData.status,
+        location: formData.location,
+        description: formData.description,
+        budget: formData.budget ? parseFloat(formData.budget) : null,
+        startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
+        endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
+      };
+      
+      const newProject = await projectsAPI.create(projectData);
+      console.log("✅ Project created:", newProject);
+      
+      onClose(); // Fecha modal e recarrega dados
+    } catch (err) {
+      console.error("❌ Error creating project:", err);
+      setError(err.response?.data?.error || "Failed to create project");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -53,6 +85,13 @@ export function CreateProject({ onClose }) {
         </div>
       </div>
 
+      {error && (
+        <div className="mb-4 p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-600">
+          <Icon icon="lucide:alert-circle" className="inline mr-2" />
+          {error}
+        </div>
+      )}
+      
       <Card className="shadow-sm">
         <CardHeader className="border-b border-default-200 pb-2">
           <h2 className="text-lg">Project Details</h2>
@@ -66,26 +105,50 @@ export function CreateProject({ onClose }) {
                 placeholder="Enter the project name"
                 value={formData.name}
                 onValueChange={(value) => handleChange("name", value)}
+                isDisabled={loading}
               />
               
               <Input
                 isRequired
                 label="Client"
                 placeholder="Enter the client name"
-                value={formData.client}
-                onValueChange={(value) => handleChange("client", value)}
+                value={formData.clientName}
+                onValueChange={(value) => handleChange("clientName", value)}
+                isDisabled={loading}
               />
+              
+              <Input
+                label="Location"
+                placeholder="Project location"
+                value={formData.location}
+                onValueChange={(value) => handleChange("location", value)}
+                isDisabled={loading}
+              />
+              
+              <Select
+                isRequired
+                label="Project Type"
+                placeholder="Select project type"
+                defaultSelectedKeys={["decor"]}
+                onChange={(e) => handleChange("projectType", e.target.value)}
+                isDisabled={loading}
+              >
+                <SelectItem key="decor" value="decor">Decor</SelectItem>
+                <SelectItem key="simu" value="simu">Simu</SelectItem>
+              </Select>
               
               <Select
                 isRequired
                 label="Status"
                 placeholder="Select status"
-                defaultSelectedKeys={["In Progress"]}
+                defaultSelectedKeys={["created"]}
                 onChange={(e) => handleChange("status", e.target.value)}
+                isDisabled={loading}
               >
-                <SelectItem key="In Progress" value="In Progress">In Progress</SelectItem>
-                <SelectItem key="Finished" value="Finished">Finished</SelectItem>
-                <SelectItem key="Approved" value="Approved">Approved</SelectItem>
+                <SelectItem key="created" value="created">Created</SelectItem>
+                <SelectItem key="in_progress" value="in_progress">In Progress</SelectItem>
+                <SelectItem key="finished" value="finished">Finished</SelectItem>
+                <SelectItem key="approved" value="approved">Approved</SelectItem>
               </Select>
               
               <Input
@@ -132,14 +195,17 @@ export function CreateProject({ onClose }) {
             variant="flat" 
             color="default"
             onClick={onClose}
+            isDisabled={loading}
           >
             Cancel
           </Button>
           <Button 
             color="primary"
             onClick={handleSubmit}
+            isLoading={loading}
+            isDisabled={loading}
           >
-            Create Project
+            {loading ? "Creating..." : "Create Project"}
           </Button>
         </CardFooter>
       </Card>

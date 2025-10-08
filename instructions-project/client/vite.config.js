@@ -6,13 +6,16 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     port: 3003,
+    host: true, // Permite acesso externo
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
     },
-    hmr: true,
+    hmr: {
+      port: 3004, // Porta separada para HMR
+    },
   },
 })
 
