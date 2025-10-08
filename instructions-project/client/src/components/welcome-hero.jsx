@@ -8,7 +8,8 @@ export function WelcomeHero({userName = "Christopher"}) {
         size="lg"
         variant="flat"
         radius="full"
-        className="border-none bg-transparent text-default-700 dark:text-default-600 px-4 py-3"
+        className="border-none bg-transparent text-default-700 dark:text-default-600 px-0 py-3"
+        classNames={{ content: "px-0" }}
         startContent={<span className="text-lg">👋</span>}
       >
         {`Welcome in, ${userName}`}
