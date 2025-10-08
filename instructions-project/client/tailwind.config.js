@@ -8,7 +8,24 @@ export default {
     "./node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: "class",
-  plugins: [heroui()],
+  plugins: [
+    heroui({
+      themes: {
+        light: {
+          colors: {
+            background: "#d5d6da", // Cor de fundo personalizada para modo claro
+            foreground: "#000000",
+          },
+        },
+        dark: {
+          colors: {
+            background: "#000000",
+            foreground: "#ffffff",
+          },
+        },
+      },
+    })
+  ],
   theme: {
     extend: {
       fontFamily: {

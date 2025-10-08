@@ -132,6 +132,7 @@ export default function App() {
                       change={`${stats.total} projects total`}
                       isPositive={true}
                       icon="lucide:folder"
+                      timePeriod="All time"
                     />
                     <StatsCard
                       title="In Progress"
@@ -139,6 +140,7 @@ export default function App() {
                       change={`${stats.inProgress} active`}
                       isPositive={true}
                       icon="lucide:loader"
+                      timePeriod="Currently"
                     />
                     <StatsCard
                       title="Finished"
@@ -146,6 +148,7 @@ export default function App() {
                       change={`${stats.finished} completed`}
                       isPositive={true}
                       icon="lucide:check-circle"
+                      timePeriod="This month"
                     />
                     <StatsCard
                       title="Approved"
@@ -153,6 +156,7 @@ export default function App() {
                       change={`${stats.approved} approved`}
                       isPositive={true}
                       icon="lucide:thumbs-up"
+                      timePeriod="This month"
                     />
                     <StatsCard
                       title="In Queue"
@@ -160,6 +164,7 @@ export default function App() {
                       change={`${stats.inQueue} waiting`}
                       isPositive={false}
                       icon="lucide:clock"
+                      timePeriod="Pending"
                     />
                     <StatsCard
                       title="Cancelled"
@@ -167,6 +172,7 @@ export default function App() {
                       change={`${stats.cancelled} cancelled`}
                       isPositive={false}
                       icon="lucide:x-circle"
+                      timePeriod="This month"
                     />
                   </div>
 

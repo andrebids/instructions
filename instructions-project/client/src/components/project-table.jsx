@@ -227,6 +227,9 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
         <Input
           isClearable
           className="w-full md:max-w-xs"
+            classNames={{
+              inputWrapper: "bg-[#e4e3e8] dark:bg-content1 shadow-sm"
+            }}
           placeholder="Search by name or client..."
           startContent={<Icon icon="lucide:search" />}
           value={filterValue}
@@ -237,6 +240,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
           <DropdownTrigger>
             <Button 
               variant="flat" 
+              className="bg-[#e4e3e8] dark:bg-content1 shadow-sm"
               endContent={<Icon icon="lucide:chevron-down" />}
             >
               Status: {statusFilter === "all" ? "All" : statusFilter}
@@ -262,6 +266,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
           <DropdownTrigger>
             <Button 
               variant="flat" 
+              className="bg-[#e4e3e8] dark:bg-content1 shadow-sm"
               endContent={<Icon icon="lucide:chevron-down" />}
             >
               Favorites: {favoriteFilter === "all" ? "All" : favoriteFilter === "favorites" ? "Favorites" : "Non-favorites"}
@@ -284,7 +289,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
             <PopoverTrigger>
               <Button 
                 variant="flat" 
-                className="w-full md:w-auto justify-start"
+                className="w-full md:w-auto justify-start bg-[#e4e3e8] dark:bg-content1 shadow-sm"
                 endContent={<Icon icon="lucide:calendar" />}
               >
                 {dateRange.start ? new Date(dateRange.start).toLocaleDateString() : "Start Date"}
@@ -303,7 +308,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
             <PopoverTrigger>
               <Button 
                 variant="flat" 
-                className="w-full md:w-auto justify-start"
+                className="w-full md:w-auto justify-start bg-[#e4e3e8] dark:bg-content1 shadow-sm"
                 endContent={<Icon icon="lucide:calendar" />}
               >
                 {dateRange.end ? new Date(dateRange.end).toLocaleDateString() : "End Date"}
@@ -319,7 +324,11 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
           </Popover>
         </div>
 
-        <Button variant="light" onPress={clearFilters} className="md:ml-auto">
+        <Button 
+          variant="light" 
+          onPress={clearFilters} 
+          className="md:ml-auto bg-[#e4e3e8] dark:bg-content1 shadow-sm"
+        >
           Clear filters
         </Button>
       </div>
@@ -359,7 +368,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
           </div>
         }
         classNames={{
-          wrapper: "min-h-[400px]",
+          wrapper: "min-h-[400px] bg-[#e4e3e8] dark:bg-content1 shadow-sm",
         }}
       >
         <TableHeader>
