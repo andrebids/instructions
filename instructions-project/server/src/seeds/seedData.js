@@ -218,7 +218,7 @@ const projectsSeed = [
     status: 'cancelled',
     baseImageUrl: '/demo-images/buildings/luxury-hotel.jpg',
     startDate: new Date('2024-09-15'),
-    endDate: null,
+    endDate: new Date('2024-09-15'),
     budget: 25000,
     description: 'Elegant Christmas lighting for luxury hotel facade - project cancelled due to budget constraints',
     isFavorite: false,

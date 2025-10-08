@@ -53,7 +53,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
       status: project.status,
       startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '',
       endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '',
-      budget: project.budget ? `$ ${parseFloat(project.budget).toLocaleString()}` : '$ 0',
+      budget: project.budget ? `€ ${parseFloat(project.budget).toLocaleString()}` : '€ 0',
       projectType: project.projectType,
       isFavorite: project.isFavorite,
     }));

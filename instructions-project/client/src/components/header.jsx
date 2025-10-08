@@ -52,30 +52,29 @@ export function Header() {
 
         <Popover placement="bottom">
           <PopoverTrigger>
-            <Badge content={3} color="danger" shape="circle">
-              <Button isIconOnly variant="light" aria-label="Notifications">
-                <Icon icon="lucide:bell" className="text-xl" />
-              </Button>
-            </Badge>
+            <Button isIconOnly variant="light" aria-label="Notifications" className="relative">
+              <Icon icon="lucide:bell" className="text-xl" />
+              <Badge content={3} color="danger" shape="circle" className="absolute -top-1 -right-1" />
+            </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-0">
-            <div className="p-3 border-b border-default-200 font-semibold">Notifications</div>
+          <PopoverContent className="w-80 p-0 bg-background/70 backdrop-blur-md border border-default-200/40 rounded-xl shadow-md">
+            <div className="p-3 font-semibold">Notifications</div>
             <div className="p-3 space-y-3">
-              <div className="flex items-start gap-3">
-                <Icon icon="lucide:check-circle2" className="text-success mt-1" />
+              <div className="flex items-start gap-3 p-3 border border-default-200/50 rounded-lg hover:bg-default-100/50 transition-colors">
+                <Icon icon="lucide:check-circle-2" className="text-success mt-1" />
                 <div>
                   <div className="font-medium">Project approved</div>
                   <div className="text-small text-default-500">Client Fashion Outlet approved the draft.</div>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 p-3 border border-default-200/50 rounded-lg hover:bg-default-100/50 transition-colors">
                 <Icon icon="lucide:clock" className="text-warning mt-1" />
                 <div>
                   <div className="font-medium">Deadline approaching</div>
                   <div className="text-small text-default-500">Website Redesign due in 2 days.</div>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 p-3 border border-default-200/50 rounded-lg hover:bg-default-100/50 transition-colors">
                 <Icon icon="lucide:message-square" className="text-primary mt-1" />
                 <div>
                   <div className="font-medium">New comment</div>
@@ -83,7 +82,7 @@ export function Header() {
                 </div>
               </div>
             </div>
-            <div className="p-3 border-t border-default-200 text-center">
+            <div className="px-3 py-2 text-center">
               <Button size="sm" variant="light">View all</Button>
             </div>
           </PopoverContent>

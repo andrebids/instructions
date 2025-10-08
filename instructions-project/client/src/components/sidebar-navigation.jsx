@@ -15,7 +15,7 @@ export function SidebarNavigation() {
   useTheme();
 
   return (
-    <div className={`flex flex-col items-center h-full bg-content1 py-6`}>
+    <div className={`flex flex-col items-center h-full bg-transparent dark:bg-content1 py-6`}>
       {/* Logo reativo ao tema (sem JS) */}
       <div>
         <img
@@ -45,7 +45,7 @@ export function SidebarNavigation() {
               <Link
                 href={item.href}
                 aria-label={item.name}
-                className={`w-10 h-10 rounded-xl bg-content2 hover:bg-content3 shadow-sm flex items-center justify-center transition-all`}
+                className={`w-10 h-10 rounded-xl bg-content2/60 dark:bg-content2 hover:bg-content3 shadow-sm flex items-center justify-center transition-all`}
               >
                 <Icon icon={item.icon} className={`text-default-600 text-xl`} />
               </Link>

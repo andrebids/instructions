@@ -7,6 +7,7 @@ import {Icon} from "@iconify/react";
 import {ProjectTable} from "./components/project-table";
 import {CreateProject} from "./components/create-project";
 import {projectsAPI} from "./services/api";
+import {WelcomeHero} from "./components/welcome-hero";
 
 export default function App() {
   const [showCreateProject, setShowCreateProject] = React.useState(false);
@@ -70,7 +71,7 @@ export default function App() {
   return (
     <div className="bg-background text-foreground flex h-screen">
       {/* Sidebar */}
-      <aside className="w-20 border-r border-default-200">
+      <aside className="w-20">
         <SidebarNavigation />
       </aside>
 
@@ -84,9 +85,9 @@ export default function App() {
             <CreateProject onClose={handleCloseCreateProject} />
           ) : (
             <>
-              {/* Dashboard Header with Create Button */}
+              {/* Welcome section + Create button */}
               <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Dashboard</h1>
+                <WelcomeHero userName="Christopher" />
                 <Button 
                   color="primary" 
                   startContent={<Icon icon="lucide:plus" />}
