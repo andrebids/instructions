@@ -6,6 +6,7 @@ import {useTheme} from "@heroui/use-theme";
 export function Header() {
   const {theme, setTheme} = useTheme();
   const [showSearch, setShowSearch] = React.useState(false);
+  const [showNotifications, setShowNotifications] = React.useState(false);
   
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
@@ -50,41 +51,89 @@ export function Header() {
           </Button>
         )}
 
-        <Popover placement="bottom">
+        <Popover 
+          placement="bottom-end"
+          isOpen={showNotifications}
+          onOpenChange={setShowNotifications}
+        >
           <PopoverTrigger>
-            <Badge content={3} color="danger" shape="circle" placement="top-right">
-              <Button isIconOnly variant="light" aria-label="Notifications">
+            <Badge content="3" color="danger" shape="circle" placement="top-right">
+              <Button 
+                isIconOnly 
+                variant="light" 
+                aria-label="Notifications"
+                className="bg-default-100/50 hover:bg-default-200/50"
+                onPress={() => {
+                  console.log("🔔 Notifications button clicked");
+                  setShowNotifications(!showNotifications);
+                }}
+              >
                 <Icon icon="lucide:bell" className="text-xl" />
               </Button>
             </Badge>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-0 bg-background/70 backdrop-blur-md border border-default-200/40 rounded-xl shadow-md">
-            <div className="p-3 font-semibold">Notifications</div>
-            <div className="p-3 space-y-3">
-              <div className="flex items-start gap-3 p-3 border border-default-200/50 rounded-lg hover:bg-default-100/50 transition-colors">
-                <Icon icon="lucide:check-circle-2" className="text-success mt-1" />
-                <div>
-                  <div className="font-medium">Project approved</div>
-                  <div className="text-small text-default-500">Client Fashion Outlet approved the draft.</div>
-                </div>
+          <PopoverContent className="w-80 p-0 bg-background/70 backdrop-blur-lg border border-default-200/30 rounded-xl shadow-xl">
+            <div className="p-4 border-b border-divider/50">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-lg">Recent Updates</h3>
+                <Button 
+                  size="sm" 
+                  variant="light" 
+                  isIconOnly
+                  onPress={() => setShowNotifications(false)}
+                >
+                  <Icon icon="lucide:x" className="text-sm" />
+                </Button>
               </div>
-              <div className="flex items-start gap-3 p-3 border border-default-200/50 rounded-lg hover:bg-default-100/50 transition-colors">
-                <Icon icon="lucide:clock" className="text-warning mt-1" />
-                <div>
-                  <div className="font-medium">Deadline approaching</div>
-                  <div className="text-small text-default-500">Website Redesign due in 2 days.</div>
+            </div>
+            <div className="max-h-80 overflow-y-auto">
+              <div className="p-3 space-y-2">
+                <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-default-100/30 transition-colors cursor-pointer">
+                  <div className="flex-shrink-0 w-2 h-2 bg-success rounded-full mt-2"></div>
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">Design approved</div>
+                    <div className="text-xs text-default-500 mt-1">Living room decoration concept approved by client.</div>
+                    <div className="text-xs text-default-400 mt-1">2 hours ago</div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3 p-3 border border-default-200/50 rounded-lg hover:bg-default-100/50 transition-colors">
-                <Icon icon="lucide:message-square" className="text-primary mt-1" />
-                <div>
-                  <div className="font-medium">New comment</div>
-                  <div className="text-small text-default-500">Andre left a note on CRM Integration.</div>
+                
+                <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-default-100/30 transition-colors cursor-pointer">
+                  <div className="flex-shrink-0 w-2 h-2 bg-warning rounded-full mt-2"></div>
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">Project deadline</div>
+                    <div className="text-xs text-default-500 mt-1">Office renovation project due in 3 days.</div>
+                    <div className="text-xs text-default-400 mt-1">4 hours ago</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-default-100/30 transition-colors cursor-pointer">
+                  <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></div>
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">New revision</div>
+                    <div className="text-xs text-default-500 mt-1">Kitchen design revision requested by client.</div>
+                    <div className="text-xs text-default-400 mt-1">1 day ago</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-default-100/30 transition-colors cursor-pointer opacity-60">
+                  <div className="flex-shrink-0 w-2 h-2 bg-default-300 rounded-full mt-2"></div>
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">Project delivered</div>
+                    <div className="text-xs text-default-500 mt-1">Bedroom decoration project completed successfully.</div>
+                    <div className="text-xs text-default-400 mt-1">2 days ago</div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="px-3 py-2 text-center">
-              <Button size="sm" variant="light">View all</Button>
+            <div className="p-3 border-t border-divider/50">
+              <Button 
+                size="sm" 
+                variant="light" 
+                className="w-full"
+                onPress={() => console.log("📋 View all projects clicked")}
+              >
+                View all projects
+              </Button>
             </div>
           </PopoverContent>
         </Popover>
