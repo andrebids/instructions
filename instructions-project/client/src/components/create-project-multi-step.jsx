@@ -294,12 +294,12 @@ export function CreateProjectMultiStep({ onClose }) {
                   {/* Botão para adicionar novo cliente */}
                   <Button
                     size="sm"
-                    variant="light"
                     color="primary"
+                    variant="flat"
                     className="mt-2"
                     onPress={() => setNewClientModal(true)}
+                    startContent={<Icon icon="lucide:plus" />}
                   >
-                    <Icon icon="lucide:plus" className="mr-1" />
                     Add New Client
                   </Button>
                 </div>
@@ -382,8 +382,8 @@ export function CreateProjectMultiStep({ onClose }) {
                     </div>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                       formData.projectType === "simu" 
-                        ? "border-white bg-white/20" 
-                        : "border-white/50"
+                        ? "border-primary bg-primary/20" 
+                        : "border-white/50 bg-white/10"
                     }`}>
                       {formData.projectType === "simu" && (
                         <Icon icon="lucide:check" className="text-primary text-sm" />
@@ -421,8 +421,8 @@ export function CreateProjectMultiStep({ onClose }) {
                     </div>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                       formData.projectType === "logo" 
-                        ? "border-white bg-white/20" 
-                        : "border-white/50"
+                        ? "border-primary bg-primary/20" 
+                        : "border-white/50 bg-white/10"
                     }`}>
                       {formData.projectType === "logo" && (
                         <Icon icon="lucide:check" className="text-primary text-sm" />
@@ -436,29 +436,27 @@ export function CreateProjectMultiStep({ onClose }) {
             {formData.projectType === "simu" && (
               <div className="mt-2 sm:mt-4">
                 <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">Choose the mode</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Card
                     isPressable
                     radius="lg"
                     shadow="sm"
                     aria-label="AI Assisted Designer"
-                    className={`transition-all bg-content1 ${
+                    className={`relative transition-all bg-content1 rounded-2xl border-2 ${
                       formData.simuWorkflow === "ai"
-                        ? "ring-2 ring-primary/70"
-                        : "hover:ring-1 hover:ring-primary/40"
+                        ? "border-primary"
+                        : "border-transparent hover:border-primary/40"
                     }`}
                     onPress={() => handleInputChange("simuWorkflow", "ai")}
                   >
-                    <div className="p-4 flex items-start gap-3">
-                      <div className="text-xl">⚡</div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-foreground">AI Assisted Designer</p>
-                        <p className="text-sm text-default-500">Results in seconds</p>
-                        <p className="text-sm text-default-500">Ideal for quick projects</p>
-                      </div>
-                      {formData.simuWorkflow === "ai" && (
-                        <Icon icon="lucide:check" className="text-primary" />
-                      )}
+                    {formData.simuWorkflow === "ai" && (
+                      <Icon icon="lucide:check" className="absolute top-2.5 right-2.5 text-primary text-sm" />
+                    )}
+                    <div className="p-4 sm:p-5 flex flex-col items-center text-center gap-1.5">
+                      <Icon icon="lucide:zap" className="text-warning-500 text-2xl" />
+                      <p className="font-semibold text-foreground text-base sm:text-lg">AI Assisted Designer</p>
+                      <p className="text-xs text-default-500">Results in seconds</p>
+                      <p className="text-xs text-default-500">Ideal for quick projects</p>
                     </div>
                   </Card>
 
@@ -467,23 +465,21 @@ export function CreateProjectMultiStep({ onClose }) {
                     radius="lg"
                     shadow="sm"
                     aria-label="Send to Human Designer"
-                    className={`transition-all bg-content1 ${
+                    className={`relative transition-all bg-content1 rounded-2xl border-2 ${
                       formData.simuWorkflow === "human"
-                        ? "ring-2 ring-primary/70"
-                        : "hover:ring-1 hover:ring-primary/40"
+                        ? "border-primary"
+                        : "border-transparent hover:border-primary/40"
                     }`}
                     onPress={() => handleInputChange("simuWorkflow", "human")}
                   >
-                    <div className="p-4 flex items-start gap-3">
-                      <div className="text-xl">🎨</div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-foreground">Send to Human Designer</p>
-                        <p className="text-sm text-default-500">More realistic results</p>
-                        <p className="text-sm text-default-500">More refined results</p>
-                      </div>
-                      {formData.simuWorkflow === "human" && (
-                        <Icon icon="lucide:check" className="text-primary" />
-                      )}
+                    {formData.simuWorkflow === "human" && (
+                      <Icon icon="lucide:check" className="absolute top-2.5 right-2.5 text-primary text-sm" />
+                    )}
+                    <div className="p-4 sm:p-5 flex flex-col items-center text-center gap-1.5">
+                      <Icon icon="lucide:palette" className="text-pink-400 text-2xl" />
+                      <p className="font-semibold text-foreground text-base sm:text-lg">Send to Human Designer</p>
+                      <p className="text-xs text-default-500">More realistic results</p>
+                      <p className="text-xs text-default-500">More refined results</p>
                     </div>
                   </Card>
                 </div>
