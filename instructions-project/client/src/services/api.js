@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 // Configuração base da API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (window.location.hostname === '192.168.2.16' ? 'http://192.168.2.16:5000/api' : 'http://localhost:5000/api');
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -104,7 +105,8 @@ export const decorationsAPI = {
 // Health check
 export const healthCheck = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/health');
+    const healthUrl = window.location.hostname === '192.168.2.16' ? 'http://192.168.2.16:5000/health' : 'http://localhost:5000/health';
+    const response = await axios.get(healthUrl);
     return response.data;
   } catch (error) {
     console.error('Health check failed:', error);

@@ -52,10 +52,11 @@ export function Header() {
 
         <Popover placement="bottom">
           <PopoverTrigger>
-            <Button isIconOnly variant="light" aria-label="Notifications" className="relative">
-              <Icon icon="lucide:bell" className="text-xl" />
-              <Badge content={3} color="danger" shape="circle" className="absolute -top-1 -right-1" />
-            </Button>
+            <Badge content={3} color="danger" shape="circle" placement="top-right">
+              <Button isIconOnly variant="light" aria-label="Notifications">
+                <Icon icon="lucide:bell" className="text-xl" />
+              </Button>
+            </Badge>
           </PopoverTrigger>
           <PopoverContent className="w-80 p-0 bg-background/70 backdrop-blur-md border border-default-200/40 rounded-xl shadow-md">
             <div className="p-3 font-semibold">Notifications</div>

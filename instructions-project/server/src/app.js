@@ -10,7 +10,10 @@ const app = express();
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3003', 'http://192.168.2.16:3003', 'http://192.168.2.28:3003'],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -54,8 +57,11 @@ async function startServer() {
     // Iniciar servidor
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Servidor em http://localhost:${PORT}`);
+      console.log(`🌐 Servidor acessível externamente em http://192.168.2.16:${PORT}`);
       console.log(`📊 API disponível em http://localhost:${PORT}/api`);
+      console.log(`📊 API externa disponível em http://192.168.2.16:${PORT}/api`);
       console.log(`💚 Health check: http://localhost:${PORT}/health`);
+      console.log(`💚 Health check externo: http://192.168.2.16:${PORT}/health`);
     });
   } catch (error) {
     console.error('❌ Erro ao iniciar servidor:', error);

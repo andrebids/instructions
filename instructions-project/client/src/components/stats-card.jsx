@@ -32,7 +32,7 @@ export function StatsCard({ title, value, change, isPositive, icon, timePeriod =
             <span className="text-3xl font-semibold text-gray-800 dark:text-foreground -mt-0.5">{value}</span>
             <div>
               <p className="text-sm font-semibold leading-tight text-gray-800 dark:text-foreground">{title}</p>
-              <p className="text-[10px] text-default-500 mt-0">{timePeriod}</p>
+              <p className="text-sm text-default-500 mt-0">{timePeriod}</p>
             </div>
           </div>
           <div className={`flex items-center justify-center w-12 h-12 rounded-lg ${bg}`}>

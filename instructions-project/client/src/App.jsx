@@ -6,10 +6,14 @@ import {Button, Spinner} from "@heroui/react";
 import {Icon} from "@iconify/react";
 import {ProjectTable} from "./components/project-table";
 import {CreateProject} from "./components/create-project";
+import {CreateProjectMultiStep} from "./components/create-project-multi-step";
 import {projectsAPI} from "./services/api";
 import {WelcomeHero} from "./components/welcome-hero";
+import {AIAssistantChat} from "./components/ai-assistant-chat";
+import {motion, AnimatePresence} from "framer-motion";
 
 export default function App() {
+  const [isOpen, setIsOpen] = React.useState(false);
   const [showCreateProject, setShowCreateProject] = React.useState(false);
   const [projects, setProjects] = React.useState([]);
   const [stats, setStats] = React.useState({
@@ -82,7 +86,7 @@ export default function App() {
         {/* Dashboard Content */}
         <div className="flex-1 overflow-auto p-6">
           {showCreateProject ? (
-            <CreateProject onClose={handleCloseCreateProject} />
+            <CreateProjectMultiStep onClose={handleCloseCreateProject} />
           ) : (
             <>
               {/* Welcome section + Create button */}
@@ -187,6 +191,34 @@ export default function App() {
           )}
         </div>
       </main>
+
+      {/* Floating AI Assistant Button */}
+      <Button 
+        isIconOnly
+        color="primary" 
+        className="fixed bottom-6 right-6 shadow-lg w-14 h-14 rounded-full transition-transform duration-200 hover:scale-105 z-50"
+        onPress={() => setIsOpen(!isOpen)}
+      >
+        <Icon 
+          icon={isOpen ? "lucide:x" : "lucide:bot"}
+          className="text-2xl" 
+        />
+      </Button>
+      
+      {/* AI Assistant Chat Window */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-24 right-6 z-40 w-96 shadow-2xl rounded-2xl overflow-hidden border border-divider bg-background"
+          >
+            <AIAssistantChat onClose={() => setIsOpen(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
