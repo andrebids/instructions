@@ -1,5 +1,7 @@
 import React from "react";
-import { Button, Card, CardFooter, Input, Textarea, Image, Autocomplete, AutocompleteItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, DateInput } from "@heroui/react";
+import { Button, Card, CardFooter, Input, Textarea, Image, Autocomplete, AutocompleteItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+import { DatePicker } from "@heroui/date-picker";
+import { today, getLocalTimeZone } from "@internationalized/date";
 import { Icon } from "@iconify/react";
 import { projectsAPI } from "../services/api";
 
@@ -64,6 +66,17 @@ export function CreateProjectMultiStep({ onClose }) {
       console.error("Erro ao carregar clientes:", err);
     }
   };
+
+  // Definir data de entrega por defeito: hoje + 7 dias
+  React.useEffect(() => {
+    if (!formData.endDate) {
+      const base = today(getLocalTimeZone());
+      setFormData((prev) => ({
+        ...prev,
+        endDate: base.add({ days: 7 }),
+      }));
+    }
+  }, []);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -159,7 +172,7 @@ export function CreateProjectMultiStep({ onClose }) {
         location: formData.location,
         description: formData.description,
         budget: formData.budget ? parseFloat(formData.budget) : null,
-        startDate: formData.startDate ? formData.startDate.toDate(new Date().getTimezoneOffset()).toISOString() : null,
+        startDate: null,
         endDate: formData.endDate ? formData.endDate.toDate(new Date().getTimezoneOffset()).toISOString() : null,
       };
       
@@ -231,40 +244,36 @@ export function CreateProjectMultiStep({ onClose }) {
                 </Button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <DateInput
-                    label="Start Date"
-                    isRequired
-                    value={formData.startDate}
-                    onChange={(value) => handleInputChange("startDate", value)}
-                    className="w-full"
-                    variant="bordered"
-                    startContent={<Icon icon="lucide:calendar" className="text-default-400" />}
-                  />
-                </div>
-                
-                <div>
-                  <DateInput
-                    label="End Date"
+                  <DatePicker
+                    labelPlacement="outside"
+                    label="Delivery Date"
                     isRequired
                     value={formData.endDate}
                     onChange={(value) => handleInputChange("endDate", value)}
                     className="w-full"
                     variant="bordered"
-                    startContent={<Icon icon="lucide:calendar-check" className="text-default-400" />}
+                    size="lg"
+                    radius="lg"
+                    showMonthAndYearPickers
+                    locale="pt-PT"
+                    minValue={today(getLocalTimeZone())}
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-2">Budget (EUR) *</label>
                   <Input
                     type="number"
-                    isRequired
+                    
                     placeholder="Enter the budget amount"
                     value={formData.budget}
                     onChange={(e) => handleInputChange("budget", e.target.value)}
                     className="w-full"
+                    variant="bordered"
+                    size="lg"
+                    radius="lg"
                     startContent={
                       <div className="pointer-events-none flex items-center">
                         <span className="text-default-400 text-small">€</span>
@@ -443,12 +452,6 @@ export function CreateProjectMultiStep({ onClose }) {
                     <p className="font-medium">{formData.clientPhone || "—"}</p>
                   </div>
                   <div>
-                    <span className="text-default-500">Start Date:</span>
-                    <p className="font-medium">
-                      {formData.startDate ? formData.startDate.toDate(new Date().getTimezoneOffset()).toLocaleDateString() : "—"}
-                    </p>
-                  </div>
-                  <div>
                     <span className="text-default-500">End Date:</span>
                     <p className="font-medium">
                       {formData.endDate ? formData.endDate.toDate(new Date().getTimezoneOffset()).toLocaleDateString() : "—"}
@@ -501,7 +504,7 @@ export function CreateProjectMultiStep({ onClose }) {
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return formData.name.trim() !== "" && formData.clientName.trim() !== "" && formData.startDate && formData.endDate && formData.budget;
+        return formData.name.trim() !== "" && formData.clientName.trim() !== "" && formData.endDate;
       case 2:
         return formData.projectType;
       case 3:
