@@ -62,6 +62,43 @@ export function CreateProjectMultiStep({ onClose }) {
         { id: 8, name: "Tech Company HQ", email: "contact@techcompany.com", phone: "+351 444 555 666" },
       ];
       setClients(mockClients);
+      
+      // Para ambiente de demo: pré-selecionar um cliente aleatório
+      if (mockClients.length > 0) {
+        const randomIndex = Math.floor(Math.random() * mockClients.length);
+        const defaultClient = mockClients[randomIndex];
+        
+        // Lista de nomes de projetos para demo
+        const projectNames = [
+          "Christmas 2025 Collection",
+          "Summer Campaign 2025",
+          "New Year Celebration",
+          "Easter Special Display",
+          "Black Friday Setup",
+          "Valentine's Day Decoration",
+          "Mother's Day Tribute",
+          "Halloween Theme",
+          "Spring Collection Launch",
+          "Holiday Season Display",
+          "Back to School Campaign",
+          "Winter Wonderland",
+          "Summer Festival Setup",
+          "Anniversary Celebration",
+          "Grand Opening Event"
+        ];
+        
+        const randomProjectName = projectNames[Math.floor(Math.random() * projectNames.length)];
+        
+        setFormData(prev => ({
+          ...prev,
+          name: randomProjectName,
+          selectedClientKey: defaultClient.id,
+          clientId: defaultClient.id,
+          clientName: defaultClient.name,
+          clientEmail: defaultClient.email,
+          clientPhone: defaultClient.phone,
+        }));
+      }
     } catch (err) {
       console.error("Erro ao carregar clientes:", err);
     }
@@ -220,6 +257,9 @@ export function CreateProjectMultiStep({ onClose }) {
                   startContent={<Icon icon="lucide:user" className="text-default-400" />}
                   menuTrigger="input"
                   defaultItems={clients}
+                  selectedKey={formData.selectedClientKey}
+                  inputValue={formData.clientName}
+                  onInputChange={handleClientInputChange}
                 >
                   {(client) => (
                     <AutocompleteItem key={client.id} textValue={client.name}>
