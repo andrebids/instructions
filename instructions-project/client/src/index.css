@@ -21,3 +21,13 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield; /* Firefox */
 }
+
+/* Esconder scrollbar mas manter funcionalidade */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE e Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari e Opera */
+}

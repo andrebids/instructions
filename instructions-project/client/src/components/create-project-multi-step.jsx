@@ -231,8 +231,8 @@ export function CreateProjectMultiStep({ onClose }) {
       case 1:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Project Details</h2>
-            <p className="text-default-500">Let's start with the basic information about your project.</p>
+            <h2 className="text-xl sm:text-2xl font-bold">Project Details</h2>
+            <p className="text-sm sm:text-base text-default-500">Let's start with the basic information about your project.</p>
             
             <div className="space-y-4">
               <div>
@@ -330,10 +330,10 @@ export function CreateProjectMultiStep({ onClose }) {
       case 2:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Project Type</h2>
-            <p className="text-default-500">Select the type of project</p>
+            <h2 className="text-xl sm:text-2xl font-bold">Project Type</h2>
+            <p className="text-sm sm:text-base text-default-500">Select the type of project</p>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 justify-items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 justify-items-center">
               {/* Simu Card */}
               <Card 
                 isPressable 
@@ -418,8 +418,8 @@ export function CreateProjectMultiStep({ onClose }) {
       case 3:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Location & Description</h2>
-            <p className="text-default-500">
+            <h2 className="text-xl sm:text-2xl font-bold">Location & Description</h2>
+            <p className="text-sm sm:text-base text-default-500">
               Add location and a detailed description for the project.
             </p>
             
@@ -454,8 +454,8 @@ export function CreateProjectMultiStep({ onClose }) {
       case 4:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Confirm Details</h2>
-            <p className="text-default-500">
+            <h2 className="text-xl sm:text-2xl font-bold">Confirm Details</h2>
+            <p className="text-sm sm:text-base text-default-500">
               Please review the information before creating the project.
             </p>
             
@@ -557,25 +557,25 @@ export function CreateProjectMultiStep({ onClose }) {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto">
-      <Card className="shadow-lg overflow-hidden">
-        <div className="flex flex-col min-h-[600px]">
+    <div className="w-full h-full">
+      <Card className="shadow-lg overflow-hidden h-full rounded-none bg-default-100">
+        <div className="flex flex-col h-full min-h-0">
           {/* Top bar + horizontal stepper */}
-          <div className="w-full bg-content1 p-6 border-b border-divider">
-            <div className="flex items-center justify-between">
-            <Button
-              variant="light"
-                className="text-default-600"
-              startContent={<Icon icon="lucide:arrow-left" />}
-              onPress={onClose}
-            >
-              Back to dashboard
-            </Button>
-            </div>
-            
-            {/* Horizontal steps */}
-            <div className="mt-4 overflow-x-auto">
-              <ol className="flex items-center gap-4 min-w-[700px]">
+          <div className="w-full bg-content1 px-4 py-2 sm:px-6 sm:py-3 border-b border-divider">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="light"
+                className="text-default-600 shrink-0"
+                startContent={<Icon icon="lucide:arrow-left" />}
+                onPress={onClose}
+              >
+                Back to dashboard
+              </Button>
+
+              {/* Horizontal steps */}
+              <div className="flex-1 overflow-x-auto scrollbar-hide">
+                <div className="flex justify-center">
+                <ol className="flex items-center gap-2 sm:gap-4 min-w-fit">
               {steps.map((step, index) => {
                 const stepNumber = index + 1;
                 const isCompleted = stepNumber < currentStep;
@@ -583,9 +583,9 @@ export function CreateProjectMultiStep({ onClose }) {
                   const isLast = stepNumber === steps.length;
                 return (
                     <React.Fragment key={step.id}>
-                      <li className="flex items-center gap-2">
+                      <li className="flex items-center gap-1.5 sm:gap-2">
                     <div
-                      className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                      className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-colors ${
                         isCompleted
                           ? "bg-success text-white"
                           : isActive
@@ -594,13 +594,13 @@ export function CreateProjectMultiStep({ onClose }) {
                       }`}
                     >
                       {isCompleted ? (
-                        <Icon icon="lucide:check" className="text-lg" />
+                        <Icon icon="lucide:check" className="text-base sm:text-lg" />
                       ) : (
-                        <span className="text-sm font-medium">{stepNumber}</span>
+                        <span className="text-xs sm:text-sm font-medium">{stepNumber}</span>
                       )}
                     </div>
                       <span
-                          className={`whitespace-nowrap text-sm ${
+                          className={`whitespace-nowrap text-xs sm:text-sm ${
                           isActive ? "font-semibold text-foreground" : "text-default-500"
                         }`}
                       >
@@ -609,7 +609,7 @@ export function CreateProjectMultiStep({ onClose }) {
                       </li>
                       {!isLast && (
                         <div
-                          className={`h-0.5 w-10 md:w-24 ${
+                          className={`h-0.5 w-6 sm:w-10 md:w-16 lg:w-24 ${
                             isCompleted ? "bg-success" : "bg-default-200"
                           }`}
                         />
@@ -617,17 +617,22 @@ export function CreateProjectMultiStep({ onClose }) {
                     </React.Fragment>
                 );
               })}
-              </ol>
+                </ol>
+                </div>
+              </div>
             </div>
           </div>
           
           {/* Main content */}
-          <div className="flex-1 p-8">
-            <div className="min-h-[400px]">
+          <div className="flex-1 min-h-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 overflow-y-auto bg-default-100">
+            <div className="max-w-6xl mx-auto pb-24">
               {renderStepContent()}
             </div>
-            
-            <div className="mt-8 flex justify-between items-center pt-6 border-t border-divider">
+          </div>
+          
+          {/* Fixed Footer com botões de navegação */}
+          <div className="w-full bg-content1 border-t border-divider px-4 py-4 sm:px-6 sm:py-6 sticky bottom-0">
+            <div className="max-w-6xl mx-auto flex justify-between items-center">
               <Button
                 variant="flat"
                 className={currentStep === 1 ? "invisible" : ""}
@@ -666,41 +671,71 @@ export function CreateProjectMultiStep({ onClose }) {
       </Card>
       
       {/* Modal para adicionar novo cliente */}
-      <Modal isOpen={newClientModal} onClose={() => setNewClientModal(false)}>
+      <Modal 
+        isOpen={newClientModal} 
+        onClose={() => setNewClientModal(false)}
+        size="md"
+        placement="center"
+        backdrop="blur"
+      >
         <ModalContent>
-          <ModalHeader>Add New Client</ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <Input
-                label="Client Name"
-                value={newClientData.name}
-                onChange={(e) => setNewClientData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Enter client name"
-                isRequired
-              />
-              <Input
-                label="Email"
-                type="email"
-                value={newClientData.email}
-                onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="client@example.com"
-              />
-              <Input
-                label="Phone"
-                value={newClientData.phone}
-                onChange={(e) => setNewClientData(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="+351 123 456 789"
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={() => setNewClientModal(false)}>
-              Cancel
-            </Button>
-            <Button color="primary" onPress={handleCreateNewClient}>
-              Add Client
-            </Button>
-          </ModalFooter>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <Icon icon="lucide:user-plus" className="text-primary text-xl" />
+                  <span>Add New Client</span>
+                </div>
+                <p className="text-xs text-default-500 font-normal">Fill in the client information below</p>
+              </ModalHeader>
+              <ModalBody className="py-6">
+                <div className="space-y-4">
+                  <Input
+                    label="Client Name"
+                    labelPlacement="outside"
+                    placeholder="Enter client name"
+                    value={newClientData.name}
+                    onChange={(e) => setNewClientData(prev => ({ ...prev, name: e.target.value }))}
+                    isRequired
+                    variant="bordered"
+                    startContent={<Icon icon="lucide:building-2" className="text-default-400" />}
+                  />
+                  <Input
+                    label="Email"
+                    labelPlacement="outside"
+                    type="email"
+                    placeholder="client@example.com"
+                    value={newClientData.email}
+                    onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))}
+                    variant="bordered"
+                    startContent={<Icon icon="lucide:mail" className="text-default-400" />}
+                  />
+                  <Input
+                    label="Phone"
+                    labelPlacement="outside"
+                    placeholder="+351 123 456 789"
+                    value={newClientData.phone}
+                    onChange={(e) => setNewClientData(prev => ({ ...prev, phone: e.target.value }))}
+                    variant="bordered"
+                    startContent={<Icon icon="lucide:phone" className="text-default-400" />}
+                  />
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="flat" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button 
+                  color="primary" 
+                  onPress={handleCreateNewClient}
+                  isDisabled={!newClientData.name.trim()}
+                  startContent={<Icon icon="lucide:check" />}
+                >
+                  Add Client
+                </Button>
+              </ModalFooter>
+            </>
+          )}
         </ModalContent>
       </Modal>
     </div>
