@@ -23,7 +23,9 @@ export function CreateProjectMultiStep({ onClose }) {
   const [formData, setFormData] = React.useState({
     // Step 1: Project Details
     name: "",
-    projectType: "simu",
+    projectType: null,
+    // Sub-seleção quando projectType = "simu"
+    simuWorkflow: null, // "ai" | "human"
     status: "created",
     clientId: null,
     selectedClientKey: null,
@@ -384,7 +386,7 @@ export function CreateProjectMultiStep({ onClose }) {
                         : "border-white/50"
                     }`}>
                       {formData.projectType === "simu" && (
-                        <Icon icon="lucide:check" className="text-white text-sm" />
+                        <Icon icon="lucide:check" className="text-primary text-sm" />
                       )}
                     </div>
                   </CardFooter>
@@ -423,13 +425,70 @@ export function CreateProjectMultiStep({ onClose }) {
                         : "border-white/50"
                     }`}>
                       {formData.projectType === "logo" && (
-                        <Icon icon="lucide:check" className="text-white text-sm" />
+                        <Icon icon="lucide:check" className="text-primary text-sm" />
                       )}
                     </div>
                   </CardFooter>
                 </div>
               </Card>
             </div>
+
+            {formData.projectType === "simu" && (
+              <div className="mt-2 sm:mt-4">
+                <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">Choose the mode</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Card
+                    isPressable
+                    radius="lg"
+                    shadow="sm"
+                    aria-label="AI Assisted Designer"
+                    className={`transition-all bg-content1 ${
+                      formData.simuWorkflow === "ai"
+                        ? "ring-2 ring-primary/70"
+                        : "hover:ring-1 hover:ring-primary/40"
+                    }`}
+                    onPress={() => handleInputChange("simuWorkflow", "ai")}
+                  >
+                    <div className="p-4 flex items-start gap-3">
+                      <div className="text-xl">⚡</div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground">AI Assisted Designer</p>
+                        <p className="text-sm text-default-500">Results in seconds</p>
+                        <p className="text-sm text-default-500">Ideal for quick projects</p>
+                      </div>
+                      {formData.simuWorkflow === "ai" && (
+                        <Icon icon="lucide:check" className="text-primary" />
+                      )}
+                    </div>
+                  </Card>
+
+                  <Card
+                    isPressable
+                    radius="lg"
+                    shadow="sm"
+                    aria-label="Send to Human Designer"
+                    className={`transition-all bg-content1 ${
+                      formData.simuWorkflow === "human"
+                        ? "ring-2 ring-primary/70"
+                        : "hover:ring-1 hover:ring-primary/40"
+                    }`}
+                    onPress={() => handleInputChange("simuWorkflow", "human")}
+                  >
+                    <div className="p-4 flex items-start gap-3">
+                      <div className="text-xl">🎨</div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground">Send to Human Designer</p>
+                        <p className="text-sm text-default-500">More realistic results</p>
+                        <p className="text-sm text-default-500">More refined results</p>
+                      </div>
+                      {formData.simuWorkflow === "human" && (
+                        <Icon icon="lucide:check" className="text-primary" />
+                      )}
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            )}
           </div>
         );
       
@@ -442,6 +501,19 @@ export function CreateProjectMultiStep({ onClose }) {
             </p>
             
             <div className="space-y-4">
+              {formData.projectType === "simu" && formData.simuWorkflow && (
+                <Card className="p-4 bg-content1/60 border border-divider">
+                  <div className="flex items-start gap-3">
+                    <Icon icon="lucide:layers" className="text-primary" />
+                    <div>
+                      <p className="text-sm text-default-500">Selected mode</p>
+                      <p className="font-medium text-foreground capitalize">
+                        {formData.simuWorkflow === "ai" ? "AI Assisted Designer" : "Send to Human Designer"}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              )}
               <div>
                 <label className="block text-sm font-medium mb-2">Project Location (Optional)</label>
                 <Input
@@ -491,8 +563,20 @@ export function CreateProjectMultiStep({ onClose }) {
                   </div>
                   <div>
                     <span className="text-default-500">Type:</span>
-                    <p className="font-medium capitalize">{formData.projectType}</p>
+                    <p className="font-medium capitalize">{formData.projectType || "—"}</p>
                   </div>
+                  {formData.projectType === "simu" && (
+                    <div className="col-span-2">
+                      <span className="text-default-500">Simu mode:</span>
+                      <p className="font-medium">
+                        {formData.simuWorkflow === "ai"
+                          ? "AI Assisted Designer"
+                          : formData.simuWorkflow === "human"
+                          ? "Send to Human Designer"
+                          : "—"}
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <span className="text-default-500">Client:</span>
                     <p className="font-medium">{formData.clientName || "—"}</p>
@@ -564,7 +648,10 @@ export function CreateProjectMultiStep({ onClose }) {
       case 1:
         return formData.name.trim() !== "" && formData.clientName.trim() !== "" && formData.endDate;
       case 2:
-        return formData.projectType;
+        return (
+          formData.projectType &&
+          (formData.projectType !== "simu" || !!formData.simuWorkflow)
+        );
       case 3:
         return true; // Optional fields
       case 4:
