@@ -349,11 +349,15 @@ export function CreateProjectMultiStep({ onClose }) {
       
       case 2:
         return (
-          <div className="space-y-6">
-            <h2 className="text-xl sm:text-2xl font-bold">Project Type</h2>
-            <p className="text-sm sm:text-base text-default-500">Select the type of project</p>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 justify-items-center">
+          <div className="flex justify-center">
+            <div className="w-full max-w-4xl space-y-4">
+              <div className="text-center">
+                <h2 className="text-xl sm:text-2xl font-bold">Project Type</h2>
+                <p className="text-sm sm:text-base text-default-500 mt-1">Select the type of project</p>
+              </div>
+              
+              <div className="flex justify-center">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-4xl">
               {/* Simu Card */}
               <Card 
                 isPressable 
@@ -361,7 +365,7 @@ export function CreateProjectMultiStep({ onClose }) {
                 radius="lg"
                 shadow="sm"
                 aria-label="Select Simu project type"
-                className={`cursor-pointer transition-all duration-200 max-w-[420px] w-full ${
+                className={`cursor-pointer transition-all duration-200 w-full ${
                   formData.projectType === "simu" 
                     ? "ring-2 ring-primary/70 shadow-medium" 
                     : "hover:shadow-medium"
@@ -375,18 +379,18 @@ export function CreateProjectMultiStep({ onClose }) {
                     alt="3D Simulation Video"
                     className="z-0 w-full h-full object-cover"
                   />
-                  <CardFooter className="absolute bottom-0 z-10 bg-black/50 text-white flex items-center justify-between w-full gap-3">
+                  <CardFooter className="absolute bottom-0 z-10 bg-black/50 text-white flex items-center justify-between w-full gap-3 p-4">
                     <div className="leading-tight text-left">
-                      <p className="font-semibold text-sm">Simu</p>
-                      <p className="text-xs opacity-90 mt-0.5">Simulate the decor in the ambience</p>
+                      <p className="font-semibold text-base">Simu</p>
+                      <p className="text-sm opacity-90 mt-0.5">Simulate the decor in the ambience</p>
                     </div>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                    <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center ${
                       formData.projectType === "simu" 
                         ? "border-primary bg-primary/20" 
                         : "border-white/50 bg-white/10"
                     }`}>
                       {formData.projectType === "simu" && (
-                        <Icon icon="lucide:check" className="text-primary text-sm" />
+                        <Icon icon="lucide:check" className="text-primary text-base" />
                       )}
                     </div>
                   </CardFooter>
@@ -400,7 +404,7 @@ export function CreateProjectMultiStep({ onClose }) {
                 radius="lg"
                 shadow="sm"
                 aria-label="Select Logo project type"
-                className={`cursor-pointer transition-all duration-200 max-w-[420px] w-full ${
+                className={`cursor-pointer transition-all duration-200 w-full ${
                   formData.projectType === "logo" 
                     ? "ring-2 ring-primary/70 shadow-medium" 
                     : "hover:shadow-medium"
@@ -414,29 +418,33 @@ export function CreateProjectMultiStep({ onClose }) {
                     alt="Logo Design"
                     className="z-0 w-full h-full object-cover"
                   />
-                  <CardFooter className="absolute bottom-0 z-10 bg-black/50 text-white flex items-center justify-between w-full gap-3">
+                  <CardFooter className="absolute bottom-0 z-10 bg-black/50 text-white flex items-center justify-between w-full gap-3 p-4">
                     <div className="leading-tight text-left">
-                      <p className="font-semibold text-sm">Logo</p>
-                      <p className="text-xs opacity-90 mt-0.5">Create your own decoration or edit existing ones</p>
+                      <p className="font-semibold text-base">Logo</p>
+                      <p className="text-sm opacity-90 mt-0.5">Create your own decoration or edit existing ones</p>
                     </div>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                    <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center ${
                       formData.projectType === "logo" 
                         ? "border-primary bg-primary/20" 
                         : "border-white/50 bg-white/10"
                     }`}>
                       {formData.projectType === "logo" && (
-                        <Icon icon="lucide:check" className="text-primary text-sm" />
+                        <Icon icon="lucide:check" className="text-primary text-base" />
                       )}
                     </div>
                   </CardFooter>
                 </div>
               </Card>
-            </div>
+                </div>
+              </div>
 
             {formData.projectType === "simu" && (
-              <div className="mt-2 sm:mt-4">
-                <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">Choose the mode</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="mt-3">
+                <div className="text-center mb-3">
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground">Choose the mode</h3>
+                </div>
+                <div className="flex justify-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
                   <Card
                     isPressable
                     radius="lg"
@@ -452,7 +460,7 @@ export function CreateProjectMultiStep({ onClose }) {
                     {formData.simuWorkflow === "ai" && (
                       <Icon icon="lucide:check" className="absolute top-2.5 right-2.5 text-primary text-sm" />
                     )}
-                    <div className="p-4 sm:p-5 flex flex-col items-center text-center gap-1.5">
+                    <div className="p-3 sm:p-4 flex flex-col items-center text-center gap-1">
                       <Icon icon="lucide:zap" className="text-warning-500 text-2xl" />
                       <p className="font-semibold text-foreground text-base sm:text-lg">AI Assisted Designer</p>
                       <p className="text-xs text-default-500">Results in seconds</p>
@@ -475,16 +483,18 @@ export function CreateProjectMultiStep({ onClose }) {
                     {formData.simuWorkflow === "human" && (
                       <Icon icon="lucide:check" className="absolute top-2.5 right-2.5 text-primary text-sm" />
                     )}
-                    <div className="p-4 sm:p-5 flex flex-col items-center text-center gap-1.5">
+                    <div className="p-3 sm:p-4 flex flex-col items-center text-center gap-1">
                       <Icon icon="lucide:palette" className="text-pink-400 text-2xl" />
                       <p className="font-semibold text-foreground text-base sm:text-lg">Send to Human Designer</p>
                       <p className="text-xs text-default-500">More realistic results</p>
                       <p className="text-xs text-default-500">More refined results</p>
                     </div>
                   </Card>
+                  </div>
                 </div>
               </div>
             )}
+            </div>
           </div>
         );
       
