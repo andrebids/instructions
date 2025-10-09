@@ -80,6 +80,12 @@ Este projeto é uma **aplicação de demonstração** para gestão de projetos d
 - Algoritmos de snapping
 - Performance tips
 
+### 5. [HeroUI MCP Server Integration](./docs/09_HEROUI_MCP_INTEGRATION.md) 🆕 **DEV TOOL**
+- Ferramenta de desenvolvimento para consultar documentação HeroUI via API
+- Contexto inteligente sobre componentes, props, acessibilidade
+- Quick start: `./instructions-project/dev-tools/QUICK_START.md`
+- Exemplos práticos: `./instructions-project/dev-tools/INTEGRATION_EXAMPLES.md`
+
 ### 6. [Dashboard com HeroUI](./docs/06_DASHBOARD_COM_HEROUI.md) 📚 *(Apenas referência)*
 - ~~Dashboard já implementado no projeto ✅~~
 - Útil como referência para outros componentes HeroUI
