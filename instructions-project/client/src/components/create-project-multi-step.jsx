@@ -1,13 +1,12 @@
 import React from "react";
-import { Button, Card, Input, Textarea, Image, CardFooter } from "@heroui/react";
+import { Button, Card, CardFooter, Input, Textarea, Image, Autocomplete, AutocompleteItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, DateInput } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { projectsAPI } from "../services/api";
 
 // Define form steps
 const steps = [
   { id: "project-details", label: "Project Details", icon: "lucide:folder" },
-  { id: "client-info", label: "Client Information", icon: "lucide:user" },
-  { id: "timeline-budget", label: "Timeline & Budget", icon: "lucide:calendar" },
+  { id: "project-type", label: "Project Type", icon: "lucide:layers" },
   { id: "location-description", label: "Location & Description", icon: "lucide:map-pin" },
   { id: "confirm-details", label: "Confirm Details", icon: "lucide:check-circle" },
 ];
@@ -16,11 +15,16 @@ export function CreateProjectMultiStep({ onClose }) {
   const [currentStep, setCurrentStep] = React.useState(1);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
+  const [clients, setClients] = React.useState([]);
+  const [newClientModal, setNewClientModal] = React.useState(false);
+  const [newClientData, setNewClientData] = React.useState({ name: "", email: "", phone: "" });
   const [formData, setFormData] = React.useState({
     // Step 1: Project Details
     name: "",
     projectType: "simu",
     status: "created",
+    clientId: null,
+    selectedClientKey: null,
     
     // Step 2: Client Information
     clientName: "",
@@ -37,11 +41,94 @@ export function CreateProjectMultiStep({ onClose }) {
     description: "",
   });
 
+  // Carregar clientes existentes
+  React.useEffect(() => {
+    loadClients();
+  }, []);
+
+  const loadClients = async () => {
+    try {
+      // Clientes existentes no sistema
+      const mockClients = [
+        { id: 1, name: "Fashion Outlet", email: "contact@fashionoutlet.com", phone: "+351 123 456 789" },
+        { id: 2, name: "Lisbon Municipality", email: "info@cm-lisboa.pt", phone: "+351 987 654 321" },
+        { id: 3, name: "Luxury Hotel Chain", email: "reservations@luxuryhotels.com", phone: "+351 456 789 123" },
+        { id: 4, name: "Hotel Marquês de Pombal", email: "info@hotelmarques.com", phone: "+351 321 654 987" },
+        { id: 5, name: "City Council", email: "contact@citycouncil.pt", phone: "+351 555 123 456" },
+        { id: 6, name: "Centro Comercial Colombo", email: "info@colombo.pt", phone: "+351 777 888 999" },
+        { id: 7, name: "Gourmet Restaurant", email: "reservations@gourmet.pt", phone: "+351 111 222 333" },
+        { id: 8, name: "Tech Company HQ", email: "contact@techcompany.com", phone: "+351 444 555 666" },
+      ];
+      setClients(mockClients);
+    } catch (err) {
+      console.error("Erro ao carregar clientes:", err);
+    }
+  };
+
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
+  };
+
+
+  const handleClientInputChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      clientName: value,
+    }));
+  };
+
+  // Função de filtro personalizada para o autocomplete
+  const filterClients = (textValue, inputValue) => {
+    return textValue.toLowerCase().includes(inputValue.toLowerCase());
+  };
+
+  // Verificar se deve mostrar opção de adicionar novo cliente
+  const shouldShowAddNew = formData.clientName && 
+    !clients.some(c => c.name.toLowerCase().includes(formData.clientName.toLowerCase()));
+
+  const handleClientSelection = (key) => {
+    console.log('Selected key:', key, 'Type:', typeof key);
+    if (key) {
+      // Converter key para número se necessário
+      const clientId = typeof key === 'string' ? parseInt(key) : key;
+      const client = clients.find(c => c.id === clientId);
+      console.log('Found client:', client);
+      if (client) {
+        setFormData(prev => ({
+          ...prev,
+          selectedClientKey: key,
+          clientId: client.id,
+          clientName: client.name,
+          clientEmail: client.email,
+          clientPhone: client.phone,
+        }));
+      }
+    }
+  };
+
+  const handleCreateNewClient = () => {
+    const newClient = {
+      id: Date.now(), // ID temporário
+      name: newClientData.name,
+      email: newClientData.email,
+      phone: newClientData.phone,
+    };
+    
+    setClients(prev => [...prev, newClient]);
+    setFormData(prev => ({
+      ...prev,
+      selectedClientKey: newClient.id,
+      clientId: newClient.id,
+      clientName: newClient.name,
+      clientEmail: newClient.email,
+      clientPhone: newClient.phone,
+    }));
+    
+    setNewClientModal(false);
+    setNewClientData({ name: "", email: "", phone: "" });
   };
 
   const nextStep = () => {
@@ -72,8 +159,8 @@ export function CreateProjectMultiStep({ onClose }) {
         location: formData.location,
         description: formData.description,
         budget: formData.budget ? parseFloat(formData.budget) : null,
-        startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
-        endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
+        startDate: formData.startDate ? formData.startDate.toDate(new Date().getTimezoneOffset()).toISOString() : null,
+        endDate: formData.endDate ? formData.endDate.toDate(new Date().getTimezoneOffset()).toISOString() : null,
       };
       
       console.log("📤 Submitting project data:", projectData);
@@ -111,25 +198,80 @@ export function CreateProjectMultiStep({ onClose }) {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Project Type *</label>
-                <p className="text-xs text-default-500 mb-3">Select the type of project</p>
-                <RadioGroup
-                  value={formData.projectType}
-                  onValueChange={(value) => handleInputChange("projectType", value)}
+                <Autocomplete
+                  label="Client"
+                  placeholder="Search for a client"
+                  isRequired
+                  onSelectionChange={handleClientSelection}
+                  className="w-full"
+                  startContent={<Icon icon="lucide:user" className="text-default-400" />}
+                  menuTrigger="input"
+                  defaultItems={clients}
                 >
-                  <Radio value="simu">
-                    <div className="flex items-center gap-2">
-                      <Icon icon="lucide:box" />
-                      <span>Simu - Simulate the decor in the ambience</span>
-                    </div>
-                  </Radio>
-                  <Radio value="logo">
-                    <div className="flex items-center gap-2">
-                      <Icon icon="lucide:image" />
-                      <span>Logo - Create your own decoration or edit existing ones</span>
-                    </div>
-                  </Radio>
-                </RadioGroup>
+                  {(client) => (
+                    <AutocompleteItem key={client.id} textValue={client.name}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{client.name}</span>
+                        <span className="text-xs text-default-500">{client.email}</span>
+                      </div>
+                    </AutocompleteItem>
+                  )}
+                </Autocomplete>
+                
+                {/* Botão para adicionar novo cliente */}
+                <Button
+                  size="sm"
+                  variant="light"
+                  color="primary"
+                  className="mt-2"
+                  onPress={() => setNewClientModal(true)}
+                >
+                  <Icon icon="lucide:plus" className="mr-1" />
+                  Add New Client
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <DateInput
+                    label="Start Date"
+                    isRequired
+                    value={formData.startDate}
+                    onChange={(value) => handleInputChange("startDate", value)}
+                    className="w-full"
+                    variant="bordered"
+                    startContent={<Icon icon="lucide:calendar" className="text-default-400" />}
+                  />
+                </div>
+                
+                <div>
+                  <DateInput
+                    label="End Date"
+                    isRequired
+                    value={formData.endDate}
+                    onChange={(value) => handleInputChange("endDate", value)}
+                    className="w-full"
+                    variant="bordered"
+                    startContent={<Icon icon="lucide:calendar-check" className="text-default-400" />}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Budget (EUR) *</label>
+                  <Input
+                    type="number"
+                    isRequired
+                    placeholder="Enter the budget amount"
+                    value={formData.budget}
+                    onChange={(e) => handleInputChange("budget", e.target.value)}
+                    className="w-full"
+                    startContent={
+                      <div className="pointer-events-none flex items-center">
+                        <span className="text-default-400 text-small">€</span>
+                      </div>
+                    }
+                  />
+                </div>
               </div>
               
             </div>
@@ -139,105 +281,92 @@ export function CreateProjectMultiStep({ onClose }) {
       case 2:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Client Information</h2>
-            <p className="text-default-500">
-              Tell us about the client for this project.
-            </p>
+            <h2 className="text-2xl font-bold">Project Type</h2>
+            <p className="text-default-500">Select the type of project</p>
             
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Client Name *</label>
-                <Input
-                  isRequired
-                  placeholder="Enter the client name"
-                  value={formData.clientName}
-                  onChange={(e) => handleInputChange("clientName", e.target.value)}
-                  className="w-full"
-                  startContent={<Icon icon="lucide:user" className="text-default-400" />}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">Client Email (Optional)</label>
-                <Input
-                  type="email"
-                  placeholder="client@example.com"
-                  value={formData.clientEmail}
-                  onChange={(e) => handleInputChange("clientEmail", e.target.value)}
-                  className="w-full"
-                  startContent={<Icon icon="lucide:mail" className="text-default-400" />}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">Client Phone (Optional)</label>
-                <Input
-                  type="tel"
-                  placeholder="+1 (555) 000-0000"
-                  value={formData.clientPhone}
-                  onChange={(e) => handleInputChange("clientPhone", e.target.value)}
-                  className="w-full"
-                  startContent={<Icon icon="lucide:phone" className="text-default-400" />}
-                />
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 justify-items-center">
+              {/* Simu Card */}
+              <Card 
+                isPressable 
+                isFooterBlurred
+                radius="lg"
+                shadow="sm"
+                aria-label="Select Simu project type"
+                className={`cursor-pointer transition-all duration-200 max-w-[420px] w-full ${
+                  formData.projectType === "simu" 
+                    ? "ring-2 ring-primary/70 shadow-medium" 
+                    : "hover:shadow-medium"
+                }`}
+                onPress={() => handleInputChange("projectType", "simu")}
+              >
+                <div className="relative aspect-[16/10] overflow-hidden rounded-lg">
+                  <Image
+                    removeWrapper
+                    src="/simuvideo.webp"
+                    alt="3D Simulation Video"
+                    className="z-0 w-full h-full object-cover"
+                  />
+                  <CardFooter className="absolute bottom-0 z-10 bg-black/50 text-white flex items-center justify-between w-full gap-3">
+                    <div className="leading-tight text-left">
+                      <p className="font-semibold text-sm">Simu</p>
+                      <p className="text-xs opacity-90 mt-0.5">Simulate the decor in the ambience</p>
+                    </div>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                      formData.projectType === "simu" 
+                        ? "border-white bg-white/20" 
+                        : "border-white/50"
+                    }`}>
+                      {formData.projectType === "simu" && (
+                        <Icon icon="lucide:check" className="text-white text-sm" />
+                      )}
+                    </div>
+                  </CardFooter>
+                </div>
+              </Card>
+
+              {/* Logo Card */}
+              <Card 
+                isPressable 
+                isFooterBlurred
+                radius="lg"
+                shadow="sm"
+                aria-label="Select Logo project type"
+                className={`cursor-pointer transition-all duration-200 max-w-[420px] w-full ${
+                  formData.projectType === "logo" 
+                    ? "ring-2 ring-primary/70 shadow-medium" 
+                    : "hover:shadow-medium"
+                }`}
+                onPress={() => handleInputChange("projectType", "logo")}
+              >
+                <div className="relative aspect-[16/10] overflow-hidden rounded-lg">
+                  <Image
+                    removeWrapper
+                    src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=640&h=480&fit=crop"
+                    alt="Logo Design"
+                    className="z-0 w-full h-full object-cover"
+                  />
+                  <CardFooter className="absolute bottom-0 z-10 bg-black/50 text-white flex items-center justify-between w-full gap-3">
+                    <div className="leading-tight text-left">
+                      <p className="font-semibold text-sm">Logo</p>
+                      <p className="text-xs opacity-90 mt-0.5">Create your own decoration or edit existing ones</p>
+                    </div>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                      formData.projectType === "logo" 
+                        ? "border-white bg-white/20" 
+                        : "border-white/50"
+                    }`}>
+                      {formData.projectType === "logo" && (
+                        <Icon icon="lucide:check" className="text-white text-sm" />
+                      )}
+                    </div>
+                  </CardFooter>
+                </div>
+              </Card>
             </div>
           </div>
         );
       
       case 3:
-        return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Timeline & Budget</h2>
-            <p className="text-default-500">
-              Set the timeline and budget for this project.
-            </p>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Start Date *</label>
-                <Input
-                  type="date"
-                  isRequired
-                  value={formData.startDate || ""}
-                  onChange={(e) => handleInputChange("startDate", e.target.value)}
-                  className="w-full"
-                  startContent={<Icon icon="lucide:calendar" className="text-default-400" />}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">End Date *</label>
-                <Input
-                  type="date"
-                  isRequired
-                  value={formData.endDate || ""}
-                  onChange={(e) => handleInputChange("endDate", e.target.value)}
-                  className="w-full"
-                  startContent={<Icon icon="lucide:calendar-check" className="text-default-400" />}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">Budget (USD) *</label>
-                <Input
-                  type="number"
-                  isRequired
-                  placeholder="Enter the budget amount"
-                  value={formData.budget}
-                  onChange={(e) => handleInputChange("budget", e.target.value)}
-                  className="w-full"
-                  startContent={
-                    <div className="pointer-events-none flex items-center">
-                      <span className="text-default-400 text-small">$</span>
-                    </div>
-                  }
-                />
-              </div>
-            </div>
-          </div>
-        );
-      
-      case 4:
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Location & Description</h2>
@@ -273,7 +402,7 @@ export function CreateProjectMultiStep({ onClose }) {
           </div>
         );
       
-      case 5:
+      case 4:
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Confirm Details</h2>
@@ -298,57 +427,37 @@ export function CreateProjectMultiStep({ onClose }) {
                     <p className="font-medium capitalize">{formData.projectType}</p>
                   </div>
                   <div>
-                    <span className="text-default-500">Status:</span>
-                    <p className="font-medium">Created</p>
-                  </div>
-                </div>
-              </Card>
-              
-              {/* Client Information */}
-              <Card className="p-4">
-                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                  <Icon icon="lucide:user" className="text-primary" />
-                  Client Information
-                </h3>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="text-default-500">Name:</span>
+                    <span className="text-default-500">Client:</span>
                     <p className="font-medium">{formData.clientName || "—"}</p>
                   </div>
                   <div>
-                    <span className="text-default-500">Email:</span>
+                    <span className="text-default-500">Status:</span>
+                    <p className="font-medium">Created</p>
+                  </div>
+                  <div>
+                    <span className="text-default-500">Client Email:</span>
                     <p className="font-medium">{formData.clientEmail || "—"}</p>
                   </div>
                   <div>
-                    <span className="text-default-500">Phone:</span>
+                    <span className="text-default-500">Client Phone:</span>
                     <p className="font-medium">{formData.clientPhone || "—"}</p>
                   </div>
-                </div>
-              </Card>
-              
-              {/* Timeline & Budget */}
-              <Card className="p-4">
-                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                  <Icon icon="lucide:calendar" className="text-primary" />
-                  Timeline & Budget
-                </h3>
-                <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <span className="text-default-500">Start Date:</span>
                     <p className="font-medium">
-                      {formData.startDate ? new Date(formData.startDate).toLocaleDateString() : "—"}
+                      {formData.startDate ? formData.startDate.toDate(new Date().getTimezoneOffset()).toLocaleDateString() : "—"}
                     </p>
                   </div>
                   <div>
                     <span className="text-default-500">End Date:</span>
                     <p className="font-medium">
-                      {formData.endDate ? new Date(formData.endDate).toLocaleDateString() : "—"}
+                      {formData.endDate ? formData.endDate.toDate(new Date().getTimezoneOffset()).toLocaleDateString() : "—"}
                     </p>
                   </div>
                   <div>
                     <span className="text-default-500">Budget:</span>
                     <p className="font-medium">
-                      {formData.budget ? `$${parseFloat(formData.budget).toLocaleString()}` : "—"}
+                      {formData.budget ? `€${parseFloat(formData.budget).toLocaleString()}` : "—"}
                     </p>
                   </div>
                 </div>
@@ -392,14 +501,12 @@ export function CreateProjectMultiStep({ onClose }) {
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return formData.name.trim() !== "" && formData.projectType;
+        return formData.name.trim() !== "" && formData.clientName.trim() !== "" && formData.startDate && formData.endDate && formData.budget;
       case 2:
-        return formData.clientName.trim() !== "";
+        return formData.projectType;
       case 3:
-        return formData.startDate && formData.endDate && formData.budget;
-      case 4:
         return true; // Optional fields
-      case 5:
+      case 4:
         return true; // Review step
       default:
         return false;
@@ -413,49 +520,49 @@ export function CreateProjectMultiStep({ onClose }) {
           {/* Top bar + horizontal stepper */}
           <div className="w-full bg-content1 p-6 border-b border-divider">
             <div className="flex items-center justify-between">
-              <Button
-                variant="light"
+            <Button
+              variant="light"
                 className="text-default-600"
-                startContent={<Icon icon="lucide:arrow-left" />}
-                onPress={onClose}
-              >
-                Back to dashboard
-              </Button>
+              startContent={<Icon icon="lucide:arrow-left" />}
+              onPress={onClose}
+            >
+              Back to dashboard
+            </Button>
             </div>
             
             {/* Horizontal steps */}
             <div className="mt-4 overflow-x-auto">
               <ol className="flex items-center gap-4 min-w-[700px]">
-                {steps.map((step, index) => {
-                  const stepNumber = index + 1;
-                  const isCompleted = stepNumber < currentStep;
-                  const isActive = stepNumber === currentStep;
+              {steps.map((step, index) => {
+                const stepNumber = index + 1;
+                const isCompleted = stepNumber < currentStep;
+                const isActive = stepNumber === currentStep;
                   const isLast = stepNumber === steps.length;
-                  return (
+                return (
                     <React.Fragment key={step.id}>
                       <li className="flex items-center gap-2">
-                        <div
-                          className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
-                            isCompleted
-                              ? "bg-success text-white"
-                              : isActive
-                              ? "bg-primary text-white"
-                              : "bg-default-100 text-default-400"
-                          }`}
-                        >
-                          {isCompleted ? (
-                            <Icon icon="lucide:check" className="text-lg" />
-                          ) : (
-                            <span className="text-sm font-medium">{stepNumber}</span>
-                          )}
-                        </div>
-                        <span
+                    <div
+                      className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                        isCompleted
+                          ? "bg-success text-white"
+                          : isActive
+                          ? "bg-primary text-white"
+                          : "bg-default-100 text-default-400"
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <Icon icon="lucide:check" className="text-lg" />
+                      ) : (
+                        <span className="text-sm font-medium">{stepNumber}</span>
+                      )}
+                    </div>
+                      <span
                           className={`whitespace-nowrap text-sm ${
-                            isActive ? "font-semibold text-foreground" : "text-default-500"
-                          }`}
-                        >
-                          {step.label}
-                        </span>
+                          isActive ? "font-semibold text-foreground" : "text-default-500"
+                        }`}
+                      >
+                        {step.label}
+                      </span>
                       </li>
                       {!isLast && (
                         <div
@@ -465,12 +572,12 @@ export function CreateProjectMultiStep({ onClose }) {
                         />
                       )}
                     </React.Fragment>
-                  );
-                })}
+                );
+              })}
               </ol>
             </div>
           </div>
-
+          
           {/* Main content */}
           <div className="flex-1 p-8">
             <div className="min-h-[400px]">
@@ -514,6 +621,45 @@ export function CreateProjectMultiStep({ onClose }) {
           </div>
         </div>
       </Card>
+      
+      {/* Modal para adicionar novo cliente */}
+      <Modal isOpen={newClientModal} onClose={() => setNewClientModal(false)}>
+        <ModalContent>
+          <ModalHeader>Add New Client</ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <Input
+                label="Client Name"
+                value={newClientData.name}
+                onChange={(e) => setNewClientData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter client name"
+                isRequired
+              />
+              <Input
+                label="Email"
+                type="email"
+                value={newClientData.email}
+                onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="client@example.com"
+              />
+              <Input
+                label="Phone"
+                value={newClientData.phone}
+                onChange={(e) => setNewClientData(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="+351 123 456 789"
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setNewClientModal(false)}>
+              Cancel
+            </Button>
+            <Button color="primary" onPress={handleCreateNewClient}>
+              Add Client
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
