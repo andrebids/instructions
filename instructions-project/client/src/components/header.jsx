@@ -81,6 +81,7 @@ export function Header() {
                   variant="light" 
                   isIconOnly
                   onPress={() => setShowNotifications(false)}
+                  className="mr-0"
                 >
                   <Icon icon="lucide:x" className="text-sm" />
                 </Button>
