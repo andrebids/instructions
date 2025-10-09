@@ -230,99 +230,117 @@ export function CreateProjectMultiStep({ onClose }) {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-6">
-            <h2 className="text-xl sm:text-2xl font-bold">Project Details</h2>
-            <p className="text-sm sm:text-base text-default-500">Let's start with the basic information about your project.</p>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Project Name *</label>
-                <Input
-                  isRequired
-                  placeholder="Enter the project name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  className="w-full"
-                  startContent={<Icon icon="lucide:folder" className="text-default-400" />}
-                />
+          <div className="flex justify-center">
+            <div className="w-full max-w-2xl space-y-6">
+              <div className="text-center">
+                <h2 className="text-xl sm:text-2xl font-bold">Project Details</h2>
+                <p className="text-sm sm:text-base text-default-500 mt-2">Let's start with the basic information about your project.</p>
               </div>
               
-              <div>
-                <Autocomplete
-                  label="Client"
-                  placeholder="Search for a client"
-                  isRequired
-                  onSelectionChange={handleClientSelection}
-                  className="w-full"
-                  startContent={<Icon icon="lucide:user" className="text-default-400" />}
-                  menuTrigger="input"
-                  defaultItems={clients}
-                  selectedKey={formData.selectedClientKey}
-                  inputValue={formData.clientName}
-                  onInputChange={handleClientInputChange}
-                >
-                  {(client) => (
-                    <AutocompleteItem key={client.id} textValue={client.name}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{client.name}</span>
-                        <span className="text-xs text-default-500">{client.email}</span>
-                      </div>
-                    </AutocompleteItem>
-                  )}
-                </Autocomplete>
-                
-                {/* Botão para adicionar novo cliente */}
-                <Button
-                  size="sm"
-                  variant="light"
-                  color="primary"
-                  className="mt-2"
-                  onPress={() => setNewClientModal(true)}
-                >
-                  <Icon icon="lucide:plus" className="mr-1" />
-                  Add New Client
-                </Button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-5">
                 <div>
-                  <DatePicker
-                    labelPlacement="outside"
-                    label="Delivery Date"
-                    isRequired
-                    value={formData.endDate}
-                    onChange={(value) => handleInputChange("endDate", value)}
-                    className="w-full"
-                    variant="bordered"
-                    size="lg"
-                    radius="lg"
-                    showMonthAndYearPickers
-                    locale="pt-PT"
-                    minValue={today(getLocalTimeZone())}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Budget (EUR) *</label>
+                  <label className="block text-sm font-semibold mb-2 text-foreground">Project Name *</label>
                   <Input
-                    type="number"
-                    
-                    placeholder="Enter the budget amount"
-                    value={formData.budget}
-                    onChange={(e) => handleInputChange("budget", e.target.value)}
+                    isRequired
+                    placeholder="Enter the project name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
                     className="w-full"
                     variant="bordered"
-                    size="lg"
+                    size="md"
                     radius="lg"
-                    startContent={
-                      <div className="pointer-events-none flex items-center">
-                        <span className="text-default-400 text-small">€</span>
-                      </div>
-                    }
+                    startContent={<Icon icon="lucide:folder" className="text-default-400" />}
+                    classNames={{
+                      input: "text-foreground font-medium",
+                      inputWrapper: "bg-content1 border-2 border-divider hover:border-primary focus-within:border-primary"
+                    }}
                   />
                 </div>
+                
+                <div>
+                  <Autocomplete
+                    label="Client"
+                    placeholder="Search for a client"
+                    isRequired
+                    onSelectionChange={handleClientSelection}
+                    className="w-full"
+                    variant="bordered"
+                    size="md"
+                    radius="lg"
+                    startContent={<Icon icon="lucide:user" className="text-default-400" />}
+                    menuTrigger="input"
+                    defaultItems={clients}
+                    selectedKey={formData.selectedClientKey}
+                    inputValue={formData.clientName}
+                    onInputChange={handleClientInputChange}
+                    classNames={{
+                      label: "text-foreground font-semibold",
+                      input: "text-foreground font-medium",
+                      inputWrapper: "bg-content1 border-2 border-divider hover:border-primary focus-within:border-primary"
+                    }}
+                  >
+                    {(client) => (
+                      <AutocompleteItem key={client.id} textValue={client.name}>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-foreground">{client.name}</span>
+                          <span className="text-xs text-default-500">{client.email}</span>
+                        </div>
+                      </AutocompleteItem>
+                    )}
+                  </Autocomplete>
+                  
+                  {/* Botão para adicionar novo cliente */}
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="primary"
+                    className="mt-2"
+                    onPress={() => setNewClientModal(true)}
+                  >
+                    <Icon icon="lucide:plus" className="mr-1" />
+                    Add New Client
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <DatePicker
+                      labelPlacement="outside"
+                      label="Delivery Date"
+                      isRequired
+                      value={formData.endDate}
+                      onChange={(value) => handleInputChange("endDate", value)}
+                      className="w-full"
+                      variant="bordered"
+                      size="md"
+                      radius="lg"
+                      showMonthAndYearPickers
+                      locale="pt-PT"
+                      minValue={today(getLocalTimeZone())}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Budget (EUR) *</label>
+                    <Input
+                      type="number"
+                      placeholder="Enter the budget amount"
+                      value={formData.budget}
+                      onChange={(e) => handleInputChange("budget", e.target.value)}
+                      className="w-full"
+                      variant="bordered"
+                      size="md"
+                      radius="lg"
+                      startContent={
+                        <div className="pointer-events-none flex items-center">
+                          <span className="text-default-400 text-small">€</span>
+                        </div>
+                      }
+                    />
+                  </div>
+                </div>
+                
               </div>
-              
             </div>
           </div>
         );
