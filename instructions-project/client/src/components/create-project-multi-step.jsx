@@ -390,7 +390,7 @@ export function CreateProjectMultiStep({ onClose }) {
                 <div className="relative aspect-[16/10] overflow-hidden rounded-lg">
                   <Image
                     removeWrapper
-                    src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=640&h=480&fit=crop"
+                    src="/logo.webp"
                     alt="Logo Design"
                     className="z-0 w-full h-full object-cover"
                   />
