@@ -109,6 +109,27 @@ const LoadingIndicator = () => (
   </div>
 );
 
+// Componente para Cartão de Decoração
+const DecorationCard = ({ decoration, index }) => (
+  <div
+    key={index}
+    className="p-2 md:p-3 border border-divider rounded-lg cursor-grab hover:border-primary/50 transition-colors bg-background"
+    draggable
+    onDragStart={(e) => {
+      e.dataTransfer.setData('text/plain', JSON.stringify({
+        type: decoration.type,
+        name: decoration.name,
+        icon: decoration.icon
+      }));
+    }}
+  >
+    <div className="text-center">
+      <div className="text-xl md:text-2xl mb-1">{decoration.icon}</div>
+      <p className="text-[10px] md:text-xs text-default-600 truncate">{decoration.name}</p>
+    </div>
+  </div>
+);
+
 
 // Componente Konva Canvas (simulado até instalação das dependências)
 const KonvaCanvas = ({ width, height, onDecorationAdd, onDecorationRemove, decorations = [], startGeneration, selectedImage }) => {
@@ -354,19 +375,19 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   }, [decorations]); // Removido onInputChange das dependências para evitar loop infinito
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-full flex flex-col">
       {uploadStep === 'uploading' && <UploadModal />}
       {uploadStep === 'loading' && <LoadingIndicator />}
       
       {/* Main Content Area - 3 Column Layout */}
       {uploadStep === 'done' && (
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Left Sidebar - Image Thumbnails */}
-          <aside className="w-64 border-r border-divider bg-content1/30 flex flex-col flex-shrink-0">
-            <div className="p-4 border-b border-divider">
-              <h3 className="text-lg font-semibold">Source Images</h3>
+          <aside className="w-48 md:w-56 lg:w-64 border-r border-divider bg-content1/30 flex flex-col flex-shrink-0">
+            <div className="p-3 md:p-4 border-b border-divider">
+              <h3 className="text-base md:text-lg font-semibold">Source Images</h3>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4 space-y-2 md:space-y-3">
               {loadedImages.map((image) => (
                 <div
                   key={image.id}
@@ -407,10 +428,10 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
           </aside>
 
           {/* Center Canvas Area */}
-          <Card className="flex-1 p-6 min-h-0">
-            <div className="h-full flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Decoration Canvas</h3>
+          <div className="flex-1 min-h-0 flex flex-col bg-content1">
+            <div className="h-full flex flex-col p-3 md:p-4 lg:p-6">
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <h3 className="text-base md:text-lg font-semibold">Decoration Canvas</h3>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
@@ -436,102 +457,54 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                 />
               </div>
             </div>
-          </Card>
+          </div>
 
           {/* Right Sidebar - Decoration Library */}
-          <aside className="w-64 border-l border-divider bg-content1/30 flex flex-col flex-shrink-0">
-            <div className="p-4 border-b border-divider">
-              <h3 className="text-lg font-semibold">Decorations</h3>
+          <aside className="w-48 md:w-56 lg:w-64 border-l border-divider bg-content1/30 flex flex-col flex-shrink-0">
+            <div className="p-3 md:p-4 border-b border-divider">
+              <h3 className="text-base md:text-lg font-semibold">Decorations</h3>
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4">
               <div className="space-y-4">
                 {/* Decoration Categories */}
                 <div>
-                  <h4 className="text-sm font-medium text-default-600 mb-2">Trees & Plants</h4>
-                  <div className="grid grid-cols-2 gap-2">
+                  <h4 className="text-xs md:text-sm font-medium text-default-600 mb-2">Trees & Plants</h4>
+                  <div className="grid grid-cols-2 gap-1.5 md:gap-2">
                     {[
                       { name: 'Pine Tree', icon: '🌲', type: 'tree' },
                       { name: 'Oak Tree', icon: '🌳', type: 'tree' },
                       { name: 'Palm Tree', icon: '🌴', type: 'tree' },
                       { name: 'Bush', icon: '🌿', type: 'plant' }
                     ].map((decoration, index) => (
-                      <div
-                        key={index}
-                        className="p-3 border border-divider rounded-lg cursor-grab hover:border-primary/50 transition-colors bg-background"
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('text/plain', JSON.stringify({
-                            type: decoration.type,
-                            name: decoration.name,
-                            icon: decoration.icon
-                          }));
-                        }}
-                      >
-                        <div className="text-center">
-                          <div className="text-2xl mb-1">{decoration.icon}</div>
-                          <p className="text-xs text-default-600">{decoration.name}</p>
-                        </div>
-                      </div>
+                      <DecorationCard key={index} decoration={decoration} index={index} />
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium text-default-600 mb-2">Lights & Ornaments</h4>
-                  <div className="grid grid-cols-2 gap-2">
+                  <h4 className="text-xs md:text-sm font-medium text-default-600 mb-2">Lights & Ornaments</h4>
+                  <div className="grid grid-cols-2 gap-1.5 md:gap-2">
                     {[
                       { name: 'Christmas Lights', icon: '💡', type: 'lights' },
                       { name: 'Star', icon: '⭐', type: 'ornament' },
                       { name: 'Bell', icon: '🔔', type: 'ornament' },
                       { name: 'Gift', icon: '🎁', type: 'ornament' }
                     ].map((decoration, index) => (
-                      <div
-                        key={index}
-                        className="p-3 border border-divider rounded-lg cursor-grab hover:border-primary/50 transition-colors bg-background"
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('text/plain', JSON.stringify({
-                            type: decoration.type,
-                            name: decoration.name,
-                            icon: decoration.icon
-                          }));
-                        }}
-                      >
-                        <div className="text-center">
-                          <div className="text-2xl mb-1">{decoration.icon}</div>
-                          <p className="text-xs text-default-600">{decoration.name}</p>
-                        </div>
-                      </div>
+                      <DecorationCard key={index} decoration={decoration} index={index} />
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium text-default-600 mb-2">Holiday Items</h4>
-                  <div className="grid grid-cols-2 gap-2">
+                  <h4 className="text-xs md:text-sm font-medium text-default-600 mb-2">Holiday Items</h4>
+                  <div className="grid grid-cols-2 gap-1.5 md:gap-2">
                     {[
                       { name: 'Snowman', icon: '⛄', type: 'holiday' },
                       { name: 'Santa Hat', icon: '🎅', type: 'holiday' },
                       { name: 'Candy Cane', icon: '🍭', type: 'holiday' },
                       { name: 'Snowflake', icon: '❄️', type: 'holiday' }
                     ].map((decoration, index) => (
-                      <div
-                        key={index}
-                        className="p-3 border border-divider rounded-lg cursor-grab hover:border-primary/50 transition-colors bg-background"
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('text/plain', JSON.stringify({
-                            type: decoration.type,
-                            name: decoration.name,
-                            icon: decoration.icon
-                          }));
-                        }}
-                      >
-                        <div className="text-center">
-                          <div className="text-2xl mb-1">{decoration.icon}</div>
-                          <p className="text-xs text-default-600">{decoration.name}</p>
-                        </div>
-                      </div>
+                      <DecorationCard key={index} decoration={decoration} index={index} />
                     ))}
                   </div>
                 </div>

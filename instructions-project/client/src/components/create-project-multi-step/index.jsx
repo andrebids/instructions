@@ -69,6 +69,12 @@ export function CreateProjectMultiStep({ onClose, selectedImage }) {
     }
   }, []);
 
+  // Check if current step is AI Designer
+  const isAIDesignerStep = () => {
+    const currentVisibleStep = visibleSteps[navigation.currentStep - 1];
+    return currentVisibleStep?.id === "ai-designer";
+  };
+
   // Render current step
   const renderStepContent = () => {
     const currentVisibleStep = visibleSteps[navigation.currentStep - 1];
@@ -143,8 +149,12 @@ export function CreateProjectMultiStep({ onClose, selectedImage }) {
           </div>
           
           {/* Main content */}
-          <div className="flex-1 min-h-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 overflow-y-auto bg-default-100">
-            <div className="max-w-6xl mx-auto pb-24">
+          <div className={`flex-1 min-h-0 bg-default-100 ${
+            isAIDesignerStep() 
+              ? 'overflow-hidden' 
+              : 'px-4 py-6 sm:px-6 sm:py-8 lg:px-8 overflow-y-auto'
+          }`}>
+            <div className={isAIDesignerStep() ? 'h-full' : 'max-w-6xl mx-auto pb-24'}>
               {renderStepContent()}
             </div>
           </div>
