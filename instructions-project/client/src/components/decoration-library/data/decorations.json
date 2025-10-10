@@ -1,0 +1,144 @@
+{
+  "categories": [
+    {
+      "id": "trees-plants",
+      "name": "Trees & Plants",
+      "icon": "🌳",
+      "count": 4
+    },
+    {
+      "id": "lights-ornaments",
+      "name": "Lights & Ornaments",
+      "icon": "💡",
+      "count": 4
+    },
+    {
+      "id": "holiday-items",
+      "name": "Holiday Items",
+      "icon": "🎄",
+      "count": 4
+    }
+  ],
+  "decorations": [
+    {
+      "id": "dec-001",
+      "name": "Pine Tree",
+      "ref": "TREE-PINE-001",
+      "category": "trees-plants",
+      "icon": "🌲",
+      "imageUrl": null,
+      "type": "tree",
+      "tags": ["tree", "pine", "evergreen", "christmas"]
+    },
+    {
+      "id": "dec-002",
+      "name": "Oak Tree",
+      "ref": "TREE-OAK-002",
+      "category": "trees-plants",
+      "icon": "🌳",
+      "imageUrl": null,
+      "type": "tree",
+      "tags": ["tree", "oak", "deciduous"]
+    },
+    {
+      "id": "dec-003",
+      "name": "Palm Tree",
+      "ref": "TREE-PALM-003",
+      "category": "trees-plants",
+      "icon": "🌴",
+      "imageUrl": null,
+      "type": "tree",
+      "tags": ["tree", "palm", "tropical"]
+    },
+    {
+      "id": "dec-004",
+      "name": "Bush",
+      "ref": "PLANT-BUSH-004",
+      "category": "trees-plants",
+      "icon": "🌿",
+      "imageUrl": null,
+      "type": "plant",
+      "tags": ["plant", "bush", "shrub", "green"]
+    },
+    {
+      "id": "dec-005",
+      "name": "Christmas Lights",
+      "ref": "LIGHT-CHRISTMAS-005",
+      "category": "lights-ornaments",
+      "icon": "💡",
+      "imageUrl": null,
+      "type": "lights",
+      "tags": ["lights", "christmas", "bulbs", "illumination"]
+    },
+    {
+      "id": "dec-006",
+      "name": "Star",
+      "ref": "ORNAMENT-STAR-006",
+      "category": "lights-ornaments",
+      "icon": "⭐",
+      "imageUrl": null,
+      "type": "ornament",
+      "tags": ["star", "ornament", "decoration", "gold"]
+    },
+    {
+      "id": "dec-007",
+      "name": "Bell",
+      "ref": "ORNAMENT-BELL-007",
+      "category": "lights-ornaments",
+      "icon": "🔔",
+      "imageUrl": null,
+      "type": "ornament",
+      "tags": ["bell", "ornament", "christmas", "sound"]
+    },
+    {
+      "id": "dec-008",
+      "name": "Gift",
+      "ref": "ORNAMENT-GIFT-008",
+      "category": "lights-ornaments",
+      "icon": "🎁",
+      "imageUrl": null,
+      "type": "ornament",
+      "tags": ["gift", "present", "box", "wrapped"]
+    },
+    {
+      "id": "dec-009",
+      "name": "Snowman",
+      "ref": "HOLIDAY-SNOWMAN-009",
+      "category": "holiday-items",
+      "icon": "⛄",
+      "imageUrl": null,
+      "type": "holiday",
+      "tags": ["snowman", "winter", "snow", "christmas"]
+    },
+    {
+      "id": "dec-010",
+      "name": "Santa Hat",
+      "ref": "HOLIDAY-SANTA-HAT-010",
+      "category": "holiday-items",
+      "icon": "🎅",
+      "imageUrl": null,
+      "type": "holiday",
+      "tags": ["santa", "hat", "christmas", "red"]
+    },
+    {
+      "id": "dec-011",
+      "name": "Candy Cane",
+      "ref": "HOLIDAY-CANDY-CANE-011",
+      "category": "holiday-items",
+      "icon": "🍭",
+      "imageUrl": null,
+      "type": "holiday",
+      "tags": ["candy", "cane", "sweet", "christmas"]
+    },
+    {
+      "id": "dec-012",
+      "name": "Snowflake",
+      "ref": "HOLIDAY-SNOWFLAKE-012",
+      "category": "holiday-items",
+      "icon": "❄️",
+      "imageUrl": null,
+      "type": "holiday",
+      "tags": ["snowflake", "snow", "winter", "ice"]
+    }
+  ]
+}
