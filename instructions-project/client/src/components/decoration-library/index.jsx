@@ -103,7 +103,7 @@ export const DecorationLibrary = ({
         <SearchBar 
           value={searchTerm}
           onChange={handleSearchChange}
-          placeholder="Type to search..."
+          placeholder={viewMode === 'categories' ? "Search all decorations..." : "Search by name or ref..."}
         />
       )}
       
