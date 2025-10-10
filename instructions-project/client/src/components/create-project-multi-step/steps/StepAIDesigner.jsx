@@ -157,10 +157,12 @@ const DecorationItem = ({
   const trRef = useRef();
 
   useEffect(() => {
-    if (isSelected && trRef.current && shapeRef.current) {
-      // Attach transformer to shape quando selecionada
-      trRef.current.nodes([shapeRef.current]);
-      trRef.current.getLayer().batchDraw();
+    if (isSelected) {
+      // Attach transformer manualmente ao shape
+      if (trRef.current && shapeRef.current) {
+        trRef.current.nodes([shapeRef.current]);
+        trRef.current.getLayer().batchDraw();
+      }
     }
   }, [isSelected]);
 
@@ -173,14 +175,17 @@ const DecorationItem = ({
     });
   };
 
-  const handleTransformEnd = () => {
+  const handleTransformEnd = (e) => {
+    // Transformer está a mudar a scale do node, não width/height
+    // No store temos apenas width/height
+    // Por isso resetamos a scale após transform
     const node = shapeRef.current;
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
     
     console.log('🔧 Decoração transformada:', decoration.id, 'scale:', scaleX, scaleY, 'rotation:', node.rotation());
     
-    // Reset scale para aplicar ao width/height
+    // Resetar scale de volta para 1
     node.scaleX(1);
     node.scaleY(1);
     
@@ -188,6 +193,7 @@ const DecorationItem = ({
       ...decoration,
       x: node.x(),
       y: node.y(),
+      // Definir valor mínimo
       width: Math.max(20, node.width() * scaleX),
       height: Math.max(20, node.height() * scaleY),
       rotation: node.rotation(),
@@ -217,9 +223,10 @@ const DecorationItem = ({
         {isSelected && (
           <Transformer
             ref={trRef}
+            flipEnabled={false}
             boundBoxFunc={(oldBox, newBox) => {
-              // Limitar tamanho mínimo
-              if (newBox.width < 20 || newBox.height < 20) {
+              // Limitar resize mínimo
+              if (Math.abs(newBox.width) < 20 || Math.abs(newBox.height) < 20) {
                 return oldBox;
               }
               return newBox;
@@ -285,10 +292,11 @@ const KonvaCanvas = ({
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  // Click no Stage para desselecionar decoração
-  const handleStageClick = (e) => {
-    // Click no background desseleciona
-    if (e.target === e.target.getStage()) {
+  // Click/Touch no Stage para desselecionar decoração
+  const checkDeselect = (e) => {
+    // Desselecionar quando clica em área vazia
+    const clickedOnEmpty = e.target === e.target.getStage();
+    if (clickedOnEmpty) {
       console.log('❌ Desselecionado');
       setSelectedId(null);
     }
@@ -395,8 +403,8 @@ const KonvaCanvas = ({
         ref={stageRef}
         width={stageSize.width}
         height={stageSize.height}
-        onClick={handleStageClick}
-        onTap={handleStageClick}
+        onMouseDown={checkDeselect}
+        onTouchStart={checkDeselect}
         className={`rounded-lg ${
           canvasImages.length > 0 || dragOver
             ? (dragOver 
