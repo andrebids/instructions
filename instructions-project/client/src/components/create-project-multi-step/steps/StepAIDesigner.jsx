@@ -509,6 +509,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   const [uploadStep, setUploadStep] = useState('uploading'); // 'uploading', 'loading', 'done'
   const [selectedImage, setSelectedImage] = useState(null);
   const [canvasImages, setCanvasImages] = useState([]); // Imagens adicionadas ao canvas
+  const [activeGifIndex, setActiveGifIndex] = useState(0); // Controla em qual thumbnail o GIF está visível (-1 = nenhum)
   
   // Imagens carregadas (simuladas)
   const loadedImages = [
@@ -529,7 +530,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
     },
   ];
 
-  // Simular o fluxo de upload
+  // Simular o fluxo de upload e animação sequencial do GIF
   useEffect(() => {
     // 1. Mostrar o modal de upload (muito rápido)
     const t1 = setTimeout(() => {
@@ -541,10 +542,26 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
       setUploadStep('done');
     }, 300);
 
+    // 3. Sequência de animação do GIF: Source 1 -> Source 2 -> Source 3 -> desaparece
+    const t3 = setTimeout(() => {
+      setActiveGifIndex(1); // Source 2
+    }, 4000);
+
+    const t4 = setTimeout(() => {
+      setActiveGifIndex(2); // Source 3
+    }, 8000);
+
+    const t5 = setTimeout(() => {
+      setActiveGifIndex(-1); // Desaparece
+    }, 12000);
+
     // Limpar os timeouts se o componente for desmontado
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+      clearTimeout(t5);
     };
   }, []);
 
@@ -653,7 +670,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
               <h3 className="text-base md:text-lg font-semibold">Source Images</h3>
             </div>
             <div className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4 space-y-2 md:space-y-3">
-              {loadedImages.map((image) => (
+              {loadedImages.map((image, index) => (
                 <Card
                   key={image.id}
                   isFooterBlurred
@@ -669,6 +686,24 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                     handleImageAddToCanvas(image);
                   }}
                 >
+                  {/* GIF animado que percorre os thumbnails sequencialmente */}
+                  {index === activeGifIndex && (
+                    <div className="absolute top-0 right-0 z-20 pointer-events-none">
+                      <img 
+                        src="/day night.gif" 
+                        alt="Day Night Animation"
+                        className="w-12 h-12"
+                        style={{ 
+                          objectFit: 'cover',
+                          backgroundColor: 'transparent'
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                  
                   <Image
                     alt={image.name}
                     className="object-cover"
