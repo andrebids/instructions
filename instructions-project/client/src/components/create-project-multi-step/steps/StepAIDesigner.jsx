@@ -111,7 +111,7 @@ const LoadingIndicator = () => (
 
 
 // Componente Konva Canvas (simulado até instalação das dependências)
-const KonvaCanvas = ({ width, height, onDecorationAdd, decorations = [], startGeneration }) => {
+const KonvaCanvas = ({ width, height, onDecorationAdd, decorations = [], startGeneration, selectedImage }) => {
   const canvasRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -148,27 +148,48 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, decorations = [], startGe
       {/* Canvas placeholder - será substituído por Konva real */}
       <div 
         ref={canvasRef}
-        className="border-2 border-dashed border-default-300 rounded-lg bg-default-50 h-full w-full"
+        className="border-2 border-dashed border-default-300 rounded-lg bg-default-50 h-full w-full overflow-hidden"
         style={{ 
           width: width === "100%" ? "100%" : width,
           height: height === "100%" ? "100%" : height
         }}
       >
-        <div className="flex items-center justify-center h-full">
+        {/* Background Image */}
+        {selectedImage && (
+          <div className="absolute inset-0">
+            <img
+              src={selectedImage.thumbnail}
+              alt={selectedImage.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
+            />
+          </div>
+        )}
+        
+        {/* Overlay Content */}
+        <div className="absolute inset-0 flex items-center justify-center">
           {isLoading ? (
-            <div className="text-center">
-              <Spinner size="lg" />
-              <p className="mt-4 text-default-600">Generating decorations with AI...</p>
+            <div className="text-center bg-black/50 rounded-lg p-6">
+              <Spinner size="lg" color="white" />
+              <p className="mt-4 text-white">Generating decorations with AI...</p>
             </div>
           ) : decorations.length > 0 ? (
-            <div className="text-center">
+            <div className="text-center bg-black/50 rounded-lg p-6">
               <Icon icon="lucide:check-circle" className="text-success text-4xl mb-2" />
               <p className="text-success font-medium">{decorations.length} decorations generated</p>
             </div>
+          ) : selectedImage ? (
+            <div className="text-center bg-black/50 rounded-lg p-6">
+              <Icon icon="lucide:sparkles" className="text-white text-4xl mb-2" />
+              <p className="text-white mb-4">Canvas ready for decorations</p>
+              <p className="text-white/80 text-sm">Selected: {selectedImage.name}</p>
+            </div>
           ) : (
             <div className="text-center">
-              <Icon icon="lucide:sparkles" className="text-primary text-4xl mb-2" />
-              <p className="text-default-600 mb-4">Canvas ready for decorations</p>
+              <Icon icon="lucide:image" className="text-default-400 text-4xl mb-2" />
+              <p className="text-default-600 mb-4">Select an image to start decorating</p>
             </div>
           )}
         </div>
@@ -197,7 +218,7 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, decorations = [], startGe
   );
 };
 
-export const StepAIDesigner = ({ formData, onInputChange }) => {
+export const StepAIDesigner = ({ formData, onInputChange, selectedImage, onUploadStepChange }) => {
   const [decorations, setDecorations] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [uploadStep, setUploadStep] = useState('uploading'); // 'uploading', 'loading', 'done'
@@ -220,6 +241,13 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
       clearTimeout(t2);
     };
   }, []);
+
+  // Comunicar mudanças do uploadStep para o componente pai
+  useEffect(() => {
+    if (onUploadStepChange) {
+      onUploadStepChange(uploadStep);
+    }
+  }, [uploadStep, onUploadStepChange]);
 
 
   // Adicionar decoração ao canvas
@@ -257,14 +285,6 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
               >
                 Clear
               </Button>
-              <Button
-                size="sm"
-                color="primary"
-                startContent={<Icon icon="lucide:download" />}
-                isDisabled={decorations.length === 0}
-              >
-                Export
-              </Button>
             </div>
           </div>
           
@@ -275,6 +295,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
               onDecorationAdd={handleDecorationAdd}
               decorations={decorations}
               startGeneration={uploadStep === 'done'}
+              selectedImage={selectedImage}
             />
           </div>
         </div>

@@ -26,6 +26,28 @@ export default function App() {
   });
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+  const [selectedImage, setSelectedImage] = React.useState(null);
+  const [uploadStep, setUploadStep] = React.useState('uploading');
+  const [currentStepId, setCurrentStepId] = React.useState(null);
+  
+  // Imagens carregadas (simuladas)
+  const loadedImages = [
+    { 
+      id: 1, 
+      name: 'source 1.jpeg', 
+      thumbnail: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop&crop=center'
+    },
+    { 
+      id: 2, 
+      name: 'source 2.jpeg', 
+      thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop&crop=center'
+    },
+    { 
+      id: 3, 
+      name: 'source 3.jpeg', 
+      thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop&crop=center'
+    },
+  ];
   
   // Carregar dados ao iniciar
   React.useEffect(() => {
@@ -68,16 +90,74 @@ export default function App() {
   
   const handleCloseCreateProject = () => {
     setShowCreateProject(false);
+    setSelectedImage(null);
+    setUploadStep('uploading');
+    setCurrentStepId(null);
     // Recarregar dados após criar projeto
     loadData();
   };
 
+  const handleUploadStepChange = (step) => {
+    setUploadStep(step);
+  };
+
+  const handleCurrentStepChange = (stepId) => {
+    setCurrentStepId(stepId);
+  };
+
   return (
     <div className="bg-background text-foreground flex h-screen">
-      {/* Sidebar */}
+      {/* Sidebar Navigation */}
       <aside className="w-20">
         <SidebarNavigation />
       </aside>
+
+      {/* Source Images Sidebar - Só aparece no StepAIDesigner após upload completo */}
+      {showCreateProject && currentStepId === 'ai-designer' && uploadStep === 'done' && (
+        <aside className="w-64 border-r border-divider bg-content1/30 flex flex-col">
+          <div className="p-4 border-b border-divider">
+            <h3 className="text-lg font-semibold">Source Images</h3>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {loadedImages.map((image) => (
+              <div
+                key={image.id}
+                className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+                  selectedImage?.id === image.id 
+                    ? 'border-primary shadow-lg' 
+                    : 'border-divider hover:border-primary/50'
+                }`}
+                onClick={() => setSelectedImage(image)}
+              >
+                <div className="aspect-video bg-default-100">
+                  <img
+                    src={image.thumbnail}
+                    alt={image.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div className="w-full h-full hidden items-center justify-center bg-default-100">
+                    <Icon icon="lucide:image" className="text-4xl text-default-400" />
+                  </div>
+                </div>
+                <div className="p-2 bg-background">
+                  <p className="text-sm font-medium truncate">{image.name}</p>
+                </div>
+                {selectedImage?.id === image.id && (
+                  <div className="absolute top-2 right-2">
+                    <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                      <Icon icon="lucide:check" className="text-white text-sm" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </aside>
+      )}
 
       {/* Main Content */}
       <main className="flex flex-1 flex-col overflow-hidden">
@@ -86,7 +166,12 @@ export default function App() {
         {/* Dashboard Content */}
         <div className={`flex-1 min-h-0 ${showCreateProject ? 'overflow-hidden' : 'overflow-auto p-6'}`}>
           {showCreateProject ? (
-            <CreateProjectMultiStep onClose={handleCloseCreateProject} />
+            <CreateProjectMultiStep 
+              onClose={handleCloseCreateProject} 
+              selectedImage={selectedImage}
+              onUploadStepChange={handleUploadStepChange}
+              onCurrentStepChange={handleCurrentStepChange}
+            />
           ) : (
             <>
               {/* Welcome section + Create button */}
