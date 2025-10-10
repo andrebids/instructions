@@ -32,7 +32,21 @@ export const DecorationItem = ({ decoration, onSelect }) => {
       title={`Click to add ${decoration.name} (${decoration.ref})`}
     >
       <div className="text-center pointer-events-none">
-        <div className="text-xl md:text-2xl mb-1 select-none">{decoration.icon}</div>
+        {/* Mostrar imagem PNG se disponível, caso contrário mostrar ícone */}
+        {decoration.imageUrl ? (
+          <div className="w-full h-12 md:h-16 mb-1 flex items-center justify-center">
+            <img
+              src={decoration.imageUrl}
+              alt={decoration.name}
+              className="max-w-full max-h-full object-contain select-none"
+              style={{ backgroundColor: 'transparent' }}
+              draggable={false}
+            />
+          </div>
+        ) : (
+          <div className="text-xl md:text-2xl mb-1 select-none">{decoration.icon}</div>
+        )}
+        
         <p className="text-[10px] md:text-xs text-default-600 truncate font-medium">
           {decoration.name}
         </p>
