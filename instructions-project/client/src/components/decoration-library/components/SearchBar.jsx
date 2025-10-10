@@ -2,7 +2,7 @@ import React from 'react';
 import { Input } from '@heroui/react';
 import { Icon } from '@iconify/react';
 
-export const SearchBar = ({ value, onChange, placeholder = "Search by name or ref..." }) => {
+export const SearchBar = ({ value, onChange, placeholder = "Type to search..." }) => {
   const handleClear = () => {
     onChange('');
   };
@@ -10,7 +10,6 @@ export const SearchBar = ({ value, onChange, placeholder = "Search by name or re
   return (
     <div className="p-3 border-b border-divider">
       <Input
-        label="Search decorations"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -27,7 +26,6 @@ export const SearchBar = ({ value, onChange, placeholder = "Search by name or re
         variant="bordered"
         size="sm"
         classNames={{
-          label: "text-xs",
           input: "text-sm",
           inputWrapper: "bg-default-50"
         }}
