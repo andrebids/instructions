@@ -492,6 +492,29 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                   </CardFooter>
                 </Card>
               ))}
+
+              {/* Fake add image card (placed after sources) */}
+              <Card
+                isFooterBlurred
+                isPressable
+                className="w-full cursor-pointer border-none transition-all duration-200 hover:ring-1 hover:ring-primary/50"
+                radius="lg"
+                onPress={() => {
+                  console.log('➕ [Source Images] Fake add image clicked');
+                }}
+              >
+                <div className="w-full h-[120px] flex items-center justify-center bg-default-100 rounded-lg">
+                  <div className="flex items-center gap-2 text-default-500">
+                    <Icon icon="lucide:upload-cloud" className="text-2xl" />
+                    <span className="text-sm font-medium">Add image or take picture</span>
+                  </div>
+                </div>
+                <CardFooter className="absolute bg-black/40 bottom-0 z-10 py-1 pointer-events-none">
+                  <div className="flex grow gap-2 items-center">
+                    <p className="text-tiny text-white/80 truncate">Upload (coming soon)</p>
+                  </div>
+                </CardFooter>
+              </Card>
             </div>
           </aside>
 

@@ -1,45 +1,45 @@
 # DecorationLibrary Component
 
-Componente modular e reutilizável para biblioteca de decorações com funcionalidades de drag-and-drop, pesquisa e navegação por categorias.
+Modular and reusable component for decorations library with drag-and-drop functionality, search and category navigation.
 
-## Funcionalidades
+## Features
 
-- ✅ **Navegação por categorias** - Menu com categorias e botão "Todas"
-- ✅ **Pesquisa em tempo real** - Pesquisa por nome, referência ou tags
-- ✅ **Drag-and-drop** - Arrastar decorações para canvas (HTML5 nativo por agora)
-- ✅ **Dados JSON** - Base de dados estruturada em JSON
-- ✅ **Logs estratégicos** - Console logs para debugging
-- ✅ **Responsivo** - Adapta-se a diferentes tamanhos de ecrã
-- ✅ **HeroUI** - Interface consistente com o resto da aplicação
+- ✅ **Hierarchical navigation** - First view categories (Transversal, Pole, 3D), then enter to see decorations
+- ✅ **Global search** - Search by name, reference or tags (always visible, searches all decorations)
+- ✅ **Drag-and-drop** - Drag decorations to canvas (HTML5 native for now)
+- ✅ **JSON data** - Structured JSON database
+- ✅ **Strategic logs** - Console logs for debugging
+- ✅ **Responsive** - Adapts to different screen sizes
+- ✅ **HeroUI** - Interface consistent with the rest of the application
 
-## Estrutura
+## Structure
 
 ```
 decoration-library/
-├── index.jsx                    # Componente principal
+├── index.jsx                    # Main component
 ├── components/
-│   ├── CategoryMenu.jsx        # Menu de navegação por categorias
-│   ├── DecorationGrid.jsx      # Grid de decorações
-│   ├── DecorationItem.jsx      # Item individual arrastável
-│   └── SearchBar.jsx           # Barra de pesquisa
+│   ├── CategoryMenu.jsx        # Category navigation menu
+│   ├── DecorationGrid.jsx      # Decorations grid
+│   ├── DecorationItem.jsx      # Individual draggable item
+│   └── SearchBar.jsx           # Search bar
 ├── hooks/
-│   ├── useDecorations.js       # Hook para gerir decorações
-│   └── useDecorationSearch.js  # Hook para pesquisa/filtros
+│   ├── useDecorations.js       # Hook to manage decorations
+│   └── useDecorationSearch.js  # Hook for search/filters
 ├── data/
-│   └── decorations.json        # Base de dados das decorações
-└── README.md                   # Esta documentação
+│   └── decorations.json        # Decorations database
+└── README.md                   # This documentation
 ```
 
-## Uso
+## Usage
 
-### Importação Básica
+### Basic Import
 
 ```jsx
 import { DecorationLibrary } from './components/decoration-library';
 
 function MyComponent() {
   const handleDecorationSelect = (decoration) => {
-    console.log('Decoração selecionada:', decoration);
+    console.log('Decoration selected:', decoration);
   };
 
   return (
@@ -55,17 +55,31 @@ function MyComponent() {
 
 ### Props
 
-| Prop | Tipo | Default | Descrição |
-|------|------|---------|-----------|
-| `onDecorationSelect` | `function` | - | Callback quando decoração é arrastada/selecionada |
-| `mode` | `"sidebar" \| "modal"` | `"sidebar"` | Modo de visualização |
-| `className` | `string` | `""` | Classes CSS adicionais |
-| `enableSearch` | `boolean` | `true` | Ativar barra de pesquisa |
-| `initialCategory` | `string` | `null` | Categoria inicial selecionada |
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `onDecorationSelect` | `function` | - | Callback when decoration is dragged/selected |
+| `mode` | `"sidebar" \| "modal"` | `"sidebar"` | Display mode |
+| `className` | `string` | `""` | Additional CSS classes |
+| `enableSearch` | `boolean` | `true` | Enable search bar |
+| `initialCategory` | `string` | `null` | Initially selected category |
 
-### Dados das Decorações
+## Navigation Flow
 
-Cada decoração tem a seguinte estrutura:
+The component uses a **hierarchical navigation** system:
+
+1. **Categories View** - Shows 3 main categories:
+   - 📐 **Transversal** - Cross-sectional decorations
+   - 🏗️ **Pole** - Pole-based decorations  
+   - 🎯 **3D** - Three-dimensional decorations
+
+2. **Decorations View** - After selecting a category or searching:
+   - Shows decorations within that category or search results
+   - Search bar always visible for global search
+   - Back button to return to categories
+
+### Decoration Data
+
+Each decoration has the following structure:
 
 ```javascript
 {
@@ -82,30 +96,30 @@ Cada decoração tem a seguinte estrutura:
 
 ## Drag-and-Drop
 
-Por enquanto usa HTML5 native drag-and-drop. Quando `@dnd-kit` estiver instalado, será migrado para uma implementação superior com:
+Currently uses HTML5 native drag-and-drop. When `@dnd-kit` is installed, it will be migrated to a superior implementation with:
 
-- ✅ Suporte touch devices
-- ✅ Melhor performance
-- ✅ Acessibilidade keyboard
-- ✅ Customização avançada
+- ✅ Touch device support
+- ✅ Better performance
+- ✅ Keyboard accessibility
+- ✅ Advanced customization
 
-## Logs de Debug
+## Debug Logs
 
-O componente inclui logs estratégicos para debugging:
+The component includes strategic logs for debugging:
 
 ```javascript
-🎨 [DecorationLibrary] Montado - modo: sidebar
-📚 [useDecorations] Carregadas: 12 decorations
-📂 [DecorationLibrary] Mudando categoria para: trees-plants
-🔍 [useDecorationSearch] Pesquisando: pine
-🎯 [DecorationItem] Iniciando drag: Pine Tree
+🎨 [DecorationLibrary] Mounted - mode: sidebar
+📚 [useDecorations] Loaded: 12 decorations
+📂 [DecorationLibrary] Changing category to: trees-plants
+🔍 [useDecorationSearch] Searching: pine
+🎯 [DecorationItem] Starting drag: Pine Tree
 ```
 
-## Personalização
+## Customization
 
-### Adicionar Nova Decoração
+### Add New Decoration
 
-Editar `data/decorations.json`:
+Edit `data/decorations.json`:
 
 ```json
 {
@@ -120,17 +134,17 @@ Editar `data/decorations.json`:
 }
 ```
 
-### Adicionar Nova Categoria
+### Add New Category
 
-1. Adicionar categoria em `categories` array
-2. Atualizar `count` das categorias existentes
-3. Atribuir `category` nas decorações
+1. Add category to `categories` array
+2. Update `count` of existing categories
+3. Assign `category` to decorations
 
-## Próximos Passos
+## Next Steps
 
-- [ ] Instalar `@dnd-kit/core` e `@dnd-kit/utilities`
-- [ ] Migrar para dnd-kit (melhor performance)
-- [ ] Suporte a imagens PNG
-- [ ] Modo modal para popup
-- [ ] Favoritos/pin decorações
-- [ ] Histórico de uso recente
+- [ ] Install `@dnd-kit/core` and `@dnd-kit/utilities`
+- [ ] Migrate to dnd-kit (better performance)
+- [ ] PNG image support
+- [ ] Modal mode for popup
+- [ ] Favorites/pin decorations
+- [ ] Recent usage history

@@ -2,46 +2,31 @@ import React from 'react';
 import { Button } from '@heroui/react';
 import { Icon } from '@iconify/react';
 
-export const CategoryMenu = ({ categories, activeCategory, onCategoryChange }) => {
+export const CategoryMenu = ({ categories, onCategorySelect }) => {
+  console.log('📋 [CategoryMenu] Rendering', categories.length, 'categories');
 
   return (
-    <div className="p-3 border-b border-divider">
-      <h4 className="text-xs md:text-sm font-medium text-default-600 mb-3">Categories</h4>
-      <div className="space-y-1">
-        {/* All button */}
-        <Button
-          variant={!activeCategory ? "solid" : "light"}
-          color={!activeCategory ? "primary" : "default"}
-          size="sm"
-          className="w-full justify-start"
-          onClick={() => {
-            console.log('🏠 [CategoryMenu] Selecting: All');
-            onCategoryChange(null);
-          }}
-          startContent={<Icon icon="lucide:home" />}
-        >
-          <span className="text-xs">All</span>
-        </Button>
-
-        {/* Categories list */}
+    <div className="p-3">
+      <div className="grid grid-cols-1 gap-3">
         {categories.map((category) => (
-          <Button
+          <div
             key={category.id}
-            variant={activeCategory === category.id ? "solid" : "light"}
-            color={activeCategory === category.id ? "primary" : "default"}
-            size="sm"
-            className="w-full justify-start"
             onClick={() => {
               console.log('📂 [CategoryMenu] Selecting category:', category.name);
-              onCategoryChange(category.id);
+              onCategorySelect(category.id);
             }}
-            startContent={<span className="text-sm">{category.icon}</span>}
+            className="p-4 border border-divider rounded-lg cursor-pointer hover:border-primary/50 transition-all duration-200 bg-background hover:bg-default-50 active:scale-95"
           >
-            <div className="flex items-center justify-between w-full">
-              <span className="text-xs">{category.name}</span>
-              <span className="text-xs opacity-60">({category.count})</span>
+            <div className="text-center">
+              <div className="text-3xl mb-2">{category.icon}</div>
+              <h3 className="text-sm font-semibold text-default-700 mb-1">
+                {category.name}
+              </h3>
+              <p className="text-xs text-default-500">
+                {category.count} decoration{category.count !== 1 ? 's' : ''}
+              </p>
             </div>
-          </Button>
+          </div>
         ))}
       </div>
     </div>
