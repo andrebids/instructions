@@ -183,6 +183,7 @@ export const AIAssistantChat = ({ onClose }) => {
             onKeyDown={handleKeyPress}
             className="flex-grow"
             size="sm"
+            aria-label="Message input"
             endContent={
               <Button
                 isIconOnly
@@ -191,6 +192,7 @@ export const AIAssistantChat = ({ onClose }) => {
                 size="sm"
                 isDisabled={!inputValue.trim() || isLoading}
                 onPress={handleSendMessage}
+                aria-label="Send message"
               >
                 <Icon icon="lucide:send" className="text-lg" />
               </Button>

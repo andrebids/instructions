@@ -71,7 +71,7 @@ export const validateStepConfirmDetails = (formData) => {
 };
 
 // 🧪 Breakpoint de Teste 6
-export const TEST_BREAKPOINT_6 = true;
+export const TEST_BREAKPOINT_6 = false;
 
 // ✅ CORRIGIDO: Validação por STEP ID em vez de número
 export const isStepValid = (stepId, formData) => {
@@ -101,19 +101,7 @@ export const isStepValid = (stepId, formData) => {
       isValid = false;
   }
   
-  if (TEST_BREAKPOINT_6) {
-    console.log("🧪 TEST 6: Validation", {
-      stepId,
-      isValid,
-      formDataKeys: Object.keys(formData),
-      criticalFields: {
-        name: formData.name,
-        projectType: formData.projectType,
-        clientName: formData.clientName,
-        endDate: !!formData.endDate
-      }
-    });
-  }
+  // Logs de teste removidos
   
   return isValid;
 };

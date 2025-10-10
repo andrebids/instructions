@@ -198,6 +198,7 @@ export default function App() {
         color="primary" 
         className="fixed bottom-6 right-6 shadow-lg w-14 h-14 rounded-full transition-transform duration-200 hover:scale-105 z-50"
         onPress={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? "Close AI Assistant" : "Open AI Assistant"}
       >
         <Icon 
           icon={isOpen ? "lucide:x" : "lucide:bot"}

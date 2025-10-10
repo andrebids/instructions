@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { projectsAPI } from "../../../services/api";
 import { logger } from "../utils/logger";
 import { getLocalTimeZone } from "@internationalized/date";
 
 // 🧪 Breakpoint de Teste 2
-export const TEST_BREAKPOINT_2 = true;
+export const TEST_BREAKPOINT_2 = false;
 
 export const useProjectForm = (onClose) => {
   const [loading, setLoading] = useState(false);
@@ -30,28 +30,22 @@ export const useProjectForm = (onClose) => {
     canvasDecorations: [],    // Array de decorações geradas pelo AI Designer
   });
 
-  // 🧪 Logging inicial
-  if (TEST_BREAKPOINT_2) {
-    console.log("🧪 TEST 2: useProjectForm initialized", {
-      hasOnClose: !!onClose,
-      initialFormData: formData
-    });
-  }
+  // 🧪 Logging inicial - removido para evitar logs infinitos
   
   logger.lifecycle('useProjectForm', 'Hook initialized', { hasOnClose: !!onClose });
 
-  // Handler genérico de input
-  const handleInputChange = (field, value) => {
+  // Handler genérico de input - usando useCallback para evitar re-renders desnecessários
+  const handleInputChange = useCallback((field, value) => {
     logger.userAction('Input Change', field, value);
     
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
-  };
+  }, []);
 
   // 🧪 Breakpoint de Teste 7
-  const TEST_BREAKPOINT_7 = true;
+  const TEST_BREAKPOINT_7 = false;
 
   // Submissão do formulário
   const handleSubmit = async () => {
@@ -74,28 +68,19 @@ export const useProjectForm = (onClose) => {
       logger.api('projects', 'POST', projectData);
       logger.lifecycle('useProjectForm', 'Submitting project', projectData);
       
-      if (TEST_BREAKPOINT_7) {
-        console.log("🧪 TEST 7: Before API call", {
-          projectData,
-          apiEndpoint: '/api/projects'
-        });
-      }
+      // Logs de teste removidos
       
       const newProject = await projectsAPI.create(projectData);
       
       logger.lifecycle('useProjectForm', 'Project created', newProject);
       
-      if (TEST_BREAKPOINT_7) {
-        console.log("🧪 TEST 7: API Success", newProject);
-      }
+      // Logs de teste removidos
       
       onClose?.();  // Optional chaining
     } catch (err) {
       logger.error('useProjectForm.handleSubmit', err);
       
-      if (TEST_BREAKPOINT_7) {
-        console.log("🧪 TEST 7: API Error", err);
-      }
+      // Logs de teste removidos
       
       setError(err.response?.data?.error || "Failed to create project");
     } finally {

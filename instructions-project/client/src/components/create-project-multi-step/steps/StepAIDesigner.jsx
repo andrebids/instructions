@@ -1,9 +1,117 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Card, Button, Spinner } from "@heroui/react";
+import { Card, Button, Spinner, Progress } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
+// Componente para o Modal de Upload
+const UploadModal = () => {
+  const [isPreparing, setIsPreparing] = useState(true);
+  const [files, setFiles] = useState([
+    { name: 'source 1.jpeg', size: '2.4 MB', progress: 0, status: 'pending' },
+    { name: 'source 2.jpeg', size: '1.8 MB', progress: 0, status: 'pending' },
+    { name: 'source 3.jpeg', size: '0.9 MB', progress: 0, status: 'pending' },
+  ]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsPreparing(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (isPreparing) return;
+
+    let fileIndex = 0;
+    const intervals = [];
+
+    const uploadNextFile = () => {
+      if (fileIndex >= files.length) return;
+
+      setFiles(prev => {
+        const newFiles = [...prev];
+        if (newFiles[fileIndex]) {
+          newFiles[fileIndex].status = 'uploading';
+        }
+        return newFiles;
+      });
+
+      const interval = setInterval(() => {
+        setFiles(prev => {
+          const newFiles = [...prev];
+          const currentFile = newFiles[fileIndex];
+
+          // Verificar se currentFile existe antes de aceder às suas propriedades
+          if (currentFile && currentFile.progress < 100) {
+            currentFile.progress += 10;
+            return newFiles;
+          } else if (currentFile) {
+            clearInterval(interval);
+            currentFile.status = 'done';
+            fileIndex++;
+            // Chamar uploadNextFile no próximo tick para evitar problemas de estado
+            setTimeout(uploadNextFile, 50);
+            return newFiles;
+          }
+          return newFiles;
+        });
+      }, 100);
+      intervals.push(interval);
+    };
+
+    uploadNextFile();
+
+    return () => intervals.forEach(clearInterval);
+  }, [isPreparing, files.length]);
+
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+      <Card className="p-8 text-center max-w-lg w-full m-4 transition-all duration-300">
+        {isPreparing ? (
+          <>
+            <h2 className="text-xl font-semibold mb-4">Upload Background Image</h2>
+            <div className="border-2 border-dashed border-default-300 rounded-lg p-12 bg-default-50">
+              <Icon icon="lucide:upload-cloud" className="text-5xl text-default-500 mx-auto mb-4" />
+              <p className="text-default-600 mb-2">Drag and drop your images here</p>
+              <p className="text-default-500 text-sm mb-4">or</p>
+              <Button color="primary" variant="ghost">Select Files</Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="text-xl font-semibold mb-4">Uploading Files...</h2>
+            <div className="p-4 bg-default-50 rounded-lg space-y-3">
+              {files.map((file, index) => (
+                <div key={index} className="flex items-center gap-3 p-2 rounded-lg bg-default-100">
+                  <Icon icon="lucide:image" className="text-3xl text-primary flex-shrink-0" />
+                  <div className="text-left flex-1 overflow-hidden">
+                    <p className="font-medium truncate text-sm">{file.name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Progress value={file.progress} size="sm" className="flex-1" />
+                      <span className="text-xs text-default-500 w-10 text-right">{file.progress}%</span>
+                    </div>
+                  </div>
+                  {file.status === 'done' && <Icon icon="lucide:check-circle" className="text-2xl text-success flex-shrink-0" />}
+                   {file.status === 'uploading' && <Spinner size="sm" />}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </Card>
+    </div>
+  );
+};
+
+// Componente para o Indicador de Carregamento
+const LoadingIndicator = () => (
+  <div className="fixed inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center z-50">
+    <Spinner size="lg" />
+    <p className="mt-4 text-white">Simulating image processing...</p>
+  </div>
+);
+
+
 // Componente Konva Canvas (simulado até instalação das dependências)
-const KonvaCanvas = ({ width, height, onDecorationAdd, decorations = [] }) => {
+const KonvaCanvas = ({ width, height, onDecorationAdd, decorations = [], startGeneration }) => {
   const canvasRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -28,6 +136,13 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, decorations = [] }) => {
     setIsLoading(false);
   };
 
+  useEffect(() => {
+    if (startGeneration) {
+      handleGenerateDecorations();
+    }
+  }, [startGeneration]);
+
+
   return (
     <div className="relative h-full w-full">
       {/* Canvas placeholder - será substituído por Konva real */}
@@ -43,24 +158,17 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, decorations = [] }) => {
           {isLoading ? (
             <div className="text-center">
               <Spinner size="lg" />
-              <p className="mt-4 text-default-600">A gerar decorações com IA...</p>
+              <p className="mt-4 text-default-600">Generating decorations with AI...</p>
             </div>
           ) : decorations.length > 0 ? (
             <div className="text-center">
               <Icon icon="lucide:check-circle" className="text-success text-4xl mb-2" />
-              <p className="text-success font-medium">{decorations.length} decorações geradas</p>
+              <p className="text-success font-medium">{decorations.length} decorations generated</p>
             </div>
           ) : (
             <div className="text-center">
               <Icon icon="lucide:sparkles" className="text-primary text-4xl mb-2" />
-              <p className="text-default-600 mb-4">Canvas pronto para decorações</p>
-              <Button 
-                color="primary" 
-                startContent={<Icon icon="lucide:wand-2" />}
-                onPress={handleGenerateDecorations}
-              >
-                Gerar Decorações com IA
-              </Button>
+              <p className="text-default-600 mb-4">Canvas ready for decorations</p>
             </div>
           )}
         </div>
@@ -92,6 +200,27 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, decorations = [] }) => {
 export const StepAIDesigner = ({ formData, onInputChange }) => {
   const [decorations, setDecorations] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [uploadStep, setUploadStep] = useState('uploading'); // 'uploading', 'loading', 'done'
+
+  // Simular o fluxo de upload
+  useEffect(() => {
+    // 1. Mostrar o modal de upload (1.5s estático + 3s animação)
+    const t1 = setTimeout(() => {
+      setUploadStep('loading');
+    }, 4500);
+
+    // 2. Mostrar o ecrã de loading por mais 2 segundos
+    const t2 = setTimeout(() => {
+      setUploadStep('done');
+    }, 6500);
+
+    // Limpar os timeouts se o componente for desmontado
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
+
 
   // Adicionar decoração ao canvas
   const handleDecorationAdd = (decoration) => {
@@ -106,15 +235,18 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   // Salvar decorações no formData
   useEffect(() => {
     onInputChange("canvasDecorations", decorations);
-  }, [decorations, onInputChange]);
+  }, [decorations]); // Removido onInputChange das dependências para evitar loop infinito
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col relative">
+      {uploadStep === 'uploading' && <UploadModal />}
+      {uploadStep === 'loading' && <LoadingIndicator />}
+      
       {/* Canvas Area - Ocupa todo o espaço disponível */}
       <Card className="flex-1 p-6 min-h-0">
         <div className="h-full flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Canvas de Decoração</h3>
+            <h3 className="text-lg font-semibold">Decoration Canvas</h3>
             <div className="flex gap-2">
               <Button
                 size="sm"
@@ -123,7 +255,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                 onPress={() => setDecorations([])}
                 isDisabled={decorations.length === 0}
               >
-                Limpar
+                Clear
               </Button>
               <Button
                 size="sm"
@@ -131,7 +263,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                 startContent={<Icon icon="lucide:download" />}
                 isDisabled={decorations.length === 0}
               >
-                Exportar
+                Export
               </Button>
             </div>
           </div>
@@ -142,6 +274,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
               height="100%"
               onDecorationAdd={handleDecorationAdd}
               decorations={decorations}
+              startGeneration={uploadStep === 'done'}
             />
           </div>
         </div>

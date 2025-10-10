@@ -26,7 +26,7 @@ import { getVisibleSteps } from "./utils/stepHelpers";
 import { logger } from "./utils/logger";
 
 // 🧪 Breakpoint de Teste 5 (Componente Principal)
-const TEST_BREAKPOINT_5 = true;
+const TEST_BREAKPOINT_5 = false;
 
 export function CreateProjectMultiStep({ onClose }) {
   // Initialize hooks
@@ -45,18 +45,7 @@ export function CreateProjectMultiStep({ onClose }) {
       visibleSteps: visibleSteps.length
     });
     
-    if (TEST_BREAKPOINT_5) {
-      console.log("🧪 TEST 5: Main component mounted", {
-        totalSteps: STEPS.length,
-        visibleSteps: visibleSteps.map(s => s.id),
-        formData: formState.formData,
-        allHooksLoaded: {
-          formState: !!formState,
-          clientState: !!clientState,
-          navigation: !!navigation
-        }
-      });
-    }
+    // Logs de teste removidos
     
     return () => {
       logger.lifecycle('CreateProjectMultiStep', 'Component unmounting');
@@ -84,17 +73,7 @@ export function CreateProjectMultiStep({ onClose }) {
   const renderStepContent = () => {
     const currentVisibleStep = visibleSteps[navigation.currentStep - 1];
     
-    if (TEST_BREAKPOINT_5) {
-      console.log("🧪 TEST 5: Rendering step", {
-        stepNumber: navigation.currentStep,
-        stepId: currentVisibleStep?.id,
-        visibleStepsCount: visibleSteps.length,
-        formDataSnapshot: {
-          projectType: formState.formData.projectType,
-          simuWorkflow: formState.formData.simuWorkflow,
-        }
-      });
-    }
+    // Logs de teste removidos
     
     switch (currentVisibleStep?.id) {
       case "project-details":
