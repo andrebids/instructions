@@ -516,7 +516,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
     { 
       id: 'source-img-1', 
       name: 'source 1.jpeg', 
-      thumbnail: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop&crop=center'
+      thumbnail: '/demo-images/sourceday/SOURCE1.jpg'
     },
     { 
       id: 'source-img-2', 
