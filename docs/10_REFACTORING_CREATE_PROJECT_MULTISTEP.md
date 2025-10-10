@@ -69,7 +69,7 @@ client/src/components/
 
 ## 🔍 DECOMPOSIÇÃO DETALHADA POR FICHEIRO
 
-### 1️⃣ **constants.js** (Novo - ~30 linhas)
+### 1️⃣ **constants.js** (Novo - ~60 linhas) ✅ COM TESTES
 
 **Localização Original:** Linhas 9-14, configurações dispersas
 
@@ -110,6 +110,32 @@ export const CANVAS_CONFIG = {
   maxZoom: 3,
   minZoom: 0.5,
 };
+
+// 📊 Configuração de Logging
+export const LOG_CONFIG = {
+  ENABLE_LOGS: true, // Toggle global (false em produção)
+  LEVELS: {
+    LIFECYCLE: true,    // Mounting, unmounting
+    NAVIGATION: true,   // Step changes
+    VALIDATION: true,   // Validação de steps
+    CANVAS: true,       // Operações no canvas
+    API: true,          // Chamadas API
+    USER_ACTION: true,  // Cliques, inputs
+  }
+};
+
+// 🧪 Breakpoint de Teste 1
+export const TEST_BREAKPOINT_1 = true;
+
+if (TEST_BREAKPOINT_1) {
+  console.log("🧪 TEST 1: Constants loaded", {
+    stepsCount: STEPS.length,
+    hasCanvasSteps: STEPS.some(s => s.condition === "isSimu"),
+    canvasConfig: CANVAS_CONFIG,
+    validationConfig: VALIDATION_CONFIG,
+    loggingEnabled: LOG_CONFIG.ENABLE_LOGS
+  });
+}
 ```
 
 **Razão:** Centralizar configurações reutilizáveis e facilitar modificações globais.
@@ -152,56 +178,184 @@ export const getRandomProjectName = () => {
 
 ---
 
-### 3️⃣ **utils/validation.js** (Novo - ~60 linhas)
+### 3️⃣ **utils/validation.js** (Novo - ~100 linhas) ✅ COM LOGS E CORREÇÃO
 
 **Localização Original:** Linhas 651-667
 
 **Conteúdo a Extrair:**
 ```javascript
-// Validação do Step 1
+import { logger } from "./logger";
+
+// Validação do Step 1: Project Details
 export const validateStepProjectDetails = (formData) => {
-  return (
+  const isValid = (
     formData.name.trim() !== "" && 
     formData.clientName.trim() !== "" && 
     formData.endDate  // Truthy check (null, undefined, false = inválido)
   );
+  
+  logger.validation("project-details", isValid, {
+    hasName: !!formData.name,
+    hasClient: !!formData.clientName,
+    hasEndDate: !!formData.endDate
+  });
+  
+  return isValid;
 };
 
-// Validação do Step 2
+// Validação do Step 2: Project Type
 export const validateStepProjectType = (formData) => {
-  return (
+  const isValid = (
     formData.projectType !== null &&
     (formData.projectType !== "simu" || formData.simuWorkflow !== null)
   );
+  
+  logger.validation("project-type", isValid, {
+    projectType: formData.projectType,
+    simuWorkflow: formData.simuWorkflow
+  });
+  
+  return isValid;
 };
 
-// Validação do Step 3
+// Validação do Step 3: Canvas Selection (apenas Simu)
+export const validateCanvasSelection = (formData) => {
+  const isValid = formData.canvasSelection && formData.canvasSelection.length > 0;
+  
+  logger.validation("canvas-selection", isValid, {
+    selectionCount: formData.canvasSelection?.length || 0
+  });
+  
+  return isValid;
+};
+
+// Validação do Step 4: Canvas Positioning (apenas Simu)
+export const validateCanvasPositioning = (formData) => {
+  const isValid = formData.canvasPositioning && formData.canvasPositioning.length > 0;
+  
+  logger.validation("canvas-positioning", isValid, {
+    positionedCount: formData.canvasPositioning?.length || 0
+  });
+  
+  return isValid;
+};
+
+// Validação do Step 5: Location & Description
 export const validateStepLocationDescription = (formData) => {
   return true; // Campos opcionais
 };
 
-// Validação do Step 4
+// Validação do Step 6: Confirm Details
 export const validateStepConfirmDetails = (formData) => {
   return true; // Review step
 };
 
-// Validação geral por step
-export const isStepValid = (currentStep, formData) => {
-  switch (currentStep) {
-    case 1: return validateStepProjectDetails(formData);
-    case 2: return validateStepProjectType(formData);
-    case 3: return validateStepLocationDescription(formData);
-    case 4: return validateStepConfirmDetails(formData);
-    default: return false;
+// 🧪 Breakpoint de Teste 6
+export const TEST_BREAKPOINT_6 = true;
+
+// ✅ CORRIGIDO: Validação por STEP ID em vez de número
+export const isStepValid = (stepId, formData) => {
+  let isValid = false;
+  
+  switch (stepId) {
+    case "project-details":
+      isValid = validateStepProjectDetails(formData);
+      break;
+    case "project-type":
+      isValid = validateStepProjectType(formData);
+      break;
+    case "canvas-selection":
+      isValid = validateCanvasSelection(formData);
+      break;
+    case "canvas-positioning":
+      isValid = validateCanvasPositioning(formData);
+      break;
+    case "location-description":
+      isValid = validateStepLocationDescription(formData);
+      break;
+    case "confirm-details":
+      isValid = validateStepConfirmDetails(formData);
+      break;
+    default:
+      logger.warn("validation", `Unknown step ID: ${stepId}`);
+      isValid = false;
+  }
+  
+  if (TEST_BREAKPOINT_6) {
+    console.log("🧪 TEST 6: Validation", {
+      stepId,
+      isValid,
+      formDataKeys: Object.keys(formData),
+      criticalFields: {
+        name: formData.name,
+        projectType: formData.projectType,
+        clientName: formData.clientName,
+        endDate: !!formData.endDate
+      }
+    });
+  }
+  
+  return isValid;
+};
+```
+
+**Razão:** Facilitar testes unitários, reutilização de validações e manutenção centralizada de regras. **CORRIGIDO** para usar step IDs em vez de números.
+
+---
+
+### 3️⃣.1 **utils/logger.js** (Novo - ~80 linhas) ✅ SISTEMA DE LOGGING
+
+**Conteúdo:**
+```javascript
+import { LOG_CONFIG } from "../constants";
+
+export const logger = {
+  lifecycle: (component, action, data) => {
+    if (!LOG_CONFIG.ENABLE_LOGS || !LOG_CONFIG.LEVELS.LIFECYCLE) return;
+    console.log(`🔄 [${component}] ${action}`, data || '');
+  },
+  
+  navigation: (from, to, data) => {
+    if (!LOG_CONFIG.ENABLE_LOGS || !LOG_CONFIG.LEVELS.NAVIGATION) return;
+    console.log(`🧭 Navigation: Step ${from} → Step ${to}`, data || '');
+  },
+  
+  validation: (stepId, isValid, formData) => {
+    if (!LOG_CONFIG.ENABLE_LOGS || !LOG_CONFIG.LEVELS.VALIDATION) return;
+    const icon = isValid ? '✅' : '❌';
+    console.log(`${icon} Validation [${stepId}]:`, isValid, formData);
+  },
+  
+  canvas: (action, data) => {
+    if (!LOG_CONFIG.ENABLE_LOGS || !LOG_CONFIG.LEVELS.CANVAS) return;
+    console.log(`🎨 Canvas: ${action}`, data || '');
+  },
+  
+  api: (endpoint, method, data) => {
+    if (!LOG_CONFIG.ENABLE_LOGS || !LOG_CONFIG.LEVELS.API) return;
+    console.log(`📡 API [${method}] ${endpoint}`, data || '');
+  },
+  
+  userAction: (action, target, value) => {
+    if (!LOG_CONFIG.ENABLE_LOGS || !LOG_CONFIG.LEVELS.USER_ACTION) return;
+    console.log(`👆 User: ${action}`, { target, value });
+  },
+  
+  error: (context, error) => {
+    console.error(`❌ Error [${context}]:`, error);
+  },
+  
+  warn: (context, message) => {
+    console.warn(`⚠️ Warning [${context}]:`, message);
   }
 };
 ```
 
-**Razão:** Facilitar testes unitários, reutilização de validações e manutenção centralizada de regras.
+**Razão:** Sistema centralizado de logging com níveis configuráveis para debug e produção.
 
 ---
 
-### 4️⃣ **hooks/useProjectForm.js** (Novo - ~100 linhas)
+### 4️⃣ **hooks/useProjectForm.js** (Novo - ~120 linhas) ✅ COM LOGS
 
 **Localização Original:** Linhas 23-46, 120-125, 200-229
 
@@ -209,6 +363,10 @@ export const isStepValid = (currentStep, formData) => {
 ```javascript
 import { useState } from "react";
 import { projectsAPI } from "../../services/api";
+import { logger } from "../utils/logger";
+
+// 🧪 Breakpoint de Teste 2
+export const TEST_BREAKPOINT_2 = true;
 
 export const useProjectForm = (onClose) => {
   const [loading, setLoading] = useState(false);
@@ -232,13 +390,28 @@ export const useProjectForm = (onClose) => {
     description: "",
   });
 
+  // 🧪 Logging inicial
+  if (TEST_BREAKPOINT_2) {
+    console.log("🧪 TEST 2: useProjectForm initialized", {
+      hasOnClose: !!onClose,
+      initialFormData: formData
+    });
+  }
+  
+  logger.lifecycle('useProjectForm', 'Hook initialized', { hasOnClose: !!onClose });
+
   // Handler genérico de input (linhas 120-125)
   const handleInputChange = (field, value) => {
+    logger.userAction('Input Change', field, value);
+    
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
+
+  // 🧪 Breakpoint de Teste 7
+  const TEST_BREAKPOINT_7 = true;
 
   // Submissão do formulário (linhas 200-229)
   const handleSubmit = async () => {
@@ -258,13 +431,32 @@ export const useProjectForm = (onClose) => {
         endDate: formData.endDate ? formData.endDate.toDate(new Date().getTimezoneOffset()).toISOString() : null,
       };
       
-      console.log("📤 Submitting project data:", projectData);
+      logger.api('projects', 'POST', projectData);
+      logger.lifecycle('useProjectForm', 'Submitting project', projectData);
+      
+      if (TEST_BREAKPOINT_7) {
+        console.log("🧪 TEST 7: Before API call", {
+          projectData,
+          apiEndpoint: '/api/projects'
+        });
+      }
+      
       const newProject = await projectsAPI.create(projectData);
-      console.log("✅ Project created successfully:", newProject);
+      
+      logger.lifecycle('useProjectForm', 'Project created', newProject);
+      
+      if (TEST_BREAKPOINT_7) {
+        console.log("🧪 TEST 7: API Success", newProject);
+      }
       
       onClose?.();  // Optional chaining
     } catch (err) {
-      console.error("❌ Error creating project:", err);
+      logger.error('useProjectForm.handleSubmit', err);
+      
+      if (TEST_BREAKPOINT_7) {
+        console.log("🧪 TEST 7: API Error", err);
+      }
+      
       setError(err.response?.data?.error || "Failed to create project");
     } finally {
       setLoading(false);
@@ -404,37 +596,74 @@ export const useClientManagement = (setFormData) => {
 
 ---
 
-### 6️⃣ **hooks/useStepNavigation.js** (Novo - ~50 linhas)
+### 6️⃣ **hooks/useStepNavigation.js** (Novo - ~80 linhas) ✅ COM LOGS E CORREÇÃO
 
 **Localização Original:** Linhas 17, 186-198
 
 **Conteúdo a Extrair:**
 ```javascript
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { isStepValid } from "../utils/validation";
+import { logger } from "../utils/logger";
 
-export const useStepNavigation = (formData, totalSteps) => {
+// 🧪 Breakpoint de Teste 3
+export const TEST_BREAKPOINT_3 = true;
+
+// ✅ CORRIGIDO: Agora recebe getVisibleSteps para navegação correta
+export const useStepNavigation = (formData, visibleSteps) => {
   const [currentStep, setCurrentStep] = useState(1);
+  
+  // Log de navegação
+  useEffect(() => {
+    const currentStepData = visibleSteps[currentStep - 1];
+    
+    logger.navigation(
+      currentStep - 1,
+      currentStep,
+      { 
+        stepId: currentStepData?.id,
+        totalSteps: visibleSteps.length
+      }
+    );
+    
+    if (TEST_BREAKPOINT_3) {
+      console.log("🧪 TEST 3: Step changed", {
+        currentStep,
+        totalSteps: visibleSteps.length,
+        stepId: currentStepData?.id,
+        projectType: formData.projectType,
+        canProceed: canProceed()
+      });
+    }
+  }, [currentStep, visibleSteps]);
 
   // Avançar para próximo step (linhas 186-191)
   const nextStep = () => {
-    if (currentStep < totalSteps && isStepValid(currentStep, formData)) {
+    const currentStepId = visibleSteps[currentStep - 1]?.id;
+    
+    if (currentStep < visibleSteps.length && isStepValid(currentStepId, formData)) {
       setCurrentStep(currentStep + 1);
       window.scrollTo(0, 0);
+      logger.userAction('Next Step', currentStepId, currentStep + 1);
+    } else {
+      logger.warn('useStepNavigation', `Cannot proceed from step ${currentStepId}`);
     }
   };
 
   // Voltar para step anterior (linhas 193-198)
   const prevStep = () => {
     if (currentStep > 1) {
+      const currentStepId = visibleSteps[currentStep - 1]?.id;
       setCurrentStep(currentStep - 1);
       window.scrollTo(0, 0);
+      logger.userAction('Previous Step', currentStepId, currentStep - 1);
     }
   };
 
   // Verificar se step atual é válido
   const canProceed = () => {
-    return isStepValid(currentStep, formData);
+    const currentStepId = visibleSteps[currentStep - 1]?.id;
+    return isStepValid(currentStepId, formData);
   };
 
   return {
@@ -447,16 +676,20 @@ export const useStepNavigation = (formData, totalSteps) => {
 };
 ```
 
-**Razão:** Separar lógica de navegação e facilitar adicionar animações/transições futuras.
+**Razão:** Separar lógica de navegação e facilitar adicionar animações/transições futuras. **CORRIGIDO** para usar visibleSteps e step IDs.
 
 ---
 
-### 7️⃣ **hooks/useCanvasManager.js** (Novo - ~150 linhas) 🆕
+### 7️⃣ **hooks/useCanvasManager.js** (Novo - ~200 linhas) 🆕 ✅ COM LOGS E CORREÇÕES
 
 **Conteúdo:**
 ```javascript
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { decorationsAPI } from "../../services/api";
+import { logger } from "../utils/logger";
+
+// 🧪 Breakpoint de Teste 4
+export const TEST_BREAKPOINT_4 = true;
 
 export const useCanvasManager = () => {
   const [availableDecorations, setAvailableDecorations] = useState([]);
@@ -466,15 +699,62 @@ export const useCanvasManager = () => {
   const [canvasHistory, setCanvasHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const stageRef = useRef(null);
+  
+  // Log canvas state changes
+  useEffect(() => {
+    if (TEST_BREAKPOINT_4) {
+      console.log("🧪 TEST 4: Canvas state", {
+        availableCount: availableDecorations.length,
+        selectedCount: selectedDecorations.length,
+        positionedCount: positionedDecorations.length,
+        canUndo: historyIndex > 0,
+        canRedo: historyIndex < canvasHistory.length - 1
+      });
+    }
+  }, [availableDecorations, selectedDecorations, positionedDecorations]);
 
-  // Carregar decorações disponíveis da API
+  // ✅ CORRIGIDO: Carregar decorações com fallback para mock
   const loadDecorations = useCallback(async () => {
     try {
-      const response = await decorationsAPI.getAll();
-      setAvailableDecorations(response.data);
-      console.log("✅ Loaded decorations:", response.data.length);
+      logger.canvas('Loading decorations from API');
+      
+      // Tentar carregar da API com optional chaining
+      const response = await decorationsAPI?.getAll?.();
+      
+      if (response?.data) {
+        setAvailableDecorations(response.data);
+        logger.canvas('Loaded decorations from API', { count: response.data.length });
+      } else {
+        // Fallback para mock data
+        const mockDecorations = [
+          {
+            id: 1,
+            name: "Christmas Tree",
+            imageUrl: "/decorations/tree.png",
+            thumbnailUrl: "/decorations/tree-thumb.png",
+            category: "Christmas"
+          },
+          {
+            id: 2,
+            name: "Santa Claus",
+            imageUrl: "/decorations/santa.png",
+            thumbnailUrl: "/decorations/santa-thumb.png",
+            category: "Christmas"
+          },
+          {
+            id: 3,
+            name: "Snowman",
+            imageUrl: "/decorations/snowman.png",
+            thumbnailUrl: "/decorations/snowman-thumb.png",
+            category: "Winter"
+          }
+        ];
+        setAvailableDecorations(mockDecorations);
+        logger.warn('useCanvasManager', 'Using mock decorations - API not available');
+      }
     } catch (err) {
-      console.error("❌ Error loading decorations:", err);
+      logger.error('useCanvasManager.loadDecorations', err);
+      setAvailableDecorations([]); // Fallback vazio
     }
   }, []);
 
@@ -488,18 +768,24 @@ export const useCanvasManager = () => {
       thumbnailUrl: decoration.thumbnailUrl,
       category: decoration.category,
     };
+    
     setSelectedDecorations(prev => [...prev, newDecoration]);
-    console.log("➕ Added decoration to selection:", newDecoration.name);
+    logger.canvas('Add Decoration', { name: decoration.name, id: decoration.id });
   }, []);
 
   // Canvas 1: Remover decoração da seleção
   const removeDecorationFromSelection = useCallback((decorationId) => {
     setSelectedDecorations(prev => prev.filter(d => d.id !== decorationId));
-    console.log("➖ Removed decoration from selection");
+    logger.canvas('Remove Decoration', { id: decorationId });
   }, []);
 
-  // Canvas 2: Inicializar decorações com posições default
+  // ✅ CORRIGIDO: Canvas 2: Inicializar decorações com validação
   const initializePositions = useCallback(() => {
+    if (selectedDecorations.length === 0) {
+      logger.warn('useCanvasManager', 'No decorations selected to initialize positions');
+      return;
+    }
+    
     const positioned = selectedDecorations.map((dec, index) => ({
       ...dec,
       x: 100 + (index % 3) * 200, // Grid layout
@@ -510,9 +796,14 @@ export const useCanvasManager = () => {
       scaleX: 1,
       scaleY: 1,
     }));
+    
     setPositionedDecorations(positioned);
     saveToHistory(positioned);
-    console.log("🎯 Initialized positions for", positioned.length, "decorations");
+    
+    logger.canvas('Initialize Positions', {
+      count: positioned.length,
+      decorations: positioned.map(d => d.name)
+    });
   }, [selectedDecorations]);
 
   // Canvas 2: Atualizar posição/transformação de decoração
@@ -548,21 +839,30 @@ export const useCanvasManager = () => {
 
   // Histórico: Undo
   const undo = useCallback(() => {
+    logger.canvas('Undo', { historyIndex, canUndo: historyIndex > 0 });
+    
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
       setPositionedDecorations(JSON.parse(JSON.stringify(canvasHistory[newIndex])));
-      console.log("↶ Undo");
+    } else {
+      logger.warn('useCanvasManager', 'Cannot undo - at beginning of history');
     }
   }, [historyIndex, canvasHistory]);
 
   // Histórico: Redo
   const redo = useCallback(() => {
+    logger.canvas('Redo', { 
+      historyIndex, 
+      canRedo: historyIndex < canvasHistory.length - 1 
+    });
+    
     if (historyIndex < canvasHistory.length - 1) {
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
       setPositionedDecorations(JSON.parse(JSON.stringify(canvasHistory[newIndex])));
-      console.log("↷ Redo");
+    } else {
+      logger.warn('useCanvasManager', 'Cannot redo - at end of history');
     }
   }, [historyIndex, canvasHistory]);
 
@@ -1480,23 +1780,35 @@ export function StepLocationDescription({ formData, onInputChange }) {
 
 ---
 
-### 1️⃣6️⃣ **steps/StepCanvasSelection.jsx** (Novo - ~200 linhas) 🆕
+### 1️⃣6️⃣ **steps/StepCanvasSelection.jsx** (Novo - ~220 linhas) 🆕 ✅ COM LOGS
 
 **Conteúdo:**
 ```jsx
 import React, { useEffect } from "react";
 import { Card, Button, Chip } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { logger } from "../utils/logger";
 
 export function StepCanvasSelection({ 
   canvasState,
   onNext 
 }) {
   useEffect(() => {
+    logger.lifecycle('StepCanvasSelection', 'Step mounted');
     canvasState.loadDecorations();
+    
+    return () => {
+      logger.lifecycle('StepCanvasSelection', 'Step unmounted', {
+        selectedCount: canvasState.selectedDecorations.length
+      });
+    };
   }, []);
 
   const handleContinue = () => {
+    logger.userAction('Continue to Canvas Positioning', 'StepCanvasSelection', {
+      selectedCount: canvasState.selectedDecorations.length
+    });
+    
     canvasState.initializePositions();
     onNext();
   };
@@ -1601,18 +1913,29 @@ export function StepCanvasSelection({
 
 ---
 
-### 1️⃣7️⃣ **steps/StepCanvasPositioning.jsx** (Novo - ~250 linhas) 🆕
+### 1️⃣7️⃣ **steps/StepCanvasPositioning.jsx** (Novo - ~280 linhas) 🆕 ✅ COM LOGS
 
 **Conteúdo:**
 ```jsx
-import React from "react";
+import React, { useEffect } from "react";
 import { Button, Card, Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Stage, Layer, Image as KonvaImage, Transformer } from "react-konva";
 import useImage from "use-image";
 import { CANVAS_CONFIG } from "../constants";
+import { logger } from "../utils/logger";
 
 export function StepCanvasPositioning({ canvasState }) {
+  useEffect(() => {
+    logger.lifecycle('StepCanvasPositioning', 'Step mounted', {
+      positionedCount: canvasState.positionedDecorations.length
+    });
+    
+    return () => {
+      logger.lifecycle('StepCanvasPositioning', 'Step unmounted');
+    };
+  }, []);
+  
   return (
     <div className="flex h-full">
       {/* Canvas Principal */}
@@ -2195,6 +2518,31 @@ const [formData, setFormData] = useState({
 
 ---
 
+## ✅ RESUMO: LOGS E TESTES INTEGRADOS NO PLANO
+
+### Ficheiros com Logging e Breakpoints Integrados:
+
+| Ficheiro | Logs | Breakpoint | Correções |
+|----------|------|------------|-----------|
+| `constants.js` | ✅ LOG_CONFIG | ✅ TEST 1 | - |
+| `utils/logger.js` | ✅ NOVO FICHEIRO | - | Sistema completo |
+| `utils/validation.js` | ✅ 6 validações | ✅ TEST 6 | Step IDs |
+| `hooks/useProjectForm.js` | ✅ Input + API | ✅ TEST 2, 7 | Optional chaining |
+| `hooks/useStepNavigation.js` | ✅ Navigation | ✅ TEST 3 | visibleSteps |
+| `hooks/useCanvasManager.js` | ✅ Canvas ops | ✅ TEST 4 | Mock fallback + validação |
+| `index.jsx` | ✅ Lifecycle + Submit | ✅ TEST 5 | Correção args useStepNavigation |
+| `steps/StepCanvasSelection.jsx` | ✅ Lifecycle + Actions | - | - |
+| `steps/StepCanvasPositioning.jsx` | ✅ Lifecycle | - | - |
+
+### Estatísticas:
+- **Total de Logs Adicionados:** ~35 pontos de logging estratégico
+- **Total de Breakpoints:** 7 testes incrementais (TEST_BREAKPOINT_1 a TEST_BREAKPOINT_7)
+- **Inconsistências Corrigidas:** 5
+- **Ficheiros Criados:** 1 novo ficheiro (`logger.js`)
+- **Ficheiros Atualizados com Logs:** 8 ficheiros principais
+
+---
+
 ## 🔄 ORDEM DE IMPLEMENTAÇÃO
 
 ### **Fase 1: Preparação** (Sem quebras, criação de ficheiros base)
@@ -2286,6 +2634,10 @@ import { StepConfirmDetails } from "./steps/StepConfirmDetails";
 // Utils & Constants
 import { STEPS } from "./constants";
 import { getVisibleSteps } from "./utils/stepHelpers"; // 🆕
+import { logger } from "./utils/logger"; // 🆕
+
+// 🧪 Breakpoint de Teste 5 (Componente Principal)
+const TEST_BREAKPOINT_5 = true;
 
 export function CreateProjectMultiStep({ onClose }) {
   // Initialize hooks
@@ -2295,7 +2647,43 @@ export function CreateProjectMultiStep({ onClose }) {
   
   // Get visible steps based on project type
   const visibleSteps = getVisibleSteps(formState.formData, STEPS); // 🆕
-  const navigation = useStepNavigation(formState.formData, visibleSteps.length);
+  const navigation = useStepNavigation(formState.formData, visibleSteps);
+  
+  // 🔄 Lifecycle logging
+  useEffect(() => {
+    logger.lifecycle('CreateProjectMultiStep', 'Component mounted', {
+      hasOnClose: !!onClose,
+      totalSteps: STEPS.length,
+      visibleSteps: visibleSteps.length
+    });
+    
+    if (TEST_BREAKPOINT_5) {
+      console.log("🧪 TEST 5: Main component mounted", {
+        totalSteps: STEPS.length,
+        visibleSteps: visibleSteps.map(s => s.id),
+        formData: formState.formData,
+        allHooksLoaded: {
+          formState: !!formState,
+          clientState: !!clientState,
+          canvasState: !!canvasState,
+          navigation: !!navigation
+        }
+      });
+    }
+    
+    return () => {
+      logger.lifecycle('CreateProjectMultiStep', 'Component unmounting');
+    };
+  }, []);
+  
+  // Log quando steps visíveis mudam
+  useEffect(() => {
+    logger.lifecycle('CreateProjectMultiStep', 'Visible steps changed', {
+      count: visibleSteps.length,
+      stepIds: visibleSteps.map(s => s.id),
+      projectType: formState.formData.projectType
+    });
+  }, [visibleSteps.length, formState.formData.projectType]);
 
   // Set default end date
   useEffect(() => {
@@ -2307,7 +2695,15 @@ export function CreateProjectMultiStep({ onClose }) {
 
   // Update formData with canvas data before submission
   const handleFinalSubmit = () => {
+    logger.lifecycle('CreateProjectMultiStep', 'Final submit initiated');
+    
     const canvasData = canvasState.exportCanvasData(); // 🆕
+    
+    logger.lifecycle('CreateProjectMultiStep', 'Canvas data exported', {
+      hasCanvasSelection: !!canvasData.canvasSelection?.length,
+      hasCanvasPositioning: !!canvasData.canvasPositioning?.length
+    });
+    
     formState.handleInputChange("canvasSelection", canvasData.canvasSelection);
     formState.handleInputChange("canvasPositioning", canvasData.canvasPositioning);
     formState.handleSubmit();
@@ -2882,8 +3278,610 @@ Esta refatoração transforma um componente monolítico de **854 linhas** em **~
 
 *Documento criado em: 9 de Outubro de 2025*  
 *Última atualização: 10 de Outubro de 2025*  
-*Autor: AI Assistant (Claude)*
+*Autor: AI Assistant (Claude)*  
 *Revisão profissional e correções: 10 de Outubro de 2025*  
 *Integração Canvas Konva: 10 de Outubro de 2025* 🆕  
-*Versões específicas e HeroUI verificados: 10 de Outubro de 2025* ✅
+*Versões específicas e HeroUI verificados: 10 de Outubro de 2025* ✅  
+*Análise de inconsistências, logging e breakpoints: 10 de Outubro de 2025* 🔍
+
+---
+
+## 🔍 ANÁLISE PROFUNDA - INCONSISTÊNCIAS IDENTIFICADAS
+
+### ❌ Inconsistência #1: useStepNavigation recebe totalSteps mas valida com currentStep
+
+**Localização:** `hooks/useStepNavigation.js`
+
+**Problema:**
+```javascript
+// INCONSISTENTE
+export const useStepNavigation = (formData, totalSteps) => {
+  const canProceed = () => {
+    return isStepValid(currentStep, formData); // ← Valida step atual
+  };
+}
+
+// Mas isStepValid espera STEP NUMBER, não formData
+```
+
+**Solução:**
+```javascript
+export const useStepNavigation = (formData, totalSteps, getVisibleSteps) => {
+  const [currentStep, setCurrentStep] = useState(1);
+  
+  const canProceed = () => {
+    const visibleSteps = getVisibleSteps(formData);
+    const currentStepId = visibleSteps[currentStep - 1]?.id;
+    return isStepValid(currentStepId, formData); // ← Passa step ID
+  };
+  
+  return { currentStep, setCurrentStep, nextStep, prevStep, canProceed };
+};
+```
+
+---
+
+### ❌ Inconsistência #2: validation.js valida por número mas steps são dinâmicos
+
+**Localização:** `utils/validation.js`
+
+**Problema:**
+```javascript
+// INCONSISTENTE - Steps são condicionais mas validação usa números fixos
+export const isStepValid = (currentStep, formData) => {
+  switch (currentStep) {
+    case 1: return validateStepProjectDetails(formData);
+    case 2: return validateStepProjectType(formData);
+    case 3: return validateStepLocationDescription(formData); // ← Errado se Simu
+    // ...
+  }
+};
+```
+
+**Solução:**
+```javascript
+// Validação por STEP ID em vez de número
+export const isStepValid = (stepId, formData) => {
+  switch (stepId) {
+    case "project-details":
+      return validateStepProjectDetails(formData);
+    case "project-type":
+      return validateStepProjectType(formData);
+    case "canvas-selection":
+      return validateCanvasSelection(formData);
+    case "canvas-positioning":
+      return validateCanvasPositioning(formData);
+    case "location-description":
+      return validateStepLocationDescription(formData);
+    case "confirm-details":
+      return validateStepConfirmDetails(formData);
+    default:
+      return false;
+  }
+};
+
+// Validações específicas dos canvas
+export const validateCanvasSelection = (formData) => {
+  // Pelo menos 1 decoração selecionada
+  return formData.canvasSelection && formData.canvasSelection.length > 0;
+};
+
+export const validateCanvasPositioning = (formData) => {
+  // Todas as decorações devem ter posição
+  return formData.canvasPositioning && formData.canvasPositioning.length > 0;
+};
+```
+
+---
+
+### ❌ Inconsistência #3: useCanvasManager.initializePositions() não é chamado
+
+**Localização:** `hooks/useCanvasManager.js` + `steps/StepCanvasSelection.jsx`
+
+**Problema:**
+```javascript
+// StepCanvasSelection chama initializePositions ao avançar
+const handleContinue = () => {
+  canvasState.initializePositions(); // ← Cria posicionedDecorations
+  onNext();
+};
+
+// MAS useCanvasManager não depende de selectedDecorations corretamente
+const initializePositions = useCallback(() => {
+  const positioned = selectedDecorations.map(...); // ← Pode estar vazio!
+}, [selectedDecorations]); // ← Falta no array de dependências
+```
+
+**Solução:**
+```javascript
+const initializePositions = useCallback(() => {
+  if (selectedDecorations.length === 0) {
+    console.warn("⚠️ No decorations selected to initialize positions");
+    return;
+  }
+  
+  const positioned = selectedDecorations.map((dec, index) => ({
+    ...dec,
+    x: 100 + (index % 3) * 200,
+    y: 100 + Math.floor(index / 3) * 200,
+    width: 150,
+    height: 150,
+    rotation: 0,
+    scaleX: 1,
+    scaleY: 1,
+  }));
+  
+  setPositionedDecorations(positioned);
+  saveToHistory(positioned);
+  console.log("🎯 Initialized", positioned.length, "decorations with positions");
+}, [selectedDecorations]); // ← Mantém dependência correta
+```
+
+---
+
+### ❌ Inconsistência #4: decorationsAPI não existe ainda
+
+**Localização:** `hooks/useCanvasManager.js`
+
+**Problema:**
+```javascript
+import { decorationsAPI } from "../../services/api";
+
+const loadDecorations = useCallback(async () => {
+  const response = await decorationsAPI.getAll(); // ← API não existe
+}, []);
+```
+
+**Solução Temporária (Mock):**
+```javascript
+import { decorationsAPI } from "../../services/api";
+
+const loadDecorations = useCallback(async () => {
+  try {
+    // TODO: Substituir por API real quando disponível
+    const response = await decorationsAPI?.getAll?.();
+    
+    if (response?.data) {
+      setAvailableDecorations(response.data);
+      console.log("✅ Loaded decorations from API:", response.data.length);
+    } else {
+      // Fallback para mock data
+      const mockDecorations = [
+        {
+          id: 1,
+          name: "Christmas Tree",
+          imageUrl: "/decorations/tree.png",
+          thumbnailUrl: "/decorations/tree-thumb.png",
+          category: "Christmas"
+        },
+        // ... mais mocks
+      ];
+      setAvailableDecorations(mockDecorations);
+      console.log("⚠️ Using mock decorations:", mockDecorations.length);
+    }
+  } catch (err) {
+    console.error("❌ Error loading decorations:", err);
+    setAvailableDecorations([]); // Fallback vazio
+  }
+}, []);
+```
+
+---
+
+### ❌ Inconsistência #5: Missing import de Icon em alguns componentes
+
+**Localização:** Vários ficheiros
+
+**Problema:** Alguns componentes usam `<Icon>` mas não importam
+
+**Solução:** Garantir import em TODOS os ficheiros que usam ícones:
+```javascript
+import { Icon } from "@iconify/react";
+```
+
+---
+
+## 📊 SISTEMA DE LOGGING ESTRATÉGICO
+
+### Logging Level System:
+
+```javascript
+// constants.js - Adicionar
+export const LOG_CONFIG = {
+  ENABLE_LOGS: true, // Toggle global
+  LEVELS: {
+    LIFECYCLE: true,    // Mounting, unmounting
+    NAVIGATION: true,   // Step changes
+    VALIDATION: true,   // Validação de steps
+    CANVAS: true,       // Operações no canvas
+    API: true,          // Chamadas API
+    USER_ACTION: true,  // Cliques, inputs
+  }
+};
+
+// utils/logger.js - Criar novo ficheiro
+export const logger = {
+  lifecycle: (component, action, data) => {
+    if (!LOG_CONFIG.ENABLE_LOGS || !LOG_CONFIG.LEVELS.LIFECYCLE) return;
+    console.log(`🔄 [${component}] ${action}`, data || '');
+  },
+  
+  navigation: (from, to, data) => {
+    if (!LOG_CONFIG.ENABLE_LOGS || !LOG_CONFIG.LEVELS.NAVIGATION) return;
+    console.log(`🧭 Navigation: Step ${from} → Step ${to}`, data || '');
+  },
+  
+  validation: (stepId, isValid, formData) => {
+    if (!LOG_CONFIG.ENABLE_LOGS || !LOG_CONFIG.LEVELS.VALIDATION) return;
+    const icon = isValid ? '✅' : '❌';
+    console.log(`${icon} Validation [${stepId}]:`, isValid, formData);
+  },
+  
+  canvas: (action, data) => {
+    if (!LOG_CONFIG.ENABLE_LOGS || !LOG_CONFIG.LEVELS.CANVAS) return;
+    console.log(`🎨 Canvas: ${action}`, data || '');
+  },
+  
+  api: (endpoint, method, data) => {
+    if (!LOG_CONFIG.ENABLE_LOGS || !LOG_CONFIG.LEVELS.API) return;
+    console.log(`📡 API [${method}] ${endpoint}`, data || '');
+  },
+  
+  userAction: (action, target, value) => {
+    if (!LOG_CONFIG.ENABLE_LOGS || !LOG_CONFIG.LEVELS.USER_ACTION) return;
+    console.log(`👆 User: ${action}`, { target, value });
+  },
+  
+  error: (context, error) => {
+    console.error(`❌ Error [${context}]:`, error);
+  },
+  
+  warn: (context, message) => {
+    console.warn(`⚠️ Warning [${context}]:`, message);
+  }
+};
+```
+
+### Locais Estratégicos para Logs:
+
+#### **1. index.jsx - Lifecycle e Navigation**
+```javascript
+export function CreateProjectMultiStep({ onClose }) {
+  logger.lifecycle('CreateProjectMultiStep', 'Mount');
+  
+  const formState = useProjectForm(onClose);
+  const canvasState = useCanvasManager();
+  const navigation = useStepNavigation(formData, visibleSteps.length);
+  
+  useEffect(() => {
+    logger.lifecycle('CreateProjectMultiStep', 'Mounted', {
+      initialStep: navigation.currentStep,
+      projectType: formState.formData.projectType
+    });
+    
+    return () => {
+      logger.lifecycle('CreateProjectMultiStep', 'Unmount');
+    };
+  }, []);
+  
+  // Log navigation changes
+  useEffect(() => {
+    logger.navigation(
+      navigation.currentStep - 1, 
+      navigation.currentStep,
+      { stepId: visibleSteps[navigation.currentStep - 1]?.id }
+    );
+  }, [navigation.currentStep]);
+}
+```
+
+#### **2. useProjectForm - Form Changes e Submit**
+```javascript
+const handleInputChange = (field, value) => {
+  logger.userAction('Input Change', field, value);
+  setFormData((prev) => ({
+    ...prev,
+    [field]: value,
+  }));
+};
+
+const handleSubmit = async () => {
+  try {
+    logger.api('projects', 'POST', projectData);
+    logger.lifecycle('useProjectForm', 'Submitting project', projectData);
+    
+    const newProject = await projectsAPI.create(projectData);
+    
+    logger.lifecycle('useProjectForm', 'Project created', newProject);
+    onClose?.();
+  } catch (err) {
+    logger.error('useProjectForm.handleSubmit', err);
+    setError(err.response?.data?.error || "Failed to create project");
+  }
+};
+```
+
+#### **3. useCanvasManager - Canvas Operations**
+```javascript
+const addDecorationToSelection = useCallback((decoration) => {
+  logger.canvas('Add Decoration', { name: decoration.name, id: decoration.id });
+  
+  const newDecoration = { /* ... */ };
+  setSelectedDecorations(prev => [...prev, newDecoration]);
+}, []);
+
+const initializePositions = useCallback(() => {
+  logger.canvas('Initialize Positions', {
+    count: selectedDecorations.length,
+    decorations: selectedDecorations.map(d => d.name)
+  });
+  
+  if (selectedDecorations.length === 0) {
+    logger.warn('useCanvasManager', 'No decorations to initialize');
+    return;
+  }
+  
+  // ... rest of logic
+}, [selectedDecorations]);
+
+const undo = useCallback(() => {
+  logger.canvas('Undo', { historyIndex, canUndo: historyIndex > 0 });
+  // ... rest of logic
+}, [historyIndex, canvasHistory]);
+```
+
+#### **4. validation.js - Validation Results**
+```javascript
+export const isStepValid = (stepId, formData) => {
+  let isValid = false;
+  
+  switch (stepId) {
+    case "project-details":
+      isValid = validateStepProjectDetails(formData);
+      break;
+    // ... outros cases
+  }
+  
+  logger.validation(stepId, isValid, {
+    name: formData.name,
+    projectType: formData.projectType,
+    // ... campos relevantes
+  });
+  
+  return isValid;
+};
+```
+
+#### **5. StepCanvasSelection - Canvas Step 1**
+```javascript
+export function StepCanvasSelection({ canvasState, onNext }) {
+  useEffect(() => {
+    logger.lifecycle('StepCanvasSelection', 'Loading decorations');
+    canvasState.loadDecorations();
+  }, []);
+
+  const handleContinue = () => {
+    logger.userAction('Continue to Positioning', 'canvas-selection', {
+      selectedCount: canvasState.selectedDecorations.length
+    });
+    canvasState.initializePositions();
+    onNext();
+  };
+}
+```
+
+---
+
+## 🧪 BREAKPOINTS PARA TESTE VIA MCP
+
+### Sistema de Testes Incrementais:
+
+#### **Teste 1: Estrutura Base**
+```javascript
+// constants.js
+export const TEST_BREAKPOINT_1 = true;
+
+if (TEST_BREAKPOINT_1) {
+  console.log("🧪 TEST 1: Constants loaded", {
+    stepsCount: STEPS.length,
+    canvasConfig: CANVAS_CONFIG,
+    validationConfig: VALIDATION_CONFIG
+  });
+}
+```
+
+#### **Teste 2: Hooks Básicos**
+```javascript
+// hooks/useProjectForm.js
+export const TEST_BREAKPOINT_2 = true;
+
+export const useProjectForm = (onClose) => {
+  if (TEST_BREAKPOINT_2) {
+    console.log("🧪 TEST 2: useProjectForm initialized", {
+      hasOnClose: !!onClose,
+      initialFormData: formData
+    });
+  }
+  
+  // ... rest of hook
+  
+  return { formData, handleInputChange, handleSubmit, loading, error };
+};
+```
+
+#### **Teste 3: Step Navigation**
+```javascript
+// hooks/useStepNavigation.js
+export const TEST_BREAKPOINT_3 = true;
+
+export const useStepNavigation = (formData, totalSteps) => {
+  const [currentStep, setCurrentStep] = useState(1);
+  
+  useEffect(() => {
+    if (TEST_BREAKPOINT_3) {
+      console.log("🧪 TEST 3: Step changed", {
+        currentStep,
+        totalSteps,
+        projectType: formData.projectType,
+        canProceed: canProceed()
+      });
+    }
+  }, [currentStep]);
+  
+  return { currentStep, nextStep, prevStep, canProceed };
+};
+```
+
+#### **Teste 4: Canvas Manager**
+```javascript
+// hooks/useCanvasManager.js
+export const TEST_BREAKPOINT_4 = true;
+
+export const useCanvasManager = () => {
+  useEffect(() => {
+    if (TEST_BREAKPOINT_4) {
+      console.log("🧪 TEST 4: Canvas state", {
+        availableCount: availableDecorations.length,
+        selectedCount: selectedDecorations.length,
+        positionedCount: positionedDecorations.length,
+        canUndo, canRedo
+      });
+    }
+  }, [availableDecorations, selectedDecorations, positionedDecorations]);
+};
+```
+
+#### **Teste 5: Step Rendering**
+```javascript
+// index.jsx
+const TEST_BREAKPOINT_5 = true;
+
+const renderStepContent = () => {
+  const currentVisibleStep = visibleSteps[navigation.currentStep - 1];
+  
+  if (TEST_BREAKPOINT_5) {
+    console.log("🧪 TEST 5: Rendering step", {
+      stepNumber: navigation.currentStep,
+      stepId: currentVisibleStep?.id,
+      visibleStepsCount: visibleSteps.length,
+      formDataSnapshot: {
+        projectType: formState.formData.projectType,
+        simuWorkflow: formState.formData.simuWorkflow,
+        canvasSelectionCount: formState.formData.canvasSelection?.length
+      }
+    });
+  }
+  
+  switch (currentVisibleStep?.id) {
+    // ... cases
+  }
+};
+```
+
+#### **Teste 6: Validation System**
+```javascript
+// utils/validation.js
+export const TEST_BREAKPOINT_6 = true;
+
+export const isStepValid = (stepId, formData) => {
+  const result = /* validation logic */;
+  
+  if (TEST_BREAKPOINT_6) {
+    console.log("🧪 TEST 6: Validation", {
+      stepId,
+      isValid: result,
+      formDataKeys: Object.keys(formData),
+      criticalFields: {
+        name: formData.name,
+        projectType: formData.projectType,
+        clientName: formData.clientName,
+        endDate: !!formData.endDate
+      }
+    });
+  }
+  
+  return result;
+};
+```
+
+#### **Teste 7: API Integration**
+```javascript
+// hooks/useProjectForm.js - handleSubmit
+const handleSubmit = async () => {
+  const TEST_BREAKPOINT_7 = true;
+  
+  if (TEST_BREAKPOINT_7) {
+    console.log("🧪 TEST 7: Before API call", {
+      projectData,
+      canvasData: canvasState?.exportCanvasData?.(),
+      apiEndpoint: '/api/projects'
+    });
+  }
+  
+  try {
+    const newProject = await projectsAPI.create(projectData);
+    
+    if (TEST_BREAKPOINT_7) {
+      console.log("🧪 TEST 7: API Success", newProject);
+    }
+  } catch (err) {
+    if (TEST_BREAKPOINT_7) {
+      console.log("🧪 TEST 7: API Error", err);
+    }
+  }
+};
+```
+
+---
+
+## 📋 CHECKLIST DE IMPLEMENTAÇÃO COM TESTES
+
+### Fase 1: Estrutura Base
+- [ ] Criar pastas e estrutura
+- [ ] `npm install` dependências Konva
+- [ ] ✅ TEST 1: Verificar constants.js carrega
+- [ ] Criar utils (validation, mockData, stepHelpers, canvasHelpers)
+
+### Fase 2: Hooks
+- [ ] Criar useProjectForm
+- [ ] ✅ TEST 2: Verificar hook inicializa
+- [ ] Criar useClientManagement
+- [ ] Criar useStepNavigation
+- [ ] ✅ TEST 3: Verificar navegação funciona
+- [ ] Criar useCanvasManager
+- [ ] ✅ TEST 4: Verificar canvas state
+
+### Fase 3: Components
+- [ ] Criar StepIndicator
+- [ ] Criar NavigationFooter
+- [ ] Criar ProjectTypeCard
+- [ ] Criar SimuWorkflowSelector
+- [ ] Criar ClientAutocomplete
+- [ ] Criar AddClientModal
+
+### Fase 4: Steps
+- [ ] Criar StepProjectDetails
+- [ ] Criar StepProjectType
+- [ ] Criar StepCanvasSelection
+- [ ] Criar StepCanvasPositioning
+- [ ] Criar StepLocationDescription
+- [ ] Criar StepConfirmDetails
+
+### Fase 5: Integração
+- [ ] Criar index.jsx orquestrador
+- [ ] ✅ TEST 5: Verificar renderização de steps
+- [ ] ✅ TEST 6: Verificar validações
+- [ ] Integrar com App
+- [ ] ✅ TEST 7: Verificar submissão completa
+
+### Fase 6: Validação Final
+- [ ] Testar fluxo Logo (4 steps)
+- [ ] Testar fluxo Simu AI (6 steps)
+- [ ] Testar fluxo Simu Human (6 steps)
+- [ ] Testar undo/redo no canvas
+- [ ] Testar validações bloqueiam navegação
+- [ ] Remover TEST_BREAKPOINT flags
+- [ ] Ajustar LOG_CONFIG.ENABLE_LOGS = false (produção)
+
+---
 
