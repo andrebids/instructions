@@ -1,6 +1,7 @@
 import React from "react";
 import { Card } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { getLocalTimeZone } from "@internationalized/date";
 
 export function StepConfirmDetails({ formData, error }) {
   return (
@@ -58,7 +59,7 @@ export function StepConfirmDetails({ formData, error }) {
               <span className="text-default-500">End Date:</span>
               <p className="font-medium">
                 {formData.endDate 
-                  ? formData.endDate.toDate(new Date().getTimezoneOffset()).toLocaleDateString() 
+                  ? formData.endDate.toDate(getLocalTimeZone()).toLocaleDateString() 
                   : "—"}
               </p>
             </div>
@@ -73,25 +74,41 @@ export function StepConfirmDetails({ formData, error }) {
           </div>
         </Card>
         
-        {/* Location & Description Card */}
-        <Card className="p-4">
-          <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-            <Icon icon="lucide:map-pin" className="text-primary" />
-            Location & Description
-          </h3>
-          <div className="space-y-3 text-sm">
-            <div>
-              <span className="text-default-500">Location:</span>
-              <p className="font-medium">{formData.location || "—"}</p>
+        {/* AI Designer Card - apenas se for AI workflow */}
+        {formData.projectType === "simu" && formData.simuWorkflow === "ai" && (
+          <Card className="p-4">
+            <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+              <Icon icon="lucide:sparkles" className="text-primary" />
+              AI Generated Decorations
+            </h3>
+            <div className="space-y-3 text-sm">
+              <div>
+                <span className="text-default-500">Decorations Generated:</span>
+                <p className="font-medium">
+                  {formData.canvasDecorations?.length || 0} decorations
+                </p>
+              </div>
+              {formData.canvasDecorations && formData.canvasDecorations.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {formData.canvasDecorations.map((decoration, index) => (
+                    <div
+                      key={decoration.id || index}
+                      className="flex items-center gap-2 p-2 bg-default-50 rounded"
+                    >
+                      <div
+                        className="w-4 h-4 rounded"
+                        style={{ backgroundColor: decoration.color }}
+                      />
+                      <span className="text-xs font-medium capitalize">
+                        {decoration.type}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div>
-              <span className="text-default-500">Description:</span>
-              <p className="font-medium whitespace-pre-wrap">
-                {formData.description || "—"}
-              </p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        )}
       </div>
       
       {/* Error Display */}

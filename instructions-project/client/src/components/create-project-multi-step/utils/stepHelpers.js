@@ -8,6 +8,11 @@ export const getVisibleSteps = (formData, allSteps) => {
       return formData.projectType === "simu" && formData.simuWorkflow !== null;
     }
     
+    // Step condicional para AI Designer
+    if (step.condition === "isAIDesigner") {
+      return formData.projectType === "simu" && formData.simuWorkflow === "ai";
+    }
+    
     return true;
   });
 };
