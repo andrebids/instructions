@@ -55,7 +55,7 @@ const UploadModal = () => {
           }
           return newFiles;
         });
-      }, 20);
+      }, 100);
       intervals.push(interval);
     };
 
