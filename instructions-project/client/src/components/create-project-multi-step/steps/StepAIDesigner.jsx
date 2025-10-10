@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Card, Button, Spinner, Progress } from "@heroui/react";
+import { Card, CardFooter, Button, Spinner, Progress, Image } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 // Componente para o Modal de Upload
@@ -222,10 +222,14 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, onDecorationRemove, decor
       {/* Canvas placeholder - será substituído por Konva real */}
       <div 
         ref={canvasRef}
-        className={`border-2 border-dashed rounded-lg h-full w-full overflow-hidden transition-colors ${
-          dragOver 
-            ? 'border-primary bg-primary/10' 
-            : 'border-default-300 bg-default-50'
+        className={`rounded-lg h-full w-full overflow-hidden transition-colors ${
+          selectedImage 
+            ? (dragOver 
+                ? 'border-2 border-primary bg-primary/10' 
+                : 'border-0 bg-transparent')
+            : (dragOver 
+                ? 'border-2 border-primary bg-primary/10' 
+                : 'border-2 border-dashed border-default-300 bg-default-50')
         }`}
         style={{ 
           width: width === "100%" ? "100%" : width,
@@ -249,31 +253,27 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, onDecorationRemove, decor
           </div>
         )}
         
-        {/* Overlay Content */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          {isLoading ? (
-            <div className="text-center bg-black/50 rounded-lg p-6">
-              <Spinner size="lg" color="white" />
-              <p className="mt-4 text-white">Generating decorations with AI...</p>
-            </div>
-          ) : decorations.length > 0 ? (
-            <div className="text-center bg-black/50 rounded-lg p-6">
-              <Icon icon="lucide:check-circle" className="text-success text-4xl mb-2" />
-              <p className="text-success font-medium">{decorations.length} decorations generated</p>
-            </div>
-          ) : selectedImage ? (
-            <div className="text-center bg-black/50 rounded-lg p-6">
-              <Icon icon="lucide:sparkles" className="text-white text-4xl mb-2" />
-              <p className="text-white mb-4">Canvas ready for decorations</p>
-              <p className="text-white/80 text-sm">Selected: {selectedImage.name}</p>
-            </div>
-          ) : (
-            <div className="text-center">
-              <Icon icon="lucide:image" className="text-default-400 text-4xl mb-2" />
-              <p className="text-default-600 mb-4">Select an image to start decorating</p>
-            </div>
-          )}
-        </div>
+        {/* Overlay Content - Only show when needed */}
+        {(isLoading || decorations.length > 0 || !selectedImage) && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            {isLoading ? (
+              <div className="text-center bg-black/50 rounded-lg p-6">
+                <Spinner size="lg" color="white" />
+                <p className="mt-4 text-white">Generating decorations with AI...</p>
+              </div>
+            ) : decorations.length > 0 ? (
+              <div className="text-center bg-black/50 rounded-lg p-6">
+                <Icon icon="lucide:check-circle" className="text-success text-4xl mb-2" />
+                <p className="text-success font-medium">{decorations.length} decorations generated</p>
+              </div>
+            ) : (
+              <div className="text-center">
+                <Icon icon="lucide:image" className="text-default-400 text-4xl mb-2" />
+                <p className="text-default-600 mb-4">Select an image to start decorating</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       
       {/* Decorações arrastáveis */}
@@ -383,46 +383,49 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
       {uploadStep === 'done' && (
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Left Sidebar - Image Thumbnails */}
-          <aside className="w-48 md:w-56 lg:w-64 border-r border-divider bg-content1/30 flex flex-col flex-shrink-0">
+          <aside className="w-32 md:w-40 lg:w-48 border-r border-divider bg-content1/30 flex flex-col flex-shrink-0">
             <div className="p-3 md:p-4 border-b border-divider">
               <h3 className="text-base md:text-lg font-semibold">Source Images</h3>
             </div>
             <div className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4 space-y-2 md:space-y-3">
               {loadedImages.map((image) => (
-                <div
+                <Card
                   key={image.id}
-                  className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+                  isFooterBlurred
+                  className={`cursor-pointer border-none transition-all duration-200 ${
                     selectedImage?.id === image.id 
-                      ? 'border-primary shadow-lg' 
-                      : 'border-divider hover:border-primary/50'
+                      ? 'ring-2 ring-primary shadow-lg' 
+                      : 'hover:ring-1 hover:ring-primary/50'
                   }`}
+                  radius="lg"
                   onClick={() => setSelectedImage(image)}
                 >
-                  <div className="aspect-video bg-default-100">
-                    <img
-                      src={image.thumbnail}
-                      alt={image.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
-                    <div className="w-full h-full hidden items-center justify-center bg-default-100">
-                      <Icon icon="lucide:image" className="text-4xl text-default-400" />
+                  <Image
+                    alt={image.name}
+                    className="object-cover"
+                    height={120}
+                    src={image.thumbnail}
+                    width="100%"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div className="w-full h-full hidden items-center justify-center bg-default-100">
+                    <Icon icon="lucide:image" className="text-4xl text-default-400" />
+                  </div>
+                  
+                  <CardFooter className="absolute bg-black/40 bottom-0 z-10 py-1">
+                    <div className="flex grow gap-2 items-center">
+                      <p className="text-tiny text-white/80 truncate">{image.name}</p>
                     </div>
-                  </div>
-                  <div className="p-2 bg-background">
-                    <p className="text-sm font-medium truncate">{image.name}</p>
-                  </div>
-                  {selectedImage?.id === image.id && (
-                    <div className="absolute top-2 right-2">
-                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                        <Icon icon="lucide:check" className="text-white text-sm" />
+                    {selectedImage?.id === image.id && (
+                      <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                        <Icon icon="lucide:check" className="text-white text-xs" />
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </CardFooter>
+                </Card>
               ))}
             </div>
           </aside>
