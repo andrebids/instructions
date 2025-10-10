@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Card, CardFooter, Button, Spinner, Progress, Image } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { DecorationLibrary } from "../../decoration-library";
 
 // Componente para o Modal de Upload
 const UploadModal = () => {
@@ -109,46 +110,45 @@ const LoadingIndicator = () => (
   </div>
 );
 
-// Componente para Cartão de Decoração
-const DecorationCard = ({ decoration, index }) => (
-  <div
-    key={index}
-    className="p-2 md:p-3 border border-divider rounded-lg cursor-grab hover:border-primary/50 transition-colors bg-background"
-    draggable
-    onDragStart={(e) => {
-      e.dataTransfer.setData('text/plain', JSON.stringify({
-        type: decoration.type,
-        name: decoration.name,
-        icon: decoration.icon
-      }));
-    }}
-  >
-    <div className="text-center">
-      <div className="text-xl md:text-2xl mb-1">{decoration.icon}</div>
-      <p className="text-[10px] md:text-xs text-default-600 truncate">{decoration.name}</p>
-    </div>
-  </div>
-);
-
+// Função para obter cor baseada no tipo de decoração
+const getDecorationColor = (type) => {
+  const colors = {
+    'tree': '#228B22',
+    'plant': '#32CD32',
+    'lights': '#FFD700',
+    'ornament': '#FF6347',
+    'holiday': '#FF69B4'
+  };
+  return colors[type] || '#6B7280';
+};
 
 // Componente Konva Canvas (simulado até instalação das dependências)
-const KonvaCanvas = ({ width, height, onDecorationAdd, onDecorationRemove, decorations = [], startGeneration, selectedImage }) => {
+const KonvaCanvas = ({ 
+  width, 
+  height, 
+  onDecorationAdd, 
+  onDecorationRemove, 
+  onImageRemove,
+  decorations = [], 
+  canvasImages = [],
+  selectedImage 
+}) => {
   const canvasRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
-  // Simular carregamento de decorações
+  // Função para gerar decorações (não usada automaticamente)
   const handleGenerateDecorations = async () => {
     setIsLoading(true);
     
-    // Simular delay de geração (muito rápido)
+    // Simular delay de geração
     await new Promise(resolve => setTimeout(resolve, 200));
     
     // Adicionar decorações simuladas
     const newDecorations = [
-      { id: 1, type: "tree", x: 200, y: 150, width: 100, height: 120, color: "#228B22" },
-      { id: 2, type: "lights", x: 300, y: 200, width: 80, height: 60, color: "#FFD700" },
-      { id: 3, type: "ornament", x: 400, y: 180, width: 60, height: 60, color: "#FF6347" },
+      { id: `dec-${Date.now()}-1`, type: "tree", x: 200, y: 150, width: 100, height: 120, color: "#228B22" },
+      { id: `dec-${Date.now()}-2`, type: "lights", x: 300, y: 200, width: 80, height: 60, color: "#FFD700" },
+      { id: `dec-${Date.now()}-3`, type: "ornament", x: 400, y: 180, width: 60, height: 60, color: "#FF6347" },
     ];
     
     newDecorations.forEach(decoration => {
@@ -158,11 +158,7 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, onDecorationRemove, decor
     setIsLoading(false);
   };
 
-  useEffect(() => {
-    if (startGeneration) {
-      handleGenerateDecorations();
-    }
-  }, [startGeneration]);
+  // Removido useEffect que gerava decorações automaticamente
 
   // Handle drag and drop
   const handleDragOver = (e) => {
@@ -204,32 +200,17 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, onDecorationRemove, decor
     }
   };
 
-  // Função para obter cor baseada no tipo
-  const getDecorationColor = (type) => {
-    const colors = {
-      'tree': '#228B22',
-      'plant': '#32CD32',
-      'lights': '#FFD700',
-      'ornament': '#FF6347',
-      'holiday': '#FF69B4'
-    };
-    return colors[type] || '#6B7280';
-  };
-
-
   return (
     <div className="relative h-full w-full">
       {/* Canvas placeholder - será substituído por Konva real */}
       <div 
         ref={canvasRef}
         className={`rounded-lg h-full w-full overflow-hidden transition-colors ${
-          selectedImage 
+          canvasImages.length > 0 || dragOver
             ? (dragOver 
                 ? 'border-2 border-primary bg-primary/10' 
-                : 'border-0 bg-transparent')
-            : (dragOver 
-                ? 'border-2 border-primary bg-primary/10' 
-                : 'border-2 border-dashed border-default-300 bg-default-50')
+                : 'border-0 bg-default-100')
+            : 'border-2 border-dashed border-default-300 bg-default-50'
         }`}
         style={{ 
           width: width === "100%" ? "100%" : width,
@@ -239,44 +220,50 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, onDecorationRemove, decor
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {/* Background Image */}
-        {selectedImage && (
-          <div className="absolute inset-0">
+        {/* Imagens do Canvas (Source Images adicionadas) */}
+        {canvasImages.map(img => (
+          <div
+            key={img.id}
+            className="absolute shadow-2xl"
+            style={{
+              left: img.x,
+              top: img.y,
+              width: img.width,
+              height: img.height,
+              transform: 'translate(-50%, -50%)',
+              zIndex: 1
+            }}
+          >
+            {/* Imagem */}
             <img
-              src={selectedImage.thumbnail}
-              alt={selectedImage.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
+              src={img.src}
+              alt={img.name}
+              className="w-full h-full object-cover rounded-lg"
+              draggable={false}
             />
           </div>
-        )}
+        ))}
         
         {/* Overlay Content - Only show when needed */}
-        {(isLoading || decorations.length > 0 || !selectedImage) && (
-          <div className="absolute inset-0 flex items-center justify-center">
+        {(isLoading || (decorations.length > 0 && canvasImages.length === 0) || (canvasImages.length === 0 && decorations.length === 0)) && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             {isLoading ? (
               <div className="text-center bg-black/50 rounded-lg p-6">
                 <Spinner size="lg" color="white" />
                 <p className="mt-4 text-white">Generating decorations with AI...</p>
               </div>
-            ) : decorations.length > 0 ? (
-              <div className="text-center bg-black/50 rounded-lg p-6">
-                <Icon icon="lucide:check-circle" className="text-success text-4xl mb-2" />
-                <p className="text-success font-medium">{decorations.length} decorations generated</p>
-              </div>
-            ) : (
+            ) : canvasImages.length === 0 && decorations.length === 0 ? (
               <div className="text-center">
                 <Icon icon="lucide:image" className="text-default-400 text-4xl mb-2" />
-                <p className="text-default-600 mb-4">Select an image to start decorating</p>
+                <p className="text-default-600 mb-4">Click on a Source Image to start</p>
+                <p className="text-default-500 text-sm">Then add decorations on top</p>
               </div>
-            )}
+            ) : null}
           </div>
         )}
       </div>
       
-      {/* Decorações arrastáveis */}
+      {/* Decorações arrastáveis - ficam por cima das imagens */}
       {decorations.map(decoration => (
         <div
           key={decoration.id}
@@ -287,7 +274,8 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, onDecorationRemove, decor
             width: decoration.width,
             height: decoration.height,
             backgroundColor: decoration.color,
-            transform: 'translate(-50%, -50%)'
+            transform: 'translate(-50%, -50%)',
+            zIndex: 10 // Decorações sempre por cima das imagens
           }}
           draggable
           onDragStart={(e) => {
@@ -299,7 +287,7 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, onDecorationRemove, decor
           </div>
           {/* Botão de remover */}
           <button
-            className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+            className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors z-20"
             onClick={(e) => {
               e.stopPropagation();
               onDecorationRemove(decoration.id);
@@ -318,21 +306,22 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [uploadStep, setUploadStep] = useState('uploading'); // 'uploading', 'loading', 'done'
   const [selectedImage, setSelectedImage] = useState(null);
+  const [canvasImages, setCanvasImages] = useState([]); // Imagens adicionadas ao canvas
   
   // Imagens carregadas (simuladas)
   const loadedImages = [
     { 
-      id: 1, 
+      id: 'source-img-1', 
       name: 'source 1.jpeg', 
       thumbnail: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop&crop=center'
     },
     { 
-      id: 2, 
+      id: 'source-img-2', 
       name: 'source 2.jpeg', 
       thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop&crop=center'
     },
     { 
-      id: 3, 
+      id: 'source-img-3', 
       name: 'source 3.jpeg', 
       thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop&crop=center'
     },
@@ -359,6 +348,77 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
 
 
 
+  // Adicionar imagem source ao canvas (substitui a anterior)
+  const handleImageAddToCanvas = (image) => {
+    console.log('📸🖼️ ===== SOURCE IMAGE CLICADA =====');
+    console.log('📸 Nome:', image.name);
+    console.log('📸 ID:', image.id);
+    console.log('📸 URL:', image.thumbnail);
+    
+    // Calcular dimensões do canvas
+    const canvasElement = document.querySelector('.rounded-lg.h-full.w-full');
+    let canvasWidth = 1200;
+    let canvasHeight = 600;
+    let centerX = canvasWidth / 2;
+    let centerY = canvasHeight / 2;
+    
+    if (canvasElement) {
+      const rect = canvasElement.getBoundingClientRect();
+      canvasWidth = rect.width;
+      canvasHeight = rect.height;
+      centerX = canvasWidth / 2;
+      centerY = canvasHeight / 2;
+    }
+    
+    // Calcular dimensões da imagem para caber no canvas mantendo aspect ratio
+    // Assumindo aspect ratio 4:3 das imagens (pode ser ajustado)
+    const imageAspectRatio = 4 / 3;
+    const canvasAspectRatio = canvasWidth / canvasHeight;
+    
+    // Margem de segurança (2% de cada lado) - mais espaço para a imagem
+    const maxWidth = canvasWidth * 0.96;
+    const maxHeight = canvasHeight * 0.96;
+    
+    let imageWidth, imageHeight;
+    
+    // Calcular tamanho mantendo aspect ratio e garantindo que cabe no canvas
+    if (maxWidth / imageAspectRatio <= maxHeight) {
+      // Limitado pela largura
+      imageWidth = maxWidth;
+      imageHeight = maxWidth / imageAspectRatio;
+    } else {
+      // Limitado pela altura
+      imageHeight = maxHeight;
+      imageWidth = maxHeight * imageAspectRatio;
+    }
+    
+    console.log('📐 Canvas:', canvasWidth, 'x', canvasHeight);
+    console.log('📐 Imagem:', imageWidth, 'x', imageHeight);
+    
+    const newImageLayer = {
+      id: `img-${Date.now()}`, // ID único com prefixo
+      type: 'image',
+      name: image.name,
+      src: image.thumbnail,
+      x: centerX,
+      y: centerY,
+      width: imageWidth,
+      height: imageHeight,
+      isSourceImage: true
+    };
+    
+    console.log('✅ Imagem adicionada ao canvas:', newImageLayer);
+    
+    // SUBSTITUI a imagem anterior (não adiciona)
+    setCanvasImages([newImageLayer]);
+    setSelectedImage(image);
+  };
+
+  // Remover imagem do canvas
+  const handleImageRemoveFromCanvas = (imageId) => {
+    setCanvasImages(prev => prev.filter(img => img.id !== imageId));
+  };
+
   // Adicionar decoração ao canvas
   const handleDecorationAdd = (decoration) => {
     setDecorations(prev => [...prev, decoration]);
@@ -369,10 +429,11 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
     setDecorations(prev => prev.filter(d => d.id !== decorationId));
   };
 
-  // Salvar decorações no formData
+  // Salvar dados no formData
   useEffect(() => {
     onInputChange("canvasDecorations", decorations);
-  }, [decorations]); // Removido onInputChange das dependências para evitar loop infinito
+    onInputChange("canvasImages", canvasImages);
+  }, [decorations, canvasImages]); // Removido onInputChange das dependências para evitar loop infinito
 
   return (
     <div className="h-full flex flex-col">
@@ -384,7 +445,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Left Sidebar - Image Thumbnails */}
           <aside className="w-32 md:w-40 lg:w-48 border-r border-divider bg-content1/30 flex flex-col flex-shrink-0">
-            <div className="p-3 md:p-4 border-b border-divider">
+            <div className="p-3 md:p-4 border-b border-divider text-center">
               <h3 className="text-base md:text-lg font-semibold">Source Images</h3>
             </div>
             <div className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4 space-y-2 md:space-y-3">
@@ -392,13 +453,17 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                 <Card
                   key={image.id}
                   isFooterBlurred
+                  isPressable
                   className={`cursor-pointer border-none transition-all duration-200 ${
                     selectedImage?.id === image.id 
                       ? 'ring-2 ring-primary shadow-lg' 
                       : 'hover:ring-1 hover:ring-primary/50'
                   }`}
                   radius="lg"
-                  onClick={() => setSelectedImage(image)}
+                  onPress={() => {
+                    console.log('🖱️ CARD CLICADO - Imagem:', image.name);
+                    handleImageAddToCanvas(image);
+                  }}
                 >
                   <Image
                     alt={image.name}
@@ -415,7 +480,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                     <Icon icon="lucide:image" className="text-4xl text-default-400" />
                   </div>
                   
-                  <CardFooter className="absolute bg-black/40 bottom-0 z-10 py-1">
+                  <CardFooter className="absolute bg-black/40 bottom-0 z-10 py-1 pointer-events-none">
                     <div className="flex grow gap-2 items-center">
                       <p className="text-tiny text-white/80 truncate">{image.name}</p>
                     </div>
@@ -434,16 +499,20 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
           <div className="flex-1 min-h-0 flex flex-col bg-content1">
             <div className="h-full flex flex-col p-3 md:p-4 lg:p-6">
               <div className="flex items-center justify-between mb-3 md:mb-4">
-                <h3 className="text-base md:text-lg font-semibold">Decoration Canvas</h3>
+                <h3 className="text-base md:text-lg font-semibold text-center flex-1">Decoration Canvas</h3>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
                     variant="light"
                     startContent={<Icon icon="lucide:refresh-cw" />}
-                    onPress={() => setDecorations([])}
-                    isDisabled={decorations.length === 0}
+                    onPress={() => {
+                      setDecorations([]);
+                      setCanvasImages([]);
+                      setSelectedImage(null);
+                    }}
+                    isDisabled={decorations.length === 0 && canvasImages.length === 0}
                   >
-                    Clear
+                    Clear All
                   </Button>
                 </div>
               </div>
@@ -454,8 +523,9 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                   height="100%"
                   onDecorationAdd={handleDecorationAdd}
                   onDecorationRemove={handleDecorationRemove}
+                  onImageRemove={handleImageRemoveFromCanvas}
                   decorations={decorations}
-                  startGeneration={uploadStep === 'done'}
+                  canvasImages={canvasImages}
                   selectedImage={selectedImage}
                 />
               </div>
@@ -463,57 +533,38 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
           </div>
 
           {/* Right Sidebar - Decoration Library */}
-          <aside className="w-48 md:w-56 lg:w-64 border-l border-divider bg-content1/30 flex flex-col flex-shrink-0">
-            <div className="p-3 md:p-4 border-b border-divider">
-              <h3 className="text-base md:text-lg font-semibold">Decorations</h3>
-            </div>
-            <div className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4">
-              <div className="space-y-4">
-                {/* Decoration Categories */}
-                <div>
-                  <h4 className="text-xs md:text-sm font-medium text-default-600 mb-2">Trees & Plants</h4>
-                  <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-                    {[
-                      { name: 'Pine Tree', icon: '🌲', type: 'tree' },
-                      { name: 'Oak Tree', icon: '🌳', type: 'tree' },
-                      { name: 'Palm Tree', icon: '🌴', type: 'tree' },
-                      { name: 'Bush', icon: '🌿', type: 'plant' }
-                    ].map((decoration, index) => (
-                      <DecorationCard key={index} decoration={decoration} index={index} />
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-xs md:text-sm font-medium text-default-600 mb-2">Lights & Ornaments</h4>
-                  <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-                    {[
-                      { name: 'Christmas Lights', icon: '💡', type: 'lights' },
-                      { name: 'Star', icon: '⭐', type: 'ornament' },
-                      { name: 'Bell', icon: '🔔', type: 'ornament' },
-                      { name: 'Gift', icon: '🎁', type: 'ornament' }
-                    ].map((decoration, index) => (
-                      <DecorationCard key={index} decoration={decoration} index={index} />
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-xs md:text-sm font-medium text-default-600 mb-2">Holiday Items</h4>
-                  <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-                    {[
-                      { name: 'Snowman', icon: '⛄', type: 'holiday' },
-                      { name: 'Santa Hat', icon: '🎅', type: 'holiday' },
-                      { name: 'Candy Cane', icon: '🍭', type: 'holiday' },
-                      { name: 'Snowflake', icon: '❄️', type: 'holiday' }
-                    ].map((decoration, index) => (
-                      <DecorationCard key={index} decoration={decoration} index={index} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
+          <DecorationLibrary
+            mode="sidebar"
+            onDecorationSelect={(decoration) => {
+              
+              // Calcular posição central do canvas se houver imagem selecionada
+              const canvasElement = document.querySelector('.rounded-lg.h-full.w-full');
+              let centerX = 200; // Posição default
+              let centerY = 200;
+              
+              if (canvasElement) {
+                const rect = canvasElement.getBoundingClientRect();
+                centerX = rect.width / 2;
+                centerY = rect.height / 2;
+              }
+              
+              // Criar nova decoração para o canvas na posição central
+              const newDecoration = {
+                id: `dec-${Date.now()}`, // ID único com prefixo
+                type: decoration.type,
+                name: decoration.name,
+                icon: decoration.icon,
+                x: centerX,
+                y: centerY,
+                width: 60,
+                height: 60,
+                color: getDecorationColor(decoration.type)
+              };
+              handleDecorationAdd(newDecoration);
+            }}
+            enableSearch={true}
+            className="w-48 md:w-56 lg:w-64"
+          />
         </div>
       )}
     </div>
