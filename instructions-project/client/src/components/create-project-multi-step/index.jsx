@@ -17,7 +17,7 @@ import { AddClientModal } from "./components/AddClientModal";
 // Steps
 import { StepProjectDetails } from "./steps/StepProjectDetails";
 import { StepProjectType } from "./steps/StepProjectType";
-import { StepLocationDescription } from "./steps/StepLocationDescription";
+import { StepAIDesigner } from "./steps/StepAIDesigner";
 import { StepConfirmDetails } from "./steps/StepConfirmDetails";
 
 // Utils & Constants
@@ -33,22 +33,21 @@ export function CreateProjectMultiStep({ onClose }) {
   const formState = useProjectForm(onClose);
   const clientState = useClientManagement(formState.setFormData);
   
-  // Get visible steps based on project type (sem canvas por agora)
-  const allSteps = STEPS.filter(s => !s.id.includes('canvas')); // Remover steps de canvas até Konva estar instalado
-  const visibleSteps = getVisibleSteps(formState.formData, allSteps);
+  // Get visible steps based on project type
+  const visibleSteps = getVisibleSteps(formState.formData, STEPS);
   const navigation = useStepNavigation(formState.formData, visibleSteps);
   
   // 🔄 Lifecycle logging
   useEffect(() => {
     logger.lifecycle('CreateProjectMultiStep', 'Component mounted', {
       hasOnClose: !!onClose,
-      totalSteps: allSteps.length,
+      totalSteps: STEPS.length,
       visibleSteps: visibleSteps.length
     });
     
     if (TEST_BREAKPOINT_5) {
       console.log("🧪 TEST 5: Main component mounted", {
-        totalSteps: allSteps.length,
+        totalSteps: STEPS.length,
         visibleSteps: visibleSteps.map(s => s.id),
         formData: formState.formData,
         allHooksLoaded: {
@@ -118,9 +117,9 @@ export function CreateProjectMultiStep({ onClose }) {
           />
         );
       
-      case "location-description":
+      case "ai-designer":
         return (
-          <StepLocationDescription
+          <StepAIDesigner
             formData={formState.formData}
             onInputChange={formState.handleInputChange}
           />

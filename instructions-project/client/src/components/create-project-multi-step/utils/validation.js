@@ -54,9 +54,15 @@ export const validateCanvasPositioning = (formData) => {
   return isValid;
 };
 
-// Validação do Step 5: Location & Description
-export const validateStepLocationDescription = (formData) => {
-  return true; // Campos opcionais
+// Validação do Step 3: AI Designer (apenas para AI workflow)
+export const validateStepAIDesigner = (formData) => {
+  const isValid = formData.canvasDecorations && formData.canvasDecorations.length > 0;
+  
+  logger.validation("ai-designer", isValid, {
+    decorationsCount: formData.canvasDecorations?.length || 0
+  });
+  
+  return isValid;
 };
 
 // Validação do Step 6: Confirm Details
@@ -84,8 +90,8 @@ export const isStepValid = (stepId, formData) => {
     case "canvas-positioning":
       isValid = validateCanvasPositioning(formData);
       break;
-    case "location-description":
-      isValid = validateStepLocationDescription(formData);
+    case "ai-designer":
+      isValid = validateStepAIDesigner(formData);
       break;
     case "confirm-details":
       isValid = validateStepConfirmDetails(formData);

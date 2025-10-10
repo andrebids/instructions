@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { projectsAPI } from "../../../services/api";
 import { logger } from "../utils/logger";
+import { getLocalTimeZone } from "@internationalized/date";
 
 // 🧪 Breakpoint de Teste 2
 export const TEST_BREAKPOINT_2 = true;
@@ -26,8 +27,7 @@ export const useProjectForm = (onClose) => {
     location: "",
     description: "",
     // 🆕 Novos campos para Canvas Konva (apenas projectos Simu)
-    canvasSelection: [],      // Array de decorações selecionadas no Step 3
-    canvasPositioning: [],    // Array de decorações posicionadas no Step 4
+    canvasDecorations: [],    // Array de decorações geradas pelo AI Designer
   });
 
   // 🧪 Logging inicial
@@ -68,7 +68,7 @@ export const useProjectForm = (onClose) => {
         description: formData.description,
         budget: formData.budget ? parseFloat(formData.budget) : null,
         startDate: null,
-        endDate: formData.endDate ? formData.endDate.toDate(new Date().getTimezoneOffset()).toISOString() : null,
+        endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
       };
       
       logger.api('projects', 'POST', projectData);

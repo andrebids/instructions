@@ -2,9 +2,7 @@
 export const STEPS = [
   { id: "project-details", label: "Project Details", icon: "lucide:folder", conditional: false },
   { id: "project-type", label: "Project Type", icon: "lucide:layers", conditional: false },
-  { id: "canvas-selection", label: "Select Decorations", icon: "lucide:palette", conditional: true, condition: "isSimu" },
-  { id: "canvas-positioning", label: "Position Elements", icon: "lucide:move", conditional: true, condition: "isSimu" },
-  { id: "location-description", label: "Location & Description", icon: "lucide:map-pin", conditional: false },
+  { id: "ai-designer", label: "AI Designer", icon: "lucide:sparkles", conditional: true, condition: "isAIDesigner" },
   { id: "confirm-details", label: "Confirm Details", icon: "lucide:check-circle", conditional: false },
 ];
 
