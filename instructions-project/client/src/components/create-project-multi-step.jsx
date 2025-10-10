@@ -233,14 +233,14 @@ export function CreateProjectMultiStep({ onClose }) {
       case 1:
         return (
           <div className="flex justify-center">
-            <div className="w-full max-w-2xl space-y-6">
+            <div className="w-full max-w-lg space-y-6">
               <div className="text-center">
                 <h2 className="text-xl sm:text-2xl font-bold">Project Details</h2>
                 <p className="text-sm sm:text-base text-default-500 mt-2">Let's start with the basic information about your project.</p>
               </div>
               
               <div className="space-y-5">
-                <div>
+                <div className="max-w-md mx-auto">
                   <label className="block text-sm font-semibold mb-2 text-foreground">Project Name *</label>
                   <Input
                     isRequired
@@ -259,7 +259,7 @@ export function CreateProjectMultiStep({ onClose }) {
                   />
                 </div>
                 
-                <div>
+                <div className="max-w-md mx-auto">
                   <Autocomplete
                     label="Client"
                     placeholder="Search for a client"
@@ -296,7 +296,7 @@ export function CreateProjectMultiStep({ onClose }) {
                     size="sm"
                     color="primary"
                     variant="flat"
-                    className="mt-2"
+                    className="mt-2 w-full"
                     onPress={() => setNewClientModal(true)}
                     startContent={<Icon icon="lucide:plus" />}
                   >
@@ -304,7 +304,7 @@ export function CreateProjectMultiStep({ onClose }) {
                   </Button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
                   <div>
                     <DatePicker
                       labelPlacement="outside"
@@ -487,7 +487,7 @@ export function CreateProjectMultiStep({ onClose }) {
                       <Icon icon="lucide:palette" className="text-pink-400 text-2xl" />
                       <p className="font-semibold text-foreground text-base sm:text-lg">Send to Human Designer</p>
                       <p className="text-xs text-default-500">More realistic results</p>
-                      <p className="text-xs text-default-500">More refined results</p>
+                      <p className="text-xs text-default-500">Ideal for strategic projects</p>
                     </div>
                   </Card>
                   </div>
@@ -678,7 +678,8 @@ export function CreateProjectMultiStep({ onClose }) {
                 variant="light"
                 className="text-default-600 shrink-0"
                 startContent={<Icon icon="lucide:arrow-left" />}
-                onPress={onClose}
+                as="a"
+                href="/"
               >
                 Back to dashboard
               </Button>
@@ -810,6 +811,7 @@ export function CreateProjectMultiStep({ onClose }) {
                     isRequired
                     variant="bordered"
                     startContent={<Icon icon="lucide:building-2" className="text-default-400" />}
+                    className="mb-8"
                   />
                   <Input
                     label="Email"
@@ -820,6 +822,7 @@ export function CreateProjectMultiStep({ onClose }) {
                     onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))}
                     variant="bordered"
                     startContent={<Icon icon="lucide:mail" className="text-default-400" />}
+                    className="mb-8"
                   />
                   <Input
                     label="Phone"
