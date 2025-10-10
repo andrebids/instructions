@@ -123,6 +123,21 @@ const getDecorationColor = (type) => {
 };
 
 // Componente Konva Canvas (simulado até instalação das dependências)
+// 
+// Arquitetura de Layers (inspirada nas boas práticas do Konva):
+// ┌─────────────────────────────────────────────┐
+// │ Layer 3: Decorações (z-index 100+)         │ ← Arrastáveis, z-index dinâmico
+// │   - Cada decoração tem z-index próprio      │   (100, 101, 102, 103...)
+// │   - Click traz para frente                  │
+// │   - Drag & drop otimizado                   │
+// ├─────────────────────────────────────────────┤
+// │ Layer 2: Overlay UI (z-index 50)           │ ← Mensagens e loading
+// │   - Apenas quando necessário                │
+// ├─────────────────────────────────────────────┤
+// │ Layer 1: Source Images (z-index 1)         │ ← Imagem de fundo
+// │   - Estática, não arrastável                │
+// │   - listening(false) para performance       │
+// └─────────────────────────────────────────────┘
 const KonvaCanvas = ({ 
   width, 
   height, 
@@ -176,25 +191,47 @@ const KonvaCanvas = ({
     setDragOver(false);
     
     try {
-      const decorationData = JSON.parse(e.dataTransfer.getData('text/plain'));
       const rect = canvasRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       
-      // Criar nova decoração
-      const newDecoration = {
-        id: Date.now(), // ID único baseado no timestamp
-        type: decorationData.type,
-        name: decorationData.name,
-        icon: decorationData.icon,
-        x: x,
-        y: y,
-        width: 60,
-        height: 60,
-        color: getDecorationColor(decorationData.type)
-      };
+      // Verificar se é uma decoração sendo movida ou uma nova da biblioteca
+      const moveData = e.dataTransfer.getData('decoration-move');
       
-      onDecorationAdd(newDecoration);
+      if (moveData) {
+        // Mover decoração existente (sempre permitido)
+        const decoration = JSON.parse(moveData);
+        console.log('🔄 Movendo decoração:', decoration.id, 'para', x, y);
+        
+        // Atualizar posição da decoração
+        onDecorationAdd({ ...decoration, x, y });
+        onDecorationRemove(decoration.id);
+      } else {
+        // Adicionar nova decoração da biblioteca
+        const decorationData = JSON.parse(e.dataTransfer.getData('text/plain'));
+        
+        // ⚠️ VERIFICAR SE HÁ IMAGEM DE FUNDO antes de adicionar decoração
+        if (canvasImages.length === 0) {
+          console.warn('⚠️ Não é possível adicionar decoração sem imagem de fundo!');
+          return;
+        }
+        
+        const newDecoration = {
+          id: Date.now(), // ID único baseado no timestamp
+          type: decorationData.imageUrl ? 'image' : decorationData.type, // Se tem imageUrl, tipo = image
+          name: decorationData.name,
+          icon: decorationData.icon,
+          src: decorationData.imageUrl || undefined, // Adicionar src se tiver imageUrl
+          x: x,
+          y: y,
+          width: decorationData.imageUrl ? 100 : 60, // Imagens PNG maiores
+          height: decorationData.imageUrl ? 100 : 60,
+          color: getDecorationColor(decorationData.type)
+        };
+        
+        console.log('➕ Adicionando nova decoração:', newDecoration);
+        onDecorationAdd(newDecoration);
+      }
     } catch (error) {
       console.error('Error handling drop:', error);
     }
@@ -220,7 +257,7 @@ const KonvaCanvas = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {/* Imagens do Canvas (Source Images adicionadas) */}
+        {/* Imagens do Canvas (Source Images adicionadas) - SEMPRE NO FUNDO */}
         {canvasImages.map(img => (
           <div
             key={img.id}
@@ -231,10 +268,10 @@ const KonvaCanvas = ({
               width: img.width,
               height: img.height,
               transform: 'translate(-50%, -50%)',
-              zIndex: 1
+              zIndex: 1 // Camada de fundo - source images
             }}
           >
-            {/* Imagem */}
+            {/* Imagem de fundo */}
             <img
               src={img.src}
               alt={img.name}
@@ -244,9 +281,9 @@ const KonvaCanvas = ({
           </div>
         ))}
         
-        {/* Overlay Content - Only show when needed */}
+        {/* Overlay Content - Only show when needed (Layer 2: z-index 50) */}
         {(isLoading || (decorations.length > 0 && canvasImages.length === 0) || (canvasImages.length === 0 && decorations.length === 0)) && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 50 }}>
             {isLoading ? (
               <div className="text-center bg-black/50 rounded-lg p-6">
                 <Spinner size="lg" color="white" />
@@ -263,40 +300,71 @@ const KonvaCanvas = ({
         )}
       </div>
       
-      {/* Decorações arrastáveis - ficam por cima das imagens */}
-      {decorations.map(decoration => (
-        <div
-          key={decoration.id}
-          className="absolute rounded-lg border-2 border-white shadow-lg cursor-move hover:scale-105 transition-transform"
-          style={{
-            left: decoration.x,
-            top: decoration.y,
-            width: decoration.width,
-            height: decoration.height,
-            backgroundColor: decoration.color,
-            transform: 'translate(-50%, -50%)',
-            zIndex: 10 // Decorações sempre por cima das imagens
-          }}
-          draggable
-          onDragStart={(e) => {
-            e.dataTransfer.setData('text/plain', JSON.stringify(decoration));
-          }}
-        >
-          <div className="flex items-center justify-center h-full text-white font-bold text-xs">
-            {decoration.icon || decoration.type}
-          </div>
-          {/* Botão de remover */}
-          <button
-            className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors z-20"
+      {/* Decorações arrastáveis - SEMPRE POR CIMA das source images */}
+      {decorations.map(decoration => {
+        // Verificar se é uma imagem PNG (decoração tipo image com src)
+        const isImageDecoration = decoration.type === 'image' && decoration.src;
+        
+        return (
+          <div
+            key={decoration.id}
+            className={`absolute cursor-move hover:scale-105 transition-transform ${
+              isImageDecoration ? '' : 'rounded-lg border-2 border-white shadow-lg'
+            }`}
+            style={{
+              left: decoration.x,
+              top: decoration.y,
+              width: decoration.width,
+              height: decoration.height,
+              backgroundColor: isImageDecoration ? 'transparent' : decoration.color,
+              transform: 'translate(-50%, -50%)',
+              zIndex: decoration.zIndex || 100 // Cada decoração tem seu próprio z-index
+            }}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData('decoration-move', JSON.stringify(decoration));
+              e.dataTransfer.effectAllowed = 'move';
+            }}
             onClick={(e) => {
+              // Ao clicar, trazer para frente (aumentar z-index)
               e.stopPropagation();
-              onDecorationRemove(decoration.id);
+              const maxZ = Math.max(...decorations.map(d => d.zIndex || 100));
+              if (decoration.zIndex < maxZ) {
+                console.log('🔼 Trazendo decoração para frente:', decoration.id);
+                onDecorationAdd({ ...decoration, zIndex: maxZ + 1 });
+                onDecorationRemove(decoration.id);
+              }
             }}
           >
-            ×
-          </button>
-        </div>
-      ))}
+            {isImageDecoration ? (
+              // Renderizar PNG com transparência
+              <img
+                src={decoration.src}
+                alt={decoration.name || 'decoration'}
+                className="w-full h-full object-contain pointer-events-none select-none"
+                style={{ backgroundColor: 'transparent' }}
+                draggable={false}
+              />
+            ) : (
+              // Renderizar decoração colorida com ícone
+              <div className="flex items-center justify-center h-full text-white font-bold text-xs">
+                {decoration.icon || decoration.type}
+              </div>
+            )}
+            
+            {/* Botão de remover */}
+            <button
+              className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors z-20"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDecorationRemove(decoration.id);
+              }}
+            >
+              ×
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -307,6 +375,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   const [uploadStep, setUploadStep] = useState('uploading'); // 'uploading', 'loading', 'done'
   const [selectedImage, setSelectedImage] = useState(null);
   const [canvasImages, setCanvasImages] = useState([]); // Imagens adicionadas ao canvas
+  const [nextZIndex, setNextZIndex] = useState(100); // Próximo z-index disponível para decorações
   
   // Imagens carregadas (simuladas)
   const loadedImages = [
@@ -421,7 +490,16 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
 
   // Adicionar decoração ao canvas
   const handleDecorationAdd = (decoration) => {
-    setDecorations(prev => [...prev, decoration]);
+    // Se a decoração não tem zIndex, atribuir o próximo disponível
+    const decorationWithZIndex = {
+      ...decoration,
+      zIndex: decoration.zIndex || nextZIndex
+    };
+    
+    console.log('✅ Decoração adicionada com z-index:', decorationWithZIndex.zIndex);
+    
+    setDecorations(prev => [...prev, decorationWithZIndex]);
+    setNextZIndex(prev => prev + 1); // Incrementar para a próxima decoração
   };
 
   // Remover decoração
@@ -496,21 +574,25 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
               {/* Fake add image card (placed after sources) */}
               <Card
                 isFooterBlurred
-                isPressable
-                className="w-full cursor-pointer border-none transition-all duration-200 hover:ring-1 hover:ring-primary/50"
+                isPressable={false}
+                className="w-full cursor-not-allowed border-none transition-all duration-200 opacity-80 hover:opacity-70"
                 radius="lg"
                 onPress={() => {
                   console.log('➕ [Source Images] Fake add image clicked');
                 }}
               >
-                <div className="w-full h-[120px] flex items-center justify-center bg-default-100 rounded-lg">
-                  <div className="flex items-center gap-2 text-default-500">
-                    <Icon icon="lucide:upload-cloud" className="text-2xl" />
-                    <span className="text-sm font-medium">Add image or take picture</span>
+                <div className="w-full h-[120px] flex items-center justify-center bg-gradient-to-br from-default-100 to-default-200 rounded-lg relative overflow-hidden">
+                  {/* Overlay pattern sutil para indicar disabled */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-white/2"></div>
+                  
+                  <div className="flex flex-col items-center gap-2 text-default-500 relative z-10">
+                    <Icon icon="lucide:upload-cloud" className="text-3xl opacity-80" />
+                    <span className="text-sm font-medium text-center leading-tight">Add image or take picture</span>
                   </div>
                 </div>
                 <CardFooter className="absolute bg-black/40 bottom-0 z-10 py-1 pointer-events-none">
                   <div className="flex grow gap-2 items-center">
+                    <Icon icon="lucide:clock" className="text-tiny text-warning-400" />
                     <p className="text-tiny text-white/80 truncate">Upload (coming soon)</p>
                   </div>
                 </CardFooter>
@@ -558,7 +640,13 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
           {/* Right Sidebar - Decoration Library */}
           <DecorationLibrary
             mode="sidebar"
+            disabled={canvasImages.length === 0}
             onDecorationSelect={(decoration) => {
+              // ⚠️ VERIFICAR SE HÁ IMAGEM DE FUNDO antes de adicionar decoração
+              if (canvasImages.length === 0) {
+                console.warn('⚠️ Adicione primeiro uma imagem de fundo!');
+                return;
+              }
               
               // Calcular posição central do canvas se houver imagem selecionada
               const canvasElement = document.querySelector('.rounded-lg.h-full.w-full');
@@ -574,13 +662,14 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
               // Criar nova decoração para o canvas na posição central
               const newDecoration = {
                 id: `dec-${Date.now()}`, // ID único com prefixo
-                type: decoration.type,
+                type: decoration.imageUrl ? 'image' : decoration.type, // Se tem imageUrl, tipo = image
                 name: decoration.name,
                 icon: decoration.icon,
+                src: decoration.imageUrl || undefined, // Adicionar src se tiver imageUrl
                 x: centerX,
                 y: centerY,
-                width: 60,
-                height: 60,
+                width: decoration.imageUrl ? 100 : 60, // Imagens PNG maiores
+                height: decoration.imageUrl ? 100 : 60,
                 color: getDecorationColor(decoration.type)
               };
               handleDecorationAdd(newDecoration);

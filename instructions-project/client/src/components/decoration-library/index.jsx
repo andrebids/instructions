@@ -13,7 +13,8 @@ export const DecorationLibrary = ({
   mode = "sidebar",
   className = "",
   enableSearch = true,
-  initialCategory = null
+  initialCategory = null,
+  disabled = false
 }) => {
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [viewMode, setViewMode] = useState('categories'); // 'categories' or 'decorations'
@@ -79,7 +80,7 @@ export const DecorationLibrary = ({
   return (
     // TODO: Quando dnd-kit estiver instalado, adicionar DndContext:
     // <DndContext onDragEnd={handleDragEnd}>
-    <aside className={containerClasses}>
+    <aside className={`${containerClasses} ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       {/* Header */}
       <div className="p-3 md:p-4 border-b border-divider">
         <div className="flex items-center justify-between">
@@ -91,11 +92,17 @@ export const DecorationLibrary = ({
               onClick={handleBackToCategories}
               className="text-default-500 hover:text-default-700 transition-colors"
               title="Back to categories"
+              disabled={disabled}
             >
               <Icon icon="lucide:arrow-left" className="text-lg" />
             </button>
           )}
         </div>
+        {disabled && (
+          <p className="text-xs text-warning mt-2">
+            ⚠️ Adicione uma imagem de fundo primeiro
+          </p>
+        )}
       </div>
       
       {/* Search Bar - always visible */}
@@ -104,6 +111,7 @@ export const DecorationLibrary = ({
           value={searchTerm}
           onChange={handleSearchChange}
           placeholder={viewMode === 'categories' ? "Search all decorations..." : "Search by name or ref..."}
+          disabled={disabled}
         />
       )}
       

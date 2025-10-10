@@ -2,7 +2,7 @@ import React from 'react';
 import { Input } from '@heroui/react';
 import { Icon } from '@iconify/react';
 
-export const SearchBar = ({ value, onChange, placeholder = "Search all decorations..." }) => {
+export const SearchBar = ({ value, onChange, placeholder = "Search all decorations...", disabled = false }) => {
   const handleClear = () => {
     onChange('');
   };
@@ -14,7 +14,7 @@ export const SearchBar = ({ value, onChange, placeholder = "Search all decoratio
         value={value}
         onChange={(e) => onChange(e.target.value)}
         startContent={<Icon icon="lucide:search" className="text-default-400" />}
-        endContent={value && (
+        endContent={value && !disabled && (
           <button 
             onClick={handleClear}
             className="text-default-400 hover:text-default-600 transition-colors"
@@ -25,6 +25,7 @@ export const SearchBar = ({ value, onChange, placeholder = "Search all decoratio
         )}
         variant="bordered"
         size="sm"
+        disabled={disabled}
         classNames={{
           input: "text-sm",
           inputWrapper: "bg-default-50"
