@@ -203,10 +203,10 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
       case "actions":
         return (
           <div className="flex items-center gap-2">
-            <Button isIconOnly size="sm" variant="light" title="View project">
+            <Button isIconOnly size="sm" variant="light" title="View project" aria-label="View project">
               <Icon icon="lucide:eye" className="text-lg" />
             </Button>
-            <Button isIconOnly size="sm" variant="light" title="Edit project">
+            <Button isIconOnly size="sm" variant="light" title="Edit project" aria-label="Edit project">
               <Icon icon="lucide:edit-2" className="text-lg" />
             </Button>
           </div>

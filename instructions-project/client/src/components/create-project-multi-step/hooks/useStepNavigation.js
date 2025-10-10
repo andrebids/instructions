@@ -3,7 +3,7 @@ import { isStepValid } from "../utils/validation";
 import { logger } from "../utils/logger";
 
 // 🧪 Breakpoint de Teste 3
-export const TEST_BREAKPOINT_3 = true;
+export const TEST_BREAKPOINT_3 = false;
 
 // ✅ CORRIGIDO: Agora recebe visibleSteps para navegação correta
 export const useStepNavigation = (formData, visibleSteps) => {
@@ -22,15 +22,7 @@ export const useStepNavigation = (formData, visibleSteps) => {
       }
     );
     
-    if (TEST_BREAKPOINT_3) {
-      console.log("🧪 TEST 3: Step changed", {
-        currentStep,
-        totalSteps: visibleSteps.length,
-        stepId: currentStepData?.id,
-        projectType: formData.projectType,
-        canProceed: canProceed()
-      });
-    }
+    // Logs de teste removidos
   }, [currentStep, visibleSteps]);
 
   // Avançar para próximo step

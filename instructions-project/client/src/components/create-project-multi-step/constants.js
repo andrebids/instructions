@@ -34,27 +34,19 @@ export const CANVAS_CONFIG = {
 
 // 📊 Configuração de Logging
 export const LOG_CONFIG = {
-  ENABLE_LOGS: true, // Toggle global (false em produção)
+  ENABLE_LOGS: false, // Toggle global (false em produção)
   LEVELS: {
-    LIFECYCLE: true,    // Mounting, unmounting
-    NAVIGATION: true,   // Step changes
-    VALIDATION: true,   // Validação de steps
-    CANVAS: true,       // Operações no canvas
-    API: true,          // Chamadas API
-    USER_ACTION: true,  // Cliques, inputs
+    LIFECYCLE: false,    // Mounting, unmounting
+    NAVIGATION: false,   // Step changes
+    VALIDATION: false,   // Validação de steps
+    CANVAS: false,       // Operações no canvas
+    API: false,          // Chamadas API
+    USER_ACTION: false,  // Cliques, inputs
   }
 };
 
 // 🧪 Breakpoint de Teste 1
-export const TEST_BREAKPOINT_1 = true;
+export const TEST_BREAKPOINT_1 = false;
 
-if (TEST_BREAKPOINT_1) {
-  console.log("🧪 TEST 1: Constants loaded", {
-    stepsCount: STEPS.length,
-    hasCanvasSteps: STEPS.some(s => s.condition === "isSimu"),
-    canvasConfig: CANVAS_CONFIG,
-    validationConfig: VALIDATION_CONFIG,
-    loggingEnabled: LOG_CONFIG.ENABLE_LOGS
-  });
-}
+// Logs de teste removidos
 
