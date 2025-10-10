@@ -2,7 +2,7 @@ import React from 'react';
 import { Input } from '@heroui/react';
 import { Icon } from '@iconify/react';
 
-export const SearchBar = ({ value, onChange, placeholder = "Type to search..." }) => {
+export const SearchBar = ({ value, onChange, placeholder = "Search all decorations..." }) => {
   const handleClear = () => {
     onChange('');
   };
