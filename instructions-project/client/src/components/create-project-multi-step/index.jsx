@@ -28,7 +28,7 @@ import { logger } from "./utils/logger";
 // 🧪 Breakpoint de Teste 5 (Componente Principal)
 const TEST_BREAKPOINT_5 = false;
 
-export function CreateProjectMultiStep({ onClose, selectedImage, onUploadStepChange, onCurrentStepChange }) {
+export function CreateProjectMultiStep({ onClose, selectedImage }) {
   // Initialize hooks
   const formState = useProjectForm(onClose);
   const clientState = useClientManagement(formState.setFormData);
@@ -36,14 +36,6 @@ export function CreateProjectMultiStep({ onClose, selectedImage, onUploadStepCha
   // Get visible steps based on project type
   const visibleSteps = getVisibleSteps(formState.formData, STEPS);
   const navigation = useStepNavigation(formState.formData, visibleSteps);
-
-  // Comunicar mudanças do step atual para o componente pai
-  useEffect(() => {
-    if (onCurrentStepChange) {
-      const currentStepData = visibleSteps[navigation.currentStep - 1];
-      onCurrentStepChange(currentStepData?.id);
-    }
-  }, [navigation.currentStep, visibleSteps, onCurrentStepChange]);
   
   // 🔄 Lifecycle logging
   useEffect(() => {
@@ -110,7 +102,6 @@ export function CreateProjectMultiStep({ onClose, selectedImage, onUploadStepCha
             formData={formState.formData}
             onInputChange={formState.handleInputChange}
             selectedImage={selectedImage}
-            onUploadStepChange={onUploadStepChange}
           />
         );
       

@@ -9,8 +9,11 @@ export function WelcomeHero({userName = "Christopher"}) {
         variant="flat"
         radius="full"
         className="border-none bg-transparent text-default-700 dark:text-default-600 px-0 py-3"
-        classNames={{ content: "px-0" }}
-        startContent={<span className="text-lg">👋</span>}
+        classNames={{ 
+          content: "px-0 flex items-center",
+          startContent: "flex items-center"
+        }}
+        startContent={<span className="text-lg leading-none">👋</span>}
       >
         {`Welcome in, ${userName}`}
       </Chip>
