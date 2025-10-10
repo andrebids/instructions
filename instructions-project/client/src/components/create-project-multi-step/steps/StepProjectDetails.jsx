@@ -1,6 +1,5 @@
 import React from "react";
-import { Input } from "@heroui/react";
-import { DatePicker } from "@heroui/date-picker";
+import { Input, DatePicker } from "@heroui/react";
 import { today, getLocalTimeZone } from "@internationalized/date";
 import { Icon } from "@iconify/react";
 import { ClientAutocomplete } from "../components/ClientAutocomplete";

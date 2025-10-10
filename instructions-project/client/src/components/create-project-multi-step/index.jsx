@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
-import { Card, Button } from "@heroui/react";
-import { DatePicker } from "@heroui/date-picker";
+import { Card, Button, DatePicker } from "@heroui/react";
 import { today, getLocalTimeZone } from "@internationalized/date";
 import { Icon } from "@iconify/react";
 
