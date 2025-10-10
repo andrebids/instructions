@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import {useTheme} from "@heroui/use-theme";
+import { useTheme } from "@heroui/use-theme";
 
 const navigationItems = [
   { name: "Dashboard", icon: "lucide:layout-dashboard", href: "/" },

@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useState } from "react";
 import { Card, CardFooter, Button, Spinner, Progress, Image } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { DecorationLibrary } from "../../decoration-library";
+import { Stage, Layer, Image as KonvaImage, Transformer } from 'react-konva';
+import useImage from 'use-image';
 
 // Componente para o Modal de Upload
 const UploadModal = () => {
@@ -122,7 +124,119 @@ const getDecorationColor = (type) => {
   return colors[type] || '#6B7280';
 };
 
-// Componente Konva Canvas (simulado até instalação das dependências)
+// ============================================
+// COMPONENTES REACT-KONVA
+// ============================================
+
+// Componente para carregar Source Images (não arrastáveis)
+const URLImage = ({ src, width, height, x, y }) => {
+  const [image] = useImage(src, 'anonymous');
+  return (
+    <KonvaImage
+      image={image}
+      x={x}
+      y={y}
+      width={width}
+      height={height}
+      offsetX={width / 2}
+      offsetY={height / 2}
+      listening={false} // Não responde a eventos (não arrastável)
+    />
+  );
+};
+
+// Componente para Decorações individuais com Transformer
+const DecorationItem = ({ 
+  decoration, 
+  isSelected, 
+  onSelect, 
+  onChange 
+}) => {
+  const [image] = useImage(decoration.src, 'anonymous');
+  const shapeRef = useRef();
+  const trRef = useRef();
+
+  useEffect(() => {
+    if (isSelected && trRef.current && shapeRef.current) {
+      // Attach transformer to shape quando selecionada
+      trRef.current.nodes([shapeRef.current]);
+      trRef.current.getLayer().batchDraw();
+    }
+  }, [isSelected]);
+
+  const handleDragEnd = (e) => {
+    console.log('🔄 Decoração movida:', decoration.id, 'nova posição:', e.target.x(), e.target.y());
+    onChange({
+      ...decoration,
+      x: e.target.x(),
+      y: e.target.y(),
+    });
+  };
+
+  const handleTransformEnd = () => {
+    const node = shapeRef.current;
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+    
+    console.log('🔧 Decoração transformada:', decoration.id, 'scale:', scaleX, scaleY, 'rotation:', node.rotation());
+    
+    // Reset scale para aplicar ao width/height
+    node.scaleX(1);
+    node.scaleY(1);
+    
+    onChange({
+      ...decoration,
+      x: node.x(),
+      y: node.y(),
+      width: Math.max(20, node.width() * scaleX),
+      height: Math.max(20, node.height() * scaleY),
+      rotation: node.rotation(),
+    });
+  };
+
+  // Renderizar apenas decorações tipo imagem (PNG)
+  if (decoration.type === 'image' && decoration.src) {
+    return (
+      <>
+        <KonvaImage
+          ref={shapeRef}
+          image={image}
+          x={decoration.x}
+          y={decoration.y}
+          width={decoration.width}
+          height={decoration.height}
+          offsetX={decoration.width / 2}
+          offsetY={decoration.height / 2}
+          rotation={decoration.rotation || 0}
+          draggable
+          onClick={onSelect}
+          onTap={onSelect}
+          onDragEnd={handleDragEnd}
+          onTransformEnd={handleTransformEnd}
+        />
+        {isSelected && (
+          <Transformer
+            ref={trRef}
+            boundBoxFunc={(oldBox, newBox) => {
+              // Limitar tamanho mínimo
+              if (newBox.width < 20 || newBox.height < 20) {
+                return oldBox;
+              }
+              return newBox;
+            }}
+          />
+        )}
+      </>
+    );
+  }
+  
+  // Decorações coloridas (fallback) - não implementado nesta versão
+  return null;
+};
+
+// ============================================
+// COMPONENTE KONVA CANVAS PRINCIPAL
+// ============================================
 // 
 // Arquitetura de Layers (inspirada nas boas práticas do Konva):
 // ┌─────────────────────────────────────────────┐
@@ -148,34 +262,39 @@ const KonvaCanvas = ({
   canvasImages = [],
   selectedImage 
 }) => {
-  const canvasRef = useRef(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const stageRef = useRef(null);
+  const containerRef = useRef(null);
+  const [selectedId, setSelectedId] = useState(null);
+  const [stageSize, setStageSize] = useState({ width: 1200, height: 600 });
   const [dragOver, setDragOver] = useState(false);
 
-  // Função para gerar decorações (não usada automaticamente)
-  const handleGenerateDecorations = async () => {
-    setIsLoading(true);
+  // Calcular tamanho do Stage dinamicamente
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        const container = containerRef.current;
+        setStageSize({
+          width: container.offsetWidth,
+          height: container.offsetHeight
+        });
+      }
+    };
     
-    // Simular delay de geração
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // Adicionar decorações simuladas
-    const newDecorations = [
-      { id: `dec-${Date.now()}-1`, type: "tree", x: 200, y: 150, width: 100, height: 120, color: "#228B22" },
-      { id: `dec-${Date.now()}-2`, type: "lights", x: 300, y: 200, width: 80, height: 60, color: "#FFD700" },
-      { id: `dec-${Date.now()}-3`, type: "ornament", x: 400, y: 180, width: 60, height: 60, color: "#FF6347" },
-    ];
-    
-    newDecorations.forEach(decoration => {
-      onDecorationAdd(decoration);
-    });
-    
-    setIsLoading(false);
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  // Click no Stage para desselecionar decoração
+  const handleStageClick = (e) => {
+    // Click no background desseleciona
+    if (e.target === e.target.getStage()) {
+      console.log('❌ Desselecionado');
+      setSelectedId(null);
+    }
   };
 
-  // Removido useEffect que gerava decorações automaticamente
-
-  // Handle drag and drop
+  // Handle drag and drop da biblioteca (HTML)
   const handleDragOver = (e) => {
     e.preventDefault();
     setDragOver(true);
@@ -191,180 +310,187 @@ const KonvaCanvas = ({
     setDragOver(false);
     
     try {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
-      // Verificar se é uma decoração sendo movida ou uma nova da biblioteca
-      const moveData = e.dataTransfer.getData('decoration-move');
-      
-      if (moveData) {
-        // Mover decoração existente (sempre permitido)
-        const decoration = JSON.parse(moveData);
-        console.log('🔄 Movendo decoração:', decoration.id, 'para', x, y);
-        
-        // Atualizar posição da decoração
-        onDecorationAdd({ ...decoration, x, y });
-        onDecorationRemove(decoration.id);
-      } else {
-        // Adicionar nova decoração da biblioteca
-        const decorationData = JSON.parse(e.dataTransfer.getData('text/plain'));
-        
-        // ⚠️ VERIFICAR SE HÁ IMAGEM DE FUNDO antes de adicionar decoração
-        if (canvasImages.length === 0) {
-          console.warn('⚠️ Não é possível adicionar decoração sem imagem de fundo!');
-          return;
-        }
-        
-        const newDecoration = {
-          id: Date.now(), // ID único baseado no timestamp
-          type: decorationData.imageUrl ? 'image' : decorationData.type, // Se tem imageUrl, tipo = image
-          name: decorationData.name,
-          icon: decorationData.icon,
-          src: decorationData.imageUrl || undefined, // Adicionar src se tiver imageUrl
-          x: x,
-          y: y,
-          width: decorationData.imageUrl ? 100 : 60, // Imagens PNG maiores
-          height: decorationData.imageUrl ? 100 : 60,
-          color: getDecorationColor(decorationData.type)
-        };
-        
-        console.log('➕ Adicionando nova decoração:', newDecoration);
-        onDecorationAdd(newDecoration);
+      // Verificar se há imagem de fundo
+      if (canvasImages.length === 0) {
+        console.warn('⚠️ Não é possível adicionar decoração sem imagem de fundo!');
+        return;
       }
+
+      // Adicionar nova decoração da biblioteca
+      const decorationData = JSON.parse(e.dataTransfer.getData('text/plain'));
+      
+      // Calcular posição relativa ao Stage
+      const stage = stageRef.current;
+      if (!stage) return;
+      
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const x = e.clientX - containerRect.left;
+      const y = e.clientY - containerRect.top;
+      
+      const newDecoration = {
+        id: Date.now(),
+        type: decorationData.imageUrl ? 'image' : decorationData.type,
+        name: decorationData.name,
+        icon: decorationData.icon,
+        src: decorationData.imageUrl || undefined,
+        x: x,
+        y: y,
+        width: decorationData.imageUrl ? 100 : 60,
+        height: decorationData.imageUrl ? 100 : 60,
+        rotation: 0,
+        color: getDecorationColor(decorationData.type)
+      };
+      
+      console.log('➕ Adicionando nova decoração:', newDecoration);
+      onDecorationAdd(newDecoration);
     } catch (error) {
-      console.error('Error handling drop:', error);
+      console.error('❌ Error handling drop:', error);
     }
   };
 
+  // Funções para controlar z-index (ordem no array)
+  const moveDecorationToFront = () => {
+    if (!selectedId) return;
+    
+    const index = decorations.findIndex(d => d.id === selectedId);
+    if (index === -1 || index === decorations.length - 1) return;
+    
+    console.log('⬆️ Movendo decoração para frente:', selectedId);
+    
+    // Remove da posição atual e adiciona no final (topo)
+    const decoration = decorations[index];
+    onDecorationRemove(selectedId);
+    setTimeout(() => onDecorationAdd(decoration), 0);
+  };
+
+  const moveDecorationToBack = () => {
+    if (!selectedId) return;
+    
+    const index = decorations.findIndex(d => d.id === selectedId);
+    if (index === -1 || index === 0) return;
+    
+    console.log('⬇️ Movendo decoração para trás:', selectedId);
+    
+    // Reordenar: mover para o início
+    const decoration = decorations[index];
+    const newDecorations = [decoration, ...decorations.slice(0, index), ...decorations.slice(index + 1)];
+    
+    // Limpar e re-adicionar na nova ordem
+    decorations.forEach(d => onDecorationRemove(d.id));
+    setTimeout(() => {
+      newDecorations.forEach(d => onDecorationAdd(d));
+    }, 0);
+  };
+
   return (
-    <div className="relative h-full w-full">
-      {/* Canvas placeholder - será substituído por Konva real */}
-      <div 
-        ref={canvasRef}
-        className={`rounded-lg h-full w-full overflow-hidden transition-colors ${
+    <div 
+      ref={containerRef}
+      className="relative h-full w-full"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Stage do React-Konva */}
+      <Stage
+        ref={stageRef}
+        width={stageSize.width}
+        height={stageSize.height}
+        onClick={handleStageClick}
+        onTap={handleStageClick}
+        className={`rounded-lg ${
           canvasImages.length > 0 || dragOver
             ? (dragOver 
-                ? 'border-2 border-primary bg-primary/10' 
-                : 'border-0 bg-default-100')
+                ? 'ring-2 ring-primary bg-primary/10' 
+                : 'bg-default-100')
             : 'border-2 border-dashed border-default-300 bg-default-50'
         }`}
-        style={{ 
-          width: width === "100%" ? "100%" : width,
-          height: height === "100%" ? "100%" : height
-        }}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
       >
-        {/* Imagens do Canvas (Source Images adicionadas) - SEMPRE NO FUNDO */}
-        {canvasImages.map(img => (
-          <div
-            key={img.id}
-            className="absolute shadow-2xl"
-            style={{
-              left: img.x,
-              top: img.y,
-              width: img.width,
-              height: img.height,
-              transform: 'translate(-50%, -50%)',
-              zIndex: 1 // Camada de fundo - source images
-            }}
-          >
-            {/* Imagem de fundo */}
-            <img
+        {/* Layer 1: Source Images (não arrastáveis) */}
+        <Layer>
+          {canvasImages.map(img => (
+            <URLImage
+              key={img.id}
               src={img.src}
-              alt={img.name}
-              className="w-full h-full object-cover rounded-lg"
-              draggable={false}
+              x={img.x}
+              y={img.y}
+              width={img.width}
+              height={img.height}
             />
-          </div>
-        ))}
-        
-        {/* Overlay Content - Only show when needed (Layer 2: z-index 50) */}
-        {(isLoading || (decorations.length > 0 && canvasImages.length === 0) || (canvasImages.length === 0 && decorations.length === 0)) && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 50 }}>
-            {isLoading ? (
-              <div className="text-center bg-black/50 rounded-lg p-6">
-                <Spinner size="lg" color="white" />
-                <p className="mt-4 text-white">Generating decorations with AI...</p>
-              </div>
-            ) : canvasImages.length === 0 && decorations.length === 0 ? (
-              <div className="text-center">
-                <Icon icon="lucide:image" className="text-default-400 text-4xl mb-2" />
-                <p className="text-default-600 mb-4">Click on a Source Image to start</p>
-                <p className="text-default-500 text-sm">Then add decorations on top</p>
-              </div>
-            ) : null}
-          </div>
-        )}
-      </div>
-      
-      {/* Decorações arrastáveis - SEMPRE POR CIMA das source images */}
-      {decorations.map(decoration => {
-        // Verificar se é uma imagem PNG (decoração tipo image com src)
-        const isImageDecoration = decoration.type === 'image' && decoration.src;
-        
-        return (
-          <div
-            key={decoration.id}
-            className={`absolute cursor-move hover:scale-105 transition-transform ${
-              isImageDecoration ? '' : 'rounded-lg border-2 border-white shadow-lg'
-            }`}
-            style={{
-              left: decoration.x,
-              top: decoration.y,
-              width: decoration.width,
-              height: decoration.height,
-              backgroundColor: isImageDecoration ? 'transparent' : decoration.color,
-              transform: 'translate(-50%, -50%)',
-              zIndex: decoration.zIndex || 100 // Cada decoração tem seu próprio z-index
-            }}
-            draggable
-            onDragStart={(e) => {
-              e.dataTransfer.setData('decoration-move', JSON.stringify(decoration));
-              e.dataTransfer.effectAllowed = 'move';
-            }}
-            onClick={(e) => {
-              // Ao clicar, trazer para frente (aumentar z-index)
-              e.stopPropagation();
-              const maxZ = Math.max(...decorations.map(d => d.zIndex || 100));
-              if (decoration.zIndex < maxZ) {
-                console.log('🔼 Trazendo decoração para frente:', decoration.id);
-                onDecorationAdd({ ...decoration, zIndex: maxZ + 1 });
-                onDecorationRemove(decoration.id);
-              }
-            }}
-          >
-            {isImageDecoration ? (
-              // Renderizar PNG com transparência
-              <img
-                src={decoration.src}
-                alt={decoration.name || 'decoration'}
-                className="w-full h-full object-contain pointer-events-none select-none"
-                style={{ backgroundColor: 'transparent' }}
-                draggable={false}
-              />
-            ) : (
-              // Renderizar decoração colorida com ícone
-              <div className="flex items-center justify-center h-full text-white font-bold text-xs">
-                {decoration.icon || decoration.type}
-              </div>
-            )}
-            
-            {/* Botão de remover */}
-            <button
-              className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors z-20"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDecorationRemove(decoration.id);
+          ))}
+        </Layer>
+
+        {/* Layer 2: Decorações (arrastáveis com Transformer) */}
+        <Layer>
+          {decorations.map(decoration => (
+            <DecorationItem
+              key={decoration.id}
+              decoration={decoration}
+              isSelected={decoration.id === selectedId}
+              onSelect={() => {
+                console.log('✅ Decoração selecionada:', decoration.id);
+                setSelectedId(decoration.id);
               }}
-            >
-              ×
-            </button>
+              onChange={(newAttrs) => {
+                // Atualizar decoração
+                onDecorationRemove(decoration.id);
+                onDecorationAdd(newAttrs);
+              }}
+            />
+          ))}
+        </Layer>
+      </Stage>
+
+      {/* Botão de remover - HTML overlay */}
+      {selectedId && (
+        <Button
+          size="sm"
+          color="danger"
+          className="absolute top-2 right-2"
+          startContent={<Icon icon="lucide:trash-2" />}
+          onPress={() => {
+            console.log('🗑️ Removendo decoração:', selectedId);
+            onDecorationRemove(selectedId);
+            setSelectedId(null);
+          }}
+        >
+          Remove
+        </Button>
+      )}
+
+      {/* Controles de Layer (z-index) */}
+      {selectedId && (
+        <div className="absolute bottom-2 right-2 flex gap-2">
+          <Button
+            size="sm"
+            variant="flat"
+            className="bg-default-200"
+            startContent={<Icon icon="lucide:arrow-down" />}
+            onPress={moveDecorationToBack}
+          >
+            Send Back
+          </Button>
+          <Button
+            size="sm"
+            variant="flat"
+            className="bg-default-200"
+            startContent={<Icon icon="lucide:arrow-up" />}
+            onPress={moveDecorationToFront}
+          >
+            Bring Front
+          </Button>
+        </div>
+      )}
+
+      {/* Overlays informativos */}
+      {canvasImages.length === 0 && decorations.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="text-center">
+            <Icon icon="lucide:image" className="text-default-400 text-4xl mb-2" />
+            <p className="text-default-600 mb-4">Click on a Source Image to start</p>
+            <p className="text-default-500 text-sm">Then add decorations on top</p>
           </div>
-        );
-      })}
+        </div>
+      )}
     </div>
   );
 };
@@ -375,7 +501,6 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   const [uploadStep, setUploadStep] = useState('uploading'); // 'uploading', 'loading', 'done'
   const [selectedImage, setSelectedImage] = useState(null);
   const [canvasImages, setCanvasImages] = useState([]); // Imagens adicionadas ao canvas
-  const [nextZIndex, setNextZIndex] = useState(100); // Próximo z-index disponível para decorações
   
   // Imagens carregadas (simuladas)
   const loadedImages = [
@@ -489,17 +614,10 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   };
 
   // Adicionar decoração ao canvas
+  // No React-Konva, z-index = ordem no array (último = frente)
   const handleDecorationAdd = (decoration) => {
-    // Se a decoração não tem zIndex, atribuir o próximo disponível
-    const decorationWithZIndex = {
-      ...decoration,
-      zIndex: decoration.zIndex || nextZIndex
-    };
-    
-    console.log('✅ Decoração adicionada com z-index:', decorationWithZIndex.zIndex);
-    
-    setDecorations(prev => [...prev, decorationWithZIndex]);
-    setNextZIndex(prev => prev + 1); // Incrementar para a próxima decoração
+    console.log('✅ Decoração adicionada:', decoration.id);
+    setDecorations(prev => [...prev, decoration]);
   };
 
   // Remover decoração
@@ -670,6 +788,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                 y: centerY,
                 width: decoration.imageUrl ? 100 : 60, // Imagens PNG maiores
                 height: decoration.imageUrl ? 100 : 60,
+                rotation: 0, // Rotação inicial
                 color: getDecorationColor(decoration.type)
               };
               handleDecorationAdd(newDecoration);
