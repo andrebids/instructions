@@ -12,7 +12,7 @@ const UploadModal = () => {
   ]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsPreparing(false), 1500);
+    const timer = setTimeout(() => setIsPreparing(false), 100);
     return () => clearTimeout(timer);
   }, []);
 
@@ -52,7 +52,7 @@ const UploadModal = () => {
           }
           return newFiles;
         });
-      }, 100);
+      }, 20);
       intervals.push(interval);
     };
 
@@ -111,16 +111,17 @@ const LoadingIndicator = () => (
 
 
 // Componente Konva Canvas (simulado até instalação das dependências)
-const KonvaCanvas = ({ width, height, onDecorationAdd, decorations = [], startGeneration, selectedImage }) => {
+const KonvaCanvas = ({ width, height, onDecorationAdd, onDecorationRemove, decorations = [], startGeneration, selectedImage }) => {
   const canvasRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   // Simular carregamento de decorações
   const handleGenerateDecorations = async () => {
     setIsLoading(true);
     
-    // Simular delay de geração
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Simular delay de geração (muito rápido)
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     // Adicionar decorações simuladas
     const newDecorations = [
@@ -142,17 +143,76 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, decorations = [], startGe
     }
   }, [startGeneration]);
 
+  // Handle drag and drop
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    
+    try {
+      const decorationData = JSON.parse(e.dataTransfer.getData('text/plain'));
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      // Criar nova decoração
+      const newDecoration = {
+        id: Date.now(), // ID único baseado no timestamp
+        type: decorationData.type,
+        name: decorationData.name,
+        icon: decorationData.icon,
+        x: x,
+        y: y,
+        width: 60,
+        height: 60,
+        color: getDecorationColor(decorationData.type)
+      };
+      
+      onDecorationAdd(newDecoration);
+    } catch (error) {
+      console.error('Error handling drop:', error);
+    }
+  };
+
+  // Função para obter cor baseada no tipo
+  const getDecorationColor = (type) => {
+    const colors = {
+      'tree': '#228B22',
+      'plant': '#32CD32',
+      'lights': '#FFD700',
+      'ornament': '#FF6347',
+      'holiday': '#FF69B4'
+    };
+    return colors[type] || '#6B7280';
+  };
+
 
   return (
     <div className="relative h-full w-full">
       {/* Canvas placeholder - será substituído por Konva real */}
       <div 
         ref={canvasRef}
-        className="border-2 border-dashed border-default-300 rounded-lg bg-default-50 h-full w-full overflow-hidden"
+        className={`border-2 border-dashed rounded-lg h-full w-full overflow-hidden transition-colors ${
+          dragOver 
+            ? 'border-primary bg-primary/10' 
+            : 'border-default-300 bg-default-50'
+        }`}
         style={{ 
           width: width === "100%" ? "100%" : width,
           height: height === "100%" ? "100%" : height
         }}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
         {/* Background Image */}
         {selectedImage && (
@@ -195,11 +255,11 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, decorations = [], startGe
         </div>
       </div>
       
-      {/* Decorações simuladas */}
+      {/* Decorações arrastáveis */}
       {decorations.map(decoration => (
         <div
           key={decoration.id}
-          className="absolute rounded-lg border-2 border-white shadow-lg"
+          className="absolute rounded-lg border-2 border-white shadow-lg cursor-move hover:scale-105 transition-transform"
           style={{
             left: decoration.x,
             top: decoration.y,
@@ -208,32 +268,66 @@ const KonvaCanvas = ({ width, height, onDecorationAdd, decorations = [], startGe
             backgroundColor: decoration.color,
             transform: 'translate(-50%, -50%)'
           }}
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData('text/plain', JSON.stringify(decoration));
+          }}
         >
           <div className="flex items-center justify-center h-full text-white font-bold text-xs">
-            {decoration.type}
+            {decoration.icon || decoration.type}
           </div>
+          {/* Botão de remover */}
+          <button
+            className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDecorationRemove(decoration.id);
+            }}
+          >
+            ×
+          </button>
         </div>
       ))}
     </div>
   );
 };
 
-export const StepAIDesigner = ({ formData, onInputChange, selectedImage, onUploadStepChange }) => {
+export const StepAIDesigner = ({ formData, onInputChange }) => {
   const [decorations, setDecorations] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [uploadStep, setUploadStep] = useState('uploading'); // 'uploading', 'loading', 'done'
+  const [selectedImage, setSelectedImage] = useState(null);
+  
+  // Imagens carregadas (simuladas)
+  const loadedImages = [
+    { 
+      id: 1, 
+      name: 'source 1.jpeg', 
+      thumbnail: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop&crop=center'
+    },
+    { 
+      id: 2, 
+      name: 'source 2.jpeg', 
+      thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop&crop=center'
+    },
+    { 
+      id: 3, 
+      name: 'source 3.jpeg', 
+      thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop&crop=center'
+    },
+  ];
 
   // Simular o fluxo de upload
   useEffect(() => {
-    // 1. Mostrar o modal de upload (1.5s estático + 3s animação)
+    // 1. Mostrar o modal de upload (muito rápido)
     const t1 = setTimeout(() => {
       setUploadStep('loading');
-    }, 4500);
+    }, 100);
 
-    // 2. Mostrar o ecrã de loading por mais 2 segundos
+    // 2. Mostrar o ecrã de loading por tempo mínimo
     const t2 = setTimeout(() => {
       setUploadStep('done');
-    }, 6500);
+    }, 300);
 
     // Limpar os timeouts se o componente for desmontado
     return () => {
@@ -242,12 +336,6 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage, onUploa
     };
   }, []);
 
-  // Comunicar mudanças do uploadStep para o componente pai
-  useEffect(() => {
-    if (onUploadStepChange) {
-      onUploadStepChange(uploadStep);
-    }
-  }, [uploadStep, onUploadStepChange]);
 
 
   // Adicionar decoração ao canvas
@@ -266,40 +354,192 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage, onUploa
   }, [decorations]); // Removido onInputChange das dependências para evitar loop infinito
 
   return (
-    <div className="h-full flex flex-col relative">
+    <div className="h-screen flex flex-col">
       {uploadStep === 'uploading' && <UploadModal />}
       {uploadStep === 'loading' && <LoadingIndicator />}
       
-      {/* Canvas Area - Ocupa todo o espaço disponível */}
-      <Card className="flex-1 p-6 min-h-0">
-        <div className="h-full flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Decoration Canvas</h3>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="light"
-                startContent={<Icon icon="lucide:refresh-cw" />}
-                onPress={() => setDecorations([])}
-                isDisabled={decorations.length === 0}
-              >
-                Clear
-              </Button>
+      {/* Main Content Area - 3 Column Layout */}
+      {uploadStep === 'done' && (
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left Sidebar - Image Thumbnails */}
+          <aside className="w-64 border-r border-divider bg-content1/30 flex flex-col flex-shrink-0">
+            <div className="p-4 border-b border-divider">
+              <h3 className="text-lg font-semibold">Source Images</h3>
             </div>
-          </div>
-          
-          <div className="flex-1 min-h-0">
-            <KonvaCanvas
-              width="100%"
-              height="100%"
-              onDecorationAdd={handleDecorationAdd}
-              decorations={decorations}
-              startGeneration={uploadStep === 'done'}
-              selectedImage={selectedImage}
-            />
-          </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {loadedImages.map((image) => (
+                <div
+                  key={image.id}
+                  className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+                    selectedImage?.id === image.id 
+                      ? 'border-primary shadow-lg' 
+                      : 'border-divider hover:border-primary/50'
+                  }`}
+                  onClick={() => setSelectedImage(image)}
+                >
+                  <div className="aspect-video bg-default-100">
+                    <img
+                      src={image.thumbnail}
+                      alt={image.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div className="w-full h-full hidden items-center justify-center bg-default-100">
+                      <Icon icon="lucide:image" className="text-4xl text-default-400" />
+                    </div>
+                  </div>
+                  <div className="p-2 bg-background">
+                    <p className="text-sm font-medium truncate">{image.name}</p>
+                  </div>
+                  {selectedImage?.id === image.id && (
+                    <div className="absolute top-2 right-2">
+                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                        <Icon icon="lucide:check" className="text-white text-sm" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </aside>
+
+          {/* Center Canvas Area */}
+          <Card className="flex-1 p-6 min-h-0">
+            <div className="h-full flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Decoration Canvas</h3>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="light"
+                    startContent={<Icon icon="lucide:refresh-cw" />}
+                    onPress={() => setDecorations([])}
+                    isDisabled={decorations.length === 0}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="flex-1 min-h-0">
+                <KonvaCanvas
+                  width="100%"
+                  height="100%"
+                  onDecorationAdd={handleDecorationAdd}
+                  onDecorationRemove={handleDecorationRemove}
+                  decorations={decorations}
+                  startGeneration={uploadStep === 'done'}
+                  selectedImage={selectedImage}
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Right Sidebar - Decoration Library */}
+          <aside className="w-64 border-l border-divider bg-content1/30 flex flex-col flex-shrink-0">
+            <div className="p-4 border-b border-divider">
+              <h3 className="text-lg font-semibold">Decorations</h3>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-4">
+                {/* Decoration Categories */}
+                <div>
+                  <h4 className="text-sm font-medium text-default-600 mb-2">Trees & Plants</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { name: 'Pine Tree', icon: '🌲', type: 'tree' },
+                      { name: 'Oak Tree', icon: '🌳', type: 'tree' },
+                      { name: 'Palm Tree', icon: '🌴', type: 'tree' },
+                      { name: 'Bush', icon: '🌿', type: 'plant' }
+                    ].map((decoration, index) => (
+                      <div
+                        key={index}
+                        className="p-3 border border-divider rounded-lg cursor-grab hover:border-primary/50 transition-colors bg-background"
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', JSON.stringify({
+                            type: decoration.type,
+                            name: decoration.name,
+                            icon: decoration.icon
+                          }));
+                        }}
+                      >
+                        <div className="text-center">
+                          <div className="text-2xl mb-1">{decoration.icon}</div>
+                          <p className="text-xs text-default-600">{decoration.name}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium text-default-600 mb-2">Lights & Ornaments</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { name: 'Christmas Lights', icon: '💡', type: 'lights' },
+                      { name: 'Star', icon: '⭐', type: 'ornament' },
+                      { name: 'Bell', icon: '🔔', type: 'ornament' },
+                      { name: 'Gift', icon: '🎁', type: 'ornament' }
+                    ].map((decoration, index) => (
+                      <div
+                        key={index}
+                        className="p-3 border border-divider rounded-lg cursor-grab hover:border-primary/50 transition-colors bg-background"
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', JSON.stringify({
+                            type: decoration.type,
+                            name: decoration.name,
+                            icon: decoration.icon
+                          }));
+                        }}
+                      >
+                        <div className="text-center">
+                          <div className="text-2xl mb-1">{decoration.icon}</div>
+                          <p className="text-xs text-default-600">{decoration.name}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium text-default-600 mb-2">Holiday Items</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { name: 'Snowman', icon: '⛄', type: 'holiday' },
+                      { name: 'Santa Hat', icon: '🎅', type: 'holiday' },
+                      { name: 'Candy Cane', icon: '🍭', type: 'holiday' },
+                      { name: 'Snowflake', icon: '❄️', type: 'holiday' }
+                    ].map((decoration, index) => (
+                      <div
+                        key={index}
+                        className="p-3 border border-divider rounded-lg cursor-grab hover:border-primary/50 transition-colors bg-background"
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', JSON.stringify({
+                            type: decoration.type,
+                            name: decoration.name,
+                            icon: decoration.icon
+                          }));
+                        }}
+                      >
+                        <div className="text-center">
+                          <div className="text-2xl mb-1">{decoration.icon}</div>
+                          <p className="text-xs text-default-600">{decoration.name}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
         </div>
-      </Card>
+      )}
     </div>
   );
 };
