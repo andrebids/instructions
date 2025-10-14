@@ -266,6 +266,7 @@ const KonvaCanvas = ({
   onDecorationAdd, 
   onDecorationRemove, 
   onImageRemove,
+  onDecorationUpdate,
   decorations = [], 
   canvasImages = [],
   selectedImage 
@@ -476,9 +477,14 @@ const KonvaCanvas = ({
                 setSelectedId(decoration.id);
               }}
               onChange={(newAttrs) => {
-                // Atualizar decoração
-                onDecorationRemove(decoration.id);
-                onDecorationAdd(newAttrs);
+                // Atualizar decoração via callback
+                if (onDecorationUpdate) {
+                  onDecorationUpdate(decoration.id, newAttrs);
+                } else {
+                  // Fallback: remover e adicionar
+                  onDecorationRemove(decoration.id);
+                  onDecorationAdd(newAttrs);
+                }
               }}
             />
           ))}
@@ -542,6 +548,7 @@ const KonvaCanvas = ({
 
 export const StepAIDesigner = ({ formData, onInputChange }) => {
   const [decorations, setDecorations] = useState([]);
+  const [decorationsByImage, setDecorationsByImage] = useState({}); // Mapeia decorações por imagem: { 'source-img-1': [...decorations], 'source-img-2': [...] }
   const [isGenerating, setIsGenerating] = useState(false);
   const [uploadStep, setUploadStep] = useState('uploading'); // 'uploading', 'loading', 'done'
   const [selectedImage, setSelectedImage] = useState(null);
@@ -614,6 +621,20 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
     console.log('📸 Nome:', image.name);
     console.log('📸 ID:', image.id);
     console.log('📸 Modo:', useDayMode ? 'Day' : 'Night');
+    
+    // 1. Guardar decorações da imagem anterior antes de trocar
+    if (selectedImage && selectedImage.id !== image.id) {
+      console.log('💾 Guardando decorações da imagem anterior:', selectedImage.id, decorations.length, 'decorações');
+      setDecorationsByImage(prev => ({
+        ...prev,
+        [selectedImage.id]: decorations
+      }));
+    }
+    
+    // 2. Carregar decorações da nova imagem do mapeamento (ou array vazio se não existir)
+    const newImageDecorations = decorationsByImage[image.id] || [];
+    console.log('📂 Carregando decorações da imagem:', image.id, newImageDecorations.length, 'decorações');
+    setDecorations(newImageDecorations);
     
     // Escolher a imagem correta baseada no modo
     const imageSrc = useDayMode ? image.thumbnail : image.nightVersion;
@@ -691,12 +712,46 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   // No React-Konva, z-index = ordem no array (último = frente)
   const handleDecorationAdd = (decoration) => {
     console.log('✅ Decoração adicionada:', decoration.id);
-    setDecorations(prev => [...prev, decoration]);
+    const updatedDecorations = [...decorations, decoration];
+    setDecorations(updatedDecorations);
+    
+    // Atualizar mapeamento da imagem selecionada
+    if (selectedImage) {
+      setDecorationsByImage(prev => ({
+        ...prev,
+        [selectedImage.id]: updatedDecorations
+      }));
+    }
   };
 
   // Remover decoração
   const handleDecorationRemove = (decorationId) => {
-    setDecorations(prev => prev.filter(d => d.id !== decorationId));
+    const updatedDecorations = decorations.filter(d => d.id !== decorationId);
+    setDecorations(updatedDecorations);
+    
+    // Atualizar mapeamento da imagem selecionada
+    if (selectedImage) {
+      setDecorationsByImage(prev => ({
+        ...prev,
+        [selectedImage.id]: updatedDecorations
+      }));
+    }
+  };
+
+  // Atualizar decoração (transformações, movimentos)
+  const handleDecorationUpdate = (decorationId, newAttrs) => {
+    const updatedDecorations = decorations.map(d => 
+      d.id === decorationId ? newAttrs : d
+    );
+    setDecorations(updatedDecorations);
+    
+    // Atualizar mapeamento da imagem selecionada
+    if (selectedImage) {
+      setDecorationsByImage(prev => ({
+        ...prev,
+        [selectedImage.id]: updatedDecorations
+      }));
+    }
   };
 
   // Salvar dados no formData
@@ -827,7 +882,9 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                     variant="light"
                     startContent={<Icon icon="lucide:refresh-cw" />}
                     onPress={() => {
+                      // Limpar tudo, incluindo o mapeamento de decorações por imagem
                       setDecorations([]);
+                      setDecorationsByImage({});
                       setCanvasImages([]);
                       setSelectedImage(null);
                     }}
@@ -844,6 +901,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                   height="100%"
                   onDecorationAdd={handleDecorationAdd}
                   onDecorationRemove={handleDecorationRemove}
+                  onDecorationUpdate={handleDecorationUpdate}
                   onImageRemove={handleImageRemoveFromCanvas}
                   decorations={decorations}
                   canvasImages={canvasImages}
