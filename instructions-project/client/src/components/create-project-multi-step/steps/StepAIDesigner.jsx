@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { DecorationLibrary } from "../../decoration-library";
 import { Stage, Layer, Image as KonvaImage, Transformer } from 'react-konva';
 import useImage from 'use-image';
+import { NightThumb } from '../../NightThumb';
 
 // Componente para o Modal de Upload
 const UploadModal = () => {
@@ -510,23 +511,27 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [canvasImages, setCanvasImages] = useState([]); // Imagens adicionadas ao canvas
   const [activeGifIndex, setActiveGifIndex] = useState(0); // Controla em qual thumbnail o GIF está visível (-1 = nenhum)
+  const [isDayMode, setIsDayMode] = useState(true); // Controla se mostra imagem de dia ou noite
   
   // Imagens carregadas (simuladas)
   const loadedImages = [
     { 
       id: 'source-img-1', 
       name: 'source 1.jpeg', 
-      thumbnail: '/demo-images/sourceday/SOURCE1.jpg'
+      thumbnail: '/demo-images/sourceday/SOURCE1.jpg',
+      nightVersion: '/demo-images/sourcenight/SOURCE1.png'
     },
     { 
       id: 'source-img-2', 
       name: 'source 2.jpeg', 
-      thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop&crop=center'
+      thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop&crop=center',
+      nightVersion: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop&crop=center&auto=format&q=80&blur=1&sat=-50&brightness=0.3'
     },
     { 
       id: 'source-img-3', 
       name: 'source 3.jpeg', 
-      thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop&crop=center'
+      thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop&crop=center',
+      nightVersion: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop&crop=center&auto=format&q=80&blur=1&sat=-50&brightness=0.3'
     },
   ];
 
@@ -568,11 +573,15 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
 
 
   // Adicionar imagem source ao canvas (substitui a anterior)
-  const handleImageAddToCanvas = (image) => {
+  const handleImageAddToCanvas = (image, useDayMode = isDayMode) => {
     console.log('📸🖼️ ===== SOURCE IMAGE CLICADA =====');
     console.log('📸 Nome:', image.name);
     console.log('📸 ID:', image.id);
-    console.log('📸 URL:', image.thumbnail);
+    console.log('📸 Modo:', useDayMode ? 'Day' : 'Night');
+    
+    // Escolher a imagem correta baseada no modo
+    const imageSrc = useDayMode ? image.thumbnail : image.nightVersion;
+    console.log('📸 URL:', imageSrc);
     
     // Calcular dimensões do canvas
     const canvasElement = document.querySelector('.rounded-lg.h-full.w-full');
@@ -618,7 +627,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
       id: `img-${Date.now()}`, // ID único com prefixo
       type: 'image',
       name: image.name,
-      src: image.thumbnail,
+      src: imageSrc,
       x: centerX,
       y: centerY,
       width: imageWidth,
@@ -631,6 +640,18 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
     // SUBSTITUI a imagem anterior (não adiciona)
     setCanvasImages([newImageLayer]);
     setSelectedImage(image);
+  };
+
+  // Alternar entre modo dia e noite
+  const toggleDayNightMode = () => {
+    const newMode = !isDayMode;
+    setIsDayMode(newMode);
+    
+    // Se há uma imagem selecionada, atualizar a imagem no canvas
+    if (selectedImage && canvasImages.length > 0) {
+      console.log('🌓 Alternando modo:', newMode ? 'Day' : 'Night');
+      handleImageAddToCanvas(selectedImage, newMode);
+    }
   };
 
   // Remover imagem do canvas
@@ -686,23 +707,14 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                     handleImageAddToCanvas(image);
                   }}
                 >
-                  {/* GIF animado que percorre os thumbnails sequencialmente */}
-                  {index === activeGifIndex && (
-                    <div className="absolute top-0 right-0 z-20 pointer-events-none">
-                      <img 
-                        src="/day night.gif" 
-                        alt="Day Night Animation"
-                        className="w-12 h-12"
-                        style={{ 
-                          objectFit: 'cover',
-                          backgroundColor: 'transparent'
-                        }}
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
+                  {/* NightThumb com animação de dia para noite */}
+                  <NightThumb
+                    dayImage={image.thumbnail}
+                    nightImage={image.nightVersion}
+                    filename={image.name}
+                    isActive={index === activeGifIndex}
+                    duration={4000}
+                  />
                   
                   <Image
                     alt={image.name}
@@ -767,6 +779,21 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <h3 className="text-base md:text-lg font-semibold text-center flex-1">Decoration Canvas</h3>
                 <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color={isDayMode ? "warning" : "primary"}
+                    startContent={
+                      <Icon 
+                        icon={isDayMode ? "lucide:sun" : "lucide:moon"} 
+                        className={isDayMode ? "text-warning" : "text-primary"}
+                      />
+                    }
+                    onPress={toggleDayNightMode}
+                    isDisabled={canvasImages.length === 0}
+                  >
+                    {isDayMode ? 'Day' : 'Night'}
+                  </Button>
                   <Button
                     size="sm"
                     variant="light"
