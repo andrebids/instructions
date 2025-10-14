@@ -273,25 +273,59 @@ const KonvaCanvas = ({
   const stageRef = useRef(null);
   const containerRef = useRef(null);
   const [selectedId, setSelectedId] = useState(null);
-  const [stageSize, setStageSize] = useState({ width: 1200, height: 600 });
   const [dragOver, setDragOver] = useState(false);
+  
+  // Define tamanho virtual/base da cena (dimensões de referência)
+  const sceneWidth = 1200;
+  const sceneHeight = 600;
+  
+  // Estado para rastrear escala e dimensões atuais
+  const [stageSize, setStageSize] = useState({
+    width: sceneWidth,
+    height: sceneHeight,
+    scale: 1
+  });
 
-  // Calcular tamanho do Stage dinamicamente
-  useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        const container = containerRef.current;
-        setStageSize({
-          width: container.offsetWidth,
-          height: container.offsetHeight
-        });
-      }
-    };
+  // Função para tornar o Stage responsivo
+  const fitStageIntoParentContainer = () => {
+    if (!containerRef.current) return;
     
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, []);
+    // Obter largura do container
+    const containerWidth = containerRef.current.offsetWidth;
+    const containerHeight = containerRef.current.offsetHeight;
+    
+    // Evitar valores inválidos
+    if (containerWidth === 0 || containerHeight === 0) return;
+    
+    // Calcular escala baseada na largura e altura
+    const scaleX = containerWidth / sceneWidth;
+    const scaleY = containerHeight / sceneHeight;
+    
+    // Usar a menor escala para manter aspect ratio
+    const scale = Math.min(scaleX, scaleY);
+    
+    // Atualizar estado com novas dimensões
+    setStageSize({
+      width: sceneWidth * scale,
+      height: sceneHeight * scale,
+      scale: scale
+    });
+  };
+
+  // Atualizar no mount e quando a janela redimensiona
+  useEffect(() => {
+    fitStageIntoParentContainer();
+    
+    const resizeObserver = new ResizeObserver(() => {
+      fitStageIntoParentContainer();
+    });
+    
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+    
+    return () => resizeObserver.disconnect();
+  }, []); // Sem dependências - só executa uma vez
 
   // Click/Touch no Stage para desselecionar decoração
   const checkDeselect = (e) => {
@@ -333,8 +367,8 @@ const KonvaCanvas = ({
       if (!stage) return;
       
       const containerRect = containerRef.current.getBoundingClientRect();
-      const x = e.clientX - containerRect.left;
-      const y = e.clientY - containerRect.top;
+      const x = (e.clientX - containerRect.left) / stageSize.scale;
+      const y = (e.clientY - containerRect.top) / stageSize.scale;
       
       const newDecoration = {
         id: Date.now(),
@@ -394,7 +428,7 @@ const KonvaCanvas = ({
   return (
     <div 
       ref={containerRef}
-      className="relative h-full w-full"
+      className="relative h-full w-full overflow-hidden"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -404,6 +438,8 @@ const KonvaCanvas = ({
         ref={stageRef}
         width={stageSize.width}
         height={stageSize.height}
+        scaleX={stageSize.scale}
+        scaleY={stageSize.scale}
         onMouseDown={checkDeselect}
         onTouchStart={checkDeselect}
         className={`rounded-lg ${
@@ -583,20 +619,12 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
     const imageSrc = useDayMode ? image.thumbnail : image.nightVersion;
     console.log('📸 URL:', imageSrc);
     
-    // Calcular dimensões do canvas
-    const canvasElement = document.querySelector('.rounded-lg.h-full.w-full');
-    let canvasWidth = 1200;
-    let canvasHeight = 600;
-    let centerX = canvasWidth / 2;
-    let centerY = canvasHeight / 2;
-    
-    if (canvasElement) {
-      const rect = canvasElement.getBoundingClientRect();
-      canvasWidth = rect.width;
-      canvasHeight = rect.height;
-      centerX = canvasWidth / 2;
-      centerY = canvasHeight / 2;
-    }
+    // Usar dimensões virtuais do canvas (sempre 1200x600)
+    // O Konva vai escalar automaticamente para o tamanho real
+    const canvasWidth = 1200;
+    const canvasHeight = 600;
+    const centerX = canvasWidth / 2;
+    const centerY = canvasHeight / 2;
     
     // Calcular dimensões da imagem para caber no canvas mantendo aspect ratio
     // Assumindo aspect ratio 4:3 das imagens (pode ser ajustado)
@@ -836,16 +864,10 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                 return;
               }
               
-              // Calcular posição central do canvas se houver imagem selecionada
-              const canvasElement = document.querySelector('.rounded-lg.h-full.w-full');
-              let centerX = 200; // Posição default
-              let centerY = 200;
-              
-              if (canvasElement) {
-                const rect = canvasElement.getBoundingClientRect();
-                centerX = rect.width / 2;
-                centerY = rect.height / 2;
-              }
+              // Usar dimensões virtuais do canvas (sempre 1200x600)
+              // O Konva vai escalar automaticamente para o tamanho real
+              const centerX = 600; // Centro do canvas virtual (1200/2)
+              const centerY = 300; // Centro do canvas virtual (600/2)
               
               // Criar nova decoração para o canvas na posição central
               const newDecoration = {
