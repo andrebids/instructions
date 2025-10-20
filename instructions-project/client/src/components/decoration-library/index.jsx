@@ -7,17 +7,24 @@ import { useDecorationSearch } from './hooks/useDecorationSearch';
 import { SearchBar } from './components/SearchBar';
 import { CategoryMenu } from './components/CategoryMenu';
 import { DecorationGrid } from './components/DecorationGrid';
+import { PropertyFilters } from './components/PropertyFilters';
 
 export const DecorationLibrary = ({ 
   onDecorationSelect, 
   mode = "sidebar",
   className = "",
   enableSearch = true,
+  enableFilters = true,
   initialCategory = null,
   disabled = false
 }) => {
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [viewMode, setViewMode] = useState('categories'); // 'categories' or 'decorations'
+  const [filters, setFilters] = useState({
+    textContent: '',
+    height: 10,
+    dimension: '2d'
+  });
   
   // Load decorations data
   const { decorations, categories, isLoading, filterByCategory } = useDecorations();
@@ -25,7 +32,7 @@ export const DecorationLibrary = ({
   // Search hook
   const { searchTerm, setSearchTerm, filteredDecorations: searchResults } = useDecorationSearch(decorations);
   
-  // Combine filters: category + search
+  // Combine filters: category + search + property filters
   const finalDecorations = useMemo(() => {
     let result = decorations;
     
@@ -45,8 +52,32 @@ export const DecorationLibrary = ({
       }
     }
     
+    // Apply property filters
+    if (enableFilters) {
+      result = result.filter(decoration => {
+        // Filter by text content (search in name, ref, or tags)
+        if (filters.textContent) {
+          const searchText = filters.textContent.toLowerCase();
+          const matchesText = 
+            decoration.name.toLowerCase().includes(searchText) ||
+            decoration.ref.toLowerCase().includes(searchText) ||
+            decoration.tags.some(tag => tag.toLowerCase().includes(searchText));
+          if (!matchesText) return false;
+        }
+        
+        // Filter by dimension type
+        if (filters.dimension !== '2d') {
+          // This is a placeholder logic - you can customize based on your decoration properties
+          if (filters.dimension === '3d' && decoration.category !== '3d') return false;
+          if (filters.dimension === 'grid' && decoration.category !== 'transversal') return false;
+        }
+        
+        return true;
+      });
+    }
+    
     return result;
-  }, [decorations, activeCategory, searchTerm, searchResults, filterByCategory]);
+  }, [decorations, activeCategory, searchTerm, searchResults, filterByCategory, filters, enableFilters]);
   
   const handleCategorySelect = (categoryId) => {
     console.log('📂 [DecorationLibrary] Selecting category:', categoryId);
@@ -63,6 +94,10 @@ export const DecorationLibrary = ({
   
   const handleSearchChange = (term) => {
     setSearchTerm(term);
+  };
+  
+  const handleFiltersChange = (newFilters) => {
+    setFilters(newFilters);
   };
   
   // TODO: Quando dnd-kit estiver instalado, adicionar:
@@ -113,6 +148,16 @@ export const DecorationLibrary = ({
           placeholder={viewMode === 'categories' ? "Search all decorations..." : "Search by name or ref..."}
           disabled={disabled}
         />
+      )}
+      
+      {/* Property Filters - visible when in decorations view */}
+      {enableFilters && (viewMode === 'decorations' || searchTerm) && (
+        <div className="p-3 md:p-4 border-b border-divider">
+          <PropertyFilters
+            onFiltersChange={handleFiltersChange}
+            disabled={disabled}
+          />
+        </div>
       )}
       
       {/* Content based on view mode and search */}

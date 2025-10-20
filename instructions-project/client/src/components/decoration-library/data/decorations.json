@@ -17,6 +17,12 @@
       "name": "3D",
       "icon": "🎯",
       "count": 4
+    },
+    {
+      "id": "custom",
+      "name": "Custom",
+      "icon": "🛠️",
+      "count": 3
     }
   ],
   "decorations": [
@@ -139,6 +145,36 @@
       "imageUrl": null,
       "type": "holiday",
       "tags": ["snowflake", "snow", "winter", "ice"]
+    },
+    {
+      "id": "dec-013",
+      "name": "Custom Banner",
+      "ref": "CUSTOM-BANNER-013",
+      "category": "custom",
+      "icon": "🏳️",
+      "imageUrl": null,
+      "type": "custom",
+      "tags": ["banner", "custom", "personalized", "flag"]
+    },
+    {
+      "id": "dec-014",
+      "name": "Custom Sign",
+      "ref": "CUSTOM-SIGN-014",
+      "category": "custom",
+      "icon": "📋",
+      "imageUrl": null,
+      "type": "custom",
+      "tags": ["sign", "custom", "text", "message"]
+    },
+    {
+      "id": "dec-015",
+      "name": "Custom Logo",
+      "ref": "CUSTOM-LOGO-015",
+      "category": "custom",
+      "icon": "🏷️",
+      "imageUrl": null,
+      "type": "custom",
+      "tags": ["logo", "custom", "brand", "design"]
     }
   ]
 }
