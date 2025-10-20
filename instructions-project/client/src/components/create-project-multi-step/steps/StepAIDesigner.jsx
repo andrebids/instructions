@@ -269,7 +269,8 @@ const KonvaCanvas = ({
   onDecorationUpdate,
   decorations = [], 
   canvasImages = [],
-  selectedImage 
+  selectedImage,
+  onRequireBackground
 }) => {
   const stageRef = useRef(null);
   const containerRef = useRef(null);
@@ -357,6 +358,9 @@ const KonvaCanvas = ({
       // Verificar se há imagem de fundo
       if (canvasImages.length === 0) {
         console.warn('⚠️ Não é possível adicionar decoração sem imagem de fundo!');
+        if (onRequireBackground) {
+          onRequireBackground();
+        }
         return;
       }
 
@@ -548,6 +552,7 @@ const KonvaCanvas = ({
 
 export const StepAIDesigner = ({ formData, onInputChange }) => {
   const [decorations, setDecorations] = useState([]);
+  const [noBgWarning, setNoBgWarning] = useState(false);
   const [decorationsByImage, setDecorationsByImage] = useState({}); // Mapeia decorações por imagem: { 'source-img-1': [...decorations], 'source-img-2': [...] }
   const [isGenerating, setIsGenerating] = useState(false);
   const [uploadStep, setUploadStep] = useState('uploading'); // 'uploading', 'loading', 'done'
@@ -896,6 +901,11 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
               </div>
               
               <div className="flex-1 min-h-0">
+                {noBgWarning && (
+                  <div className="mb-2 p-2 rounded-md bg-warning-50 border border-warning-200 text-warning-700 text-sm">
+                    ⚠️ Select a background image to add PNGs
+                  </div>
+                )}
                 <KonvaCanvas
                   width="100%"
                   height="100%"
@@ -906,6 +916,10 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                   decorations={decorations}
                   canvasImages={canvasImages}
                   selectedImage={selectedImage}
+                  onRequireBackground={() => {
+                    setNoBgWarning(true);
+                    setTimeout(() => setNoBgWarning(false), 2000);
+                  }}
                 />
               </div>
             </div>
@@ -919,6 +933,8 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
               // ⚠️ VERIFICAR SE HÁ IMAGEM DE FUNDO antes de adicionar decoração
               if (canvasImages.length === 0) {
                 console.warn('⚠️ Adicione primeiro uma imagem de fundo!');
+                setNoBgWarning(true);
+                setTimeout(() => setNoBgWarning(false), 2000);
                 return;
               }
               
