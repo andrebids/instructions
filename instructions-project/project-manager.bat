@@ -31,14 +31,26 @@ echo    INICIANDO PROJETO INSTRUCTIONS
 echo ========================================
 echo.
 
-echo [1/4] Iniciando base de dados PostgreSQL...
-docker-compose -f docker-compose.dev.yml up -d
+rem Verificar pré-requisitos (Node, npm, Docker/Compose)
+call :ensure_prereqs
 if %errorlevel% neq 0 (
-    echo ❌ Erro ao iniciar PostgreSQL
     pause
     goto menu
 )
-echo ✅ PostgreSQL iniciado com sucesso!
+
+echo [1/4] Iniciando base de dados PostgreSQL...
+if "%DOCKER_AVAILABLE%"=="1" (
+    %COMPOSE_CMD% -f docker-compose.dev.yml up -d
+    if %errorlevel% neq 0 (
+        echo ❌ Erro ao iniciar PostgreSQL
+        pause
+        goto menu
+    )
+    echo ✅ PostgreSQL iniciado com sucesso!
+) else (
+    echo ❌ Docker/Compose nao encontrado. Base de dados via Docker nao sera iniciada.
+    echo    -> Instala Docker Desktop ou inicia a tua BD localmente (porta 5433)
+)
 echo.
 
 echo [2/4] Aguardando PostgreSQL estar pronto...
@@ -75,8 +87,13 @@ echo ========================================
 echo.
 
 echo [1/3] Parando containers Docker...
-docker-compose -f docker-compose.dev.yml down
-echo ✅ Containers Docker parados
+call :detect_docker
+if "%DOCKER_AVAILABLE%"=="1" (
+    %COMPOSE_CMD% -f docker-compose.dev.yml down
+    echo ✅ Containers Docker parados
+) else (
+    echo ⚠️  Docker/Compose nao encontrado. Nada para parar via Docker.
+)
 echo.
 
 echo [2/3] Parando processos Node.js...
@@ -104,7 +121,12 @@ echo ========================================
 echo.
 
 echo [1/3] Verificando PostgreSQL...
-docker ps --filter "name=instructions-project-postgres" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+call :detect_docker >nul 2>&1
+if "%DOCKER_AVAILABLE%"=="1" (
+    docker ps --filter "name=instructions-project-postgres" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+) else (
+    echo ⚠️  Docker nao encontrado. Saltando verificacao de containers.
+)
 echo.
 
 echo [2/3] Verificando processos Node.js...
@@ -166,3 +188,46 @@ echo Projeto Instructions - Gerido com sucesso
 echo.
 timeout /t 2 /nobreak >nul
 exit
+
+rem =====================
+rem Utilitarios e checks
+rem =====================
+
+:ensure_prereqs
+rem Node
+where node >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ❌ Node.js nao encontrado.
+    echo    -> Instala o Node.js LTS de https://nodejs.org/en/download
+    exit /b 1
+)
+where npm >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ❌ npm nao encontrado no PATH.
+    echo    -> Reinstala o Node.js ou adiciona a pasta do npm ao PATH.
+    exit /b 1
+)
+
+rem Docker/Compose (opcional mas recomendado para a BD)
+call :detect_docker
+exit /b 0
+
+:detect_docker
+set "DOCKER_AVAILABLE=0"
+set "COMPOSE_CMD=docker compose"
+docker --version >nul 2>&1
+if %errorlevel% equ 0 (
+    docker compose version >nul 2>&1
+    if %errorlevel% equ 0 (
+        set "DOCKER_AVAILABLE=1"
+        exit /b 0
+    ) else (
+        where docker-compose >nul 2>&1
+        if %errorlevel% equ 0 (
+            set "DOCKER_AVAILABLE=1"
+            set "COMPOSE_CMD=docker-compose"
+            exit /b 0
+        )
+    )
+)
+exit /b 1

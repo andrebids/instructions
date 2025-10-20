@@ -5,8 +5,7 @@ import { useTheme } from "@heroui/use-theme";
 
 const navigationItems = [
   { name: "Dashboard", icon: "lucide:layout-dashboard", href: "/" },
-  { name: "Analytics", icon: "lucide:bar-chart", href: "#" },
-  { name: "Customers", icon: "lucide:users", href: "#" },
+  { name: "Statistics", icon: "lucide:bar-chart", href: "#" },
   { name: "Orders", icon: "lucide:shopping-cart", href: "#" },
 ];
 
