@@ -11,7 +11,14 @@ const app = express();
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:3003', 'http://192.168.2.16:3003', 'http://192.168.2.28:3003'],
+  origin: [
+    'http://localhost:3003',
+    'http://localhost:3005',
+    'http://192.168.2.16:3003',
+    'http://192.168.2.16:3005',
+    'http://192.168.2.28:3003',
+    'http://192.168.2.28:3005',
+  ],
   credentials: true
 }));
 app.use(express.json());
