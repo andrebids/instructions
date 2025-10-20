@@ -59,25 +59,52 @@ echo ✅ PostgreSQL pronto!
 echo.
 
 echo [3/4] Iniciando servidor backend...
-start "Backend Server" cmd /k "cd server && npm run dev"
+start /min "Backend Server" cmd /k "cd server && npm run dev"
 echo ✅ Servidor backend iniciado em http://localhost:5000
 echo.
 
 echo [4/4] Iniciando cliente frontend...
-start "Frontend Client" cmd /k "cd client && npm run dev"
-echo ✅ Cliente frontend iniciado em http://localhost:3003
+start /min "Frontend Client" cmd /k "cd client && npm run dev"
+echo ✅ Cliente frontend iniciado
 echo.
 
 echo ========================================
 echo    PROJETO INICIADO COM SUCESSO!
 echo ========================================
 echo.
-echo 🌐 Frontend: http://localhost:3003
 echo 🔧 Backend:  http://localhost:5000
 echo 🗄️  Database: localhost:5433
 echo.
-pause
-goto menu
+echo Aguardando frontend estar pronto...
+timeout /t 5 /nobreak >nul
+
+rem Tentar detectar a porta do frontend automaticamente
+set "FRONTEND_PORT=3003"
+echo Tentando conectar ao frontend na porta %FRONTEND_PORT%...
+curl -s http://localhost:%FRONTEND_PORT% >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ✅ Frontend detectado na porta %FRONTEND_PORT%
+    set "FRONTEND_URL=http://localhost:%FRONTEND_PORT%"
+) else (
+    echo ⚠️  Frontend nao encontrado na porta %FRONTEND_PORT%
+    echo.
+    echo Portas comuns do Vite: 3000, 3001, 3002, 3003, 5173, 4173
+    echo.
+    set /p FRONTEND_PORT="Insere a porta do frontend (ou Enter para 3003): "
+    if "%FRONTEND_PORT%"=="" set "FRONTEND_PORT=3003"
+    set "FRONTEND_URL=http://localhost:%FRONTEND_PORT%"
+)
+
+echo.
+echo 🌐 Frontend: %FRONTEND_URL%
+echo.
+echo Abrindo frontend no browser...
+start %FRONTEND_URL%
+echo ✅ Frontend aberto no browser!
+echo.
+echo ✅ Projeto iniciado com sucesso! Fechando janela...
+timeout /t 2 /nobreak >nul
+exit
 
 :stop
 cls
