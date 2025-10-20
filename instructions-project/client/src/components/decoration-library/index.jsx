@@ -100,7 +100,7 @@ export const DecorationLibrary = ({
         </div>
         {disabled && (
           <p className="text-xs text-warning mt-2">
-            ⚠️ Adicione uma imagem de fundo primeiro
+            ⚠️ Select a background image first
           </p>
         )}
       </div>
