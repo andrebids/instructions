@@ -21,9 +21,8 @@ export const DecorationLibrary = ({
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [viewMode, setViewMode] = useState('categories'); // 'categories' or 'decorations'
   const [filters, setFilters] = useState({
-    textContent: '',
     height: 10,
-    dimension: '2d'
+    dimension: 'all'
   });
   
   // Load decorations data
@@ -55,21 +54,15 @@ export const DecorationLibrary = ({
     // Apply property filters
     if (enableFilters) {
       result = result.filter(decoration => {
-        // Filter by text content (search in name, ref, or tags)
-        if (filters.textContent) {
-          const searchText = filters.textContent.toLowerCase();
-          const matchesText = 
-            decoration.name.toLowerCase().includes(searchText) ||
-            decoration.ref.toLowerCase().includes(searchText) ||
-            decoration.tags.some(tag => tag.toLowerCase().includes(searchText));
-          if (!matchesText) return false;
-        }
-        
-        // Filter by dimension type
-        if (filters.dimension !== '2d') {
-          // This is a placeholder logic - you can customize based on your decoration properties
-          if (filters.dimension === '3d' && decoration.category !== '3d') return false;
-          if (filters.dimension === 'grid' && decoration.category !== 'transversal') return false;
+        // Filter by dimension type (2D vs 3D)
+        if (filters.dimension !== 'all') {
+          if (filters.dimension === '2d') {
+            // Filter for 2D decorations (transversal and pole categories)
+            if (!['transversal', 'pole'].includes(decoration.category)) return false;
+          } else if (filters.dimension === '3d') {
+            // Filter for 3D decorations (3d and custom categories)
+            if (!['3d', 'custom'].includes(decoration.category)) return false;
+          }
         }
         
         return true;
