@@ -1,11 +1,12 @@
 import React from "react";
-import { Link, Tooltip } from "@heroui/react";
+import { NavLink } from "react-router-dom";
+import { Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useTheme } from "@heroui/use-theme";
 
 const navigationItems = [
   { name: "Dashboard", icon: "lucide:layout-dashboard", href: "/" },
-  { name: "Statistics", icon: "lucide:bar-chart", href: "#" },
+  { name: "Statistics", icon: "lucide:bar-chart", href: "/statistics" },
   { name: "Orders", icon: "lucide:shopping-cart", href: "#" },
 ];
 
@@ -41,13 +42,13 @@ export function SidebarNavigation() {
               color="default"
               delay={300}
             >
-              <Link
-                href={item.href}
+              <NavLink
+                to={item.href}
                 aria-label={item.name}
-                className={`w-10 h-10 rounded-xl bg-content2/60 dark:bg-content2 hover:bg-content3 shadow-sm flex items-center justify-center transition-all`}
+                className="w-10 h-10 rounded-xl bg-content2/60 dark:bg-content2 hover:bg-content3 shadow-sm flex items-center justify-center transition-all"
               >
-                <Icon icon={item.icon} className={`text-default-600 text-xl`} />
-              </Link>
+                <Icon icon={item.icon} className="text-default-600 text-xl" />
+              </NavLink>
             </Tooltip>
           ))}
         </div>
