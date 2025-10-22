@@ -15,6 +15,7 @@ export function ProjectsYearComparison({
     function handleResize() {
       if (containerRef.current) {
         const w = containerRef.current.clientWidth;
+        // Match container width to prevent horizontal scroll
         setChartWidth(Math.max(320, w));
       }
     }
@@ -77,7 +78,8 @@ export function ProjectsYearComparison({
   const colorCurrent = theme === 'dark' ? '#3b82f6' : '#006FEE';
   const colorComparison = theme === 'dark' ? '#22c55e' : '#17C964';
   const chartHeight = 320;
-  const margins = { left: 40, right: 16, top: 6, bottom: 24 };
+  // Leave a bit more space on the right so "Dec" is always visible
+  const margins = { left: 22, right: 18, top: 6, bottom: 24 };
   const plotHeight = chartHeight - margins.top - margins.bottom;
   const yLabelTop = margins.top + plotHeight / 2;
 
@@ -160,7 +162,7 @@ export function ProjectsYearComparison({
       )}
 
       {/* Chart */}
-      <div className="w-full relative" ref={containerRef}>
+      <div className="w-full relative overflow-hidden" ref={containerRef}>
           <LineChart
             xAxis={[{ 
               scaleType: 'point', 
@@ -199,12 +201,7 @@ export function ProjectsYearComparison({
           >
             Projects
           </div>
-          <div
-            className="absolute text-foreground text-xs md:text-sm"
-            style={{ left: '50%', transform: 'translateX(-50%)', bottom: margins.bottom - 2 }}
-          >
-            Months
-          </div>
+        
           {/* Custom legend pinned bottom-left under the chart */}
           <div className="mt-3 pl-2 flex items-center gap-6">
             <div className="flex items-center gap-2">
@@ -220,9 +217,6 @@ export function ProjectsYearComparison({
             <div className="mt-2 text-xs text-default-500 flex flex-wrap gap-4 pl-2">
               <span>
                 {`${difference >= 0 ? '+' : ''}${percentageChange}%`} more projects compared to {safeComparisonYear}.
-              </span>
-              <span className="opacity-80">
-                {safeCurrentYear}: {currentValue.toLocaleString()} | {safeComparisonYear}: {comparisonValue.toLocaleString()}
               </span>
             </div>
           )}

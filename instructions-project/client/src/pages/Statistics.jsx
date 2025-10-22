@@ -1,5 +1,5 @@
 import React from "react";
-import {Select, SelectItem, Card, CardBody, Progress, Avatar, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem} from "@heroui/react";
+import {Select, SelectItem, Card, CardBody, Progress, Avatar, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Tooltip} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useTheme } from "@heroui/use-theme";
 import { Gauge } from "@mui/x-charts/Gauge";
@@ -10,6 +10,8 @@ import CountUp from "../components/CountUp";
 export default function Statistics() {
   const { theme } = useTheme();
   const [year, setYear] = React.useState(2025);
+  const [showBackToTop, setShowBackToTop] = React.useState(false);
+  const scrollContainerRef = React.useRef(null);
 
   const years = [2025, 2024, 2023, 2022, 2021];
 
@@ -240,6 +242,25 @@ export default function Statistics() {
   const budgetDelta = Math.round(((current.totalWonBudget - lastYear.totalWonBudget) / lastYear.totalWonBudget) * 100);
   const wonRateDelta = current.wonRatePct - lastYear.wonRatePct;
 
+  // Projects totals for YoY text (keep in sync with chart component)
+  const projectsTotals = { 2025: 15471, 2024: 12456, 2023: 22567, 2022: 9874, 2021: 13457 };
+  const currentProjectsTotal = projectsTotals[year] ?? 0;
+  const lastYearProjectsTotal = projectsTotals[year - 1] ?? 0;
+  const projectsDeltaPct = lastYearProjectsTotal ? Math.round(((currentProjectsTotal - lastYearProjectsTotal) / lastYearProjectsTotal) * 100) : 0;
+
+  React.useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      const epsilon = 16; // tolerance pixels from the very bottom
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - epsilon;
+      setShowBackToTop(atBottom);
+    };
+    handleScroll();
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Objective helpers
   const objectiveReached = Math.round((objectiveMax * current.objectivePct) / 100);
   const objectiveRemaining = Math.max(0, objectiveMax - objectiveReached);
@@ -251,6 +272,27 @@ export default function Statistics() {
     .slice(0, 3)
     .reduce((sum, c) => sum + c.value, 0);
   const top3Pct = Math.min(100, Math.round((top3Revenue / current.totalWonBudget) * 100));
+
+  // Client industries mapping
+  const clientIndustries = {
+    "Fashion Outlet": "Retail",
+    "Lisbon Municipality": "Public Sector",
+    "Luxury Hotel Chain": "Hospitality",
+    "Hotel Marquês de Pombal": "Hospitality",
+    "City Council": "Public Sector",
+    "Centro Comercial Colombo": "Retail",
+    "Gourmet Restaurant": "Hospitality",
+    "Tech Company HQ": "Technology",
+  };
+  const getIndustryColor = (industry) => {
+    const colors = {
+      "Retail": "primary",
+      "Hospitality": "secondary",
+      "Public Sector": "warning",
+      "Technology": "success",
+    };
+    return colors[industry] || "default";
+  };
 
   // Recent summary
   const recentCount = current.recent.length;
@@ -364,18 +406,22 @@ export default function Statistics() {
     w.document.close();
   };
 
-  return (
-      <div className="flex-1 min-h-0 overflow-auto p-6">
+    return (
+      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-auto p-6">
       {/* Header with greeting and year filter */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Hello, Christopher</h1>
-          <p className="text-default-500 mt-2">Your progress. Your data. Your success.</p>
+          <h1 className="text-3xl text-foreground">
+            <span className="font-normal text-default-500">Welcome back, </span>
+            <span className="font-bold">Christopher</span>
+          </h1>
+          <p className="text-default-500 mt-1">Here's how your year is shaping up so far.</p>
+          <p className="text-xs text-default-400 mt-1">Jan 1 – Oct 22, {year}</p>
         </div>
         <div className="flex items-center gap-2">
           <Dropdown>
             <DropdownTrigger>
-              <Button size="sm" variant="flat" startContent={<Icon icon="lucide:download" />}>Export</Button>
+              <Button size="sm" variant="flat" startContent={<Icon icon="lucide:file-output" />}>Export Report</Button>
             </DropdownTrigger>
             <DropdownMenu aria-label="Export format" onAction={(key)=>{ if(key==='csv') handleExportCSV(); if(key==='pdf') handleExportPDF(); }}>
               <DropdownItem key="csv" startContent={<Icon icon="lucide:file-down" />}>CSV (Excel)</DropdownItem>
@@ -406,24 +452,22 @@ export default function Statistics() {
         {/* This Year Objective */}
         <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm h-full">
           <CardBody className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-sm font-semibold text-foreground">Annual Goal Tracker</div>
-                <div className="text-3xl font-bold mt-1">{current.objectivePct}%</div>
-                <div className="text-sm text-default-500">of annual projects target reached</div>
-              </div>
-              <Icon icon="lucide:target" className="text-primary text-3xl" />
+            <div className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Icon icon="lucide:target" className="text-primary text-lg" />
+              Annual Goal Tracker
             </div>
+            <div className="text-3xl font-bold mt-3">{current.objectivePct}%</div>
+            <div className="text-sm text-default-500 mt-1">of annual projects target reached</div>
             <Progress aria-label="Objective progress" value={current.objectivePct} className="mt-3" color="primary" />
             <div className="flex items-center justify-between text-xs text-default-500 mt-3 border-t border-divider pt-2">
               <span>0</span>
               <span>{objectiveMax?.toLocaleString()}</span>
             </div>
             <div className="text-xs text-default-500 mt-2">
-              You're {Math.max(0, 100 - current.objectivePct)}% away from hitting your yearly goal. Keep pushing!
+              You're {Math.max(0, 100 - current.objectivePct)}% short of your annual target. Maintain current pace to exceed projections.
             </div>
             <div className="text-xs text-default-600 mt-1">
-              Projected: {objectiveRemaining.toLocaleString()} remaining projects to goal.
+              Projected completion: {objectiveRemaining.toLocaleString()} projects remaining.
             </div>
           </CardBody>
         </Card>
@@ -431,14 +475,12 @@ export default function Statistics() {
         {/* New Clients */}
         <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm h-full">
           <CardBody className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-sm font-semibold text-foreground">New Clients Acquired</div>
-                <div className="text-3xl font-bold mt-1">{current.newClients}</div>
-                <div className="text-sm text-default-500">{current.newClients} new clients — up {newClientsDelta}% vs last year.</div>
-              </div>
-              <Icon icon="lucide:users" className="text-warning text-3xl" />
+            <div className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Icon icon="lucide:users" className="text-primary text-lg" />
+              New Clients Acquired
             </div>
+            <div className="text-3xl font-bold mt-3">{current.newClients}</div>
+            <div className="text-sm text-default-500 mt-1">{current.newClients} new clients this year.</div>
             <div className="text-success text-xs mt-2 flex items-center gap-1">
               <Icon icon="lucide:arrow-up-right" /> +{newClientsDelta}% vs {year - 1}
             </div>
@@ -465,44 +507,57 @@ export default function Statistics() {
       {/* Masonry-like unified grid to avoid inner gaps */}
       <div className="grid grid-cols-1 lg:grid-cols-12 grid-flow-row-dense gap-6 items-stretch">
         {/* Bar Chart */}
-        <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-5 h-full">
+        <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-4 h-full">
           <CardBody className="p-5 h-full flex flex-col">
             <div className="mb-2">
-              <div className="text-sm font-semibold text-foreground">Year-over-Year Comparison</div>
-              <div className="text-sm text-default-500">Consistent growth throughout the year.</div>
+              <div className="flex items-center gap-2 text-base font-semibold text-foreground">
+                <Icon icon="lucide:bar-chart-3" className="text-primary text-lg" />
+                Year-over-Year Comparison
+              </div>
+              <div className="text-sm text-default-500 mt-1">
+                +{projectsDeltaPct}% more projects vs {year - 1}. Consistent growth throughout the year.
+              </div>
             </div>
-            <div className="flex-1 flex items-center justify-center">
+            <div className="flex-1 flex items-center justify-start w-full">
               <ProjectsYearComparison currentYear={year} comparisonYear={year - 1} compact />
+            </div>
+            <div className="text-xs text-default-500 mt-2 border-t border-divider pt-2">
+              {year} Total: {currentProjectsTotal.toLocaleString()} projects | {year - 1} Total: {lastYearProjectsTotal.toLocaleString()} projects
             </div>
           </CardBody>
         </Card>
 
         {/* Gauge: Won Projects % */}
-        <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-3 h-full">
+        <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-4 h-full">
           <CardBody className="p-5 h-full flex flex-col">
-            <div className="text-sm font-semibold text-foreground mb-2">Win Rate</div>
+            <div className="flex items-center gap-2 text-base font-semibold text-foreground mb-2">
+              <Icon icon="lucide:trophy" className="text-primary text-lg" />
+              Win Rate
+            </div>
             <div className="flex-1 flex items-center justify-center">
               <div className="relative">
                 <Gauge
                   value={current.wonRatePct}
-                  width={240}
-                  height={240}
+                  width={300}
+                  height={300}
                   startAngle={-130}
                   endAngle={130}
                   innerRadius="60%"
-                  outerRadius="90%"
+                  outerRadius="95%"
                   cornerRadius={8}
                   sx={{ "& text": { display: "none" } }}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-4xl md:text-5xl font-extrabold" style={{ transform: "translateY(6px)" }}>{current.wonRatePct}%</div>
+                  <div className="text-5xl md:text-6xl font-extrabold" style={{ transform: "translateY(6px)" }}>{current.wonRatePct}%</div>
                 </div>
               </div>
             </div>
-            <div className="text-sm text-default-500 mt-2">{current.wonRatePct}% of proposals converted into won deals.</div>
-            <div className="text-sm text-default-500">Goal: 70% win rate by year-end.</div>
-            <div className="text-success text-xs flex items-center gap-1 mt-1">
-              <Icon icon="lucide:arrow-up-right" /> {wonRateDelta >= 0 ? '+' : ''}{wonRateDelta}% vs {year - 1}
+            <div className="text-sm text-default-500 mt-2">Proposal-to-win conversion rate.</div>
+            <div className="text-sm text-default-500 mt-1">
+              Goal: 70% by year-end · 
+              <span className="text-success ml-1">
+                <Icon icon="lucide:arrow-up-right" className="inline" /> {wonRateDelta >= 0 ? '+' : ''}{wonRateDelta}pp YoY
+              </span>
             </div>
           </CardBody>
         </Card>
@@ -510,16 +565,22 @@ export default function Statistics() {
         {/* Total Budget */}
         <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-4 h-full">
           <CardBody className="p-5 h-full flex flex-col">
-            <div className="text-sm font-semibold text-foreground mb-1">Total Revenue from Won Projects</div>
-            <div className="text-sm text-default-500 mb-2">{formatEUR(current.totalWonBudget)} total — up {budgetDelta}% year-over-year.</div>
+            <div className="flex items-center gap-2 text-base font-semibold text-foreground mb-1">
+              <Icon icon="lucide:euro" className="text-primary text-lg" />
+              Total Revenue from Won Projects
+            </div>
+            <div className="text-sm text-default-500 mt-1 mb-2">{formatEUR(current.totalWonBudget)} total — up {budgetDelta}% year-over-year.</div>
             <div className="flex-1 flex items-center justify-center">
               <div className="font-extrabold tracking-tight text-[clamp(2.5rem,6vw,6rem)] leading-none text-center w-full">
                 <span>€</span>
-                <CountUp from={0} to={current.totalWonBudget} separator="," duration={0.1} />
+                <CountUp from={0} to={current.totalWonBudget} separator="," duration={0.05} />
               </div>
             </div>
-            <div className="text-success text-xs flex items-center gap-1 mt-auto">
-              <Icon icon="lucide:arrow-up-right" /> +{budgetDelta}% last year
+            <div className="flex items-center gap-2 mt-auto">
+              <Chip size="sm" color="success" variant="flat" startContent={<Icon icon="lucide:trending-up" className="text-sm" />}>
+                +{budgetDelta}% YoY
+              </Chip>
+              <span className="text-xs text-default-500">vs {year - 1}</span>
             </div>
           </CardBody>
         </Card>
@@ -527,8 +588,11 @@ export default function Statistics() {
         {/* Top Clients */}
         <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-6">
           <CardBody className="p-5">
-            <div className="text-sm font-semibold text-foreground">Key Accounts</div>
-            <div className="text-sm text-default-500 mb-4">Based on number of active projects.</div>
+            <div className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Icon icon="lucide:building-2" className="text-primary text-lg" />
+              Key Accounts
+            </div>
+            <div className="text-sm text-default-500 mt-1 mb-4">Based on number of active projects.</div>
             <div className="space-y-4">
               {current.topClients
                 .slice()
@@ -542,6 +606,8 @@ export default function Statistics() {
                     .join("")
                     .slice(0, 2)
                     .toUpperCase();
+                  const industry = clientIndustries[client.name] || "Other";
+                  const industryColor = getIndustryColor(industry);
                   return (
                     <div key={client.name}>
                       <div className="flex items-center justify-between">
@@ -549,12 +615,17 @@ export default function Statistics() {
                           <Avatar className="shrink-0" name={client.name} size="sm">
                             {initials}
                           </Avatar>
-                          <div className="truncate">
-                            <div className="truncate text-foreground">{client.name}</div>
-                            <div className="text-xs text-default-500">{client.projects} projects</div>
+                          <div className="truncate flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="truncate text-foreground">{client.name}</div>
+                              <Chip size="sm" color={industryColor} variant="flat" className="text-xs px-1 h-5">
+                                {industry}
+                              </Chip>
+                            </div>
+                            <div className="text-xs text-default-500 mt-0.5">{client.projects} projects</div>
                           </div>
                         </div>
-                        <div className="text-xs text-default-600 whitespace-nowrap">{formatEUR(client.value)}</div>
+                        <div className="text-xs text-default-600 whitespace-nowrap ml-2">{formatEUR(client.value)}</div>
                       </div>
                       <Progress aria-label={client.name} value={pct} className="mt-2 h-2" color="primary" />
                     </div>
@@ -568,8 +639,11 @@ export default function Statistics() {
         {/* Top 5 Budgets */}
         <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-6">
           <CardBody className="p-5">
-            <div className="text-sm font-semibold text-foreground">Top Budget Projects</div>
-            <div className="text-sm text-default-500 mb-4">Projects ranked by total approved budget.</div>
+            <div className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Icon icon="lucide:wallet" className="text-primary text-lg" />
+              Top Budget Projects
+            </div>
+            <div className="text-sm text-default-500 mt-1 mb-4">Projects ranked by total approved budget.</div>
             <div className="space-y-3">
               {current.topBudgets.map((item) => {
                 const pct = Math.round((item.value / maxBudget) * 100);
@@ -619,8 +693,16 @@ export default function Statistics() {
         {/* SIMU/LOGO Pie */}
         <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-4">
           <CardBody className="p-5 h-full flex flex-col gap-4">
-            <div className="text-sm font-semibold text-foreground">Service Mix: LOGO vs SIMU</div>
-            <div className="text-sm text-default-500 mb-2">{current.simuLogoSplit.logo}% logo design • {current.simuLogoSplit.simu}% simulation.</div>
+            <div className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Icon icon="lucide:pie-chart" className="text-primary text-lg" />
+              Service Portfolio Breakdown
+            </div>
+            <div className="text-sm text-default-500 mt-1 mb-2">
+              <Icon icon="lucide:palette" className="inline mr-1 text-primary" />
+              {current.simuLogoSplit.logo}% logo design • 
+              <Icon icon="lucide:sparkles" className="inline mx-1 text-success" />
+              {current.simuLogoSplit.simu}% simulation
+            </div>
             <div>
               {/* Main stacked bar */}
               <div className="h-6 rounded-full overflow-hidden flex border border-divider">
@@ -630,11 +712,13 @@ export default function Statistics() {
               <div className="mt-2 flex items-center gap-6 text-sm">
                 <div className="flex items-center gap-2">
                   <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: theme === 'dark' ? '#60A5FA' : '#006FEE' }}></span>
+                  <Icon icon="lucide:palette" className="text-primary text-sm" />
                   <span className="text-foreground">LOGO</span>
                   <span className="text-default-500">{logoPct}%</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: theme === 'dark' ? '#34D399' : '#17C964' }}></span>
+                  <Icon icon="lucide:sparkles" className="text-success text-sm" />
                   <span className="text-foreground">SIMU</span>
                   <span className="text-default-500">{simuPct}%</span>
                 </div>
@@ -644,8 +728,8 @@ export default function Statistics() {
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-content2 rounded-md border border-divider p-3">
                 <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: theme === 'dark' ? '#60A5FA' : '#006FEE' }}></span>
+                  <div className="flex items-center gap-1.5">
+                    <Icon icon="lucide:palette" className="text-primary text-sm" />
                     <span className="text-foreground">LOGO</span>
                   </div>
                   <div className="text-default-600">{logoPct}%</div>
@@ -656,8 +740,8 @@ export default function Statistics() {
               </div>
               <div className="bg-content2 rounded-md border border-divider p-3">
                 <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: theme === 'dark' ? '#34D399' : '#17C964' }}></span>
+                  <div className="flex items-center gap-1.5">
+                    <Icon icon="lucide:sparkles" className="text-success text-sm" />
                     <span className="text-foreground">SIMU</span>
                   </div>
                   <div className="text-default-600">{simuPct}%</div>
@@ -696,25 +780,30 @@ export default function Statistics() {
         {/* Recent Activity */}
         <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-8">
           <CardBody className="p-5">
-            <div className="text-sm font-semibold text-foreground">Recent Projects</div>
-            <div className="text-sm text-default-500 mb-4">Latest projects added to the pipeline.</div>
-            <Table aria-label="Recent activity" removeWrapper className="min-w-full">
+            <div className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Icon icon="lucide:activity" className="text-primary text-lg" />
+              Recent Projects
+            </div>
+            <div className="text-sm text-default-500 mt-1 mb-4">Latest projects added to the pipeline.</div>
+            <Table aria-label="Recent activity" removeWrapper className="min-w-full table-fixed">
               <TableHeader>
-                <TableColumn>Data</TableColumn>
-                <TableColumn>Client</TableColumn>
-                <TableColumn>Value (€)</TableColumn>
-                <TableColumn>Status</TableColumn>
+                <TableColumn className="w-[18%]">Data</TableColumn>
+                <TableColumn className="w-[32%]">Client</TableColumn>
+                <TableColumn className="w-[20%] text-right">Value (€)</TableColumn>
+                <TableColumn className="w-[30%] text-right">Status</TableColumn>
               </TableHeader>
               <TableBody>
                 {current.recent.map((r, idx) => (
                   <TableRow key={idx}>
                     <TableCell>{r.date}</TableCell>
                     <TableCell>{r.client}</TableCell>
-                    <TableCell>{formatEUR(r.value)}</TableCell>
-                    <TableCell>
-                      {r.status === "Finished" && <Chip size="sm" color="success" variant="flat">Finished</Chip>}
-                      {r.status === "Approved" && <Chip size="sm" color="primary" variant="flat">Approved</Chip>}
-                      {r.status === "In Queue" && <Chip size="sm" color="warning" variant="flat">In Queue</Chip>}
+                    <TableCell className="text-right">{formatEUR(r.value)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end">
+                        {r.status === "Finished" && <Chip size="sm" color="success" variant="flat">Finished</Chip>}
+                        {r.status === "Approved" && <Chip size="sm" color="primary" variant="flat">Approved</Chip>}
+                        {r.status === "In Queue" && <Chip size="sm" color="warning" variant="flat">In Queue</Chip>}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -750,7 +839,7 @@ export default function Statistics() {
 
               {/* Quick stats */}
               <div className="md:col-span-2">
-                <div className="text-xs text-default-500 mb-2">Quick stats</div>
+                <div className="text-xs text-default-500 mb-2">Deal Insights</div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-content2 rounded-md border border-divider p-3 text-center">
                     <div className="text-xs text-default-500">Average</div>
@@ -767,6 +856,21 @@ export default function Statistics() {
           </CardBody>
         </Card>
       </div>
+
+      {/* Back to top - floating FAB */}
+      {showBackToTop && (
+        <Tooltip content="Back to top" placement="left" color="foreground" className="text-xs">
+          <Button
+            isIconOnly
+            variant="flat"
+            className="fixed bottom-6 right-6 rounded-full shadow-md border border-divider bg-content2 text-primary hover:bg-content3"
+            aria-label="Back to top"
+            onPress={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
+            <Icon icon="lucide:arrow-up" />
+          </Button>
+        </Tooltip>
+      )}
     </div>
   );
 }
