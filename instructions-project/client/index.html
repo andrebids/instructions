@@ -1,9 +1,16 @@
 <!doctype html>
-<html lang="pt-PT">
+<html lang="pt-PT" class="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Instructions Project</title>
+    <script>
+      // Prevent flash of unstyled content by applying saved theme immediately
+      (function() {
+        const savedTheme = localStorage.getItem('heroui-theme') || 'light';
+        document.documentElement.classList.add(savedTheme);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
