@@ -1,8 +1,7 @@
 import React from "react";
-import {Select, SelectItem, Card, CardBody, Progress, Avatar, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell} from "@heroui/react";
+import {Select, SelectItem, Card, CardBody, Progress, Avatar, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useTheme } from "@heroui/use-theme";
-import { PieChart } from "@mui/x-charts/PieChart";
 import { Gauge } from "@mui/x-charts/Gauge";
 import { ProjectsYearComparison } from "../components/charts/ProjectsYearComparison";
 import ScrollVelocity from "../components/ScrollVelocity";
@@ -276,6 +275,94 @@ export default function Statistics() {
   const top5Pct = Math.min(100, Math.round((top5Total / current.totalWonBudget) * 100));
   const avgDealSize = Math.round(top5Total / current.topBudgets.length);
   const segmentColors = ["#006FEE", "#17C964", "#F5A524", "#8B5CF6", "#F31260"]; // primary, success, warning, secondary, danger
+  // Service mix helpers
+  const logoPct = current.simuLogoSplit.logo;
+  const simuPct = current.simuLogoSplit.simu;
+  const logoYoY = logoPct - (lastYear?.simuLogoSplit?.logo ?? logoPct);
+  const simuYoY = simuPct - (lastYear?.simuLogoSplit?.simu ?? simuPct);
+  const leader = logoPct === simuPct ? null : (logoPct > simuPct ? 'LOGO' : 'SIMU');
+  const leadBy = Math.abs(logoPct - simuPct);
+
+  // Export helpers
+  const csvEscape = (value) => {
+    if (value == null) return "";
+    const str = String(value).replace(/"/g, '""');
+    return `"${str}"`;
+  };
+
+  const handleExportCSV = () => {
+    const rows = [];
+    rows.push(["Section","Metric","Value"].join(","));
+    rows.push(["Overview","Year", year].join(","));
+    rows.push(["Objective","Objective %", current.objectivePct].join(","));
+    rows.push(["Objective","Objective Max", objectiveMax].join(","));
+    rows.push(["Objective","Remaining Projects", objectiveRemaining].join(","));
+    rows.push(["Clients","New Clients", current.newClients].join(","));
+    rows.push(["Won","Win Rate %", current.wonRatePct].join(","));
+    rows.push(["Budget","Total Won Budget", current.totalWonBudget].join(","));
+    rows.push("");
+    rows.push(["Top Clients","Projects","Value (€)"].join(","));
+    current.topClients.forEach((c)=>{
+      rows.push([csvEscape(c.name), c.projects, c.value].join(","));
+    });
+    rows.push("");
+    rows.push(["Top Budgets","Budget (€)"].join(","));
+    current.topBudgets.forEach((b)=>{
+      rows.push([csvEscape(b.name), b.value].join(","));
+    });
+    rows.push("");
+    rows.push(["Recent","Date","Client","Value (€)","Status"].join(","));
+    current.recent.forEach((r)=>{
+      rows.push([r.date, csvEscape(r.client), r.value, r.status].join(","));
+    });
+    const csvContent = "\ufeff" + rows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `statistics_${year}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportPDF = () => {
+    const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Statistics ${year}</title>
+      <style>
+        body{font-family:Arial,Helvetica,sans-serif;padding:24px;color:#111}
+        h1{margin:0 0 12px 0;font-size:20px}
+        h2{margin:18px 0 8px 0;font-size:16px}
+        table{width:100%;border-collapse:collapse;margin-top:8px}
+        th,td{border:1px solid #ccc;padding:6px 8px;font-size:12px;text-align:left}
+        small{color:#555}
+      </style></head><body>
+      <h1>Statistics ${year}</h1>
+      <div><strong>Objective:</strong> ${current.objectivePct}% (${objectiveReached.toLocaleString()} of ${objectiveMax.toLocaleString()})</div>
+      <div><strong>New Clients:</strong> ${current.newClients}</div>
+      <div><strong>Win Rate:</strong> ${current.wonRatePct}%</div>
+      <div><strong>Total Won Budget:</strong> ${formatEUR(current.totalWonBudget)}</div>
+      <h2>Top Clients</h2>
+      <table><thead><tr><th>Client</th><th>Projects</th><th>Value (€)</th></tr></thead><tbody>
+      ${current.topClients.map(c=>`<tr><td>${c.name}</td><td>${c.projects}</td><td>${c.value.toLocaleString()}</td></tr>`).join('')}
+      </tbody></table>
+      <h2>Top Budgets</h2>
+      <table><thead><tr><th>Project</th><th>Budget (€)</th></tr></thead><tbody>
+      ${current.topBudgets.map(b=>`<tr><td>${b.name}</td><td>${b.value.toLocaleString()}</td></tr>`).join('')}
+      </tbody></table>
+      <h2>Recent</h2>
+      <table><thead><tr><th>Date</th><th>Client</th><th>Value (€)</th><th>Status</th></tr></thead><tbody>
+      ${current.recent.map(r=>`<tr><td>${r.date}</td><td>${r.client}</td><td>${r.value.toLocaleString()}</td><td>${r.status}</td></tr>`).join('')}
+      </tbody></table>
+      <p><small>Tip: Use your browser's Print dialog to "Save as PDF".</small></p>
+      <script>window.onload=()=>{setTimeout(()=>window.print(),250)}</script>
+    </body></html>`;
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  };
 
   return (
       <div className="flex-1 min-h-0 overflow-auto p-6">
@@ -285,34 +372,45 @@ export default function Statistics() {
           <h1 className="text-3xl font-bold text-foreground">Hello, Christopher</h1>
           <p className="text-default-500 mt-2">Your progress. Your data. Your success.</p>
         </div>
-        <Select
-          aria-label="Select year"
-          selectedKeys={new Set([String(year)])}
-          onSelectionChange={(keys) => {
-            const selected = Number(Array.from(keys)[0]);
-            setYear(selected);
-          }}
-          className="w-32"
-          size="sm"
-          renderValue={(items) => items && items.size > 0 ? Array.from(items)[0].textValue : String(year)}
-        >
-          {years.map((y) => (
-            <SelectItem key={String(y)} value={String(y)}>{y}</SelectItem>
-          ))}
-        </Select>
+        <div className="flex items-center gap-2">
+          <Dropdown>
+            <DropdownTrigger>
+              <Button size="sm" variant="flat" startContent={<Icon icon="lucide:download" />}>Export</Button>
+            </DropdownTrigger>
+            <DropdownMenu aria-label="Export format" onAction={(key)=>{ if(key==='csv') handleExportCSV(); if(key==='pdf') handleExportPDF(); }}>
+              <DropdownItem key="csv" startContent={<Icon icon="lucide:file-down" />}>CSV (Excel)</DropdownItem>
+              <DropdownItem key="pdf" startContent={<Icon icon="lucide:file-text" />}>PDF</DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+          <Select
+            aria-label="Select year"
+            selectedKeys={new Set([String(year)])}
+            onSelectionChange={(keys) => {
+              const selected = Number(Array.from(keys)[0]);
+              setYear(selected);
+            }}
+            className="w-32"
+            size="sm"
+            renderValue={(items) => items && items.size > 0 ? Array.from(items)[0].textValue : String(year)}
+          >
+            {years.map((y) => (
+              <SelectItem key={String(y)} value={String(y)}>{y}</SelectItem>
+            ))}
+          </Select>
+        </div>
       </div>
 
       {/* KPI Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 items-stretch">
 
         {/* This Year Objective */}
-        <Card className="bg-content1 border border-divider h-full">
+        <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm h-full">
           <CardBody className="p-5">
             <div className="flex items-start justify-between">
               <div>
                 <div className="text-sm font-semibold text-foreground">Annual Goal Tracker</div>
                 <div className="text-3xl font-bold mt-1">{current.objectivePct}%</div>
-                <div className="text-xs text-default-500">of annual projects target reached</div>
+                <div className="text-sm text-default-500">of annual projects target reached</div>
               </div>
               <Icon icon="lucide:target" className="text-primary text-3xl" />
             </div>
@@ -331,13 +429,13 @@ export default function Statistics() {
         </Card>
 
         {/* New Clients */}
-        <Card className="bg-content1 border border-divider h-full">
+        <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm h-full">
           <CardBody className="p-5">
             <div className="flex items-start justify-between">
               <div>
                 <div className="text-sm font-semibold text-foreground">New Clients Acquired</div>
                 <div className="text-3xl font-bold mt-1">{current.newClients}</div>
-                <div className="text-xs text-default-500">{current.newClients} new clients — up {newClientsDelta}% vs last year.</div>
+                <div className="text-sm text-default-500">{current.newClients} new clients — up {newClientsDelta}% vs last year.</div>
               </div>
               <Icon icon="lucide:users" className="text-warning text-3xl" />
             </div>
@@ -367,11 +465,11 @@ export default function Statistics() {
       {/* Masonry-like unified grid to avoid inner gaps */}
       <div className="grid grid-cols-1 lg:grid-cols-12 grid-flow-row-dense gap-6 items-stretch">
         {/* Bar Chart */}
-        <Card className="bg-content1 border border-divider lg:col-span-5 h-full">
+        <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-5 h-full">
           <CardBody className="p-5 h-full flex flex-col">
             <div className="mb-2">
               <div className="text-sm font-semibold text-foreground">Year-over-Year Comparison</div>
-              <div className="text-xs text-default-500">Consistent growth throughout the year.</div>
+              <div className="text-sm text-default-500">Consistent growth throughout the year.</div>
             </div>
             <div className="flex-1 flex items-center justify-center">
               <ProjectsYearComparison currentYear={year} comparisonYear={year - 1} compact />
@@ -380,7 +478,7 @@ export default function Statistics() {
         </Card>
 
         {/* Gauge: Won Projects % */}
-        <Card className="bg-content1 border border-divider lg:col-span-3 h-full">
+        <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-3 h-full">
           <CardBody className="p-5 h-full flex flex-col">
             <div className="text-sm font-semibold text-foreground mb-2">Win Rate</div>
             <div className="flex-1 flex items-center justify-center">
@@ -401,8 +499,8 @@ export default function Statistics() {
                 </div>
               </div>
             </div>
-            <div className="text-xs text-default-500 mt-2">{current.wonRatePct}% of proposals converted into won deals.</div>
-            <div className="text-xs text-default-500">Goal: 70% win rate by year-end.</div>
+            <div className="text-sm text-default-500 mt-2">{current.wonRatePct}% of proposals converted into won deals.</div>
+            <div className="text-sm text-default-500">Goal: 70% win rate by year-end.</div>
             <div className="text-success text-xs flex items-center gap-1 mt-1">
               <Icon icon="lucide:arrow-up-right" /> {wonRateDelta >= 0 ? '+' : ''}{wonRateDelta}% vs {year - 1}
             </div>
@@ -410,14 +508,14 @@ export default function Statistics() {
         </Card>
 
         {/* Total Budget */}
-        <Card className="bg-content1 border border-divider lg:col-span-4 h-full">
+        <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-4 h-full">
           <CardBody className="p-5 h-full flex flex-col">
             <div className="text-sm font-semibold text-foreground mb-1">Total Revenue from Won Projects</div>
-            <div className="text-xs text-default-500 mb-2">{formatEUR(current.totalWonBudget)} total — up {budgetDelta}% year-over-year.</div>
+            <div className="text-sm text-default-500 mb-2">{formatEUR(current.totalWonBudget)} total — up {budgetDelta}% year-over-year.</div>
             <div className="flex-1 flex items-center justify-center">
               <div className="font-extrabold tracking-tight text-[clamp(2.5rem,6vw,6rem)] leading-none text-center w-full">
                 <span>€</span>
-                <CountUp from={0} to={current.totalWonBudget} separator="," duration={1.2} />
+                <CountUp from={0} to={current.totalWonBudget} separator="," duration={0.1} />
               </div>
             </div>
             <div className="text-success text-xs flex items-center gap-1 mt-auto">
@@ -427,10 +525,10 @@ export default function Statistics() {
         </Card>
 
         {/* Top Clients */}
-        <Card className="bg-content1 border border-divider lg:col-span-6">
+        <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-6">
           <CardBody className="p-5">
             <div className="text-sm font-semibold text-foreground">Key Accounts</div>
-            <div className="text-xs text-default-500 mb-4">Based on number of active projects.</div>
+            <div className="text-sm text-default-500 mb-4">Based on number of active projects.</div>
             <div className="space-y-4">
               {current.topClients
                 .slice()
@@ -468,10 +566,10 @@ export default function Statistics() {
         </Card>
 
         {/* Top 5 Budgets */}
-        <Card className="bg-content1 border border-divider lg:col-span-6">
+        <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-6">
           <CardBody className="p-5">
             <div className="text-sm font-semibold text-foreground">Top Budget Projects</div>
-            <div className="text-xs text-default-500 mb-4">Projects ranked by total approved budget.</div>
+            <div className="text-sm text-default-500 mb-4">Projects ranked by total approved budget.</div>
             <div className="space-y-3">
               {current.topBudgets.map((item) => {
                 const pct = Math.round((item.value / maxBudget) * 100);
@@ -519,55 +617,87 @@ export default function Statistics() {
         </Card>
 
         {/* SIMU/LOGO Pie */}
-        <Card className="bg-content1 border border-divider lg:col-span-4">
-          <CardBody className="p-5">
+        <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-4">
+          <CardBody className="p-5 h-full flex flex-col gap-4">
             <div className="text-sm font-semibold text-foreground">Service Mix: LOGO vs SIMU</div>
-            <div className="text-xs text-default-500 mb-4">{current.simuLogoSplit.logo}% logo design • {current.simuLogoSplit.simu}% simulation.</div>
-            <div className="flex items-center justify-between gap-6">
-              <div className="relative">
-                {(() => {
-                  const colorLogo = theme === "dark" ? "#60A5FA" : "#006FEE";
-                  const colorSimu = theme === "dark" ? "#34D399" : "#17C964";
-                  return (
-                    <>
-                      <PieChart
-                        series={[
-                          {
-                            data: [
-                              { id: 0, value: current.simuLogoSplit.logo, label: "LOGO" },
-                              { id: 1, value: current.simuLogoSplit.simu, label: "SIMU" },
-                            ],
-                            innerRadius: 60,
-                            outerRadius: 100,
-                            cornerRadius: 8,
-                            paddingAngle: 2,
-                            arcLabel: () => "",
-                            highlightScope: { faded: "global", highlighted: "item" },
-                            valueFormatter: (v) => `${v.value}%`,
-                          },
-                        ]}
-                        colors={[colorLogo, colorSimu]}
-                        width={260}
-                        height={260}
-                        slotProps={{ legend: { labelStyle: { fill: theme === 'dark' ? '#fff' : 'inherit' }, position: 'right' } }}
-                        sx={{
-                          '& .MuiChartsLegend-label': { fill: theme === 'dark' ? '#fff' : 'inherit', color: theme === 'dark' ? '#fff' : 'inherit' },
-                        }}
-                      />
-                    </>
-                  );
-                })()}
+            <div className="text-sm text-default-500 mb-2">{current.simuLogoSplit.logo}% logo design • {current.simuLogoSplit.simu}% simulation.</div>
+            <div>
+              {/* Main stacked bar */}
+              <div className="h-6 rounded-full overflow-hidden flex border border-divider">
+                <div style={{ width: logoPct + '%', backgroundColor: theme === 'dark' ? '#60A5FA' : '#006FEE' }}></div>
+                <div style={{ width: simuPct + '%', backgroundColor: theme === 'dark' ? '#34D399' : '#17C964' }}></div>
+              </div>
+              <div className="mt-2 flex items-center gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: theme === 'dark' ? '#60A5FA' : '#006FEE' }}></span>
+                  <span className="text-foreground">LOGO</span>
+                  <span className="text-default-500">{logoPct}%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: theme === 'dark' ? '#34D399' : '#17C964' }}></span>
+                  <span className="text-foreground">SIMU</span>
+                  <span className="text-default-500">{simuPct}%</span>
+                </div>
               </div>
             </div>
-            <div className="mt-4 text-xs text-default-500">Last quarter trend: +10% in SIMU.</div>
+            {/* Quick stats + stacked bar */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-content2 rounded-md border border-divider p-3">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: theme === 'dark' ? '#60A5FA' : '#006FEE' }}></span>
+                    <span className="text-foreground">LOGO</span>
+                  </div>
+                  <div className="text-default-600">{logoPct}%</div>
+                </div>
+                <div className="text-xs mt-1 {logoYoY>=0? 'text-success' : 'text-danger'}">
+                  {logoYoY >= 0 ? '↑' : '↓'} {Math.abs(logoYoY)} pp YoY
+                </div>
+              </div>
+              <div className="bg-content2 rounded-md border border-divider p-3">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: theme === 'dark' ? '#34D399' : '#17C964' }}></span>
+                    <span className="text-foreground">SIMU</span>
+                  </div>
+                  <div className="text-default-600">{simuPct}%</div>
+                </div>
+                <div className="text-xs mt-1 {simuYoY>=0? 'text-success' : 'text-danger'}">
+                  {simuYoY >= 0 ? '↑' : '↓'} {Math.abs(simuYoY)} pp YoY
+                </div>
+              </div>
+            </div>
+            <div className="flex-1">
+              <div className="text-xs text-default-500 mb-2">YoY composition</div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-default-500">{year}</span>
+                  <div className="flex-1 h-2 rounded-full overflow-hidden flex border border-divider">
+                    <div style={{ width: logoPct + '%', backgroundColor: theme === 'dark' ? '#60A5FA' : '#006FEE' }}></div>
+                    <div style={{ width: simuPct + '%', backgroundColor: theme === 'dark' ? '#34D399' : '#17C964' }}></div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-default-500">{year - 1}</span>
+                  <div className="flex-1 h-2 rounded-full overflow-hidden flex border border-divider">
+                    <div style={{ width: (lastYear?.simuLogoSplit?.logo ?? logoPct) + '%', backgroundColor: theme === 'dark' ? '#60A5FA' : '#006FEE' }}></div>
+                    <div style={{ width: (lastYear?.simuLogoSplit?.simu ?? simuPct) + '%', backgroundColor: theme === 'dark' ? '#34D399' : '#17C964' }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-auto text-xs text-default-500 space-y-1">
+              <div>{leader ? `${leader} leads by ${leadBy} pp.` : 'Balanced portfolio between design and simulation.'}</div>
+              <div>Last quarter trend: +10% in SIMU.</div>
+            </div>
           </CardBody>
         </Card>
 
         {/* Recent Activity */}
-        <Card className="bg-content1 border border-divider lg:col-span-8">
+        <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm lg:col-span-8">
           <CardBody className="p-5">
             <div className="text-sm font-semibold text-foreground">Recent Projects</div>
-            <div className="text-xs text-default-500 mb-4">Latest projects added to the pipeline.</div>
+            <div className="text-sm text-default-500 mb-4">Latest projects added to the pipeline.</div>
             <Table aria-label="Recent activity" removeWrapper className="min-w-full">
               <TableHeader>
                 <TableColumn>Data</TableColumn>
