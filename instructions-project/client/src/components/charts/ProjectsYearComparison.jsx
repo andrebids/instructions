@@ -1,5 +1,5 @@
 import React from "react";
-import { BarChart } from "@mui/x-charts/BarChart";
+import { LineChart } from "@mui/x-charts/LineChart";
 import { useTheme } from "@heroui/use-theme";
 
 export function ProjectsYearComparison({
@@ -9,6 +9,19 @@ export function ProjectsYearComparison({
   compact = false,
 }) {
   const { theme } = useTheme();
+  const containerRef = React.useRef(null);
+  const [chartWidth, setChartWidth] = React.useState(520);
+  React.useEffect(() => {
+    function handleResize() {
+      if (containerRef.current) {
+        const w = containerRef.current.clientWidth;
+        setChartWidth(Math.max(320, w));
+      }
+    }
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Dados dos projetos por ano (base)
   const baseProjectsData = {
@@ -33,10 +46,6 @@ export function ProjectsYearComparison({
   const safeCurrentYear = Number(currentYear);
   const safeComparisonYear = Number(comparisonYear);
 
-  // Preparar dados para o gráfico com duas séries
-  const xLabelCurrent = compact ? String(safeCurrentYear) : `Current Year (${safeCurrentYear})`;
-  const xLabelComparison = compact ? String(safeComparisonYear) : `Comparison Year (${safeComparisonYear})`;
-
   // Garantir valores numéricos válidos (evitar NaN)
   const getNumeric = (v) => {
     const n = typeof v === 'number' ? v : Number(v);
@@ -46,18 +55,31 @@ export function ProjectsYearComparison({
   const currentValue = getNumeric(projectsData[safeCurrentYear]);
   const comparisonValue = getNumeric(projectsData[safeComparisonYear]);
 
-  const chartData = [
-    {
-      year: xLabelCurrent,
-      currentYear: currentValue,
-      comparisonYear: 0,
-    },
-    {
-      year: xLabelComparison,
-      currentYear: 0,
-      comparisonYear: comparisonValue,
-    },
-  ];
+  // Construir dados mensais determinísticos proporcionais ao total anual
+  const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const buildMonthly = (total) => {
+    const weights = Array.from({ length: 12 }, (_, m) => {
+      const x = (2 * Math.PI * m) / 12;
+      return 1 + 0.35 * Math.sin(x - Math.PI / 6) + 0.15 * Math.sin(2 * x);
+    });
+    const sum = weights.reduce((a, b) => a + b, 0);
+    return weights.map((w) => Math.round((w / sum) * total));
+  };
+  const currentMonthly = buildMonthly(currentValue);
+  const comparisonMonthly = buildMonthly(comparisonValue);
+  // Acumular ao longo dos meses (total até ao mês)
+  const toCumulative = (arr) => {
+    let run = 0;
+    return arr.map((v) => (run += v));
+  };
+  const currentCumulative = toCumulative(currentMonthly);
+  const comparisonCumulative = toCumulative(comparisonMonthly);
+  const colorCurrent = theme === 'dark' ? '#3b82f6' : '#006FEE';
+  const colorComparison = theme === 'dark' ? '#22c55e' : '#17C964';
+  const chartHeight = 320;
+  const margins = { left: 40, right: 16, top: 6, bottom: 24 };
+  const plotHeight = chartHeight - margins.top - margins.bottom;
+  const yLabelTop = margins.top + plotHeight / 2;
 
   // Calcular diferença percentual
   const difference = currentValue - comparisonValue;
@@ -65,12 +87,8 @@ export function ProjectsYearComparison({
     (difference / comparisonValue) * 100
   ).toFixed(1);
 
-  // Axis overlay helpers (clean arrow + labels)
-  const rawMax = Math.max(currentValue, comparisonValue);
-  const roundedMax = Math.max(1000, Math.ceil((Number.isFinite(rawMax) ? rawMax : 0) / 5000) * 5000 || 10000);
-  const axisSteps = 4; // 0..max in 4 steps like the mock
-  const formatAxis = (n) => n.toLocaleString('fr-FR');
-  const axisLabels = Array.from({ length: axisSteps + 1 }, (_ , i) => Math.round((roundedMax / axisSteps) * i));
+  const rawMax = Math.max(...currentCumulative, ...comparisonCumulative);
+  const roundedMax = Math.max(1000, Math.ceil(rawMax / 5000) * 5000);
 
 // Note: MUI X Charts already supports initial animations via skipAnimation={false}
 
@@ -142,102 +160,72 @@ export function ProjectsYearComparison({
       )}
 
       {/* Chart */}
-      <div className="bg-content1 rounded-lg p-3 border border-divider relative">
-        {/* Left arrow axis overlay (no grid, no real axis) */}
-        <div className="absolute left-2 top-4 bottom-10 w-24 pointer-events-none">
-          <div className="absolute right-0 top-2 bottom-0 border-l dark:border-white/80 border-default-400"></div>
-          <div className="absolute right-0 -top-1 w-0 h-0 border-l-5 border-l-transparent border-r-5 border-r-transparent border-b-8 dark:border-b-white/80 border-b-default-400"></div>
-          <div className="h-full flex flex-col justify-between text-foreground text-xs md:text-sm font-semibold pr-3 whitespace-nowrap text-right">
-            {axisLabels.slice().reverse().map((v) => (
-              <div key={v}>{formatAxis(v)}</div>
-            ))}
+      <div className="w-full relative" ref={containerRef}>
+          <LineChart
+            xAxis={[{ 
+              scaleType: 'point', 
+              data: monthLabels, 
+              tickLabelStyle: { fill: 'hsl(var(--heroui-foreground))' }
+            }]}
+            yAxis={[{ 
+              min: 0, 
+              max: roundedMax, 
+              tickLabelStyle: { fill: 'hsl(var(--heroui-foreground))' },
+              valueFormatter: (v) => v.toLocaleString('fr-FR'),
+            }]}
+            series={[
+              { curve: 'monotoneX', data: currentCumulative, label: `Year ${safeCurrentYear}`, color: colorCurrent, showMark: false, area: true, baseline: 'min' },
+              { curve: 'monotoneX', data: comparisonCumulative, label: `Year ${safeComparisonYear}`, color: colorComparison, showMark: false, area: true, baseline: 'min' },
+            ]}
+            width={chartWidth}
+            height={chartHeight}
+            margin={margins}
+            grid={{ horizontal: true, vertical: false }}
+            slotProps={{ legend: { hidden: true } }}
+            sx={{
+              '& .MuiChartsLegend-root': { display: 'none' },
+              '& .MuiChartsAxis-line': { stroke: 'hsl(var(--heroui-default-400))' },
+              '& .MuiChartsAxis-tickLabel': { fill: 'hsl(var(--heroui-foreground))' },
+              '& .MuiChartsGrid-line': { stroke: 'hsl(var(--heroui-default-300))', opacity: 0.25 },
+              '& .MuiLineElement-root': { strokeLinecap: 'round', strokeWidth: 3 },
+              '& .MuiAreaElement-root': { fillOpacity: 0.12 },
+            }}
+            experimentalFeatures={{ preferStrictDomainInLineCharts: true }}
+          />
+          {/* Axis labels moved to custom positions relative to chart area */}
+          <div
+            className="absolute text-foreground text-xs md:text-sm"
+            style={{ left: margins.left - 22, top: yLabelTop, transform: 'translateY(-50%) rotate(-90deg)', transformOrigin: 'left top' }}
+          >
+            Projects
           </div>
-        </div>
-        <div className="pl-24 flex justify-center">
-        <BarChart
-          dataset={chartData}
-          xAxis={[
-            {
-              scaleType: 'band',
-              dataKey: 'year',
-              labelStyle: {
-                fill: 'hsl(var(--heroui-foreground))',
-                fontSize: '14px',
-              },
-              tickLabelStyle: {
-                fill: 'hsl(var(--heroui-foreground))',
-                fontSize: compact ? '18px' : '14px',
-                fontWeight: 700,
-              },
-              tickSize: 0,
-              position: 'none',
-            },
-          ]}
-          yAxis={[
-            {
-              min: 0,
-              max: roundedMax,
-              position: 'none',
-              tickLabelStyle: {
-                fill: 'transparent',
-                fontSize: '12px',
-              },
-              tickSize: 0,
-            },
-          ]}
-          series={[
-            {
-              dataKey: 'currentYear',
-              label: `Current Year (${safeCurrentYear})`,
-              color: 'url(#barGradBlue)',
-              highlightScope: { highlighted: 'none', faded: 'none' },
-            },
-            {
-              dataKey: 'comparisonYear',
-              label: `Comparison Year (${safeComparisonYear})`,
-              color: 'url(#barGradGreen)',
-              highlightScope: { highlighted: 'none', faded: 'none' },
-            },
-          ]}
-          width={280}
-          height={200}
-          margin={{ left: 0, right: 0, top: 0, bottom: 28 }}
-          skipAnimation={false}
-          tooltip={{
-            formatter: (value) => [`${value.toLocaleString()} projects`, 'Projects'],
-          }}
-          grid={{ horizontal: false, vertical: false }}
-          legend={{ hidden: true }}
-          slotProps={{ bar: { rx: 10 } }}
-          sx={{
-            width: '100%',
-            pointerEvents: 'none',
-            '& .MuiChartsGrid-root': { display: 'none' },
-            '& .MuiChartsAxis-line': { display: 'none' },
-            '& .MuiChartsLegend-root': { display: 'none' },
-            '& .MuiChartsAxis-tick': { display: 'none' },
-            '& .MuiChartsTooltip-root': { display: 'none' },
-          }}
-        >
-          <defs>
-            <linearGradient id="barGradBlue" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={theme === 'dark' ? '#bfdbfe' : '#cfe7ff'} />
-              <stop offset="100%" stopColor={theme === 'dark' ? '#3b82f6' : '#3b82f6'} />
-            </linearGradient>
-            <linearGradient id="barGradGreen" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={theme === 'dark' ? '#bbf7d0' : '#d2fbd8'} />
-              <stop offset="100%" stopColor={theme === 'dark' ? '#22c55e' : '#22c55e'} />
-            </linearGradient>
-          </defs>
-        </BarChart>
-        </div>
-        {/* Year labels aligned under each bar */}
-        <div className="mt-2 pl-24 pr-2">
-          <div className="grid grid-cols-2">
-            <div className="text-center text-lg md:text-xl font-semibold text-foreground">{safeCurrentYear}</div>
-            <div className="text-center text-lg md:text-xl font-semibold text-foreground">{safeComparisonYear}</div>
+          <div
+            className="absolute text-foreground text-xs md:text-sm"
+            style={{ left: '50%', transform: 'translateX(-50%)', bottom: margins.bottom - 2 }}
+          >
+            Months
           </div>
-        </div>
+          {/* Custom legend pinned bottom-left under the chart */}
+          <div className="mt-3 pl-2 flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-2.5 w-7 rounded-full" style={{ backgroundColor: colorCurrent }}></span>
+              <span className="text-foreground text-sm">Year {safeCurrentYear}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-2.5 w-7 rounded-full" style={{ backgroundColor: colorComparison }}></span>
+              <span className="text-foreground text-sm">Year {safeComparisonYear}</span>
+            </div>
+          </div>
+          {compact && (
+            <div className="mt-2 text-xs text-default-500 flex flex-wrap gap-4 pl-2">
+              <span>
+                {`${difference >= 0 ? '+' : ''}${percentageChange}%`} more projects compared to {safeComparisonYear}.
+              </span>
+              <span className="opacity-80">
+                {safeCurrentYear}: {currentValue.toLocaleString()} | {safeComparisonYear}: {comparisonValue.toLocaleString()}
+              </span>
+            </div>
+          )}
       </div>
     </div>
   );
