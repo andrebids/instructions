@@ -38,6 +38,14 @@ if %errorlevel% neq 0 (
     goto menu
 )
 
+rem Verificar e instalar dependências
+call :check_and_install_dependencies
+if %errorlevel% neq 0 (
+    echo ❌ Erro ao instalar dependências
+    pause
+    goto menu
+)
+
 echo [1/4] Iniciando base de dados PostgreSQL...
 if "%DOCKER_AVAILABLE%"=="1" (
     %COMPOSE_CMD% -f docker-compose.dev.yml up -d
@@ -215,6 +223,51 @@ echo Projeto Instructions - Gerido com sucesso
 echo.
 timeout /t 2 /nobreak >nul
 exit
+
+rem =====================
+rem Verificação e instalação de dependências
+rem =====================
+
+:check_and_install_dependencies
+echo ========================================
+echo    VERIFICANDO DEPENDÊNCIAS
+echo ========================================
+echo.
+
+echo [1/3] Verificando dependências do servidor...
+cd /d "%~dp0server"
+if not exist "node_modules" (
+    echo ⚠️  node_modules não encontrado no servidor. Instalando dependências...
+    npm install
+    if %errorlevel% neq 0 (
+        echo ❌ Erro ao instalar dependências do servidor
+        exit /b 1
+    )
+    echo ✅ Dependências do servidor instaladas com sucesso!
+) else (
+    echo ✅ Dependências do servidor já instaladas
+)
+echo.
+
+echo [2/3] Verificando dependências do cliente...
+cd /d "%~dp0client"
+if not exist "node_modules" (
+    echo ⚠️  node_modules não encontrado no cliente. Instalando dependências...
+    npm install
+    if %errorlevel% neq 0 (
+        echo ❌ Erro ao instalar dependências do cliente
+        exit /b 1
+    )
+    echo ✅ Dependências do cliente instaladas com sucesso!
+) else (
+    echo ✅ Dependências do cliente já instaladas
+)
+echo.
+
+echo [3/3] Verificação de dependências concluída!
+echo ✅ Todas as dependências estão prontas
+echo.
+exit /b 0
 
 rem =====================
 rem Utilitarios e checks
