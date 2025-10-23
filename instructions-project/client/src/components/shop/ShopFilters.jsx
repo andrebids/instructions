@@ -1,11 +1,14 @@
 import React from "react";
-import { RadioGroup, Radio, CheckboxGroup, Checkbox } from "@heroui/react";
+import { RadioGroup, Radio, CheckboxGroup, Checkbox, Input } from "@heroui/react";
 
-export default function ShopFilters({ filters, onChange }) {
+export default function ShopFilters({ filters, onChange, query, onQueryChange }) {
   const handle = (key, value) => onChange({ ...filters, [key]: value });
 
   return (
     <div className="mb-4">
+      <div className="mb-4">
+        <Input size="sm" placeholder="Buscar produtos" value={query || ""} onChange={(e)=>onQueryChange && onQueryChange(e.target.value)} />
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-content1/40 border border-divider rounded-lg p-4">
           <div className="text-sm text-default-500 mb-2">Tipo (2D/3D)</div>
