@@ -7,7 +7,8 @@ import { useTheme } from "@heroui/use-theme";
 const navigationItems = [
   { name: "Dashboard", icon: "lucide:layout-dashboard", href: "/" },
   { name: "Statistics", icon: "lucide:bar-chart", href: "/statistics" },
-  { name: "Orders", icon: "lucide:shopping-cart", href: "#" },
+  { name: "Loja", icon: "lucide:shopping-bag", href: "/shop" },
+  { name: "Orders", icon: "lucide:shopping-cart", href: "/orders" },
 ];
 
 export function SidebarNavigation() {
@@ -15,7 +16,7 @@ export function SidebarNavigation() {
   useTheme();
 
   return (
-    <div className={`flex flex-col items-center h-full bg-transparent dark:bg-content1 py-6`}>
+    <div className={`flex flex-col items-center h-full bg-transparent py-6`}>
       {/* Logo reativo ao tema (sem JS) */}
       <div>
         <img
@@ -60,8 +61,8 @@ export function SidebarNavigation() {
                     className={({ isActive }) =>
                       `w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-all ` +
                       (isActive
-                        ? `bg-primary/20 hover:bg-primary/25`
-                        : `bg-content2/60 dark:bg-content2 hover:bg-content3`)
+                        ? `bg-primary/50 hover:bg-primary/60`
+                        : `bg-content2/70 dark:bg-content2 hover:bg-content3`)
                     }
                   >
                     {({ isActive }) => (
