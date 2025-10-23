@@ -3,39 +3,41 @@ import { Input, Avatar, Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { motion } from "framer-motion";
 
-export const AIAssistantChat = ({ onClose }) => {
-  const [messages, setMessages] = React.useState([
+export const AIAssistantChat = ({ onClose, initialMessages }) => {
+  const createDefaultMessages = () => ([
     {
       id: "1",
       content: "Hello! I'm Blachere Assistant. How can I help you today?",
       isUser: false,
-      timestamp: new Date(Date.now() - 180000), // 3 minutes ago
+      timestamp: new Date(Date.now() - 180000),
     },
     {
       id: "2",
       content: "Hi! Can you tell me the dimensions of the IPL123?",
       isUser: true,
-      timestamp: new Date(Date.now() - 120000), // 2 minutes ago
+      timestamp: new Date(Date.now() - 120000),
     },
     {
       id: "3",
       content: "Of course! The IPL123 has dimensions of 1.20m in height by 4m in width. It's one of our most popular illuminated panels for facade decorations. Would you like more details about its specifications or installation requirements?",
       isUser: false,
-      timestamp: new Date(Date.now() - 115000), // 1 minute 55 seconds ago
+      timestamp: new Date(Date.now() - 115000),
     },
     {
       id: "4",
       content: "That's perfect, thanks! What about power consumption?",
       isUser: true,
-      timestamp: new Date(Date.now() - 60000), // 1 minute ago
+      timestamp: new Date(Date.now() - 60000),
     },
     {
       id: "5",
       content: "The IPL123 operates at 24V with a power consumption of approximately 96W. It features energy-efficient LED technology, which makes it ideal for extended use during the holiday season. The unit also comes with an IP65 rating, making it suitable for outdoor installations.",
       isUser: false,
-      timestamp: new Date(Date.now() - 55000), // 55 seconds ago
+      timestamp: new Date(Date.now() - 55000),
     },
   ]);
+
+  const [messages, setMessages] = React.useState(() => initialMessages ?? createDefaultMessages());
   const [inputValue, setInputValue] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
   

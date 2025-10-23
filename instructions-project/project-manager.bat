@@ -46,9 +46,12 @@ if %errorlevel% neq 0 (
     goto menu
 )
 
+rem Garantir que estamos na raiz do projeto antes de comandos subsequentes
+cd /d "%~dp0"
+
 echo [1/4] Iniciando base de dados PostgreSQL...
 if "%DOCKER_AVAILABLE%"=="1" (
-    %COMPOSE_CMD% -f docker-compose.dev.yml up -d
+    %COMPOSE_CMD% -f "%~dp0docker-compose.dev.yml" up -d
     if %errorlevel% neq 0 (
         echo ❌ Erro ao iniciar PostgreSQL
         pause
@@ -67,12 +70,12 @@ echo ✅ PostgreSQL pronto!
 echo.
 
 echo [3/4] Iniciando servidor backend...
-start /min "Backend Server" cmd /k "cd server && npm run dev"
+start /min "Backend Server" cmd /k cd /d "%~dp0server" ^&^& npm run dev
 echo ✅ Servidor backend iniciado em http://localhost:5000
 echo.
 
 echo [4/4] Iniciando cliente frontend...
-start /min "Frontend Client" cmd /k "cd client && npm run dev"
+start /min "Frontend Client" cmd /k cd /d "%~dp0client" ^&^& npm run dev
 echo ✅ Cliente frontend iniciado
 echo.
 
@@ -84,24 +87,31 @@ echo 🔧 Backend:  http://localhost:5000
 echo 🗄️  Database: localhost:5433
 echo.
 echo Aguardando frontend estar pronto...
-timeout /t 5 /nobreak >nul
+timeout /t 7 /nobreak >nul
 
-rem Tentar detectar a porta do frontend automaticamente
-set "FRONTEND_PORT=3003"
-echo Tentando conectar ao frontend na porta %FRONTEND_PORT%...
-curl -s http://localhost:%FRONTEND_PORT% >nul 2>&1
-if %errorlevel% equ 0 (
-    echo ✅ Frontend detectado na porta %FRONTEND_PORT%
-    set "FRONTEND_URL=http://localhost:%FRONTEND_PORT%"
-) else (
-    echo ⚠️  Frontend nao encontrado na porta %FRONTEND_PORT%
-    echo.
-    echo Portas comuns do Vite: 3000, 3001, 3002, 3003, 5173, 4173
-    echo.
-    set /p FRONTEND_PORT="Insere a porta do frontend (ou Enter para 3003): "
-    if "%FRONTEND_PORT%"=="" set "FRONTEND_PORT=3003"
-    set "FRONTEND_URL=http://localhost:%FRONTEND_PORT%"
+rem Tentar detectar automaticamente o frontend em portas comuns do Vite
+set "FRONTEND_PORT="
+for %%P in (3003 5173 4173 3000 3001 3002 3005) do (
+    curl -s http://localhost:%%P >nul 2>&1
+    if not errorlevel 1 (
+        set "FRONTEND_PORT=%%P"
+        goto frontend_found
+    )
 )
+
+echo ⚠️  Frontend nao detectado automaticamente.
+echo.
+echo Portas comuns do Vite: 3003, 5173, 4173, 3000, 3001, 3002, 3005
+echo.
+set /p FRONTEND_PORT="Insere a porta do frontend (ou Enter para 3003): "
+if "%FRONTEND_PORT%"=="" set "FRONTEND_PORT=3003"
+goto frontend_set
+
+:frontend_found
+echo ✅ Frontend detectado na porta %FRONTEND_PORT%
+
+:frontend_set
+set "FRONTEND_URL=http://localhost:%FRONTEND_PORT%"
 
 echo.
 echo 🌐 Frontend: %FRONTEND_URL%

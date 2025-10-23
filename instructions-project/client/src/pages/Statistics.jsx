@@ -1,17 +1,18 @@
 import React from "react";
-import {Select, SelectItem, Card, CardBody, Progress, Avatar, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Tooltip} from "@heroui/react";
+import {Select, SelectItem, Card, CardBody, Progress, Avatar, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useTheme } from "@heroui/use-theme";
 import { Gauge } from "@mui/x-charts/Gauge";
 import { ProjectsYearComparison } from "../components/charts/ProjectsYearComparison";
 import ScrollVelocity from "../components/ScrollVelocity";
 import CountUp from "../components/CountUp";
+import { AIAssistantChat } from "../components/ai-assistant-chat";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Statistics() {
   const { theme } = useTheme();
   const [year, setYear] = React.useState(2025);
-  const [showBackToTop, setShowBackToTop] = React.useState(false);
-  const scrollContainerRef = React.useRef(null);
+  const [isOpen, setIsOpen] = React.useState(false);
 
   const years = [2025, 2024, 2023, 2022, 2021];
 
@@ -248,18 +249,7 @@ export default function Statistics() {
   const lastYearProjectsTotal = projectsTotals[year - 1] ?? 0;
   const projectsDeltaPct = lastYearProjectsTotal ? Math.round(((currentProjectsTotal - lastYearProjectsTotal) / lastYearProjectsTotal) * 100) : 0;
 
-  React.useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const handleScroll = () => {
-      const epsilon = 16; // tolerance pixels from the very bottom
-      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - epsilon;
-      setShowBackToTop(atBottom);
-    };
-    handleScroll();
-    el.addEventListener('scroll', handleScroll, { passive: true });
-    return () => el.removeEventListener('scroll', handleScroll);
-  }, []);
+  // Chat toggle handled locally, no scroll listeners needed
 
   // Objective helpers
   const objectiveReached = Math.round((objectiveMax * current.objectivePct) / 100);
@@ -406,8 +396,41 @@ export default function Statistics() {
     w.document.close();
   };
 
+  const chatInitialMessages = [
+    {
+      id: "s1",
+      content: "Hello! I'm the Analytics Assistant. I can help with this page's data. What would you like to analyze?",
+      isUser: false,
+      timestamp: new Date(Date.now() - 180000),
+    },
+    {
+      id: "s2",
+      content: "What's the win rate trend this year versus last year?",
+      isUser: true,
+      timestamp: new Date(Date.now() - 120000),
+    },
+    {
+      id: "s3",
+      content: `The current win rate is ${current.wonRatePct}% (${wonRateDelta >= 0 ? "+" : ""}${wonRateDelta} pp YoY). I can break it down by quarter if you like.`,
+      isUser: false,
+      timestamp: new Date(Date.now() - 115000),
+    },
+    {
+      id: "s4",
+      content: "And the total revenue from won projects?",
+      isUser: true,
+      timestamp: new Date(Date.now() - 60000),
+    },
+    {
+      id: "s5",
+      content: `Total won revenue: ${formatEUR(current.totalWonBudget)} (↑ ${budgetDelta}% vs ${year - 1}). Would you like me to export a quick report (CSV/PDF)?`,
+      isUser: false,
+      timestamp: new Date(Date.now() - 55000),
+    },
+  ];
+
     return (
-      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-auto p-6">
+      <div className="flex-1 min-h-0 overflow-auto p-6">
       {/* Header with greeting and year filter */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -857,20 +880,34 @@ export default function Statistics() {
         </Card>
       </div>
 
-      {/* Back to top - floating FAB */}
-      {showBackToTop && (
-        <Tooltip content="Back to top" placement="left" color="foreground" className="text-xs">
-          <Button
-            isIconOnly
-            variant="flat"
-            className="fixed bottom-6 right-6 rounded-full shadow-md border border-divider bg-content2 text-primary hover:bg-content3"
-            aria-label="Back to top"
-            onPress={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+      {/* Floating AI Assistant Button */}
+      <Button 
+        isIconOnly
+        color="primary" 
+        className="fixed bottom-6 right-6 shadow-lg w-14 h-14 rounded-full transition-transform duration-200 hover:scale-105 z-50"
+        onPress={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? "Close AI Assistant" : "Open AI Assistant"}
+      >
+        <Icon 
+          icon={isOpen ? "lucide:x" : "lucide:bot"}
+          className="text-2xl" 
+        />
+      </Button>
+
+      {/* AI Assistant Chat Window */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-24 right-6 z-40 w-96 shadow-2xl rounded-2xl overflow-hidden border border-divider bg-background"
           >
-            <Icon icon="lucide:arrow-up" />
-          </Button>
-        </Tooltip>
-      )}
+            <AIAssistantChat onClose={() => setIsOpen(false)} initialMessages={chatInitialMessages} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
