@@ -6,7 +6,7 @@ import {Icon} from "@iconify/react";
 import {ProjectTable} from "../components/project-table";
 import {CreateProjectMultiStep} from "../components/create-project-multi-step";
 import {projectsAPI} from "../services/api";
-import {WelcomeHero} from "../components/welcome-hero";
+import {PageTitle} from "../components/page-title";
 import {AIAssistantChat} from "../components/ai-assistant-chat";
 import {motion, AnimatePresence} from "framer-motion";
 
@@ -102,9 +102,9 @@ export default function Dashboard() {
           />
         ) : (
           <>
-            {/* Welcome section + Create button */}
+            {/* Title section + Create button */}
             <div className="flex justify-between items-center mb-6">
-              <WelcomeHero userName="Christopher" />
+              <PageTitle title="Dashboard" userName="Christopher" subtitle="Here’s your project overview." />
               <Button 
                 color="primary" 
                 startContent={<Icon icon="lucide:plus" />}

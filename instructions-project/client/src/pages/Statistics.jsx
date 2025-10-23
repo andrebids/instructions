@@ -8,6 +8,7 @@ import ScrollVelocity from "../components/ScrollVelocity";
 import CountUp from "../components/CountUp";
 import { AIAssistantChat } from "../components/ai-assistant-chat";
 import { motion, AnimatePresence } from "framer-motion";
+import { PageTitle } from "../components/page-title";
 
 export default function Statistics() {
   const { theme } = useTheme();
@@ -434,12 +435,7 @@ export default function Statistics() {
       {/* Header with greeting and year filter */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl text-foreground">
-            <span className="font-normal text-default-500">Welcome back, </span>
-            <span className="font-bold">Christopher</span>
-          </h1>
-          <p className="text-default-500 mt-1">Here's how your year is shaping up so far.</p>
-          <p className="text-xs text-default-400 mt-1">Jan 1 – Oct 22, {year}</p>
+          <PageTitle title="Statistics" userName="Christopher" subtitle={"Here's how your year is shaping up so far."} meta={`Jan 1 – Oct 22, ${year}`} />
         </div>
         <div className="flex items-center gap-2">
           <Dropdown>
