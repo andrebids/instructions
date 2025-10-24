@@ -1,19 +1,113 @@
 import React from "react";
-import { Card, CardBody, Image } from "@heroui/react";
+import { Card, CardBody, Image, Chip, Tooltip, Button } from "@heroui/react";
+import { Icon } from "@iconify/react";
+import { useShop } from "../../context/ShopContext";
 import ProductModal from "./ProductModal";
 
 export default function ProductCard({ product, onOrder }) {
   const [open, setOpen] = React.useState(false);
+  const [activeColor, setActiveColor] = React.useState(null);
+  const { addToProject, projects, favorites, compare, toggleFavorite, toggleCompare } = useShop();
+
+  const previewSrc = React.useMemo(() => {
+    if (activeColor && product.images?.colors?.[activeColor]) return product.images.colors[activeColor];
+    return product.images?.day;
+  }, [activeColor, product]);
+
+  const colorKeyToStyle = {
+    brancoPuro: "#ffffff",
+    brancoQuente: "#fbbf24",
+    rgb: "linear-gradient(135deg,#ef4444,#f59e0b,#10b981,#3b82f6,#8b5cf6)",
+    vermelho: "#ef4444",
+    verde: "#10b981",
+    azul: "#3b82f6",
+  };
+
+  const colorKeys = Object.keys(product.images?.colors || {});
+  const discountPct = product.oldPrice ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100) : null;
+
   return (
     <>
-      <Card isPressable onPress={() => setOpen(true)} className="bg-content1 border border-divider">
+      <Card isPressable onPress={() => setOpen(true)} className="group bg-content1/50 border border-divider rounded-2xl overflow-hidden">
         <CardBody className="p-0">
-          <Image removeWrapper src={product.images?.day} alt={product.name} className="w-full h-40 object-cover" />
-          <div className="p-3">
-            <div className="flex items-center justify-between">
-              <div className="font-medium text-foreground truncate pr-2">{product.name}</div>
-              <div className="text-sm text-primary font-semibold">€{product.price}</div>
+          <div className="relative">
+            {discountPct ? (
+              <Chip size="sm" color="danger" variant="solid" className="absolute left-3 top-3 z-10">{discountPct}% Off</Chip>
+            ) : null}
+            <Image removeWrapper src={previewSrc} alt={product.name} className="w-full h-64 object-cover" />
+            {/* Quick actions */}
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-10 opacity-0 translate-x-2 pointer-events-auto transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
+              {/* Add to cart */}
+              <div className="group/action relative flex items-center">
+                <Tooltip content="Add to cart" placement="left">
+                  <Button
+                    isIconOnly
+                    radius="full"
+                    className="bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/70 shadow-medium"
+                    aria-label="Add to cart"
+                    onPress={() => { onOrder?.(product, { color: activeColor || "brancoPuro", mode: "day" }); }}
+                    onClick={(e)=> e.stopPropagation()}
+                  >
+                    <Icon icon="lucide:shopping-bag" className="text-white text-xl" />
+                  </Button>
+                </Tooltip>
+              </div>
+
+              {/* Favorite */}
+              <div className="group/action relative flex items-center">
+                <Tooltip content={favorites?.includes(product.id) ? "Remove from favorites" : "Add to favorites"} placement="left">
+                  <Button
+                    isIconOnly
+                    radius="full"
+                    className={`bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/70 shadow-medium ${favorites?.includes(product.id) ? 'ring-2 ring-danger-500' : ''}`}
+                    aria-label="Add to favorites"
+                    onPress={() => { toggleFavorite(product.id); }}
+                    onClick={(e)=> e.stopPropagation()}
+                  >
+                    <Icon icon="lucide:heart" className="text-white text-xl" />
+                  </Button>
+                </Tooltip>
+              </div>
+
+              {/* Compare */}
+              <div className="group/action relative flex items-center">
+                <Tooltip content={compare?.includes(product.id) ? "Remove from compare" : "Add to compare"} placement="left">
+                  <Button
+                    isIconOnly
+                    radius="full"
+                    className="bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/70 shadow-medium"
+                    aria-label="Add to compare"
+                    onPress={() => { toggleCompare(product.id); }}
+                    onClick={(e)=> e.stopPropagation()}
+                  >
+                    <Icon icon="lucide:shuffle" className="text-white text-xl" />
+                  </Button>
+                </Tooltip>
+              </div>
             </div>
+          </div>
+          <div className="p-4">
+            <div className="font-medium text-foreground mb-1 truncate" title={product.name}>{product.name}</div>
+            <div className="flex items-baseline gap-2">
+              <div className="text-base font-semibold text-primary">€{product.price}</div>
+              {product.oldPrice ? (
+                <div className="text-sm text-default-500 line-through">€{product.oldPrice}</div>
+              ) : null}
+            </div>
+            {colorKeys.length > 0 && (
+              <div className="mt-3 flex items-center gap-2">
+                {colorKeys.slice(0, 4).map((key) => (
+                  <Tooltip key={key} content={key}>
+                    <button
+                      type="button"
+                      className={`w-5 h-5 rounded-full border ${activeColor === key ? 'ring-2 ring-primary' : 'border-default-200'}`}
+                      style={{ background: colorKeyToStyle[key] || '#e5e7eb', boxShadow: key === 'brancoPuro' ? 'inset 0 0 0 1px rgba(0,0,0,0.08)' : undefined }}
+                      onClick={(e) => { e.stopPropagation(); setActiveColor(activeColor === key ? null : key); }}
+                    />
+                  </Tooltip>
+                ))}
+              </div>
+            )}
           </div>
         </CardBody>
       </Card>

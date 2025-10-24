@@ -55,7 +55,7 @@ export default function Shop() {
               onError={() => setSrc(fallbackImages[cfg.id])}
               className={`z-0 w-full h-full transition-transform duration-300 ${cfg.id === 'summer' ? 'object-contain object-top bg-black group-hover:scale-100' : 'object-cover group-hover:scale-105'}`}
             />
-            <div className={`absolute inset-0 z-10 pointer-events-none transition-opacity duration-300 ${cfg.id === 'summer' ? 'bg-gradient-to-b from-transparent via-black/20 to-black/40 opacity-100' : 'bg-black/25 opacity-100 group-hover:opacity-60'}`} />
+            <div className={`absolute inset-0 z-10 pointer-events-none transition-opacity duration-300 ${cfg.id === 'summer' ? 'bg-gradient-to-b from-transparent via-black/30 to-black/50 dark:via-black/60 dark:to-black/80 opacity-100' : 'bg-black/35 dark:bg-black/60 opacity-100 group-hover:opacity-70'}`} />
             <div className="absolute inset-0 z-20 flex items-center justify-center">
               <div className="text-white text-4xl md:text-5xl font-bold tracking-tight drop-shadow-lg uppercase text-center">
                 {cfg.title}
@@ -75,7 +75,7 @@ export default function Shop() {
         <CardBody className="p-0 h-full overflow-hidden">
           <div className="relative h-full">
             <Image removeWrapper src={src} alt={cfg.title} onError={() => setSrc(fallbackImages[cfg.id])} className="z-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-            <div className="absolute inset-0 z-10 bg-black/25 opacity-100 transition-opacity duration-300 group-hover:opacity-60 pointer-events-none" />
+            <div className="absolute inset-0 z-10 bg-black/35 dark:bg-black/60 opacity-100 transition-opacity duration-300 group-hover:opacity-70 pointer-events-none" />
             <div className="absolute inset-0 z-20 p-6 flex items-center justify-center">
               <div className="text-white text-7xl md:text-8xl font-bold tracking-tight drop-shadow-lg uppercase text-center">
                 {cfg.title}
