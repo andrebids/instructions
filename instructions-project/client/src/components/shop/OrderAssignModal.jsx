@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem, Input, Badge } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem, Input } from "@heroui/react";
 import { useNavigate } from "react-router-dom";
 import { useShop } from "../../context/ShopContext";
 
@@ -46,15 +46,15 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
                 <div className="text-sm text-default-600">
                   <div className="flex items-center gap-2">
                     <span>Budget:</span>
-                    <Badge variant="flat" color="primary">€{project?.budget || 0}</Badge>
+                    <span className="px-2 py-0.5 rounded-full bg-content2 border border-divider text-foreground/90 text-xs">€{project?.budget || 0}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <span>Total atual:</span>
-                    <Badge variant="flat" color="default">€{currentTotal}</Badge>
+                    <span className="px-2 py-0.5 rounded-full bg-content2 border border-divider text-foreground/90 text-xs">€{currentTotal}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <span>Após adição:</span>
-                    <Badge variant="flat" color={nextTotal > (project?.budget||0) ? "danger" : "success"}>€{nextTotal}</Badge>
+                    <span className={`px-2 py-0.5 rounded-full border text-xs ${nextTotal > (project?.budget||0) ? 'bg-danger-500/15 border-danger-500/30 text-danger-300' : 'bg-success-500/15 border-success-500/30 text-success-300'}`}>€{nextTotal}</span>
                   </div>
                 </div>
               </div>

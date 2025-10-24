@@ -29,6 +29,14 @@ export function ShopProvider({ children }) {
     const persisted = loadPersistedState();
     return persisted?.cartByProject || {};
   });
+  const [favorites, setFavorites] = React.useState(() => {
+    const persisted = loadPersistedState();
+    return persisted?.favorites || [];
+  });
+  const [compare, setCompare] = React.useState(() => {
+    const persisted = loadPersistedState();
+    return persisted?.compare || [];
+  });
 
   const computeTotals = React.useCallback((cart) => {
     const totals = {};
@@ -63,11 +71,31 @@ export function ShopProvider({ children }) {
         });
       }
       next[projectId] = { items };
-      const stateToPersist = { cartByProject: next };
+      const stateToPersist = { cartByProject: next, favorites, compare };
       persistState(stateToPersist);
       return next;
     });
-  }, [products]);
+  }, [products, favorites, compare]);
+
+  const toggleFavorite = React.useCallback((productId) => {
+    setFavorites((prev) => {
+      const exists = prev.includes(productId);
+      const next = exists ? prev.filter((id) => id !== productId) : [...prev, productId];
+      const stateToPersist = { cartByProject, favorites: next, compare };
+      persistState(stateToPersist);
+      return next;
+    });
+  }, [cartByProject, compare]);
+
+  const toggleCompare = React.useCallback((productId) => {
+    setCompare((prev) => {
+      const exists = prev.includes(productId);
+      const next = exists ? prev.filter((id) => id !== productId) : [...prev, productId];
+      const stateToPersist = { cartByProject, favorites, compare: next };
+      persistState(stateToPersist);
+      return next;
+    });
+  }, [cartByProject, favorites]);
 
   const value = React.useMemo(() => ({
     products,
@@ -76,6 +104,10 @@ export function ShopProvider({ children }) {
     cartByProject,
     totalsByProject,
     addToProject,
+    favorites,
+    compare,
+    toggleFavorite,
+    toggleCompare,
   }), [products, projects, categories, cartByProject, totalsByProject, addToProject]);
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
