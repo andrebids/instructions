@@ -1,17 +1,19 @@
 import React from "react";
-import { Card, CardBody, Image, Chip, Tooltip, Button } from "@heroui/react";
+import { Image, Chip, Tooltip, Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useShop } from "../../context/ShopContext";
 import ProductModal from "./ProductModal";
 import RequestInfoModal from "./RequestInfoModal";
+import CompareSuggestModal from "./CompareSuggestModal";
 
 export default function ProductCard({ product, onOrder }) {
   const [open, setOpen] = React.useState(false);
   const [activeColor, setActiveColor] = React.useState(null);
-  const { addToProject, projects, favorites, compare, toggleFavorite, toggleCompare } = useShop();
+  const { addToProject, projects, favorites, compare, toggleFavorite, toggleCompare, products } = useShop();
 
   const previewSrc = React.useMemo(() => {
     if (activeColor && product.images?.colors?.[activeColor]) return product.images.colors[activeColor];
+    if (product.images?.night) return product.images.night; // prefer night on cards
     return product.images?.day;
   }, [activeColor, product]);
 
@@ -36,21 +38,21 @@ export default function ProductCard({ product, onOrder }) {
   const isOutOfStock = stock <= 0;
   const isLowStock = stock > 0 && stock <= 10;
   const [infoOpen, setInfoOpen] = React.useState(false);
+  const [compareOpen, setCompareOpen] = React.useState(false);
 
   return (
     <>
-      <Card isPressable onPress={() => setOpen(true)} className="group bg-content1/50 border border-divider rounded-2xl overflow-hidden">
-        <CardBody className="p-0">
-          <div className="relative">
+      <div onClick={() => setOpen(true)} className="group cursor-pointer select-none">
+          <div className="relative overflow-hidden rounded-t-2xl bg-[#0b1b3a]">
             {discountPct ? (
-              <Chip size="sm" color="danger" variant="solid" className="absolute left-3 top-3 z-10">{discountPct}% Off</Chip>
+              <Chip size="sm" color="danger" variant="solid" className="absolute left-3 top-3 z-30 text-white">{discountPct}% Off</Chip>
             ) : null}
             {isOutOfStock ? (
-              <Chip size="sm" color="default" variant="solid" className="absolute left-3 top-3 z-10">Out of stock</Chip>
+              <Chip size="sm" color="danger" variant="solid" className="absolute left-3 top-3 z-30 text-white">Out of stock</Chip>
             ) : isLowStock ? (
-              <Chip size="sm" color="warning" variant="solid" className="absolute left-3 top-3 z-10">Low stock</Chip>
+              <Chip size="sm" color="warning" variant="solid" className="absolute left-3 top-3 z-30 text-white">Low stock</Chip>
             ) : null}
-            <Image removeWrapper src={previewSrc} alt={product.name} className="w-full h-64 object-cover" />
+            <Image removeWrapper src={previewSrc} alt={product.name} className="w-full h-64 object-contain transition-transform duration-300 group-hover:scale-105" />
             {/* Quick actions */}
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-10 opacity-0 translate-x-2 pointer-events-auto transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
               {/* Add to cart or Request info */}
@@ -93,7 +95,7 @@ export default function ProductCard({ product, onOrder }) {
                     radius="full"
                     className="bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/70 shadow-medium"
                     aria-label="Add to compare"
-                    onPress={() => { toggleCompare(product.id); }}
+                    onPress={() => { setCompareOpen(true); }}
                     onClick={(e)=> e.stopPropagation()}
                   >
                     <Icon icon="lucide:shuffle" className="text-white text-xl" />
@@ -102,7 +104,8 @@ export default function ProductCard({ product, onOrder }) {
               </div>
             </div>
           </div>
-          <div className="p-4">
+          {/* Info card-only rectangle with gradient into background */}
+          <div className="rounded-b-2xl p-4 bg-gradient-to-t from-[#e5e7eb] dark:from-black to-[#0b1b3a]">
             <div className="font-medium text-foreground mb-1 truncate" title={product.name}>{product.name}</div>
             <div className="flex items-baseline gap-2">
               <div className="text-base font-semibold text-primary">€{product.price}</div>
@@ -132,8 +135,7 @@ export default function ProductCard({ product, onOrder }) {
               </div>
             )}
           </div>
-        </CardBody>
-      </Card>
+      </div>
       <ProductModal
         isOpen={open}
         onOpenChange={setOpen}
@@ -141,6 +143,12 @@ export default function ProductCard({ product, onOrder }) {
         onOrder={(variant) => onOrder?.(product, variant)}
       />
       <RequestInfoModal isOpen={infoOpen} onOpenChange={setInfoOpen} product={product} />
+      <CompareSuggestModal
+        isOpen={compareOpen}
+        onOpenChange={setCompareOpen}
+        baseProduct={product}
+        onAdd={(p)=>{ toggleCompare(p.id); }}
+      />
     </>
   );
 }
