@@ -3,13 +3,13 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Image
 import RequestInfoModal from "./RequestInfoModal";
 
 export default function ProductModal({ isOpen, onOpenChange, product, onOrder }) {
-  const [mode, setMode] = React.useState("day");
+  const [mode, setMode] = React.useState("night");
   const [color, setColor] = React.useState("brancoPuro");
   const [infoOpen, setInfoOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
-      setMode("day");
+      setMode("night");
       setColor("brancoPuro");
     }
   }, [isOpen]);
@@ -38,45 +38,55 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder })
                   <Chip size="sm" color="default" variant="solid">Out of stock</Chip>
                 )}
               </div>
-              <div className="text-primary font-bold">€{product.price}</div>
+              {/* price moved to footer */}
             </ModalHeader>
             <ModalBody>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Left: Viewer */}
                 <div className="relative">
-                  <Image removeWrapper src={imageSrc} alt={product.name} className="w-full h-72 object-cover rounded-lg" />
-                  <div className="absolute top-3 right-3 bg-content1/80 border border-divider rounded-xl px-3 py-2">
+                  <Image removeWrapper src={imageSrc} alt={product.name} className="w-full h-72 object-contain rounded-lg bg-content2" />
+                  <div className="absolute top-3 right-3 z-10 bg-content1/90 border border-divider rounded-xl px-3 py-2 text-foreground shadow-sm">
                     <div className="flex items-center gap-2 text-sm">
-                      <span>Dia</span>
-                      <Switch size="sm" isSelected={mode === "night"} onValueChange={(v) => setMode(v ? "night" : "day")} aria-label="Dia/Noite" />
-                      <span>Noite</span>
+                      <span>Day</span>
+                      <Switch size="sm" isSelected={mode === "night"} onValueChange={(v) => setMode(v ? "night" : "day")} aria-label="Day/Night" />
+                      <span>Night</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Right: Details */}
                 <div>
-                  <div className="mb-3">
-                    <div className="text-sm text-default-500 mb-1">Cor</div>
-                    <RadioGroup orientation="horizontal" value={color} onValueChange={setColor}>
-                      <Radio value="brancoPuro">Branco Puro</Radio>
-                      <Radio value="brancoQuente">Branco Quente</Radio>
-                    </RadioGroup>
-                  </div>
-
                   <div className="space-y-2 text-sm text-default-600">
-                    <div><span className="text-default-500">Descrição:</span> {product.specs?.descricao}</div>
-                    <div><span className="text-default-500">Técnicas:</span> {product.specs?.tecnicas}</div>
-                    <div><span className="text-default-500">Dimensões:</span> {product.specs?.dimensoes}</div>
-                    <div><span className="text-default-500">Materiais:</span> {product.specs?.materiais}</div>
+                    <div><span className="text-default-500">Dimensions:</span> {product.specs?.dimensoes}</div>
+                    <div><span className="text-default-500">Materials:</span> {product.specs?.materiais}</div>
+                    <div><span className="text-default-500">Technical:</span> {product.specs?.tecnicas}</div>
+                    {product.specs?.weight && (
+                      <div><span className="text-default-500">Weight:</span> {product.specs?.weight}</div>
+                    )}
+                    {product.specs?.effects && (
+                      <div><span className="text-default-500">LED / Effects:</span> {product.specs?.effects}</div>
+                    )}
+                    <div><span className="text-default-500">Description:</span> {product.specs?.descricao}</div>
+                    {/* Price and stock below description */}
+                    <div className="mt-2">
+                      <div className="text-2xl font-bold text-primary">€{product.price}</div>
+                      <div className="mt-1 text-sm">
+                        <span className="text-default-500 mr-1">Stock:</span>
+                        {isOutOfStock ? (
+                          <span className="text-danger-400">Out of stock</span>
+                        ) : (
+                          <span className={`${stock <= 10 ? 'text-warning' : 'text-default-600'}`}>{stock}</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button variant="flat" onPress={close}>Fechar</Button>
               <div className="flex items-center gap-2">
-                <Button color="primary" isDisabled={isOutOfStock} onPress={() => { onOrder?.({ mode, color }); close(); }}>Encomendar</Button>
+                <Button variant="flat" onPress={close}>Close</Button>
+                <Button color="primary" isDisabled={isOutOfStock} onPress={() => { onOrder?.({ mode, color }); close(); }}>Order</Button>
                 {isOutOfStock && (
                   <Button variant="bordered" onPress={() => setInfoOpen(true)}>Request info</Button>
                 )}
