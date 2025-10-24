@@ -72,6 +72,15 @@ export default function TrendingFiltersSidebar({
 
   const resetPrice = () => onPriceChange?.([min, max]);
 
+  // Stock slider (min stock)
+  const computeStock = (id) => { try { let s=0; for (const ch of String(id||'')) s+=ch.charCodeAt(0); return 5 + (s % 60); } catch(_){ return 20; } };
+  const maxStock = React.useMemo(() => {
+    const values = products.map(p => typeof p.stock === 'number' ? p.stock : computeStock(p.id));
+    return values.length ? Math.max(...values) : 0;
+  }, [products]);
+  const minStock = typeof filters.minStock === 'number' ? filters.minStock : 0;
+  const resetStock = () => handle('minStock', 0);
+
   return (
     <aside className={`space-y-6 ${className}`}>
       <Accordion variant="splitted" defaultExpandedKeys={["type", "location", "price", "color", "mount", "usage"]} selectionMode="multiple">
@@ -155,6 +164,28 @@ export default function TrendingFiltersSidebar({
               </div>
             )}
             <div className="text-sm">Price: <span className="font-medium">€{priceRange[0]}</span> - <span className="font-medium">€{priceRange[1]}</span></div>
+          </div>
+        </AccordionItem>
+
+        {/* Stock */}
+        <AccordionItem key="stock" aria-label="Stock" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Stock</span></div>}>
+          <div className="space-y-3">
+            <button type="button" onClick={resetStock} className="text-xs text-primary hover:underline">Reset</button>
+            {typeof Slider !== 'undefined' ? (
+              <Slider
+                aria-label="Minimum stock"
+                minValue={0}
+                maxValue={maxStock}
+                step={1}
+                className="max-w-full"
+                value={minStock}
+                onChange={(value)=> handle('minStock', Array.isArray(value) ? value[0] : Number(value))}
+                showTooltip
+              />
+            ) : (
+              <input type="range" min={0} max={maxStock} value={minStock} onChange={(e)=> handle('minStock', Number(e.target.value))} className="w-full" />
+            )}
+            <div className="text-sm">Stock: <span className="font-medium">{minStock}+</span></div>
           </div>
         </AccordionItem>
 
