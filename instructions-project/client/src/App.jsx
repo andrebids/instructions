@@ -6,7 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Statistics from "./pages/Statistics";
 import Shop from "./pages/Shop";
 import ShopCategory from "./pages/ShopCategory";
-import Orders from "./pages/Orders";
+import Projects from "./pages/Projects";
 
 export default function App() {
   return (
@@ -25,7 +25,8 @@ export default function App() {
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/shop/:category" element={<ShopCategory />} />
-          <Route path="/orders" element={<Orders />} />
+          <Route path="/projects" element={<Projects />} />
+          <Route path="/orders" element={<Projects />} />
         </Routes>
       </main>
     </div>

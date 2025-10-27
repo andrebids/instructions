@@ -9,6 +9,7 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
   const [projectSearch, setProjectSearch] = React.useState("");
   const [qty, setQty] = React.useState(1);
   const [qtyError, setQtyError] = React.useState("");
+  const [projectError, setProjectError] = React.useState("");
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -17,6 +18,7 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
       setProjectSearch("");
       setQty(1);
       setQtyError("");
+      setProjectError("");
     }
   }, [isOpen, projects]);
 
@@ -52,6 +54,7 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
     setProjectId(id);
     const selected = projects.find((p) => p.id === id);
     if (selected) setProjectSearch(selected.name);
+    setProjectError("");
   };
 
   return (
@@ -74,6 +77,8 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
                     defaultItems={projects}
                     placeholder="Search for a project..."
                     menuTrigger="input"
+                    isInvalid={!!projectError}
+                    errorMessage={projectError}
                   >
                     {(p) => (
                       <AutocompleteItem key={p.id}>{p.name}</AutocompleteItem>
@@ -116,7 +121,12 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
               <Button
                 color="primary"
                 isDisabled={!projectId || qty < 1 || (stock > 0 && qty > stock) || stock === 0}
-                onPress={() => { addToProject(projectId, product.id, variant, qty); close(); navigate("/orders"); }}
+                onPress={() => {
+                  if (!projectId) { setProjectError("Select a project first."); return; }
+                  addToProject(projectId, product.id, variant, qty);
+                  close();
+                  navigate("/projects");
+                }}
               >
                 Confirm
               </Button>
