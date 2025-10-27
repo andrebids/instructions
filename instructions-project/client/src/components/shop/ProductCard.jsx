@@ -153,11 +153,10 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
                 <div className="mt-3 flex items-center gap-2">
                   {colorKeys.slice(0, 4).map((key) => (
                     <Tooltip key={key} content={key}>
-                      <button
-                        type="button"
+                      <div
+                        aria-hidden
                         className={`w-5 h-5 rounded-full border ${activeColor === key ? 'ring-2 ring-primary' : 'border-default-200'}`}
-                        style={{ background: colorKeyToStyle[key] || '#e5e7eb', boxShadow: key === 'brancoPuro' ? 'inset 0 0 0 1px rgba(0,0,0,0.08)' : undefined }}
-                        onClick={(e) => { e.stopPropagation(); setActiveColor(activeColor === key ? null : key); }}
+                        style={{ background: colorKeyToStyle[key] || '#e5e7eb', boxShadow: key === 'brancoPuro' ? 'inset 0 0 0 1px rgba(0,0,0,0.08)' : undefined, pointerEvents: 'none' }}
                       />
                     </Tooltip>
                   ))}
@@ -170,7 +169,7 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
         isOpen={open}
         onOpenChange={setOpen}
         product={product}
-        onOrder={(variant, qty) => onOrder?.(product, variant, qty)}
+        onOrder={onOrder}
         enableQuantity={allowQty}
       />
       <RequestInfoModal isOpen={infoOpen} onOpenChange={setInfoOpen} product={product} />
