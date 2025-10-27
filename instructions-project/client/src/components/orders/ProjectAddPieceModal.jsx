@@ -33,15 +33,17 @@ export default function ProjectAddPieceModal({ isOpen, onOpenChange, project }) 
               <ProductGrid
                 products={filtered}
                 cols={3}
-                onOrder={(product, variant) => {
+                allowQty
+                onOrder={(product, variant, qty) => {
                   const current = totalsByProject[project.id]?.total || 0;
                   const budget = Number(project?.budget) || 0;
-                  const next = current + (Number(product?.price) || 0);
+                  const q = Number(qty) || 1;
+                  const next = current + (Number(product?.price) || 0) * q;
                   if (Number.isFinite(budget) && next > budget) {
                     setError("Sem orçamento suficiente para adicionar este produto.");
                     return;
                   }
-                  addToProject(project.id, product.id, variant, 1);
+                  addToProject(project.id, product.id, variant, q);
                 }}
               />
             </ModalBody>
