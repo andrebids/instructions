@@ -50,7 +50,7 @@ export const products = [
   },
   {
     id: "prd-002",
-    name: "Estrela Suspensa 2D",
+    name: "Hanging Star 2D",
     price: 349,
     stock: 8,
     images: {
@@ -67,15 +67,15 @@ export const products = [
     location: "Interior",
     mount: "Transversal",
     specs: {
-      descricao: "Estrela leve para ambientes internos.",
+      descricao: "Lightweight star for indoor environments.",
       tecnicas: "IP20, 24V, 25W",
       dimensoes: "0.8m x 0.8m",
-      materiais: "PVC, LED SMD",
+      materiais: "PVC, SMD LED",
     },
   },
   {
     id: "prd-003",
-    name: "Caminho Luminoso",
+    name: "Pathway Light",
     price: 499,
     stock: 47,
     images: {
@@ -92,15 +92,15 @@ export const products = [
     location: "Exterior",
     mount: "Chão",
     specs: {
-      descricao: "Balizadores modulares para caminhos externos.",
+      descricao: "Modular bollards for outdoor pathways.",
       tecnicas: "IP67, 24V, 12W",
       dimensoes: "0.6m x 0.15m",
-      materiais: "Alumínio anodizado",
+      materiais: "Anodized aluminium",
     },
   },
   {
     id: "prd-004",
-    name: "Fita LED Decorativa",
+    name: "Decorative LED Strip",
     price: 129,
     stock: 150,
     images: {
@@ -117,10 +117,10 @@ export const products = [
     location: "Interior",
     mount: "Transversal",
     specs: {
-      descricao: "Fita LED flexível para aplicações variadas.",
+      descricao: "Flexible LED strip for a variety of applications.",
       tecnicas: "IP20, 12V, 14W/m",
-      dimensoes: "Bobina 5m",
-      materiais: "PCB flexível, LED SMD",
+      dimensoes: "5 m reel",
+      materiais: "Flexible PCB, SMD LED",
     },
   },
   {
@@ -140,12 +140,14 @@ export const products = [
     type: "3D",
     usage: "Shopping",
     location: "Exterior",
-    mount: "Poste",
+    mount: "Chão",
     specs: {
-      descricao: "Poste urbano com adorno iluminado.",
-      tecnicas: "IP65, 220V, 60W",
-      dimensoes: "3.5m altura",
-      materiais: "Aço galvanizado, LED COB",
+      descricao: "Luminous 3D bear-shaped sculpture with illuminated decorative swirl.",
+      tecnicas: "IP65, 230V AC, 60W, high‑efficiency LEDs",
+      dimensoes: "2.60 m (W) x 1.50 m (H) x 1.10 m (D)",
+      materiais: "White bioprint, gold bioprint, Fil Lumière, warm white LEDs with flash, pure white LEDs with flash",
+      weight: "65 kg",
+      effects: "Pure white with warm‑white accent (day/night modes)",
     },
   },
   // Additional placeholder products to reach 16 items for the grid

@@ -77,6 +77,25 @@ export function ShopProvider({ children }) {
     });
   }, [products, favorites, compare]);
 
+  const getReservedQuantity = React.useCallback((productId) => {
+    let reserved = 0;
+    for (const projectState of Object.values(cartByProject)) {
+      for (const item of projectState.items || []) {
+        if (item.productId === productId) reserved += Number(item.qty) || 0;
+      }
+    }
+    return reserved;
+  }, [cartByProject]);
+
+  const getAvailableStock = React.useCallback((product) => {
+    const computeStock = (id) => {
+      try { let sum = 0; for (const ch of String(id||'')) sum += ch.charCodeAt(0); return 5 + (sum % 60); } catch (_) { return 20; }
+    };
+    const base = typeof product?.stock === 'number' ? product.stock : computeStock(product?.id);
+    const reserved = getReservedQuantity(product?.id);
+    return Math.max(0, base - reserved);
+  }, [getReservedQuantity]);
+
   const toggleFavorite = React.useCallback((productId) => {
     setFavorites((prev) => {
       const exists = prev.includes(productId);
@@ -108,7 +127,9 @@ export function ShopProvider({ children }) {
     compare,
     toggleFavorite,
     toggleCompare,
-  }), [products, projects, categories, cartByProject, totalsByProject, addToProject]);
+    getReservedQuantity,
+    getAvailableStock,
+  }), [products, projects, categories, cartByProject, totalsByProject, addToProject, favorites, compare, toggleFavorite, toggleCompare, getReservedQuantity, getAvailableStock]);
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 }
