@@ -17,6 +17,9 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
   const [videoSrc, setVideoSrc] = React.useState(null);
   const [isLoadingVideo, setIsLoadingVideo] = React.useState(false);
   const videoRef = React.useRef(null);
+  // Image zoom state
+  const [zoom, setZoom] = React.useState(1);
+  const [zoomOrigin, setZoomOrigin] = React.useState({ xPct: 50, yPct: 50 });
   
 
   React.useEffect(() => {
@@ -88,6 +91,38 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
   const stock = getAvailableStock(product);
   const isOutOfStock = stock <= 0;
 
+  const formatDimensions = (specs) => {
+    const dim = specs?.dimensions;
+    // Display order: Height x Width x Depth
+    if (dim && (dim.widthM != null || dim.heightM != null || dim.depthM != null)) {
+      const parts = [];
+      if (dim.heightM != null) parts.push(`${Number(dim.heightM).toFixed(2)} m (H)`);
+      if (dim.widthM != null) parts.push(`${Number(dim.widthM).toFixed(2)} m (W)`);
+      if (dim.depthM != null) parts.push(`${Number(dim.depthM).toFixed(2)} m (D)`);
+      return parts.join(' x ');
+    }
+    const s = specs?.dimensoes || specs?.dimensionsText;
+    if (typeof s === 'string') {
+      const regex = /([0-9]+(?:[\.,][0-9]+)?)\s*m/gi;
+      const nums = [];
+      let m;
+      while ((m = regex.exec(s)) && nums.length < 3) {
+        nums.push(parseFloat(String(m[1]).replace(',', '.')));
+      }
+      if (nums.length >= 2) {
+        // Assume text order is W x H x D; convert to H x W x D
+        const [w, h, d] = nums;
+        const parts = [];
+        if (!Number.isNaN(h)) parts.push(`${h.toFixed(2)} m (H)`);
+        if (!Number.isNaN(w)) parts.push(`${w.toFixed(2)} m (W)`);
+        if (!Number.isNaN(d)) parts.push(`${d.toFixed(2)} m (D)`);
+        return parts.join(' x ');
+      }
+      return s;
+    }
+    return '-';
+  };
+
   return (
     <>
     <Modal
@@ -119,9 +154,35 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                 {/* Left: Media viewer (image/video) with nav arrows */}
                 <div className="relative md:col-span-3 flex flex-col">
                   {/* Media wrapper to correctly center arrows relative to image/video */}
-                  <div className="relative w-full h-[40vh] md:h-[42vh] lg:h-[44vh] rounded-lg overflow-hidden bg-content2">
+                  <div
+                    className="relative w-full h-[40vh] md:h-[42vh] lg:h-[44vh] rounded-lg overflow-hidden bg-content2"
+                    onMouseMove={(e) => {
+                      if (mediaIndex !== 0) return;
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const xPct = Math.min(100, Math.max(0, ((e.clientX - rect.left) / rect.width) * 100));
+                      const yPct = Math.min(100, Math.max(0, ((e.clientY - rect.top) / rect.height) * 100));
+                      setZoomOrigin({ xPct, yPct });
+                    }}
+                    onWheel={(e) => {
+                      if (mediaIndex !== 0) return;
+                      e.preventDefault();
+                      const next = Math.min(3, Math.max(1, zoom + (e.deltaY < 0 ? 0.2 : -0.2)));
+                      setZoom(next);
+                    }}
+                    onDoubleClick={() => {
+                      if (mediaIndex !== 0) return;
+                      setZoom((z) => (z > 1 ? 1 : 2));
+                    }}
+                    onMouseLeave={() => setZoom(1)}
+                  >
                     {mediaIndex === 0 && (
-                      <Image removeWrapper src={imageSrc} alt={product.name} className="w-full h-full object-contain" />
+                      <img
+                        src={imageSrc}
+                        alt={product.name}
+                        className="absolute inset-0 w-full h-full object-contain select-none"
+                        style={{ transform: `scale(${zoom})`, transformOrigin: `${zoomOrigin.xPct}% ${zoomOrigin.yPct}%` }}
+                        draggable={false}
+                      />
                     )}
                     {mediaIndex === 1 && product.videoFile && (
                       <div className="absolute inset-0 bg-black flex items-center justify-center">
@@ -197,9 +258,31 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                         className={`group relative w-28 h-16 rounded-md overflow-hidden border ${mediaIndex === 1 ? 'border-white ring-2 ring-white' : 'border-white/50'} bg-center bg-cover`}
                         style={{ backgroundImage: `url(${product.images?.day || imageSrc})` }}
                       >
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Icon icon="lucide:play-circle" className="text-white text-2xl drop-shadow" />
-                        </div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <svg
+                          className="w-7 h-7 drop-shadow-md transition-transform duration-200 group-hover:scale-105"
+                          viewBox="0 0 100 100"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <defs>
+                            <linearGradient id="playGrad" x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0" stopColor="#ffffff" />
+                              <stop offset="1" stopColor="#e6f0ff" />
+                            </linearGradient>
+                            <filter id="playShadow" x="-20%" y="-20%" width="140%" height="140%">
+                              <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#74a7ff" floodOpacity="0.55" />
+                            </filter>
+                          </defs>
+                          {/* Rounded triangular play shape */}
+                          <path
+                            d="M32 20 C28 20 26 22 26 26 L26 74 C26 78 28 80 32 80 L78 52 C82 50 82 46 78 44 Z"
+                            fill="url(#playGrad)"
+                            stroke="rgba(255,255,255,0.9)"
+                            strokeWidth="2"
+                            filter="url(#playShadow)"
+                          />
+                        </svg>
+                      </div>
                         {/* caption removed */}
                       </button>
                     )}
@@ -213,7 +296,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                       <Icon icon="lucide:ruler" className="text-default-500 text-lg mt-0.5" />
                       <div>
                         <div className="text-default-500 text-sm">Dimensions</div>
-                        <div>{product.specs?.dimensoes}</div>
+                        <div>{formatDimensions(product.specs)}</div>
                       </div>
                     </div>
 
