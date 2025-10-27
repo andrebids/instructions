@@ -9,7 +9,7 @@ import CompareSuggestModal from "./CompareSuggestModal";
 export default function ProductCard({ product, onOrder, glass = false }) {
   const [open, setOpen] = React.useState(false);
   const [activeColor, setActiveColor] = React.useState(null);
-  const { addToProject, projects, favorites, compare, toggleFavorite, toggleCompare, products } = useShop();
+  const { addToProject, projects, favorites, compare, toggleFavorite, toggleCompare, products, getAvailableStock } = useShop();
 
   const previewSrc = React.useMemo(() => {
     if (activeColor && product.images?.colors?.[activeColor]) return product.images.colors[activeColor];
@@ -28,13 +28,7 @@ export default function ProductCard({ product, onOrder, glass = false }) {
 
   const colorKeys = Object.keys(product.images?.colors || {});
   const discountPct = product.oldPrice ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100) : null;
-  const computeStock = (id) => {
-    try {
-      let sum = 0; for (const ch of String(id||'')) sum += ch.charCodeAt(0);
-      return 5 + (sum % 60);
-    } catch (_) { return 20; }
-  };
-  const stock = typeof product.stock === 'number' ? product.stock : computeStock(product.id);
+  const stock = getAvailableStock(product);
   const isOutOfStock = stock <= 0;
   const isLowStock = stock > 0 && stock <= 10;
   const [infoOpen, setInfoOpen] = React.useState(false);

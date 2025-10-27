@@ -1,9 +1,12 @@
 import React from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Image, RadioGroup, Radio, Switch, Chip } from "@heroui/react";
+import { Icon } from "@iconify/react";
 import DayNightToggle from "../DayNightToggle";
 import RequestInfoModal from "./RequestInfoModal";
+import { useShop } from "../../context/ShopContext";
 
 export default function ProductModal({ isOpen, onOpenChange, product, onOrder }) {
+  const { getAvailableStock } = useShop();
   const [mode, setMode] = React.useState("night");
   const [color, setColor] = React.useState("brancoPuro");
   const [infoOpen, setInfoOpen] = React.useState(false);
@@ -26,13 +29,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder })
 
   if (!product) return null;
   const imageSrc = mode === "day" ? product.images?.day : product.images?.night;
-  const computeStock = (id) => {
-    try {
-      let sum = 0; for (const ch of String(id||'')) sum += ch.charCodeAt(0);
-      return 5 + (sum % 60);
-    } catch (_) { return 20; }
-  };
-  const stock = typeof product.stock === 'number' ? product.stock : computeStock(product.id);
+  const stock = getAvailableStock(product);
   const isOutOfStock = stock <= 0;
 
   return (
@@ -77,28 +74,70 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder })
 
                 {/* Right: Details */}
                 <div className="md:col-span-2">
-                  <div className="space-y-2 text-sm text-default-600">
-                    <div><span className="text-default-500">Dimensions:</span> {product.specs?.dimensoes}</div>
-                    <div><span className="text-default-500">Materials:</span> {product.specs?.materiais}</div>
-                    <div><span className="text-default-500">Technical:</span> {product.specs?.tecnicas}</div>
-                    {product.specs?.weight && (
-                      <div><span className="text-default-500">Weight:</span> {product.specs?.weight}</div>
-                    )}
-                    {product.specs?.effects && (
-                      <div><span className="text-default-500">LED / Effects:</span> {product.specs?.effects}</div>
-                    )}
-                    <div><span className="text-default-500">Description:</span> {product.specs?.descricao}</div>
-                    {/* Price and stock below description */}
-                    <div className="mt-2">
-                      <div className="text-2xl font-bold text-primary">€{product.price}</div>
-                      <div className="mt-1 text-sm">
-                        <span className="text-default-500 mr-1">Stock:</span>
-                        {isOutOfStock ? (
-                          <span className="text-danger-400">Out of stock</span>
-                        ) : (
-                          <span className={`${stock <= 10 ? 'text-warning' : 'text-default-600'}`}>{stock}</span>
-                        )}
+                  <div className="grid grid-cols-1 gap-y-3 text-base text-default-600">
+                    <div className="flex items-start gap-2">
+                      <Icon icon="lucide:ruler" className="text-default-500 text-lg mt-0.5" />
+                      <div>
+                        <div className="text-default-500 text-sm">Dimensions</div>
+                        <div>{product.specs?.dimensoes}</div>
                       </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <Icon icon="lucide:layers" className="text-default-500 text-lg mt-0.5" />
+                      <div>
+                        <div className="text-default-500 text-sm">Materials</div>
+                        <div>{product.specs?.materiais}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <Icon icon="lucide:cpu" className="text-default-500 text-lg mt-0.5" />
+                      <div>
+                        <div className="text-default-500 text-sm">Technical</div>
+                        <div>{product.specs?.tecnicas}</div>
+                      </div>
+                    </div>
+
+                    {product.specs?.weight && (
+                      <div className="flex items-start gap-2">
+                        <Icon icon="lucide:scale" className="text-default-500 text-lg mt-0.5" />
+                        <div>
+                          <div className="text-default-500 text-sm">Weight</div>
+                          <div>{product.specs?.weight}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {product.specs?.effects && (
+                      <div className="flex items-start gap-2">
+                        <Icon icon="lucide:sparkles" className="text-default-500 text-lg mt-0.5" />
+                        <div>
+                          <div className="text-default-500 text-sm">LED / Effects</div>
+                          <div>{product.specs?.effects}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-start gap-2">
+                      <Icon icon="lucide:file-text" className="text-default-500 text-lg mt-0.5" />
+                      <div>
+                        <div className="text-default-500 text-sm">Description</div>
+                        <div>{product.specs?.descricao}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Price and stock stacked */}
+                  <div className="mt-5">
+                    <div className="text-2xl font-bold text-primary">€{product.price}</div>
+                    <div className="mt-1.5 text-sm">
+                      <span className="text-default-500 mr-1">Stock:</span>
+                      {isOutOfStock ? (
+                        <span className="text-danger-400">Out of stock</span>
+                      ) : (
+                        <span className={`${stock <= 10 ? 'text-warning' : 'text-default-600'}`}>{stock}</span>
+                      )}
                     </div>
                   </div>
                 </div>
