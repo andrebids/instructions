@@ -23,6 +23,18 @@ export default function TrendingFiltersSidebar({
 }) {
   const handle = (key, value) => onChange?.({ ...filters, [key]: value });
 
+  const isEcoProduct = (p) => {
+    try {
+      const explicit = typeof p?.eco === "boolean" ? p.eco : false;
+      const tagEco = Array.isArray(p?.tags) && p.tags.includes("eco");
+      const materialsText = String(p?.specs?.materiais || p?.materials || "").toLowerCase();
+      const inferred = /(recy|recycled|recycle|bioprint|bio|eco)/.test(materialsText);
+      return Boolean(explicit || tagEco || inferred);
+    } catch (_) {
+      return false;
+    }
+  };
+
   const itemsCount = React.useMemo(() => ({
     all: products.length,
     type2D: products.filter((p) => p.type === "2D").length,
@@ -30,6 +42,7 @@ export default function TrendingFiltersSidebar({
     indoor: products.filter((p) => p.location === "Interior").length,
     outdoor: products.filter((p) => p.location === "Exterior").length,
     usageShopping: products.filter((p) => p.usage === "Shopping").length,
+    eco: products.filter((p) => isEcoProduct(p)).length,
     mountPole: products.filter((p) => p.mount === "Poste").length,
     mountCrossarm: products.filter((p) => p.mount === "Transversal").length,
     mountGround: products.filter((p) => p.mount === "Chão").length,
@@ -110,6 +123,7 @@ export default function TrendingFiltersSidebar({
         <AccordionItem key="usage" aria-label="Usage" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Usage</span></div>}>
           <div className="space-y-2">
             <Checkbox isSelected={filters.usage === "Shopping"} onValueChange={(v) => handle("usage", v ? "Shopping" : "")}>Shopping Malls <span className="text-default-500">({itemsCount.usageShopping})</span></Checkbox>
+            <Checkbox isSelected={Boolean(filters.eco)} onValueChange={(v) => handle("eco", v)}>Eco <span className="text-default-500">({itemsCount.eco})</span></Checkbox>
           </div>
         </AccordionItem>
 

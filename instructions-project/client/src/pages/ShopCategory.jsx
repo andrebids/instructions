@@ -11,7 +11,7 @@ import { PageTitle } from "../components/page-title";
 export default function ShopCategory() {
   const { category } = useParams();
   const { products } = useShop();
-  const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0 });
+  const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false });
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [selected, setSelected] = React.useState({ product: null, variant: null });
   const [filtersOpen, setFiltersOpen] = React.useState(false);
@@ -42,6 +42,11 @@ export default function ShopCategory() {
       if (filters.usage && p.usage !== filters.usage) return false;
       if (filters.location && p.location !== filters.location) return false;
       if (filters.mount && p.mount !== filters.mount) return false;
+      if (filters.eco) {
+        const materialsText = String(p?.specs?.materiais || p?.materials || "").toLowerCase();
+        const isEco = Boolean(p?.eco) || (Array.isArray(p?.tags) && p.tags.includes("eco")) || /(recy|recycled|recycle|bioprint|bio|eco)/.test(materialsText);
+        if (!isEco) return false;
+      }
       if (filters.color && Array.isArray(filters.color) && filters.color.length > 0) {
         const hasAny = filters.color.some((c) => Boolean(p.images?.colors?.[c]));
         if (!hasAny) return false;
@@ -101,7 +106,7 @@ export default function ShopCategory() {
               variant="bordered"
               color="default"
               startContent={<Icon icon="lucide:rotate-ccw" className="text-sm" />}
-              onPress={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0 }); setPriceRange([priceLimits.min, priceLimits.max]); setQuery(""); }}
+          onPress={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false }); setPriceRange([priceLimits.min, priceLimits.max]); setQuery(""); }}
             >
               Clear filters
             </Button>
