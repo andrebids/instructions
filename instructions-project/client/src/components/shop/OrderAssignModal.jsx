@@ -50,6 +50,11 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
   };
 
   const handleProjectSelection = (key) => {
+    if (!key) {
+      setProjectId("");
+      setProjectError("Select a project first.");
+      return;
+    }
     const id = typeof key === 'string' ? key : String(key);
     setProjectId(id);
     const selected = projects.find((p) => p.id === id);
@@ -77,6 +82,8 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
                     defaultItems={projects}
                     placeholder="Search for a project..."
                     menuTrigger="input"
+                    selectionMode="single"
+                    allowsCustomValue={false}
                     isInvalid={!!projectError}
                     errorMessage={projectError}
                   >

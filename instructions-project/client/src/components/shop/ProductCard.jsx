@@ -6,7 +6,7 @@ import ProductModal from "./ProductModal";
 import RequestInfoModal from "./RequestInfoModal";
 import CompareSuggestModal from "./CompareSuggestModal";
 
-export default function ProductCard({ product, onOrder, glass = false }) {
+export default function ProductCard({ product, onOrder, glass = false, allowQty = false }) {
   const [open, setOpen] = React.useState(false);
   const [activeColor, setActiveColor] = React.useState(null);
   const { addToProject, projects, favorites, compare, toggleFavorite, toggleCompare, products, getAvailableStock } = useShop();
@@ -170,7 +170,8 @@ export default function ProductCard({ product, onOrder, glass = false }) {
         isOpen={open}
         onOpenChange={setOpen}
         product={product}
-        onOrder={(variant) => onOrder?.(product, variant)}
+        onOrder={(variant, qty) => onOrder?.(product, variant, qty)}
+        enableQuantity={allowQty}
       />
       <RequestInfoModal isOpen={infoOpen} onOpenChange={setInfoOpen} product={product} />
       <CompareSuggestModal

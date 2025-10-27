@@ -29,6 +29,20 @@ export function ShopProvider({ children }) {
     const persisted = loadPersistedState();
     return persisted?.cartByProject || {};
   });
+  const [projectStatusById, setProjectStatusById] = React.useState(() => {
+    const persisted = loadPersistedState();
+    if (persisted?.projectStatusById) return persisted.projectStatusById;
+    const map = {};
+    (mockProjects || []).forEach((p) => { map[p.id] = p.status || "created"; });
+    return map;
+  });
+  const [projectBudgetById, setProjectBudgetById] = React.useState(() => {
+    const persisted = loadPersistedState();
+    if (persisted?.projectBudgetById) return persisted.projectBudgetById;
+    const map = {};
+    (mockProjects || []).forEach((p) => { if (typeof p.budget !== 'undefined') map[p.id] = Number(p.budget); });
+    return map;
+  });
   const [favorites, setFavorites] = React.useState(() => {
     const persisted = loadPersistedState();
     return persisted?.favorites || [];
@@ -71,7 +85,7 @@ export function ShopProvider({ children }) {
         });
       }
       next[projectId] = { items };
-      const stateToPersist = { cartByProject: next, favorites, compare };
+      const stateToPersist = { cartByProject: next, favorites, compare, projectStatusById, projectBudgetById };
       persistState(stateToPersist);
       return next;
     });
@@ -100,7 +114,7 @@ export function ShopProvider({ children }) {
     setFavorites((prev) => {
       const exists = prev.includes(productId);
       const next = exists ? prev.filter((id) => id !== productId) : [...prev, productId];
-      const stateToPersist = { cartByProject, favorites: next, compare };
+      const stateToPersist = { cartByProject, favorites: next, compare, projectStatusById, projectBudgetById };
       persistState(stateToPersist);
       return next;
     });
@@ -110,7 +124,7 @@ export function ShopProvider({ children }) {
     setCompare((prev) => {
       const exists = prev.includes(productId);
       const next = exists ? prev.filter((id) => id !== productId) : [...prev, productId];
-      const stateToPersist = { cartByProject, favorites, compare: next };
+      const stateToPersist = { cartByProject, favorites, compare: next, projectStatusById, projectBudgetById };
       persistState(stateToPersist);
       return next;
     });
@@ -151,7 +165,7 @@ export function ShopProvider({ children }) {
         const allowedMaxStock = available + (Number(currentItem.qty) || 0);
         // Budget constraint
         const project = projects.find((p) => String(p.id) === String(projectId));
-        const budgetValue = Number(project?.budget);
+        const budgetValue = Number(projectBudgetById?.[projectId] ?? project?.budget);
         let allowedMaxBudget = Infinity;
         if (Number.isFinite(budgetValue)) {
           // total excluding current line
@@ -173,7 +187,7 @@ export function ShopProvider({ children }) {
           items[idx] = { ...currentItem, qty: clamped };
         }
         next[projectId] = { items };
-        const stateToPersist = { cartByProject: next, favorites, compare };
+        const stateToPersist = { cartByProject: next, favorites, compare, projectStatusById, projectBudgetById };
         persistState(stateToPersist);
         return next;
       });
@@ -185,7 +199,23 @@ export function ShopProvider({ children }) {
         if (!existing) return prev;
         const items = (existing.items || []).filter((it) => it.key !== key);
         next[projectId] = { items };
-        const stateToPersist = { cartByProject: next, favorites, compare };
+        const stateToPersist = { cartByProject: next, favorites, compare, projectStatusById, projectBudgetById };
+        persistState(stateToPersist);
+        return next;
+      });
+    },
+    setProjectStatus: (projectId, status) => {
+      setProjectStatusById((prev) => {
+        const next = { ...prev, [projectId]: status };
+        const stateToPersist = { cartByProject, favorites, compare, projectStatusById: next, projectBudgetById };
+        persistState(stateToPersist);
+        return next;
+      });
+    },
+    setProjectBudget: (projectId, budget) => {
+      setProjectBudgetById((prev) => {
+        const next = { ...prev, [projectId]: Number(budget) || 0 };
+        const stateToPersist = { cartByProject, favorites, compare, projectStatusById, projectBudgetById: next };
         persistState(stateToPersist);
         return next;
       });
@@ -196,7 +226,9 @@ export function ShopProvider({ children }) {
     toggleCompare,
     getReservedQuantity,
     getAvailableStock,
-  }), [products, projects, categories, cartByProject, totalsByProject, addToProject, favorites, compare, toggleFavorite, toggleCompare, getReservedQuantity, getAvailableStock]);
+    projectStatusById,
+    projectBudgetById,
+  }), [products, projects, categories, cartByProject, totalsByProject, addToProject, favorites, compare, toggleFavorite, toggleCompare, getReservedQuantity, getAvailableStock, projectStatusById, projectBudgetById]);
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 }

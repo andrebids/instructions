@@ -10,10 +10,10 @@ import './index.css'
 const rootElement = document.getElementById('root')
 createRoot(rootElement).render(
   <React.StrictMode>
-    <HeroUIProvider defaultTheme="light" storageKey="heroui-theme">
+    <HeroUIProvider>
       <ThemeProvider>
         <ShopProvider>
-          <BrowserRouter>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <App />
           </BrowserRouter>
         </ShopProvider>

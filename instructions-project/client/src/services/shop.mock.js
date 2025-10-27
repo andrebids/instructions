@@ -9,9 +9,9 @@ export const categories = [
 ];
 
 export const projects = [
-  { id: "p1", name: "Centro Comercial Colombo", budget: 40000 },
-  { id: "p2", name: "Lisbon Municipality", budget: 25000 },
-  { id: "p3", name: "Luxury Hotel Chain", budget: 30000 },
+  { id: "p1", name: "Centro Comercial Colombo", budget: 40000, status: "in_progress" },
+  { id: "p2", name: "Lisbon Municipality", budget: 25000, status: "created" },
+  { id: "p3", name: "Luxury Hotel Chain", budget: 30000, status: "created" },
 ];
 
 // Helper images from public/demo-images (fallback to unsplash if missing)
@@ -25,6 +25,7 @@ export const products = [
     name: "IPL317R",
     price: 1299,
     stock: 32,
+    videoFile: "IPL317R.mp4",
     images: {
       day: img("/SHOP/TRENDING/DAY/IPL317R_DAY.png", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
       night: img("/SHOP/TRENDING/NIGHT/IPL317R_NIGHT.png", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
@@ -128,6 +129,7 @@ export const products = [
     name: "GX349L",
     price: 899,
     stock: 21,
+    videoFile: "GX349L.mp4",
     images: {
       day: img("/SHOP/TRENDING/DAY/GX349L_DAY.png", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
       night: img("/SHOP/TRENDING/NIGHT/GX349L_NIGHT.png", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
@@ -145,7 +147,7 @@ export const products = [
       descricao: "Luminous 3D bear-shaped sculpture with illuminated decorative swirl.",
       tecnicas: "IP65, 230V AC, 60W, high‑efficiency LEDs",
       dimensoes: "2.60 m (W) x 1.50 m (H) x 1.10 m (D)",
-      materiais: "White bioprint, gold bioprint, Fil Lumière, warm white LEDs with flash, pure white LEDs with flash",
+      materiais: "White bioprint, gold bioprint, Fil Lumière, pure white LEDs with flash",
       weight: "65 kg",
       effects: "Pure white with warm‑white accent (day/night modes)",
     },
