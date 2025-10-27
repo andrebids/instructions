@@ -8,7 +8,7 @@ const navigationItems = [
   { name: "Dashboard", icon: "lucide:layout-dashboard", href: "/" },
   { name: "Statistics", icon: "lucide:bar-chart", href: "/statistics" },
   { name: "Shop", icon: "lucide:shopping-bag", href: "/shop" },
-  { name: "Orders", icon: "lucide:shopping-cart", href: "/orders" },
+  { name: "Projects", icon: "lucide:folder", href: "/projects" },
 ];
 
 export function SidebarNavigation() {

@@ -146,7 +146,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder })
             <ModalFooter>
               <div className="flex items-center gap-2">
                 <Button variant="flat" onPress={close}>Close</Button>
-                <Button color="primary" isDisabled={isOutOfStock} onPress={() => { onOrder?.({ mode, color }); close(); }}>Order</Button>
+                <Button color="primary" isDisabled={isOutOfStock} onPress={() => { onOrder?.({ mode, color }); close(); }}>Add</Button>
                 {isOutOfStock && (
                   <Button variant="bordered" onPress={() => setInfoOpen(true)}>Request info</Button>
                 )}
