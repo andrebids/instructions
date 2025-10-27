@@ -67,7 +67,7 @@ export default function ShopCategory() {
 
   return (
     <div className="flex-1 min-h-0 overflow-auto p-6">
-      <PageTitle title="Shop" userName="Christopher" subtitle="Explore products by category." />
+      <PageTitle title="Shop" userName="Christopher" />
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground mt-2">{category?.charAt(0).toUpperCase() + category?.slice(1)}</h1>
@@ -156,6 +156,7 @@ export default function ShopCategory() {
           products={filtered}
           onOrder={(product, variant) => { setSelected({ product, variant }); setAssignOpen(true); }}
           cols={cols}
+          glass={isTrending}
         />
         </div>
       </div>

@@ -89,7 +89,7 @@ export default function Shop() {
 
   return (
     <div className="flex-1 min-h-0 overflow-hidden p-6 flex flex-col">
-      <PageTitle title="Shop" userName="Christopher" subtitle="Browse decorations and assets." />
+      <PageTitle title="Shop" userName="Christopher" />
       {/* Top utility bar */}
       <div className="mb-5 flex items-center justify-end gap-2">
         <Button isIconOnly variant="light" aria-label="Search">

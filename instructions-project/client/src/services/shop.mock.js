@@ -125,12 +125,12 @@ export const products = [
   },
   {
     id: "prd-005",
-    name: "Poste Ornamental",
+    name: "GX349L",
     price: 899,
     stock: 21,
     images: {
-      day: img("/demo-images/decorations/pole_day.jpg", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
-      night: img("/demo-images/decorations/pole_night.jpg", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
+      day: img("/SHOP/TRENDING/DAY/GX349L_DAY.png", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
+      night: img("/SHOP/TRENDING/NIGHT/GX349L_NIGHT.png", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
       colors: {
         brancoPuro: img("/demo-images/decorations/star_white.jpg", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"),
         brancoQuente: img("/demo-images/decorations/star_warm.jpg", "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800"),

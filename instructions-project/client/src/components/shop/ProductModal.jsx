@@ -1,11 +1,13 @@
 import React from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Image, RadioGroup, Radio, Switch, Chip } from "@heroui/react";
+import DayNightToggle from "../DayNightToggle";
 import RequestInfoModal from "./RequestInfoModal";
 
 export default function ProductModal({ isOpen, onOpenChange, product, onOrder }) {
   const [mode, setMode] = React.useState("night");
   const [color, setColor] = React.useState("brancoPuro");
   const [infoOpen, setInfoOpen] = React.useState(false);
+  // Using custom toggle; no external player
 
   React.useEffect(() => {
     if (isOpen) {
@@ -13,6 +15,14 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder })
       setColor("brancoPuro");
     }
   }, [isOpen]);
+
+  // Custom toggle has internal animation
+
+  const toggleMode = () => {
+    setMode((prev) => (prev === "day" ? "night" : "day"));
+  };
+
+  // No external event handling needed
 
   if (!product) return null;
   const imageSrc = mode === "day" ? product.images?.day : product.images?.night;
@@ -27,7 +37,18 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder })
 
   return (
     <>
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="4xl" placement="center" scrollBehavior="outside">
+    <Modal
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      size="4xl"
+      placement="center"
+      scrollBehavior="inside"
+      classNames={{
+        wrapper: "items-center justify-center",
+        base: "max-w-[1400px] w-[96vw] my-10",
+        body: "pt-4",
+      }}
+    >
       <ModalContent>
         {(close) => (
           <>
@@ -41,21 +62,21 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder })
               {/* price moved to footer */}
             </ModalHeader>
             <ModalBody>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                 {/* Left: Viewer */}
-                <div className="relative">
-                  <Image removeWrapper src={imageSrc} alt={product.name} className="w-full h-72 object-contain rounded-lg bg-content2" />
-                  <div className="absolute top-3 right-3 z-10 bg-content1/90 border border-divider rounded-xl px-3 py-2 text-foreground shadow-sm">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span>Day</span>
-                      <Switch size="sm" isSelected={mode === "night"} onValueChange={(v) => setMode(v ? "night" : "day")} aria-label="Day/Night" />
-                      <span>Night</span>
-                    </div>
+                <div className="relative md:col-span-3">
+                  <Image removeWrapper src={imageSrc} alt={product.name} className="w-full h-80 md:h-[28rem] lg:h-[36rem] object-contain rounded-lg bg-content2" />
+                  <div className="absolute top-3 right-3 z-10">
+                    <DayNightToggle
+                      isNight={mode === "night"}
+                      onToggle={() => toggleMode()}
+                      size={32}
+                    />
                   </div>
                 </div>
 
                 {/* Right: Details */}
-                <div>
+                <div className="md:col-span-2">
                   <div className="space-y-2 text-sm text-default-600">
                     <div><span className="text-default-500">Dimensions:</span> {product.specs?.dimensoes}</div>
                     <div><span className="text-default-500">Materials:</span> {product.specs?.materiais}</div>
