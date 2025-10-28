@@ -47,6 +47,11 @@ export function ShopProvider({ children }) {
     const persisted = loadPersistedState();
     return persisted?.favorites || [];
   });
+  // Favorites folders: [{id, name, productIds: string[] }]
+  const [favoriteFolders, setFavoriteFolders] = React.useState(() => {
+    const persisted = loadPersistedState();
+    return persisted?.favoriteFolders || [];
+  });
   const [compare, setCompare] = React.useState(() => {
     const persisted = loadPersistedState();
     return persisted?.compare || [];
@@ -85,7 +90,7 @@ export function ShopProvider({ children }) {
         });
       }
       next[projectId] = { items };
-      const stateToPersist = { cartByProject: next, favorites, compare, projectStatusById, projectBudgetById };
+      const stateToPersist = { cartByProject: next, favorites, favoriteFolders, compare, projectStatusById, projectBudgetById };
       persistState(stateToPersist);
       return next;
     });
@@ -114,21 +119,87 @@ export function ShopProvider({ children }) {
     setFavorites((prev) => {
       const exists = prev.includes(productId);
       const next = exists ? prev.filter((id) => id !== productId) : [...prev, productId];
-      const stateToPersist = { cartByProject, favorites: next, compare, projectStatusById, projectBudgetById };
+      // If unfavoriting, also remove from all folders
+      let foldersNext = favoriteFolders;
+      if (exists) {
+        foldersNext = (favoriteFolders || []).map((f) => ({ ...f, productIds: (f.productIds || []).filter((id) => id !== productId) }));
+        setFavoriteFolders(foldersNext);
+      }
+      const stateToPersist = { cartByProject, favorites: next, favoriteFolders: foldersNext, compare, projectStatusById, projectBudgetById };
       persistState(stateToPersist);
       return next;
     });
-  }, [cartByProject, compare]);
+  }, [cartByProject, compare, favoriteFolders]);
 
   const toggleCompare = React.useCallback((productId) => {
     setCompare((prev) => {
       const exists = prev.includes(productId);
       const next = exists ? prev.filter((id) => id !== productId) : [...prev, productId];
-      const stateToPersist = { cartByProject, favorites, compare: next, projectStatusById, projectBudgetById };
+      const stateToPersist = { cartByProject, favorites, favoriteFolders, compare: next, projectStatusById, projectBudgetById };
       persistState(stateToPersist);
       return next;
     });
-  }, [cartByProject, favorites]);
+  }, [cartByProject, favorites, favoriteFolders]);
+
+  // Favorite folders API
+  const createFavoriteFolder = React.useCallback((name) => {
+    const id = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    setFavoriteFolders((prev) => {
+      const next = [...prev, { id, name: String(name || 'New folder'), productIds: [] }];
+      persistState({ cartByProject, favorites, favoriteFolders: next, compare, projectStatusById, projectBudgetById });
+      return next;
+    });
+    return id;
+  }, [cartByProject, favorites, compare, projectStatusById, projectBudgetById]);
+
+  const renameFavoriteFolder = React.useCallback((folderId, name) => {
+    setFavoriteFolders((prev) => {
+      const next = prev.map((f) => f.id === folderId ? { ...f, name: String(name || f.name) } : f);
+      persistState({ cartByProject, favorites, favoriteFolders: next, compare, projectStatusById, projectBudgetById });
+      return next;
+    });
+  }, [cartByProject, favorites, compare, projectStatusById, projectBudgetById]);
+
+  const deleteFavoriteFolder = React.useCallback((folderId) => {
+    setFavoriteFolders((prev) => {
+      const next = prev.filter((f) => f.id !== folderId);
+      persistState({ cartByProject, favorites, favoriteFolders: next, compare, projectStatusById, projectBudgetById });
+      return next;
+    });
+  }, [cartByProject, favorites, compare, projectStatusById, projectBudgetById]);
+
+  const toggleProductInFolder = React.useCallback((folderId, productId) => {
+    setFavoriteFolders((prev) => {
+      const target = prev.find((f) => f.id === folderId);
+      const inTarget = Boolean(target?.productIds?.includes(productId));
+      let next;
+      if (inTarget) {
+        // Remove only from the target folder
+        next = prev.map((f) => f.id === folderId ? { ...f, productIds: (f.productIds || []).filter((id) => id !== productId) } : f);
+      } else {
+        // Add exclusively: remove from all other folders, then add to target
+        next = prev.map((f) => {
+          if (f.id === folderId) {
+            const set = new Set(f.productIds || []);
+            set.add(productId);
+            return { ...f, productIds: Array.from(set) };
+          }
+          // remove from others
+          return { ...f, productIds: (f.productIds || []).filter((id) => id !== productId) };
+        });
+      }
+      // Ensure product is favorite when present in any folder
+      const isInAny = next.some((f) => (f.productIds || []).includes(productId));
+      setFavorites((favPrev) => {
+        let ensured = favPrev;
+        if (isInAny && !favPrev.includes(productId)) ensured = [...favPrev, productId];
+        if (!isInAny && favPrev.includes(productId)) ensured = favPrev.filter((id) => id !== productId);
+        persistState({ cartByProject, favorites: ensured, favoriteFolders: next, compare, projectStatusById, projectBudgetById });
+        return ensured;
+      });
+      return next;
+    });
+  }, [cartByProject, compare, projectStatusById, projectBudgetById]);
 
   const value = React.useMemo(() => ({
     products,
@@ -221,14 +292,19 @@ export function ShopProvider({ children }) {
       });
     },
     favorites,
+    favoriteFolders,
     compare,
     toggleFavorite,
+    createFavoriteFolder,
+    renameFavoriteFolder,
+    deleteFavoriteFolder,
+    toggleProductInFolder,
     toggleCompare,
     getReservedQuantity,
     getAvailableStock,
     projectStatusById,
     projectBudgetById,
-  }), [products, projects, categories, cartByProject, totalsByProject, addToProject, favorites, compare, toggleFavorite, toggleCompare, getReservedQuantity, getAvailableStock, projectStatusById, projectBudgetById]);
+  }), [products, projects, categories, cartByProject, totalsByProject, addToProject, favorites, favoriteFolders, compare, toggleFavorite, createFavoriteFolder, renameFavoriteFolder, deleteFavoriteFolder, toggleProductInFolder, toggleCompare, getReservedQuantity, getAvailableStock, projectStatusById, projectBudgetById]);
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { Accordion, AccordionItem, Button, Checkbox, Chip, Slider, Tooltip } from "@heroui/react";
+import { Accordion, AccordionItem, Checkbox, Slider, Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 /**
@@ -121,9 +121,23 @@ export default function TrendingFiltersSidebar({
 
         {/* Usage */}
         <AccordionItem key="usage" aria-label="Usage" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Usage</span></div>}>
-          <div className="space-y-2">
-            <Checkbox isSelected={filters.usage === "Shopping"} onValueChange={(v) => handle("usage", v ? "Shopping" : "")}>Shopping Malls <span className="text-default-500">({itemsCount.usageShopping})</span></Checkbox>
-            <Checkbox isSelected={Boolean(filters.eco)} onValueChange={(v) => handle("eco", v)}>Eco <span className="text-default-500">({itemsCount.eco})</span></Checkbox>
+          <div className="flex flex-col gap-2">
+            <Checkbox 
+              isSelected={filters.usage === "Shopping"}
+              onValueChange={(v) => handle("usage", v ? "Shopping" : "")}
+              classNames={{ label: "flex items-center gap-1" }}
+              size="sm"
+            >
+              <span className="flex items-center gap-1">Shopping Malls <span className="text-default-500">({itemsCount.usageShopping})</span></span>
+            </Checkbox>
+            <Checkbox 
+              isSelected={Boolean(filters.eco)}
+              onValueChange={(v) => handle("eco", v)}
+              classNames={{ label: "flex items-center gap-1" }}
+              size="sm"
+            >
+              <span className="flex items-center gap-1">Eco <span className="text-default-500">({itemsCount.eco})</span></span>
+            </Checkbox>
           </div>
         </AccordionItem>
 
@@ -148,7 +162,6 @@ export default function TrendingFiltersSidebar({
         {/* Price */}
         <AccordionItem key="price" aria-label="Price" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Price</span></div>}>
           <div className="space-y-3">
-            <button type="button" onClick={resetPrice} className="text-xs text-primary hover:underline">Reset</button>
             {/* Try HeroUI range first */}
             {typeof Slider !== "undefined" ? (
               <Slider
@@ -184,7 +197,6 @@ export default function TrendingFiltersSidebar({
         {/* Stock */}
         <AccordionItem key="stock" aria-label="Stock" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Stock</span></div>}>
           <div className="space-y-3">
-            <button type="button" onClick={resetStock} className="text-xs text-primary hover:underline">Reset</button>
             {typeof Slider !== 'undefined' ? (
               <Slider
                 aria-label="Minimum stock"
@@ -227,21 +239,22 @@ export default function TrendingFiltersSidebar({
           </div>
         </AccordionItem>
 
-        {/* Mount */}
+        {/* Mount - align style with Type (full-width selectable rows) */}
         <AccordionItem key="mount" aria-label="Mount" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Mount</span></div>}>
-          <div className="flex flex-wrap gap-2">
+          <ul className="space-y-2">
             {mountOptions.map((opt) => (
-              <Chip
-                key={opt.value}
-                variant={filters.mount === opt.value ? "solid" : "bordered"}
-                color={filters.mount === opt.value ? "primary" : "default"}
-                className="cursor-pointer"
-                onClick={() => handle("mount", filters.mount === opt.value ? "" : opt.value)}
-              >
-                {opt.label} <span className="ml-1 text-default-500">({itemsCount[opt.countKey]})</span>
-              </Chip>
+              <li key={opt.value}>
+                <button
+                  type="button"
+                  onClick={() => handle("mount", filters.mount === opt.value ? "" : opt.value)}
+                  className={`flex w-full items-center justify-between rounded-md px-2 py-2 text-left hover:bg-content2 ${filters.mount === opt.value ? "bg-content2" : ""}`}
+                >
+                  <span>{opt.label}</span>
+                  <span className="text-default-500">({itemsCount[opt.countKey]})</span>
+                </button>
+              </li>
             ))}
-          </div>
+          </ul>
         </AccordionItem>
       </Accordion>
     </aside>
