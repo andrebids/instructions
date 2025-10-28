@@ -9,8 +9,10 @@ import CountUp from "../components/CountUp";
 import { AIAssistantChat } from "../components/ai-assistant-chat";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageTitle } from "../components/page-title";
+import { useUser } from "../context/UserContext";
 
 export default function Statistics() {
+  const { userName } = useUser();
   const { theme } = useTheme();
   const [year, setYear] = React.useState(2025);
   const [isOpen, setIsOpen] = React.useState(false);
@@ -435,7 +437,7 @@ export default function Statistics() {
       {/* Header with greeting and year filter */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <PageTitle title="Statistics" userName="Christopher" subtitle={"Here's how your year is shaping up so far."} meta={`Jan 1 – Oct 22, ${year}`} />
+          <PageTitle title="Statistics" userName={userName} lead={`Your performance overview, ${userName}`} subtitle={"Here's how your year is shaping up so far."} meta={`Jan 1 – Oct 22, ${year}`} />
         </div>
         <div className="flex items-center gap-2">
           <Dropdown>

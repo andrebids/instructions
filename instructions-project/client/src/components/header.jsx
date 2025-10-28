@@ -1,12 +1,16 @@
-import {Avatar, Button, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Badge, Popover, PopoverTrigger, PopoverContent} from "@heroui/react";
+import {Avatar, Button, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Badge, Popover, PopoverTrigger, PopoverContent, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter} from "@heroui/react";
 import {Icon} from "@iconify/react";
 import React from "react";
 import {useTheme} from "@heroui/use-theme";
+import { useUser } from "../context/UserContext";
 
 export function Header() {
   const {theme, setTheme} = useTheme();
   const [showSearch, setShowSearch] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(false);
+  const [showSettings, setShowSettings] = React.useState(false);
+  const { userName, setUserName } = useUser();
+  const [tempName, setTempName] = React.useState("");
   
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
@@ -148,7 +152,12 @@ export function Header() {
               className="transition-transform"
             />
           </DropdownTrigger>
-          <DropdownMenu aria-label="Profile Actions" variant="flat">
+          <DropdownMenu aria-label="Profile Actions" variant="flat" onAction={(key)=>{
+            if (key === 'settings') {
+              setTempName(userName || "Christopher");
+              setShowSettings(true);
+            }
+          }}>
             <DropdownItem key="profile" className="h-14 gap-2">
               <p className="font-semibold">Signed in as</p>
               <p className="font-semibold">john@example.com</p>
@@ -160,6 +169,29 @@ export function Header() {
             </DropdownItem>
           </DropdownMenu>
         </Dropdown>
+
+        {/* My Settings Modal */}
+        <Modal isOpen={showSettings} onClose={()=>setShowSettings(false)} placement="center" backdrop="blur">
+          <ModalContent>
+            {(onClose) => (
+              <>
+                <ModalHeader className="flex flex-col gap-1">My Settings</ModalHeader>
+                <ModalBody>
+                  <Input
+                    label="Your name"
+                    placeholder="Enter your name"
+                    value={tempName}
+                    onValueChange={setTempName}
+                  />
+                </ModalBody>
+                <ModalFooter>
+                  <Button variant="flat" onPress={onClose}>Cancel</Button>
+                  <Button color="primary" onPress={()=>{ setUserName(tempName?.trim() || "Christopher"); onClose(); }}>Save</Button>
+                </ModalFooter>
+              </>
+            )}
+          </ModalContent>
+        </Modal>
       </div>
     </header>
   );

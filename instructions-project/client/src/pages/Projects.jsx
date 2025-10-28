@@ -2,11 +2,13 @@ import React from "react";
 import { Card, CardBody, Chip, Progress, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Tooltip } from "@heroui/react";
 import { useShop } from "../context/ShopContext";
 import { PageTitle } from "../components/page-title";
+import { useUser } from "../context/UserContext";
 import ProjectOrderModal from "../components/projects/ProjectOrderModal";
 import ProjectAddPieceModal from "../components/projects/ProjectAddPieceModal";
 import { Icon } from "@iconify/react";
 
 export default function Projects() {
+  const { userName } = useUser();
   const { projects, cartByProject, totalsByProject, projectStatusById, setProjectStatus, projectBudgetById, setProjectBudget } = useShop();
   const [openProject, setOpenProject] = React.useState(null);
   const [adding, setAdding] = React.useState(false);
@@ -37,7 +39,7 @@ export default function Projects() {
 
   return (
     <div className="flex-1 min-h-0 overflow-auto p-6">
-      <PageTitle title="Projects" userName="Christopher" subtitle="Review projects and budgets." className="mb-6" />
+      <PageTitle title="Projects" userName={userName} lead={`Manage your projects, ${userName}`} subtitle="Review projects and budgets." className="mb-6" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {projects.map((proj) => {

@@ -34,12 +34,14 @@ export default function FavoriteFolderModal({ isOpen, onOpenChange, productId })
     setNewFolderName("");
   };
 
+  const isFav = Array.isArray(favorites) && favorites.includes(productId);
+
   return (
     <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md">
       <ModalContent>
         {(close) => (
           <>
-            <ModalHeader className="flex flex-col gap-1">Add to favorites</ModalHeader>
+            <ModalHeader className="flex flex-col gap-1">{isFav ? 'Update favorites' : 'Add to favorites'}</ModalHeader>
             <ModalBody>
               <div className="space-y-3">
                 <RadioGroup label="Choose a folder (optional)" value={selectedFolderId} onValueChange={setSelectedFolderId}>
@@ -61,8 +63,13 @@ export default function FavoriteFolderModal({ isOpen, onOpenChange, productId })
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button variant="light" onPress={close}>Close</Button>
-              <Button color="primary" onPress={handleConfirm}>Save</Button>
+              <div className="w-full flex justify-end gap-2">
+                <Button variant="light" onPress={close}>Close</Button>
+                {isFav && (
+                  <Button color="danger" variant="flat" onPress={() => { toggleFavorite(productId); onOpenChange?.(false); }}>Remove</Button>
+                )}
+                <Button color="primary" onPress={handleConfirm}>Save</Button>
+              </div>
             </ModalFooter>
           </>
         )}
