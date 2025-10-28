@@ -12,6 +12,9 @@ export default function Favorites() {
   const [selectedFolderId, setSelectedFolderId] = React.useState('all');
   const [creating, setCreating] = React.useState(false);
   const [newName, setNewName] = React.useState('');
+  const [query, setQuery] = React.useState('');
+  const [searchFocused, setSearchFocused] = React.useState(false);
+  const [suggestSeed, setSuggestSeed] = React.useState(0);
   const [renameModal, setRenameModal] = React.useState({ open: false, folder: null });
   const [deleteModal, setDeleteModal] = React.useState({ open: false, folder: null });
 
@@ -22,6 +25,42 @@ export default function Favorites() {
   }, [favorites, selectedFolderId, selectedFolder]);
 
   const items = React.useMemo(() => products.filter(p => productIds.includes(p.id)), [products, productIds]);
+  const filteredItems = React.useMemo(() => {
+    if (!query) return items;
+    const q = query.toLowerCase();
+    return items.filter(p => String(p.name || '').toLowerCase().includes(q));
+  }, [items, query]);
+
+  // Suggestions: 3 random when empty, otherwise top matches (up to 5)
+  const suggestions = React.useMemo(() => {
+    if (!items.length) return [];
+    if (!query) {
+      const n = Math.min(3, items.length);
+      const scored = items.map((p, idx) => ({ idx, score: Math.abs(Math.sin(suggestSeed + idx) * 10000) }));
+      scored.sort((a, b) => a.score - b.score);
+      return scored.slice(0, n).map((s) => items[s.idx]);
+    }
+    const q = query.toLowerCase();
+    return items.filter(p => String(p.name || '').toLowerCase().includes(q)).slice(0, 5);
+  }, [items, query, suggestSeed]);
+
+  React.useEffect(() => {
+    if (searchFocused) setSuggestSeed(Date.now());
+  }, [searchFocused]);
+
+  const highlight = (name) => {
+    const q = query.trim();
+    if (!q) return name;
+    const i = name.toLowerCase().indexOf(q.toLowerCase());
+    if (i === -1) return name;
+    return (
+      <>
+        {name.slice(0, i)}
+        <span className="font-semibold">{name.slice(i, i + q.length)}</span>
+        {name.slice(i + q.length)}
+      </>
+    );
+  };
 
   const handleCreate = () => {
     const name = newName.trim();
@@ -81,10 +120,43 @@ export default function Favorites() {
 
         {/* Right: products in folder */}
         <div className="flex-1 w-full">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <div className="text-default-500">{selectedFolderId==='all' ? 'All favorite products' : `Folder: ${selectedFolder?.name || ''}`}</div>
+            <div className={`relative transition-all duration-200 ${searchFocused ? 'flex-1 max-w-md' : 'w-48 md:w-60'}`}>
+              <Input
+                value={query}
+                onValueChange={setQuery}
+                placeholder="Search favorites..."
+                isClearable
+                startContent={<Icon icon="lucide:search" className="text-default-400" />}
+                size="sm"
+                classNames={{ inputWrapper: "bg-default-50" }}
+                onFocus={()=> setSearchFocused(true)}
+                onBlur={()=> setSearchFocused(false)}
+              />
+              {searchFocused && suggestions.length > 0 && (
+                <div className="absolute left-0 right-0 mt-1 rounded-md border border-divider bg-content1 shadow-medium z-20 overflow-hidden">
+                  {suggestions.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-content2 text-left"
+                      onMouseDown={(e)=> { e.preventDefault(); setQuery(p.name); }}
+                    >
+                      <img
+                        src={p.images?.night || p.images?.day}
+                        alt={p.name}
+                        className="w-8 h-8 object-contain rounded"
+                        onError={(e)=>{ e.currentTarget.style.visibility = 'hidden'; }}
+                      />
+                      <span className="text-sm text-foreground truncate">{highlight(p.name)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-          <ProductGrid products={items} onOrder={()=>{}} cols={4} glass={false} />
+          <ProductGrid products={filteredItems} onOrder={()=>{}} cols={4} glass={false} />
         </div>
       </div>
     </div>
@@ -101,7 +173,7 @@ export default function Favorites() {
       isOpen={deleteModal.open}
       onOpenChange={(v)=> setDeleteModal({ open: v, folder: deleteModal.folder })}
       title="Delete folder"
-      description={<span>Are you sure you want to delete <span className="font-medium">{deleteModal.folder?.name}</span>? Items remain in All favorites.</span>}
+      description={<span>Are you sure you want to delete <span className="font-medium">{deleteModal.folder?.name}</span>?<br />Items remain in All favorites.</span>}
       confirmText="Delete"
       confirmColor="danger"
       onConfirm={()=> { if (deleteModal.folder) { deleteFavoriteFolder(deleteModal.folder.id); if (selectedFolderId===deleteModal.folder.id) setSelectedFolderId('all'); } }}
