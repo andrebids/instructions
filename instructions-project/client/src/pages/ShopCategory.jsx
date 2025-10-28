@@ -7,10 +7,12 @@ import TrendingFiltersSidebar from "../components/shop/TrendingFiltersSidebar";
 import ProductGrid from "../components/shop/ProductGrid";
 import OrderAssignModal from "../components/shop/OrderAssignModal";
 import { PageTitle } from "../components/page-title";
+import { useNavigate } from "react-router-dom";
 
 export default function ShopCategory() {
   const { category } = useParams();
   const { products } = useShop();
+  const navigate = useNavigate();
   const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false });
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [selected, setSelected] = React.useState({ product: null, variant: null });
@@ -18,6 +20,7 @@ export default function ShopCategory() {
   const [query, setQuery] = React.useState("");
   const [sort, setSort] = React.useState("relevance");
   const [cols, setCols] = React.useState(4);
+  
 
   const isTrending = category === "trending";
   const productsInCategory = React.useMemo(() => products.filter((p) => p.tags?.includes(category)), [products, category]);
@@ -100,11 +103,12 @@ export default function ShopCategory() {
             priceLimits={priceLimits}
             onPriceChange={setPriceRange}
           />
-          <div className="mt-2 flex gap-2">
+          <div className="mt-2 flex gap-2 justify-end">
             <Button
               size="sm"
-              variant="bordered"
-              color="default"
+              variant="flat"
+              radius="full"
+              className="bg-[#e4e3e8] text-foreground/80 hover:text-foreground dark:bg-content1 shadow-sm"
               startContent={<Icon icon="lucide:rotate-ccw" className="text-sm" />}
           onPress={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false }); setPriceRange([priceLimits.min, priceLimits.max]); setQuery(""); }}
             >
@@ -133,29 +137,34 @@ export default function ShopCategory() {
               </Button>
             ))}
           </div>
-          <Dropdown>
-            <DropdownTrigger>
-              <Button radius="full" variant="bordered" endContent={<Icon icon="lucide:chevron-down" className="text-sm" />}> 
-                {sort === 'relevance' && 'Best Selling'}
-                {sort === 'alpha-asc' && 'Alphabetically, A-Z'}
-                {sort === 'alpha-desc' && 'Alphabetically, Z-A'}
-                {sort === 'price-asc' && 'Price, low to high'}
-                {sort === 'price-desc' && 'Price, high to low'}
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu 
-              aria-label="Sort products"
-              selectedKeys={new Set([sort])}
-              selectionMode="single"
-              onAction={(key)=>setSort(String(key))}
-            >
-              <DropdownItem key="relevance">Best selling</DropdownItem>
-              <DropdownItem key="alpha-asc">Alphabetically, A-Z</DropdownItem>
-              <DropdownItem key="alpha-desc">Alphabetically, Z-A</DropdownItem>
-              <DropdownItem key="price-asc">Price, low to high</DropdownItem>
-              <DropdownItem key="price-desc">Price, high to low</DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
+          <div className="flex items-center gap-2">
+            <Dropdown>
+              <DropdownTrigger>
+                <Button radius="full" variant="bordered" endContent={<Icon icon="lucide:chevron-down" className="text-sm" />}> 
+                  {sort === 'relevance' && 'Best Selling'}
+                  {sort === 'alpha-asc' && 'Alphabetically, A-Z'}
+                  {sort === 'alpha-desc' && 'Alphabetically, Z-A'}
+                  {sort === 'price-asc' && 'Price, low to high'}
+                  {sort === 'price-desc' && 'Price, high to low'}
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu 
+                aria-label="Sort products"
+                selectedKeys={new Set([sort])}
+                selectionMode="single"
+                onAction={(key)=>setSort(String(key))}
+              >
+                <DropdownItem key="relevance">Best selling</DropdownItem>
+                <DropdownItem key="alpha-asc">Alphabetically, A-Z</DropdownItem>
+                <DropdownItem key="alpha-desc">Alphabetically, Z-A</DropdownItem>
+                <DropdownItem key="price-asc">Price, low to high</DropdownItem>
+                <DropdownItem key="price-desc">Price, high to low</DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+            <Button isIconOnly radius="full" variant="bordered" aria-label="Go to favorites" onPress={()=> navigate('/favorites')}>
+              <Icon icon="lucide:heart" className="text-default-500" />
+            </Button>
+          </div>
         </div>
         <ProductGrid
           products={filtered}

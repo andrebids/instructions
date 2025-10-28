@@ -1,15 +1,16 @@
 import React from "react";
-import { Image, Chip, Tooltip, Button } from "@heroui/react";
+import { Image, Chip, Tooltip, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useShop } from "../../context/ShopContext";
 import ProductModal from "./ProductModal";
 import RequestInfoModal from "./RequestInfoModal";
 import CompareSuggestModal from "./CompareSuggestModal";
+import FavoriteFolderModal from "./FavoriteFolderModal";
 
 export default function ProductCard({ product, onOrder, glass = false, allowQty = false }) {
   const [open, setOpen] = React.useState(false);
   const [activeColor, setActiveColor] = React.useState(null);
-  const { addToProject, projects, favorites, compare, toggleFavorite, toggleCompare, products, getAvailableStock } = useShop();
+  const { addToProject, projects, favorites, compare, toggleFavorite, toggleCompare, products, getAvailableStock, favoriteFolders, toggleProductInFolder, createFavoriteFolder } = useShop();
 
   const previewSrc = React.useMemo(() => {
     if (activeColor && product.images?.colors?.[activeColor]) return product.images.colors[activeColor];
@@ -33,6 +34,7 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
   const isLowStock = stock > 0 && stock <= 10;
   const [infoOpen, setInfoOpen] = React.useState(false);
   const [compareOpen, setCompareOpen] = React.useState(false);
+  const [favModalOpen, setFavModalOpen] = React.useState(false);
 
   return (
     <>
@@ -102,13 +104,13 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
 
               {/* Favorite */}
               <div className="group/action relative flex items-center">
-                <Tooltip content={favorites?.includes(product.id) ? "Remove from favorites" : "Add to favorites"} placement="left">
+                <Tooltip content={favorites?.includes(product.id) ? "In favorites" : "Add to favorites"} placement="left">
                   <Button
                     isIconOnly
                     radius="full"
                     className={`bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/70 shadow-medium ${favorites?.includes(product.id) ? 'ring-2 ring-danger-500' : ''}`}
                     aria-label="Add to favorites"
-                    onPress={() => { toggleFavorite(product.id); }}
+                    onPress={() => { setFavModalOpen(true); }}
                     onClick={(e)=> e.stopPropagation()}
                   >
                     <Icon icon="lucide:heart" className="text-white text-xl" />
@@ -130,6 +132,41 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
                     <Icon icon="lucide:shuffle" className="text-white text-xl" />
                   </Button>
                 </Tooltip>
+              </div>
+
+              {/* Add to folder */}
+              <div className="group/action relative flex items-center">
+                <Dropdown placement="left-start">
+                  <DropdownTrigger>
+                    <Button
+                      isIconOnly
+                      radius="full"
+                      className="bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/70 shadow-medium"
+                      aria-label="Add to folder"
+                      onClick={(e)=> e.stopPropagation()}
+                    >
+                      <Icon icon="lucide:folder-plus" className="text-white text-xl" />
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu aria-label="Add to folder" onAction={(key)=>{
+                    if (String(key) === '__new') {
+                      const name = window.prompt('Folder name');
+                      if (name && name.trim()) {
+                        const id = createFavoriteFolder(name.trim());
+                        toggleProductInFolder(id, product.id);
+                        if (!favorites?.includes(product.id)) toggleFavorite(product.id);
+                      }
+                    } else {
+                      toggleProductInFolder(String(key), product.id);
+                      if (!favorites?.includes(product.id)) toggleFavorite(product.id);
+                    }
+                  }}>
+                    {(favoriteFolders || []).map((f)=> (
+                      <DropdownItem key={f.id}>{f.name}</DropdownItem>
+                    ))}
+                    <DropdownItem key="__new" color="primary">New folder…</DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
               </div>
             </div>
           </div>
@@ -180,6 +217,7 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
         baseProduct={product}
         onAdd={(p)=>{ toggleCompare(p.id); }}
       />
+      <FavoriteFolderModal isOpen={favModalOpen} onOpenChange={setFavModalOpen} productId={product.id} />
     </>
   );
 }

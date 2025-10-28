@@ -7,6 +7,7 @@ import Statistics from "./pages/Statistics";
 import Shop from "./pages/Shop";
 import ShopCategory from "./pages/ShopCategory";
 import Projects from "./pages/Projects";
+import Favorites from "./pages/Favorites";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/shop/:category" element={<ShopCategory />} />
+          <Route path="/favorites" element={<Favorites />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/orders" element={<Projects />} />
         </Routes>

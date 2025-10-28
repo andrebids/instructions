@@ -146,7 +146,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
       scrollBehavior="inside"
       classNames={{
         wrapper: "items-center justify-center",
-        base: "max-w-[1400px] w-[96vw] max-h-[90vh] my-4",
+        base: "max-w-[1400px] w-[96vw] max-h-[90vh] my-4 bg-[#e4e3e8] dark:bg-content1",
         body: "py-2",
       }}
     >
@@ -168,7 +168,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                 <div className="relative md:col-span-3 flex flex-col">
                   {/* Media wrapper to correctly center arrows relative to image/video */}
                   <div
-                    className="relative w-full h-[40vh] md:h-[42vh] lg:h-[44vh] rounded-lg overflow-hidden bg-content2"
+                    className="relative w-full h-[40vh] md:h-[42vh] lg:h-[44vh] rounded-lg overflow-hidden bg-[#1f2937] dark:bg-content2"
                     onMouseMove={(e) => {
                       if (mediaIndex !== 0) return;
                       const rect = e.currentTarget.getBoundingClientRect();
