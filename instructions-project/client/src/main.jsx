@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { HeroUIProvider } from '@heroui/react'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ShopProvider } from './context/ShopContext'
+import { UserProvider } from './context/UserContext'
 import App from './App'
 import './index.css'
 
@@ -13,9 +14,11 @@ createRoot(rootElement).render(
     <HeroUIProvider>
       <ThemeProvider>
         <ShopProvider>
-          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <App />
-          </BrowserRouter>
+          <UserProvider>
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <App />
+            </BrowserRouter>
+          </UserProvider>
         </ShopProvider>
       </ThemeProvider>
     </HeroUIProvider>

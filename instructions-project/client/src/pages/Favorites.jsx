@@ -6,8 +6,10 @@ import ProductGrid from "../components/shop/ProductGrid";
 import { PageTitle } from "../components/page-title";
 import ConfirmModal from "../components/common/ConfirmModal";
 import EditNameModal from "../components/common/EditNameModal";
+import { useUser } from "../context/UserContext";
 
 export default function Favorites() {
+  const { userName } = useUser();
   const { products, favorites, favoriteFolders, createFavoriteFolder, renameFavoriteFolder, deleteFavoriteFolder } = useShop();
   const [selectedFolderId, setSelectedFolderId] = React.useState('all');
   const [creating, setCreating] = React.useState(false);
@@ -51,13 +53,17 @@ export default function Favorites() {
   const highlight = (name) => {
     const q = query.trim();
     if (!q) return name;
-    const i = name.toLowerCase().indexOf(q.toLowerCase());
-    if (i === -1) return name;
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = name.split(new RegExp(`(${escaped})`, 'ig'));
     return (
       <>
-        {name.slice(0, i)}
-        <span className="font-semibold">{name.slice(i, i + q.length)}</span>
-        {name.slice(i + q.length)}
+        {parts.map((part, idx) =>
+          part.toLowerCase() === q.toLowerCase() ? (
+            <span key={idx} className="font-semibold text-primary">{part}</span>
+          ) : (
+            <span key={idx}>{part}</span>
+          )
+        )}
       </>
     );
   };
@@ -74,9 +80,9 @@ export default function Favorites() {
   return (
     <>
     <div className="flex-1 min-h-0 overflow-auto p-6">
-      <PageTitle title="Favorites" userName="Christopher" />
+      <PageTitle title="Favorites" userName={userName} lead={`Your saved products, ${userName}`} />
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-foreground mt-2">Favorite folders</h1>
+        <h2 className="text-base md:text-lg font-semibold text-foreground mt-2">Favorite folders</h2>
         <div className="flex items-center gap-2">
           {creating ? (
             <div className="flex items-center gap-2">
@@ -156,7 +162,7 @@ export default function Favorites() {
               )}
             </div>
           </div>
-          <ProductGrid products={filteredItems} onOrder={()=>{}} cols={4} glass={false} />
+          <ProductGrid products={filteredItems} onOrder={()=>{}} cols={4} glass={false} cardProps={{ removable: true }} />
         </div>
       </div>
     </div>

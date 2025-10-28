@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 import { Icon } from "@iconify/react";
 import { PageTitle } from "../components/page-title";
+import { useUser } from "../context/UserContext";
 
 // Fallback-friendly images (use local if present, else remote placeholder)
 // High-quality Unsplash images matching categories; cropped to fill cards
@@ -28,6 +29,7 @@ const fallbackImages = {
 export default function Shop() {
   const navigate = useNavigate();
   const { categories } = useShop();
+  const { userName } = useUser();
 
   const topRow = [
     { id: "trending", title: "Trending", subtitle: "Our best sellers" },
@@ -89,7 +91,7 @@ export default function Shop() {
 
   return (
     <div className="flex-1 min-h-0 overflow-hidden p-6 flex flex-col">
-      <PageTitle title="Shop" userName="Christopher" />
+      <PageTitle title="Shop" userName={userName} lead={`Here's your catalog, ${userName}`} />
       {/* Top utility bar */}
       <div className="mb-5 flex items-center justify-end gap-2">
         <Button isIconOnly variant="light" aria-label="Search">

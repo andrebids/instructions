@@ -1,5 +1,5 @@
 import React from "react";
-import { Image, Chip, Tooltip, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
+import { Image, Chip, Tooltip, Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useShop } from "../../context/ShopContext";
 import ProductModal from "./ProductModal";
@@ -7,10 +7,10 @@ import RequestInfoModal from "./RequestInfoModal";
 import CompareSuggestModal from "./CompareSuggestModal";
 import FavoriteFolderModal from "./FavoriteFolderModal";
 
-export default function ProductCard({ product, onOrder, glass = false, allowQty = false }) {
+export default function ProductCard({ product, onOrder, glass = false, allowQty = false, removable = false }) {
   const [open, setOpen] = React.useState(false);
   const [activeColor, setActiveColor] = React.useState(null);
-  const { addToProject, projects, favorites, compare, toggleFavorite, toggleCompare, products, getAvailableStock, favoriteFolders, toggleProductInFolder, createFavoriteFolder } = useShop();
+  const { addToProject, projects, favorites, compare, toggleFavorite, toggleCompare, products, getAvailableStock } = useShop();
 
   const previewSrc = React.useMemo(() => {
     if (activeColor && product.images?.colors?.[activeColor]) return product.images.colors[activeColor];
@@ -118,6 +118,23 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
                 </Tooltip>
               </div>
 
+            {removable && favorites?.includes(product.id) && (
+              <div className="group/action relative flex items-center">
+                <Tooltip content="Remove from favorites" placement="left">
+                  <Button
+                    isIconOnly
+                    radius="full"
+                    className="bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/70 shadow-medium"
+                    aria-label="Remove from favorites"
+                    onPress={() => { toggleFavorite(product.id); }}
+                    onClick={(e)=> e.stopPropagation()}
+                  >
+                    <Icon icon="lucide:trash-2" className="text-danger-400 text-xl" />
+                  </Button>
+                </Tooltip>
+              </div>
+            )}
+
               {/* Compare */}
               <div className="group/action relative flex items-center">
                 <Tooltip content={compare?.includes(product.id) ? "Remove from compare" : "Add to compare"} placement="left">
@@ -134,40 +151,7 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
                 </Tooltip>
               </div>
 
-              {/* Add to folder */}
-              <div className="group/action relative flex items-center">
-                <Dropdown placement="left-start">
-                  <DropdownTrigger>
-                    <Button
-                      isIconOnly
-                      radius="full"
-                      className="bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/70 shadow-medium"
-                      aria-label="Add to folder"
-                      onClick={(e)=> e.stopPropagation()}
-                    >
-                      <Icon icon="lucide:folder-plus" className="text-white text-xl" />
-                    </Button>
-                  </DropdownTrigger>
-                  <DropdownMenu aria-label="Add to folder" onAction={(key)=>{
-                    if (String(key) === '__new') {
-                      const name = window.prompt('Folder name');
-                      if (name && name.trim()) {
-                        const id = createFavoriteFolder(name.trim());
-                        toggleProductInFolder(id, product.id);
-                        if (!favorites?.includes(product.id)) toggleFavorite(product.id);
-                      }
-                    } else {
-                      toggleProductInFolder(String(key), product.id);
-                      if (!favorites?.includes(product.id)) toggleFavorite(product.id);
-                    }
-                  }}>
-                    {(favoriteFolders || []).map((f)=> (
-                      <DropdownItem key={f.id}>{f.name}</DropdownItem>
-                    ))}
-                    <DropdownItem key="__new" color="primary">New folder…</DropdownItem>
-                  </DropdownMenu>
-                </Dropdown>
-              </div>
+              
             </div>
           </div>
           {/* Info area: light solid gray; dark has black→blue vertical gradient */}

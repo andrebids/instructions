@@ -8,11 +8,13 @@ import ProductGrid from "../components/shop/ProductGrid";
 import OrderAssignModal from "../components/shop/OrderAssignModal";
 import { PageTitle } from "../components/page-title";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../context/UserContext";
 
 export default function ShopCategory() {
   const { category } = useParams();
   const { products } = useShop();
   const navigate = useNavigate();
+  const { userName } = useUser();
   const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false });
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [selected, setSelected] = React.useState({ product: null, variant: null });
@@ -75,7 +77,7 @@ export default function ShopCategory() {
 
   return (
     <div className="flex-1 min-h-0 overflow-auto p-6">
-      <PageTitle title="Shop" userName="Christopher" />
+      <PageTitle title="Shop" userName={userName} lead={`Here's your catalog, ${userName}`} />
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground mt-2">{category?.charAt(0).toUpperCase() + category?.slice(1)}</h1>
@@ -161,8 +163,15 @@ export default function ShopCategory() {
                 <DropdownItem key="price-desc">Price, high to low</DropdownItem>
               </DropdownMenu>
             </Dropdown>
-            <Button isIconOnly radius="full" variant="bordered" aria-label="Go to favorites" onPress={()=> navigate('/favorites')}>
-              <Icon icon="lucide:heart" className="text-default-500" />
+            <Button
+              isIconOnly
+              radius="full"
+              variant="bordered"
+              aria-label="Go to favorites"
+              className="border-red-500/40 hover:border-red-500 bg-transparent text-red-500 hover:bg-red-500/5 focus-visible:ring-2 focus-visible:ring-red-500/50"
+              onPress={()=> navigate('/favorites')}
+            >
+              <Icon icon="lucide:heart" className="text-red-500 text-2xl" />
             </Button>
           </div>
         </div>

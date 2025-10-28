@@ -9,8 +9,10 @@ import {projectsAPI} from "../services/api";
 import {PageTitle} from "../components/page-title";
 import {AIAssistantChat} from "../components/ai-assistant-chat";
 import {motion, AnimatePresence} from "framer-motion";
+import { useUser } from "../context/UserContext";
 
 export default function Dashboard() {
+  const { userName } = useUser();
   const [isOpen, setIsOpen] = React.useState(false);
   const [showCreateProject, setShowCreateProject] = React.useState(false);
   const [projects, setProjects] = React.useState([]);
@@ -104,7 +106,7 @@ export default function Dashboard() {
           <>
             {/* Title section + Create button */}
             <div className="flex justify-between items-center mb-6">
-              <PageTitle title="Dashboard" userName="Christopher" subtitle="Here’s your project overview." />
+              <PageTitle title="Dashboard" userName={userName} subtitle="Here’s your project overview." showWelcome />
               <Button 
                 color="primary" 
                 startContent={<Icon icon="lucide:plus" />}
