@@ -30,6 +30,7 @@ export default function Shop() {
   const navigate = useNavigate();
   const { categories } = useShop();
   const { userName } = useUser();
+  const mainDescription = "Pick a category or explore what's trending today.";
 
   const topRow = [
     { id: "trending", title: "Trending", subtitle: "Our best sellers" },
@@ -91,7 +92,7 @@ export default function Shop() {
 
   return (
     <div className="flex-1 min-h-0 overflow-hidden p-6 flex flex-col">
-      <PageTitle title="Shop" userName={userName} lead={`Here's your catalog, ${userName}`} />
+      <PageTitle title="Shop" userName={userName} lead={`Here's your catalog, ${userName}`} subtitle={mainDescription} />
       {/* Top utility bar */}
       <div className="mb-5 flex items-center justify-end gap-2">
         <Button isIconOnly variant="light" aria-label="Search">

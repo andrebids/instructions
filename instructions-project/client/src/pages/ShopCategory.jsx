@@ -22,7 +22,45 @@ export default function ShopCategory() {
   const [query, setQuery] = React.useState("");
   const [sort, setSort] = React.useState("relevance");
   const [cols, setCols] = React.useState(4);
-  
+  // Title typing animation
+  const fullTitle = React.useMemo(() => {
+    const c = String(category || "");
+    if (c.toLowerCase() === "trending") return "TRENDING";
+    return c.replace(/-/g, " ").toUpperCase();
+  }, [category]);
+  const categoryDescription = React.useMemo(() => {
+    const c = String(category || "").toLowerCase();
+    const map = {
+      trending: "Explore what's popular right now.",
+      new: "Fresh arrivals picked for you.",
+      sale: "Great deals and limited-time offers.",
+      christmas: "Festive picks for the season.",
+      summer: "Bright picks for sunny days.",
+    };
+    return map[c] || "Browse curated items for this category.";
+  }, [category]);
+  const [typedTitle, setTypedTitle] = React.useState("");
+  const [typingDone, setTypingDone] = React.useState(false);
+  React.useEffect(() => {
+    const text = String(fullTitle || "");
+    setTypedTitle("");
+    if (!text.length) {
+      setTypingDone(true);
+      return;
+    }
+    setTypingDone(false);
+    let i = 0;
+    const timer = setInterval(() => {
+      i += 1;
+      const next = text.slice(0, Math.min(i, text.length));
+      setTypedTitle(next);
+      if (i >= text.length) {
+        clearInterval(timer);
+        setTypingDone(true);
+      }
+    }, 45);
+    return () => clearInterval(timer);
+  }, [fullTitle]);
 
   const isTrending = category === "trending";
   const productsInCategory = React.useMemo(() => products.filter((p) => p.tags?.includes(category)), [products, category]);
@@ -77,12 +115,13 @@ export default function ShopCategory() {
 
   return (
     <div className="flex-1 min-h-0 overflow-auto p-6">
-      <PageTitle title="Shop" userName={userName} lead={`Here's your catalog, ${userName}`} />
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground mt-2">{category?.charAt(0).toUpperCase() + category?.slice(1)}</h1>
-        </div>
-        <div>
+      <PageTitle title="Shop" userName={userName} lead={`Here's your catalog, ${userName}`} subtitle={categoryDescription} />
+      <div className="mb-4">
+        <h1 className="text-4xl md:text-6xl font-extrabold uppercase tracking-wider text-foreground mt-6 text-center" style={{ textShadow: "0 6px 22px rgba(0,0,0,0.35)" }}>
+          <span>{typedTitle}</span>
+          <span className={`ml-1 inline-block w-[2px] h-[1em] align-[-0.2em] bg-current ${typingDone ? 'opacity-0' : 'animate-pulse'}`}></span>
+        </h1>
+        <div className="mt-2 flex items-center justify-end">
           <Button size="sm" variant="flat" className="md:hidden" onPress={() => setFiltersOpen(true)}>Filters</Button>
         </div>
       </div>
