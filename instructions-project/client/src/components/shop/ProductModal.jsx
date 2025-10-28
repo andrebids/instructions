@@ -31,16 +31,15 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
       setMediaIndex(0);
       setVideoError(false);
       setActiveProduct(product);
-      // pick default color from mapping or images
+      // pick default color only when there are real variant mappings
       const defaultColor = (() => {
-        const mapKeys = product?.variantProductByColor ? Object.keys(product.variantProductByColor) : [];
+        const mapKeys = Object.keys(product?.variantProductByColor || {});
         if (mapKeys.length) {
           if (mapKeys.includes('brancoQuente') && String(product?.id) === 'prd-005a') return 'brancoQuente';
           if (mapKeys.includes('brancoPuro') && String(product?.id) === 'prd-006') return 'brancoPuro';
           return mapKeys[0];
         }
-        const imgKeys = Object.keys(product?.images?.colors || {});
-        return imgKeys[0] || 'brancoPuro';
+        return undefined;
       })();
       setColor(defaultColor);
       if (videoSrc) {
@@ -371,7 +370,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                       )}
                     </div>
                     {(() => {
-                      const colorKeys = activeProduct?.variantProductByColor ? Object.keys(activeProduct.variantProductByColor) : Object.keys(activeProduct?.images?.colors || {});
+                      const colorKeys = Object.keys(activeProduct?.variantProductByColor || {});
                       return colorKeys.length > 0 ? (
                       <div className="mt-3">
                         <div className="text-sm text-default-500 mb-1">Color</div>
