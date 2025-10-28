@@ -11,10 +11,11 @@ export default {
   plugins: [
     heroui({
       themes: {
+        // Align with HeroUI defaults for a clean light mode
         light: {
           colors: {
-            background: "#d5d6da", // Cor de fundo personalizada para modo claro
-            foreground: "#000000",
+            background: "#ffffff",
+            foreground: "#111827",
           },
         },
         dark: {

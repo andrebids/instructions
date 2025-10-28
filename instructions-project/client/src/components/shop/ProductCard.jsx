@@ -38,7 +38,7 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
     <>
       <div
         onClick={() => setOpen(true)}
-        className="group cursor-pointer select-none"
+        className="group cursor-pointer select-none rounded-2xl overflow-hidden"
         style={glass ? {
           WebkitMaskImage: "radial-gradient(100% 100% at 50% 50%, black calc(100% - 16px), rgba(0,0,0,0) 100%)",
           maskImage: "radial-gradient(100% 100% at 50% 50%, black calc(100% - 16px), rgba(0,0,0,0) 100%)",
@@ -67,6 +67,8 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
                 }}
               />
             )}
+            {/* Bottom blur on blue area to soften transition to grey */}
+            <div className="absolute left-0 right-0 bottom-0 h-12 md:h-16 pointer-events-none bg-gradient-to-b from-transparent to-[#0b1b3a]/95 backdrop-blur-md dark:hidden" />
             {glass && (
               <div
                 className="absolute inset-0 pointer-events-none rounded-t-2xl"
@@ -131,9 +133,8 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
               </div>
             </div>
           </div>
-          {/* Info card-only rectangle with gradient into background */}
-          <div className="relative rounded-b-2xl p-4 bg-gradient-to-t from-[#e5e7eb] dark:from-black to-[#0b1b3a]">
-            {/* bottom glass overlay removed to avoid visible seam; keep original background gradient */}
+          {/* Info area: light solid gray; dark has black→blue vertical gradient */}
+          <div className="relative rounded-b-2xl p-4 bg-[#e5e7eb] dark:bg-gradient-to-t dark:from-black dark:to-[#0b1b3a] overflow-hidden">
             <div className="relative z-10">
               <div className="font-medium text-foreground mb-1 truncate" title={product.name}>{product.name}</div>
               <div className="flex items-baseline gap-2">
