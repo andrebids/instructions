@@ -20,6 +20,14 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
+          echo "🔑 Verificando chave SSH escrita..."
+          echo "Tamanho do ficheiro: $(wc -c < ~/.ssh/id_deploy) bytes"
+          echo "Primeiras linhas:"
+          head -n 2 ~/.ssh/id_deploy
+          echo "Últimas linhas:"
+          tail -n 2 ~/.ssh/id_deploy
+          echo "Tentando extrair chave pública..."
+          ssh-keygen -y -f ~/.ssh/id_deploy 2>&1 | head -n 1 || echo "⚠️ Não foi possível extrair chave pública (formato pode estar incorreto)"
         shell: bash
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
