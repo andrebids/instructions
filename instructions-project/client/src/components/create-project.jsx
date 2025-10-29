@@ -78,6 +78,7 @@ export function CreateProject({ onClose }) {
             variant="light" 
             onClick={onClose}
             className="mr-2"
+            aria-label="Back"
           >
             <Icon icon="lucide:arrow-left" className="text-xl" />
           </Button>

@@ -101,7 +101,7 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
                     errorMessage={projectError}
                   >
                     {(p) => (
-                      <AutocompleteItem key={p.id}>{p.name}</AutocompleteItem>
+                      <AutocompleteItem key={p.id} textValue={p.name}>{p.name}</AutocompleteItem>
                     )}
                   </Autocomplete>
                 </div>

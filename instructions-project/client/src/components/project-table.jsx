@@ -170,6 +170,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
             variant="light"
             onPress={() => handleToggleFavorite(project.id)}
             title={project.isFavorite ? "Remove from favorites" : "Add to favorites"}
+            aria-label={project.isFavorite ? "Remove from favorites" : "Add to favorites"}
             className="text-warning hover:text-warning-600"
           >
             <Icon 

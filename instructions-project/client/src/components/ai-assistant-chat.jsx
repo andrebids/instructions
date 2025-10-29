@@ -124,6 +124,7 @@ export const AIAssistantChat = ({ onClose, initialMessages }) => {
           size="sm"
           variant="light"
           onPress={onClose}
+          aria-label="Close"
         >
           <Icon icon="lucide:x" className="text-lg" />
         </Button>

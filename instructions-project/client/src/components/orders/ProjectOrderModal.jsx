@@ -137,7 +137,7 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
                         <div className="flex items-center gap-3 justify-end">
                           <div className="flex items-center gap-1">
                             <Tooltip content="Decrease">
-                              <Button isIconOnly size="sm" variant="flat" onPress={() => updateProjectItemQty(project.id, it.key, Math.max(0, Number(it.qty) - 1))} isDisabled={isOrdered}>
+                              <Button isIconOnly size="sm" variant="flat" onPress={() => updateProjectItemQty(project.id, it.key, Math.max(0, Number(it.qty) - 1))} isDisabled={isOrdered} aria-label="Decrease quantity">
                                 <Icon icon="lucide:minus" className="text-base" />
                               </Button>
                             </Tooltip>
@@ -155,14 +155,14 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
                               }}
                             />
                             <Tooltip content={remaining === 0 ? "Out of stock" : (budgetBlocked ? "No budget" : "Increase")}>
-                              <Button isIconOnly size="sm" variant="flat" isDisabled={isOrdered || remaining === 0 || budgetBlocked} onPress={() => updateProjectItemQty(project.id, it.key, Number(it.qty) + 1)}>
+                              <Button isIconOnly size="sm" variant="flat" isDisabled={isOrdered || remaining === 0 || budgetBlocked} onPress={() => updateProjectItemQty(project.id, it.key, Number(it.qty) + 1)} aria-label="Increase quantity">
                                 <Icon icon="lucide:plus" className="text-base" />
                               </Button>
                             </Tooltip>
                           </div>
                           <div className="text-default-600 whitespace-nowrap w-24 text-right">€{(Number(it.unitPrice)||0) * (Number(it.qty)||0)}</div>
                           <Tooltip content="Remove line">
-                            <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => removeProjectItem(project.id, it.key)} isDisabled={isOrdered}>
+                            <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => removeProjectItem(project.id, it.key)} isDisabled={isOrdered} aria-label="Remove line">
                               <Icon icon="lucide:trash-2" className="text-base" />
                             </Button>
                           </Tooltip>
