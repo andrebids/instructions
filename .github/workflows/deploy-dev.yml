@@ -86,21 +86,21 @@ jobs:
           
           # 6. Garantir que client/.env existe (preservar se já existir)
           # NOTA: A chave Clerk deve ser configurada manualmente no servidor
-          if [ ! -f ../client/.env ]; then
-            echo "# VITE_CLERK_PUBLISHABLE_KEY deve ser configurado aqui" > ../client/.env
+          if [ ! -f instructions-project/client/.env ]; then
+            echo "# VITE_CLERK_PUBLISHABLE_KEY deve ser configurado aqui" > instructions-project/client/.env
             echo "⚠️ Ficheiro client/.env criado. Por favor configure VITE_CLERK_PUBLISHABLE_KEY manualmente."
           fi
           
           # 7. Reiniciar servidor Node.js via PM2
           echo "🔄 Reiniciando servidor Node.js..."
-          cd "${{ secrets.REMOTE_PATH }}/instructions-project/server"
+          cd instructions-project/server
           if command -v pm2 >/dev/null 2>&1; then
-            pm2 restart instructions-server --update-env 2>/dev/null || pm2 start "node src/app.js" --name instructions-server || true
+            pm2 restart instructions-server --update-env 2>/dev/null || pm2 start "node src/app.js" --name instructions-server --cwd . || true
             pm2 save 2>/dev/null || true
           else
             echo "⚠️ PM2 não encontrado. Instalando..."
             sudo npm i -g pm2 || true
-            pm2 start "node src/app.js" --name instructions-server || true
+            pm2 start "node src/app.js" --name instructions-server --cwd . || true
             pm2 save 2>/dev/null || true
           fi
           
