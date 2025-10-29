@@ -129,6 +129,7 @@ jobs:
           
           # 6. Garantir que client/.env existe (preservar se já existir)
           # NOTA: A chave Clerk deve ser configurada manualmente no servidor
+          cd "$REMOTE_PATH"
           if [ ! -f instructions-project/client/.env ]; then
             echo "# VITE_CLERK_PUBLISHABLE_KEY deve ser configurado aqui" > instructions-project/client/.env
             echo "⚠️ Ficheiro client/.env criado. Por favor configure VITE_CLERK_PUBLISHABLE_KEY manualmente."
