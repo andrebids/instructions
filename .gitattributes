@@ -1,0 +1,26 @@
+# Normalize text files to LF in repo; Windows editors can still show CRLF
+* text=auto eol=lf
+
+# Keep Windows batch files with CRLF
+*.bat eol=crlf
+
+# Do not apply line-ending normalization to dependencies
+node_modules/** -text
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.mp4 binary
+*.mov binary
+*.webm binary
+*.svg binary
+
+# Lock files and archives treated as binary
+*.lock binary
+*.zip binary
+*.7z binary
+*.gz binary
+*.tgz binary

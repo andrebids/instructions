@@ -28,11 +28,18 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static('public'));
 
-// Initialize Clerk middleware
-app.use(clerkMiddleware());
-
-// Protect all /api/** routes with Clerk
-app.use('/api', requireAuth());
+// Initialize Clerk middleware (only if configured)
+const hasClerk = !!process.env.CLERK_SECRET_KEY;
+const enableAuth = process.env.ENABLE_AUTH === 'true';
+if (hasClerk && enableAuth) {
+  app.use(clerkMiddleware());
+  // Protect all /api/** routes with Clerk
+  app.use('/api', requireAuth());
+  console.log('🔐 Clerk auth enabled for /api routes');
+} else {
+  if (!hasClerk) console.warn('Clerk disabled (missing CLERK_SECRET_KEY). /api routes are unsecured.');
+  if (hasClerk && !enableAuth) console.warn('Clerk present but ENABLE_AUTH!=true. Skipping auth protection for /api in dev.');
+}
 
 // Health check
 app.get('/health', async (req, res) => {
@@ -61,9 +68,11 @@ app.get('/api/media/:name', async (req, res) => {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     const candidateDirs = [
-      // When server runs from server/ working directory
+      // Prefer exact TRENDING directory where mp4 files live in this repo
+      path.resolve(process.cwd(), '../client/public/SHOP/TRENDING'),
+      path.resolve(__dirname, '../../client/public/SHOP/TRENDING'),
+      // Fallback to TRENDING/VIDEO if present in other setups
       path.resolve(process.cwd(), '../client/public/SHOP/TRENDING/VIDEO'),
-      // When process.cwd() is server/src or other
       path.resolve(__dirname, '../../client/public/SHOP/TRENDING/VIDEO'),
     ];
     let baseDir = null;
@@ -77,10 +86,18 @@ app.get('/api/media/:name', async (req, res) => {
       `${baseName}.mov`,
       `${baseName}.webm`,
     ];
+    const searchDirs = [
+      clientPublic,
+      path.join(clientPublic, 'VIDEO'),
+      path.join(clientPublic, 'video'),
+    ];
     let filePath = null;
-    for (const n of tryNames) {
-      const p = path.join(clientPublic, n);
-      if (fs.existsSync(p)) { filePath = p; break; }
+    for (const dir of searchDirs) {
+      for (const n of tryNames) {
+        const p = path.join(dir, n);
+        if (fs.existsSync(p)) { filePath = p; break; }
+      }
+      if (filePath) break;
     }
     if (!filePath) return res.status(404).json({ error: 'Media not found' });
 
@@ -90,6 +107,18 @@ app.get('/api/media/:name', async (req, res) => {
       : filePath.toLowerCase().endsWith('.webm') ? 'video/webm'
       : filePath.toLowerCase().endsWith('.mov') ? 'video/quicktime'
       : 'application/octet-stream';
+
+    // Ensure CORS headers for media (some browsers enforce on <video>)
+    try {
+      const origin = req.headers.origin;
+      if (origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+      } else {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      }
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    } catch {}
 
     if (range) {
       // Support forms: bytes=start-end, bytes=start-, bytes=-suffix
