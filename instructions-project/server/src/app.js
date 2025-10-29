@@ -8,6 +8,7 @@ import decorationRoutes from './routes/decorations.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { clerkMiddleware, requireAuth, getAuth } from '@clerk/express';
 
 const app = express();
 
@@ -27,6 +28,12 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static('public'));
 
+// Initialize Clerk middleware
+app.use(clerkMiddleware());
+
+// Protect all /api/** routes with Clerk
+app.use('/api', requireAuth());
+
 // Health check
 app.get('/health', async (req, res) => {
   const dbConnected = await testConnection();
@@ -40,6 +47,12 @@ app.get('/health', async (req, res) => {
 // API Routes
 app.use('/api/projects', projectRoutes);
 app.use('/api/decorations', decorationRoutes);
+
+// Example protected route to inspect auth context
+app.get('/api/me', (req, res) => {
+  const auth = getAuth(req);
+  res.json({ userId: auth?.userId || null, sessionId: auth?.sessionId || null });
+});
 
 // Simple media streaming with Range support (serves client/public videos during dev)
 app.get('/api/media/:name', async (req, res) => {
