@@ -74,10 +74,11 @@ jobs:
 
       - name: Deploy completo no servidor
         run: |
-          ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << REMOTE_SCRIPT
+          REMOTE_PATH="${{ secrets.REMOTE_PATH }}"
+          ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" bash -s << REMOTE_SCRIPT
           set -e
           set -x
-          cd "${{ secrets.REMOTE_PATH }}"
+          cd "$REMOTE_PATH"
           echo "📍 Diretório atual: $(pwd)"
           
           # 1. Garantir Docker, Docker Compose e rsync
@@ -154,6 +155,8 @@ jobs:
           echo "✅ Deploy concluído com sucesso!"
           echo "📍 Timestamp: $(date)"
           REMOTE_SCRIPT
+        env:
+          REMOTE_PATH: ${{ secrets.REMOTE_PATH }}
         shell: bash
       
       - name: Verificar health do servidor
