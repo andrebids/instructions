@@ -48,7 +48,7 @@ jobs:
 
       - name: Deploy completo no servidor
         run: |
-          ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << EOF
+          ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << 'REMOTE_SCRIPT'
           set -euo pipefail
           cd "${{ secrets.REMOTE_PATH }}"
           
@@ -80,15 +80,7 @@ jobs:
           # 5. Garantir que .env existe (preservar se já existir - não sobrescrever se existir)
           # NOTA: As chaves Clerk devem ser configuradas manualmente no servidor no ficheiro .env
           if [ ! -f .env ]; then
-            cat > .env <<ENVEOF
-DB_HOST=localhost
-DB_PORT=5433
-DB_NAME=instructions_demo
-DB_USER=demo_user
-DB_PASSWORD=demo_password
-PORT=5000
-NODE_ENV=production
-ENVEOF
+            printf "DB_HOST=localhost\nDB_PORT=5433\nDB_NAME=instructions_demo\nDB_USER=demo_user\nDB_PASSWORD=demo_password\nPORT=5000\nNODE_ENV=production\n" > .env
             echo "⚠️ Ficheiro .env criado. Por favor configure CLERK_PUBLISHABLE_KEY e CLERK_SECRET_KEY manualmente."
           fi
           
@@ -121,7 +113,7 @@ ENVEOF
           pm2 list | grep instructions-server || echo "⚠️ PM2 processo não encontrado"
           
           echo "✅ Deploy concluído com sucesso!"
-          EOF
+          REMOTE_SCRIPT
         shell: bash
       
       - name: Verificar health do servidor
