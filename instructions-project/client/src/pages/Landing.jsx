@@ -3,6 +3,7 @@ import { SignInButton, SignUpButton } from '@clerk/clerk-react'
 import { ArrowRightOnRectangleIcon, UserPlusIcon } from '@heroicons/react/24/outline'
 import LiquidEther from '../components/LiquidEther'
 import GlassSurface from '../components/GlassSurface'
+import ShinyText from '../components/ShinyText'
 
 export default function Landing() {
   const sectionRef = React.useRef(null)
@@ -58,7 +59,7 @@ export default function Landing() {
             <br />
             Let’s <span ref={word2Ref} className="text-primary">create</span> something great.
           </h1>
-          <p className="mt-3 text-default-500 text-base md:text-lg">Sign in to access your dashboard.</p>
+          <ShinyText text="Sign in to access your dashboard." speed={4} className="mt-3 text-base md:text-lg" />
         </section>
 
         <div className="auth-cta">
