@@ -50,32 +50,38 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << REMOTE_SCRIPT
           set -e
+          set -x
           cd "${{ secrets.REMOTE_PATH }}"
+          echo "📍 Diretório atual: $(pwd)"
           
           # 1. Garantir Docker e Docker Compose
+          echo "🐳 Verificando Docker..."
           if ! command -v docker >/dev/null 2>&1; then
+            echo "Instalando Docker..."
             curl -fsSL https://get.docker.com | sh
           fi
           if ! docker compose version >/dev/null 2>&1; then
             if command -v apt-get >/dev/null 2>&1; then 
+              echo "Instalando Docker Compose..."
               sudo apt-get update -y 
               sudo apt-get install -y docker-compose-plugin
             fi
           fi
           
           # 2. Subir Postgres via Docker Compose
-          docker compose -f instructions-project/docker-compose.dev.yml up -d --pull always
+          echo "🐘 Subindo Postgres..."
+          docker compose -f instructions-project/docker-compose.dev.yml up -d --pull always || echo "⚠️ Docker Compose pode ter falhado, mas continuando..."
           
           # 3. Instalar dependências do client e fazer build
           echo "📦 Fazendo build do frontend..."
           cd instructions-project/client
-          npm ci --omit=dev || npm install --omit=dev
-          npm run build
+          npm ci --omit=dev || npm install --omit=dev || echo "⚠️ npm install falhou, mas continuando..."
+          npm run build || { echo "❌ Build do frontend falhou!"; exit 1; }
           
           # 4. Instalar dependências do server
           echo "📦 Instalando dependências do servidor..."
           cd ../server
-          npm ci --omit=dev || npm install --omit=dev
+          npm ci --omit=dev || npm install --omit=dev || echo "⚠️ npm install falhou, mas continuando..."
           
           # 5. Garantir que .env existe (preservar se já existir - não sobrescrever se existir)
           # NOTA: As chaves Clerk devem ser configuradas manualmente no servidor no ficheiro .env
