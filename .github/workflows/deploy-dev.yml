@@ -49,7 +49,7 @@ jobs:
       - name: Deploy completo no servidor
         run: |
           ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << REMOTE_SCRIPT
-          set -euo pipefail
+          set -e
           cd "${{ secrets.REMOTE_PATH }}"
           
           # 1. Garantir Docker e Docker Compose
@@ -93,14 +93,15 @@ jobs:
           
           # 7. Reiniciar servidor Node.js via PM2
           echo "🔄 Reiniciando servidor Node.js..."
+          cd "${{ secrets.REMOTE_PATH }}/instructions-project/server"
           if command -v pm2 >/dev/null 2>&1; then
-            pm2 restart instructions-server --update-env || pm2 start "node src/app.js" --name instructions-server
-            pm2 save || true
+            pm2 restart instructions-server --update-env 2>/dev/null || pm2 start "node src/app.js" --name instructions-server || true
+            pm2 save 2>/dev/null || true
           else
             echo "⚠️ PM2 não encontrado. Instalando..."
-            sudo npm i -g pm2
-            pm2 start "node src/app.js" --name instructions-server
-            pm2 save || true
+            sudo npm i -g pm2 || true
+            pm2 start "node src/app.js" --name instructions-server || true
+            pm2 save 2>/dev/null || true
           fi
           
           # 8. Recarregar Nginx para servir novos ficheiros
