@@ -134,7 +134,7 @@ export default function ShopCategory() {
         <div className={`fixed left-0 top-0 bottom-0 z-50 w-80 bg-background border-r border-divider p-4 transition-transform transform ${filtersOpen ? 'translate-x-0' : '-translate-x-full'} md:static md:translate-x-0 md:z-auto md:w-80 md:bg-transparent md:border-0 md:rounded-none md:top-auto md:h-auto md:overflow-visible`}> 
           <div className="flex items-center justify-between mb-3">
             <div className="font-semibold">Filters</div>
-            <Button isIconOnly size="sm" variant="light" className="md:hidden" onPress={() => setFiltersOpen(false)}>✕</Button>
+            <Button isIconOnly size="sm" variant="light" className="md:hidden" onPress={() => setFiltersOpen(false)} aria-label="Close filters">✕</Button>
           </div>
           <TrendingFiltersSidebar
             products={productsInCategory}
@@ -169,6 +169,7 @@ export default function ShopCategory() {
                 variant={cols===n? 'solid':'bordered'}
                 radius="full"
                 onPress={()=>setCols(n)}
+                aria-label={`Set columns to ${n}`}
               >
                 <div className="flex items-center gap-0.5">
                   {Array.from({ length: n }).map((_,i)=> (

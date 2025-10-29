@@ -86,6 +86,7 @@ export function Header() {
                   isIconOnly
                   onPress={() => setShowNotifications(false)}
                   className="mr-0"
+                  aria-label="Close notifications"
                 >
                   <Icon icon="lucide:x" className="text-sm" />
                 </Button>

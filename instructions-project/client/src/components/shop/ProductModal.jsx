@@ -74,7 +74,9 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
   // Load video as Blob to avoid servers that don't honor Range requests (416)
   React.useEffect(() => {
     if (mediaIndex !== 1 || !activeProduct?.videoFile) return;
-    const apiBase = (import.meta?.env?.VITE_API_BASE) || 'http://localhost:5000';
+    // Prefer same-origin relative URL to leverage Vite proxy and avoid CORS
+    const baseFromEnv = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
+    const apiBase = baseFromEnv || '';
     const srcUrl = `${apiBase}/api/media/${encodeURIComponent(activeProduct.videoFile)}`;
     let revokedUrl = null;
     const controller = new AbortController();

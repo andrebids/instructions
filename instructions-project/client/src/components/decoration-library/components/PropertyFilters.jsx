@@ -142,6 +142,7 @@ export const PropertyFilters = ({
                   className="flex-1 min-w-0"
                   disabled={disabled}
                   isIconOnly={option.value !== 'all'}
+                  aria-label={option.value !== 'all' ? option.label : undefined}
                 >
                   {option.value === 'all' ? (
                     <span className="text-xs font-medium">{option.label}</span>
