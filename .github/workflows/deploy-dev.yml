@@ -82,8 +82,11 @@ jobs:
           if [[ "\$REMOTE_PATH" == ~* ]]; then
             REMOTE_PATH="\${REMOTE_PATH/#\~/\$HOME}"
           fi
+          # Guardar o caminho absoluto
+          REMOTE_PATH="\$(cd "\$REMOTE_PATH" && pwd)"
           cd "\$REMOTE_PATH"
-          echo "📍 Diretório atual: $(pwd)"
+          echo "📍 Diretório atual: \$REMOTE_PATH"
+          echo "📍 PWD: \$(pwd)"
           
           # 1. Garantir Docker, Docker Compose e rsync
           echo "🐳 Verificando Docker..."
@@ -129,7 +132,7 @@ jobs:
           
           # 6. Garantir que client/.env existe (preservar se já existir)
           # NOTA: A chave Clerk deve ser configurada manualmente no servidor
-          cd "$REMOTE_PATH"
+          cd "\$REMOTE_PATH"
           if [ ! -f instructions-project/client/.env ]; then
             echo "# VITE_CLERK_PUBLISHABLE_KEY deve ser configurado aqui" > instructions-project/client/.env
             echo "⚠️ Ficheiro client/.env criado. Por favor configure VITE_CLERK_PUBLISHABLE_KEY manualmente."
