@@ -77,7 +77,12 @@ jobs:
           ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" bash << REMOTE_SCRIPT
           set -e
           set -x
-          cd "${{ secrets.REMOTE_PATH }}"
+          REMOTE_PATH="${{ secrets.REMOTE_PATH }}"
+          # Expandir ~ para caminho absoluto se necessário
+          if [[ "\$REMOTE_PATH" == ~* ]]; then
+            REMOTE_PATH="\${REMOTE_PATH/#\~/\$HOME}"
+          fi
+          cd "\$REMOTE_PATH"
           echo "📍 Diretório atual: $(pwd)"
           
           # 1. Garantir Docker, Docker Compose e rsync
