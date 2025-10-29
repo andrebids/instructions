@@ -140,6 +140,7 @@ jobs:
           pm2 list | grep instructions-server || echo "⚠️ PM2 processo não encontrado"
           
           echo "✅ Deploy concluído com sucesso!"
+          echo "📍 Timestamp: $(date)"
           REMOTE_SCRIPT
         shell: bash
       
