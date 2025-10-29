@@ -13,6 +13,24 @@ const api = axios.create({
   timeout: 10000, // 10 segundos
 });
 
+// Attach Clerk session token to requests when available
+api.interceptors.request.use(async (config) => {
+  try {
+    const clerk = window?.Clerk;
+    const session = clerk?.session;
+    if (session) {
+      const token = await session.getToken();
+      if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+  } catch (e) {
+    // silent
+  }
+  return config;
+});
+
 // Interceptor para logging (desenvolvimento)
 api.interceptors.response.use(
   (response) => {
