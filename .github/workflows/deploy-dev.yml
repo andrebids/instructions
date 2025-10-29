@@ -1,0 +1,125 @@
+name: Deploy (dev) via SSH
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Write SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+        shell: bash
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+
+      - name: Add remote host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+        shell: bash
+
+      - name: Rsync código para o servidor
+        run: |
+          RSYNC_EXCLUDES=(
+            ".git/"
+            "**/node_modules/"
+            "**/.next/"
+            "**/dist/"
+            "**/build/"
+          )
+          EXCLUDE_ARGS=""
+          for e in "${RSYNC_EXCLUDES[@]}"; do EXCLUDE_ARGS+=" --exclude=$e"; done
+          rsync -az --delete $EXCLUDE_ARGS \
+            -e "ssh -i ~/.ssh/id_deploy -p ${{ secrets.SSH_PORT }}" \
+            "${GITHUB_WORKSPACE}/" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.REMOTE_PATH }}/"
+        shell: bash
+
+      - name: Deploy completo no servidor
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << REMOTE_SCRIPT
+          set -euo pipefail
+          cd "${{ secrets.REMOTE_PATH }}"
+          
+          # 1. Garantir Docker e Docker Compose
+          if ! command -v docker >/dev/null 2>&1; then
+            curl -fsSL https://get.docker.com | sh
+          fi
+          if ! docker compose version >/dev/null 2>&1; then
+            if command -v apt-get >/dev/null 2>&1; then 
+              sudo apt-get update -y 
+              sudo apt-get install -y docker-compose-plugin
+            fi
+          fi
+          
+          # 2. Subir Postgres via Docker Compose
+          docker compose -f instructions-project/docker-compose.dev.yml up -d --pull always
+          
+          # 3. Instalar dependências do client e fazer build
+          echo "📦 Fazendo build do frontend..."
+          cd instructions-project/client
+          npm ci --omit=dev || npm install --omit=dev
+          npm run build
+          
+          # 4. Instalar dependências do server
+          echo "📦 Instalando dependências do servidor..."
+          cd ../server
+          npm ci --omit=dev || npm install --omit=dev
+          
+          # 5. Garantir que .env existe (preservar se já existir - não sobrescrever se existir)
+          # NOTA: As chaves Clerk devem ser configuradas manualmente no servidor no ficheiro .env
+          if [ ! -f .env ]; then
+            printf "DB_HOST=localhost\nDB_PORT=5433\nDB_NAME=instructions_demo\nDB_USER=demo_user\nDB_PASSWORD=demo_password\nPORT=5000\nNODE_ENV=production\n" > .env
+            echo "⚠️ Ficheiro .env criado. Por favor configure CLERK_PUBLISHABLE_KEY e CLERK_SECRET_KEY manualmente."
+          fi
+          
+          # 6. Garantir que client/.env existe (preservar se já existir)
+          # NOTA: A chave Clerk deve ser configurada manualmente no servidor
+          if [ ! -f ../client/.env ]; then
+            echo "# VITE_CLERK_PUBLISHABLE_KEY deve ser configurado aqui" > ../client/.env
+            echo "⚠️ Ficheiro client/.env criado. Por favor configure VITE_CLERK_PUBLISHABLE_KEY manualmente."
+          fi
+          
+          # 7. Reiniciar servidor Node.js via PM2
+          echo "🔄 Reiniciando servidor Node.js..."
+          if command -v pm2 >/dev/null 2>&1; then
+            pm2 restart instructions-server --update-env || pm2 start "node src/app.js" --name instructions-server
+            pm2 save || true
+          else
+            echo "⚠️ PM2 não encontrado. Instalando..."
+            sudo npm i -g pm2
+            pm2 start "node src/app.js" --name instructions-server
+            pm2 save || true
+          fi
+          
+          # 8. Recarregar Nginx para servir novos ficheiros
+          echo "🔄 Recarregando Nginx..."
+          sudo systemctl reload nginx || true
+          
+          # 9. Verificar se serviços estão a correr
+          echo "🔍 Verificando status dos serviços..."
+          docker ps --filter "name=postgres" --format "table {{.Names}}\t{{.Status}}" || true
+          pm2 list | grep instructions-server || echo "⚠️ PM2 processo não encontrado"
+          
+          echo "✅ Deploy concluído com sucesso!"
+          REMOTE_SCRIPT
+        shell: bash
+      
+      - name: Verificar health do servidor
+        run: |
+          sleep 5
+          curl -f http://${{ secrets.SSH_HOST }}/health || echo "⚠️ Health check falhou - servidor pode ainda estar a iniciar"
+        continue-on-error: true
+
+
