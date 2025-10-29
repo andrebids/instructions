@@ -74,11 +74,10 @@ jobs:
 
       - name: Deploy completo no servidor
         run: |
-          REMOTE_PATH="${{ secrets.REMOTE_PATH }}"
           ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" bash << REMOTE_SCRIPT
           set -e
           set -x
-          cd "$REMOTE_PATH"
+          cd ${{ secrets.REMOTE_PATH }}
           echo "📍 Diretório atual: $(pwd)"
           
           # 1. Garantir Docker, Docker Compose e rsync
