@@ -3,6 +3,7 @@ import {Icon} from "@iconify/react";
 import React from "react";
 import {useTheme} from "@heroui/use-theme";
 import { useUser } from "../context/UserContext";
+import { useClerk, useUser as useClerkUser } from "@clerk/clerk-react";
 
 export function Header() {
   const {theme, setTheme} = useTheme();
@@ -11,6 +12,8 @@ export function Header() {
   const [showSettings, setShowSettings] = React.useState(false);
   const { userName, setUserName } = useUser();
   const [tempName, setTempName] = React.useState("");
+  const { signOut } = useClerk();
+  const { user: clerkUser } = useClerkUser();
   
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
@@ -157,12 +160,11 @@ export function Header() {
             if (key === 'settings') {
               setTempName(userName || "Christopher");
               setShowSettings(true);
+            } else if (key === 'logout') {
+              // Sign out via Clerk and redirect to landing
+              signOut({ redirectUrl: '/' });
             }
           }}>
-            <DropdownItem key="profile" className="h-14 gap-2">
-              <p className="font-semibold">Signed in as</p>
-              <p className="font-semibold">john@example.com</p>
-            </DropdownItem>
             <DropdownItem key="settings">My Settings</DropdownItem>
             <DropdownItem key="team">Team Settings</DropdownItem>
             <DropdownItem key="logout" color="danger">

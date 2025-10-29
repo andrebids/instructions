@@ -1,11 +1,11 @@
 @echo off
-title Project Manager - Instructions
+title Project Manager - TheCore
 color 0A
 
 :menu
 cls
 echo ========================================
-echo    PROJECT MANAGER - INSTRUCTIONS
+echo    PROJECT MANAGER - THECORE
 echo ========================================
 echo.
 echo 1. 🚀 INICIAR PROJETO
@@ -27,7 +27,7 @@ goto menu
 :start
 cls
 echo ========================================
-echo    INICIANDO PROJETO INSTRUCTIONS
+echo    INICIANDO PROJETO THECORE
 echo ========================================
 echo.
 
@@ -127,7 +127,7 @@ exit
 :stop
 cls
 echo ========================================
-echo    PARANDO PROJETO INSTRUCTIONS
+echo    PARANDO PROJETO THECORE
 echo ========================================
 echo.
 
@@ -161,7 +161,7 @@ goto menu
 :status
 cls
 echo ========================================
-echo    STATUS DO PROJETO INSTRUCTIONS
+echo    STATUS DO PROJETO THECORE
 echo ========================================
 echo.
 
@@ -211,7 +211,7 @@ goto menu
 :restart
 cls
 echo ========================================
-echo    REINICIANDO PROJETO INSTRUCTIONS
+echo    REINICIANDO PROJETO THECORE
 echo ========================================
 echo.
 
@@ -229,7 +229,7 @@ echo ========================================
 echo    OBRIGADO POR USAR PROJECT MANAGER!
 echo ========================================
 echo.
-echo Projeto Instructions - Gerido com sucesso
+echo Projeto TheCore - Gerido com sucesso
 echo.
 timeout /t 2 /nobreak >nul
 exit

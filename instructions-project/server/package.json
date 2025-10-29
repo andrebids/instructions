@@ -1,5 +1,5 @@
 {
-  "name": "instructions-server",
+  "name": "thecore-server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
