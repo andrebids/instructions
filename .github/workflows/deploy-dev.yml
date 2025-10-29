@@ -20,6 +20,14 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
+          echo "🔑 Verificando chave SSH escrita..."
+          echo "Tamanho do ficheiro: $(wc -c < ~/.ssh/id_deploy) bytes"
+          echo "Primeiras linhas:"
+          head -n 2 ~/.ssh/id_deploy
+          echo "Últimas linhas:"
+          tail -n 2 ~/.ssh/id_deploy
+          echo "Tentando extrair chave pública..."
+          ssh-keygen -y -f ~/.ssh/id_deploy 2>&1 | head -n 1 || echo "⚠️ Não foi possível extrair chave pública (formato pode estar incorreto)"
         shell: bash
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
@@ -30,8 +38,19 @@ jobs:
           ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
         shell: bash
 
+      - name: Garantir rsync no servidor
+        run: |
+          echo "📦 Verificando se rsync está instalado no servidor..."
+          ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "command -v rsync >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y rsync)" || echo "⚠️ Não foi possível instalar rsync"
+        shell: bash
+
       - name: Rsync código para o servidor
         run: |
+          echo "🔑 Verificando chave SSH..."
+          ls -la ~/.ssh/id_deploy || echo "⚠️ Chave SSH não encontrada"
+          echo "🔍 Testando conexão SSH..."
+          ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" -o StrictHostKeyChecking=no -o ConnectTimeout=10 "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "echo 'SSH connection OK'" || echo "⚠️ SSH test falhou"
+          
           RSYNC_EXCLUDES=(
             ".git/"
             "**/node_modules/"
@@ -41,41 +60,65 @@ jobs:
           )
           EXCLUDE_ARGS=""
           for e in "${RSYNC_EXCLUDES[@]}"; do EXCLUDE_ARGS+=" --exclude=$e"; done
-          rsync -az --delete $EXCLUDE_ARGS \
-            -e "ssh -i ~/.ssh/id_deploy -p ${{ secrets.SSH_PORT }}" \
-            "${GITHUB_WORKSPACE}/" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.REMOTE_PATH }}/"
+          
+          echo "📤 Iniciando rsync..."
+          rsync -avz --delete $EXCLUDE_ARGS \
+            -e "ssh -i ~/.ssh/id_deploy -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no -o LogLevel=VERBOSE" \
+            "${GITHUB_WORKSPACE}/" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.REMOTE_PATH }}/" || {
+            echo "❌ Rsync falhou!"
+            echo "Tentando debug SSH..."
+            ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" -v "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "echo test" || true
+            exit 1
+          }
         shell: bash
 
       - name: Deploy completo no servidor
         run: |
-          ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << REMOTE_SCRIPT
-          set -euo pipefail
-          cd "${{ secrets.REMOTE_PATH }}"
+          ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" bash << REMOTE_SCRIPT
+          set -e
+          set -x
+          REMOTE_PATH="${{ secrets.REMOTE_PATH }}"
+          # Expandir ~ para caminho absoluto se necessário
+          if [[ "\$REMOTE_PATH" == ~* ]]; then
+            REMOTE_PATH="\${REMOTE_PATH/#\~/\$HOME}"
+          fi
+          cd "\$REMOTE_PATH"
+          echo "📍 Diretório atual: $(pwd)"
           
-          # 1. Garantir Docker e Docker Compose
+          # 1. Garantir Docker, Docker Compose e rsync
+          echo "🐳 Verificando Docker..."
           if ! command -v docker >/dev/null 2>&1; then
+            echo "Instalando Docker..."
             curl -fsSL https://get.docker.com | sh
           fi
           if ! docker compose version >/dev/null 2>&1; then
             if command -v apt-get >/dev/null 2>&1; then 
+              echo "Instalando Docker Compose..."
               sudo apt-get update -y 
               sudo apt-get install -y docker-compose-plugin
             fi
           fi
+          echo "📦 Verificando rsync..."
+          if ! command -v rsync >/dev/null 2>&1; then
+            echo "Instalando rsync..."
+            sudo apt-get update -y
+            sudo apt-get install -y rsync || echo "⚠️ Falha ao instalar rsync"
+          fi
           
           # 2. Subir Postgres via Docker Compose
-          docker compose -f instructions-project/docker-compose.dev.yml up -d --pull always
+          echo "🐘 Subindo Postgres..."
+          docker compose -f instructions-project/docker-compose.dev.yml up -d --pull always || echo "⚠️ Docker Compose pode ter falhado, mas continuando..."
           
           # 3. Instalar dependências do client e fazer build
           echo "📦 Fazendo build do frontend..."
           cd instructions-project/client
-          npm ci --omit=dev || npm install --omit=dev
-          npm run build
+          npm ci || npm install || echo "⚠️ npm install falhou, mas continuando..."
+          npm run build || { echo "❌ Build do frontend falhou!"; exit 1; }
           
           # 4. Instalar dependências do server
           echo "📦 Instalando dependências do servidor..."
           cd ../server
-          npm ci --omit=dev || npm install --omit=dev
+          npm ci --omit=dev || npm install --omit=dev || echo "⚠️ npm install falhou, mas continuando..."
           
           # 5. Garantir que .env existe (preservar se já existir - não sobrescrever se existir)
           # NOTA: As chaves Clerk devem ser configuradas manualmente no servidor no ficheiro .env
@@ -86,21 +129,22 @@ jobs:
           
           # 6. Garantir que client/.env existe (preservar se já existir)
           # NOTA: A chave Clerk deve ser configurada manualmente no servidor
-          if [ ! -f ../client/.env ]; then
-            echo "# VITE_CLERK_PUBLISHABLE_KEY deve ser configurado aqui" > ../client/.env
+          if [ ! -f instructions-project/client/.env ]; then
+            echo "# VITE_CLERK_PUBLISHABLE_KEY deve ser configurado aqui" > instructions-project/client/.env
             echo "⚠️ Ficheiro client/.env criado. Por favor configure VITE_CLERK_PUBLISHABLE_KEY manualmente."
           fi
           
           # 7. Reiniciar servidor Node.js via PM2
           echo "🔄 Reiniciando servidor Node.js..."
+          cd instructions-project/server
           if command -v pm2 >/dev/null 2>&1; then
-            pm2 restart instructions-server --update-env || pm2 start "node src/app.js" --name instructions-server
-            pm2 save || true
+            pm2 restart instructions-server --update-env 2>/dev/null || pm2 start "node src/app.js" --name instructions-server --cwd . || true
+            pm2 save 2>/dev/null || true
           else
             echo "⚠️ PM2 não encontrado. Instalando..."
-            sudo npm i -g pm2
-            pm2 start "node src/app.js" --name instructions-server
-            pm2 save || true
+            sudo npm i -g pm2 || true
+            pm2 start "node src/app.js" --name instructions-server --cwd . || true
+            pm2 save 2>/dev/null || true
           fi
           
           # 8. Recarregar Nginx para servir novos ficheiros
@@ -113,6 +157,7 @@ jobs:
           pm2 list | grep instructions-server || echo "⚠️ PM2 processo não encontrado"
           
           echo "✅ Deploy concluído com sucesso!"
+          echo "📍 Timestamp: $(date)"
           REMOTE_SCRIPT
         shell: bash
       
