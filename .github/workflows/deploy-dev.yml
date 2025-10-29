@@ -112,7 +112,7 @@ jobs:
           # 3. Instalar dependências do client e fazer build
           echo "📦 Fazendo build do frontend..."
           cd instructions-project/client
-          npm ci --omit=dev || npm install --omit=dev || echo "⚠️ npm install falhou, mas continuando..."
+          npm ci || npm install || echo "⚠️ npm install falhou, mas continuando..."
           npm run build || { echo "❌ Build do frontend falhou!"; exit 1; }
           
           # 4. Instalar dependências do server
