@@ -48,7 +48,7 @@ jobs:
 
       - name: Deploy completo no servidor
         run: |
-          ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << 'REMOTE_SCRIPT'
+          ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << REMOTE_SCRIPT
           set -euo pipefail
           cd "${{ secrets.REMOTE_PATH }}"
           
