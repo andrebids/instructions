@@ -74,7 +74,7 @@ jobs:
           cd "${{ secrets.REMOTE_PATH }}"
           echo "📍 Diretório atual: $(pwd)"
           
-          # 1. Garantir Docker e Docker Compose
+          # 1. Garantir Docker, Docker Compose e rsync
           echo "🐳 Verificando Docker..."
           if ! command -v docker >/dev/null 2>&1; then
             echo "Instalando Docker..."
@@ -86,6 +86,12 @@ jobs:
               sudo apt-get update -y 
               sudo apt-get install -y docker-compose-plugin
             fi
+          fi
+          echo "📦 Verificando rsync..."
+          if ! command -v rsync >/dev/null 2>&1; then
+            echo "Instalando rsync..."
+            sudo apt-get update -y
+            sudo apt-get install -y rsync || echo "⚠️ Falha ao instalar rsync"
           fi
           
           # 2. Subir Postgres via Docker Compose
