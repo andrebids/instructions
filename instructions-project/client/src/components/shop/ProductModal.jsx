@@ -3,13 +3,28 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Image
 import { Icon } from "@iconify/react";
 import DayNightToggle from "../DayNightToggle";
 import RequestInfoModal from "./RequestInfoModal";
+import CompareSuggestModal from "./CompareSuggestModal";
+import FavoriteFolderModal from "./FavoriteFolderModal";
 import { useShop } from "../../context/ShopContext";
 
 export default function ProductModal({ isOpen, onOpenChange, product, onOrder, enableQuantity = false }) {
-  const { getAvailableStock, products } = useShop();
+  const { getAvailableStock, products, favorites, compare, toggleFavorite, toggleCompare } = useShop();
   const [mode, setMode] = React.useState("night");
   const [color, setColor] = React.useState("brancoPuro");
   const [infoOpen, setInfoOpen] = React.useState(false);
+  const [compareOpen, setCompareOpen] = React.useState(false);
+  const [closedForCompare, setClosedForCompare] = React.useState(false);
+  const handleCompareOpenChange = React.useCallback((open) => {
+    setCompareOpen(open);
+    if (open) {
+      setClosedForCompare(true);
+      if (typeof onOpenChange === 'function') onOpenChange(false);
+    } else if (closedForCompare) {
+      if (typeof onOpenChange === 'function') onOpenChange(true);
+      setClosedForCompare(false);
+    }
+  }, [onOpenChange, closedForCompare]);
+  const [favModalOpen, setFavModalOpen] = React.useState(false);
   // Using custom toggle; no external player
   const [qty, setQty] = React.useState(1);
   const [mediaIndex, setMediaIndex] = React.useState(0); // 0=image, 1=video
@@ -253,12 +268,12 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                   </div>
 
                   {/* Thumbnails selector inside left panel (below media) */}
-                  <div className="mt-3 flex items-center justify-center gap-3">
+                  <div className="mt-3 flex items-center justify-center gap-2">
                     <button
                       type="button"
                       aria-label="Imagem"
                       onClick={() => setMediaIndex(0)}
-                      className={`group relative w-28 h-16 rounded-md overflow-hidden border ${mediaIndex === 0 ? 'border-white ring-2 ring-white' : 'border-white/50'} bg-center bg-cover`}
+                      className={`group relative w-28 h-16 rounded-md overflow-hidden border ${mediaIndex === 0 ? 'border-white ring-2 ring-white' : 'border-white/40'} bg-[#1f2937] bg-center bg-cover`}
                       style={{ backgroundImage: `url(${imageSrc})` }}
                     >
                       {/* caption removed */}
@@ -268,7 +283,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                         type="button"
                         aria-label="Vídeo"
                         onClick={() => setMediaIndex(1)}
-                        className={`group relative w-28 h-16 rounded-md overflow-hidden border ${mediaIndex === 1 ? 'border-white ring-2 ring-white' : 'border-white/50'} bg-center bg-cover`}
+                        className={`group relative w-28 h-16 rounded-md overflow-hidden border ${mediaIndex === 1 ? 'border-white ring-2 ring-white' : 'border-white/40'} bg-[#1f2937] bg-center bg-cover`}
                         style={{ backgroundImage: `url(${activeProduct.images?.day || imageSrc})` }}
                       >
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -424,6 +439,21 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
             <ModalFooter>
               <div className="flex items-center gap-2">
                 <Button variant="flat" onPress={close}>Close</Button>
+                <Button
+                  variant="bordered"
+                  onPress={() => setFavModalOpen(true)}
+                  className={`${favorites?.includes(activeProduct.id) ? 'ring-2 ring-danger-500' : ''}`}
+                  startContent={<Icon icon="lucide:heart" />}
+                >
+                  Favorite
+                </Button>
+                <Button
+                  variant="bordered"
+                  onPress={() => { if (!compare?.includes(activeProduct.id)) toggleCompare(activeProduct.id); handleCompareOpenChange(true); }}
+                  startContent={<Icon icon="lucide:shuffle" />}
+                >
+                  Compare
+                </Button>
                 <Button color="primary" isDisabled={isOutOfStock} onPress={() => { onOrder?.(activeProduct, { mode, color }, enableQuantity ? qty : undefined); close(); }}>Add</Button>
                 {isOutOfStock && (
                   <Button variant="bordered" onPress={() => setInfoOpen(true)}>Request info</Button>
@@ -435,6 +465,13 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
       </ModalContent>
     </Modal>
     <RequestInfoModal isOpen={infoOpen} onOpenChange={setInfoOpen} product={activeProduct} />
+    <CompareSuggestModal
+      isOpen={compareOpen}
+      onOpenChange={handleCompareOpenChange}
+      baseProduct={activeProduct}
+      onAdd={(p)=>{ toggleCompare(p.id); }}
+    />
+    <FavoriteFolderModal isOpen={favModalOpen} onOpenChange={setFavModalOpen} productId={activeProduct?.id} />
     </>
   );
 }

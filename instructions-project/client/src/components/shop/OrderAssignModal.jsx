@@ -29,22 +29,35 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
   const stock = product ? getAvailableStock(product) : 0;
 
   const handleQtyChange = (value) => {
-    const numeric = Number(value);
-    if (Number.isNaN(numeric)) {
-      setQty(1);
+    // Allow clearing the input while the user is typing
+    if (value === "") {
+      setQty("");
       setQtyError("");
       return;
     }
+
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) {
+      // If not a valid number, keep empty and no error
+      setQty("");
+      setQtyError("");
+      return;
+    }
+
     if (numeric < 1) {
+      // Do not allow zero or negative quantities
       setQty(1);
       setQtyError("Quantity cannot be negative or zero.");
       return;
     }
+
     if (stock > 0 && numeric > stock) {
+      // Clamp to available stock
       setQty(stock);
       setQtyError(`Quantity cannot exceed stock (${stock}).`);
       return;
     }
+
     setQty(numeric);
     setQtyError("");
   };
