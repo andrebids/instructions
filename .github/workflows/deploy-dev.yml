@@ -168,7 +168,8 @@ jobs:
       - name: Verificar health do servidor
         run: |
           sleep 5
-          curl -f http://${{ secrets.SSH_HOST }}/health || echo "⚠️ Health check falhou - servidor pode ainda estar a iniciar"
+          echo "🔍 Verificando health check..."
+          curl -f https://thecore.dsproject.pt/health || echo "⚠️ Health check falhou - servidor pode ainda estar a iniciar"
         continue-on-error: true
 
 
