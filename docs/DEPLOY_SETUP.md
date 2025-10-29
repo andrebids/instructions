@@ -108,3 +108,7 @@ Quando fazes push para a branch `main`, o GitHub Actions executa automaticamente
 - Verifica os logs do PM2: `pm2 logs instructions-server`
 - Confirma que o processo PM2 existe: `pm2 describe instructions-server`
 
+---
+
+*Última atualização: 2025-10-29*
+
