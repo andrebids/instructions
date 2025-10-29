@@ -2,6 +2,7 @@ import React from 'react'
 import { SignInButton, SignUpButton } from '@clerk/clerk-react'
 import { ArrowRightOnRectangleIcon, UserPlusIcon } from '@heroicons/react/24/outline'
 import LiquidEther from '../components/LiquidEther'
+import GlassSurface from '../components/GlassSurface'
 
 export default function Landing() {
   const sectionRef = React.useRef(null)
@@ -53,7 +54,7 @@ export default function Landing() {
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-8 px-8">
         <section ref={sectionRef} onMouseMove={onMouseMove} className="select-none text-center">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-            Welcome to <span ref={word1Ref} className="text-primary">Instructions</span>.
+            Welcome to <span ref={word1Ref} className="text-primary">TheCore</span>.
             <br />
             Let’s <span ref={word2Ref} className="text-primary">create</span> something great.
           </h1>
@@ -63,15 +64,19 @@ export default function Landing() {
         <div className="auth-cta">
           <ul>
             <SignInButton mode="modal" redirectUrl="/">
-              <li style={{"--i":"#36d1dc","--j":"#5b86e5"}}>
-                <ArrowRightOnRectangleIcon className="auth-icon w-7 h-7" />
+              <li style={{"--i":"#36d1dc","--j":"#5b86e5", background:"transparent"}}>
+                <GlassSurface width={"100%"} height={"100%"} borderRadius={9999} className="!p-0">
+                  <ArrowRightOnRectangleIcon className="auth-icon w-7 h-7" />
+                </GlassSurface>
                 <span className="title">Sign in</span>
               </li>
             </SignInButton>
 
             <SignUpButton mode="modal" redirectUrl="/">
-              <li style={{"--i":"#f7971e","--j":"#ffd200"}}>
-                <UserPlusIcon className="auth-icon w-7 h-7" />
+              <li style={{"--i":"#f7971e","--j":"#ffd200", background:"transparent"}}>
+                <GlassSurface width={"100%"} height={"100%"} borderRadius={9999} className="!p-0">
+                  <UserPlusIcon className="auth-icon w-7 h-7" />
+                </GlassSurface>
                 <span className="title">Sign up</span>
               </li>
             </SignUpButton>
