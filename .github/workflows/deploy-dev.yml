@@ -38,6 +38,12 @@ jobs:
           ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
         shell: bash
 
+      - name: Garantir rsync no servidor
+        run: |
+          echo "📦 Verificando se rsync está instalado no servidor..."
+          ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "command -v rsync >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y rsync)" || echo "⚠️ Não foi possível instalar rsync"
+        shell: bash
+
       - name: Rsync código para o servidor
         run: |
           echo "🔑 Verificando chave SSH..."
