@@ -32,6 +32,11 @@ jobs:
 
       - name: Rsync código para o servidor
         run: |
+          echo "🔑 Verificando chave SSH..."
+          ls -la ~/.ssh/id_deploy || echo "⚠️ Chave SSH não encontrada"
+          echo "🔍 Testando conexão SSH..."
+          ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" -o StrictHostKeyChecking=no -o ConnectTimeout=10 "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "echo 'SSH connection OK'" || echo "⚠️ SSH test falhou"
+          
           RSYNC_EXCLUDES=(
             ".git/"
             "**/node_modules/"
@@ -41,9 +46,16 @@ jobs:
           )
           EXCLUDE_ARGS=""
           for e in "${RSYNC_EXCLUDES[@]}"; do EXCLUDE_ARGS+=" --exclude=$e"; done
-          rsync -az --delete $EXCLUDE_ARGS \
-            -e "ssh -i ~/.ssh/id_deploy -p ${{ secrets.SSH_PORT }}" \
-            "${GITHUB_WORKSPACE}/" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.REMOTE_PATH }}/"
+          
+          echo "📤 Iniciando rsync..."
+          rsync -avz --delete $EXCLUDE_ARGS \
+            -e "ssh -i ~/.ssh/id_deploy -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no -o LogLevel=VERBOSE" \
+            "${GITHUB_WORKSPACE}/" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.REMOTE_PATH }}/" || {
+            echo "❌ Rsync falhou!"
+            echo "Tentando debug SSH..."
+            ssh -i ~/.ssh/id_deploy -p "${{ secrets.SSH_PORT }}" -v "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "echo test" || true
+            exit 1
+          }
         shell: bash
 
       - name: Deploy completo no servidor
