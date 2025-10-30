@@ -7,13 +7,15 @@ import useImage from 'use-image';
 import { NightThumb } from '../../NightThumb';
 
 // Componente para o Modal de Upload
-const UploadModal = () => {
+const UploadModal = ({ onUploadComplete }) => {
   const [isPreparing, setIsPreparing] = useState(true);
+  const [dragOver, setDragOver] = useState(false);
   const [files, setFiles] = useState([
     { name: 'source 1.jpeg', size: '2.4 MB', progress: 0, status: 'pending' },
     { name: 'source 2.jpeg', size: '1.8 MB', progress: 0, status: 'pending' },
     { name: 'source 3.jpeg', size: '0.9 MB', progress: 0, status: 'pending' },
   ]);
+  const callbackCalledRef = useRef(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsPreparing(false), 100);
@@ -27,7 +29,9 @@ const UploadModal = () => {
     const intervals = [];
 
     const uploadNextFile = () => {
-      if (fileIndex >= files.length) return;
+      if (fileIndex >= files.length) {
+        return;
+      }
 
       setFiles(prev => {
         const newFiles = [...prev];
@@ -37,6 +41,7 @@ const UploadModal = () => {
         return newFiles;
       });
 
+      // 2 segundos por arquivo: incrementar 5% a cada 100ms (20 * 100ms = 2000ms)
       const interval = setInterval(() => {
         setFiles(prev => {
           const newFiles = [...prev];
@@ -44,7 +49,7 @@ const UploadModal = () => {
 
           // Verificar se currentFile existe antes de aceder às suas propriedades
           if (currentFile && currentFile.progress < 100) {
-            currentFile.progress += 10;
+            currentFile.progress += 5;
             return newFiles;
           } else if (currentFile) {
             clearInterval(interval);
@@ -65,16 +70,69 @@ const UploadModal = () => {
     return () => intervals.forEach(clearInterval);
   }, [isPreparing, files.length]);
 
+  // Verificar quando todos os arquivos estão completos
+  useEffect(() => {
+    if (isPreparing) return;
+    
+    const allDone = files.every(file => file.status === 'done');
+    if (allDone && files.length > 0 && onUploadComplete && !callbackCalledRef.current) {
+      callbackCalledRef.current = true;
+      const timer = setTimeout(() => {
+        onUploadComplete();
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [files, isPreparing, onUploadComplete]);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    
+    // Simular recepção de arquivos (fake)
+    if (isPreparing) {
+      setIsPreparing(false);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <Card className="p-8 text-center max-w-lg w-full m-4 transition-all duration-300">
         {isPreparing ? (
           <>
             <h2 className="text-xl font-semibold mb-4">Upload Background Image</h2>
-            <div className="border-2 border-dashed border-default-300 rounded-lg p-12 bg-default-50">
-              <Icon icon="lucide:upload-cloud" className="text-5xl text-default-500 mx-auto mb-4" />
-              <p className="text-default-600 mb-2">Drag and drop your images here</p>
+            <div 
+              className={`border-2 border-dashed rounded-lg p-12 bg-default-50 transition-all duration-200 ${
+                dragOver 
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary ring-offset-2' 
+                  : 'border-default-300'
+              }`}
+            >
+              <Icon icon="lucide:upload-cloud" className={`text-5xl mx-auto mb-4 transition-colors ${
+                dragOver ? 'text-primary' : 'text-default-500'
+              }`} />
+              <p className={`mb-2 transition-colors ${
+                dragOver ? 'text-primary font-medium' : 'text-default-600'
+              }`}>
+                {dragOver ? 'Drop your images here' : 'Drag and drop your images here'}
+              </p>
               <p className="text-default-500 text-sm mb-4">or</p>
               <Button color="primary" variant="ghost">Select Files</Button>
             </div>
@@ -558,10 +616,11 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   const [uploadStep, setUploadStep] = useState('uploading'); // 'uploading', 'loading', 'done'
   const [selectedImage, setSelectedImage] = useState(null);
   const [canvasImages, setCanvasImages] = useState([]); // Imagens adicionadas ao canvas
-  const [activeGifIndex, setActiveGifIndex] = useState(0); // Controla em qual thumbnail o GIF está visível (-1 = nenhum)
+  const [activeGifIndex, setActiveGifIndex] = useState(-1); // Controla em qual thumbnail o GIF está visível (-1 = nenhum)
   const [isDayMode, setIsDayMode] = useState(true); // Controla se mostra imagem de dia ou noite
+  const [uploadedImages, setUploadedImages] = useState([]); // Imagens disponíveis após upload completo
   
-  // Imagens carregadas (simuladas)
+  // Imagens carregadas (simuladas) - dados de origem
   const loadedImages = [
     { 
       id: 'source-img-1', 
@@ -583,40 +642,36 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
     },
   ];
 
-  // Simular o fluxo de upload e animação sequencial do GIF
-  useEffect(() => {
-    // 1. Mostrar o modal de upload (muito rápido)
-    const t1 = setTimeout(() => {
-      setUploadStep('loading');
-    }, 100);
-
-    // 2. Mostrar o ecrã de loading por tempo mínimo
-    const t2 = setTimeout(() => {
+  // Callback quando upload completo
+  const handleUploadComplete = () => {
+    // Mudar para 'loading' antes de mostrar imagens
+    setUploadStep('loading');
+    
+    // Após um breve delay, popular uploadedImages e mostrar interface
+    setTimeout(() => {
+      setUploadedImages(loadedImages);
       setUploadStep('done');
+      
+      // Iniciar conversão automática sequencial após upload
+      // Começar com primeira imagem após 500ms
+      setTimeout(() => {
+        setActiveGifIndex(0); // Source 1
+      }, 500);
+      
+      // Sequência de animação do GIF: Source 1 -> Source 2 -> Source 3 -> desaparece
+      setTimeout(() => {
+        setActiveGifIndex(1); // Source 2
+      }, 4500); // 500ms delay inicial + 4000ms conversão da primeira
+      
+      setTimeout(() => {
+        setActiveGifIndex(2); // Source 3
+      }, 8500); // 500ms + 4000ms + 4000ms
+      
+      setTimeout(() => {
+        setActiveGifIndex(-1); // Desaparece após todas convertidas
+      }, 12500); // 500ms + 4000ms * 3
     }, 300);
-
-    // 3. Sequência de animação do GIF: Source 1 -> Source 2 -> Source 3 -> desaparece
-    const t3 = setTimeout(() => {
-      setActiveGifIndex(1); // Source 2
-    }, 4000);
-
-    const t4 = setTimeout(() => {
-      setActiveGifIndex(2); // Source 3
-    }, 8000);
-
-    const t5 = setTimeout(() => {
-      setActiveGifIndex(-1); // Desaparece
-    }, 12000);
-
-    // Limpar os timeouts se o componente for desmontado
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
-      clearTimeout(t5);
-    };
-  }, []);
+  };
 
 
 
@@ -767,7 +822,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
 
   return (
     <div className="h-full flex flex-col">
-      {uploadStep === 'uploading' && <UploadModal />}
+      {uploadStep === 'uploading' && <UploadModal onUploadComplete={handleUploadComplete} />}
       {uploadStep === 'loading' && <LoadingIndicator />}
       
       {/* Main Content Area - 3 Column Layout */}
@@ -779,7 +834,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
               <h3 className="text-base md:text-lg font-semibold">Source Images</h3>
             </div>
             <div className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4 space-y-2 md:space-y-3">
-              {loadedImages.map((image, index) => (
+              {uploadedImages.map((image, index) => (
                 <Card
                   key={image.id}
                   isFooterBlurred
