@@ -30,6 +30,15 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static('public'));
 
+// Servir também arquivos estáticos do client/public (para imagens da loja)
+var __filename = fileURLToPath(import.meta.url);
+var __dirname = path.dirname(__filename);
+var clientPublicPath = path.resolve(__dirname, '../../client/public');
+if (fs.existsSync(clientPublicPath)) {
+  app.use(express.static(clientPublicPath));
+  console.log('📁 Servindo arquivos estáticos do client/public');
+}
+
 // Initialize Clerk middleware (only if configured)
 const hasClerk = !!process.env.CLERK_SECRET_KEY;
 const enableAuth = process.env.ENABLE_AUTH === 'true';
@@ -68,9 +77,8 @@ app.get('/api/me', (req, res) => {
 // Simple media streaming with Range support (serves client/public videos during dev)
 app.get('/api/media/:name', async (req, res) => {
   try {
-    const baseName = req.params.name; // without extension or with
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
+    var baseName = req.params.name; // without extension or with
+    // __filename e __dirname já declarados acima
     const candidateDirs = [
       // Prefer exact TRENDING directory where mp4 files live in this repo
       path.resolve(process.cwd(), '../client/public/SHOP/TRENDING'),
