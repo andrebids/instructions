@@ -65,7 +65,7 @@ export default function TrendingFiltersSidebar({
 
   const mountOptions = [
     { value: "Poste", label: "Pole", countKey: "mountPole" },
-    { value: "Transversal", label: "Crossarm", countKey: "mountCrossarm" },
+    { value: "Transversal", label: "Transversal", countKey: "mountCrossarm" },
     { value: "Chão", label: "Ground", countKey: "mountGround" },
   ];
 
@@ -330,8 +330,8 @@ export default function TrendingFiltersSidebar({
           </div>
         </AccordionItem>
 
-        {/* Mount - align style with Type (full-width selectable rows) */}
-        <AccordionItem key="mount" aria-label="Mount" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Mount</span></div>}>
+        {/* Category (was Mount) - align style with Type (full-width selectable rows) */}
+        <AccordionItem key="mount" aria-label="Category" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Category</span></div>}>
           <ul className="space-y-2">
             {mountOptions.map((opt) => (
               <li key={opt.value}>

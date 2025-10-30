@@ -117,7 +117,7 @@ export const products = [
     type: "2D",
     usage: "Shopping",
     location: "Interior",
-    mount: "Transversal",
+    mount: "Poste",
     specs: {
       descricao: "Flexible LED strip for a variety of applications.",
       tecnicas: "IP20, 12V, 14W/m",
