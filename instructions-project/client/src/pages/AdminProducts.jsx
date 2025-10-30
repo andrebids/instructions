@@ -28,6 +28,7 @@ export default function AdminProducts() {
   var [loading, setLoading] = React.useState(true);
   var [error, setError] = React.useState(null);
   var [filters, setFilters] = React.useState({});
+  var [showArchived, setShowArchived] = React.useState(false);
   var [searchQuery, setSearchQuery] = React.useState("");
   
   var { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
@@ -91,6 +92,11 @@ export default function AdminProducts() {
       }
     }
     
+    // Adicionar filtro de arquivados
+    if (showArchived) {
+      cleanedFilters.showArchived = 'true';
+    }
+    
     console.log('🔄 [AdminProducts] Filtros limpos:', cleanedFilters);
     setLoading(true);
     setError(null);
@@ -111,7 +117,7 @@ export default function AdminProducts() {
         setError(err.message || "Erro ao carregar produtos");
         setLoading(false);
       });
-  }, [filters]);
+  }, [filters, showArchived]);
 
   React.useEffect(function() {
     console.log('🔄 [AdminProducts] useEffect inicial - carregando produtos');
@@ -227,9 +233,37 @@ export default function AdminProducts() {
     onModalOpen();
   };
 
-  // Deletar produto
+  // Arquivar produto
+  var handleArchive = function(productId) {
+    if (!window.confirm("Tem certeza que deseja arquivar este produto? Ele não ficará visível.")) {
+      return;
+    }
+    
+    productsAPI.archive(productId)
+      .then(function() {
+        loadProducts();
+      })
+      .catch(function(err) {
+        console.error("Erro ao arquivar produto:", err);
+        alert("Erro ao arquivar produto: " + (err.message || "Erro desconhecido"));
+      });
+  };
+  
+  // Desarquivar produto
+  var handleUnarchive = function(productId) {
+    productsAPI.unarchive(productId)
+      .then(function() {
+        loadProducts();
+      })
+      .catch(function(err) {
+        console.error("Erro ao desarquivar produto:", err);
+        alert("Erro ao desarquivar produto: " + (err.message || "Erro desconhecido"));
+      });
+  };
+  
+  // Deletar produto permanentemente (hard delete)
   var handleDelete = function(productId) {
-    if (!window.confirm("Tem certeza que deseja deletar este produto?")) {
+    if (!window.confirm("⚠️ ATENÇÃO: Esta ação é PERMANENTE e não pode ser desfeita!\n\nTem certeza que deseja DELETAR PERMANENTEMENTE este produto da base de dados?")) {
       return;
     }
     
@@ -439,6 +473,13 @@ export default function AdminProducts() {
           >
             Limpar Filtros
           </Button>
+          
+          <Checkbox
+            isSelected={showArchived}
+            onValueChange={setShowArchived}
+          >
+            Mostrar Arquivados
+          </Checkbox>
         </div>
       </div>
 
@@ -488,8 +529,8 @@ export default function AdminProducts() {
                         </Chip>
                       )}
                       {!product.isActive && (
-                        <Chip size="sm" color="danger" className="absolute top-2 right-2">
-                          Inativo
+                        <Chip size="sm" color="warning" className="absolute top-2 right-2">
+                          Arquivado
                         </Chip>
                       )}
                     </div>
@@ -502,7 +543,7 @@ export default function AdminProducts() {
                         )}
                       </p>
                       <p className="text-default-400 text-xs mb-2">Stock: {product.stock}</p>
-                      <div className="flex gap-2 mt-4">
+                      <div className="flex gap-2 mt-4 flex-wrap">
                         <Button
                           size="sm"
                           variant="flat"
@@ -511,12 +552,33 @@ export default function AdminProducts() {
                         >
                           Editar
                         </Button>
+                        {product.isActive ? (
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            color="warning"
+                            onPress={function() { handleArchive(product.id); }}
+                            startContent={<Icon icon="lucide:archive" />}
+                          >
+                            Arquivar
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            color="success"
+                            onPress={function() { handleUnarchive(product.id); }}
+                            startContent={<Icon icon="lucide:archive-restore" />}
+                          >
+                            Desarquivar
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="flat"
                           color="danger"
                           onPress={function() { handleDelete(product.id); }}
-                          startContent={<Icon icon="lucide:trash" />}
+                          startContent={<Icon icon="lucide:trash-2" />}
                         >
                           Deletar
                         </Button>
