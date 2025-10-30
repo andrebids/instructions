@@ -43,16 +43,16 @@ export async function getAll(req, res) {
     
     // Filtro por isActive - apenas se for 'true' ou 'false' (não string vazia)
     // Por padrão, mostrar apenas produtos ativos (não arquivados)
-    // Se showArchived=true, mostrar todos (arquivados e não arquivados)
+    // Se showArchived=true, mostrar apenas produtos arquivados (isActive=false)
     if (query.showArchived === 'true') {
-      // Se mostrar arquivados, não filtrar por isActive (mostrar todos)
-      // Não adicionar filtro de isActive
+      // Se mostrar arquivados, mostrar apenas produtos arquivados
+      where.isActive = false;
     } else {
       // Por padrão, mostrar apenas produtos ativos
       where.isActive = true;
     }
     
-    // Se o usuário especificou explicitamente isActive, respeitar isso
+    // Se o usuário especificou explicitamente isActive, respeitar isso (mas apenas se showArchived não estiver ativo)
     if (query.isActive !== undefined && query.isActive !== '' && query.isActive !== null && query.showArchived !== 'true') {
       where.isActive = query.isActive === 'true' || query.isActive !== 'false';
     }
@@ -97,10 +97,18 @@ export async function getAll(req, res) {
     
     console.log('📦 [PRODUCTS API] Where clause:', JSON.stringify(where));
     
-    var products = await Product.findAll({
-      where: where,
-      order: [['name', 'ASC']],
-    });
+    var products;
+    try {
+      products = await Product.findAll({
+        where: where,
+        order: [['name', 'ASC']],
+      });
+      console.log('✅ [PRODUCTS API] Query executada com sucesso');
+    } catch (queryError) {
+      console.error('❌ [PRODUCTS API] Erro ao executar query:', queryError);
+      console.error('❌ [PRODUCTS API] Query Error Stack:', queryError.stack);
+      throw queryError; // Re-throw para ser capturado pelo catch externo
+    }
     
     console.log('📦 [PRODUCTS API] Produtos encontrados:', products.length);
     if (products.length > 0) {
@@ -133,15 +141,134 @@ export async function getAll(req, res) {
     }
     
     // Converter produtos para objetos simples para evitar problemas de serialização
-    var productsData = products.map(function(p) {
-      return p.get({ plain: true });
-    });
-    
-    res.json(productsData);
+    var productsData = [];
+    try {
+      for (var i = 0; i < products.length; i++) {
+        try {
+          var plainProduct = products[i].get({ plain: true });
+          
+          // Converter campos JSON para objetos simples se necessário
+          try {
+            if (plainProduct.specs !== null && plainProduct.specs !== undefined) {
+              if (typeof plainProduct.specs === 'object') {
+                plainProduct.specs = JSON.parse(JSON.stringify(plainProduct.specs));
+              } else if (typeof plainProduct.specs === 'string') {
+                plainProduct.specs = JSON.parse(plainProduct.specs);
+              }
+            }
+          } catch (e) {
+            console.warn('⚠️  [PRODUCTS API] Erro ao processar specs do produto ' + plainProduct.id + ':', e.message);
+            plainProduct.specs = null;
+          }
+          
+          try {
+            if (plainProduct.availableColors !== null && plainProduct.availableColors !== undefined) {
+              if (typeof plainProduct.availableColors === 'object') {
+                plainProduct.availableColors = JSON.parse(JSON.stringify(plainProduct.availableColors));
+              } else if (typeof plainProduct.availableColors === 'string') {
+                plainProduct.availableColors = JSON.parse(plainProduct.availableColors);
+              }
+            }
+          } catch (e) {
+            console.warn('⚠️  [PRODUCTS API] Erro ao processar availableColors do produto ' + plainProduct.id + ':', e.message);
+            plainProduct.availableColors = null;
+          }
+          
+          try {
+            if (plainProduct.variantProductByColor !== null && plainProduct.variantProductByColor !== undefined) {
+              if (typeof plainProduct.variantProductByColor === 'object') {
+                plainProduct.variantProductByColor = JSON.parse(JSON.stringify(plainProduct.variantProductByColor));
+              } else if (typeof plainProduct.variantProductByColor === 'string') {
+                plainProduct.variantProductByColor = JSON.parse(plainProduct.variantProductByColor);
+              }
+            }
+          } catch (e) {
+            console.warn('⚠️  [PRODUCTS API] Erro ao processar variantProductByColor do produto ' + plainProduct.id + ':', e.message);
+            plainProduct.variantProductByColor = null;
+          }
+          
+          // Garantir que valores numéricos são números, não strings ou objetos DECIMAL
+          if (plainProduct.price !== null && plainProduct.price !== undefined) {
+            if (typeof plainProduct.price === 'object' && plainProduct.price.toString) {
+              plainProduct.price = parseFloat(plainProduct.price.toString());
+            } else {
+              plainProduct.price = parseFloat(plainProduct.price);
+            }
+            if (isNaN(plainProduct.price)) plainProduct.price = 0;
+          }
+          if (plainProduct.stock !== null && plainProduct.stock !== undefined) {
+            plainProduct.stock = parseInt(String(plainProduct.stock), 10);
+            if (isNaN(plainProduct.stock)) plainProduct.stock = 0;
+          }
+          if (plainProduct.oldPrice !== null && plainProduct.oldPrice !== undefined) {
+            if (typeof plainProduct.oldPrice === 'object' && plainProduct.oldPrice.toString) {
+              plainProduct.oldPrice = parseFloat(plainProduct.oldPrice.toString());
+            } else {
+              plainProduct.oldPrice = parseFloat(plainProduct.oldPrice);
+            }
+            if (isNaN(plainProduct.oldPrice)) plainProduct.oldPrice = null;
+          }
+          
+          // Garantir que tags é um array válido
+          if (!Array.isArray(plainProduct.tags)) {
+            plainProduct.tags = [];
+          }
+          
+          // Converter valores Date para strings ISO se necessário
+          if (plainProduct.createdAt && plainProduct.createdAt instanceof Date) {
+            plainProduct.createdAt = plainProduct.createdAt.toISOString();
+          }
+          if (plainProduct.updatedAt && plainProduct.updatedAt instanceof Date) {
+            plainProduct.updatedAt = plainProduct.updatedAt.toISOString();
+          }
+          
+          productsData.push(plainProduct);
+        } catch (err) {
+          console.error('❌ [PRODUCTS API] Erro ao serializar produto ' + (products[i].id || 'unknown') + ':', err);
+          console.error('❌ [PRODUCTS API] Stack do erro de serialização:', err.stack);
+          // Continuar mesmo se um produto falhar
+        }
+      }
+      
+      console.log('✅ [PRODUCTS API] Produtos serializados com sucesso:', productsData.length);
+      
+      // Verificar se a resposta já foi enviada
+      if (!res.headersSent) {
+        res.json(productsData);
+      } else {
+        console.warn('⚠️  [PRODUCTS API] Resposta já foi enviada, ignorando...');
+      }
+    } catch (serializationError) {
+      console.error('❌ [PRODUCTS API] Erro crítico na serialização:', serializationError);
+      console.error('❌ [PRODUCTS API] Stack:', serializationError.stack);
+      // Tentar enviar pelo menos um array vazio
+      if (!res.headersSent) {
+        res.status(500).json({ 
+          error: 'Erro ao serializar produtos',
+          details: serializationError.message,
+          name: serializationError.name
+        });
+      } else {
+        console.error('❌ [PRODUCTS API] Não foi possível enviar resposta de erro - headers já enviados');
+      }
+    }
   } catch (error) {
     console.error('❌ [PRODUCTS API] Erro ao buscar produtos:', error);
+    console.error('❌ [PRODUCTS API] Nome do erro:', error.name);
+    console.error('❌ [PRODUCTS API] Mensagem:', error.message);
     console.error('❌ [PRODUCTS API] Stack:', error.stack);
-    res.status(500).json({ error: error.message });
+    
+    // Garantir que sempre enviamos uma resposta JSON válida
+    if (!res.headersSent) {
+      var errorMessage = error.message || 'Erro desconhecido ao buscar produtos';
+      res.status(500).json({ 
+        error: errorMessage,
+        details: error.message,
+        name: error.name
+      });
+    } else {
+      console.error('❌ [PRODUCTS API] Não foi possível enviar resposta de erro - headers já enviados');
+    }
   }
 }
 
@@ -226,7 +353,9 @@ export async function getById(req, res) {
       return res.status(404).json({ error: 'Product not found' });
     }
     
-    res.json(product);
+    // Converter para objeto simples
+    var productData = product.get({ plain: true });
+    res.json(productData);
   } catch (error) {
     console.error('Erro ao buscar produto:', error);
     res.status(500).json({ error: error.message });
@@ -238,6 +367,10 @@ export async function create(req, res) {
   try {
     var files = req.files || {};
     var body = req.body;
+    
+    console.log('📦 [PRODUCTS API] POST /api/products - Criar produto');
+    console.log('📦 [PRODUCTS API] Body recebido:', JSON.stringify(body, null, 2));
+    console.log('📦 [PRODUCTS API] Files recebidos:', Object.keys(files));
     
     // Processar URLs de imagens dos ficheiros enviados
     var imagesDayUrl = null;
@@ -331,34 +464,93 @@ export async function create(req, res) {
       }
     }
     
+    // Função auxiliar para converter strings vazias ou "null" para null
+    var toNullIfEmpty = function(value) {
+      if (value === null || value === undefined || value === '' || value === 'null' || value === 'undefined') {
+        return null;
+      }
+      return value;
+    };
+    
     var productData = {
+      id: body.id || null, // ID será gerado automaticamente se não fornecido
       name: body.name,
       price: parseFloat(body.price) || 0,
       stock: parseInt(body.stock, 10) || 0,
       oldPrice: body.oldPrice ? parseFloat(body.oldPrice) : null,
-      imagesDayUrl: imagesDayUrl || body.imagesDayUrl || null,
-      imagesNightUrl: imagesNightUrl || body.imagesNightUrl || null,
-      animationUrl: animationUrl || body.animationUrl || null,
-      thumbnailUrl: thumbnailUrl || body.thumbnailUrl || null,
+      imagesDayUrl: imagesDayUrl || toNullIfEmpty(body.imagesDayUrl),
+      imagesNightUrl: imagesNightUrl || toNullIfEmpty(body.imagesNightUrl),
+      animationUrl: animationUrl || toNullIfEmpty(body.animationUrl),
+      thumbnailUrl: thumbnailUrl || toNullIfEmpty(body.thumbnailUrl),
       tags: tags,
-      type: body.type || null,
-      usage: body.usage || null,
-      location: body.location || null,
-      mount: body.mount || null,
+      type: toNullIfEmpty(body.type),
+      usage: toNullIfEmpty(body.usage),
+      location: toNullIfEmpty(body.location),
+      mount: toNullIfEmpty(body.mount),
       specs: specs,
       availableColors: Object.keys(availableColors).length > 0 ? availableColors : null,
       variantProductByColor: variantProductByColor,
-      videoFile: body.videoFile || null,
+      videoFile: toNullIfEmpty(body.videoFile),
       isSourceImage: body.isSourceImage === 'true' || body.isSourceImage === true,
       isActive: body.isActive !== 'false' && body.isActive !== false,
+      season: toNullIfEmpty(body.season),
+      isTrending: body.isTrending === 'true' || body.isTrending === true,
+      releaseYear: body.releaseYear ? parseInt(body.releaseYear, 10) : null,
+      isOnSale: body.isOnSale === 'true' || body.isOnSale === true,
     };
+    
+    // Validar campos obrigatórios
+    console.log('📦 [PRODUCTS API] Validando campos obrigatórios...');
+    console.log('📦 [PRODUCTS API] productData.name:', productData.name);
+    console.log('📦 [PRODUCTS API] typeof productData.name:', typeof productData.name);
+    
+    if (!productData.name || (typeof productData.name === 'string' && productData.name.trim() === '')) {
+      console.error('❌ [PRODUCTS API] Campo "name" está vazio ou não foi fornecido');
+      console.error('❌ [PRODUCTS API] Body completo:', JSON.stringify(body, null, 2));
+      return res.status(400).json({ 
+        error: 'Campo "name" é obrigatório',
+        received: {
+          name: productData.name,
+          body: body
+        }
+      });
+    }
+    
+    // Gerar ID automaticamente se não fornecido
+    if (!productData.id) {
+      // Gerar ID baseado no nome (formato: prd-XXXXX onde XXXXX é o nome em maiúsculas sem espaços)
+      var idBase = productData.name.toUpperCase().replace(/\s+/g, '').replace(/[^A-Z0-9]/g, '');
+      var generatedId = 'prd-' + idBase;
+      
+      // Verificar se o ID já existe, se sim, adicionar timestamp
+      var existingProduct = await Product.findByPk(generatedId);
+      if (existingProduct) {
+        var timestamp = Date.now().toString().slice(-6);
+        generatedId = 'prd-' + idBase + '-' + timestamp;
+      }
+      
+      productData.id = generatedId;
+      console.log('📦 [PRODUCTS API] ID gerado automaticamente:', productData.id);
+    }
+    
+    console.log('📦 [PRODUCTS API] Criando produto:', { id: productData.id, name: productData.name });
     
     var product = await Product.create(productData);
     
-    res.status(201).json(product);
+    // Converter para objeto simples antes de enviar
+    var productResponse = product.get({ plain: true });
+    
+    res.status(201).json(productResponse);
   } catch (error) {
-    console.error('Erro ao criar produto:', error);
-    res.status(500).json({ error: error.message });
+    console.error('❌ [PRODUCTS API] Erro ao criar produto:', error);
+    console.error('❌ [PRODUCTS API] Nome do erro:', error.name);
+    console.error('❌ [PRODUCTS API] Mensagem:', error.message);
+    console.error('❌ [PRODUCTS API] Stack:', error.stack);
+    res.status(500).json({ 
+      error: error.message || 'Erro ao criar produto',
+      details: error.message,
+      name: error.name
+    });
   }
 }
 
@@ -426,16 +618,24 @@ export async function update(req, res) {
       }
     }
     
+    // Função auxiliar para converter strings vazias ou "null" para null
+    var toNullIfEmpty = function(value) {
+      if (value === null || value === undefined || value === '' || value === 'null' || value === 'undefined') {
+        return null;
+      }
+      return value;
+    };
+    
     // Atualizar campos básicos
     if (body.name !== undefined) updateData.name = body.name;
     if (body.price !== undefined) updateData.price = parseFloat(body.price) || 0;
     if (body.stock !== undefined) updateData.stock = parseInt(body.stock, 10) || 0;
     if (body.oldPrice !== undefined) updateData.oldPrice = body.oldPrice ? parseFloat(body.oldPrice) : null;
-    if (body.type !== undefined) updateData.type = body.type || null;
-    if (body.usage !== undefined) updateData.usage = body.usage || null;
-    if (body.location !== undefined) updateData.location = body.location || null;
-    if (body.mount !== undefined) updateData.mount = body.mount || null;
-    if (body.videoFile !== undefined) updateData.videoFile = body.videoFile || null;
+    if (body.type !== undefined) updateData.type = toNullIfEmpty(body.type);
+    if (body.usage !== undefined) updateData.usage = toNullIfEmpty(body.usage);
+    if (body.location !== undefined) updateData.location = toNullIfEmpty(body.location);
+    if (body.mount !== undefined) updateData.mount = toNullIfEmpty(body.mount);
+    if (body.videoFile !== undefined) updateData.videoFile = toNullIfEmpty(body.videoFile);
     
     // Processar tags
     if (body.tags !== undefined) {
@@ -480,12 +680,39 @@ export async function update(req, res) {
       updateData.isActive = body.isActive !== 'false' && body.isActive !== false;
     }
     
+    // Processar season, isTrending, releaseYear, isOnSale
+    if (body.season !== undefined) {
+      updateData.season = toNullIfEmpty(body.season);
+    }
+    if (body.isTrending !== undefined) {
+      updateData.isTrending = body.isTrending === 'true' || body.isTrending === true;
+    }
+    if (body.releaseYear !== undefined) {
+      updateData.releaseYear = body.releaseYear ? parseInt(body.releaseYear, 10) : null;
+    }
+    if (body.isOnSale !== undefined) {
+      updateData.isOnSale = body.isOnSale === 'true' || body.isOnSale === true;
+    }
+    
     await product.update(updateData);
     
-    res.json(product);
+    // Recarregar o produto atualizado
+    await product.reload();
+    
+    // Converter para objeto simples antes de enviar
+    var productResponse = product.get({ plain: true });
+    
+    res.json(productResponse);
   } catch (error) {
-    console.error('Erro ao atualizar produto:', error);
-    res.status(500).json({ error: error.message });
+    console.error('❌ [PRODUCTS API] Erro ao atualizar produto:', error);
+    console.error('❌ [PRODUCTS API] Nome do erro:', error.name);
+    console.error('❌ [PRODUCTS API] Mensagem:', error.message);
+    console.error('❌ [PRODUCTS API] Stack:', error.stack);
+    res.status(500).json({ 
+      error: error.message || 'Erro ao atualizar produto',
+      details: error.message,
+      name: error.name
+    });
   }
 }
 
