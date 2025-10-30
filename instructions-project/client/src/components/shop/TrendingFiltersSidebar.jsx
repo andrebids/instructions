@@ -1,5 +1,5 @@
 import React from "react";
-import { Accordion, AccordionItem, Checkbox, Slider, Tooltip } from "@heroui/react";
+import { Accordion, AccordionItem, Checkbox, Slider, Tooltip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 /**
@@ -65,7 +65,7 @@ export default function TrendingFiltersSidebar({
 
   const mountOptions = [
     { value: "Poste", label: "Pole", countKey: "mountPole" },
-    { value: "Transversal", label: "Crossarm", countKey: "mountCrossarm" },
+    { value: "Transversal", label: "Transversal", countKey: "mountCrossarm" },
     { value: "Chão", label: "Ground", countKey: "mountGround" },
   ];
 
@@ -94,9 +94,30 @@ export default function TrendingFiltersSidebar({
   const minStock = typeof filters.minStock === 'number' ? filters.minStock : 0;
   const resetStock = () => handle('minStock', 0);
 
+  // Dimensions (height/width/depth in meters)
+  const dimKey = filters.dimKey || ""; // one of 'heightM' | 'widthM' | 'depthM' | ''
+  const dimLabels = {
+    heightM: "Height",
+    widthM: "Width",
+    depthM: "Depth",
+  };
+  const availableDimKeys = ["heightM", "widthM", "depthM"];
+  const dimValues = React.useMemo(() => {
+    const vals = products
+      .map(p => p?.specs?.dimensions?.[dimKey])
+      .filter(v => typeof v === 'number' && Number.isFinite(v));
+    if (!vals.length) return { min: 0, max: 0 };
+    return { min: Math.min(...vals), max: Math.max(...vals) };
+  }, [products, dimKey]);
+  const dimRange = Array.isArray(filters.dimRange) ? filters.dimRange : null;
+  const effectiveDimRange = React.useMemo(() => {
+    if (dimRange && dimRange.length === 2 && Number.isFinite(dimRange[0]) && Number.isFinite(dimRange[1])) return dimRange;
+    return [dimValues.min, dimValues.max];
+  }, [dimRange, dimValues.min, dimValues.max]);
+
   return (
     <aside className={`space-y-6 ${className}`}>
-      <Accordion variant="splitted" defaultExpandedKeys={["type", "location", "price", "color", "mount", "usage"]} selectionMode="multiple">
+      <Accordion variant="splitted" defaultExpandedKeys={["type", "location", "price", "color", "mount", "usage", "dimensions"]} selectionMode="multiple">
         {/* Type */}
         <AccordionItem key="type" aria-label="Type" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Type</span></div>}>
           <ul className="space-y-2">
@@ -117,6 +138,76 @@ export default function TrendingFiltersSidebar({
               </li>
             ))}
           </ul>
+        </AccordionItem>
+
+        {/* Dimensions */}
+        <AccordionItem key="dimensions" aria-label="Dimensions" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Dimensions</span></div>}>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm text-default-600">Field</span>
+              <Dropdown>
+                <DropdownTrigger>
+                  <Button size="sm" radius="full" variant="bordered" endContent={<Icon icon="lucide:chevron-down" className="text-sm" />}> 
+                    {dimKey ? dimLabels[dimKey] : "Select"}
+                  </Button>
+                </DropdownTrigger>
+                <DropdownMenu
+                  aria-label="Select dimension"
+                  selectedKeys={new Set([dimKey || ""]) }
+                  selectionMode="single"
+                  onAction={(key)=>{
+                    const k = String(key);
+                    // Reset range when changing key
+                    const next = { ...filters, dimKey: k === "" ? "" : k };
+                    if (k === "") {
+                      next.dimRange = null;
+                    } else {
+                      const vals = products
+                        .map(p => p?.specs?.dimensions?.[k])
+                        .filter(v => typeof v === 'number' && Number.isFinite(v));
+                      if (vals.length) next.dimRange = [Math.min(...vals), Math.max(...vals)];
+                    }
+                    onChange?.(next);
+                  }}
+                >
+                  <DropdownItem key="">None</DropdownItem>
+                  {availableDimKeys.map(k => (
+                    <DropdownItem key={k}>{dimLabels[k]}</DropdownItem>
+                  ))}
+                </DropdownMenu>
+              </Dropdown>
+            </div>
+
+            {dimKey ? (
+              <div className="space-y-2">
+                {typeof Slider !== 'undefined' ? (
+                  <Slider
+                    aria-label={`${dimLabels[dimKey]} range`}
+                    minValue={dimValues.min}
+                    maxValue={dimValues.max}
+                    step={0.01}
+                    className="max-w-full"
+                    value={effectiveDimRange}
+                    onChange={(value)=>{
+                      if (Array.isArray(value)) {
+                        onChange?.({ ...filters, dimRange: [Math.min(...value), Math.max(...value)] });
+                      }
+                    }}
+                    showTooltip
+                    formatOptions={{ style: 'unit', unit: 'meter', maximumFractionDigits: 2 }}
+                  />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input type="range" min={dimValues.min} max={dimValues.max} step={0.01} value={effectiveDimRange[0]} onChange={(e)=> onChange?.({ ...filters, dimRange: [Math.min(Number(e.target.value), effectiveDimRange[1]-0.01), effectiveDimRange[1]] })} className="w-full" />
+                    <input type="range" min={dimValues.min} max={dimValues.max} step={0.01} value={effectiveDimRange[1]} onChange={(e)=> onChange?.({ ...filters, dimRange: [effectiveDimRange[0], Math.max(Number(e.target.value), effectiveDimRange[0]+0.01)] })} className="w-full" />
+                  </div>
+                )}
+                <div className="text-sm">{dimLabels[dimKey]}: <span className="font-medium">{effectiveDimRange[0].toFixed(2)}m</span> - <span className="font-medium">{effectiveDimRange[1].toFixed(2)}m</span></div>
+              </div>
+            ) : (
+              <div className="text-sm text-default-500">Select a dimension to filter</div>
+            )}
+          </div>
         </AccordionItem>
 
         {/* Usage */}
@@ -239,8 +330,8 @@ export default function TrendingFiltersSidebar({
           </div>
         </AccordionItem>
 
-        {/* Mount - align style with Type (full-width selectable rows) */}
-        <AccordionItem key="mount" aria-label="Mount" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Mount</span></div>}>
+        {/* Category (was Mount) - align style with Type (full-width selectable rows) */}
+        <AccordionItem key="mount" aria-label="Category" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Category</span></div>}>
           <ul className="space-y-2">
             {mountOptions.map((opt) => (
               <li key={opt.value}>

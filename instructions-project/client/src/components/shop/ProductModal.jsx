@@ -76,6 +76,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
     if (mediaIndex !== 1 || !activeProduct?.videoFile) return;
     // Prefer same-origin relative URL to leverage Vite proxy and avoid CORS
     const baseFromEnv = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
+    // Use relative path by default (empty string) for same-origin requests
     const apiBase = baseFromEnv || '';
     const srcUrl = `${apiBase}/api/media/${encodeURIComponent(activeProduct.videoFile)}`;
     let revokedUrl = null;
@@ -229,7 +230,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                             poster={activeProduct.images?.day}
                             className="w-full h-full object-contain bg-black"
                             onError={() => setVideoError(true)}
-                            src={videoSrc || `${((import.meta?.env?.VITE_API_BASE) || 'http://localhost:5000')}/api/media/${encodeURIComponent(activeProduct.videoFile)}`}
+                            src={videoSrc || `/api/media/${encodeURIComponent(activeProduct.videoFile)}`}
                           />
                         )}
                       </div>
