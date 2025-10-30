@@ -157,7 +157,7 @@ jobs:
           
           # 7. Reiniciar servidor Node.js via PM2
           echo "🔄 Reiniciando servidor Node.js..."
-          cd instructions-project/server
+          # Já estamos em instructions-project/server desde o passo anterior
           if command -v pm2 >/dev/null 2>&1; then
             pm2 restart instructions-server --update-env 2>/dev/null || pm2 start "node src/app.js" --name instructions-server --cwd . || true
             pm2 save 2>/dev/null || true
