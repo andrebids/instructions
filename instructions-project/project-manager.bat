@@ -136,6 +136,31 @@ echo [4/5] Iniciando servidor backend...
 start /min "Backend Server" cmd /k cd /d "%~dp0server" ^&^& npm run dev
 echo ✅ Servidor backend iniciado em http://localhost:5000
 echo.
+echo    Aguardando servidor estar pronto (5 segundos)...
+timeout /t 5 /nobreak >nul
+
+rem Verificar se o backend está realmente a correr
+echo    Verificando se backend está online...
+set "BACKEND_ONLINE=0"
+for /L %%i in (1,1,6) do (
+    if "%BACKEND_ONLINE%"=="0" (
+        curl -s -m 2 http://localhost:5000/health >nul 2>&1
+        if not errorlevel 1 (
+            set "BACKEND_ONLINE=1"
+            echo ✅ Backend está online e respondendo!
+            goto backend_checked
+        )
+        timeout /t 2 /nobreak >nul
+    )
+)
+
+:backend_checked
+if "%BACKEND_ONLINE%"=="0" (
+    echo ⚠️  AVISO: Backend pode não estar totalmente pronto
+    echo    Verifique a janela "Backend Server" para erros
+    echo    Erro comum: falta pacote 'sharp' - execute: cd server ^&^& npm install
+)
+echo.
 
 echo [5/5] Iniciando cliente frontend...
 start /min "Frontend Client" cmd /k cd /d "%~dp0client" ^&^& npm run dev
@@ -197,12 +222,20 @@ echo.
 echo ✅ Projeto iniciado com sucesso!
 echo.
 echo 📝 NOTA: Se aparecerem erros 500 (Internal Server Error) no frontend,
-echo    significa que as migrations não foram executadas corretamente.
-echo    Execute manualmente: cd server ^&^& npm run setup
+echo    verifique:
+echo    1. Backend está a correr (janela "Backend Server")
+echo    2. Se falta 'sharp': execute cd server ^&^& npm install
+echo    3. Se tabelas não existem: execute cd server ^&^& npm run setup
 echo.
-echo Aguardando 2 segundos antes de fechar...
-timeout /t 2 /nobreak >nul
-exit
+echo 📝 NOTA 2: Se aparecer "ECONNREFUSED" no frontend,
+echo    significa que o backend não está a correr.
+echo    Verifique a janela "Backend Server" para erros.
+echo.
+echo ========================================
+echo    Script concluído. Janela mantida aberta.
+echo ========================================
+echo.
+pause
 
 :stop
 cls
@@ -326,14 +359,53 @@ echo.
 
 echo [1/3] Verificando dependências do servidor...
 cd /d "%~dp0server"
+set "SERVER_NEED_INSTALL=0"
 if not exist "node_modules" (
     echo ⚠️  node_modules não encontrado no servidor. Instalando dependências...
-    npm install
+    set "SERVER_NEED_INSTALL=1"
+) else (
+    rem Verificar se dependências críticas estão instaladas
+    if not exist "node_modules\sharp" (
+        echo ⚠️  sharp não encontrado. Reinstalando dependências...
+        set "SERVER_NEED_INSTALL=1"
+    )
+    if not exist "node_modules\sequelize" (
+        echo ⚠️  sequelize não encontrado. Reinstalando dependências...
+        set "SERVER_NEED_INSTALL=1"
+    )
+    if not exist "node_modules\express" (
+        echo ⚠️  express não encontrado. Reinstalando dependências...
+        set "SERVER_NEED_INSTALL=1"
+    )
+    if not exist "node_modules\pg" (
+        echo ⚠️  pg não encontrado. Reinstalando dependências...
+        set "SERVER_NEED_INSTALL=1"
+    )
+)
+
+if "%SERVER_NEED_INSTALL%"=="1" (
+    echo 🔄 Instalando dependências do servidor...
+    if exist "package-lock.json" (
+        npm ci
+        if %errorlevel% neq 0 (
+            echo ⚠️  npm ci falhou, tentando npm install...
+            npm install
+        )
+    ) else (
+        npm install
+    )
     if %errorlevel% neq 0 (
         echo ❌ Erro ao instalar dependências do servidor
+        echo    -> Tente executar manualmente: cd server ^&^& npm install
         exit /b 1
     )
     echo ✅ Dependências do servidor instaladas com sucesso!
+    rem Verificar novamente após instalação
+    if not exist "node_modules\sharp" (
+        echo ❌ AVISO: sharp ainda não foi instalado após npm install
+        echo    -> Execute manualmente: cd server ^&^& npm install sharp
+        echo    -> O servidor pode não iniciar sem esta dependência!
+    )
 ) else (
     echo ✅ Dependências do servidor já instaladas
 )
