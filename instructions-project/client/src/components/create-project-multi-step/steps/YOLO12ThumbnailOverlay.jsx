@@ -31,19 +31,20 @@ export const YOLO12ThumbnailOverlay = ({ duration = 2500 }) => {
   }, [duration]);
 
   return (
-    <div className="absolute inset-0 z-30 pointer-events-none bg-black/40 backdrop-blur-[1px] rounded-lg flex flex-col items-center justify-center">
+    <div className="absolute inset-0 z-50 pointer-events-none bg-black/50 backdrop-blur-[2px] rounded-lg flex flex-col items-center justify-center" style={{ borderRadius: 'inherit' }}>
       {/* Efeito de scanlines sutis */}
       <div 
-        className="absolute inset-0 opacity-30"
+        className="absolute inset-0 opacity-40"
         style={{
           background: `repeating-linear-gradient(
             0deg,
             transparent,
             transparent 3px,
-            rgba(59, 130, 246, 0.1) 3px,
-            rgba(59, 130, 246, 0.1) 6px
+            rgba(59, 130, 246, 0.15) 3px,
+            rgba(59, 130, 246, 0.15) 6px
           )`,
-          animation: 'scanlineMove 1s linear infinite'
+          animation: 'scanlineMove 1s linear infinite',
+          borderRadius: 'inherit'
         }}
       />
       
@@ -51,7 +52,7 @@ export const YOLO12ThumbnailOverlay = ({ duration = 2500 }) => {
       <div className="relative z-10 flex flex-col items-center gap-2 px-2">
         {/* Ícone pequeno */}
         <div className="relative">
-          <div className="absolute inset-0 bg-blue-500 rounded-full blur-md opacity-50 animate-pulse" />
+          <div className="absolute inset-0 bg-blue-500 rounded-full blur-md opacity-60 animate-pulse" />
           <div className="relative bg-gradient-to-br from-blue-600 to-blue-800 rounded-full p-2">
             <Icon icon="lucide:scan" className="text-white text-sm" />
           </div>
@@ -64,7 +65,7 @@ export const YOLO12ThumbnailOverlay = ({ duration = 2500 }) => {
         </div>
         
         {/* Barra de progresso pequena */}
-        <div className="w-16 h-1 bg-black/30 rounded-full overflow-hidden">
+        <div className="w-16 h-1 bg-black/40 rounded-full overflow-hidden">
           <div 
             className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-100"
             style={{ width: progress + '%' }}

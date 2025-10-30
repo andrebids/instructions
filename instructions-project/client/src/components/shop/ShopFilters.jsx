@@ -7,7 +7,7 @@ export default function ShopFilters({ filters, onChange, query, onQueryChange })
   return (
     <div className="mb-4">
       <div className="mb-4">
-        <Input size="sm" placeholder="Buscar produtos" value={query || ""} onChange={(e)=>onQueryChange && onQueryChange(e.target.value)} />
+        <Input size="sm" placeholder="Buscar produtos" aria-label="Buscar produtos" value={query || ""} onChange={(e)=>onQueryChange && onQueryChange(e.target.value)} />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-content1/40 border border-divider rounded-lg p-4">
