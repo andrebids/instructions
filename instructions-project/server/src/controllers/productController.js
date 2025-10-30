@@ -14,15 +14,25 @@ export async function getAll(req, res) {
     var query = req.query;
     
     // Filtro por tags - apenas se não for string vazia
-    if (query.tags && query.tags.trim() !== '') {
-      var tagsArray = Array.isArray(query.tags) ? query.tags : [query.tags];
-      where.tags = {
-        [Op.overlap]: tagsArray,
-      };
+    if (query.tags) {
+      if (Array.isArray(query.tags)) {
+        var tagsArray = query.tags.filter(function(tag) {
+          return tag && String(tag).trim() !== '';
+        });
+        if (tagsArray.length > 0) {
+          where.tags = {
+            [Op.overlap]: tagsArray,
+          };
+        }
+      } else if (typeof query.tags === 'string' && query.tags.trim() !== '') {
+        where.tags = {
+          [Op.overlap]: [query.tags],
+        };
+      }
     }
     
     // Filtro por type - apenas se não for string vazia
-    if (query.type && query.type.trim() !== '') {
+    if (query.type && typeof query.type === 'string' && query.type.trim() !== '') {
       where.type = query.type;
     }
     
@@ -48,22 +58,22 @@ export async function getAll(req, res) {
     }
     
     // Filtro por location - apenas se não for string vazia
-    if (query.location && query.location.trim() !== '') {
+    if (query.location && typeof query.location === 'string' && query.location.trim() !== '') {
       where.location = query.location;
     }
     
     // Filtro por usage - apenas se não for string vazia
-    if (query.usage && query.usage.trim() !== '') {
+    if (query.usage && typeof query.usage === 'string' && query.usage.trim() !== '') {
       where.usage = query.usage;
     }
     
     // Filtro por mount - apenas se não for string vazia
-    if (query.mount && query.mount.trim() !== '') {
+    if (query.mount && typeof query.mount === 'string' && query.mount.trim() !== '') {
       where.mount = query.mount;
     }
     
     // Filtro por season - apenas se não for string vazia
-    if (query.season && query.season.trim() !== '') {
+    if (query.season && typeof query.season === 'string' && query.season.trim() !== '') {
       where.season = query.season;
     }
     
@@ -73,8 +83,11 @@ export async function getAll(req, res) {
     }
     
     // Filtro por releaseYear - apenas se não for string vazia
-    if (query.releaseYear && query.releaseYear.trim() !== '') {
-      where.releaseYear = parseInt(query.releaseYear);
+    if (query.releaseYear && typeof query.releaseYear === 'string' && query.releaseYear.trim() !== '') {
+      var year = parseInt(query.releaseYear);
+      if (!isNaN(year)) {
+        where.releaseYear = year;
+      }
     }
     
     // Filtro por isOnSale - apenas se for 'true' ou 'false' (não string vazia)
@@ -119,7 +132,12 @@ export async function getAll(req, res) {
       }
     }
     
-    res.json(products);
+    // Converter produtos para objetos simples para evitar problemas de serialização
+    var productsData = products.map(function(p) {
+      return p.get({ plain: true });
+    });
+    
+    res.json(productsData);
   } catch (error) {
     console.error('❌ [PRODUCTS API] Erro ao buscar produtos:', error);
     console.error('❌ [PRODUCTS API] Stack:', error.stack);
@@ -138,7 +156,12 @@ export async function getSourceImages(req, res) {
       order: [['name', 'ASC']],
     });
     
-    res.json(products);
+    // Converter produtos para objetos simples
+    var productsData = products.map(function(p) {
+      return p.get({ plain: true });
+    });
+    
+    res.json(productsData);
   } catch (error) {
     console.error('Erro ao buscar Source Images:', error);
     res.status(500).json({ error: error.message });
@@ -182,7 +205,12 @@ export async function search(req, res) {
       order: [['name', 'ASC']],
     });
     
-    res.json(products);
+    // Converter produtos para objetos simples
+    var productsData = products.map(function(p) {
+      return p.get({ plain: true });
+    });
+    
+    res.json(productsData);
   } catch (error) {
     console.error('Erro ao pesquisar produtos:', error);
     res.status(500).json({ error: error.message });
