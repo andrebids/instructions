@@ -92,6 +92,12 @@ export const projectsAPI = {
     const response = await api.patch(`/projects/${id}/favorite`);
     return response.data;
   },
+
+  // PATCH /api/projects/:id/canvas - Atualizar dados do canvas
+  updateCanvas: async (id, data) => {
+    const response = await api.patch(`/projects/${id}/canvas`, data);
+    return response.data;
+  },
 };
 
 // ===== DECORATIONS API =====
