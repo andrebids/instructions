@@ -1,9 +1,29 @@
 import { Project, ProjectElement, Decoration } from '../models/index.js';
+import sequelize from '../config/database.js';
+import { QueryTypes } from 'sequelize';
 
 // GET /api/projects - Listar todos os projetos
 export async function getAll(req, res) {
   try {
     console.log('📋 [PROJECTS API] GET /api/projects - Iniciando busca');
+    
+    // Verificar se a tabela existe primeiro
+    try {
+      var tableExists = await sequelize.query(
+        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'projects')",
+        { type: QueryTypes.SELECT }
+      );
+      if (!tableExists || !tableExists[0] || !tableExists[0].exists) {
+        console.error('❌ [PROJECTS API] Tabela "projects" não existe!');
+        return res.status(500).json({ 
+          error: 'Tabela projects não existe. Execute: npm run setup',
+          details: 'A tabela de projetos não foi criada. Execute o setup da base de dados.'
+        });
+      }
+    } catch (tableCheckError) {
+      console.error('❌ [PROJECTS API] Erro ao verificar tabela:', tableCheckError.message);
+    }
+    
     const { status, projectType, favorite } = req.query;
     const where = {};
     
@@ -19,10 +39,12 @@ export async function getAll(req, res) {
         {
           model: ProjectElement,
           as: 'elements',
+          required: false,
           include: [
             {
               model: Decoration,
               as: 'decoration',
+              required: false,
             },
           ],
         },
@@ -34,8 +56,23 @@ export async function getAll(req, res) {
     res.json(projects);
   } catch (error) {
     console.error('❌ [PROJECTS API] Erro ao buscar projetos:', error);
+    console.error('❌ [PROJECTS API] Nome do erro:', error.name);
+    console.error('❌ [PROJECTS API] Mensagem:', error.message);
     console.error('❌ [PROJECTS API] Stack:', error.stack);
-    res.status(500).json({ error: error.message });
+    
+    // Mensagem mais detalhada para o cliente
+    var errorMessage = error.message;
+    if (error.message && error.message.indexOf('does not exist') !== -1) {
+      errorMessage = 'Tabela não existe. Execute: npm run setup';
+    } else if (error.message && error.message.indexOf('relation') !== -1) {
+      errorMessage = 'Tabela não encontrada. Execute o setup da base de dados.';
+    }
+    
+    res.status(500).json({ 
+      error: errorMessage,
+      details: error.message,
+      hint: 'Verifique se executou: npm run setup'
+    });
   }
 }
 
@@ -184,6 +221,24 @@ export async function updateCanvas(req, res) {
 export async function getStats(req, res) {
   try {
     console.log('📊 [PROJECTS API] GET /api/projects/stats - Iniciando busca');
+    
+    // Verificar se a tabela existe primeiro
+    try {
+      var tableExists = await sequelize.query(
+        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'projects')",
+        { type: QueryTypes.SELECT }
+      );
+      if (!tableExists || !tableExists[0] || !tableExists[0].exists) {
+        console.error('❌ [PROJECTS API] Tabela "projects" não existe!');
+        return res.status(500).json({ 
+          error: 'Tabela projects não existe. Execute: npm run setup',
+          details: 'A tabela de projetos não foi criada. Execute o setup da base de dados.'
+        });
+      }
+    } catch (tableCheckError) {
+      console.error('❌ [PROJECTS API] Erro ao verificar tabela:', tableCheckError.message);
+    }
+    
     const total = await Project.count();
     const inProgress = await Project.count({ where: { status: 'in_progress' } });
     const finished = await Project.count({ where: { status: 'finished' } });
@@ -204,8 +259,23 @@ export async function getStats(req, res) {
     res.json(stats);
   } catch (error) {
     console.error('❌ [PROJECTS API] Erro ao buscar estatísticas:', error);
+    console.error('❌ [PROJECTS API] Nome do erro:', error.name);
+    console.error('❌ [PROJECTS API] Mensagem:', error.message);
     console.error('❌ [PROJECTS API] Stack:', error.stack);
-    res.status(500).json({ error: error.message });
+    
+    // Mensagem mais detalhada para o cliente
+    var errorMessage = error.message;
+    if (error.message && error.message.indexOf('does not exist') !== -1) {
+      errorMessage = 'Tabela não existe. Execute: npm run setup';
+    } else if (error.message && error.message.indexOf('relation') !== -1) {
+      errorMessage = 'Tabela não encontrada. Execute o setup da base de dados.';
+    }
+    
+    res.status(500).json({ 
+      error: errorMessage,
+      details: error.message,
+      hint: 'Verifique se executou: npm run setup'
+    });
   }
 }
 
