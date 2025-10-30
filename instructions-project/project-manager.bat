@@ -41,16 +41,20 @@ if %errorlevel% neq 0 (
     goto menu
 )
 
-rem Verificar e instalar dependências
+rem Garantir que estamos na raiz do projeto antes de comandos subsequentes
+cd /d "%~dp0"
+
+rem Verificar e instalar dependências ANTES de iniciar servidores
 call :check_and_install_dependencies
 if %errorlevel% neq 0 (
     echo ❌ Erro ao instalar dependências
+    echo.
+    echo 📋 Tente executar manualmente:
+    echo    cd server ^&^& npm install
+    echo    cd client ^&^& npm install
     pause
     goto menu
 )
-
-rem Garantir que estamos na raiz do projeto antes de comandos subsequentes
-cd /d "%~dp0"
 
 echo [1/4] Iniciando base de dados PostgreSQL...
 if "%DOCKER_AVAILABLE%"=="1" (
@@ -86,7 +90,41 @@ echo.
 
 echo [4/5] Iniciando servidor backend...
 start /min "Backend Server" cmd /k cd /d "%~dp0server" ^&^& npm run dev
-echo ✅ Servidor backend iniciado em http://localhost:5000
+echo ✅ Processo do servidor backend iniciado
+echo.
+echo    Aguardando backend estar online...
+set "BACKEND_READY=0"
+for /l %%i in (1,1,40) do (
+    timeout /t 2 /nobreak >nul
+    curl -s http://localhost:5000/health >nul 2>&1
+    if not errorlevel 1 (
+        set "BACKEND_READY=1"
+        echo ✅ Backend está online e pronto! (http://localhost:5000)
+        goto backend_ready
+    )
+    if %%i LEQ 10 (
+        echo    Aguardando... (%%i/40)
+    ) else if %%i EQU 20 (
+        echo    ⏳ Backend ainda a iniciar... (%%i/40)
+    ) else if %%i EQU 30 (
+        echo    ⏳ Aguardando backend... (%%i/40)
+    )
+)
+if "%BACKEND_READY%"=="0" (
+    echo.
+    echo ⚠️  ATENÇÃO: Backend não está a responder após 80 segundos!
+    echo.
+    echo 📋 Possíveis problemas:
+    echo    1. Verifique a janela "Backend Server" para erros
+    echo    2. Verifique se o ficheiro .env existe em server/
+    echo    3. Verifique se a base de dados está a correr
+    echo    4. Verifique se a porta 5000 está livre
+    echo.
+    echo    Continuando mesmo assim - o frontend pode ter erros de conexão.
+    echo    Podes executar manualmente: cd server ^&^& npm run dev
+    echo.
+)
+:backend_ready
 echo.
 
 echo [5/5] Iniciando cliente frontend...
@@ -261,11 +299,37 @@ echo.
 
 echo [1/3] Verificando dependências do servidor...
 cd /d "%~dp0server"
+set "NEED_INSTALL_SERVER=0"
+
 if not exist "node_modules" (
     echo ⚠️  node_modules não encontrado no servidor. Instalando dependências...
+    set "NEED_INSTALL_SERVER=1"
+) else (
+    rem Verificar dependências críticas do servidor
+    if not exist "node_modules\sharp" (
+        echo ⚠️  sharp não encontrado. Reinstalando dependências...
+        set "NEED_INSTALL_SERVER=1"
+    )
+    if not exist "node_modules\sequelize" (
+        echo ⚠️  sequelize não encontrado. Reinstalando dependências...
+        set "NEED_INSTALL_SERVER=1"
+    )
+    if not exist "node_modules\express" (
+        echo ⚠️  express não encontrado. Reinstalando dependências...
+        set "NEED_INSTALL_SERVER=1"
+    )
+    if not exist "node_modules\pg" (
+        echo ⚠️  pg não encontrado. Reinstalando dependências...
+        set "NEED_INSTALL_SERVER=1"
+    )
+)
+
+if "%NEED_INSTALL_SERVER%"=="1" (
+    echo 🔄 Instalando dependências do servidor...
     npm install
     if %errorlevel% neq 0 (
         echo ❌ Erro ao instalar dependências do servidor
+        echo    Tente executar manualmente: cd server ^&^& npm install
         exit /b 1
     )
     echo ✅ Dependências do servidor instaladas com sucesso!
