@@ -143,6 +143,38 @@ export async function toggleFavorite(req, res) {
   }
 }
 
+// PATCH /api/projects/:id/canvas - Atualizar dados do canvas (zonas, decorações, etc)
+export async function updateCanvas(req, res) {
+  try {
+    const project = await Project.findByPk(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    var updateData = {};
+    if (req.body.snapZonesByImage !== undefined) {
+      updateData.snapZonesByImage = req.body.snapZonesByImage;
+    }
+    if (req.body.canvasDecorations !== undefined) {
+      updateData.canvasDecorations = req.body.canvasDecorations;
+    }
+    if (req.body.canvasImages !== undefined) {
+      updateData.canvasImages = req.body.canvasImages;
+    }
+    if (req.body.decorationsByImage !== undefined) {
+      updateData.decorationsByImage = req.body.decorationsByImage;
+    }
+    
+    await project.update(updateData);
+    console.log('✅ Canvas atualizado para projeto:', req.params.id, updateData);
+    res.json(project);
+  } catch (error) {
+    console.error('Erro ao atualizar canvas:', error);
+    res.status(400).json({ error: error.message });
+  }
+}
+
 // GET /api/projects/stats - Estatísticas dos projetos
 export async function getStats(req, res) {
   try {

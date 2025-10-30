@@ -24,7 +24,7 @@ export default function ProjectAddPieceModal({ isOpen, onOpenChange, project }) 
           <>
             <ModalHeader className="flex items-center justify-between">
               <div>Adicionar peça a {project?.name}</div>
-              <div className="w-64"><Input size="sm" placeholder="Pesquisar produto" value={query} onChange={(e)=>setQuery(e.target.value)} /></div>
+              <div className="w-64"><Input size="sm" placeholder="Pesquisar produto" aria-label="Pesquisar produto" value={query} onChange={(e)=>setQuery(e.target.value)} /></div>
             </ModalHeader>
             <ModalBody>
               {error && (

@@ -86,7 +86,7 @@ export default function Favorites() {
         <div className="flex items-center gap-2">
           {creating ? (
             <div className="flex items-center gap-2">
-              <Input size="sm" placeholder="Folder name" value={newName} onValueChange={setNewName} autoFocus />
+              <Input size="sm" placeholder="Folder name" aria-label="Folder name" value={newName} onValueChange={setNewName} autoFocus />
               <Button size="sm" color="primary" onPress={handleCreate}>Create</Button>
               <Button size="sm" variant="light" onPress={() => { setCreating(false); setNewName(''); }}>Cancel</Button>
             </div>
@@ -112,12 +112,12 @@ export default function Favorites() {
               <button type="button" className="flex-1 text-left" onClick={()=> setSelectedFolderId(f.id)}>
                 {f.name} <span className="text-default-500">({f.productIds?.length || 0})</span>
               </button>
-              <button className="text-default-400 hover:text-default-600" title="Rename" onClick={()=>{
+              <button className="text-default-400 hover:text-default-600" title="Rename" aria-label="Rename folder" onClick={()=>{
                 setRenameModal({ open: true, folder: f });
               }}>
                 <Icon icon="lucide:edit-2" />
               </button>
-              <button className="text-default-400 hover:text-danger" title="Delete" onClick={()=>{ setDeleteModal({ open: true, folder: f }); }}>
+              <button className="text-default-400 hover:text-danger" title="Delete" aria-label="Delete folder" onClick={()=>{ setDeleteModal({ open: true, folder: f }); }}>
                 <Icon icon="lucide:trash-2" />
               </button>
             </div>
@@ -133,6 +133,7 @@ export default function Favorites() {
                 value={query}
                 onValueChange={setQuery}
                 placeholder="Search favorites..."
+                aria-label="Search favorites"
                 isClearable
                 startContent={<Icon icon="lucide:search" className="text-default-400" />}
                 size="sm"
