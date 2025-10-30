@@ -252,6 +252,18 @@ export const productsAPI = {
     return response.data;
   },
 
+  // PATCH /api/products/:id/archive
+  archive: async (id) => {
+    const response = await api.patch(`/products/${id}/archive`);
+    return response.data;
+  },
+
+  // PATCH /api/products/:id/unarchive
+  unarchive: async (id) => {
+    const response = await api.patch(`/products/${id}/unarchive`);
+    return response.data;
+  },
+
   // POST /api/upload/product-images
   uploadImages: async (formData) => {
     const response = await api.post('/upload/product-images', formData, {
