@@ -25,7 +25,7 @@ export const products = [
     name: "IPL317R",
     price: 1299,
     stock: 32,
-    videoFile: "IPL317R.mp4",
+    videoFile: "IPL317R.webm",
     images: {
       day: img("/SHOP/TRENDING/DAY/IPL317R_DAY.png", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
       night: img("/SHOP/TRENDING/NIGHT/IPL317R_NIGHT.png", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
@@ -130,7 +130,7 @@ export const products = [
     name: "GX350LW",
     price: 899,
     stock: 18,
-    videoFile: "GX350LW.mp4",
+    videoFile: "GX350LW.webm",
     images: {
       day: img("/SHOP/TRENDING/DAY/GX350LW.png", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
       night: img("/SHOP/TRENDING/NIGHT/GX350LW_NIGHT.png", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
@@ -159,7 +159,7 @@ export const products = [
     name: "GX349L",
     price: 899,
     stock: 21,
-    videoFile: "GX349L.mp4",
+    videoFile: "GX349L.webm",
     images: {
       day: img("/SHOP/TRENDING/DAY/GX349L_DAY.png", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
       night: img("/SHOP/TRENDING/NIGHT/GX349L_NIGHT.png", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
@@ -188,7 +188,7 @@ export const products = [
     name: "IPL337W",
     price: 1299,
     stock: 28,
-    videoFile: "IPL337W.mp4",
+    videoFile: "IPL337W.webm",
     images: {
       day: img("/SHOP/TRENDING/DAY/IPL337W.png", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
       night: img("/SHOP/TRENDING/NIGHT/IPL337W.png", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
@@ -217,7 +217,7 @@ export const products = [
     name: "IPL337",
     price: 1299,
     stock: 31,
-    videoFile: "IPL337.mp4",
+    videoFile: "IPL337.webm",
     images: {
       day: img("/SHOP/TRENDING/DAY/IPL337.png", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
       night: img("/SHOP/TRENDING/NIGHT/IPL337.png", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
