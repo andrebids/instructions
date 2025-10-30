@@ -95,7 +95,7 @@ input[type="number"] {
 }
 
 .auth-cta li .title {
-  color: #fff;
+  color: #000;
   font-size: 1.1em;
   letter-spacing: 0.1em;
   text-transform: uppercase;

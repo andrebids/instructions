@@ -60,7 +60,7 @@ export default function Shop() {
             />
             <div className={`absolute inset-0 z-10 pointer-events-none transition-opacity duration-300 ${cfg.id === 'summer' ? 'bg-gradient-to-b from-transparent via-black/30 to-black/50 dark:via-black/60 dark:to-black/80 opacity-100' : 'bg-black/35 dark:bg-black/60 opacity-100 group-hover:opacity-70'}`} />
             <div className="absolute inset-0 z-20 flex items-center justify-center">
-              <div className="text-white text-4xl md:text-5xl font-bold tracking-tight drop-shadow-lg uppercase text-center">
+              <div className="text-white text-4xl md:text-5xl font-bold tracking-tight uppercase text-center">
                 {cfg.title}
               </div>
             </div>
@@ -80,7 +80,7 @@ export default function Shop() {
             <Image removeWrapper src={src} alt={cfg.title} onError={() => setSrc(fallbackImages[cfg.id])} className="z-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
             <div className="absolute inset-0 z-10 bg-black/35 dark:bg-black/60 opacity-100 transition-opacity duration-300 group-hover:opacity-70 pointer-events-none" />
             <div className="absolute inset-0 z-20 p-6 flex items-center justify-center">
-              <div className="text-white text-7xl md:text-8xl font-bold tracking-tight drop-shadow-lg uppercase text-center">
+              <div className="text-white text-7xl md:text-8xl font-bold tracking-tight uppercase text-center">
                 {cfg.title}
               </div>
             </div>
