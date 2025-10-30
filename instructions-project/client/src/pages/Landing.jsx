@@ -24,9 +24,8 @@ export default function Landing() {
       if (word2Ref.current) {
         word2Ref.current.style.transform = `translate3d(${moveX / 2}px, ${moveY}px, 0)`
       }
-      if (sectionRef.current) {
-        sectionRef.current.style.textShadow = `${moveX}px ${-moveY}px rgba(0,0,0,0.1)`
-      }
+      // Removed dynamic text shadow for headline/subtext
+      if (sectionRef.current) sectionRef.current.style.textShadow = 'none'
     })
   }
 
@@ -53,13 +52,13 @@ export default function Landing() {
           autoRampDuration={0.6}
         />
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-8 px-8">
-        <section ref={sectionRef} onMouseMove={onMouseMove} className="select-none text-center">
+        <section ref={sectionRef} className="select-none text-center">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
             Welcome to <span ref={word1Ref} className="text-primary">TheCore</span>.
             <br />
             Let’s <span ref={word2Ref} className="text-primary">create</span> something great.
           </h1>
-          <ShinyText text="Sign in to access your dashboard." speed={4} className="mt-3 text-base md:text-lg" />
+          <p className="mt-3 text-base md:text-lg text-black">Sign in to access your dashboard.</p>
         </section>
 
         <div className="auth-cta">
