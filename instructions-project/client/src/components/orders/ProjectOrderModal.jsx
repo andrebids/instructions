@@ -148,6 +148,7 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
                               value={String(it.qty)}
                               className="w-16"
                               isDisabled={isOrdered}
+                              aria-label="Item quantity"
                               onChange={(e)=> {
                                 const desired = Number(e.target.value);
                                 const clamped = Number.isFinite(desired) ? Math.max(0, Math.min(desired, maxByAll)) : 0;
@@ -210,7 +211,7 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
           <>
             <ModalHeader>Edit budget</ModalHeader>
             <ModalBody>
-              <Input type="number" value={String(budgetInput)} onChange={(e)=> setBudgetInput(Number(e.target.value))} />
+              <Input type="number" aria-label="Project budget" value={String(budgetInput)} onChange={(e)=> setBudgetInput(Number(e.target.value))} />
             </ModalBody>
             <ModalFooter>
               <Button color="primary" onPress={()=> { setProjectBudget(project.id, budgetInput); close(); }}>Save</Button>

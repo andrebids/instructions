@@ -165,7 +165,7 @@ export default function Projects() {
                   <div className="text-sm text-default-500">Project</div>
                   <div className="font-medium">{editBudgetProject?.name}</div>
                   <div className="text-sm text-default-500">New budget</div>
-                  <Input type="number" value={String(budgetInput)} onChange={(e)=> setBudgetInput(Number(e.target.value))} />
+                  <Input type="number" aria-label="New budget" value={String(budgetInput)} onChange={(e)=> setBudgetInput(Number(e.target.value))} />
                 </div>
               </ModalBody>
               <ModalFooter>
