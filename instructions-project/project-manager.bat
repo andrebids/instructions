@@ -31,6 +31,9 @@ echo    INICIANDO PROJETO THECORE
 echo ========================================
 echo.
 
+rem Parar rapidamente processos/portas antes de iniciar
+call :stop_quick
+
 rem Verificar pré-requisitos (Node, npm, Docker/Compose)
 call :ensure_prereqs
 if %errorlevel% neq 0 (
@@ -261,22 +264,99 @@ echo.
 
 echo [2/3] Verificando dependências do cliente...
 cd /d "%~dp0client"
+set "NEED_INSTALL=0"
 if not exist "node_modules" (
     echo ⚠️  node_modules não encontrado no cliente. Instalando dependências...
-    npm install
+    set "NEED_INSTALL=1"
+) else (
+    rem Verificar se dependências críticas estão instaladas
+    if not exist "node_modules\@clerk\clerk-react" (
+        echo ⚠️  @clerk/clerk-react não encontrado. Reinstalando dependências...
+        set "NEED_INSTALL=1"
+    )
+    if not exist "node_modules\three" (
+        echo ⚠️  three não encontrado. Reinstalando dependências...
+        set "NEED_INSTALL=1"
+    )
+    if not exist "node_modules\react" (
+        echo ⚠️  react não encontrado. Reinstalando dependências...
+        set "NEED_INSTALL=1"
+    )
+    if not exist "node_modules\vite" (
+        echo ⚠️  vite não encontrado. Reinstalando dependências...
+        set "NEED_INSTALL=1"
+    )
+    rem Verificar também outras dependências críticas do projeto
+    if not exist "node_modules\react-router-dom" (
+        echo ⚠️  react-router-dom não encontrado. Reinstalando dependências...
+        set "NEED_INSTALL=1"
+    )
+    if not exist "node_modules\@heroui\react" (
+        echo ⚠️  @heroui/react não encontrado. Reinstalando dependências...
+        set "NEED_INSTALL=1"
+    )
+)
+
+if "%NEED_INSTALL%"=="1" (
+    if exist "package-lock.json" (
+        echo 🔄 Instalando dependências do cliente com npm ci...
+        npm ci
+        if %errorlevel% neq 0 (
+            echo ⚠️  npm ci falhou, tentando npm install...
+            npm install
+        )
+    ) else (
+        echo 🔄 Instalando dependências do cliente com npm install...
+        npm install
+    )
     if %errorlevel% neq 0 (
         echo ❌ Erro ao instalar dependências do cliente
+        echo    -> Tente executar manualmente: cd client ^&^& npm install
         exit /b 1
     )
     echo ✅ Dependências do cliente instaladas com sucesso!
+    rem Verificar novamente após instalação
+    if not exist "node_modules\@clerk\clerk-react" (
+        echo ❌ AVISO: @clerk/clerk-react ainda não foi instalado após npm install
+        echo    -> Execute manualmente: cd client ^&^& npm install @clerk/clerk-react
+    )
+    if not exist "node_modules\three" (
+        echo ❌ AVISO: three ainda não foi instalado após npm install
+        echo    -> Execute manualmente: cd client ^&^& npm install three
+    )
 ) else (
     echo ✅ Dependências do cliente já instaladas
 )
 echo.
 
+ rem Aviso de variável Vite Clerk
+ if not exist ".env" (
+     echo ⚠️  Arquivo .env nao encontrado em client. Defina VITE_CLERK_PUBLISHABLE_KEY
+ ) else (
+     findstr /B /C:"VITE_CLERK_PUBLISHABLE_KEY=" ".env" >nul
+     if errorlevel 1 (
+         echo ⚠️  VITE_CLERK_PUBLISHABLE_KEY nao definida em client\.env
+     ) else (
+         echo ✅ VITE_CLERK_PUBLISHABLE_KEY detectada
+     )
+ )
+
 echo [3/3] Verificação de dependências concluída!
 echo ✅ Todas as dependências estão prontas
 echo.
+exit /b 0
+
+rem =====================
+rem Paragem rápida (silenciosa) para reinício
+rem =====================
+
+:stop_quick
+call :detect_docker >nul 2>&1
+if "%DOCKER_AVAILABLE%"=="1" (
+    %COMPOSE_CMD% -f "%~dp0docker-compose.dev.yml" down >nul 2>&1
+)
+taskkill /f /im node.exe >nul 2>&1
+taskkill /f /im nodemon.exe >nul 2>&1
 exit /b 0
 
 rem =====================
