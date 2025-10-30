@@ -3,12 +3,15 @@ import { Project, ProjectElement, Decoration } from '../models/index.js';
 // GET /api/projects - Listar todos os projetos
 export async function getAll(req, res) {
   try {
+    console.log('📋 [PROJECTS API] GET /api/projects - Iniciando busca');
     const { status, projectType, favorite } = req.query;
     const where = {};
     
     if (status) where.status = status;
     if (projectType) where.projectType = projectType;
     if (favorite) where.isFavorite = favorite === 'true';
+    
+    console.log('📋 [PROJECTS API] Where clause:', JSON.stringify(where));
     
     const projects = await Project.findAll({
       where,
@@ -27,9 +30,11 @@ export async function getAll(req, res) {
       order: [['createdAt', 'DESC']],
     });
     
+    console.log('📋 [PROJECTS API] Projetos encontrados:', projects.length);
     res.json(projects);
   } catch (error) {
-    console.error('Erro ao buscar projetos:', error);
+    console.error('❌ [PROJECTS API] Erro ao buscar projetos:', error);
+    console.error('❌ [PROJECTS API] Stack:', error.stack);
     res.status(500).json({ error: error.message });
   }
 }
@@ -178,6 +183,7 @@ export async function updateCanvas(req, res) {
 // GET /api/projects/stats - Estatísticas dos projetos
 export async function getStats(req, res) {
   try {
+    console.log('📊 [PROJECTS API] GET /api/projects/stats - Iniciando busca');
     const total = await Project.count();
     const inProgress = await Project.count({ where: { status: 'in_progress' } });
     const finished = await Project.count({ where: { status: 'finished' } });
@@ -185,16 +191,20 @@ export async function getStats(req, res) {
     const cancelled = await Project.count({ where: { status: 'cancelled' } });
     const inQueue = await Project.count({ where: { status: 'in_queue' } });
     
-    res.json({
+    const stats = {
       total,
       inProgress,
       finished,
       approved,
       cancelled,
       inQueue,
-    });
+    };
+    
+    console.log('📊 [PROJECTS API] Stats:', stats);
+    res.json(stats);
   } catch (error) {
-    console.error('Erro ao buscar estatísticas:', error);
+    console.error('❌ [PROJECTS API] Erro ao buscar estatísticas:', error);
+    console.error('❌ [PROJECTS API] Stack:', error.stack);
     res.status(500).json({ error: error.message });
   }
 }

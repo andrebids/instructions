@@ -127,6 +127,142 @@ export const decorationsAPI = {
   },
 };
 
+// ===== PRODUCTS API =====
+export const productsAPI = {
+  // GET /api/products
+  getAll: async (params = {}) => {
+    console.log('🌐 [API Client] productsAPI.getAll chamado com params:', params);
+    try {
+      const response = await api.get('/products', { params });
+      console.log('🌐 [API Client] Response recebida:', {
+        status: response.status,
+        dataLength: Array.isArray(response.data) ? response.data.length : 'not array',
+        firstItem: Array.isArray(response.data) && response.data.length > 0 ? response.data[0] : null
+      });
+      return response.data;
+    } catch (error) {
+      console.error('❌ [API Client] Erro ao chamar productsAPI.getAll:', error);
+      console.error('❌ [API Client] Erro detalhado:', {
+        message: error.message,
+        response: error.response,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      throw error;
+    }
+  },
+
+  // GET /api/products/:id
+  getById: async (id) => {
+    const response = await api.get(`/products/${id}`);
+    return response.data;
+  },
+
+  // GET /api/products/source-images
+  getSourceImages: async () => {
+    const response = await api.get('/products/source-images');
+    return response.data;
+  },
+
+  // GET /api/products/search?q=query
+  search: async (query) => {
+    const response = await api.get('/products/search', { params: { q: query } });
+    return response.data;
+  },
+
+  // POST /api/products
+  create: async (data) => {
+    var formData = new FormData();
+    
+    // Adicionar campos de texto
+    for (var key in data) {
+      if (data.hasOwnProperty(key)) {
+        if (key === 'dayImage' || key === 'nightImage' || key === 'animation' || key === 'thumbnail' || key === 'colorImages') {
+          // Ficheiros serão adicionados separadamente
+          continue;
+        }
+        if (typeof data[key] === 'object' && data[key] !== null) {
+          formData.append(key, JSON.stringify(data[key]));
+        } else {
+          formData.append(key, data[key]);
+        }
+      }
+    }
+    
+    // Adicionar ficheiros se existirem
+    if (data.dayImage) formData.append('dayImage', data.dayImage);
+    if (data.nightImage) formData.append('nightImage', data.nightImage);
+    if (data.animation) formData.append('animation', data.animation);
+    if (data.thumbnail) formData.append('thumbnail', data.thumbnail);
+    if (data.colorImages && Array.isArray(data.colorImages)) {
+      for (var i = 0; i < data.colorImages.length; i++) {
+        formData.append('colorImages', data.colorImages[i]);
+      }
+    }
+    
+    const response = await api.post('/products', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // PUT /api/products/:id
+  update: async (id, data) => {
+    var formData = new FormData();
+    
+    // Adicionar campos de texto
+    for (var key in data) {
+      if (data.hasOwnProperty(key)) {
+        if (key === 'dayImage' || key === 'nightImage' || key === 'animation' || key === 'thumbnail' || key === 'colorImages') {
+          // Ficheiros serão adicionados separadamente
+          continue;
+        }
+        if (typeof data[key] === 'object' && data[key] !== null) {
+          formData.append(key, JSON.stringify(data[key]));
+        } else {
+          formData.append(key, data[key]);
+        }
+      }
+    }
+    
+    // Adicionar ficheiros se existirem
+    if (data.dayImage) formData.append('dayImage', data.dayImage);
+    if (data.nightImage) formData.append('nightImage', data.nightImage);
+    if (data.animation) formData.append('animation', data.animation);
+    if (data.thumbnail) formData.append('thumbnail', data.thumbnail);
+    if (data.colorImages && Array.isArray(data.colorImages)) {
+      for (var i = 0; i < data.colorImages.length; i++) {
+        formData.append('colorImages', data.colorImages[i]);
+      }
+    }
+    
+    const response = await api.put(`/products/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // DELETE /api/products/:id
+  delete: async (id) => {
+    const response = await api.delete(`/products/${id}`);
+    return response.data;
+  },
+
+  // POST /api/upload/product-images
+  uploadImages: async (formData) => {
+    const response = await api.post('/upload/product-images', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+};
+
 // Health check
 export const healthCheck = async () => {
   try {

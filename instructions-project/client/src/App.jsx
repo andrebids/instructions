@@ -9,6 +9,7 @@ import ShopCategory from "./pages/ShopCategory";
 import Projects from "./pages/Projects";
 import Favorites from "./pages/Favorites";
 import Landing from "./pages/Landing";
+import AdminProducts from "./pages/AdminProducts";
 import { SignedIn, SignedOut, SignIn, SignUp } from "@clerk/clerk-react";
 
 export default function App() {
@@ -42,6 +43,7 @@ export default function App() {
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/orders" element={<Projects />} />
+              <Route path="/admin/products" element={<AdminProducts />} />
             </Routes>
           </main>
         </div>

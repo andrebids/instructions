@@ -1,6 +1,7 @@
 import Project from './Project.js';
 import Decoration from './Decoration.js';
 import ProjectElement from './ProjectElement.js';
+import Product from './Product.js';
 
 // Definir associações entre modelos
 Project.hasMany(ProjectElement, {
@@ -28,5 +29,6 @@ export {
   Project,
   Decoration,
   ProjectElement,
+  Product,
 };
 

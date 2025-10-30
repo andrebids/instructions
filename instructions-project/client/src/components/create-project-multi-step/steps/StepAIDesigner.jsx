@@ -8,6 +8,7 @@ import { NightThumb } from '../../NightThumb';
 import { YOLO12ThumbnailOverlay } from './YOLO12ThumbnailOverlay';
 import { UnifiedSnapZonesPanel } from './UnifiedSnapZonesPanel';
 import { projectsAPI } from '../../../services/api';
+import useSourceImages from '../hooks/useSourceImages';
 
 // Componente para o Modal de Upload
 const UploadModal = ({ onUploadComplete }) => {
@@ -993,8 +994,11 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   const [isEditingZones, setIsEditingZones] = useState(false); // Modo de edição visual
   const [tempZones, setTempZones] = useState([]); // Zonas temporárias sendo criadas no modo edição
   
-  // Imagens carregadas (simuladas) - dados de origem
-  const loadedImages = [
+  // Carregar Source Images da API usando hook
+  var { sourceImages, loading: sourceImagesLoading, error: sourceImagesError } = useSourceImages();
+  
+  // Fallback para imagens hardcoded caso API não retorne dados
+  var loadedImages = sourceImages && sourceImages.length > 0 ? sourceImages : [
     { 
       id: 'source-img-1', 
       name: 'source 1.jpeg', 
