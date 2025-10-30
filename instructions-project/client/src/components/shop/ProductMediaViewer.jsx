@@ -25,7 +25,9 @@ export default function ProductMediaViewer({ product, initialMode = "night", cla
 
   React.useEffect(() => {
     if (mediaIndex !== 1 || !product?.videoFile) return;
-    const apiBase = (import.meta?.env?.VITE_API_BASE) || 'http://localhost:5000';
+    // Use relative path by default for same-origin requests
+    const baseFromEnv = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
+    const apiBase = baseFromEnv || '';
     const srcUrl = `${apiBase}/api/media/${encodeURIComponent(product.videoFile)}`;
     let revokedUrl = null;
     const controller = new AbortController();
@@ -115,7 +117,7 @@ export default function ProductMediaViewer({ product, initialMode = "night", cla
                 poster={product.images?.day}
                 className="w-full h-full object-contain bg-black"
                 onError={() => setVideoError(true)}
-                src={videoSrc || `${((import.meta?.env?.VITE_API_BASE) || 'http://localhost:5000')}/api/media/${encodeURIComponent(product.videoFile)}`}
+                src={videoSrc || `/api/media/${encodeURIComponent(product.videoFile)}`}
               />
             )}
           </div>
