@@ -135,6 +135,41 @@ npm run dev
 2. Verificar credenciais no `.env`
 3. Verificar se a base de dados existe
 
+### Erro `Cannot find package 'sharp'` ou outras dependências
+
+Se vês erros como `Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'sharp'`:
+
+**Causa:** As dependências não foram instaladas completamente após `git pull`.
+
+**Soluções:**
+
+1. **Usar o project-manager.bat (Recomendado):**
+   - O script agora verifica automaticamente se `sharp` está instalado usando `npm list`
+   - Se faltar, instala automaticamente antes de iniciar o servidor
+   - Executa: `project-manager.bat` e escolhe opção 1 (INICIAR PROJETO)
+
+2. **Instalar dependências manualmente:**
+   ```bash
+   cd instructions-project/server
+   npm install
+   ```
+
+3. **Verificar se sharp está instalado:**
+   ```bash
+   cd instructions-project/server
+   npm list sharp
+   ```
+   Se não estiver instalado, aparecerá um erro
+
+4. **Limpar e reinstalar (se necessário):**
+   ```bash
+   cd instructions-project/server
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+
+**Nota:** O `sharp` foi adicionado recentemente ao `package.json`. Se fizeste `git pull` antes de executar `npm install`, o `sharp` não estará instalado.
+
 ### Erro de migrations
 
 Se as migrations falharem, podes executá-las manualmente:
