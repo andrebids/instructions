@@ -4,32 +4,10 @@ import { ArrowRightOnRectangleIcon, UserPlusIcon } from '@heroicons/react/24/out
 import LiquidEther from '../components/LiquidEther'
 import GlassSurface from '../components/GlassSurface'
 import ShinyText from '../components/ShinyText'
+import TextType from '../components/TextType'
 
 export default function Landing() {
   const sectionRef = React.useRef(null)
-  const word1Ref = React.useRef(null)
-  const word2Ref = React.useRef(null)
-  const rafRef = React.useRef(null)
-
-  const onMouseMove = (e) => {
-    const x = e.clientX
-    const y = e.clientY
-    if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    rafRef.current = requestAnimationFrame(() => {
-      const moveX = x / -100
-      const moveY = y / -120
-      if (word1Ref.current) {
-        word1Ref.current.style.transform = `translate3d(${moveX / 2}px, ${moveY}px, 0)`
-      }
-      if (word2Ref.current) {
-        word2Ref.current.style.transform = `translate3d(${moveX / 2}px, ${moveY}px, 0)`
-      }
-      // Removed dynamic text shadow for headline/subtext
-      if (sectionRef.current) sectionRef.current.style.textShadow = 'none'
-    })
-  }
-
-  React.useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }, [])
 
   return (
     <main className="flex flex-1 items-center justify-center p-0">
@@ -54,11 +32,55 @@ export default function Landing() {
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-8 px-8">
         <section ref={sectionRef} className="select-none text-center">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-            Welcome to <span ref={word1Ref} className="text-primary">TheCore</span>.
+            <TextType
+              as="span"
+              text={["Welcome to "]}
+              typingSpeed={80}
+              loop={false}
+              showCursor={false}
+              startOnVisible
+            />
+            <TextType
+              as="span"
+              className="text-primary"
+              text={["TheCore."]}
+              typingSpeed={80}
+              initialDelay={80 * 11 + 150}
+              loop={false}
+              showCursor={false}
+              startOnVisible
+            />
             <br />
-            Let’s <span ref={word2Ref} className="text-primary">create</span> something great.
+            <TextType
+              as="span"
+              text={["Let’s "]}
+              typingSpeed={80}
+              initialDelay={80 * (11 + 8) + 350}
+              loop={false}
+              showCursor={false}
+              startOnVisible
+            />
+            <TextType
+              as="span"
+              className="text-primary"
+              text={["create"]}
+              typingSpeed={80}
+              initialDelay={80 * (11 + 8 + 6) + 450}
+              loop={false}
+              showCursor={false}
+              startOnVisible
+            />
+            <TextType
+              as="span"
+              text={[" something great."]}
+              typingSpeed={80}
+              initialDelay={80 * (11 + 8 + 6 + 6) + 550}
+              loop={false}
+              showCursor={false}
+              startOnVisible
+            />
           </h1>
-          <p className="mt-3 text-base md:text-lg text-black">Sign in to access your dashboard.</p>
+          <p className="mt-3 text-base md:text-lg text-black dark:text-white">Sign in to access your dashboard.</p>
         </section>
 
         <div className="auth-cta">
