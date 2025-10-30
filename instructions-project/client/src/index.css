@@ -104,6 +104,11 @@ input[type="number"] {
   transition-delay: 0s;
 }
 
+/* Dark mode: make auth button titles white */
+.dark .auth-cta li .title {
+  color: #fff;
+}
+
 .auth-cta li:hover .title {
   transform: scale(1);
   transition-delay: 0.25s;
