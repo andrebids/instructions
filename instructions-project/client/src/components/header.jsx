@@ -3,7 +3,7 @@ import {Icon} from "@iconify/react";
 import React from "react";
 import {useTheme} from "@heroui/use-theme";
 import { useUser } from "../context/UserContext";
-import { useClerk, useUser as useClerkUser } from "@clerk/clerk-react";
+import { useClerk, useUser as useClerkUser, UserProfile } from "@clerk/clerk-react";
 
 export function Header() {
   const {theme, setTheme} = useTheme();
@@ -174,24 +174,35 @@ export function Header() {
           </DropdownMenu>
         </Dropdown>
 
-        {/* My Settings Modal */}
-        <Modal isOpen={showSettings} onClose={()=>setShowSettings(false)} placement="center" backdrop="blur">
-          <ModalContent>
+        {/* My Settings Modal with Clerk UserProfile */}
+        <Modal 
+          isOpen={showSettings} 
+          onClose={()=>setShowSettings(false)} 
+          placement="center" 
+          backdrop="blur"
+          size="5xl"
+          scrollBehavior="outside"
+          hideCloseButton
+        >
+          <ModalContent className="p-0 max-w-[900px]">
             {(onClose) => (
               <>
-                <ModalHeader className="flex flex-col gap-1">My Settings</ModalHeader>
-                <ModalBody>
-                  <Input
-                    label="Your name"
-                    placeholder="Enter your name"
-                    value={tempName}
-                    onValueChange={setTempName}
-                  />
+                <ModalHeader className="flex items-center justify-between p-4 border-b border-divider">
+                  <span className="text-xl font-semibold">Manage Account</span>
+                  <Button
+                    isIconOnly
+                    variant="light"
+                    onPress={onClose}
+                    aria-label="Close"
+                  >
+                    <Icon icon="lucide:x" className="text-lg" />
+                  </Button>
+                </ModalHeader>
+                <ModalBody className="p-0 overflow-hidden">
+                  <div className="w-full max-h-[calc(80vh-80px)] overflow-auto">
+                    <UserProfile />
+                  </div>
                 </ModalBody>
-                <ModalFooter>
-                  <Button variant="flat" onPress={onClose}>Cancel</Button>
-                  <Button color="primary" onPress={()=>{ setUserName(tempName?.trim() || "Christopher"); onClose(); }}>Save</Button>
-                </ModalFooter>
               </>
             )}
           </ModalContent>
