@@ -27,10 +27,10 @@ export const products = [
     stock: 32,
     videoFile: "IPL317R.webm",
     images: {
-      day: img("/SHOP/TRENDING/DAY/IPL317R_DAY.png", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
-      night: img("/SHOP/TRENDING/NIGHT/IPL317R_NIGHT.png", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
+      day: img("/SHOP/TRENDING/DAY/IPL317R_DAY.webp", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
+      night: img("/SHOP/TRENDING/NIGHT/IPL317R_NIGHT.webp", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
       colors: {
-        brancoPuro: img("/demo-images/decorations/star_white.jpg", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"),
+        brancoPuro: img("/demo-images/shop/IPL334W.webp", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"),
         vermelho: svg('#ef4444'),
       },
     },
@@ -56,11 +56,11 @@ export const products = [
     price: 349,
     stock: 8,
     images: {
-      day: img("/demo-images/decorations/star_day.jpg", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
-      night: img("/demo-images/decorations/star_night.jpg", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
+      day: img("/demo-images/shop/tgl72lw.webp", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
+      night: img("/demo-images/shop/pl250w_pl250b_V2.webp", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
       colors: {
-        brancoPuro: img("/demo-images/decorations/star_white.jpg", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"),
-        brancoQuente: img("/demo-images/decorations/star_warm.jpg", "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800"),
+        brancoPuro: img("/demo-images/shop/IPL334W.webp", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"),
+        brancoQuente: img("/demo-images/shop/TSLWW-W.webp", "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800"),
       },
     },
     tags: ["new", "christmas"],
@@ -81,11 +81,11 @@ export const products = [
     price: 499,
     stock: 47,
     images: {
-      day: img("/demo-images/decorations/path_day.jpg", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
-      night: img("/demo-images/decorations/path_night.jpg", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
+      day: img("/demo-images/shop/simu-Gx254_V4.webp", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
+      night: img("/demo-images/shop/pl250w_pl250b_V2.webp", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
       colors: {
-        brancoPuro: img("/demo-images/decorations/star_white.jpg", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"),
-        brancoQuente: img("/demo-images/decorations/star_warm.jpg", "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800"),
+        brancoPuro: img("/demo-images/shop/IPL334W.webp", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"),
+        brancoQuente: img("/demo-images/shop/TSLWW-W.webp", "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800"),
       },
     },
     tags: ["sale", "summer"],
@@ -106,11 +106,11 @@ export const products = [
     price: 129,
     stock: 150,
     images: {
-      day: img("/SHOP/TRENDING/DAY/IPL337.png", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
-      night: img("/SHOP/TRENDING/NIGHT/IPL337.png", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
+      day: img("/SHOP/TRENDING/DAY/IPL337.webp", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
+      night: img("/SHOP/TRENDING/NIGHT/IPL337.webp", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
       colors: {
-        brancoPuro: img("/demo-images/decorations/star_white.jpg", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"),
-        brancoQuente: img("/demo-images/decorations/star_warm.jpg", "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800"),
+        brancoPuro: img("/demo-images/shop/IPL334W.webp", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"),
+        brancoQuente: img("/demo-images/shop/TSLWW-W.webp", "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800"),
       },
     },
     tags: ["new", "summer"],
@@ -132,11 +132,11 @@ export const products = [
     stock: 18,
     videoFile: "GX350LW.webm",
     images: {
-      day: img("/SHOP/TRENDING/DAY/GX350LW.png", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
-      night: img("/SHOP/TRENDING/NIGHT/GX350LW_NIGHT.png", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
+      day: img("/SHOP/TRENDING/DAY/GX350LW.webp", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
+      night: img("/SHOP/TRENDING/NIGHT/GX350LW_NIGHT.webp", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
       colors: {
-        brancoPuro: img("/demo-images/decorations/star_white.jpg", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"),
-        brancoQuente: img("/demo-images/decorations/star_warm.jpg", "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800"),
+        brancoPuro: img("/demo-images/shop/IPL334W.webp", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"),
+        brancoQuente: img("/demo-images/shop/TSLWW-W.webp", "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800"),
       },
     },
     tags: ["trending"],
@@ -161,11 +161,11 @@ export const products = [
     stock: 21,
     videoFile: "GX349L.webm",
     images: {
-      day: img("/SHOP/TRENDING/DAY/GX349L_DAY.png", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
-      night: img("/SHOP/TRENDING/NIGHT/GX349L_NIGHT.png", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
+      day: img("/SHOP/TRENDING/DAY/GX349L_DAY.webp", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
+      night: img("/SHOP/TRENDING/NIGHT/GX349L_NIGHT.webp", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
       colors: {
-        brancoPuro: img("/demo-images/decorations/star_white.jpg", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"),
-        brancoQuente: img("/demo-images/decorations/star_warm.jpg", "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800"),
+        brancoPuro: img("/demo-images/shop/IPL334W.webp", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"),
+        brancoQuente: img("/demo-images/shop/TSLWW-W.webp", "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800"),
       },
     },
     tags: ["trending", "sale"],
@@ -190,9 +190,9 @@ export const products = [
     stock: 28,
     videoFile: "IPL337W.webm",
     images: {
-      day: img("/SHOP/TRENDING/DAY/IPL337W.png", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
-      night: img("/SHOP/TRENDING/NIGHT/IPL337W.png", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
-      colors: { brancoQuente: img("/demo-images/decorations/star_warm.jpg", "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800") },
+      day: img("/SHOP/TRENDING/DAY/IPL337W.webp", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
+      night: img("/SHOP/TRENDING/NIGHT/IPL337W.webp", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
+      colors: { brancoQuente: img("/demo-images/shop/TSLWW-W.webp", "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800") },
     },
     tags: ["trending"],
     type: "2D",
@@ -219,9 +219,9 @@ export const products = [
     stock: 31,
     videoFile: "IPL337.webm",
     images: {
-      day: img("/SHOP/TRENDING/DAY/IPL337.png", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
-      night: img("/SHOP/TRENDING/NIGHT/IPL337.png", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
-      colors: { brancoPuro: img("/demo-images/decorations/star_white.jpg", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800") }
+      day: img("/SHOP/TRENDING/DAY/IPL337.webp", "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"),
+      night: img("/SHOP/TRENDING/NIGHT/IPL337.webp", "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800"),
+      colors: { brancoPuro: img("/demo-images/shop/IPL334W.webp", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800") }
     },
     tags: ["trending", "summer"],
     type: "2D",
