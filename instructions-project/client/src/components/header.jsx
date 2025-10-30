@@ -4,6 +4,7 @@ import React from "react";
 import {useTheme} from "@heroui/use-theme";
 import { useUser } from "../context/UserContext";
 import { useClerk, useUser as useClerkUser, UserProfile } from "@clerk/clerk-react";
+import { dark } from "@clerk/themes";
 
 export function Header() {
   const {theme, setTheme} = useTheme();
@@ -153,7 +154,8 @@ export function Header() {
             <Avatar
               isBordered
               as="button"
-              src="https://i.pravatar.cc/150?u=a042581f4e29026704d"
+              src={clerkUser?.imageUrl}
+              name={clerkUser?.fullName || clerkUser?.firstName || userName || "User"}
               className="transition-transform"
             />
           </DropdownTrigger>
@@ -200,7 +202,15 @@ export function Header() {
                 </ModalHeader>
                 <ModalBody className="p-0 overflow-hidden">
                   <div className="w-full max-h-[calc(80vh-80px)] overflow-auto">
-                    <UserProfile />
+                    <UserProfile 
+                      appearance={{
+                        baseTheme: theme === "dark" ? dark : undefined,
+                        elements: {
+                          rootBox: "w-full",
+                          card: "w-full shadow-none",
+                        }
+                      }}
+                    />
                   </div>
                 </ModalBody>
               </>
