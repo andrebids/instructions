@@ -149,29 +149,40 @@ echo.
 echo 🔧 Backend:  http://localhost:5000
 echo 🗄️  Database: localhost:5433
 echo.
-echo Aguardando frontend estar pronto...
+echo Aguardando frontend estar pronto (7 segundos)...
 timeout /t 7 /nobreak >nul
 
 rem Tentar detectar automaticamente o frontend em portas comuns do Vite
 set "FRONTEND_PORT="
+set "FRONTEND_FOUND=0"
+
+echo Verificando portas do frontend...
 for %%P in (3003 5173 4173 3000 3001 3002 3005) do (
-    curl -s http://localhost:%%P >nul 2>&1
-    if not errorlevel 1 (
-        set "FRONTEND_PORT=%%P"
-        goto frontend_found
+    if "%FRONTEND_FOUND%"=="0" (
+        echo    Testando porta %%P...
+        curl -s -m 2 http://localhost:%%P >nul 2>&1
+        if not errorlevel 1 (
+            set "FRONTEND_PORT=%%P"
+            set "FRONTEND_FOUND=1"
+            echo ✅ Frontend detectado na porta %%P
+            goto frontend_found
+        )
     )
 )
 
-echo ⚠️  Frontend nao detectado automaticamente.
-echo.
-echo Portas comuns do Vite: 3003, 5173, 4173, 3000, 3001, 3002, 3005
-echo.
-set /p FRONTEND_PORT="Insere a porta do frontend (ou Enter para 3003): "
-if "%FRONTEND_PORT%"=="" set "FRONTEND_PORT=3003"
-goto frontend_set
+if "%FRONTEND_FOUND%"=="0" (
+    echo ⚠️  Frontend nao detectado automaticamente.
+    echo.
+    echo Portas comuns do Vite: 3003, 5173, 4173, 3000, 3001, 3002, 3005
+    echo Usando porta padrão: 3003
+    echo.
+    echo 💡 Dica: Verifique a janela "Frontend Client" para ver a porta correta
+    set "FRONTEND_PORT=3003"
+    goto frontend_set
+)
 
 :frontend_found
-echo ✅ Frontend detectado na porta %FRONTEND_PORT%
+rem Frontend já foi detectado acima
 
 :frontend_set
 set "FRONTEND_URL=http://localhost:%FRONTEND_PORT%"
