@@ -9,22 +9,15 @@ import { useUser } from "../context/UserContext";
 // Fallback-friendly images (use local if present, else remote placeholder)
 // High-quality Unsplash images matching categories; cropped to fill cards
 const categoryImages = {
-  // Trending points to provided asset in public/demo-images/shop
-  trending: "/demo-images/shop/IPL334W.jpg",
-  new: "/demo-images/shop/TSLWW-W.jpg",
-  sale: "/demo-images/shop/tgl72lw.jpg",
-  christmas: "/demo-images/shop/pl250w_pl250b_V2.jpg",
-  summer: "/demo-images/shop/simu-Gx254_V4.jpg",
+  // Local WebP assets in public/demo-images/shop
+  trending: "/demo-images/shop/TRENDING.webp",
+  new: "/demo-images/shop/NEW.webp",
+  sale: "/demo-images/shop/SALE.webp",
+  christmas: "/demo-images/shop/XMAS.webp",
+  summer: "/demo-images/shop/SUMMER.webp",
 };
 
-// Fallbacks (online) in case a local image is missing
-const fallbackImages = {
-  trending: "https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=1600&q=80",
-  new: "https://images.unsplash.com/photo-1520975693416-35ae9233e6cf?auto=format&fit=crop&w=1600&q=80",
-  sale: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1600&q=80",
-  christmas: "https://images.unsplash.com/photo-1512389142860-9c449e58a543?auto=format&fit=crop&w=1600&q=80",
-  summer: "https://images.unsplash.com/photo-1473186578172-c141e6798cf4?auto=format&fit=crop&w=1600&q=80",
-};
+// No online fallbacks: force local assets only
 
 export default function Shop() {
   const navigate = useNavigate();
@@ -46,16 +39,14 @@ export default function Shop() {
 
   const SmallCard = ({ cfg }) => {
     if (!exists(cfg.id)) return null;
-    const [src, setSrc] = React.useState(categoryImages[cfg.id] || fallbackImages[cfg.id]);
     return (
       <Card isPressable onPress={() => navigate(`/shop/${cfg.id}`)} className="group bg-content1/40 overflow-hidden h-full">
         <CardBody className="p-0 h-full overflow-hidden">
           <div className="relative h-full">
             <Image
               removeWrapper
-              src={src}
+              src={categoryImages[cfg.id]}
               alt={cfg.title}
-              onError={() => setSrc(fallbackImages[cfg.id])}
               className={`z-0 w-full h-full transition-transform duration-300 ${cfg.id === 'summer' ? 'object-contain object-top bg-black group-hover:scale-100' : 'object-cover group-hover:scale-105'}`}
             />
             <div className={`absolute inset-0 z-10 pointer-events-none transition-opacity duration-300 ${cfg.id === 'summer' ? 'bg-gradient-to-b from-transparent via-black/30 to-black/50 dark:via-black/60 dark:to-black/80 opacity-100' : 'bg-black/35 dark:bg-black/60 opacity-100 group-hover:opacity-70'}`} />
@@ -72,12 +63,11 @@ export default function Shop() {
 
   const LargeCard = ({ cfg }) => {
     if (!exists(cfg.id)) return null;
-    const [src, setSrc] = React.useState(categoryImages[cfg.id] || fallbackImages[cfg.id]);
     return (
       <Card isPressable onPress={() => navigate(`/shop/${cfg.id}`)} className="group bg-content1/40 overflow-hidden h-full">
         <CardBody className="p-0 h-full overflow-hidden">
           <div className="relative h-full">
-            <Image removeWrapper src={src} alt={cfg.title} onError={() => setSrc(fallbackImages[cfg.id])} className="z-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            <Image removeWrapper src={categoryImages[cfg.id]} alt={cfg.title} className="z-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
             <div className="absolute inset-0 z-10 bg-black/35 dark:bg-black/60 opacity-100 transition-opacity duration-300 group-hover:opacity-70 pointer-events-none" />
             <div className="absolute inset-0 z-20 p-6 flex items-center justify-center">
               <div className="text-white text-7xl md:text-8xl font-bold tracking-tight uppercase text-center">
