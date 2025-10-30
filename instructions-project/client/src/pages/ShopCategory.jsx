@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
+import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useShop } from "../context/ShopContext";
 import TrendingFiltersSidebar from "../components/shop/TrendingFiltersSidebar";
@@ -15,7 +15,7 @@ export default function ShopCategory() {
   const { products } = useShop();
   const navigate = useNavigate();
   const { userName } = useUser();
-  const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false });
+  const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false, dimKey: "", dimRange: null });
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [selected, setSelected] = React.useState({ product: null, variant: null });
   const [filtersOpen, setFiltersOpen] = React.useState(false);
@@ -94,6 +94,11 @@ export default function ShopCategory() {
         const hasAny = filters.color.some((c) => Boolean(p.images?.colors?.[c]));
         if (!hasAny) return false;
       }
+      if (filters.dimKey && Array.isArray(filters.dimRange) && filters.dimRange.length === 2) {
+        const dimValue = p?.specs?.dimensions?.[filters.dimKey];
+        if (!(typeof dimValue === 'number' && Number.isFinite(dimValue))) return false;
+        if (dimValue < filters.dimRange[0] || dimValue > filters.dimRange[1]) return false;
+      }
       if (typeof filters.minStock === 'number') {
         const computeStock = (id) => { try { let s=0; for (const ch of String(id||'')) s+=ch.charCodeAt(0); return 5 + (s % 60); } catch(_){ return 20; } };
         const stock = typeof p.stock === 'number' ? p.stock : computeStock(p.id);
@@ -151,7 +156,7 @@ export default function ShopCategory() {
               radius="full"
               className="bg-[#e4e3e8] text-foreground/80 hover:text-foreground dark:bg-content1 shadow-sm"
               startContent={<Icon icon="lucide:rotate-ccw" className="text-sm" />}
-          onPress={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false }); setPriceRange([priceLimits.min, priceLimits.max]); setQuery(""); }}
+          onPress={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false, dimKey: "", dimRange: null }); setPriceRange([priceLimits.min, priceLimits.max]); setQuery(""); }}
             >
               Clear filters
             </Button>
@@ -180,6 +185,14 @@ export default function ShopCategory() {
             ))}
           </div>
           <div className="flex items-center gap-2">
+            <Input
+              placeholder="Search products..."
+              value={query}
+              onChange={(e)=>setQuery(e.target.value)}
+              size="sm"
+              className="w-56 hidden md:block"
+              aria-label="Search products"
+            />
             <Dropdown>
               <DropdownTrigger>
                 <Button radius="full" variant="bordered" endContent={<Icon icon="lucide:chevron-down" className="text-sm" />}> 
