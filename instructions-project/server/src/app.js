@@ -189,8 +189,19 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+  console.error('❌ [APP] Error handler global:', err);
+  console.error('❌ [APP] Stack:', err.stack);
+  
+  // Verificar se a resposta já foi enviada
+  if (!res.headersSent) {
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: err.message,
+      name: err.name
+    });
+  } else {
+    console.error('❌ [APP] Não foi possível enviar resposta de erro - headers já enviados');
+  }
 });
 
 // Iniciar servidor

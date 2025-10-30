@@ -177,10 +177,17 @@ export const productsAPI = {
     // Adicionar campos de texto
     for (var key in data) {
       if (data.hasOwnProperty(key)) {
+        // Ignorar campos de ficheiro (serão adicionados separadamente)
         if (key === 'dayImage' || key === 'nightImage' || key === 'animation' || key === 'thumbnail' || key === 'colorImages') {
-          // Ficheiros serão adicionados separadamente
           continue;
         }
+        
+        // Ignorar valores null ou undefined (não adicionar ao FormData)
+        if (data[key] === null || data[key] === undefined) {
+          continue;
+        }
+        
+        // Adicionar campo ao FormData
         if (typeof data[key] === 'object' && data[key] !== null) {
           formData.append(key, JSON.stringify(data[key]));
         } else {
@@ -215,10 +222,17 @@ export const productsAPI = {
     // Adicionar campos de texto
     for (var key in data) {
       if (data.hasOwnProperty(key)) {
+        // Ignorar campos de ficheiro (serão adicionados separadamente)
         if (key === 'dayImage' || key === 'nightImage' || key === 'animation' || key === 'thumbnail' || key === 'colorImages') {
-          // Ficheiros serão adicionados separadamente
           continue;
         }
+        
+        // Ignorar valores null ou undefined (não adicionar ao FormData)
+        if (data[key] === null || data[key] === undefined) {
+          continue;
+        }
+        
+        // Adicionar campo ao FormData
         if (typeof data[key] === 'object' && data[key] !== null) {
           formData.append(key, JSON.stringify(data[key]));
         } else {
