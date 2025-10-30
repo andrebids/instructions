@@ -12,6 +12,7 @@ router.put('/:id', projectController.update);
 router.delete('/:id', projectController.deleteProject);
 router.patch('/:id/status', projectController.updateStatus);
 router.patch('/:id/favorite', projectController.toggleFavorite);
+router.patch('/:id/canvas', projectController.updateCanvas); // Nova rota para atualizar canvas
 
 export default router;
 
