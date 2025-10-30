@@ -5985,3 +5985,4 @@ template/Multikart v1.0/multikart-frontend-next14/src/Utils/Validation/ModifiedE
 template/Multikart v1.0/multikart-frontend-next14/src/Utils/Validation/ValidationSchema.jsx
 $keyPath
 $keyPath.pub
+docs/DEPLOY_SETUP.md

@@ -62,6 +62,18 @@ andre
 ~/apps/instructions
 ```
 
+#### 6. VITE_CLERK_PUBLISHABLE_KEY
+**Name:** `VITE_CLERK_PUBLISHABLE_KEY`  
+**Secret:** A chave pública do Clerk (publishable key) obtida no dashboard do Clerk
+
+**Como obter:**
+1. Vai ao dashboard do Clerk: https://dashboard.clerk.com
+2. Seleciona a tua aplicação
+3. Vai a **API Keys**
+4. Copia a **Publishable Key** (começa com `pk_test_` ou `pk_live_`)
+
+**Importante:** Esta chave é necessária para o build do frontend funcionar corretamente. O workflow configura automaticamente esta variável no arquivo `client/.env` antes do build.
+
 ## Como Funciona o Deploy
 
 Quando fazes push para a branch `main`, o GitHub Actions executa automaticamente:
@@ -70,13 +82,14 @@ Quando fazes push para a branch `main`, o GitHub Actions executa automaticamente
 2. **Setup SSH** - Configura a chave SSH e known_hosts
 3. **Rsync código** - Transfere código atualizado para o servidor (excluindo node_modules, dist, .git)
 4. **Docker Compose** - Garante que o Postgres está a correr
-5. **Build Frontend** - Instala dependências e faz build do React/Vite
-6. **Instalar dependências server** - Instala dependências do backend
-7. **Preservar .env** - Mantém ficheiros `.env` existentes (não os sobrescreve)
-8. **Reiniciar PM2** - Reinicia o servidor Node.js com variáveis atualizadas
-9. **Reload Nginx** - Recarrega o Nginx para servir os novos ficheiros
-10. **Verificar serviços** - Verifica que Postgres e PM2 estão a correr
-11. **Health check** - Verifica se o servidor responde corretamente ao endpoint `/health`
+5. **Configurar client/.env** - Configura automaticamente `VITE_CLERK_PUBLISHABLE_KEY` no arquivo `.env` do cliente usando o secret do GitHub
+6. **Build Frontend** - Instala dependências e faz build do React/Vite (com as variáveis de ambiente configuradas)
+7. **Instalar dependências server** - Instala dependências do backend
+8. **Preservar server/.env** - Mantém ficheiro `.env` do servidor existente (não o sobrescreve)
+9. **Reiniciar PM2** - Reinicia o servidor Node.js com variáveis atualizadas
+10. **Reload Nginx** - Recarrega o Nginx para servir os novos ficheiros
+11. **Verificar serviços** - Verifica que Postgres e PM2 estão a correr
+12. **Health check** - Verifica se o servidor responde corretamente ao endpoint `/health`
 
 ## Verificar Status do Deploy
 
@@ -86,8 +99,10 @@ Quando fazes push para a branch `main`, o GitHub Actions executa automaticamente
 
 ## Notas Importantes
 
-- Os ficheiros `.env` no servidor são preservados - o workflow só cria novos se não existirem
-- O build do frontend é feito no servidor durante o deploy
+- A chave `VITE_CLERK_PUBLISHABLE_KEY` é configurada automaticamente no arquivo `client/.env` antes do build através do secret do GitHub
+- O arquivo `client/.env` é atualizado automaticamente a cada deploy, preservando outras variáveis de ambiente que possam existir
+- O ficheiro `server/.env` é preservado - o workflow só cria novo se não existir
+- O build do frontend é feito no servidor durante o deploy com as variáveis de ambiente corretas
 - O PM2 reinicia automaticamente o servidor Node.js após cada deploy
 - O Nginx é recarregado para servir os novos ficheiros compilados
 
@@ -100,8 +115,15 @@ Quando fazes push para a branch `main`, o GitHub Actions executa automaticamente
 
 ### Deploy falha no build
 - Verifica os logs do GitHub Actions para ver o erro específico
+- Confirma que o secret `VITE_CLERK_PUBLISHABLE_KEY` está configurado no GitHub
+- Verifica que a chave Clerk está correta (deve começar com `pk_test_` ou `pk_live_`)
 - Confirma que Node.js está instalado no servidor
 - Verifica que há espaço em disco suficiente
+
+### Erro "Missing Clerk Publishable Key"
+- Verifica se o secret `VITE_CLERK_PUBLISHABLE_KEY` está configurado no GitHub (Settings > Secrets and variables > Actions)
+- Confirma que o secret contém a chave completa do Clerk (sem espaços extras)
+- Verifica os logs do deploy para confirmar que a chave foi passada corretamente
 
 ### Servidor não reinicia
 - Verifica se o PM2 está instalado: `pm2 list`
@@ -110,5 +132,5 @@ Quando fazes push para a branch `main`, o GitHub Actions executa automaticamente
 
 ---
 
-*Última atualização: 2025-10-29 - Servidor Git limpo e sincronizado*
+*Última atualização: 2025-10-30 - Configuração automática de VITE_CLERK_PUBLISHABLE_KEY via secrets*
 
