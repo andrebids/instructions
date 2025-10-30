@@ -11,7 +11,8 @@
   font-size: 2.25rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+  /* Removed text shadow for clarity in light mode */
+  filter: none;
 }
 
 .scroller span {

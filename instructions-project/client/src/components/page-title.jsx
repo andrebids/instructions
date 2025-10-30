@@ -34,8 +34,8 @@ export function PageTitle({
           return <h2 className="text-xl md:text-2xl text-foreground">{lead}</h2>;
         })()
       ) : null}
-      {subtitle ? <p className="text-default-500 mt-1">{subtitle}</p> : null}
-      {meta ? <p className="text-xs text-default-400 mt-1">{meta}</p> : null}
+      {subtitle ? <p className="mt-1 text-default-600 dark:text-default-500">{subtitle}</p> : null}
+      {meta ? <p className="mt-1 text-xs text-default-500 dark:text-default-400">{meta}</p> : null}
     </div>
   );
 }
