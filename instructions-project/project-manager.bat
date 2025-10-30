@@ -52,7 +52,7 @@ if %errorlevel% neq 0 (
 rem Garantir que estamos na raiz do projeto antes de comandos subsequentes
 cd /d "%~dp0"
 
-echo [1/4] Iniciando base de dados PostgreSQL...
+echo [1/5] Iniciando base de dados PostgreSQL...
 if "%DOCKER_AVAILABLE%"=="1" (
     %COMPOSE_CMD% -f "%~dp0docker-compose.dev.yml" up -d
     if %errorlevel% neq 0 (
@@ -62,25 +62,73 @@ if "%DOCKER_AVAILABLE%"=="1" (
     )
     echo ✅ PostgreSQL iniciado com sucesso!
 ) else (
-    echo ❌ Docker/Compose nao encontrado. Base de dados via Docker nao sera iniciada.
-    echo    -> Instala Docker Desktop ou inicia a tua BD localmente (porta 5433)
+    echo ⚠️  Docker/Compose nao encontrado. Base de dados via Docker nao sera iniciada.
+    echo    -> Instala Docker Desktop OU inicia a tua BD PostgreSQL localmente (porta 5433)
+    echo    -> As migrations ainda serao executadas se o PostgreSQL estiver a correr
 )
 echo.
 
 echo [2/5] Aguardando PostgreSQL estar pronto...
+echo    Aguardando 5 segundos para garantir que o PostgreSQL está completamente iniciado...
 timeout /t 5 /nobreak >nul
-echo ✅ PostgreSQL pronto!
+echo    Verificando conectividade com PostgreSQL...
+call :wait_for_postgres
+if %errorlevel% neq 0 (
+    echo ⚠️  Aviso: PostgreSQL pode não estar totalmente pronto
+    echo    Continuando mesmo assim... (as migrations podem falhar se a BD não estiver pronta)
+) else (
+    echo ✅ PostgreSQL pronto e acessível!
+)
 echo.
 
 echo [3/5] Executando setup da base de dados (migrations)...
 cd /d "%~dp0server"
-echo    Executando migrations e verificando schema...
+echo    Este passo irá:
+echo    - Verificar conexão com a base de dados
+echo    - Criar/sincronizar tabelas básicas
+echo    - Executar migrations necessárias
+echo    - Configurar schema completo
+echo.
 call npm run setup
+set "SETUP_SUCCESS=0"
 if %errorlevel% neq 0 (
-    echo ⚠️  Aviso: Setup pode ter encontrado problemas, mas continuando...
-    echo    Se houver erros, execute manualmente: cd server ^&^& npm run setup
+    echo.
+    echo ⚠️  AVISO: Setup encontrou problemas!
+    echo    O projeto pode não funcionar corretamente sem as migrations.
+    echo.
+    echo    Tentando executar migrations manualmente...
+    call npm run migrate:all
+    if %errorlevel% neq 0 (
+        echo ❌ Erro ao executar migrations. Verifique:
+        echo    1. PostgreSQL está a correr
+        echo    2. Credenciais em server\.env estão corretas
+        echo    3. Base de dados existe
+        echo.
+        echo    Execute manualmente: cd server ^&^& npm run setup
+        echo.
+        echo ⚠️  AVISO CRÍTICO: O servidor será iniciado mesmo assim,
+        echo    mas pode apresentar erros 500 se as tabelas não existirem.
+        echo    Corrija os problemas antes de usar a aplicação.
+        echo.
+        pause
+        set "SETUP_SUCCESS=0"
+    ) else (
+        echo ✅ Migrations executadas manualmente com sucesso!
+        set "SETUP_SUCCESS=1"
+    )
 ) else (
-    echo ✅ Setup da base de dados concluído!
+    echo ✅ Setup da base de dados concluído com sucesso!
+    echo    Todas as migrations foram aplicadas.
+    set "SETUP_SUCCESS=1"
+)
+echo.
+
+if "%SETUP_SUCCESS%"=="1" (
+    echo ✅ Base de dados configurada. Prosseguindo com o início do servidor...
+) else (
+    echo ⚠️  Setup não foi concluído com sucesso, mas continuando...
+    echo    O servidor tentará sincronizar tabelas automaticamente ao iniciar.
+    echo    Se aparecerem erros 500, execute: cd server ^&^& npm run setup
 )
 echo.
 
@@ -135,7 +183,13 @@ echo Abrindo frontend no browser...
 start %FRONTEND_URL%
 echo ✅ Frontend aberto no browser!
 echo.
-echo ✅ Projeto iniciado com sucesso! Fechando janela...
+echo ✅ Projeto iniciado com sucesso!
+echo.
+echo 📝 NOTA: Se aparecerem erros 500 (Internal Server Error) no frontend,
+echo    significa que as migrations não foram executadas corretamente.
+echo    Execute manualmente: cd server ^&^& npm run setup
+echo.
+echo Aguardando 2 segundos antes de fechar...
 timeout /t 2 /nobreak >nul
 exit
 
@@ -393,6 +447,28 @@ if %errorlevel% neq 0 (
 rem Docker/Compose (opcional mas recomendado para a BD)
 call :detect_docker
 exit /b 0
+
+:wait_for_postgres
+rem Tenta verificar se PostgreSQL está acessível na porta 5433
+rem Usa netstat para verificar se a porta está em escuta
+set "MAX_TRIES=6"
+set "TRY_COUNT=0"
+:check_postgres_loop
+set /a TRY_COUNT+=1
+rem Verificar se a porta 5433 está em escuta
+netstat -an | findstr ":5433" | findstr "LISTENING" >nul 2>&1
+if %errorlevel% equ 0 (
+    rem Porta está aberta, aguardar mais um pouco para garantir que está pronto
+    timeout /t 2 /nobreak >nul
+    exit /b 0
+)
+if %TRY_COUNT% lss %MAX_TRIES% (
+    timeout /t 2 /nobreak >nul
+    goto check_postgres_loop
+)
+rem Se chegou aqui, não conseguiu verificar a porta
+rem Mas continua mesmo assim (pode ser que PostgreSQL esteja em outra porta ou sem netstat)
+exit /b 1
 
 :detect_docker
 set "DOCKER_AVAILABLE=0"
