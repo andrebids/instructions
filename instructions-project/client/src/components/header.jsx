@@ -44,6 +44,7 @@ export function Header() {
             size="sm"
             className="w-64"
             placeholder="Search..."
+            aria-label="Search"
             startContent={<Icon icon="lucide:search" className="text-default-400" />}
             onBlur={() => setShowSearch(false)}
           />

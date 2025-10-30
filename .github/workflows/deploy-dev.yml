@@ -145,6 +145,10 @@ jobs:
           cd ../server
           npm ci --omit=dev || npm install --omit=dev || echo "⚠️ npm install falhou, mas continuando..."
           
+          # 5.5. Executar migration para adicionar campos de canvas (se necessário)
+          echo "🔄 Executando migration de campos de canvas..."
+          npm run migrate || echo "⚠️ Migration falhou ou campos já existem, continuando..."
+          
           # 6. Garantir que server/.env existe (preservar se já existir - não sobrescrever se existir)
           if [ ! -f .env ]; then
             printf "DB_HOST=localhost\nDB_PORT=5433\nDB_NAME=instructions_demo\nDB_USER=demo_user\nDB_PASSWORD=demo_password\nPORT=5000\nNODE_ENV=production\n" > .env

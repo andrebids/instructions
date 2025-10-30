@@ -6,7 +6,7 @@ import { Stage, Layer, Image as KonvaImage, Transformer, Rect, Circle } from 're
 import useImage from 'use-image';
 import { NightThumb } from '../../NightThumb';
 import { YOLO12ThumbnailOverlay } from './YOLO12ThumbnailOverlay';
-import { SnapZonesPanel } from './SnapZonesPanel';
+import { UnifiedSnapZonesPanel } from './UnifiedSnapZonesPanel';
 
 // Componente para o Modal de Upload
 const UploadModal = ({ onUploadComplete }) => {
@@ -254,7 +254,9 @@ const DecorationItem = ({
   decoration, 
   isSelected, 
   onSelect, 
-  onChange 
+  onChange,
+  snapZones = [],
+  isDayMode = true
 }) => {
   const [image] = useImage(decoration.src, 'anonymous');
   const shapeRef = useRef();
@@ -270,12 +272,91 @@ const DecorationItem = ({
     }
   }, [isSelected]);
 
+  // Função para verificar snap a uma zona (dentro do DecorationItem)
+  var checkSnapToZone = function(x, y, zones) {
+    if (!zones || zones.length === 0) {
+      return { x: x, y: y, snapped: false };
+    }
+    
+    var snapThreshold = 50;
+    var closestZone = null;
+    var minDistance = Infinity;
+    
+    for (var i = 0; i < zones.length; i++) {
+      var zone = zones[i];
+      var zoneCenterX = zone.x + zone.width / 2;
+      var zoneCenterY = zone.y + zone.height / 2;
+      
+      var dx = x - zoneCenterX;
+      var dy = y - zoneCenterY;
+      var distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance < snapThreshold && distance < minDistance) {
+        minDistance = distance;
+        closestZone = zone;
+      }
+    }
+    
+    if (closestZone) {
+      return {
+        x: closestZone.x + closestZone.width / 2,
+        y: closestZone.y + closestZone.height / 2,
+        snapped: true
+      };
+    }
+    
+    return { x: x, y: y, snapped: false };
+  };
+
+  const handleDragMove = function(e) {
+    if (!snapZones || snapZones.length === 0) {
+      return;
+    }
+    
+    var node = shapeRef.current;
+    if (!node) return;
+    
+    var currentX = node.x();
+    var currentY = node.y();
+    
+    // Verificar snap durante movimento (funciona em ambos os modos)
+    var snapped = checkSnapToZone(currentX, currentY, snapZones);
+    
+    if (snapped.snapped) {
+      // Atualizar posição do node em tempo real
+      node.position({
+        x: snapped.x,
+        y: snapped.y
+      });
+      node.getLayer().batchDraw();
+    }
+  };
+
   const handleDragEnd = (e) => {
-    console.log('🔄 Decoração movida:', decoration.id, 'nova posição:', e.target.x(), e.target.y());
+    var node = shapeRef.current;
+    if (!node) return;
+    
+    var finalX = node.x();
+    var finalY = node.y();
+    
+    // Aplicar snap final antes de salvar (funciona em ambos os modos)
+    if (snapZones && snapZones.length > 0) {
+      var snapped = checkSnapToZone(finalX, finalY, snapZones);
+      finalX = snapped.x;
+      finalY = snapped.y;
+      
+      if (snapped.snapped) {
+        node.position({ x: finalX, y: finalY });
+        node.getLayer().batchDraw();
+        console.log('🎯 Snap aplicado durante drag para zona mais próxima');
+      }
+    }
+    
+    console.log('🔄 Decoração movida:', decoration.id, 'nova posição:', finalX, finalY);
     onChange({
       ...decoration,
-      x: e.target.x(),
-      y: e.target.y(),
+      x: finalX,
+      y: finalY,
     });
   };
 
@@ -321,6 +402,7 @@ const DecorationItem = ({
           draggable
           onClick={onSelect}
           onTap={onSelect}
+          onDragMove={handleDragMove}
           onDragEnd={handleDragEnd}
           onTransformEnd={handleTransformEnd}
         />
@@ -375,12 +457,16 @@ const KonvaCanvas = ({
   selectedImage,
   onRequireBackground,
   snapZones = [],
-  isDayMode = true
+  isDayMode = true,
+  isEditingZones = false,
+  onZoneCreate = null
 }) => {
   const stageRef = useRef(null);
   const containerRef = useRef(null);
   const [selectedId, setSelectedId] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  const [isDrawingZone, setIsDrawingZone] = useState(false);
+  const [currentZone, setCurrentZone] = useState(null);
   
   // Define tamanho virtual/base da cena (dimensões de referência)
   const sceneWidth = 1200;
@@ -434,8 +520,86 @@ const KonvaCanvas = ({
     return () => resizeObserver.disconnect();
   }, []); // Sem dependências - só executa uma vez
 
-  // Click/Touch no Stage para desselecionar decoração
+  // Handlers para modo de edição de zonas
+  const handleMouseDownZone = function(e) {
+    if (!isEditingZones || !onZoneCreate) return;
+    
+    var stage = e.target.getStage();
+    var pointerPos = stage.getPointerPosition();
+    var containerRect = containerRef.current.getBoundingClientRect();
+    
+    // Converter para coordenadas do canvas virtual
+    var x = pointerPos.x / stageSize.scale;
+    var y = pointerPos.y / stageSize.scale;
+    
+    setIsDrawingZone(true);
+    setCurrentZone({
+      startX: x,
+      startY: y,
+      x: x,
+      y: y,
+      width: 0,
+      height: 0
+    });
+  };
+
+  const handleMouseMoveZone = function(e) {
+    if (!isEditingZones || !isDrawingZone || !currentZone) return;
+    
+    var stage = e.target.getStage();
+    var pointerPos = stage.getPointerPosition();
+    var containerRect = containerRef.current.getBoundingClientRect();
+    
+    // Converter para coordenadas do canvas virtual
+    var x = pointerPos.x / stageSize.scale;
+    var y = pointerPos.y / stageSize.scale;
+    
+    // Calcular dimensões do retângulo
+    var newX = Math.min(currentZone.startX, x);
+    var newY = Math.min(currentZone.startY, y);
+    var newWidth = Math.abs(x - currentZone.startX);
+    var newHeight = Math.abs(y - currentZone.startY);
+    
+    setCurrentZone({
+      startX: currentZone.startX,
+      startY: currentZone.startY,
+      x: newX,
+      y: newY,
+      width: newWidth,
+      height: newHeight
+    });
+  };
+
+  const handleMouseUpZone = function(e) {
+    if (!isEditingZones || !isDrawingZone || !currentZone) return;
+    
+    // Só criar zona se tiver tamanho mínimo
+    if (currentZone.width > 10 && currentZone.height > 10) {
+      var newZone = {
+        id: 'temp-zone-' + Date.now(),
+        x: currentZone.x,
+        y: currentZone.y,
+        width: currentZone.width,
+        height: currentZone.height,
+        label: 'Zone ' + (snapZones.length + 1)
+      };
+      
+      if (onZoneCreate) {
+        onZoneCreate(newZone);
+      }
+    }
+    
+    setIsDrawingZone(false);
+    setCurrentZone(null);
+  };
+
+  // Click/Touch no Stage para desselecionar decoração ou iniciar criação de zona
   const checkDeselect = (e) => {
+    if (isEditingZones) {
+      // No modo edição, não desselecionar decorações
+      return;
+    }
+    
     // Desselecionar quando clica em área vazia
     const clickedOnEmpty = e.target === e.target.getStage();
     if (clickedOnEmpty) {
@@ -516,8 +680,8 @@ const KonvaCanvas = ({
       var x = (e.clientX - containerRect.left) / stageSize.scale;
       var y = (e.clientY - containerRect.top) / stageSize.scale;
       
-      // Aplicar snap se houver zonas definidas e modo noite ativo
-      if (!isDayMode && snapZones && snapZones.length > 0) {
+      // Aplicar snap se houver zonas definidas para o modo atual
+      if (snapZones && snapZones.length > 0) {
         var snapped = checkSnapToZone(x, y, snapZones);
         x = snapped.x;
         y = snapped.y;
@@ -596,13 +760,17 @@ const KonvaCanvas = ({
         height={stageSize.height}
         scaleX={stageSize.scale}
         scaleY={stageSize.scale}
-        onMouseDown={checkDeselect}
+        onMouseDown={isEditingZones ? handleMouseDownZone : checkDeselect}
+        onMouseMove={isEditingZones ? handleMouseMoveZone : undefined}
+        onMouseUp={isEditingZones ? handleMouseUpZone : undefined}
         onTouchStart={checkDeselect}
         className={`rounded-lg ${
           canvasImages.length > 0 || dragOver
             ? (dragOver 
                 ? 'ring-2 ring-primary bg-primary/10' 
-                : 'bg-default-100')
+                : isEditingZones
+                  ? 'ring-2 ring-warning bg-warning/5 cursor-crosshair'
+                  : 'bg-default-100')
             : 'border-2 border-dashed border-default-300 bg-default-50'
         }`}
       >
@@ -620,12 +788,36 @@ const KonvaCanvas = ({
           ))}
         </Layer>
 
-        {/* Layer 1.5: Snap Zone Markers (apenas modo noite) */}
+        {/* Layer 1.5: Snap Zone Markers (modo noite ou edição) */}
         <Layer>
+          {/* Zonas salvas (mostrar sempre quando houver zonas) */}
           <SnapZoneMarkers 
             zones={snapZones} 
-            isVisible={!isDayMode}
+            isVisible={snapZones.length > 0 && !isEditingZones}
           />
+          
+          {/* Zonas temporárias sendo criadas (modo edição) */}
+          {isEditingZones && currentZone && currentZone.width > 0 && currentZone.height > 0 && (
+            <Rect
+              x={currentZone.x}
+              y={currentZone.y}
+              width={currentZone.width}
+              height={currentZone.height}
+              stroke="rgba(255, 193, 7, 0.9)"
+              strokeWidth={2}
+              fill="rgba(255, 193, 7, 0.2)"
+              listening={false}
+              dash={[5, 5]}
+            />
+          )}
+          
+          {/* Mostrar todas as zonas no modo edição */}
+          {isEditingZones && (
+            <SnapZoneMarkers 
+              zones={snapZones} 
+              isVisible={true}
+            />
+          )}
         </Layer>
 
         {/* Layer 2: Decorações (arrastáveis com Transformer) */}
@@ -635,6 +827,8 @@ const KonvaCanvas = ({
               key={decoration.id}
               decoration={decoration}
               isSelected={decoration.id === selectedId}
+              snapZones={snapZones}
+              isDayMode={isDayMode}
               onSelect={() => {
                 console.log('✅ Decoração selecionada:', decoration.id);
                 setSelectedId(decoration.id);
@@ -723,9 +917,29 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   
   // Estados para sistema YOLO12 Snap Zones
   const [snapZonesByImage, setSnapZonesByImage] = useState({}); // Mapeia zonas de snap por imagem
+  
+  // Carregar dados salvos do formData ao inicializar
+  useEffect(function() {
+    if (formData?.snapZonesByImage && Object.keys(formData.snapZonesByImage).length > 0) {
+      console.log('📦 Carregando zonas salvas do formData:', formData.snapZonesByImage);
+      setSnapZonesByImage(formData.snapZonesByImage);
+    }
+    
+    if (formData?.canvasDecorations && Array.isArray(formData.canvasDecorations) && formData.canvasDecorations.length > 0) {
+      console.log('📦 Carregando decorações salvas do formData:', formData.canvasDecorations.length, 'decorações');
+      setDecorations(formData.canvasDecorations);
+    }
+    
+    if (formData?.decorationsByImage && Object.keys(formData.decorationsByImage).length > 0) {
+      console.log('📦 Carregando decorações por imagem do formData');
+      setDecorationsByImage(formData.decorationsByImage);
+    }
+  }, []); // Executar apenas uma vez ao montar
   const [analyzingImageId, setAnalyzingImageId] = useState(null); // ID da imagem que está sendo analisada
   const [analysisComplete, setAnalysisComplete] = useState({}); // Mapeia quais imagens já foram analisadas
-  const [showSnapZonesPanel, setShowSnapZonesPanel] = useState(false); // Painel oculto por padrão
+  const [showUnifiedPanel, setShowUnifiedPanel] = useState(false); // Painel unificado oculto por padrão
+  const [isEditingZones, setIsEditingZones] = useState(false); // Modo de edição visual
+  const [tempZones, setTempZones] = useState([]); // Zonas temporárias sendo criadas no modo edição
   
   // Imagens carregadas (simuladas) - dados de origem
   const loadedImages = [
@@ -865,6 +1079,12 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
     const newMode = !isDayMode;
     setIsDayMode(newMode);
     
+    // Cancelar modo de edição ao alternar modo para evitar confusão
+    if (isEditingZones) {
+      setIsEditingZones(false);
+      setTempZones([]);
+    }
+    
     // Se há uma imagem selecionada, atualizar a imagem no canvas
     if (selectedImage && canvasImages.length > 0) {
       console.log('🌓 Alternando modo:', newMode ? 'Day' : 'Night');
@@ -941,105 +1161,247 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
     }
   };
 
-  // Funções para gerenciar snap zones
+  // Funções para gerenciar snap zones (compartilhadas entre dia e noite)
   const handleAddSnapZone = (zone) => {
     if (!selectedImage) return;
     
-    var currentZones = snapZonesByImage[selectedImage.id] || [];
+    var imageZones = snapZonesByImage[selectedImage.id] || { day: [], night: [] };
+    var currentZones = imageZones.day || imageZones.night || []; // Usar qualquer um que tenha, ou vazio
     var updatedZones = [...currentZones, zone];
     
+    // Salvar em ambos os modos (dia e noite)
     setSnapZonesByImage(prev => ({
       ...prev,
-      [selectedImage.id]: updatedZones
+      [selectedImage.id]: {
+        day: updatedZones,
+        night: updatedZones
+      }
     }));
     
-    console.log('✅ Zona de snap adicionada:', zone.id, 'para imagem:', selectedImage.id);
+    console.log('✅ Zona de snap adicionada:', zone.id, 'para imagem:', selectedImage.id, '(dia e noite)');
   };
 
   const handleRemoveSnapZone = (zoneId) => {
     if (!selectedImage) return;
     
-    var currentZones = snapZonesByImage[selectedImage.id] || [];
+    var imageZones = snapZonesByImage[selectedImage.id] || { day: [], night: [] };
+    var currentZones = imageZones.day || imageZones.night || [];
     var updatedZones = currentZones.filter(function(z) {
       return z.id !== zoneId;
     });
     
+    // Remover de ambos os modos (dia e noite)
     setSnapZonesByImage(prev => ({
       ...prev,
-      [selectedImage.id]: updatedZones
+      [selectedImage.id]: {
+        day: updatedZones,
+        night: updatedZones
+      }
     }));
     
-    console.log('🗑️ Zona de snap removida:', zoneId);
+    console.log('🗑️ Zona de snap removida:', zoneId, '(dia e noite)');
   };
 
-  // Detectar quando conversão para noite completa e disparar análise YOLO12
+  // Função recursiva para disparar análise YOLO12 sequencialmente
+  var triggerYOLOAnalysis = function(imageId) {
+    if (!imageId) return;
+    
+    // Verificar se já foi analisada usando o estado atual
+    setAnalysisComplete(function(prev) {
+      if (prev[imageId]) {
+        return prev; // Já analisada, não fazer nada
+      }
+      
+      console.log('🔍 Disparando análise YOLO12 para imagem:', imageId);
+      setAnalyzingImageId(imageId);
+      
+      // Após análise completar
+      setTimeout(function() {
+        console.log('✅ Análise YOLO12 completa para imagem:', imageId);
+        setAnalyzingImageId(null);
+        
+        // Marcar como completa
+        setAnalysisComplete(function(prevState) {
+          var updated = {};
+          for (var key in prevState) {
+            updated[key] = prevState[key];
+          }
+          updated[imageId] = true;
+          
+          // Encontrar próximo índice
+          var currentIndex = uploadedImages.findIndex(function(img) {
+            return img.id === imageId;
+          });
+          
+          // Disparar análise na próxima imagem se houver
+          if (currentIndex >= 0 && currentIndex < uploadedImages.length - 1) {
+            var nextImageId = uploadedImages[currentIndex + 1].id;
+            
+            setTimeout(function() {
+              triggerYOLOAnalysis(nextImageId);
+            }, 300);
+          }
+          
+          return updated;
+        });
+      }, 2500); // Duração da animação YOLO12
+      
+      return prev;
+    });
+  };
+
+  // Detectar quando conversão para noite completa e disparar análise YOLO12 sequencialmente
   useEffect(function() {
     if (activeGifIndex >= 0 && activeGifIndex < uploadedImages.length) {
       var imageId = uploadedImages[activeGifIndex].id;
       
-      // Se a análise ainda não foi completada para esta imagem, disparar após delay
-      if (!analysisComplete[imageId]) {
-        var timeoutId = setTimeout(function() {
-          // Disparar análise YOLO12 no thumbnail específico
-          setAnalyzingImageId(imageId);
+      // Verificar se análise ainda não foi iniciada para esta imagem
+      setAnalysisComplete(function(prev) {
+        if (!prev[imageId]) {
+          // Disparar após conversão completar (4 segundos)
+          var timeoutId = setTimeout(function() {
+            triggerYOLOAnalysis(imageId);
+          }, 4000); // Aguardar conversão completar (duração do NightThumb)
           
-          // Após análise completar, marcar como completa
-          setTimeout(function() {
-            setAnalyzingImageId(null);
-            setAnalysisComplete(function(prev) {
-              var updated = {};
-              for (var key in prev) {
-                updated[key] = prev[key];
-              }
-              updated[imageId] = true;
-              return updated;
-            });
-          }, 2500); // Duração da animação YOLO12
-        }, 4000); // Aguardar conversão completar (duração do NightThumb)
-        
-        return function() {
-          clearTimeout(timeoutId);
-        };
-      }
+          return prev;
+        }
+        return prev;
+      });
     }
-  }, [activeGifIndex, uploadedImages, analysisComplete]);
+  }, [activeGifIndex, uploadedImages]);
 
-  // Obter zonas de snap da imagem atual
-  var currentSnapZones = selectedImage ? (snapZonesByImage[selectedImage.id] || []) : [];
+  // Salvar zonas temporárias e sair do modo edição
+  const handleSaveZones = function() {
+    if (!selectedImage || tempZones.length === 0) {
+      console.log('⚠️ Nenhuma zona para salvar');
+      return;
+    }
+    
+    var imageZones = snapZonesByImage[selectedImage.id] || { day: [], night: [] };
+    // Usar zonas existentes de qualquer modo (ou vazio)
+    var currentZones = imageZones.day || imageZones.night || [];
+    var updatedZones = [...currentZones, ...tempZones];
+    
+    // Salvar em ambos os modos (dia e noite)
+    setSnapZonesByImage(function(prev) {
+      var updated = {};
+      for (var key in prev) {
+        updated[key] = prev[key];
+      }
+      updated[selectedImage.id] = {
+        day: updatedZones,
+        night: updatedZones
+      };
+      return updated;
+    });
+    
+    console.log('✅ Zonas salvas:', updatedZones.length, 'zonas para imagem:', selectedImage.id, '(dia e noite)');
+    setTempZones([]);
+    setIsEditingZones(false);
+  };
+
+  // Cancelar edição
+  const handleCancelEditZones = function() {
+    setTempZones([]);
+    setIsEditingZones(false);
+    console.log('❌ Edição de zonas cancelada');
+  };
+
+  // Obter zonas de snap da imagem atual (compartilhadas entre dia e noite)
+  var imageZones = selectedImage ? (snapZonesByImage[selectedImage.id] || { day: [], night: [] }) : { day: [], night: [] };
+  // Usar zonas de qualquer modo (são as mesmas)
+  var currentSnapZones = imageZones.day || imageZones.night || [];
+  var allZonesForDisplay = isEditingZones ? [...currentSnapZones, ...tempZones] : currentSnapZones;
+  
+  // Migração: se imageZones é um array (estrutura antiga), converter para nova estrutura
+  useEffect(function() {
+    if (!selectedImage) return;
+    
+    var imageZones = snapZonesByImage[selectedImage.id];
+    if (Array.isArray(imageZones)) {
+      console.log('⚠️ Migrando zonas antigas para nova estrutura:', selectedImage.id);
+      setSnapZonesByImage(function(prev) {
+        var updated = {};
+        var needsUpdate = false;
+        
+        for (var key in prev) {
+          if (Array.isArray(prev[key])) {
+            // Migrar para ambos os modos (dia e noite)
+            updated[key] = { day: prev[key], night: prev[key] };
+            needsUpdate = true;
+          } else {
+            updated[key] = prev[key];
+          }
+        }
+        
+        // Só retornar atualizado se realmente houve mudança
+        return needsUpdate ? updated : prev;
+      });
+    }
+  }, [selectedImage?.id]); // Removido snapZonesByImage das dependências para evitar loop
+  
+  // Debug: log do estado atual das zonas (apenas quando muda seleção ou modo)
+  useEffect(function() {
+    if (selectedImage) {
+      var imageZones = snapZonesByImage[selectedImage.id] || { day: [], night: [] };
+      var currentZones = imageZones.day || imageZones.night || [];
+      console.log('🔍 Zonas para imagem', selectedImage.id, '(dia e noite):', currentZones.length, 'zonas', currentZones);
+    }
+  }, [selectedImage?.id, isDayMode]); // Removido snapZonesByImage para evitar logs excessivos
 
   // Salvar dados no formData
   useEffect(() => {
     onInputChange("canvasDecorations", decorations);
     onInputChange("canvasImages", canvasImages);
     onInputChange("snapZonesByImage", snapZonesByImage);
-  }, [decorations, canvasImages, snapZonesByImage]); // Removido onInputChange das dependências para evitar loop infinito
+    onInputChange("decorationsByImage", decorationsByImage);
+  }, [decorations, canvasImages, snapZonesByImage, decorationsByImage]); // Removido onInputChange das dependências para evitar loop infinito
 
   return (
     <div className="h-full flex flex-col">
       {uploadStep === 'uploading' && <UploadModal onUploadComplete={handleUploadComplete} />}
       {uploadStep === 'loading' && <LoadingIndicator />}
       
-      {/* Painel de configuração de snap zones (oculto por padrão) */}
+      {/* Painel unificado de snap zones */}
       {uploadStep === 'done' && (
         <>
-          <SnapZonesPanel
+          <UnifiedSnapZonesPanel
+            selectedImage={selectedImage}
             zones={currentSnapZones}
+            tempZones={tempZones}
+            isEditingZones={isEditingZones}
+            isDayMode={isDayMode}
+            isAnalyzed={selectedImage ? (analysisComplete[selectedImage.id] || false) : false}
+            onToggleEditMode={() => {
+              if (isEditingZones) {
+                handleCancelEditZones();
+              } else {
+                setIsEditingZones(true);
+                setTempZones([]);
+                console.log('✏️ Modo edição de zonas ativado');
+              }
+            }}
+            onSaveZones={handleSaveZones}
+            onCancelEdit={handleCancelEditZones}
             onAddZone={handleAddSnapZone}
             onRemoveZone={handleRemoveSnapZone}
-            isVisible={showSnapZonesPanel}
-            onToggle={() => setShowSnapZonesPanel(!showSnapZonesPanel)}
+            isVisible={showUnifiedPanel}
+            onToggle={() => setShowUnifiedPanel(!showUnifiedPanel)}
           />
-          {/* Botão para mostrar/ocultar painel - mais visível */}
+          {/* Botão para mostrar/ocultar painel */}
           <Button
-            isIconOnly
             size="md"
             variant="flat"
             color="primary"
-            className="fixed bottom-4 right-4 z-40 shadow-lg hover:shadow-xl transition-shadow"
-            onPress={() => setShowSnapZonesPanel(!showSnapZonesPanel)}
+            className="fixed bottom-4 right-4 z-[100] shadow-lg hover:shadow-xl transition-shadow"
+            onPress={() => {
+              console.log('🔧 Toggle Unified Panel:', !showUnifiedPanel);
+              setShowUnifiedPanel(!showUnifiedPanel);
+            }}
             title="Configurar Snap Zones"
+            startContent={<Icon icon="lucide:crosshair" className="text-lg" />}
           >
-            <Icon icon="lucide:crosshair" className="text-lg" />
+            Snap Zones
           </Button>
         </>
       )}
@@ -1054,61 +1416,62 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
             </div>
             <div className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4 space-y-2 md:space-y-3">
               {uploadedImages.map((image, index) => (
-                <Card
-                  key={image.id}
-                  isFooterBlurred
-                  isPressable
-                  className={`cursor-pointer border-none transition-all duration-200 relative ${
-                    selectedImage?.id === image.id 
-                      ? 'ring-2 ring-primary shadow-lg' 
-                      : 'hover:ring-1 hover:ring-primary/50'
-                  }`}
-                  radius="lg"
-                  onPress={() => {
-                    console.log('🖱️ CARD CLICADO - Imagem:', image.name);
-                    handleImageAddToCanvas(image);
-                  }}
-                >
-                  {/* NightThumb com animação de dia para noite */}
-                  <NightThumb
-                    dayImage={image.thumbnail}
-                    nightImage={image.nightVersion}
-                    filename={image.name}
-                    isActive={index === activeGifIndex}
-                    duration={4000}
-                  />
+                <div key={image.id} className="relative">
+                  <Card
+                    isFooterBlurred
+                    isPressable
+                    className={`cursor-pointer border-none transition-all duration-200 ${
+                      selectedImage?.id === image.id 
+                        ? 'ring-2 ring-primary shadow-lg' 
+                        : 'hover:ring-1 hover:ring-primary/50'
+                    }`}
+                    radius="lg"
+                    onPress={() => {
+                      console.log('🖱️ CARD CLICADO - Imagem:', image.name);
+                      handleImageAddToCanvas(image);
+                    }}
+                  >
+                    {/* NightThumb com animação de dia para noite */}
+                    <NightThumb
+                      dayImage={image.thumbnail}
+                      nightImage={image.nightVersion}
+                      filename={image.name}
+                      isActive={index === activeGifIndex}
+                      duration={4000}
+                    />
+                    
+                    <Image
+                      alt={image.name}
+                      className="object-cover"
+                      height={120}
+                      src={image.thumbnail}
+                      width="100%"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div className="w-full h-full hidden items-center justify-center bg-default-100">
+                      <Icon icon="lucide:image" className="text-4xl text-default-400" />
+                    </div>
+                    
+                    <CardFooter className="absolute bg-black/40 bottom-0 z-10 py-1 pointer-events-none">
+                      <div className="flex grow gap-2 items-center">
+                        <p className="text-tiny text-white/80 truncate">{image.name}</p>
+                      </div>
+                      {selectedImage?.id === image.id && (
+                        <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                          <Icon icon="lucide:check" className="text-white text-xs" />
+                        </div>
+                      )}
+                    </CardFooter>
+                  </Card>
                   
-                  {/* Overlay de análise YOLO12 no thumbnail específico */}
+                  {/* Overlay de análise YOLO12 no thumbnail específico - FORA do Card para garantir z-index */}
                   {analyzingImageId === image.id && (
                     <YOLO12ThumbnailOverlay duration={2500} />
                   )}
-                  
-                  <Image
-                    alt={image.name}
-                    className="object-cover"
-                    height={120}
-                    src={image.thumbnail}
-                    width="100%"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                  <div className="w-full h-full hidden items-center justify-center bg-default-100">
-                    <Icon icon="lucide:image" className="text-4xl text-default-400" />
-                  </div>
-                  
-                  <CardFooter className="absolute bg-black/40 bottom-0 z-10 py-1 pointer-events-none">
-                    <div className="flex grow gap-2 items-center">
-                      <p className="text-tiny text-white/80 truncate">{image.name}</p>
-                    </div>
-                    {selectedImage?.id === image.id && (
-                      <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                        <Icon icon="lucide:check" className="text-white text-xs" />
-                      </div>
-                    )}
-                  </CardFooter>
-                </Card>
+                </div>
               ))}
 
               {/* Fake add image card (placed after sources) */}
@@ -1195,8 +1558,14 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                   decorations={decorations}
                   canvasImages={canvasImages}
                   selectedImage={selectedImage}
-                  snapZones={currentSnapZones}
+                  snapZones={allZonesForDisplay}
                   isDayMode={isDayMode}
+                  isEditingZones={isEditingZones}
+                  onZoneCreate={(zone) => {
+                    setTempZones(function(prev) {
+                      return [...prev, zone];
+                    });
+                  }}
                   onRequireBackground={() => {
                     setNoBgWarning(true);
                     setTimeout(() => setNoBgWarning(false), 2000);

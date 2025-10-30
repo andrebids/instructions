@@ -76,6 +76,7 @@ export const SnapZonesPanel = ({
           size="sm"
           variant="light"
           onPress={onToggle}
+          aria-label="Close panel"
         >
           <Icon icon="lucide:x" />
         </Button>
@@ -177,6 +178,7 @@ export const SnapZonesPanel = ({
                           onRemoveZone(zone.id);
                         }
                       }}
+            aria-label="Remove zone"
                     >
                       <Icon icon="lucide:trash-2" className="text-sm" />
                     </Button>

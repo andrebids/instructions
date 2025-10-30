@@ -63,6 +63,11 @@ export const useProjectForm = (onClose) => {
         budget: formData.budget ? parseFloat(formData.budget) : null,
         startDate: null,
         endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
+        // Dados do canvas (AI Designer)
+        canvasDecorations: formData.canvasDecorations || [],
+        canvasImages: formData.canvasImages || [],
+        snapZonesByImage: formData.snapZonesByImage || {},
+        decorationsByImage: formData.decorationsByImage || {},
       };
       
       logger.api('projects', 'POST', projectData);
