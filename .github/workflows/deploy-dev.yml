@@ -78,6 +78,7 @@ jobs:
           set -e
           set -x
           REMOTE_PATH="${{ secrets.REMOTE_PATH }}"
+          VITE_CLERK_PUBLISHABLE_KEY="${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}"
           # Expandir ~ para caminho absoluto se necessário
           if [[ "\$REMOTE_PATH" == ~* ]]; then
             REMOTE_PATH="\${REMOTE_PATH/#\~/\$HOME}"
@@ -112,30 +113,42 @@ jobs:
           echo "🐘 Subindo Postgres..."
           docker compose -f instructions-project/docker-compose.dev.yml up -d --pull always || echo "⚠️ Docker Compose pode ter falhado, mas continuando..."
           
-          # 3. Instalar dependências do client e fazer build
-          echo "📦 Fazendo build do frontend..."
+          # 3. Configurar client/.env ANTES do build (obrigatório para Vite)
+          echo "🔐 Configurando variáveis de ambiente do cliente..."
           cd instructions-project/client
+          # Criar ou atualizar o arquivo .env com a chave Clerk
+          if [ -n "\$VITE_CLERK_PUBLISHABLE_KEY" ]; then
+            # Se o arquivo já existe, preservar outras variáveis e atualizar apenas VITE_CLERK_PUBLISHABLE_KEY
+            if [ -f .env ]; then
+              # Remover linha antiga da chave Clerk se existir
+              grep -v "^VITE_CLERK_PUBLISHABLE_KEY=" .env > .env.tmp || true
+              mv .env.tmp .env
+            else
+              # Criar arquivo novo se não existir
+              touch .env
+            fi
+            # Adicionar a chave Clerk ao final do arquivo
+            echo "VITE_CLERK_PUBLISHABLE_KEY=\$VITE_CLERK_PUBLISHABLE_KEY" >> .env
+            echo "✅ VITE_CLERK_PUBLISHABLE_KEY configurada no client/.env"
+          else
+            echo "⚠️ VITE_CLERK_PUBLISHABLE_KEY não foi fornecida como secret"
+            exit 1
+          fi
+          
+          # 4. Instalar dependências do client e fazer build
+          echo "📦 Fazendo build do frontend..."
           npm ci || npm install || echo "⚠️ npm install falhou, mas continuando..."
           npm run build || { echo "❌ Build do frontend falhou!"; exit 1; }
           
-          # 4. Instalar dependências do server
+          # 5. Instalar dependências do server
           echo "📦 Instalando dependências do servidor..."
           cd ../server
           npm ci --omit=dev || npm install --omit=dev || echo "⚠️ npm install falhou, mas continuando..."
           
-          # 5. Garantir que .env existe (preservar se já existir - não sobrescrever se existir)
-          # NOTA: As chaves Clerk devem ser configuradas manualmente no servidor no ficheiro .env
+          # 6. Garantir que server/.env existe (preservar se já existir - não sobrescrever se existir)
           if [ ! -f .env ]; then
             printf "DB_HOST=localhost\nDB_PORT=5433\nDB_NAME=instructions_demo\nDB_USER=demo_user\nDB_PASSWORD=demo_password\nPORT=5000\nNODE_ENV=production\n" > .env
-            echo "⚠️ Ficheiro .env criado. Por favor configure CLERK_PUBLISHABLE_KEY e CLERK_SECRET_KEY manualmente."
-          fi
-          
-          # 6. Garantir que client/.env existe (preservar se já existir)
-          # NOTA: A chave Clerk deve ser configurada manualmente no servidor
-          cd "\$REMOTE_PATH"
-          if [ ! -f instructions-project/client/.env ]; then
-            echo "# VITE_CLERK_PUBLISHABLE_KEY deve ser configurado aqui" > instructions-project/client/.env
-            echo "⚠️ Ficheiro client/.env criado. Por favor configure VITE_CLERK_PUBLISHABLE_KEY manualmente."
+            echo "⚠️ Ficheiro server/.env criado. Por favor configure CLERK_SECRET_KEY manualmente se necessário."
           fi
           
           # 7. Reiniciar servidor Node.js via PM2
