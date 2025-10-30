@@ -336,30 +336,60 @@ export default function AdminProducts() {
 
   // Submeter formulário
   var handleSubmit = function() {
-    var data = new FormData();
+    // Validar campos obrigatórios
+    if (!formData.name || formData.name.trim() === '') {
+      setError("O campo 'Nome' é obrigatório");
+      return;
+    }
     
-    // Adicionar campos básicos
-    data.append("name", formData.name);
-    data.append("price", formData.price);
-    data.append("stock", formData.stock);
-    if (formData.oldPrice) data.append("oldPrice", formData.oldPrice);
-    if (formData.type) data.append("type", formData.type);
-    if (formData.usage) data.append("usage", formData.usage);
-    if (formData.location) data.append("location", formData.location);
-    if (formData.mount) data.append("mount", formData.mount);
-    if (formData.videoFile) data.append("videoFile", formData.videoFile);
-    data.append("tags", JSON.stringify(formData.tags));
-    data.append("specs", JSON.stringify(formData.specs));
-    data.append("availableColors", JSON.stringify(formData.availableColors));
-    data.append("isSourceImage", formData.isSourceImage);
-    data.append("isActive", formData.isActive);
+    // Função auxiliar para converter strings vazias ou "null" para null
+    var toNullIfEmpty = function(value) {
+      if (value === null || value === undefined || value === '' || value === 'null' || value === 'undefined') {
+        return null;
+      }
+      return value;
+    };
     
-    // Adicionar imagens
-    if (imageFiles.dayImage) data.append("dayImage", imageFiles.dayImage);
-    if (imageFiles.nightImage) data.append("nightImage", imageFiles.nightImage);
-    if (imageFiles.animation) data.append("animation", imageFiles.animation);
+    // Criar objeto com os dados (productsAPI.create cria o FormData internamente)
+    var data = {
+      name: formData.name,
+      price: formData.price || 0,
+      stock: formData.stock || 0,
+      oldPrice: toNullIfEmpty(formData.oldPrice),
+      type: toNullIfEmpty(formData.type),
+      usage: toNullIfEmpty(formData.usage),
+      location: toNullIfEmpty(formData.location),
+      mount: toNullIfEmpty(formData.mount),
+      videoFile: toNullIfEmpty(formData.videoFile),
+      tags: formData.tags || [],
+      specs: formData.specs || null,
+      availableColors: formData.availableColors || {},
+      variantProductByColor: formData.variantProductByColor || null,
+      isSourceImage: formData.isSourceImage || false,
+      isActive: formData.isActive !== undefined ? formData.isActive : true,
+      season: toNullIfEmpty(formData.season),
+      isTrending: formData.isTrending || false,
+      releaseYear: formData.releaseYear ? parseInt(formData.releaseYear, 10) : null,
+      isOnSale: formData.isOnSale || false,
+    };
+    
+    // Adicionar ficheiros se existirem
+    if (imageFiles.dayImage) data.dayImage = imageFiles.dayImage;
+    if (imageFiles.nightImage) data.nightImage = imageFiles.nightImage;
+    if (imageFiles.animation) data.animation = imageFiles.animation;
+    if (imageFiles.thumbnail) data.thumbnail = imageFiles.thumbnail;
+    
+    console.log('📦 [AdminProducts] Enviando dados:', {
+      name: data.name,
+      price: data.price,
+      stock: data.stock,
+      hasDayImage: !!data.dayImage,
+      hasNightImage: !!data.nightImage,
+      hasAnimation: !!data.animation
+    });
     
     setLoading(true);
+    setError(null);
     
     var promise = editingProduct
       ? productsAPI.update(editingProduct.id, data)
@@ -373,7 +403,11 @@ export default function AdminProducts() {
       })
       .catch(function(err) {
         console.error("Erro ao salvar produto:", err);
-        setError(err.message || "Erro ao salvar produto");
+        var errorMessage = err.response?.data?.error || err.message || "Erro ao salvar produto";
+        if (err.response?.data?.details) {
+          errorMessage += ": " + err.response.data.details;
+        }
+        setError(errorMessage);
         setLoading(false);
       });
   };
