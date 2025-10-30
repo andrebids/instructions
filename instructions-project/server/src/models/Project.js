@@ -49,6 +49,23 @@ const Project = sequelize.define('Project', {
   feedbackDesigner: {
     type: DataTypes.TEXT,
   },
+  // Campos para dados do canvas (AI Designer)
+  canvasDecorations: {
+    type: DataTypes.JSON,
+    defaultValue: [],
+  },
+  canvasImages: {
+    type: DataTypes.JSON,
+    defaultValue: [],
+  },
+  snapZonesByImage: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+  },
+  decorationsByImage: {
+    type: DataTypes.JSON,
+    defaultValue: {},
+  },
 }, {
   tableName: 'projects',
   timestamps: true,

@@ -189,8 +189,8 @@ async function startServer() {
     // Testar conexão com o banco
     await testConnection();
     
-    // Sincronizar modelos (sem force, para não apagar dados)
-    await sequelize.sync();
+    // Sincronizar modelos (com alter: true para adicionar novos campos sem apagar dados)
+    await sequelize.sync({ alter: true });
     console.log('✅ Modelos sincronizados');
     
     // Iniciar servidor
