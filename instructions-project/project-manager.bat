@@ -305,20 +305,25 @@ if not exist "node_modules" (
     echo ⚠️  node_modules não encontrado no servidor. Instalando dependências...
     set "NEED_INSTALL_SERVER=1"
 ) else (
-    rem Verificar dependências críticas do servidor
-    if not exist "node_modules\sharp" (
+    rem Verificar dependências críticas usando npm list (mais confiável)
+    echo    Verificando dependências críticas (sharp, sequelize, express, pg)...
+    npm list sharp >nul 2>&1
+    if %errorlevel% neq 0 (
         echo ⚠️  sharp não encontrado. Reinstalando dependências...
         set "NEED_INSTALL_SERVER=1"
     )
-    if not exist "node_modules\sequelize" (
+    npm list sequelize >nul 2>&1
+    if %errorlevel% neq 0 (
         echo ⚠️  sequelize não encontrado. Reinstalando dependências...
         set "NEED_INSTALL_SERVER=1"
     )
-    if not exist "node_modules\express" (
+    npm list express >nul 2>&1
+    if %errorlevel% neq 0 (
         echo ⚠️  express não encontrado. Reinstalando dependências...
         set "NEED_INSTALL_SERVER=1"
     )
-    if not exist "node_modules\pg" (
+    npm list pg >nul 2>&1
+    if %errorlevel% neq 0 (
         echo ⚠️  pg não encontrado. Reinstalando dependências...
         set "NEED_INSTALL_SERVER=1"
     )
