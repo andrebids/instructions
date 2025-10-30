@@ -67,17 +67,29 @@ if "%DOCKER_AVAILABLE%"=="1" (
 )
 echo.
 
-echo [2/4] Aguardando PostgreSQL estar pronto...
+echo [2/5] Aguardando PostgreSQL estar pronto...
 timeout /t 5 /nobreak >nul
 echo ✅ PostgreSQL pronto!
 echo.
 
-echo [3/4] Iniciando servidor backend...
+echo [3/5] Executando setup da base de dados (migrations)...
+cd /d "%~dp0server"
+echo    Executando migrations e verificando schema...
+call npm run setup
+if %errorlevel% neq 0 (
+    echo ⚠️  Aviso: Setup pode ter encontrado problemas, mas continuando...
+    echo    Se houver erros, execute manualmente: cd server ^&^& npm run setup
+) else (
+    echo ✅ Setup da base de dados concluído!
+)
+echo.
+
+echo [4/5] Iniciando servidor backend...
 start /min "Backend Server" cmd /k cd /d "%~dp0server" ^&^& npm run dev
 echo ✅ Servidor backend iniciado em http://localhost:5000
 echo.
 
-echo [4/4] Iniciando cliente frontend...
+echo [5/5] Iniciando cliente frontend...
 start /min "Frontend Client" cmd /k cd /d "%~dp0client" ^&^& npm run dev
 echo ✅ Cliente frontend iniciado
 echo.

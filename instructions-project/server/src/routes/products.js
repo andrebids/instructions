@@ -16,7 +16,13 @@ router.post('/', uploadProductImagesWithLimits, productController.create);
 // Atualizar produto com upload opcional de imagens
 router.put('/:id', uploadProductImagesWithLimits, productController.update);
 
-// Deletar produto (soft delete)
+// Arquivar produto (soft delete)
+router.patch('/:id/archive', productController.archiveProduct);
+
+// Desarquivar produto
+router.patch('/:id/unarchive', productController.unarchiveProduct);
+
+// Deletar produto permanentemente (hard delete)
 router.delete('/:id', productController.deleteProduct);
 
 export default router;

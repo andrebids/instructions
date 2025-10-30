@@ -32,7 +32,18 @@ export async function getAll(req, res) {
     }
     
     // Filtro por isActive - apenas se for 'true' ou 'false' (não string vazia)
-    if (query.isActive !== undefined && query.isActive !== '' && query.isActive !== null) {
+    // Por padrão, mostrar apenas produtos ativos (não arquivados)
+    // Se showArchived=true, mostrar todos (arquivados e não arquivados)
+    if (query.showArchived === 'true') {
+      // Se mostrar arquivados, não filtrar por isActive (mostrar todos)
+      // Não adicionar filtro de isActive
+    } else {
+      // Por padrão, mostrar apenas produtos ativos
+      where.isActive = true;
+    }
+    
+    // Se o usuário especificou explicitamente isActive, respeitar isso
+    if (query.isActive !== undefined && query.isActive !== '' && query.isActive !== null && query.showArchived !== 'true') {
       where.isActive = query.isActive === 'true' || query.isActive !== 'false';
     }
     
@@ -432,7 +443,45 @@ export async function update(req, res) {
   }
 }
 
-// DELETE /api/products/:id - Deletar produto (soft delete)
+// PATCH /api/products/:id/archive - Arquivar produto (soft delete)
+export async function archiveProduct(req, res) {
+  try {
+    var product = await Product.findByPk(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    
+    // Arquivar: marcar como inativo
+    await product.update({ isActive: false });
+    
+    res.json({ message: 'Product archived successfully', product: product });
+  } catch (error) {
+    console.error('Erro ao arquivar produto:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+// PATCH /api/products/:id/unarchive - Desarquivar produto
+export async function unarchiveProduct(req, res) {
+  try {
+    var product = await Product.findByPk(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    
+    // Desarquivar: marcar como ativo
+    await product.update({ isActive: true });
+    
+    res.json({ message: 'Product unarchived successfully', product: product });
+  } catch (error) {
+    console.error('Erro ao desarquivar produto:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+// DELETE /api/products/:id - Deletar produto permanentemente (hard delete)
 export async function deleteProduct(req, res) {
   try {
     var product = await Product.findByPk(req.params.id);
@@ -441,10 +490,10 @@ export async function deleteProduct(req, res) {
       return res.status(404).json({ error: 'Product not found' });
     }
     
-    // Soft delete: marcar como inativo
-    await product.update({ isActive: false });
+    // Hard delete: apagar permanentemente da base de dados
+    await product.destroy();
     
-    res.json({ message: 'Product deleted successfully', product: product });
+    res.json({ message: 'Product deleted permanently' });
   } catch (error) {
     console.error('Erro ao deletar produto:', error);
     res.status(500).json({ error: error.message });

@@ -6,10 +6,13 @@
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
+    "setup": "node src/setup.js",
+    "check-env": "node src/check-env.js",
     "seed": "node src/seeds/seedData.js",
     "seed:products": "node src/seeds/seedProducts.js",
     "migrate": "node src/migrations/add-canvas-fields.js",
-    "migrate:products": "node src/migrations/add-product-category-fields.js"
+    "migrate:products": "node src/migrations/add-product-category-fields.js",
+    "migrate:all": "npm run migrate && npm run migrate:products"
   },
   "dependencies": {
     "@clerk/express": "^1.7.42",
