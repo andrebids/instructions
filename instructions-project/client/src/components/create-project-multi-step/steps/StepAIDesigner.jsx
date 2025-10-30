@@ -7,6 +7,7 @@ import useImage from 'use-image';
 import { NightThumb } from '../../NightThumb';
 import { YOLO12ThumbnailOverlay } from './YOLO12ThumbnailOverlay';
 import { UnifiedSnapZonesPanel } from './UnifiedSnapZonesPanel';
+import { projectsAPI } from '../../../services/api';
 
 // Componente para o Modal de Upload
 const UploadModal = ({ onUploadComplete }) => {
@@ -459,7 +460,8 @@ const KonvaCanvas = ({
   snapZones = [],
   isDayMode = true,
   isEditingZones = false,
-  onZoneCreate = null
+  onZoneCreate = null,
+  analysisComplete = {} // Nova prop para verificar se análise YOLO completou
 }) => {
   const stageRef = useRef(null);
   const containerRef = useRef(null);
@@ -585,6 +587,7 @@ const KonvaCanvas = ({
       };
       
       if (onZoneCreate) {
+        console.log('🎨 [DEBUG] Criando zona temporária:', newZone);
         onZoneCreate(newZone);
       }
     }
@@ -788,12 +791,18 @@ const KonvaCanvas = ({
           ))}
         </Layer>
 
-        {/* Layer 1.5: Snap Zone Markers (modo noite ou edição) */}
+        {/* Layer 1.5: Snap Zone Markers (mostrar após análise YOLO completa ou em modo edição) */}
         <Layer>
-          {/* Zonas salvas (mostrar sempre quando houver zonas) */}
+          {/* Zonas salvas (mostrar sempre que houver zonas E análise YOLO completa OU em modo edição) */}
           <SnapZoneMarkers 
             zones={snapZones} 
-            isVisible={snapZones.length > 0 && !isEditingZones}
+            isVisible={
+              snapZones.length > 0 && 
+              (
+                (selectedImage && analysisComplete[selectedImage.id]) || 
+                isEditingZones
+              )
+            }
           />
           
           {/* Zonas temporárias sendo criadas (modo edição) */}
@@ -918,11 +927,54 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   // Estados para sistema YOLO12 Snap Zones
   const [snapZonesByImage, setSnapZonesByImage] = useState({}); // Mapeia zonas de snap por imagem
   
-  // Carregar dados salvos do formData ao inicializar
+  // Carregar dados salvos do formData ao inicializar E quando formData mudar
   useEffect(function() {
+    console.log('📦 [DEBUG] Verificando formData para carregar zonas:', {
+      temSnapZones: !!formData?.snapZonesByImage,
+      snapZonesKeys: formData?.snapZonesByImage ? Object.keys(formData.snapZonesByImage) : [],
+      snapZonesValue: formData?.snapZonesByImage,
+      estadoAtual: Object.keys(snapZonesByImage),
+      formDataId: formData?.id
+    });
+    
+    // Tentar carregar do formData primeiro
     if (formData?.snapZonesByImage && Object.keys(formData.snapZonesByImage).length > 0) {
-      console.log('📦 Carregando zonas salvas do formData:', formData.snapZonesByImage);
-      setSnapZonesByImage(formData.snapZonesByImage);
+      // Só atualizar se for diferente do estado atual
+      var formDataKeys = Object.keys(formData.snapZonesByImage).sort().join(',');
+      var currentKeys = Object.keys(snapZonesByImage).sort().join(',');
+      
+      if (formDataKeys !== currentKeys || JSON.stringify(formData.snapZonesByImage) !== JSON.stringify(snapZonesByImage)) {
+        console.log('📦 [DEBUG] Carregando zonas salvas do formData:', formData.snapZonesByImage);
+        setSnapZonesByImage(formData.snapZonesByImage);
+      } else {
+        console.log('📦 [DEBUG] Zonas já estão carregadas, pulando...');
+      }
+    } else {
+      // Se não há no formData, tentar carregar do localStorage como backup
+      // Usar chave temporária baseada na sessão ou projeto
+      var storageKey = 'snapZonesByImage_temp';
+      if (formData?.id) {
+        storageKey = 'snapZonesByImage_' + formData.id;
+      }
+      
+      try {
+        var savedZones = localStorage.getItem(storageKey);
+        if (savedZones) {
+          var parsedZones = JSON.parse(savedZones);
+          if (parsedZones && Object.keys(parsedZones).length > 0) {
+            console.log('📦 [DEBUG] Carregando zonas do localStorage:', parsedZones);
+            setSnapZonesByImage(parsedZones);
+            // Atualizar formData também
+            onInputChange("snapZonesByImage", parsedZones);
+          } else {
+            console.log('📦 [DEBUG] Nenhuma zona encontrada no formData nem localStorage');
+          }
+        } else {
+          console.log('📦 [DEBUG] Nenhuma zona encontrada no formData nem localStorage');
+        }
+      } catch (e) {
+        console.log('⚠️ Erro ao carregar do localStorage:', e);
+      }
     }
     
     if (formData?.canvasDecorations && Array.isArray(formData.canvasDecorations) && formData.canvasDecorations.length > 0) {
@@ -934,7 +986,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
       console.log('📦 Carregando decorações por imagem do formData');
       setDecorationsByImage(formData.decorationsByImage);
     }
-  }, []); // Executar apenas uma vez ao montar
+  }, [formData?.snapZonesByImage, formData?.id]); // Executar quando formData.snapZonesByImage ou formData.id mudar
   const [analyzingImageId, setAnalyzingImageId] = useState(null); // ID da imagem que está sendo analisada
   const [analysisComplete, setAnalysisComplete] = useState({}); // Mapeia quais imagens já foram analisadas
   const [showUnifiedPanel, setShowUnifiedPanel] = useState(false); // Painel unificado oculto por padrão
@@ -1163,20 +1215,32 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
 
   // Funções para gerenciar snap zones (compartilhadas entre dia e noite)
   const handleAddSnapZone = (zone) => {
-    if (!selectedImage) return;
+    if (!selectedImage) {
+      console.log('⚠️ Nenhuma imagem selecionada para adicionar zona');
+      return;
+    }
+    
+    console.log('➕ [DEBUG] Adicionando zona manual:', zone, 'para imagem:', selectedImage.id);
     
     var imageZones = snapZonesByImage[selectedImage.id] || { day: [], night: [] };
     var currentZones = imageZones.day || imageZones.night || []; // Usar qualquer um que tenha, ou vazio
     var updatedZones = [...currentZones, zone];
     
+    console.log('➕ [DEBUG] Zonas antes:', currentZones.length, '| Zonas depois:', updatedZones.length);
+    
     // Salvar em ambos os modos (dia e noite)
-    setSnapZonesByImage(prev => ({
-      ...prev,
-      [selectedImage.id]: {
+    setSnapZonesByImage(prev => {
+      var updated = {};
+      for (var key in prev) {
+        updated[key] = prev[key];
+      }
+      updated[selectedImage.id] = {
         day: updatedZones,
         night: updatedZones
-      }
-    }));
+      };
+      console.log('➕ [DEBUG] Estado snapZonesByImage atualizado:', updated);
+      return updated;
+    });
     
     console.log('✅ Zona de snap adicionada:', zone.id, 'para imagem:', selectedImage.id, '(dia e noite)');
   };
@@ -1272,15 +1336,24 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
 
   // Salvar zonas temporárias e sair do modo edição
   const handleSaveZones = function() {
-    if (!selectedImage || tempZones.length === 0) {
-      console.log('⚠️ Nenhuma zona para salvar');
+    if (!selectedImage) {
+      console.log('⚠️ Nenhuma imagem selecionada para salvar zonas');
       return;
     }
+    
+    if (tempZones.length === 0) {
+      console.log('⚠️ Nenhuma zona temporária para salvar');
+      return;
+    }
+    
+    console.log('💾 [DEBUG] Salvando zonas temporárias:', tempZones.length, 'zonas para imagem:', selectedImage.id);
     
     var imageZones = snapZonesByImage[selectedImage.id] || { day: [], night: [] };
     // Usar zonas existentes de qualquer modo (ou vazio)
     var currentZones = imageZones.day || imageZones.night || [];
     var updatedZones = [...currentZones, ...tempZones];
+    
+    console.log('💾 [DEBUG] Zonas antes:', currentZones.length, '| Zonas depois:', updatedZones.length);
     
     // Salvar em ambos os modos (dia e noite)
     setSnapZonesByImage(function(prev) {
@@ -1292,6 +1365,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
         day: updatedZones,
         night: updatedZones
       };
+      console.log('💾 [DEBUG] Estado snapZonesByImage atualizado:', updated);
       return updated;
     });
     
@@ -1340,22 +1414,71 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
     }
   }, [selectedImage?.id]); // Removido snapZonesByImage das dependências para evitar loop
   
-  // Debug: log do estado atual das zonas (apenas quando muda seleção ou modo)
+  // Obter zonas de snap da imagem atual (compartilhadas entre dia e noite)
+  var imageZones = selectedImage ? (snapZonesByImage[selectedImage.id] || { day: [], night: [] }) : { day: [], night: [] };
+  // Usar zonas de qualquer modo (são as mesmas)
+  var currentSnapZones = imageZones.day || imageZones.night || [];
+  var allZonesForDisplay = isEditingZones ? [...currentSnapZones, ...tempZones] : currentSnapZones;
+  
+  // Debug: log detalhado quando imagem é selecionada
   useEffect(function() {
     if (selectedImage) {
+      console.log('🔍 [DEBUG] Imagem selecionada:', selectedImage.id);
+      console.log('🔍 [DEBUG] Estado snapZonesByImage:', snapZonesByImage);
+      console.log('🔍 [DEBUG] Zonas para esta imagem:', snapZonesByImage[selectedImage.id]);
       var imageZones = snapZonesByImage[selectedImage.id] || { day: [], night: [] };
       var currentZones = imageZones.day || imageZones.night || [];
-      console.log('🔍 Zonas para imagem', selectedImage.id, '(dia e noite):', currentZones.length, 'zonas', currentZones);
+      console.log('🔍 [DEBUG] Zonas finais calculadas:', currentZones.length, 'zonas', currentZones);
     }
-  }, [selectedImage?.id, isDayMode]); // Removido snapZonesByImage para evitar logs excessivos
+  }, [selectedImage?.id, snapZonesByImage]);
 
-  // Salvar dados no formData
+  // Salvar dados no formData E no localStorage como backup E na base de dados se projeto existir
   useEffect(() => {
+    console.log('💾 [DEBUG] Salvando zonas no formData:', {
+      snapZonesByImage: snapZonesByImage,
+      zonasCount: Object.keys(snapZonesByImage).length,
+      zonasPorImagem: Object.keys(snapZonesByImage).map(key => ({
+        imagem: key,
+        zonas: snapZonesByImage[key]?.day?.length || snapZonesByImage[key]?.night?.length || 0
+      })),
+      projectId: formData?.id
+    });
+    
+    // Salvar no formData
     onInputChange("canvasDecorations", decorations);
     onInputChange("canvasImages", canvasImages);
     onInputChange("snapZonesByImage", snapZonesByImage);
     onInputChange("decorationsByImage", decorationsByImage);
-  }, [decorations, canvasImages, snapZonesByImage, decorationsByImage]); // Removido onInputChange das dependências para evitar loop infinito
+    
+    // Salvar também no localStorage como backup
+    try {
+      var projectId = formData?.id || 'temp';
+      localStorage.setItem('snapZonesByImage_' + projectId, JSON.stringify(snapZonesByImage));
+      console.log('💾 [DEBUG] Zonas salvas no localStorage também (chave: snapZonesByImage_' + projectId + ')');
+    } catch (e) {
+      console.log('⚠️ Erro ao salvar no localStorage:', e);
+    }
+    
+    // Se projeto já existe (tem ID), salvar automaticamente na base de dados
+    if (formData?.id && Object.keys(snapZonesByImage).length > 0) {
+      var timeoutId = setTimeout(function() {
+        projectsAPI.updateCanvas(formData.id, {
+          snapZonesByImage: snapZonesByImage,
+          canvasDecorations: decorations,
+          canvasImages: canvasImages,
+          decorationsByImage: decorationsByImage
+        }).then(function() {
+          console.log('✅ [DEBUG] Zonas salvas na base de dados para projeto:', formData.id);
+        }).catch(function(err) {
+          console.error('❌ [DEBUG] Erro ao salvar zonas na base de dados:', err);
+        });
+      }, 500); // Debounce de 500ms para evitar muitas chamadas
+      
+      return function() {
+        clearTimeout(timeoutId);
+      };
+    }
+  }, [decorations, canvasImages, snapZonesByImage, decorationsByImage, formData?.id]); // Removido onInputChange das dependências para evitar loop infinito
 
   return (
     <div className="h-full flex flex-col">
@@ -1561,9 +1684,13 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                   snapZones={allZonesForDisplay}
                   isDayMode={isDayMode}
                   isEditingZones={isEditingZones}
+                  analysisComplete={analysisComplete}
                   onZoneCreate={(zone) => {
+                    console.log('🎨 [DEBUG] Zona criada no canvas, adicionando a tempZones:', zone);
                     setTempZones(function(prev) {
-                      return [...prev, zone];
+                      var updated = [...prev, zone];
+                      console.log('🎨 [DEBUG] tempZones atualizado:', updated.length, 'zonas temporárias');
+                      return updated;
                     });
                   }}
                   onRequireBackground={() => {

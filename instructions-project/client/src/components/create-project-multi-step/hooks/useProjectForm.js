@@ -28,6 +28,9 @@ export const useProjectForm = (onClose) => {
     description: "",
     // 🆕 Novos campos para Canvas Konva (apenas projectos Simu)
     canvasDecorations: [],    // Array de decorações geradas pelo AI Designer
+    canvasImages: [],          // Array de imagens adicionadas ao canvas
+    snapZonesByImage: {},      // Zonas de snap por imagem: { 'image-id': { day: [], night: [] } }
+    decorationsByImage: {},   // Decorações por imagem: { 'image-id': [...] }
   });
 
   // 🧪 Logging inicial - removido para evitar logs infinitos
@@ -78,6 +81,12 @@ export const useProjectForm = (onClose) => {
       const newProject = await projectsAPI.create(projectData);
       
       logger.lifecycle('useProjectForm', 'Project created', newProject);
+      
+      // Atualizar formData com o ID do projeto criado para permitir auto-save futuro
+      setFormData(prev => ({
+        ...prev,
+        id: newProject.id
+      }));
       
       // Logs de teste removidos
       
