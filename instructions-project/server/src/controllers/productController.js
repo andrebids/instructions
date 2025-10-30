@@ -92,13 +92,31 @@ export async function getAll(req, res) {
     console.log('📦 [PRODUCTS API] Produtos encontrados:', products.length);
     if (products.length > 0) {
       console.log('📦 [PRODUCTS API] Primeiros 3 produtos:', products.slice(0, 3).map(function(p) {
-        return { id: p.id, name: p.name, isSourceImage: p.isSourceImage };
+        return { id: p.id, name: p.name, isSourceImage: p.isSourceImage, isActive: p.isActive };
       }));
     } else {
       console.log('⚠️  [PRODUCTS API] NENHUM PRODUTO ENCONTRADO! Where clause:', JSON.stringify(where));
       // Fazer uma busca sem filtros para debug
-      var allProducts = await Product.findAll({ limit: 1 });
-      console.log('📦 [PRODUCTS API] Total de produtos na BD (sem filtros):', await Product.count());
+      var allProductsCount = await Product.count();
+      console.log('📦 [PRODUCTS API] Total de produtos na BD (sem filtros):', allProductsCount);
+      
+      // Verificar especificamente o IPL317R
+      var ipl317r = await Product.findOne({ where: { id: 'IPL317R' } });
+      if (ipl317r) {
+        console.log('🔍 [PRODUCTS API] IPL317R encontrado na BD:', {
+          id: ipl317r.id,
+          name: ipl317r.name,
+          isActive: ipl317r.isActive,
+          isSourceImage: ipl317r.isSourceImage
+        });
+        console.log('🔍 [PRODUCTS API] IPL317R não aparece porque:', {
+          showArchived: query.showArchived,
+          isActive: ipl317r.isActive,
+          whereIsActive: where.isActive
+        });
+      } else {
+        console.log('⚠️  [PRODUCTS API] IPL317R NÃO encontrado na BD - pode ter sido deletado');
+      }
     }
     
     res.json(products);
@@ -484,18 +502,130 @@ export async function unarchiveProduct(req, res) {
 // DELETE /api/products/:id - Deletar produto permanentemente (hard delete)
 export async function deleteProduct(req, res) {
   try {
+    console.log('🗑️  [DELETE PRODUCT] Iniciando deleção do produto:', req.params.id);
+    
     var product = await Product.findByPk(req.params.id);
     
     if (!product) {
+      console.log('❌ [DELETE PRODUCT] Produto não encontrado:', req.params.id);
       return res.status(404).json({ error: 'Product not found' });
     }
     
-    // Hard delete: apagar permanentemente da base de dados
-    await product.destroy();
+    console.log('📦 [DELETE PRODUCT] Produto encontrado:', {
+      id: product.id,
+      name: product.name,
+      imagesDayUrl: product.imagesDayUrl,
+      imagesNightUrl: product.imagesNightUrl,
+      animationUrl: product.animationUrl,
+      thumbnailUrl: product.thumbnailUrl,
+      availableColors: product.availableColors
+    });
     
-    res.json({ message: 'Product deleted permanently' });
+    // Coletar todos os ficheiros de imagem/vídeo para apagar
+    var filesToDelete = [];
+    var uploadDir = path.resolve(process.cwd(), 'public/uploads/products');
+    
+    // Adicionar imagem de dia
+    if (product.imagesDayUrl) {
+      var dayImagePath = path.join(process.cwd(), 'public', product.imagesDayUrl);
+      if (fs.existsSync(dayImagePath)) {
+        filesToDelete.push({ path: dayImagePath, type: 'imagesDayUrl' });
+        console.log('📸 [DELETE PRODUCT] Ficheiro de dia encontrado:', dayImagePath);
+      } else {
+        console.log('⚠️  [DELETE PRODUCT] Ficheiro de dia não encontrado:', dayImagePath);
+      }
+    }
+    
+    // Adicionar imagem de noite
+    if (product.imagesNightUrl) {
+      var nightImagePath = path.join(process.cwd(), 'public', product.imagesNightUrl);
+      if (fs.existsSync(nightImagePath)) {
+        filesToDelete.push({ path: nightImagePath, type: 'imagesNightUrl' });
+        console.log('🌙 [DELETE PRODUCT] Ficheiro de noite encontrado:', nightImagePath);
+      } else {
+        console.log('⚠️  [DELETE PRODUCT] Ficheiro de noite não encontrado:', nightImagePath);
+      }
+    }
+    
+    // Adicionar animação
+    if (product.animationUrl) {
+      var animationPath = path.join(process.cwd(), 'public', product.animationUrl);
+      if (fs.existsSync(animationPath)) {
+        filesToDelete.push({ path: animationPath, type: 'animationUrl' });
+        console.log('🎬 [DELETE PRODUCT] Ficheiro de animação encontrado:', animationPath);
+      } else {
+        console.log('⚠️  [DELETE PRODUCT] Ficheiro de animação não encontrado:', animationPath);
+      }
+    }
+    
+    // Adicionar thumbnail
+    if (product.thumbnailUrl) {
+      var thumbnailPath = path.join(process.cwd(), 'public', product.thumbnailUrl);
+      if (fs.existsSync(thumbnailPath)) {
+        filesToDelete.push({ path: thumbnailPath, type: 'thumbnailUrl' });
+        console.log('🖼️  [DELETE PRODUCT] Ficheiro de thumbnail encontrado:', thumbnailPath);
+      } else {
+        console.log('⚠️  [DELETE PRODUCT] Ficheiro de thumbnail não encontrado:', thumbnailPath);
+      }
+    }
+    
+    // Adicionar imagens de cores disponíveis
+    if (product.availableColors && typeof product.availableColors === 'object') {
+      console.log('🎨 [DELETE PRODUCT] Verificando imagens de cores disponíveis...');
+      for (var colorKey in product.availableColors) {
+        if (product.availableColors.hasOwnProperty(colorKey)) {
+          var colorUrl = product.availableColors[colorKey];
+          if (colorUrl && typeof colorUrl === 'string') {
+            var colorImagePath = path.join(process.cwd(), 'public', colorUrl);
+            if (fs.existsSync(colorImagePath)) {
+              filesToDelete.push({ path: colorImagePath, type: 'availableColors.' + colorKey });
+              console.log('🎨 [DELETE PRODUCT] Ficheiro de cor encontrado:', colorImagePath, '(' + colorKey + ')');
+            } else {
+              console.log('⚠️  [DELETE PRODUCT] Ficheiro de cor não encontrado:', colorImagePath, '(' + colorKey + ')');
+            }
+          }
+        }
+      }
+    }
+    
+    console.log('🗑️  [DELETE PRODUCT] Total de ficheiros para apagar:', filesToDelete.length);
+    
+    // Apagar ficheiros físicos
+    var deletedFiles = 0;
+    var failedFiles = [];
+    
+    for (var i = 0; i < filesToDelete.length; i++) {
+      var fileInfo = filesToDelete[i];
+      try {
+        fs.unlinkSync(fileInfo.path);
+        deletedFiles++;
+        console.log('✅ [DELETE PRODUCT] Ficheiro apagado:', fileInfo.path, '(' + fileInfo.type + ')');
+      } catch (fileError) {
+        console.error('❌ [DELETE PRODUCT] Erro ao apagar ficheiro:', fileInfo.path, '-', fileError.message);
+        failedFiles.push({ path: fileInfo.path, error: fileError.message });
+      }
+    }
+    
+    console.log('📊 [DELETE PRODUCT] Resumo de ficheiros:', {
+      total: filesToDelete.length,
+      deleted: deletedFiles,
+      failed: failedFiles.length
+    });
+    
+    // Hard delete: apagar permanentemente da base de dados
+    console.log('🗑️  [DELETE PRODUCT] Apagando produto da base de dados...');
+    await product.destroy();
+    console.log('✅ [DELETE PRODUCT] Produto apagado da base de dados com sucesso!');
+    
+    res.json({ 
+      message: 'Product deleted permanently',
+      filesDeleted: deletedFiles,
+      filesFailed: failedFiles.length,
+      failedFiles: failedFiles.length > 0 ? failedFiles : undefined
+    });
   } catch (error) {
-    console.error('Erro ao deletar produto:', error);
+    console.error('❌ [DELETE PRODUCT] Erro ao deletar produto:', error);
+    console.error('❌ [DELETE PRODUCT] Stack:', error.stack);
     res.status(500).json({ error: error.message });
   }
 }

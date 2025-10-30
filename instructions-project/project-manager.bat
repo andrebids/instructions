@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 title Project Manager - TheCore
 color 0A
 
@@ -307,32 +308,40 @@ if not exist "node_modules" (
 ) else (
     rem Verificar dependências críticas usando npm list (mais confiável)
     echo    Verificando dependências críticas (sharp, sequelize, express, pg)...
+    set "CHECK_ERROR=0"
     npm list sharp >nul 2>&1
-    if %errorlevel% neq 0 (
+    set "CHECK_ERROR=!errorlevel!"
+    if !CHECK_ERROR! neq 0 (
         echo ⚠️  sharp não encontrado. Reinstalando dependências...
         set "NEED_INSTALL_SERVER=1"
     )
+    set "CHECK_ERROR=0"
     npm list sequelize >nul 2>&1
-    if %errorlevel% neq 0 (
+    set "CHECK_ERROR=!errorlevel!"
+    if !CHECK_ERROR! neq 0 (
         echo ⚠️  sequelize não encontrado. Reinstalando dependências...
         set "NEED_INSTALL_SERVER=1"
     )
+    set "CHECK_ERROR=0"
     npm list express >nul 2>&1
-    if %errorlevel% neq 0 (
+    set "CHECK_ERROR=!errorlevel!"
+    if !CHECK_ERROR! neq 0 (
         echo ⚠️  express não encontrado. Reinstalando dependências...
         set "NEED_INSTALL_SERVER=1"
     )
+    set "CHECK_ERROR=0"
     npm list pg >nul 2>&1
-    if %errorlevel% neq 0 (
+    set "CHECK_ERROR=!errorlevel!"
+    if !CHECK_ERROR! neq 0 (
         echo ⚠️  pg não encontrado. Reinstalando dependências...
         set "NEED_INSTALL_SERVER=1"
     )
 )
 
-if "%NEED_INSTALL_SERVER%"=="1" (
+if "!NEED_INSTALL_SERVER!"=="1" (
     echo 🔄 Instalando dependências do servidor...
     npm install
-    if %errorlevel% neq 0 (
+    if !errorlevel! neq 0 (
         echo ❌ Erro ao instalar dependências do servidor
         echo    Tente executar manualmente: cd server ^&^& npm install
         exit /b 1
