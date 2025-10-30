@@ -5,6 +5,8 @@ import 'dotenv/config';
 import sequelize, { testConnection } from './config/database.js';
 import projectRoutes from './routes/projects.js';
 import decorationRoutes from './routes/decorations.js';
+import productRoutes from './routes/products.js';
+import uploadRoutes from './routes/upload.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -54,6 +56,8 @@ app.get('/health', async (req, res) => {
 // API Routes
 app.use('/api/projects', projectRoutes);
 app.use('/api/decorations', decorationRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Example protected route to inspect auth context
 app.get('/api/me', (req, res) => {
@@ -189,9 +193,21 @@ async function startServer() {
     // Testar conexão com o banco
     await testConnection();
     
-    // Sincronizar modelos (com alter: true para adicionar novos campos sem apagar dados)
-    await sequelize.sync({ alter: true });
-    console.log('✅ Modelos sincronizados');
+    // Carregar modelos primeiro para garantir que estão definidos
+    console.log('🔄 Carregando modelos...');
+    await import('./models/index.js');
+    console.log('✅ Modelos carregados');
+    
+    // Sincronizar modelos (com alter: false para evitar problemas com ENUMs)
+    // Nota: Usar migrations para alterações de schema em produção
+    console.log('🔄 Sincronizando modelos...');
+    try {
+      await sequelize.sync({ alter: false });
+      console.log('✅ Modelos sincronizados');
+    } catch (syncError) {
+      console.warn('⚠️  Aviso durante sincronização:', syncError.message);
+      console.log('💡 Continuando mesmo assim (migrations devem ser executadas separadamente)');
+    }
     
     // Iniciar servidor
     app.listen(PORT, '0.0.0.0', () => {
@@ -204,6 +220,7 @@ async function startServer() {
     });
   } catch (error) {
     console.error('❌ Erro ao iniciar servidor:', error);
+    console.error('❌ Stack:', error.stack);
     process.exit(1);
   }
 }
