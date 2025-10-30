@@ -14,6 +14,7 @@
     "import-db": "node src/import-db.js",
     "seed": "node src/seeds/seedData.js",
     "seed:products": "node src/seeds/seedProducts.js",
+    "insert:trending": "node src/scripts/insert-trending-products.js",
     "migrate": "node src/migrations/add-canvas-fields.js",
     "migrate:products": "node src/migrations/add-product-category-fields.js",
     "migrate:all": "npm run migrate && npm run migrate:products"
