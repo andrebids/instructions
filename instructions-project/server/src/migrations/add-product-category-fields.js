@@ -7,7 +7,7 @@ import { QueryTypes } from 'sequelize';
  * 
  * Campos adicionados:
  * - season: ENUM('xmas', 'summer', null) - Estação/categoria do produto
- * - isTrending: BOOLEAN - Se o produto está em trending (separado de isSourceImage)
+ * - isTrending: BOOLEAN - Se o produto está em trending
  * - releaseYear: INTEGER - Ano de lançamento para produtos NEW
  * - isOnSale: BOOLEAN - Se o produto está em promoção (calculado ou explícito)
  * 
