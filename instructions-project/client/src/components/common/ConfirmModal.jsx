@@ -12,7 +12,7 @@ export default function ConfirmModal({
   onConfirm,
 }) {
   return (
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="sm" placement="center">
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="sm" placement="center" hideCloseButton>
       <ModalContent>
         {(close) => (
           <>
@@ -24,7 +24,13 @@ export default function ConfirmModal({
             </ModalBody>
             <ModalFooter>
               <div className="w-full flex justify-end gap-2">
-                <Button variant="light" onPress={close}>{cancelText}</Button>
+                <Button 
+                  variant="flat" 
+                  onPress={close}
+                  className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-sm"
+                >
+                  {cancelText}
+                </Button>
                 <Button color={confirmColor} onPress={() => { onConfirm?.(); close(); }}>{confirmText}</Button>
               </div>
             </ModalFooter>

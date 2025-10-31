@@ -13,7 +13,7 @@ export default function RequestInfoModal({ isOpen, onOpenChange, product }) {
   }, [isOpen, product]);
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg" placement="center">
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg" placement="center" hideCloseButton>
       <ModalContent>
         {(close) => (
           <>
@@ -26,7 +26,13 @@ export default function RequestInfoModal({ isOpen, onOpenChange, product }) {
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button variant="flat" onPress={close}>Cancel</Button>
+              <Button 
+                variant="flat" 
+                onPress={close}
+                className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-sm"
+              >
+                Cancel
+              </Button>
               <Button color="primary" onPress={() => { /* Stub: send */ console.log("Request info", { productId: product?.id, name, email, message }); close(); }}>Send</Button>
             </ModalFooter>
           </>

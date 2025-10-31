@@ -162,6 +162,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
       size="4xl"
       placement="center"
       scrollBehavior="inside"
+      hideCloseButton
       classNames={{
         wrapper: "items-center justify-center",
         base: "max-w-[1400px] w-[96vw] max-h-[90vh] my-4 bg-[#e4e3e8] dark:bg-content1",
@@ -441,7 +442,13 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
             </ModalBody>
             <ModalFooter>
               <div className="flex items-center gap-2">
-                <Button variant="flat" onPress={close}>Close</Button>
+                <Button 
+                  variant="flat" 
+                  onPress={close}
+                  className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-sm"
+                >
+                  Close
+                </Button>
                 <Button
                   variant="bordered"
                   onPress={() => setFavModalOpen(true)}
