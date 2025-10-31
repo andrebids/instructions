@@ -32,6 +32,18 @@ export default function AdminProducts() {
   var [searchQuery, setSearchQuery] = React.useState("");
   var [availableColorsList, setAvailableColorsList] = React.useState({});
   
+  // Função para inicializar anos automaticamente (ano atual até 2020)
+  var initializeYears = function() {
+    var currentYear = new Date().getFullYear();
+    var years = [];
+    // Criar lista de anos do ano atual até 2020
+    for (var year = currentYear; year >= 2020; year--) {
+      years.push(year);
+    }
+    return years;
+  };
+  
+  var [availableYears, setAvailableYears] = React.useState(initializeYears);
   var { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
   var [editingProduct, setEditingProduct] = React.useState(null);
   var [formData, setFormData] = React.useState({
@@ -40,16 +52,13 @@ export default function AdminProducts() {
     stock: "",
     oldPrice: "",
     type: "",
-    usage: "",
     location: "",
     mount: "",
     tags: [],
-    isSourceImage: false,
     isActive: true,
     specs: {
       descricao: "",
       tecnicas: "",
-      dimensoes: "",
       weight: "",
       effects: "",
       materiais: "",
@@ -57,6 +66,8 @@ export default function AdminProducts() {
     },
     availableColors: {},
     videoFile: "",
+    releaseYear: "",
+    season: "",
   });
   
   var [imageFiles, setImageFiles] = React.useState({
@@ -108,6 +119,48 @@ export default function AdminProducts() {
         console.log('✅ [AdminProducts] Produtos recebidos da API:', data.length);
         console.log('✅ [AdminProducts] Primeiros produtos:', data.slice(0, 3));
         setProducts(data);
+        
+        // Atualizar lista de anos disponíveis com anos dos produtos e ano atual
+        var currentYear = new Date().getFullYear();
+        var yearsSet = {};
+        
+        // Adicionar anos do ano atual até 2020
+        for (var year = currentYear; year >= 2020; year--) {
+          yearsSet[year] = true;
+        }
+        
+        // Adicionar anos dos produtos (mesmo que estejam fora do range padrão)
+        for (var i = 0; i < data.length; i++) {
+          var productYear = data[i].releaseYear;
+          if (productYear) {
+            var yearValue = parseInt(productYear, 10);
+            if (!isNaN(yearValue)) {
+              yearsSet[yearValue] = true;
+            }
+          }
+        }
+        
+        // Criar array de anos ordenado decrescente
+        var updatedYears = [];
+        var allYears = [];
+        for (var key in yearsSet) {
+          if (yearsSet.hasOwnProperty(key)) {
+            allYears.push(parseInt(key, 10));
+          }
+        }
+        
+        // Ordenar decrescente
+        for (var j = 0; j < allYears.length; j++) {
+          for (var k = j + 1; k < allYears.length; k++) {
+            if (allYears[j] < allYears[k]) {
+              var temp = allYears[j];
+              allYears[j] = allYears[k];
+              allYears[k] = temp;
+            }
+          }
+        }
+        
+        setAvailableYears(allYears);
         setLoading(false);
       })
       .catch(function(err) {
@@ -249,7 +302,6 @@ export default function AdminProducts() {
       location: "",
       mount: "",
       tags: [],
-      isSourceImage: false,
       isActive: true,
       specs: {
         descricao: "",
@@ -263,6 +315,7 @@ export default function AdminProducts() {
       availableColors: {},
       videoFile: "",
       releaseYear: "",
+      season: "",
       height: "",
       width: "",
       depth: "",
@@ -285,17 +338,40 @@ export default function AdminProducts() {
   // Abrir modal para editar produto
   var handleEdit = function(product) {
     setEditingProduct(product);
+    
+    // Verificar se o ano do produto está na lista disponível e adicionar se necessário
+    var productYear = product.releaseYear;
+    if (productYear) {
+      var yearValue = parseInt(productYear, 10);
+      if (!isNaN(yearValue)) {
+        var yearExists = false;
+        for (var i = 0; i < availableYears.length; i++) {
+          if (availableYears[i] === yearValue) {
+            yearExists = true;
+            break;
+          }
+        }
+        
+        if (!yearExists) {
+          var updatedYears = availableYears.slice();
+          updatedYears.push(yearValue);
+          updatedYears.sort(function(a, b) {
+            return b - a;
+          });
+          setAvailableYears(updatedYears);
+        }
+      }
+    }
+    
     setFormData({
       name: product.name || "",
       price: product.price || "",
       stock: product.stock || "",
       oldPrice: product.oldPrice || "",
       type: product.type || "",
-      usage: product.usage || "",
       location: product.location || "",
       mount: product.mount || "",
       tags: product.tags || [],
-      isSourceImage: product.isSourceImage || false,
       isActive: product.isActive !== false,
       specs: product.specs || {
         descricao: "",
@@ -308,7 +384,8 @@ export default function AdminProducts() {
       },
       availableColors: product.availableColors || {},
       videoFile: product.videoFile || "",
-      releaseYear: product.releaseYear || "",
+      releaseYear: product.releaseYear ? String(product.releaseYear) : "",
+      season: product.season || "",
       height: product.height || "",
       width: product.width || "",
       depth: product.depth || "",
@@ -462,7 +539,6 @@ export default function AdminProducts() {
       stock: formData.stock || 0,
       oldPrice: toNullIfEmpty(formData.oldPrice),
       type: toNullIfEmpty(formData.type),
-      usage: toNullIfEmpty(formData.usage),
       location: toNullIfEmpty(formData.location),
       mount: toNullIfEmpty(formData.mount),
       videoFile: toNullIfEmpty(formData.videoFile),
@@ -470,7 +546,6 @@ export default function AdminProducts() {
       specs: formData.specs || null,
       availableColors: formData.availableColors || {},
       variantProductByColor: formData.variantProductByColor || null,
-      isSourceImage: formData.isSourceImage || false,
       isActive: formData.isActive !== undefined ? formData.isActive : true,
       season: toNullIfEmpty(formData.season),
       isTrending: formData.isTrending || false,
@@ -592,21 +667,6 @@ export default function AdminProducts() {
             <SelectItem key="Interior">Interior</SelectItem>
           </Select>
           
-          <Select
-            placeholder="Source Image"
-            selectedKeys={filters.isSourceImage !== "" ? [filters.isSourceImage] : []}
-            onSelectionChange={function(keys) {
-              var selected = Array.from(keys)[0] || "";
-              setFilters(function(prev) {
-                return Object.assign({}, prev, { isSourceImage: selected });
-              });
-            }}
-            className="w-40"
-          >
-            <SelectItem key="true">Yes</SelectItem>
-            <SelectItem key="false">No</SelectItem>
-          </Select>
-          
           <Button
             variant="flat"
             onPress={function() {
@@ -666,11 +726,6 @@ export default function AdminProducts() {
                         alt={product.name}
                         className="w-full h-full object-contain"
                       />
-                      {product.isSourceImage && (
-                        <Chip size="sm" color="primary" className="absolute top-2 left-2">
-                          Source Image
-                        </Chip>
-                      )}
                       {!product.isActive && (
                         <Chip size="sm" color="warning" className="absolute top-2 right-2">
                           Archived
@@ -826,17 +881,6 @@ export default function AdminProducts() {
                         <SelectItem key="Interior">Interior</SelectItem>
                       </Select>
                       
-                      <Input
-                        label="Usage"
-                        placeholder="Ex: Shopping"
-                        value={formData.usage}
-                        onValueChange={function(val) {
-                          setFormData(function(prev) {
-                            return Object.assign({}, prev, { usage: val });
-                          });
-                        }}
-                      />
-                      
                       <Select
                         label="Mount"
                         placeholder="Select mount"
@@ -853,17 +897,45 @@ export default function AdminProducts() {
                         <SelectItem key="Transversal">Transversal</SelectItem>
                       </Select>
                       
-                      <Input
+                      <Select
                         label="Ano da Coleção"
-                        type="number"
-                        placeholder="Ex: 2024"
-                        value={formData.releaseYear}
-                        onValueChange={function(val) {
+                        placeholder="Selecione o ano"
+                        selectedKeys={formData.releaseYear ? [formData.releaseYear] : []}
+                        onSelectionChange={function(keys) {
+                          var selected = Array.from(keys)[0] || "";
                           setFormData(function(prev) {
-                            return Object.assign({}, prev, { releaseYear: val });
+                            return Object.assign({}, prev, { releaseYear: selected });
                           });
                         }}
-                      />
+                      >
+                        {function() {
+                          var yearItems = [];
+                          for (var i = 0; i < availableYears.length; i++) {
+                            var year = availableYears[i];
+                            yearItems.push(
+                              <SelectItem key={String(year)} value={String(year)}>
+                                {year}
+                              </SelectItem>
+                            );
+                          }
+                          return yearItems;
+                        }()}
+                      </Select>
+                      
+                      <Select
+                        label="Season"
+                        placeholder="Select season"
+                        selectedKeys={formData.season ? [formData.season] : []}
+                        onSelectionChange={function(keys) {
+                          var selected = Array.from(keys)[0] || "";
+                          setFormData(function(prev) {
+                            return Object.assign({}, prev, { season: selected });
+                          });
+                        }}
+                      >
+                        <SelectItem key="xmas">Xmas</SelectItem>
+                        <SelectItem key="summer">Summer</SelectItem>
+                      </Select>
                     </div>
 
                     {/* Upload de imagens */}
@@ -1046,17 +1118,6 @@ export default function AdminProducts() {
                           }}
                         />
                         <Input
-                          label="Dimensions"
-                          placeholder="Ex: 2.80 m x 0.80 m"
-                          value={formData.specs.dimensoes}
-                          onValueChange={function(val) {
-                            setFormData(function(prev) {
-                              var newSpecs = Object.assign({}, prev.specs, { dimensoes: val });
-                              return Object.assign({}, prev, { specs: newSpecs });
-                            });
-                          }}
-                        />
-                        <Input
                           label="Weight"
                           placeholder="Ex: 11 kg"
                           value={formData.specs.weight}
@@ -1161,16 +1222,6 @@ export default function AdminProducts() {
 
                     {/* Checkboxes */}
                     <div className="flex gap-4">
-                      <Checkbox
-                        isSelected={formData.isSourceImage}
-                        onValueChange={function(val) {
-                          setFormData(function(prev) {
-                            return Object.assign({}, prev, { isSourceImage: val });
-                          });
-                        }}
-                      >
-                        Is Source Image
-                      </Checkbox>
                       <Checkbox
                         isSelected={formData.isActive}
                         onValueChange={function(val) {

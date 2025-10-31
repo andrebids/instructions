@@ -52,11 +52,6 @@ const Product = sequelize.define('Product', {
     allowNull: true,
     comment: '2D ou 3D',
   },
-  usage: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    comment: 'Ex: Shopping',
-  },
   location: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -87,11 +82,6 @@ const Product = sequelize.define('Product', {
     allowNull: true,
     comment: 'Nome do ficheiro de vídeo',
   },
-  isSourceImage: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-    comment: 'Se o produto pode ser usado como Source Image',
-  },
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
@@ -105,7 +95,7 @@ const Product = sequelize.define('Product', {
   isTrending: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
-    comment: 'Se o produto está em trending (separado de isSourceImage)',
+    comment: 'Se o produto está em trending',
   },
   releaseYear: {
     type: DataTypes.INTEGER,
