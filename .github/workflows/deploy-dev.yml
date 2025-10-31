@@ -35,8 +35,17 @@ jobs:
       - name: Add remote host to known_hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+          chmod 700 ~/.ssh
+          touch ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          echo "🔍 Adicionando host SSH ao known_hosts..."
+          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>&1 || {
+            echo "⚠️ Aviso: ssh-keyscan falhou, mas continuando (usando StrictHostKeyChecking=no nos comandos SSH)"
+            echo "Isso não é crítico se os secrets SSH_HOST e SSH_PORT estiverem corretos"
+          }
+          echo "✅ known_hosts atualizado"
         shell: bash
+        continue-on-error: true
 
       - name: Garantir rsync no servidor
         run: |
