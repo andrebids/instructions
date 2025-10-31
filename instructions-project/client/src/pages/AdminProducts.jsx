@@ -752,7 +752,8 @@ export default function AdminProducts() {
                     <div className="relative h-48 bg-content2">
                       {function(){
                         var baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
-                        var choose = product.thumbnailUrl || product.imagesNightUrl || product.imagesDayUrl || "/demo-images/placeholder.png";
+                        // Preferir imagem da noite, depois dia, depois thumbnail
+                        var choose = product.imagesNightUrl || product.imagesDayUrl || product.thumbnailUrl || "/demo-images/placeholder.png";
                         var abs;
                         if (choose && choose.indexOf('/uploads/') === 0) {
                           abs = baseApi ? (baseApi + choose) : ('/api' + choose);
