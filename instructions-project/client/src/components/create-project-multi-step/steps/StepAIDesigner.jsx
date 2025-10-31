@@ -264,6 +264,26 @@ const DecorationItem = ({
   const shapeRef = useRef();
   const trRef = useRef();
 
+  // Após carregar a imagem, ajustar altura para manter proporção original
+  useEffect(() => {
+    if (!image || !shapeRef.current) {
+      return;
+    }
+    // Se width/height atuais não correspondem ao aspect ratio da imagem, corrigir
+    var imgW = image && image.width ? image.width : 0;
+    var imgH = image && image.height ? image.height : 0;
+    if (imgW > 0 && imgH > 0 && decoration && decoration.width && decoration.height) {
+      var expectedHeight = decoration.width * (imgH / imgW);
+      if (Math.abs(expectedHeight - decoration.height) > 0.5) {
+        onChange({
+          ...decoration,
+          height: expectedHeight,
+          // manter demais propriedades inalteradas
+        });
+      }
+    }
+  }, [image]);
+
   useEffect(() => {
     if (isSelected) {
       // Attach transformer manualmente ao shape
@@ -411,6 +431,7 @@ const DecorationItem = ({
         {isSelected && (
           <Transformer
             ref={trRef}
+            keepRatio={true}
             flipEnabled={false}
             boundBoxFunc={(oldBox, newBox) => {
               // Limitar resize mínimo
@@ -462,7 +483,8 @@ const KonvaCanvas = ({
   isDayMode = true,
   isEditingZones = false,
   onZoneCreate = null,
-  analysisComplete = {} // Nova prop para verificar se análise YOLO completou
+  analysisComplete = {}, // Nova prop para verificar se análise YOLO completou
+  showSnapZones = true
 }) => {
   const stageRef = useRef(null);
   const containerRef = useRef(null);
@@ -792,17 +814,13 @@ const KonvaCanvas = ({
           ))}
         </Layer>
 
-        {/* Layer 1.5: Snap Zone Markers (mostrar após análise YOLO completa ou em modo edição) */}
+        {/* Layer 1.5: Snap Zone Markers (mostrar por padrão, ocultar apenas se showSnapZones for false) */}
         <Layer>
-          {/* Zonas salvas (mostrar sempre que houver zonas E análise YOLO completa OU em modo edição) */}
+          {/* Zonas salvas (mostrar sempre que houver zonas E showSnapZones for true OU em modo edição) */}
           <SnapZoneMarkers 
             zones={snapZones} 
             isVisible={
-              snapZones.length > 0 && 
-              (
-                (selectedImage && analysisComplete[selectedImage.id]) || 
-                isEditingZones
-              )
+              snapZones.length > 0 && (isEditingZones || showSnapZones)
             }
           />
           
@@ -924,6 +942,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   const [activeGifIndex, setActiveGifIndex] = useState(-1); // Controla em qual thumbnail o GIF está visível (-1 = nenhum)
   const [isDayMode, setIsDayMode] = useState(true); // Controla se mostra imagem de dia ou noite
   const [uploadedImages, setUploadedImages] = useState([]); // Imagens disponíveis após upload completo
+  const [showSnapZones, setShowSnapZones] = useState(true); // Mostrar/ocultar visualização das snap zones
   
   // Estados para sistema YOLO12 Snap Zones
   const [snapZonesByImage, setSnapZonesByImage] = useState({}); // Mapeia zonas de snap por imagem
@@ -1535,18 +1554,21 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
           />
           {/* Botão para mostrar/ocultar painel */}
           <Button
-            size="md"
-            variant="flat"
+            size="sm"
+            variant="solid"
             color="primary"
-            className="fixed bottom-4 right-4 z-[100] shadow-lg hover:shadow-xl transition-shadow"
+            radius="full"
+            className="fixed bottom-4 left-4 z-[100] shadow-md hover:shadow-lg transition-all opacity-60 hover:opacity-100 px-3"
             onPress={() => {
               console.log('🔧 Toggle Unified Panel:', !showUnifiedPanel);
-              setShowUnifiedPanel(!showUnifiedPanel);
+              var next = !showUnifiedPanel;
+              setShowUnifiedPanel(next);
+              setShowSnapZones(next); // sincronizar visualização de zonas com o botão
             }}
-            title="Configurar Snap Zones"
+            title="Set Zones"
             startContent={<Icon icon="lucide:crosshair" className="text-lg" />}
           >
-            Snap Zones
+            Set Zones
           </Button>
         </>
       )}
@@ -1672,6 +1694,16 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                   <Button
                     size="sm"
                     variant="light"
+                    title="Show/Hide Zones"
+                    startContent={<Icon icon={"lucide:eye"} />}
+                    onPress={() => setShowSnapZones(!showSnapZones)}
+                    isDisabled={canvasImages.length === 0}
+                  >
+                    Zones
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="light"
                     startContent={<Icon icon="lucide:refresh-cw" />}
                     onPress={() => {
                       // Limpar tudo, incluindo o mapeamento de decorações por imagem
@@ -1703,10 +1735,11 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                   decorations={decorations}
                   canvasImages={canvasImages}
                   selectedImage={selectedImage}
-                  snapZones={allZonesForDisplay}
+                  snapZones={showSnapZones ? allZonesForDisplay : []}
                   isDayMode={isDayMode}
                   isEditingZones={isEditingZones}
                   analysisComplete={analysisComplete}
+                  showSnapZones={showSnapZones}
                   onZoneCreate={(zone) => {
                     console.log('🎨 [DEBUG] Zona criada no canvas, adicionando a tempZones:', zone);
                     setTempZones(function(prev) {
@@ -1763,7 +1796,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
               handleDecorationAdd(newDecoration);
             }}
             enableSearch={true}
-            className="w-48 md:w-56 lg:w-64"
+            className="w-64 md:w-72 lg:w-80"
           />
         </div>
       )}
