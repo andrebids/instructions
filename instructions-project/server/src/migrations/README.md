@@ -13,7 +13,27 @@ node src/migrations/add-product-category-fields.js
 ### Lista de migrations disponíveis
 
 1. **add-canvas-fields.js** - Adiciona campos de canvas à tabela projects
-2. **add-product-category-fields.js** - Adiciona campos de categoria à tabela products (season, isTrending, releaseYear, isOnSale)
+2. **add-product-category-fields.js** - Adiciona campos de categoria à tabela products:
+   - `season`: ENUM('xmas', 'summer') - Estação/categoria do produto
+   - `isTrending`: BOOLEAN - Se o produto está em trending
+   - `releaseYear`: INTEGER - Ano de lançamento da coleção (usado para tag "new" automática)
+   - `isOnSale`: BOOLEAN - Se o produto está em promoção
+
+3. **add-product-dimensions-fields.js** - Adiciona campos de dimensões à tabela products:
+   - `height`: DECIMAL(10, 2) - Altura em metros (H)
+   - `width`: DECIMAL(10, 2) - Largura em metros (W)
+   - `depth`: DECIMAL(10, 2) - Profundidade em metros (D)
+   - `diameter`: DECIMAL(10, 2) - Diâmetro em metros
+
+**Nota sobre `releaseYear`**: 
+- Este campo é usado para marcar automaticamente produtos como "new"
+- A tag "new" é adicionada automaticamente aos produtos com o `releaseYear` mais recente
+- A tag "new" é removida automaticamente de produtos com anos anteriores quando um novo produto com ano mais recente é adicionado/atualizado
+
+**Nota sobre dimensões**:
+- Os campos de dimensões são usados para filtros no backend
+- Suporta filtros por range: `minHeight`, `maxHeight`, `minWidth`, `maxWidth`, `minDepth`, `maxDepth`, `minDiameter`, `maxDiameter`
+- Exemplo de uso: `/api/products?minHeight=2&maxHeight=3&minWidth=1.5`
 
 ## Estrutura de uma migration
 

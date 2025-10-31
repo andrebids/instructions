@@ -158,11 +158,56 @@ export default function AdminProducts() {
   var loadAvailableColors = React.useCallback(function() {
     productsAPI.getAvailableColors()
       .then(function(colors) {
-        setAvailableColorsList(colors || {});
+        // Cores padrão do shop/trending na ordem correta
+        var defaultColorsOrder = [
+          'brancoQuente',
+          'brancoPuro',
+          'rgb',
+          'vermelho',
+          'verde',
+          'azul'
+        ];
+        
+        var defaultColors = {
+          brancoQuente: "#f4e1a1",
+          brancoPuro: "#ffffff",
+          rgb: "linear-gradient(135deg,#ef4444,#f59e0b,#10b981,#3b82f6,#8b5cf6)",
+          vermelho: "#ef4444",
+          verde: "#10b981",
+          azul: "#3b82f6"
+        };
+        
+        // Combinar cores padrão com cores da base de dados (cores da BD têm prioridade)
+        var mergedColors = Object.assign({}, defaultColors, colors || {});
+        
+        // Criar objeto ordenado mantendo ordem padrão primeiro, depois outras cores
+        var orderedColors = {};
+        for (var i = 0; i < defaultColorsOrder.length; i++) {
+          var colorKey = defaultColorsOrder[i];
+          if (mergedColors.hasOwnProperty(colorKey)) {
+            orderedColors[colorKey] = mergedColors[colorKey];
+          }
+        }
+        // Adicionar outras cores que não estão na lista padrão
+        for (var key in mergedColors) {
+          if (mergedColors.hasOwnProperty(key) && !orderedColors.hasOwnProperty(key)) {
+            orderedColors[key] = mergedColors[key];
+          }
+        }
+        
+        setAvailableColorsList(orderedColors);
       })
       .catch(function(err) {
         console.error("Erro ao carregar cores disponíveis:", err);
-        setAvailableColorsList({});
+        // Mesmo em caso de erro, usar cores padrão
+        setAvailableColorsList({
+          brancoQuente: "#f4e1a1",
+          brancoPuro: "#ffffff",
+          rgb: "linear-gradient(135deg,#ef4444,#f59e0b,#10b981,#3b82f6,#8b5cf6)",
+          vermelho: "#ef4444",
+          verde: "#10b981",
+          azul: "#3b82f6"
+        });
       });
   }, []);
 
@@ -217,6 +262,11 @@ export default function AdminProducts() {
       },
       availableColors: {},
       videoFile: "",
+      releaseYear: "",
+      height: "",
+      width: "",
+      depth: "",
+      diameter: "",
     });
     setImageFiles({
       dayImage: null,
@@ -258,6 +308,11 @@ export default function AdminProducts() {
       },
       availableColors: product.availableColors || {},
       videoFile: product.videoFile || "",
+      releaseYear: product.releaseYear || "",
+      height: product.height || "",
+      width: product.width || "",
+      depth: product.depth || "",
+      diameter: product.diameter || "",
     });
     setImagePreviews({
       dayImage: product.imagesDayUrl || null,
@@ -371,6 +426,35 @@ export default function AdminProducts() {
       return value;
     };
     
+    // Processar tags e adicionar/remover tag "sale" automaticamente baseado em oldPrice
+    var finalTags = formData.tags || [];
+    var hasOldPrice = formData.oldPrice && parseFloat(formData.oldPrice) > 0;
+    var hasPrice = formData.price && parseFloat(formData.price) > 0;
+    var isOnSale = hasOldPrice && hasPrice && parseFloat(formData.oldPrice) > parseFloat(formData.price);
+    
+    // Verificar se tag "sale" já existe
+    var hasSaleTag = false;
+    for (var i = 0; i < finalTags.length; i++) {
+      if (finalTags[i].toLowerCase() === 'sale') {
+        hasSaleTag = true;
+        break;
+      }
+    }
+    
+    // Adicionar tag "sale" se houver desconto, remover se não houver
+    if (isOnSale && !hasSaleTag) {
+      finalTags.push('sale');
+    } else if (!isOnSale && hasSaleTag) {
+      // Remover tag "sale"
+      var newTags = [];
+      for (var j = 0; j < finalTags.length; j++) {
+        if (finalTags[j].toLowerCase() !== 'sale') {
+          newTags.push(finalTags[j]);
+        }
+      }
+      finalTags = newTags;
+    }
+    
     // Criar objeto com os dados (productsAPI.create cria o FormData internamente)
     var data = {
       name: formData.name,
@@ -382,7 +466,7 @@ export default function AdminProducts() {
       location: toNullIfEmpty(formData.location),
       mount: toNullIfEmpty(formData.mount),
       videoFile: toNullIfEmpty(formData.videoFile),
-      tags: formData.tags || [],
+      tags: finalTags,
       specs: formData.specs || null,
       availableColors: formData.availableColors || {},
       variantProductByColor: formData.variantProductByColor || null,
@@ -391,7 +475,11 @@ export default function AdminProducts() {
       season: toNullIfEmpty(formData.season),
       isTrending: formData.isTrending || false,
       releaseYear: formData.releaseYear ? parseInt(formData.releaseYear, 10) : null,
-      isOnSale: formData.isOnSale || false,
+      isOnSale: isOnSale,
+      height: formData.height ? parseFloat(formData.height) : null,
+      width: formData.width ? parseFloat(formData.width) : null,
+      depth: formData.depth ? parseFloat(formData.depth) : null,
+      diameter: formData.diameter ? parseFloat(formData.diameter) : null,
     };
     
     // Adicionar ficheiros se existirem
@@ -764,6 +852,18 @@ export default function AdminProducts() {
                         <SelectItem key="Chão">Chão</SelectItem>
                         <SelectItem key="Transversal">Transversal</SelectItem>
                       </Select>
+                      
+                      <Input
+                        label="Ano da Coleção"
+                        type="number"
+                        placeholder="Ex: 2024"
+                        value={formData.releaseYear}
+                        onValueChange={function(val) {
+                          setFormData(function(prev) {
+                            return Object.assign({}, prev, { releaseYear: val });
+                          });
+                        }}
+                      />
                     </div>
 
                     {/* Upload de imagens */}
@@ -862,64 +962,18 @@ export default function AdminProducts() {
 
                     {/* Cores Disponíveis */}
                     <div>
-                      <label className="block text-sm font-medium mb-2">Cores Disponíveis</label>
-                      
-                      {/* Cores selecionadas */}
-                      <div className="mb-4">
-                        <p className="text-sm text-default-600 mb-2">Cores selecionadas:</p>
-                        <div className="flex flex-wrap gap-3 p-4 border border-default-200 rounded-lg">
-                          {Object.keys(formData.availableColors).length === 0 ? (
-                            <p className="text-sm text-default-500">Nenhuma cor selecionada</p>
-                          ) : (
-                            Object.keys(formData.availableColors).map(function(colorName) {
-                              var colorValue = formData.availableColors[colorName];
-                              var isHex = colorValue && colorValue.indexOf('#') === 0;
-                              return (
-                                <div key={colorName} className="flex items-center gap-2 p-2 bg-default-100 rounded-lg">
-                                  {isHex ? (
-                                    <div
-                                      className="w-8 h-8 rounded-full border-2 border-default-300"
-                                      style={{ backgroundColor: colorValue }}
-                                    />
-                                  ) : (
-                                    <Image
-                                      src={colorValue}
-                                      alt={colorName}
-                                      className="w-8 h-8 rounded border border-default-300 object-cover"
-                                    />
-                                  )}
-                                  <span className="text-sm font-medium">{colorName}</span>
-                                  <Button
-                                    size="sm"
-                                    isIconOnly
-                                    variant="light"
-                                    color="danger"
-                                    onPress={function() {
-                                      handleRemoveColor(colorName);
-                                    }}
-                                  >
-                                    <Icon icon="lucide:x" />
-                                  </Button>
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Cores disponíveis para selecionar */}
-                      <div>
-                        <p className="text-sm text-default-600 mb-2">Selecionar cores:</p>
-                        <div className="flex flex-wrap gap-3 p-4 border border-default-200 rounded-lg bg-default-50">
-                          {Object.keys(availableColorsList).length === 0 ? (
-                            <p className="text-sm text-default-500">Nenhuma cor disponível na base de dados</p>
-                          ) : (
+                      <label className="block text-sm font-medium mb-2">Selecionar cores:</label>
+                      <div className="flex flex-wrap gap-3 p-4 border border-default-200 rounded-lg bg-default-50">
+                        {Object.keys(availableColorsList).length === 0 ? (
+                          <p className="text-sm text-default-500">Nenhuma cor disponível na base de dados</p>
+                        ) : (
                             Object.keys(availableColorsList).map(function(colorName) {
                               var colorValue = availableColorsList[colorName];
                               var isHex = colorValue && typeof colorValue === 'string' && colorValue.indexOf('#') === 0;
+                              var isGradient = colorValue && typeof colorValue === 'string' && colorValue.indexOf('linear-gradient') === 0;
                               var isSelected = formData.availableColors.hasOwnProperty(colorName);
-                              // Se não for hex, usar função helper para obter cor hex baseada no nome
-                              var displayColor = isHex ? colorValue : getColorHex(colorName);
+                              // Se não for hex nem gradiente, usar função helper para obter cor hex baseada no nome
+                              var displayColor = isHex || isGradient ? colorValue : getColorHex(colorName);
                               
                               return (
                                 <button
@@ -936,13 +990,12 @@ export default function AdminProducts() {
                                   className={isSelected 
                                     ? "w-10 h-10 rounded-full border-4 border-primary-500 shadow-md hover:scale-110 transition-transform cursor-pointer overflow-hidden" 
                                     : "w-10 h-10 rounded-full border-2 border-default-300 hover:border-primary-400 hover:scale-110 transition-transform cursor-pointer overflow-hidden"}
-                                  style={{ backgroundColor: displayColor }}
+                                  style={isGradient ? { background: displayColor } : { backgroundColor: displayColor }}
                                 >
                                 </button>
                               );
                             })
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
 
@@ -993,17 +1046,6 @@ export default function AdminProducts() {
                           }}
                         />
                         <Input
-                          label="Dimensões"
-                          placeholder="Ex: 2.80 m x 0.80 m"
-                          value={formData.specs.dimensoes}
-                          onValueChange={function(val) {
-                            setFormData(function(prev) {
-                              var newSpecs = Object.assign({}, prev.specs, { dimensoes: val });
-                              return Object.assign({}, prev, { specs: newSpecs });
-                            });
-                          }}
-                        />
-                        <Input
                           label="Peso"
                           placeholder="Ex: 11 kg"
                           value={formData.specs.weight}
@@ -1014,6 +1056,62 @@ export default function AdminProducts() {
                             });
                           }}
                         />
+                      </div>
+                      
+                      {/* Dimensões */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <h4 className="font-medium col-span-2">Dimensões (em metros)</h4>
+                        <Input
+                          label="Altura (H)"
+                          type="number"
+                          step="0.01"
+                          placeholder="Ex: 2.4"
+                          value={formData.height}
+                          onValueChange={function(val) {
+                            setFormData(function(prev) {
+                              return Object.assign({}, prev, { height: val });
+                            });
+                          }}
+                        />
+                        <Input
+                          label="Largura (W)"
+                          type="number"
+                          step="0.01"
+                          placeholder="Ex: 2.0"
+                          value={formData.width}
+                          onValueChange={function(val) {
+                            setFormData(function(prev) {
+                              return Object.assign({}, prev, { width: val });
+                            });
+                          }}
+                        />
+                        <Input
+                          label="Profundidade (D)"
+                          type="number"
+                          step="0.01"
+                          placeholder="Ex: 0.5"
+                          value={formData.depth}
+                          onValueChange={function(val) {
+                            setFormData(function(prev) {
+                              return Object.assign({}, prev, { depth: val });
+                            });
+                          }}
+                        />
+                        <Input
+                          label="Diâmetro"
+                          type="number"
+                          step="0.01"
+                          placeholder="Ex: 1.2"
+                          value={formData.diameter}
+                          onValueChange={function(val) {
+                            setFormData(function(prev) {
+                              return Object.assign({}, prev, { diameter: val });
+                            });
+                          }}
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2">
                         <Input
                           label="Efeitos"
                           placeholder="Ex: SLOWFLASH & SOFT XLED"
