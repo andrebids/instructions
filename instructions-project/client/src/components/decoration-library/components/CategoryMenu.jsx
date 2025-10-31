@@ -7,7 +7,7 @@ export const CategoryMenu = ({ categories, onCategorySelect }) => {
 
   return (
     <div className="p-3">
-      <div className="grid grid-cols-1 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {categories.map((category) => (
           <div
             key={category.id}
