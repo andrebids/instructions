@@ -54,13 +54,13 @@ export const YOLO12ThumbnailOverlay = ({ duration = 2500 }) => {
         <div className="relative">
           <div className="absolute inset-0 bg-blue-500 rounded-full blur-md opacity-60 animate-pulse" />
           <div className="relative bg-gradient-to-br from-blue-600 to-blue-800 rounded-full p-2">
-            <Icon icon="lucide:scan" className="text-white text-sm" />
+            <Icon icon="lucide:search" className="text-white text-sm" />
           </div>
         </div>
         
         {/* Texto pequeno */}
         <div className="text-center">
-          <p className="text-white text-[10px] font-semibold mb-0.5">YOLO12</p>
+          <p className="text-white text-[10px] font-semibold mb-0.5">Detecting</p>
           <p className="text-blue-200 text-[8px] font-mono">{steps[step]}</p>
         </div>
         
