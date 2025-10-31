@@ -64,6 +64,17 @@ async function setup() {
     }
     console.log('');
     
+    // Migration 3: Campos de dimensões de produtos
+    console.log('   📋 Migration: Campos de dimensões de produtos...');
+    try {
+      await execAsync('npm run migrate:dimensions');
+      console.log('   ✅ Campos de dimensões verificados');
+    } catch (error) {
+      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+      console.log('   💡 Continuando...');
+    }
+    console.log('');
+    
     console.log('✅ Setup concluído com sucesso!');
     console.log('');
     console.log('📝 Próximos passos:');

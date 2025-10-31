@@ -145,9 +145,9 @@ jobs:
           cd ../server
           npm ci --omit=dev || npm install --omit=dev || echo "⚠️ npm install falhou, mas continuando..."
           
-          # 5.5. Executar migration para adicionar campos de canvas (se necessário)
-          echo "🔄 Executando migration de campos de canvas..."
-          npm run migrate || echo "⚠️ Migration falhou ou campos já existem, continuando..."
+          # 5.5. Executar migrations necessárias
+          echo "🔄 Executando migrations..."
+          npm run migrate:all || echo "⚠️ Algumas migrations falharam ou campos já existem, continuando..."
           
           # 6. Garantir que server/.env existe (preservar se já existir - não sobrescrever se existir)
           if [ ! -f .env ]; then

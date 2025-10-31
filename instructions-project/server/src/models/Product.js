@@ -117,6 +117,26 @@ const Product = sequelize.define('Product', {
     defaultValue: false,
     comment: 'Se o produto está em promoção (calculado ou explícito)',
   },
+  height: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    comment: 'Altura em metros (H)',
+  },
+  width: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    comment: 'Largura em metros (W)',
+  },
+  depth: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    comment: 'Profundidade em metros (D)',
+  },
+  diameter: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    comment: 'Diâmetro em metros',
+  },
 }, {
   tableName: 'products',
   timestamps: true,
