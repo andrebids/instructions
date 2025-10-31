@@ -445,8 +445,13 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                 <Button
                   variant="bordered"
                   onPress={() => setFavModalOpen(true)}
-                  className={`${favorites?.includes(activeProduct.id) ? 'ring-2 ring-danger-500' : ''}`}
-                  startContent={<Icon icon="lucide:heart" />}
+                  startContent={
+                    <Icon 
+                      icon={favorites?.includes(activeProduct.id) ? "mdi:heart" : "mdi:heart-outline"} 
+                      className={`text-lg ${favorites?.includes(activeProduct.id) ? 'text-danger' : ''}`}
+                      style={favorites?.includes(activeProduct.id) ? { fill: '#f31260' } : {}}
+                    />
+                  }
                 >
                   Favorite
                 </Button>
