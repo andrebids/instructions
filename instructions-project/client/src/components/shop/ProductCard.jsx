@@ -108,12 +108,16 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
                   <Button
                     isIconOnly
                     radius="full"
-                    className={`bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/70 shadow-medium ${favorites?.includes(product.id) ? 'ring-2 ring-danger-500' : ''}`}
+                    className="bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/70 shadow-medium"
                     aria-label="Add to favorites"
                     onPress={() => { setFavModalOpen(true); }}
                     onClick={(e)=> e.stopPropagation()}
                   >
-                    <Icon icon="lucide:heart" className="text-white text-xl" />
+                    <Icon 
+                      icon={favorites?.includes(product.id) ? "mdi:heart" : "mdi:heart-outline"} 
+                      className={`text-xl ${favorites?.includes(product.id) ? 'text-danger' : 'text-white'}`}
+                      style={favorites?.includes(product.id) ? { fill: '#f31260' } : {}}
+                    />
                   </Button>
                 </Tooltip>
               </div>
