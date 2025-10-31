@@ -16,7 +16,8 @@ export const DecorationLibrary = ({
   enableSearch = true,
   enableFilters = true,
   initialCategory = null,
-  disabled = false
+  disabled = false,
+  isDayMode = true
 }) => {
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [viewMode, setViewMode] = useState('categories'); // 'categories' or 'decorations'
@@ -37,7 +38,9 @@ export const DecorationLibrary = ({
     
     // Apply category filter
     if (activeCategory) {
-      result = filterByCategory(activeCategory);
+      const filtered = filterByCategory(activeCategory);
+      console.log('[LIB] filter category', activeCategory, '->', filtered.length);
+      result = filtered;
     }
     
     // Apply search filter if active
@@ -162,7 +165,12 @@ export const DecorationLibrary = ({
           />
         ) : (
           <DecorationGrid 
-            decorations={finalDecorations}
+            decorations={finalDecorations.map(function(d){
+              // Resolver a URL exibida conforme o modo, mas manter ambas
+              var resolved = Object.assign({}, d);
+              resolved.imageUrl = isDayMode ? (d.imageUrlDay || d.thumbnailUrl) : (d.imageUrlNight || d.imageUrlDay || d.thumbnailUrl);
+              return resolved;
+            })}
             isLoading={isLoading}
             onSelect={onDecorationSelect}
           />
