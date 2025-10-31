@@ -13,6 +13,8 @@ export const useDecorations = () => {
       try {
         console.log('[LIB] fetch categories');
         var serverCategories = [];
+        // Mapa de exibição EN para mounts conhecidos
+        var mountNameMap = { 'Poste': 'Pole', 'Chão': 'Floor', 'Transversal': 'Transversal' };
         try {
           serverCategories = await decorationsAPI.getCategories();
         } catch (eCat) {
@@ -24,7 +26,8 @@ export const useDecorations = () => {
           var normalized = [];
           for (var i = 0; i < serverCategories.length; i++) {
             var id = serverCategories[i];
-            normalized.push({ id: id, name: id });
+            var display = mountNameMap[id] || id;
+            normalized.push({ id: id, name: display });
           }
           setCategories(normalized);
         }
@@ -61,11 +64,15 @@ export const useDecorations = () => {
           list = products;
 
           // Derivar categorias a partir de mount/type
+          var mountNameMap = { 'Poste': 'Pole', 'Chão': 'Floor', 'Transversal': 'Transversal' };
           var catMap = {};
           for (var ci = 0; ci < products.length; ci++) {
             var p = products[ci];
             var catRaw = (p && p.mount) ? String(p.mount) : (p && p.type) ? String(p.type) : 'custom';
-            if (!catMap[catRaw]) catMap[catRaw] = { id: catRaw, name: catRaw };
+            if (!catMap[catRaw]) {
+              var display = mountNameMap[catRaw] || catRaw;
+              catMap[catRaw] = { id: catRaw, name: display };
+            }
           }
           var derived = [];
           for (var key in catMap) {
@@ -78,7 +85,8 @@ export const useDecorations = () => {
         var mapped = [];
         for (var i = 0; i < list.length; i++) {
           var it = list[i];
-          var catRaw = it.category || it.mount || it.type || 'custom';
+          // Usar SEMPRE o mount como categoria principal
+          var catRaw = it.mount || it.category || it.type || 'custom';
           var cat = typeof catRaw === 'string' ? catRaw : 'custom';
           mapped.push({
             id: it.id,
@@ -98,6 +106,39 @@ export const useDecorations = () => {
         console.log('[LIB] results', mapped.length);
 
         if (!cancelled) {
+          // Construir estatísticas por categoria + escolher thumbnail aleatória (preferir versão Night) por categoria (reservoir sampling)
+          var catStats = {};
+          for (var j = 0; j < mapped.length; j++) {
+            var item = mapped[j];
+            var catId = item.category;
+            if (!catStats[catId]) {
+              catStats[catId] = { count: 0, thumbDay: null, thumbNight: null };
+            }
+            catStats[catId].count += 1;
+            // Reservoir sampling para escolher item aleatório uniformemente
+            var k = catStats[catId].count;
+            if (Math.floor(Math.random() * k) === 0) {
+              catStats[catId].thumbDay = item.imageUrlDay || item.thumbnailUrl || null;
+              catStats[catId].thumbNight = item.imageUrlNight || item.thumbnailUrl || item.imageUrlDay || null;
+            }
+          }
+
+          // Gerar lista de categorias com thumbnail e count
+          var mountNameMap2 = { 'Poste': 'Pole', 'Chão': 'Floor', 'Transversal': 'Transversal' };
+          var finalCategories = [];
+          for (var catKey in catStats) {
+            if (!catStats.hasOwnProperty(catKey)) continue;
+            var displayName = catKey;
+            if (mountNameMap2[catKey]) displayName = mountNameMap2[catKey];
+            var chosenNight = catStats[catKey].thumbNight || catStats[catKey].thumbDay;
+            var chosenDay = catStats[catKey].thumbDay || catStats[catKey].thumbNight;
+            finalCategories.push({ id: catKey, name: displayName, count: catStats[catKey].count, thumbnail: chosenDay, thumbnailNight: chosenNight });
+          }
+
+          if (finalCategories.length > 0) {
+            setCategories(finalCategories);
+          }
+
           setDecorations(mapped);
           setHasMore(Boolean(data && typeof data.total === 'number' ? (page * 24) < data.total : mapped.length === 24));
         }
