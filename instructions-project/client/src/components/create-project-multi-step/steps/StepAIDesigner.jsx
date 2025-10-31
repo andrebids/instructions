@@ -264,6 +264,26 @@ const DecorationItem = ({
   const shapeRef = useRef();
   const trRef = useRef();
 
+  // Após carregar a imagem, ajustar altura para manter proporção original
+  useEffect(() => {
+    if (!image || !shapeRef.current) {
+      return;
+    }
+    // Se width/height atuais não correspondem ao aspect ratio da imagem, corrigir
+    var imgW = image && image.width ? image.width : 0;
+    var imgH = image && image.height ? image.height : 0;
+    if (imgW > 0 && imgH > 0 && decoration && decoration.width && decoration.height) {
+      var expectedHeight = decoration.width * (imgH / imgW);
+      if (Math.abs(expectedHeight - decoration.height) > 0.5) {
+        onChange({
+          ...decoration,
+          height: expectedHeight,
+          // manter demais propriedades inalteradas
+        });
+      }
+    }
+  }, [image]);
+
   useEffect(() => {
     if (isSelected) {
       // Attach transformer manualmente ao shape
@@ -411,6 +431,7 @@ const DecorationItem = ({
         {isSelected && (
           <Transformer
             ref={trRef}
+            keepRatio={true}
             flipEnabled={false}
             boundBoxFunc={(oldBox, newBox) => {
               // Limitar resize mínimo
