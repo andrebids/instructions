@@ -4,6 +4,79 @@ import path from 'path';
 import fs from 'fs';
 import { generateThumbnail } from '../utils/imageUtils.js';
 
+// Função helper para atualizar tag "new" baseado no releaseYear mais recente
+async function updateNewTagForProducts() {
+  try {
+    console.log('🆕 [UPDATE NEW TAG] Atualizando tags "new" baseado no releaseYear...');
+    
+    // Buscar todos os produtos ativos com releaseYear
+    var allProducts = await Product.findAll({
+      where: {
+        isActive: true
+      },
+      attributes: ['id', 'releaseYear', 'tags']
+    });
+    
+    // Encontrar o ano mais recente
+    var latestYear = null;
+    for (var i = 0; i < allProducts.length; i++) {
+      var product = allProducts[i];
+      if (product.releaseYear && typeof product.releaseYear === 'number') {
+        if (latestYear === null || product.releaseYear > latestYear) {
+          latestYear = product.releaseYear;
+        }
+      }
+    }
+    
+    console.log('🆕 [UPDATE NEW TAG] Ano mais recente encontrado:', latestYear);
+    
+    if (latestYear === null) {
+      console.log('🆕 [UPDATE NEW TAG] Nenhum produto com releaseYear encontrado');
+      return;
+    }
+    
+    // Atualizar tags de todos os produtos
+    for (var j = 0; j < allProducts.length; j++) {
+      var productToUpdate = allProducts[j];
+      var currentTags = productToUpdate.tags || [];
+      var hasNewTag = false;
+      
+      // Verificar se já tem tag "new"
+      for (var k = 0; k < currentTags.length; k++) {
+        if (currentTags[k].toLowerCase() === 'new') {
+          hasNewTag = true;
+          break;
+        }
+      }
+      
+      // Se o produto tem releaseYear igual ao mais recente, adicionar tag "new"
+      var shouldHaveNewTag = productToUpdate.releaseYear === latestYear;
+      
+      if (shouldHaveNewTag && !hasNewTag) {
+        // Adicionar tag "new"
+        var updatedTags = currentTags.slice();
+        updatedTags.push('new');
+        await productToUpdate.update({ tags: updatedTags });
+        console.log('✅ [UPDATE NEW TAG] Tag "new" adicionada ao produto:', productToUpdate.id);
+      } else if (!shouldHaveNewTag && hasNewTag) {
+        // Remover tag "new"
+        var cleanedTags = [];
+        for (var m = 0; m < currentTags.length; m++) {
+          if (currentTags[m].toLowerCase() !== 'new') {
+            cleanedTags.push(currentTags[m]);
+          }
+        }
+        await productToUpdate.update({ tags: cleanedTags });
+        console.log('✅ [UPDATE NEW TAG] Tag "new" removida do produto:', productToUpdate.id);
+      }
+    }
+    
+    console.log('✅ [UPDATE NEW TAG] Processo concluído');
+  } catch (error) {
+    console.error('❌ [UPDATE NEW TAG] Erro ao atualizar tags "new":', error);
+  }
+}
+
 // GET /api/products - Listar todos os produtos
 export async function getAll(req, res) {
   try {
@@ -93,6 +166,75 @@ export async function getAll(req, res) {
     // Filtro por isOnSale - apenas se for 'true' ou 'false' (não string vazia)
     if (query.isOnSale !== undefined && query.isOnSale !== '' && query.isOnSale !== null) {
       where.isOnSale = query.isOnSale === 'true' || query.isOnSale === true;
+    }
+    
+    // Filtros por dimensões (range: minHeight, maxHeight, minWidth, maxWidth, minDepth, maxDepth, minDiameter, maxDiameter)
+    var heightConditions = {};
+    if (query.minHeight !== undefined && query.minHeight !== '' && query.minHeight !== null) {
+      var minHeight = parseFloat(query.minHeight);
+      if (!isNaN(minHeight)) {
+        heightConditions[Op.gte] = minHeight;
+      }
+    }
+    if (query.maxHeight !== undefined && query.maxHeight !== '' && query.maxHeight !== null) {
+      var maxHeight = parseFloat(query.maxHeight);
+      if (!isNaN(maxHeight)) {
+        heightConditions[Op.lte] = maxHeight;
+      }
+    }
+    if (Object.keys(heightConditions).length > 0) {
+      where.height = heightConditions;
+    }
+    
+    var widthConditions = {};
+    if (query.minWidth !== undefined && query.minWidth !== '' && query.minWidth !== null) {
+      var minWidth = parseFloat(query.minWidth);
+      if (!isNaN(minWidth)) {
+        widthConditions[Op.gte] = minWidth;
+      }
+    }
+    if (query.maxWidth !== undefined && query.maxWidth !== '' && query.maxWidth !== null) {
+      var maxWidth = parseFloat(query.maxWidth);
+      if (!isNaN(maxWidth)) {
+        widthConditions[Op.lte] = maxWidth;
+      }
+    }
+    if (Object.keys(widthConditions).length > 0) {
+      where.width = widthConditions;
+    }
+    
+    var depthConditions = {};
+    if (query.minDepth !== undefined && query.minDepth !== '' && query.minDepth !== null) {
+      var minDepth = parseFloat(query.minDepth);
+      if (!isNaN(minDepth)) {
+        depthConditions[Op.gte] = minDepth;
+      }
+    }
+    if (query.maxDepth !== undefined && query.maxDepth !== '' && query.maxDepth !== null) {
+      var maxDepth = parseFloat(query.maxDepth);
+      if (!isNaN(maxDepth)) {
+        depthConditions[Op.lte] = maxDepth;
+      }
+    }
+    if (Object.keys(depthConditions).length > 0) {
+      where.depth = depthConditions;
+    }
+    
+    var diameterConditions = {};
+    if (query.minDiameter !== undefined && query.minDiameter !== '' && query.minDiameter !== null) {
+      var minDiameter = parseFloat(query.minDiameter);
+      if (!isNaN(minDiameter)) {
+        diameterConditions[Op.gte] = minDiameter;
+      }
+    }
+    if (query.maxDiameter !== undefined && query.maxDiameter !== '' && query.maxDiameter !== null) {
+      var maxDiameter = parseFloat(query.maxDiameter);
+      if (!isNaN(maxDiameter)) {
+        diameterConditions[Op.lte] = maxDiameter;
+      }
+    }
+    if (Object.keys(diameterConditions).length > 0) {
+      where.diameter = diameterConditions;
     }
     
     console.log('📦 [PRODUCTS API] Where clause:', JSON.stringify(where));
@@ -464,6 +606,34 @@ export async function create(req, res) {
       }
     }
     
+    // Adicionar/remover tag "sale" automaticamente baseado em oldPrice
+    var oldPrice = body.oldPrice ? parseFloat(body.oldPrice) : null;
+    var price = parseFloat(body.price) || 0;
+    var isOnSale = oldPrice && oldPrice > price;
+    
+    // Verificar se tag "sale" já existe
+    var hasSaleTag = false;
+    for (var i = 0; i < tags.length; i++) {
+      if (tags[i].toLowerCase() === 'sale') {
+        hasSaleTag = true;
+        break;
+      }
+    }
+    
+    // Adicionar tag "sale" se houver desconto, remover se não houver
+    if (isOnSale && !hasSaleTag) {
+      tags.push('sale');
+    } else if (!isOnSale && hasSaleTag) {
+      // Remover tag "sale"
+      var newTags = [];
+      for (var j = 0; j < tags.length; j++) {
+        if (tags[j].toLowerCase() !== 'sale') {
+          newTags.push(tags[j]);
+        }
+      }
+      tags = newTags;
+    }
+    
     // Função auxiliar para converter strings vazias ou "null" para null
     var toNullIfEmpty = function(value) {
       if (value === null || value === undefined || value === '' || value === 'null' || value === 'undefined') {
@@ -477,7 +647,7 @@ export async function create(req, res) {
       name: body.name,
       price: parseFloat(body.price) || 0,
       stock: parseInt(body.stock, 10) || 0,
-      oldPrice: body.oldPrice ? parseFloat(body.oldPrice) : null,
+      oldPrice: oldPrice,
       imagesDayUrl: imagesDayUrl || toNullIfEmpty(body.imagesDayUrl),
       imagesNightUrl: imagesNightUrl || toNullIfEmpty(body.imagesNightUrl),
       animationUrl: animationUrl || toNullIfEmpty(body.animationUrl),
@@ -496,7 +666,11 @@ export async function create(req, res) {
       season: toNullIfEmpty(body.season),
       isTrending: body.isTrending === 'true' || body.isTrending === true,
       releaseYear: body.releaseYear ? parseInt(body.releaseYear, 10) : null,
-      isOnSale: body.isOnSale === 'true' || body.isOnSale === true,
+      isOnSale: isOnSale,
+      height: body.height ? parseFloat(body.height) : null,
+      width: body.width ? parseFloat(body.width) : null,
+      depth: body.depth ? parseFloat(body.depth) : null,
+      diameter: body.diameter ? parseFloat(body.diameter) : null,
     };
     
     // Validar campos obrigatórios
@@ -536,6 +710,12 @@ export async function create(req, res) {
     console.log('📦 [PRODUCTS API] Criando produto:', { id: productData.id, name: productData.name });
     
     var product = await Product.create(productData);
+    
+    // Atualizar tags "new" baseado no releaseYear mais recente
+    await updateNewTagForProducts();
+    
+    // Recarregar o produto para ter as tags atualizadas
+    await product.reload();
     
     // Converter para objeto simples antes de enviar
     var productResponse = product.get({ plain: true });
@@ -637,21 +817,6 @@ export async function update(req, res) {
     if (body.mount !== undefined) updateData.mount = toNullIfEmpty(body.mount);
     if (body.videoFile !== undefined) updateData.videoFile = toNullIfEmpty(body.videoFile);
     
-    // Processar tags
-    if (body.tags !== undefined) {
-      var tags = [];
-      if (typeof body.tags === 'string') {
-        try {
-          tags = JSON.parse(body.tags);
-        } catch (e) {
-          tags = body.tags.split(',').map(function(tag) { return tag.trim(); });
-        }
-      } else if (Array.isArray(body.tags)) {
-        tags = body.tags;
-      }
-      updateData.tags = tags;
-    }
-    
     // Processar specs
     if (body.specs !== undefined) {
       try {
@@ -680,7 +845,78 @@ export async function update(req, res) {
       updateData.isActive = body.isActive !== 'false' && body.isActive !== false;
     }
     
-    // Processar season, isTrending, releaseYear, isOnSale
+    // Processar tags (antes de outros campos para poder usar os valores de price/oldPrice)
+    if (body.tags !== undefined) {
+      var tags = [];
+      if (typeof body.tags === 'string') {
+        try {
+          tags = JSON.parse(body.tags);
+        } catch (e) {
+          tags = body.tags.split(',').map(function(tag) { return tag.trim(); });
+        }
+      } else if (Array.isArray(body.tags)) {
+        tags = body.tags;
+      }
+      
+      // Adicionar/remover tag "sale" automaticamente baseado em oldPrice
+      var oldPrice = body.oldPrice !== undefined ? (body.oldPrice ? parseFloat(body.oldPrice) : null) : product.oldPrice;
+      var price = body.price !== undefined ? parseFloat(body.price) : product.price;
+      var isOnSale = oldPrice && oldPrice > price;
+      
+      // Verificar se tag "sale" já existe
+      var hasSaleTag = false;
+      for (var i = 0; i < tags.length; i++) {
+        if (tags[i].toLowerCase() === 'sale') {
+          hasSaleTag = true;
+          break;
+        }
+      }
+      
+      // Adicionar tag "sale" se houver desconto, remover se não houver
+      if (isOnSale && !hasSaleTag) {
+        tags.push('sale');
+      } else if (!isOnSale && hasSaleTag) {
+        // Remover tag "sale"
+        var newTags = [];
+        for (var j = 0; j < tags.length; j++) {
+          if (tags[j].toLowerCase() !== 'sale') {
+            newTags.push(tags[j]);
+          }
+        }
+        tags = newTags;
+      }
+      
+      updateData.tags = tags;
+    } else {
+      // Se tags não foram fornecidas, verificar se precisa atualizar tag "sale" baseado em oldPrice
+      var oldPriceForSale = body.oldPrice !== undefined ? (body.oldPrice ? parseFloat(body.oldPrice) : null) : product.oldPrice;
+      var priceForSale = body.price !== undefined ? parseFloat(body.price) : product.price;
+      var isOnSaleCheck = oldPriceForSale && oldPriceForSale > priceForSale;
+      var currentTags = product.tags || [];
+      var hasSaleTagCheck = false;
+      for (var k = 0; k < currentTags.length; k++) {
+        if (currentTags[k].toLowerCase() === 'sale') {
+          hasSaleTagCheck = true;
+          break;
+        }
+      }
+      
+      if (isOnSaleCheck && !hasSaleTagCheck) {
+        var updatedTags = currentTags.slice();
+        updatedTags.push('sale');
+        updateData.tags = updatedTags;
+      } else if (!isOnSaleCheck && hasSaleTagCheck) {
+        var cleanedTags = [];
+        for (var m = 0; m < currentTags.length; m++) {
+          if (currentTags[m].toLowerCase() !== 'sale') {
+            cleanedTags.push(currentTags[m]);
+          }
+        }
+        updateData.tags = cleanedTags;
+      }
+    }
+    
+    // Processar season, isTrending, releaseYear
     if (body.season !== undefined) {
       updateData.season = toNullIfEmpty(body.season);
     }
@@ -690,11 +926,31 @@ export async function update(req, res) {
     if (body.releaseYear !== undefined) {
       updateData.releaseYear = body.releaseYear ? parseInt(body.releaseYear, 10) : null;
     }
-    if (body.isOnSale !== undefined) {
-      updateData.isOnSale = body.isOnSale === 'true' || body.isOnSale === true;
+    
+    // Processar dimensões
+    if (body.height !== undefined) {
+      updateData.height = body.height ? parseFloat(body.height) : null;
+    }
+    if (body.width !== undefined) {
+      updateData.width = body.width ? parseFloat(body.width) : null;
+    }
+    if (body.depth !== undefined) {
+      updateData.depth = body.depth ? parseFloat(body.depth) : null;
+    }
+    if (body.diameter !== undefined) {
+      updateData.diameter = body.diameter ? parseFloat(body.diameter) : null;
     }
     
+    // Atualizar isOnSale baseado em oldPrice (sempre calcular, ignorar valor explícito se fornecido)
+    var finalOldPrice = body.oldPrice !== undefined ? (body.oldPrice ? parseFloat(body.oldPrice) : null) : product.oldPrice;
+    var finalPrice = body.price !== undefined ? parseFloat(body.price) : product.price;
+    var finalIsOnSale = finalOldPrice && finalOldPrice > finalPrice;
+    updateData.isOnSale = finalIsOnSale;
+    
     await product.update(updateData);
+    
+    // Atualizar tags "new" baseado no releaseYear mais recente
+    await updateNewTagForProducts();
     
     // Recarregar o produto atualizado
     await product.reload();
@@ -935,4 +1191,5 @@ export async function getAvailableColors(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
+
 
