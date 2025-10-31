@@ -9,6 +9,7 @@ router.get('/source-images', productController.getSourceImages); // Deve vir ant
 router.get('/colors', productController.getAvailableColors); // Buscar cores disponíveis
 router.get('/search', productController.search); // Deve vir antes de /:id
 router.get('/', productController.getAll);
+router.get('/:id/debug-media', productController.debugMedia);
 router.get('/:id', productController.getById);
 
 // Criar produto com upload de imagens

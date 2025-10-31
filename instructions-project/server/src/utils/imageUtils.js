@@ -43,6 +43,7 @@ export async function generateThumbnail(imagePath, outputPath, width = 300, heig
  */
 export async function convertToWebP(imagePath, outputPath, quality = 85) {
   try {
+    const start = Date.now();
     // Se não fornecer outputPath, substituir o original
     if (!outputPath) {
       var ext = path.extname(imagePath);
@@ -56,11 +57,17 @@ export async function convertToWebP(imagePath, outputPath, quality = 85) {
     }
     
     // Converter para WebP usando sharp
+    const statBefore = fs.existsSync(imagePath) ? fs.statSync(imagePath) : null;
     await sharp(imagePath)
       .webp({ quality: quality })
       .toFile(outputPath);
-    
-    console.log('✅ Imagem convertida para WebP:', outputPath);
+    const statAfter = fs.existsSync(outputPath) ? fs.statSync(outputPath) : null;
+    console.log('✅ Imagem convertida para WebP:', {
+      outputPath,
+      ms: Date.now() - start,
+      inputBytes: statBefore?.size,
+      outputBytes: statAfter?.size,
+    });
     return outputPath;
   } catch (error) {
     console.error('Erro ao converter imagem para WebP:', error);
@@ -79,6 +86,7 @@ export async function processImageToWebP(imagePath, originalFilename) {
   try {
     var ext = path.extname(originalFilename).toLowerCase();
     
+    const t0 = Date.now();
     console.log('🔄 [processImageToWebP] Iniciando processamento:', {
       imagePath: imagePath,
       originalFilename: originalFilename,
@@ -108,7 +116,8 @@ export async function processImageToWebP(imagePath, originalFilename) {
     
     // Verificar se o WebP foi criado com sucesso antes de remover o original
     if (fs.existsSync(webpPath)) {
-      console.log('✅ [processImageToWebP] Arquivo WebP criado com sucesso:', webpPath);
+      const stat = fs.statSync(webpPath);
+      console.log('✅ [processImageToWebP] Arquivo WebP criado com sucesso:', { webpPath, bytes: stat.size, ms: Date.now() - t0 });
       // Remover arquivo original se não for WebP
       if (fs.existsSync(imagePath) && ext !== '.webp') {
         try {

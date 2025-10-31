@@ -501,6 +501,14 @@ export async function create(req, res) {
     console.log('📦 [PRODUCTS API] POST /api/products - Criar produto');
     console.log('📦 [PRODUCTS API] Body recebido:', JSON.stringify(body, null, 2));
     console.log('📦 [PRODUCTS API] Files recebidos:', Object.keys(files));
+    try {
+      console.log('🧾 [FILES META]', {
+        dayImage: files.dayImage?.[0]?.originalname,
+        nightImage: files.nightImage?.[0]?.originalname,
+        animation: files.animation?.[0]?.originalname,
+        thumbnail: files.thumbnail?.[0]?.originalname,
+      });
+    } catch (_) {}
     
     // Processar URLs de imagens dos ficheiros enviados
     var imagesDayUrl = null;
@@ -731,6 +739,12 @@ export async function create(req, res) {
     
     // Converter para objeto simples antes de enviar
     var productResponse = product.get({ plain: true });
+    console.log('💾 [PRODUCT SAVED] URLs persistidas:', {
+      id: productResponse.id,
+      imagesDayUrl: productResponse.imagesDayUrl,
+      imagesNightUrl: productResponse.imagesNightUrl,
+      thumbnailUrl: productResponse.thumbnailUrl,
+    });
     
     res.status(201).json(productResponse);
   } catch (error) {
@@ -1022,6 +1036,12 @@ export async function update(req, res) {
     
     // Recarregar o produto atualizado
     await product.reload();
+    console.log('💾 [PRODUCT UPDATED] URLs persistidas:', {
+      id: product.id,
+      imagesDayUrl: product.imagesDayUrl,
+      imagesNightUrl: product.imagesNightUrl,
+      thumbnailUrl: product.thumbnailUrl,
+    });
     
     // Converter para objeto simples antes de enviar
     var productResponse = product.get({ plain: true });
@@ -1037,6 +1057,31 @@ export async function update(req, res) {
       details: error.message,
       name: error.name
     });
+  }
+}
+
+// GET /api/products/:id/debug-media - inspecionar media no disco e no DB
+export async function debugMedia(req, res) {
+  try {
+    const id = req.params.id;
+    const product = await Product.findByPk(id);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    const build = (url) => {
+      if (!url) return null;
+      const rel = url.replace(/^\//, '');
+      const abs = path.resolve(process.cwd(), 'public', rel.replace(/^public\//, ''));
+      return { url, abs, exists: fs.existsSync(abs), size: fs.existsSync(abs) ? fs.statSync(abs).size : null };
+    };
+    const report = {
+      id: product.id,
+      day: build(product.imagesDayUrl),
+      night: build(product.imagesNightUrl),
+      thumb: build(product.thumbnailUrl),
+    };
+    console.log('🧪 [DEBUG MEDIA]', report);
+    res.json(report);
+  } catch (e) {
+    res.status(500).json({ error: e?.message });
   }
 }
 
