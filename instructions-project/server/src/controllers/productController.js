@@ -885,3 +885,54 @@ export async function deleteProduct(req, res) {
   }
 }
 
+// GET /api/products/colors - Buscar todas as cores disponíveis
+export async function getAvailableColors(req, res) {
+  try {
+    console.log('🎨 [PRODUCTS API] GET /api/products/colors - Buscando cores disponíveis');
+    
+    var products = await Product.findAll({
+      where: {
+        isActive: true
+      },
+      attributes: ['availableColors']
+    });
+    
+    // Extrair todas as cores únicas de todos os produtos
+    var allColors = {};
+    
+    for (var i = 0; i < products.length; i++) {
+      var product = products[i];
+      var availableColors = product.availableColors;
+      
+      if (availableColors && typeof availableColors === 'object') {
+        // Se for string, tentar fazer parse
+        if (typeof availableColors === 'string') {
+          try {
+            availableColors = JSON.parse(availableColors);
+          } catch (e) {
+            console.warn('⚠️  [GET COLORS] Erro ao fazer parse de availableColors:', e);
+            continue;
+          }
+        }
+        
+        // Adicionar cores ao objeto de cores únicas
+        for (var colorName in availableColors) {
+          if (availableColors.hasOwnProperty(colorName)) {
+            // Se a cor ainda não existe ou queremos manter a primeira ocorrência
+            if (!allColors.hasOwnProperty(colorName)) {
+              allColors[colorName] = availableColors[colorName];
+            }
+          }
+        }
+      }
+    }
+    
+    console.log('🎨 [PRODUCTS API] Cores encontradas:', Object.keys(allColors).length);
+    
+    res.json(allColors);
+  } catch (error) {
+    console.error('❌ [GET COLORS] Erro ao buscar cores:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+

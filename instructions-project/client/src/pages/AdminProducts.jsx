@@ -30,6 +30,7 @@ export default function AdminProducts() {
   var [filters, setFilters] = React.useState({});
   var [showArchived, setShowArchived] = React.useState(false);
   var [searchQuery, setSearchQuery] = React.useState("");
+  var [availableColorsList, setAvailableColorsList] = React.useState({});
   
   var { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
   var [editingProduct, setEditingProduct] = React.useState(null);
@@ -153,6 +154,43 @@ export default function AdminProducts() {
       });
   }, [searchQuery, loadProducts]);
 
+  // Carregar cores disponíveis
+  var loadAvailableColors = React.useCallback(function() {
+    productsAPI.getAvailableColors()
+      .then(function(colors) {
+        setAvailableColorsList(colors || {});
+      })
+      .catch(function(err) {
+        console.error("Erro ao carregar cores disponíveis:", err);
+        setAvailableColorsList({});
+      });
+  }, []);
+
+  // Função helper para obter cor hex baseada no nome da cor
+  var getColorHex = function(colorName) {
+    if (!colorName) return '#cccccc';
+    var nameLower = colorName.toLowerCase();
+    if (nameLower.indexOf('brancopuro') >= 0 || nameLower === 'brancopuro') {
+      return '#ffffff';
+    }
+    if (nameLower.indexOf('brancoquente') >= 0 || nameLower.indexOf('quente') >= 0 || nameLower === 'brancoquente') {
+      return '#f4e1a1';
+    }
+    if (nameLower.indexOf('vermelho') >= 0) {
+      return '#ef4444';
+    }
+    if (nameLower.indexOf('azul') >= 0) {
+      return '#3b82f6';
+    }
+    if (nameLower.indexOf('verde') >= 0) {
+      return '#10b981';
+    }
+    if (nameLower.indexOf('rgb') >= 0) {
+      return '#ef4444'; // Gradiente RGB, usar vermelho como representação
+    }
+    return '#cccccc';
+  };
+
   // Abrir modal para criar novo produto
   var handleCreateNew = function() {
     setEditingProduct(null);
@@ -190,6 +228,7 @@ export default function AdminProducts() {
       nightImage: null,
       animation: null,
     });
+    loadAvailableColors();
     onModalOpen();
   };
 
@@ -230,6 +269,7 @@ export default function AdminProducts() {
       nightImage: null,
       animation: null,
     });
+    loadAvailableColors();
     onModalOpen();
   };
 
@@ -294,11 +334,13 @@ export default function AdminProducts() {
     setImageFiles(newFiles);
   };
 
-  // Handler para adicionar cor
-  var handleAddColor = function() {
+  // Handler para adicionar cor (selecionar de cores disponíveis)
+  var handleAddColor = function(colorName) {
+    if (!availableColorsList.hasOwnProperty(colorName)) {
+      return;
+    }
     var newColors = Object.assign({}, formData.availableColors);
-    var colorName = 'Nova Cor ' + (Object.keys(newColors).length + 1);
-    newColors[colorName] = '#FFFFFF';
+    newColors[colorName] = availableColorsList[colorName];
     setFormData(function(prev) {
       return Object.assign({}, prev, { availableColors: newColors });
     });
@@ -308,27 +350,6 @@ export default function AdminProducts() {
   var handleRemoveColor = function(colorName) {
     var newColors = Object.assign({}, formData.availableColors);
     delete newColors[colorName];
-    setFormData(function(prev) {
-      return Object.assign({}, prev, { availableColors: newColors });
-    });
-  };
-  
-  // Handler para atualizar cor
-  var handleColorChange = function(colorName, hexValue) {
-    var newColors = Object.assign({}, formData.availableColors);
-    newColors[colorName] = hexValue;
-    setFormData(function(prev) {
-      return Object.assign({}, prev, { availableColors: newColors });
-    });
-  };
-  
-  // Handler para renomear cor
-  var handleColorNameChange = function(oldName, newName) {
-    if (!newName || newName.trim() === '') return;
-    var newColors = Object.assign({}, formData.availableColors);
-    var colorValue = newColors[oldName];
-    delete newColors[oldName];
-    newColors[newName] = colorValue;
     setFormData(function(prev) {
       return Object.assign({}, prev, { availableColors: newColors });
     });
@@ -841,59 +862,87 @@ export default function AdminProducts() {
 
                     {/* Cores Disponíveis */}
                     <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-medium">Cores Disponíveis</label>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          onPress={handleAddColor}
-                          startContent={<Icon icon="lucide:plus" />}
-                        >
-                          Adicionar Cor
-                        </Button>
+                      <label className="block text-sm font-medium mb-2">Cores Disponíveis</label>
+                      
+                      {/* Cores selecionadas */}
+                      <div className="mb-4">
+                        <p className="text-sm text-default-600 mb-2">Cores selecionadas:</p>
+                        <div className="flex flex-wrap gap-3 p-4 border border-default-200 rounded-lg">
+                          {Object.keys(formData.availableColors).length === 0 ? (
+                            <p className="text-sm text-default-500">Nenhuma cor selecionada</p>
+                          ) : (
+                            Object.keys(formData.availableColors).map(function(colorName) {
+                              var colorValue = formData.availableColors[colorName];
+                              var isHex = colorValue && colorValue.indexOf('#') === 0;
+                              return (
+                                <div key={colorName} className="flex items-center gap-2 p-2 bg-default-100 rounded-lg">
+                                  {isHex ? (
+                                    <div
+                                      className="w-8 h-8 rounded-full border-2 border-default-300"
+                                      style={{ backgroundColor: colorValue }}
+                                    />
+                                  ) : (
+                                    <Image
+                                      src={colorValue}
+                                      alt={colorName}
+                                      className="w-8 h-8 rounded border border-default-300 object-cover"
+                                    />
+                                  )}
+                                  <span className="text-sm font-medium">{colorName}</span>
+                                  <Button
+                                    size="sm"
+                                    isIconOnly
+                                    variant="light"
+                                    color="danger"
+                                    onPress={function() {
+                                      handleRemoveColor(colorName);
+                                    }}
+                                  >
+                                    <Icon icon="lucide:x" />
+                                  </Button>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-3 p-4 border border-default-200 rounded-lg">
-                        {Object.keys(formData.availableColors).length === 0 ? (
-                          <p className="text-sm text-default-500">Nenhuma cor adicionada</p>
-                        ) : (
-                          Object.keys(formData.availableColors).map(function(colorName) {
-                            return (
-                              <div key={colorName} className="flex items-center gap-2 p-2 bg-default-100 rounded-lg">
-                                <div
-                                  className="w-8 h-8 rounded-full border-2 border-default-300"
-                                  style={{ backgroundColor: formData.availableColors[colorName] }}
-                                />
-                                <input
-                                  type="text"
-                                  value={colorName}
-                                  onChange={function(e) {
-                                    handleColorNameChange(colorName, e.target.value);
+
+                      {/* Cores disponíveis para selecionar */}
+                      <div>
+                        <p className="text-sm text-default-600 mb-2">Selecionar cores:</p>
+                        <div className="flex flex-wrap gap-3 p-4 border border-default-200 rounded-lg bg-default-50">
+                          {Object.keys(availableColorsList).length === 0 ? (
+                            <p className="text-sm text-default-500">Nenhuma cor disponível na base de dados</p>
+                          ) : (
+                            Object.keys(availableColorsList).map(function(colorName) {
+                              var colorValue = availableColorsList[colorName];
+                              var isHex = colorValue && typeof colorValue === 'string' && colorValue.indexOf('#') === 0;
+                              var isSelected = formData.availableColors.hasOwnProperty(colorName);
+                              // Se não for hex, usar função helper para obter cor hex baseada no nome
+                              var displayColor = isHex ? colorValue : getColorHex(colorName);
+                              
+                              return (
+                                <button
+                                  key={colorName}
+                                  type="button"
+                                  onClick={function() {
+                                    if (isSelected) {
+                                      handleRemoveColor(colorName);
+                                    } else {
+                                      handleAddColor(colorName);
+                                    }
                                   }}
-                                  className="text-sm px-2 py-1 bg-default-50 rounded border border-default-200 min-w-[100px]"
-                                />
-                                <input
-                                  type="color"
-                                  value={formData.availableColors[colorName]}
-                                  onChange={function(e) {
-                                    handleColorChange(colorName, e.target.value);
-                                  }}
-                                  className="w-8 h-8 rounded border border-default-300 cursor-pointer"
-                                />
-                                <Button
-                                  size="sm"
-                                  isIconOnly
-                                  variant="light"
-                                  color="danger"
-                                  onPress={function() {
-                                    handleRemoveColor(colorName);
-                                  }}
+                                  title={colorName}
+                                  className={isSelected 
+                                    ? "w-10 h-10 rounded-full border-4 border-primary-500 shadow-md hover:scale-110 transition-transform cursor-pointer overflow-hidden" 
+                                    : "w-10 h-10 rounded-full border-2 border-default-300 hover:border-primary-400 hover:scale-110 transition-transform cursor-pointer overflow-hidden"}
+                                  style={{ backgroundColor: displayColor }}
                                 >
-                                  <Icon icon="lucide:x" />
-                                </Button>
-                              </div>
-                            );
-                          })
-                        )}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
                       </div>
                     </div>
 
