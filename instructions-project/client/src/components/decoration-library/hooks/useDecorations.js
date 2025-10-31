@@ -20,7 +20,7 @@ export const useDecorations = () => {
         }
 
         if (serverCategories && serverCategories.length > 0) {
-          // Normalizar categorias do backend (array de strings) para { id, name }
+          // Manter o nome exatamente como na loja
           var normalized = [];
           for (var i = 0; i < serverCategories.length; i++) {
             var id = serverCategories[i];
@@ -64,8 +64,8 @@ export const useDecorations = () => {
           var catMap = {};
           for (var ci = 0; ci < products.length; ci++) {
             var p = products[ci];
-            var cat = (p && p.mount) ? String(p.mount).toLowerCase() : (p && p.type) ? String(p.type).toLowerCase() : 'custom';
-            if (!catMap[cat]) catMap[cat] = { id: cat, name: cat };
+            var catRaw = (p && p.mount) ? String(p.mount) : (p && p.type) ? String(p.type) : 'custom';
+            if (!catMap[catRaw]) catMap[catRaw] = { id: catRaw, name: catRaw };
           }
           var derived = [];
           for (var key in catMap) {
@@ -78,8 +78,8 @@ export const useDecorations = () => {
         var mapped = [];
         for (var i = 0; i < list.length; i++) {
           var it = list[i];
-          var rawCat = it.category || it.mount || it.type || 'custom';
-          var cat = typeof rawCat === 'string' ? rawCat.toLowerCase() : 'custom';
+          var catRaw = it.category || it.mount || it.type || 'custom';
+          var cat = typeof catRaw === 'string' ? catRaw : 'custom';
           mapped.push({
             id: it.id,
             name: it.name,
