@@ -37,7 +37,7 @@ export default function FavoriteFolderModal({ isOpen, onOpenChange, productId })
   const isFav = Array.isArray(favorites) && favorites.includes(productId);
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md">
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md" hideCloseButton>
       <ModalContent>
         {(close) => (
           <>
@@ -64,7 +64,13 @@ export default function FavoriteFolderModal({ isOpen, onOpenChange, productId })
             </ModalBody>
             <ModalFooter>
               <div className="w-full flex justify-end gap-2">
-                <Button variant="light" onPress={close}>Close</Button>
+                <Button 
+                  variant="flat" 
+                  onPress={close}
+                  className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-sm"
+                >
+                  Close
+                </Button>
                 {isFav && (
                   <Button color="danger" variant="flat" onPress={() => { toggleFavorite(productId); onOpenChange?.(false); }}>Remove</Button>
                 )}

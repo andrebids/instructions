@@ -18,13 +18,13 @@ export default function ProjectAddPieceModal({ isOpen, onOpenChange, project }) 
   }, [products, query]);
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="5xl" placement="center" scrollBehavior="inside">
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="5xl" placement="center" scrollBehavior="inside" hideCloseButton>
       <ModalContent>
         {(close) => (
           <>
             <ModalHeader className="flex items-center justify-between">
-              <div>Adicionar peça a {project?.name}</div>
-              <div className="w-64"><Input size="sm" placeholder="Pesquisar produto" aria-label="Pesquisar produto" value={query} onChange={(e)=>setQuery(e.target.value)} /></div>
+              <div>Add piece to {project?.name}</div>
+              <div className="w-64"><Input size="sm" placeholder="Search product" aria-label="Search product" value={query} onChange={(e)=>setQuery(e.target.value)} /></div>
             </ModalHeader>
             <ModalBody>
               {error && (
@@ -40,7 +40,7 @@ export default function ProjectAddPieceModal({ isOpen, onOpenChange, project }) 
                   const q = Number(qty) || 1;
                   const next = current + (Number(product?.price) || 0) * q;
                   if (Number.isFinite(budget) && next > budget) {
-                    setError("Sem orçamento suficiente para adicionar este produto.");
+                    setError("Insufficient budget to add this product.");
                     return;
                   }
                   addToProject(project.id, product.id, variant, q);
@@ -48,7 +48,13 @@ export default function ProjectAddPieceModal({ isOpen, onOpenChange, project }) 
               />
             </ModalBody>
             <ModalFooter>
-              <Button variant="flat" onPress={close}>Fechar</Button>
+              <Button 
+                variant="flat" 
+                onPress={close}
+                className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-sm"
+              >
+                Close
+              </Button>
             </ModalFooter>
           </>
         )}

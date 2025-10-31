@@ -25,6 +25,7 @@ export function AddClientModal({
       size="md"
       placement="center"
       backdrop="blur"
+      hideCloseButton
     >
       <ModalContent>
         {(onModalClose) => (
@@ -74,7 +75,11 @@ export function AddClientModal({
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button variant="flat" onPress={handleClose}>
+              <Button 
+                variant="flat" 
+                onPress={handleClose}
+                className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-sm"
+              >
                 Cancel
               </Button>
               <Button 
