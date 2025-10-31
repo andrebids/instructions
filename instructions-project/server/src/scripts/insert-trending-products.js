@@ -65,10 +65,9 @@ function transformProduct(mockProduct) {
     availableColors: Object.keys(imagesProcessed.colors).length > 0 ? imagesProcessed.colors : null,
     variantProductByColor: mockProduct.variantProductByColor || null,
     videoFile: mockProduct.videoFile || null,
-    isSourceImage: hasTrendingTag, // Marcar produtos trending como Source Images
     isActive: true,
     season: season, // 'xmas' ou 'summer' ou null
-    isTrending: hasTrendingTag, // Separado de isSourceImage
+    isTrending: hasTrendingTag,
     releaseYear: mockProduct.releaseYear || null, // Ano de lançamento para produtos NEW (preencher manualmente)
     isOnSale: isOnSale, // Calculado baseado em oldPrice > price
   };
