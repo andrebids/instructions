@@ -41,6 +41,7 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
       size="3xl"
       placement="center"
       scrollBehavior="inside"
+      hideCloseButton
       classNames={{
         base: "max-w-[1100px] w-[96vw]",
         body: "pt-2",
@@ -181,7 +182,13 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
                   {(project && (projectStatusById?.[project.id] === 'to_order')) && (
                     <Button color="primary" onPress={()=> setConfirmOpen(true)}>Order</Button>
                   )}
-                  <Button variant="flat" onPress={close}>Close</Button>
+                  <Button 
+                    variant="flat" 
+                    onPress={close}
+                    className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-sm"
+                  >
+                    Close
+                  </Button>
                 </div>
               </div>
             </ModalFooter>
@@ -189,7 +196,7 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
         )}
       </ModalContent>
     </Modal>
-    <Modal isOpen={confirmOpen} onOpenChange={setConfirmOpen}>
+    <Modal isOpen={confirmOpen} onOpenChange={setConfirmOpen} hideCloseButton>
       <ModalContent>
         {(close)=> (
           <>
@@ -199,13 +206,19 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
             </ModalBody>
             <ModalFooter>
               <Button color="primary" onPress={()=> { setProjectStatus(project.id, 'ordered'); close(); }}>Confirm order</Button>
-              <Button variant="flat" onPress={close}>Review items</Button>
+              <Button 
+                variant="flat" 
+                onPress={close}
+                className="bg-gray-800 dark:bg-gray-700 text-gray-300 dark:text-gray-300 hover:bg-gray-700 dark:hover:bg-gray-600 shadow-sm"
+              >
+                Review items
+              </Button>
             </ModalFooter>
           </>
         )}
       </ModalContent>
     </Modal>
-    <Modal isOpen={editBudgetOpen} onOpenChange={setEditBudgetOpen}>
+    <Modal isOpen={editBudgetOpen} onOpenChange={setEditBudgetOpen} hideCloseButton>
       <ModalContent>
         {(close)=> (
           <>
@@ -215,7 +228,13 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
             </ModalBody>
             <ModalFooter>
               <Button color="primary" onPress={()=> { setProjectBudget(project.id, budgetInput); close(); }}>Save</Button>
-              <Button variant="flat" onPress={close}>Cancel</Button>
+              <Button 
+                variant="flat" 
+                onPress={close}
+                className="bg-gray-800 dark:bg-gray-700 text-gray-300 dark:text-gray-300 hover:bg-gray-700 dark:hover:bg-gray-600 shadow-sm"
+              >
+                Cancel
+              </Button>
             </ModalFooter>
           </>
         )}

@@ -136,7 +136,7 @@ export default function Projects() {
       />
 
       {/* Confirm Order Modal */}
-      <Modal isOpen={!!confirmProject} onOpenChange={(v)=>{ if (!v) setConfirmProject(null); }}>
+      <Modal isOpen={!!confirmProject} onOpenChange={(v)=>{ if (!v) setConfirmProject(null); }} hideCloseButton>
         <ModalContent>
           {(close)=> (
             <>
@@ -147,7 +147,13 @@ export default function Projects() {
               </ModalBody>
               <ModalFooter>
                 <Button color="primary" onPress={()=> { setProjectStatus(confirmProject.id, 'ordered'); setConfirmProject(null); }}>Confirm order</Button>
-                <Button variant="flat" onPress={()=> { setOpenProject(confirmProject); setConfirmProject(null); }}>Review project</Button>
+                <Button 
+                  variant="flat" 
+                  onPress={()=> { setOpenProject(confirmProject); setConfirmProject(null); }}
+                  className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-sm"
+                >
+                  Review project
+                </Button>
               </ModalFooter>
             </>
           )}
@@ -155,7 +161,7 @@ export default function Projects() {
       </Modal>
 
       {/* Edit Budget Modal */}
-      <Modal isOpen={!!editBudgetProject} onOpenChange={(v)=> { if (!v) setEditBudgetProject(null); }}>
+      <Modal isOpen={!!editBudgetProject} onOpenChange={(v)=> { if (!v) setEditBudgetProject(null); }} hideCloseButton>
         <ModalContent>
           {(close)=> (
             <>
@@ -170,7 +176,13 @@ export default function Projects() {
               </ModalBody>
               <ModalFooter>
                 <Button color="primary" onPress={()=> { setProjectBudget(editBudgetProject.id, budgetInput); setEditBudgetProject(null); }}>Save</Button>
-                <Button variant="flat" onPress={close}>Cancel</Button>
+                <Button 
+                  variant="flat" 
+                  onPress={close}
+                  className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-sm"
+                >
+                  Cancel
+                </Button>
               </ModalFooter>
             </>
           )}

@@ -1,6 +1,5 @@
 import React from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Autocomplete, AutocompleteItem } from "@heroui/react";
-import { useNavigate } from "react-router-dom";
 import { useShop } from "../../context/ShopContext";
 
 export default function OrderAssignModal({ isOpen, onOpenChange, product, variant }) {
@@ -10,7 +9,6 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
   const [qty, setQty] = React.useState(1);
   const [qtyError, setQtyError] = React.useState("");
   const [projectError, setProjectError] = React.useState("");
-  const navigate = useNavigate();
 
   React.useEffect(() => {
     if (isOpen) {
@@ -76,7 +74,7 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
   };
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg" placement="center" scrollBehavior="outside">
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg" placement="center" scrollBehavior="outside" hideCloseButton>
       <ModalContent>
         {(close) => (
           <>
@@ -137,7 +135,13 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button variant="flat" onPress={close}>Cancel</Button>
+              <Button 
+                variant="flat" 
+                onPress={close}
+                className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-sm"
+              >
+                Cancel
+              </Button>
               <Button
                 color="primary"
                 isDisabled={!projectId || qty < 1 || (stock > 0 && qty > stock) || stock === 0}
@@ -145,7 +149,6 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
                   if (!projectId) { setProjectError("Select a project first."); return; }
                   addToProject(projectId, product.id, variant, qty);
                   close();
-                  navigate("/projects");
                 }}
               >
                 Confirm
