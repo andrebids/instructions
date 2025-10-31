@@ -134,16 +134,26 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
   const stock = getAvailableStock(activeProduct);
   const isOutOfStock = stock <= 0;
 
-  const formatDimensions = (specs) => {
+  const formatDimensions = (specs, product) => {
+    // Prioridade: campos height/width/depth/diameter do produto (vindos do AdminProducts)
+    const parts = [];
+    if (product?.height != null) parts.push(`${Number(product.height).toFixed(2)} m (H)`);
+    if (product?.width != null) parts.push(`${Number(product.width).toFixed(2)} m (W)`);
+    if (product?.depth != null) parts.push(`${Number(product.depth).toFixed(2)} m (D)`);
+    if (product?.diameter != null) parts.push(`${Number(product.diameter).toFixed(2)} m (Ø)`);
+    if (parts.length > 0) return parts.join(' x ');
+    
+    // Fallback: specs.dimensions (formato antigo)
     const dim = specs?.dimensions;
-    // Display order: Height x Width x Depth
     if (dim && (dim.widthM != null || dim.heightM != null || dim.depthM != null)) {
-      const parts = [];
-      if (dim.heightM != null) parts.push(`${Number(dim.heightM).toFixed(2)} m (H)`);
-      if (dim.widthM != null) parts.push(`${Number(dim.widthM).toFixed(2)} m (W)`);
-      if (dim.depthM != null) parts.push(`${Number(dim.depthM).toFixed(2)} m (D)`);
-      return parts.join(' x ');
+      const parts2 = [];
+      if (dim.heightM != null) parts2.push(`${Number(dim.heightM).toFixed(2)} m (H)`);
+      if (dim.widthM != null) parts2.push(`${Number(dim.widthM).toFixed(2)} m (W)`);
+      if (dim.depthM != null) parts2.push(`${Number(dim.depthM).toFixed(2)} m (D)`);
+      return parts2.join(' x ');
     }
+    
+    // Fallback: specs.dimensoes (texto)
     const s = specs?.dimensoes || specs?.dimensionsText;
     if (typeof s === 'string') {
       const regex = /([0-9]+(?:[\.,][0-9]+)?)\s*m/gi;
@@ -155,11 +165,11 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
       if (nums.length >= 2) {
         // Assume text order is W x H x D; convert to H x W x D
         const [w, h, d] = nums;
-        const parts = [];
-        if (!Number.isNaN(h)) parts.push(`${h.toFixed(2)} m (H)`);
-        if (!Number.isNaN(w)) parts.push(`${w.toFixed(2)} m (W)`);
-        if (!Number.isNaN(d)) parts.push(`${d.toFixed(2)} m (D)`);
-        return parts.join(' x ');
+        const parts3 = [];
+        if (!Number.isNaN(h)) parts3.push(`${h.toFixed(2)} m (H)`);
+        if (!Number.isNaN(w)) parts3.push(`${w.toFixed(2)} m (W)`);
+        if (!Number.isNaN(d)) parts3.push(`${d.toFixed(2)} m (D)`);
+        return parts3.join(' x ');
       }
       return s;
     }
@@ -349,7 +359,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                       <Icon icon="lucide:ruler" className="text-default-500 text-lg mt-0.5" />
                       <div>
                         <div className="text-default-500 text-sm">Dimensions</div>
-                        <div>{formatDimensions(activeProduct.specs)}</div>
+                        <div>{formatDimensions(activeProduct.specs, activeProduct)}</div>
                       </div>
                     </div>
 
@@ -374,7 +384,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                         <Icon icon="lucide:scale" className="text-default-500 text-lg mt-0.5" />
                         <div>
                           <div className="text-default-500 text-sm">Weight</div>
-                          <div>{activeProduct.specs?.weight}</div>
+                          <div>{activeProduct.specs?.weight} kg</div>
                         </div>
                       </div>
                     )}

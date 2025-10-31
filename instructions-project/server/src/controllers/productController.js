@@ -346,6 +346,46 @@ export async function getAll(req, res) {
             plainProduct.tags = [];
           }
           
+          // Garantir que releaseYear é um número válido
+          if (plainProduct.releaseYear !== null && plainProduct.releaseYear !== undefined) {
+            plainProduct.releaseYear = parseInt(String(plainProduct.releaseYear), 10);
+            if (isNaN(plainProduct.releaseYear)) plainProduct.releaseYear = null;
+          }
+          
+          // Garantir que height, width, depth, diameter são números válidos
+          if (plainProduct.height !== null && plainProduct.height !== undefined) {
+            if (typeof plainProduct.height === 'object' && plainProduct.height.toString) {
+              plainProduct.height = parseFloat(plainProduct.height.toString());
+            } else {
+              plainProduct.height = parseFloat(plainProduct.height);
+            }
+            if (isNaN(plainProduct.height)) plainProduct.height = null;
+          }
+          if (plainProduct.width !== null && plainProduct.width !== undefined) {
+            if (typeof plainProduct.width === 'object' && plainProduct.width.toString) {
+              plainProduct.width = parseFloat(plainProduct.width.toString());
+            } else {
+              plainProduct.width = parseFloat(plainProduct.width);
+            }
+            if (isNaN(plainProduct.width)) plainProduct.width = null;
+          }
+          if (plainProduct.depth !== null && plainProduct.depth !== undefined) {
+            if (typeof plainProduct.depth === 'object' && plainProduct.depth.toString) {
+              plainProduct.depth = parseFloat(plainProduct.depth.toString());
+            } else {
+              plainProduct.depth = parseFloat(plainProduct.depth);
+            }
+            if (isNaN(plainProduct.depth)) plainProduct.depth = null;
+          }
+          if (plainProduct.diameter !== null && plainProduct.diameter !== undefined) {
+            if (typeof plainProduct.diameter === 'object' && plainProduct.diameter.toString) {
+              plainProduct.diameter = parseFloat(plainProduct.diameter.toString());
+            } else {
+              plainProduct.diameter = parseFloat(plainProduct.diameter);
+            }
+            if (isNaN(plainProduct.diameter)) plainProduct.diameter = null;
+          }
+          
           // Converter valores Date para strings ISO se necessário
           if (plainProduct.createdAt && plainProduct.createdAt instanceof Date) {
             plainProduct.createdAt = plainProduct.createdAt.toISOString();
@@ -485,6 +525,122 @@ export async function getById(req, res) {
     
     // Converter para objeto simples
     var productData = product.get({ plain: true });
+    
+    // Garantir que valores numéricos são números, não strings ou objetos DECIMAL
+    if (productData.price !== null && productData.price !== undefined) {
+      if (typeof productData.price === 'object' && productData.price.toString) {
+        productData.price = parseFloat(productData.price.toString());
+      } else {
+        productData.price = parseFloat(productData.price);
+      }
+      if (isNaN(productData.price)) productData.price = 0;
+    }
+    if (productData.stock !== null && productData.stock !== undefined) {
+      productData.stock = parseInt(String(productData.stock), 10);
+      if (isNaN(productData.stock)) productData.stock = 0;
+    }
+    if (productData.oldPrice !== null && productData.oldPrice !== undefined) {
+      if (typeof productData.oldPrice === 'object' && productData.oldPrice.toString) {
+        productData.oldPrice = parseFloat(productData.oldPrice.toString());
+      } else {
+        productData.oldPrice = parseFloat(productData.oldPrice);
+      }
+      if (isNaN(productData.oldPrice)) productData.oldPrice = null;
+    }
+    
+    // Garantir que releaseYear é um número válido
+    if (productData.releaseYear !== null && productData.releaseYear !== undefined) {
+      productData.releaseYear = parseInt(String(productData.releaseYear), 10);
+      if (isNaN(productData.releaseYear)) productData.releaseYear = null;
+    }
+    
+    // Garantir que height, width, depth, diameter são números válidos
+    if (productData.height !== null && productData.height !== undefined) {
+      if (typeof productData.height === 'object' && productData.height.toString) {
+        productData.height = parseFloat(productData.height.toString());
+      } else {
+        productData.height = parseFloat(productData.height);
+      }
+      if (isNaN(productData.height)) productData.height = null;
+    }
+    if (productData.width !== null && productData.width !== undefined) {
+      if (typeof productData.width === 'object' && productData.width.toString) {
+        productData.width = parseFloat(productData.width.toString());
+      } else {
+        productData.width = parseFloat(productData.width);
+      }
+      if (isNaN(productData.width)) productData.width = null;
+    }
+    if (productData.depth !== null && productData.depth !== undefined) {
+      if (typeof productData.depth === 'object' && productData.depth.toString) {
+        productData.depth = parseFloat(productData.depth.toString());
+      } else {
+        productData.depth = parseFloat(productData.depth);
+      }
+      if (isNaN(productData.depth)) productData.depth = null;
+    }
+    if (productData.diameter !== null && productData.diameter !== undefined) {
+      if (typeof productData.diameter === 'object' && productData.diameter.toString) {
+        productData.diameter = parseFloat(productData.diameter.toString());
+      } else {
+        productData.diameter = parseFloat(productData.diameter);
+      }
+      if (isNaN(productData.diameter)) productData.diameter = null;
+    }
+    
+    // Processar campos JSON
+    try {
+      if (productData.specs !== null && productData.specs !== undefined) {
+        if (typeof productData.specs === 'object') {
+          productData.specs = JSON.parse(JSON.stringify(productData.specs));
+        } else if (typeof productData.specs === 'string') {
+          productData.specs = JSON.parse(productData.specs);
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️  Erro ao processar specs do produto:', e.message);
+      productData.specs = null;
+    }
+    
+    try {
+      if (productData.availableColors !== null && productData.availableColors !== undefined) {
+        if (typeof productData.availableColors === 'object') {
+          productData.availableColors = JSON.parse(JSON.stringify(productData.availableColors));
+        } else if (typeof productData.availableColors === 'string') {
+          productData.availableColors = JSON.parse(productData.availableColors);
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️  Erro ao processar availableColors do produto:', e.message);
+      productData.availableColors = null;
+    }
+    
+    try {
+      if (productData.variantProductByColor !== null && productData.variantProductByColor !== undefined) {
+        if (typeof productData.variantProductByColor === 'object') {
+          productData.variantProductByColor = JSON.parse(JSON.stringify(productData.variantProductByColor));
+        } else if (typeof productData.variantProductByColor === 'string') {
+          productData.variantProductByColor = JSON.parse(productData.variantProductByColor);
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️  Erro ao processar variantProductByColor do produto:', e.message);
+      productData.variantProductByColor = null;
+    }
+    
+    // Garantir que tags é um array válido
+    if (!Array.isArray(productData.tags)) {
+      productData.tags = [];
+    }
+    
+    // Converter valores Date para strings ISO se necessário
+    if (productData.createdAt && productData.createdAt instanceof Date) {
+      productData.createdAt = productData.createdAt.toISOString();
+    }
+    if (productData.updatedAt && productData.updatedAt instanceof Date) {
+      productData.updatedAt = productData.updatedAt.toISOString();
+    }
+    
     res.json(productData);
   } catch (error) {
     console.error('Erro ao buscar produto:', error);

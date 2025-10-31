@@ -69,15 +69,26 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
     return pool.filter(p => p.name.toLowerCase().includes(q)).slice(0, 8);
   }, [query, pool, suggestions]);
 
-  const formatDimensions = (specs) => {
+  const formatDimensions = (specs, product) => {
+    // Prioridade: campos height/width/depth/diameter do produto (vindos do AdminProducts)
+    const parts = [];
+    if (product?.height != null) parts.push(`${Number(product.height).toFixed(2)} m (H)`);
+    if (product?.width != null) parts.push(`${Number(product.width).toFixed(2)} m (W)`);
+    if (product?.depth != null) parts.push(`${Number(product.depth).toFixed(2)} m (D)`);
+    if (product?.diameter != null) parts.push(`${Number(product.diameter).toFixed(2)} m (Ø)`);
+    if (parts.length > 0) return parts.join(' x ');
+    
+    // Fallback: specs.dimensions (formato antigo)
     const dim = specs?.dimensions;
     if (dim && (dim.widthM != null || dim.heightM != null || dim.depthM != null)) {
-      const parts = [];
-      if (dim.heightM != null) parts.push(`${Number(dim.heightM).toFixed(2)} m (H)`);
-      if (dim.widthM != null) parts.push(`${Number(dim.widthM).toFixed(2)} m (W)`);
-      if (dim.depthM != null) parts.push(`${Number(dim.depthM).toFixed(2)} m (D)`);
-      return parts.join(' x ');
+      const parts2 = [];
+      if (dim.heightM != null) parts2.push(`${Number(dim.heightM).toFixed(2)} m (H)`);
+      if (dim.widthM != null) parts2.push(`${Number(dim.widthM).toFixed(2)} m (W)`);
+      if (dim.depthM != null) parts2.push(`${Number(dim.depthM).toFixed(2)} m (D)`);
+      return parts2.join(' x ');
     }
+    
+    // Fallback: specs.dimensoes (texto)
     const s = specs?.dimensoes || specs?.dimensionsText;
     if (typeof s === 'string') {
       const regex = /([0-9]+(?:[\.,][0-9]+)?)\s*m/gi;
@@ -88,11 +99,11 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
       }
       if (nums.length >= 2) {
         const [w, h, d] = nums;
-        const parts = [];
-        if (!Number.isNaN(h)) parts.push(`${h.toFixed(2)} m (H)`);
-        if (!Number.isNaN(w)) parts.push(`${w.toFixed(2)} m (W)`);
-        if (!Number.isNaN(d)) parts.push(`${d.toFixed(2)} m (D)`);
-        return parts.join(' x ');
+        const parts3 = [];
+        if (!Number.isNaN(h)) parts3.push(`${h.toFixed(2)} m (H)`);
+        if (!Number.isNaN(w)) parts3.push(`${w.toFixed(2)} m (W)`);
+        if (!Number.isNaN(d)) parts3.push(`${d.toFixed(2)} m (D)`);
+        return parts3.join(' x ');
       }
       return s;
     }
@@ -217,7 +228,7 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                           <Icon icon="lucide:ruler" className="text-default-500 text-sm mt-0.5" />
                           <div>
                             <div className="text-default-500">Dimensions</div>
-                            <div className="leading-6 text-foreground/90 break-words">{formatDimensions(activeBase?.specs)}</div>
+                            <div className="leading-6 text-foreground/90 break-words">{formatDimensions(activeBase?.specs, activeBase)}</div>
                           </div>
                         </div>
                         <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
@@ -239,7 +250,7 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                             <Icon icon="lucide:scale" className="text-default-500 text-sm mt-0.5" />
                             <div>
                               <div className="text-default-500">Weight</div>
-                              <div className="leading-6 text-foreground/90">{activeBase?.specs?.weight}</div>
+                              <div className="leading-6 text-foreground/90">{activeBase?.specs?.weight} kg</div>
                             </div>
                           </div>
                         )}
@@ -318,7 +329,7 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                           <Icon icon="lucide:ruler" className="text-default-500 text-sm mt-0.5" />
                           <div>
                             <div className="text-default-500">Dimensions</div>
-                            <div className="leading-6 text-foreground/90 break-words">{formatDimensions(selected?.specs)}</div>
+                            <div className="leading-6 text-foreground/90 break-words">{formatDimensions(selected?.specs, selected)}</div>
                           </div>
                         </div>
                         <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
@@ -340,7 +351,7 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                             <Icon icon="lucide:scale" className="text-default-500 text-sm mt-0.5" />
                             <div>
                               <div className="text-default-500">Weight</div>
-                              <div className="leading-6 text-foreground/90">{selected?.specs?.weight}</div>
+                              <div className="leading-6 text-foreground/90">{selected?.specs?.weight} kg</div>
                             </div>
                           </div>
                         )}

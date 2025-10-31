@@ -43,7 +43,7 @@ export default function AdminProducts() {
     return years;
   };
   
-  var [availableYears, setAvailableYears] = React.useState(initializeYears);
+  var [availableYears, setAvailableYears] = React.useState(initializeYears());
   var { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
   var [editingProduct, setEditingProduct] = React.useState(null);
   var [formData, setFormData] = React.useState({
@@ -133,7 +133,8 @@ export default function AdminProducts() {
         for (var i = 0; i < data.length; i++) {
           var productYear = data[i].releaseYear;
           if (productYear) {
-            var yearValue = parseInt(productYear, 10);
+            // Garantir que é um número (pode vir como number ou string)
+            var yearValue = typeof productYear === 'number' ? productYear : parseInt(productYear, 10);
             if (!isNaN(yearValue)) {
               yearsSet[yearValue] = true;
             }
@@ -342,8 +343,11 @@ export default function AdminProducts() {
     // Verificar se o ano do produto está na lista disponível e adicionar se necessário
     var productYear = product.releaseYear;
     var releaseYearStr = "";
+    var updatedYears = availableYears.slice();
+    
     if (productYear !== null && productYear !== undefined && productYear !== "") {
-      var yearValue = parseInt(productYear, 10);
+      // Garantir que é um número (pode vir como number ou string)
+      var yearValue = typeof productYear === 'number' ? productYear : parseInt(productYear, 10);
       if (!isNaN(yearValue)) {
         releaseYearStr = String(yearValue);
         var yearExists = false;
@@ -355,15 +359,16 @@ export default function AdminProducts() {
         }
         
         if (!yearExists) {
-          var updatedYears = availableYears.slice();
           updatedYears.push(yearValue);
           updatedYears.sort(function(a, b) {
             return b - a;
           });
-          setAvailableYears(updatedYears);
         }
       }
     }
+    
+    // Atualizar anos disponíveis ANTES de abrir o modal
+    setAvailableYears(updatedYears);
     
     setFormData({
       name: product.name || "",
@@ -669,7 +674,7 @@ export default function AdminProducts() {
         <div className="flex gap-2 flex-wrap">
           <Select
             placeholder="Type"
-            selectedKeys={filters.type ? [filters.type] : []}
+            selectedKeys={filters.type ? new Set([filters.type]) : new Set()}
             onSelectionChange={function(keys) {
               var selected = Array.from(keys)[0] || "";
               setFilters(function(prev) {
@@ -684,7 +689,7 @@ export default function AdminProducts() {
           
           <Select
             placeholder="Location"
-            selectedKeys={filters.location ? [filters.location] : []}
+            selectedKeys={filters.location ? new Set([filters.location]) : new Set()}
             onSelectionChange={function(keys) {
               var selected = Array.from(keys)[0] || "";
               setFilters(function(prev) {
@@ -908,7 +913,7 @@ export default function AdminProducts() {
                       <Select
                         label="Type"
                         placeholder="Select type"
-                        selectedKeys={formData.type ? [formData.type] : []}
+                        selectedKeys={formData.type ? new Set([formData.type]) : new Set()}
                         onSelectionChange={function(keys) {
                           var selected = Array.from(keys)[0] || "";
                           setFormData(function(prev) {
@@ -923,7 +928,7 @@ export default function AdminProducts() {
                       <Select
                         label="Location"
                         placeholder="Select location"
-                        selectedKeys={formData.location ? [formData.location] : []}
+                        selectedKeys={formData.location ? new Set([formData.location]) : new Set()}
                         onSelectionChange={function(keys) {
                           var selected = Array.from(keys)[0] || "";
                           setFormData(function(prev) {
@@ -938,7 +943,7 @@ export default function AdminProducts() {
                       <Select
                         label="Mount"
                         placeholder="Select mount"
-                        selectedKeys={formData.mount ? [formData.mount] : []}
+                        selectedKeys={formData.mount ? new Set([formData.mount]) : new Set()}
                         onSelectionChange={function(keys) {
                           var selected = Array.from(keys)[0] || "";
                           setFormData(function(prev) {
@@ -952,24 +957,26 @@ export default function AdminProducts() {
                       </Select>
                       
                       <Select
-                        label="Ano da Coleção"
-                        placeholder="Selecione o ano"
-                        selectedKeys={formData.releaseYear ? [String(formData.releaseYear)] : []}
+                        label="Collection Year"
+                        placeholder="Select year"
+                        selectedKeys={formData.releaseYear ? new Set([String(formData.releaseYear)]) : new Set()}
                         onSelectionChange={function(keys) {
                           var keysArray = Array.from(keys);
                           var selected = keysArray.length > 0 ? String(keysArray[0]) : "";
+                          console.log('🎯 [Collection Year] onSelectionChange:', selected, 'availableYears:', availableYears);
                           setFormData(function(prev) {
                             return Object.assign({}, prev, { releaseYear: selected });
                           });
                         }}
                       >
                         {function() {
+                          console.log('🎯 [Collection Year] Rendering items, availableYears:', availableYears, 'formData.releaseYear:', formData.releaseYear);
                           var yearItems = [];
                           for (var i = 0; i < availableYears.length; i++) {
                             var year = availableYears[i];
                             var yearStr = String(year);
                             yearItems.push(
-                              <SelectItem key={yearStr} value={yearStr}>
+                              <SelectItem key={yearStr}>
                                 {year}
                               </SelectItem>
                             );
@@ -981,7 +988,7 @@ export default function AdminProducts() {
                       <Select
                         label="Season"
                         placeholder="Select season"
-                        selectedKeys={formData.season ? [formData.season] : []}
+                        selectedKeys={formData.season ? new Set([formData.season]) : new Set()}
                         onSelectionChange={function(keys) {
                           var selected = Array.from(keys)[0] || "";
                           setFormData(function(prev) {
@@ -1100,12 +1107,12 @@ export default function AdminProducts() {
                       </div>
                     </div>
 
-                    {/* Cores Disponíveis */}
+                    {/* LED Colors */}
                     <div>
-                      <label className="block text-sm font-medium mb-2">Selecionar cores:</label>
+                      <label className="block text-sm font-medium mb-2">LED Colors:</label>
                       <div className="flex flex-wrap gap-3 p-4 border border-default-200 rounded-lg bg-default-50">
                         {Object.keys(availableColorsList).length === 0 ? (
-                          <p className="text-sm text-default-500">Nenhuma cor disponível na base de dados</p>
+                          <p className="text-sm text-default-500">No colors available in database</p>
                         ) : (
                             Object.keys(availableColorsList).map(function(colorName) {
                               var colorValue = availableColorsList[colorName];
@@ -1186,8 +1193,8 @@ export default function AdminProducts() {
                           }}
                         />
                         <Input
-                          label="Weight"
-                          placeholder="Ex: 11 kg"
+                          label="Weight (kg)"
+                          placeholder="Ex: 11"
                           value={formData.specs.weight}
                           onValueChange={function(val) {
                             setFormData(function(prev) {
@@ -1198,11 +1205,11 @@ export default function AdminProducts() {
                         />
                       </div>
                       
-                      {/* Dimensões */}
+                      {/* Dimensions */}
                       <div className="grid grid-cols-2 gap-2">
-                        <h4 className="font-medium col-span-2">Dimensões (em metros)</h4>
+                        <h4 className="font-medium col-span-2">Dimensions (in meters)</h4>
                         <Input
-                          label="Altura (H)"
+                          label="Height (H)"
                           type="number"
                           step="0.01"
                           placeholder="Ex: 2.4"
@@ -1214,7 +1221,7 @@ export default function AdminProducts() {
                           }}
                         />
                         <Input
-                          label="Largura (W)"
+                          label="Width (W)"
                           type="number"
                           step="0.01"
                           placeholder="Ex: 2.0"
@@ -1226,7 +1233,7 @@ export default function AdminProducts() {
                           }}
                         />
                         <Input
-                          label="Profundidade (D)"
+                          label="Depth (D)"
                           type="number"
                           step="0.01"
                           placeholder="Ex: 0.5"
@@ -1238,7 +1245,7 @@ export default function AdminProducts() {
                           }}
                         />
                         <Input
-                          label="Diâmetro"
+                          label="Diameter"
                           type="number"
                           step="0.01"
                           placeholder="Ex: 1.2"
