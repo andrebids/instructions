@@ -15,6 +15,12 @@ if (!fs.existsSync(uploadDir)) {
 // Configuração de storage
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
+    try {
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      console.log('📁 [UPLOAD] Destino definido:', uploadDir);
+    } catch (e) {
+      console.error('❌ [UPLOAD] Falha ao garantir diretório de upload:', e?.message);
+    }
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
@@ -24,6 +30,15 @@ var storage = multer.diskStorage({
     var baseName = path.basename(file.originalname, ext);
     var fieldName = file.fieldname;
     var fileName = productId + '_' + fieldName + '_' + timestamp + ext;
+    try {
+      console.log('📝 [UPLOAD] Gerando nome de arquivo:', {
+        field: fieldName,
+        original: file.originalname,
+        mime: file.mimetype,
+        size: file.size,
+        savedAs: fileName,
+      });
+    } catch(_) {}
     cb(null, fileName);
   }
 });
@@ -36,12 +51,14 @@ function fileFilter(req, file, cb) {
   
   if (file.fieldname === 'animation') {
     if (allowedVideoTypes.test(ext)) {
+      console.log('✅ [UPLOAD] Vídeo aceite:', file.originalname);
       cb(null, true);
     } else {
       cb(new Error('Apenas ficheiros de vídeo (webm, mp4) são permitidos para animação'));
     }
   } else {
     if (allowedImageTypes.test(ext)) {
+      console.log('✅ [UPLOAD] Imagem aceite:', file.originalname);
       cb(null, true);
     } else {
       cb(new Error('Apenas ficheiros de imagem (jpg, jpeg, png, webp) são permitidos'));

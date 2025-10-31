@@ -118,9 +118,19 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
   }, [mediaIndex, videoSrc]);
 
   if (!activeProduct) return null;
-  const imageSrc = mode === "day" 
-    ? activeProduct.images?.day 
-    : (activeProduct.images?.night || activeProduct.images?.day);
+  const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || (typeof window !== 'undefined' ? '' : '');
+  const mapPath = function(path) {
+    if (!path) return path;
+    if (baseApi) return path.indexOf('/uploads/') === 0 ? (baseApi + path) : path;
+    // sem VITE_API_URL: usar /api/uploads para passar no proxy
+    return path.indexOf('/uploads/') === 0 ? ('/api' + path) : path;
+  };
+  const baseDay = mapPath(activeProduct.images?.day || activeProduct.imagesDayUrl || activeProduct.thumbnailUrl);
+  const baseNight = mapPath(activeProduct.images?.night || activeProduct.imagesNightUrl || baseDay);
+  const imageSrc = mode === "day" ? baseDay : baseNight;
+  const imageSrcWithBuster = imageSrc 
+    ? imageSrc + '?v=' + encodeURIComponent(String(activeProduct.updatedAt || activeProduct.id || '1')) 
+    : imageSrc;
   const stock = getAvailableStock(activeProduct);
   const isOutOfStock = stock <= 0;
 
@@ -211,11 +221,20 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                   >
                     {mediaIndex === 0 && (
                       <img
-                        src={imageSrc}
+                        src={imageSrcWithBuster || "/demo-images/placeholder.png"}
                         alt={product.name}
                         className="absolute inset-0 w-full h-full object-contain select-none"
                         style={{ transform: `scale(${zoom})`, transformOrigin: `${zoomOrigin.xPct}% ${zoomOrigin.yPct}%` }}
                         draggable={false}
+                        onError={(e) => {
+                          if (e.target.dataset.fb === '1') return;
+                          e.target.dataset.fb = '1';
+                          const fallback = activeProduct?.images?.day || "/demo-images/placeholder.png";
+                          e.target.src = fallback;
+                        }}
+                        onLoad={() => {
+                          try { console.log('🖼️ [ProductModal] imagem mostrada:', imageSrcWithBuster); } catch(_) {}
+                        }}
                       />
                     )}
                     {mediaIndex === 1 && activeProduct.videoFile && (

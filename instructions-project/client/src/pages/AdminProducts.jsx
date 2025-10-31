@@ -581,7 +581,17 @@ export default function AdminProducts() {
       stock: data.stock,
       hasDayImage: !!data.dayImage,
       hasNightImage: !!data.nightImage,
-      hasAnimation: !!data.animation
+      hasAnimation: !!data.animation,
+      fileNames: {
+        day: imageFiles?.dayImage?.name || null,
+        night: imageFiles?.nightImage?.name || null,
+        animation: imageFiles?.animation?.name || null,
+      },
+      urlsPreview: {
+        day: formData?.imagesDayUrl || null,
+        night: formData?.imagesNightUrl || null,
+        thumb: formData?.thumbnailUrl || null,
+      }
     });
     
     setLoading(true);
@@ -592,7 +602,15 @@ export default function AdminProducts() {
       : productsAPI.create(data);
     
     promise
-      .then(function() {
+      .then(function(saved) {
+        try {
+          console.log('🟢 [AdminProducts] Produto salvo/atualizado com sucesso:', {
+            id: saved?.id || editingProduct?.id || null,
+            imagesDayUrl: saved?.imagesDayUrl,
+            imagesNightUrl: saved?.imagesNightUrl,
+            thumbnailUrl: saved?.thumbnailUrl,
+          });
+        } catch(_) {}
         setLoading(false);
         onModalClose();
         loadProducts();
@@ -732,22 +750,35 @@ export default function AdminProducts() {
                 <Card key={product.id} className="h-full">
                   <CardBody className="p-0">
                     <div className="relative h-48 bg-content2">
-                      <img
-                        src={product.thumbnailUrl || product.imagesNightUrl || product.imagesDayUrl || "/demo-images/placeholder.png"}
-                        alt={product.name}
-                        className="w-full h-full object-contain"
-                        decoding="async"
-                        loading="lazy"
-                        onError={function(e) {
-                          if (e.target.dataset.fallbackAttempted === 'true') return;
-                          e.target.dataset.fallbackAttempted = 'true';
-                          if (product.imagesDayUrl && e.target.src.indexOf(product.imagesDayUrl) < 0) {
-                            e.target.src = product.imagesDayUrl;
-                          } else {
-                            e.target.src = "/demo-images/placeholder.png";
-                          }
-                        }}
-                      />
+                      {function(){
+                        var baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
+                        var choose = product.thumbnailUrl || product.imagesNightUrl || product.imagesDayUrl || "/demo-images/placeholder.png";
+                        var abs;
+                        if (choose && choose.indexOf('/uploads/') === 0) {
+                          abs = baseApi ? (baseApi + choose) : ('/api' + choose);
+                        } else {
+                          abs = choose;
+                        }
+                        var src = abs + (abs.indexOf('/demo-images/') === 0 ? '' : ('?v=' + encodeURIComponent(String(product.updatedAt || product.id || '1'))));
+                        return (
+                          <img
+                            src={src}
+                            alt={product.name}
+                            className="w-full h-full object-contain"
+                            decoding="async"
+                            loading="lazy"
+                            onLoad={function(){ try { console.log('🖼️ [AdminProducts] grid imagem OK', { id: product.id, src: src }); } catch(_) {} }}
+                            onError={function(e){
+                              if (e.target.dataset.fb === '1') return;
+                              e.target.dataset.fb = '1';
+                              var day = product.imagesDayUrl;
+                              var alt = day ? ((day.indexOf('/uploads/') === 0 ? ((baseApi ? baseApi : '/api') + day) : day) + '?v=' + encodeURIComponent(String(product.updatedAt || product.id || '1'))) : null;
+                              console.warn('⚠️ [AdminProducts] grid imagem ERRO', { id: product.id, tried: src, fallback: alt });
+                              e.target.src = alt || "/demo-images/placeholder.png";
+                            }}
+                          />
+                        );
+                      }()}
                       {!product.isActive && (
                         <Chip size="sm" color="warning" className="absolute top-2 right-2">
                           Archived

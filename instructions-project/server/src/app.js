@@ -30,6 +30,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static('public'));
 
+// Servir uploads também via /api para funcionar por trás do proxy do Vite
+app.use('/api/uploads', express.static(path.resolve(process.cwd(), 'public/uploads')));
+
 // Servir também arquivos estáticos do client/public (para imagens da loja)
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = path.dirname(__filename);
