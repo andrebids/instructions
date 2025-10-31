@@ -145,14 +145,19 @@ jobs:
           fi
           
           # 4. Instalar dependências do client e fazer build
+          echo "📦 Limpando node_modules antigo (se existir)..."
+          rm -rf node_modules package-lock.json || true
+          echo "📦 Instalando dependências do frontend..."
+          npm install || { echo "❌ npm install falhou!"; exit 1; }
           echo "📦 Fazendo build do frontend..."
-          npm ci || npm install || echo "⚠️ npm install falhou, mas continuando..."
           npm run build || { echo "❌ Build do frontend falhou!"; exit 1; }
           
           # 5. Instalar dependências do server
-          echo "📦 Instalando dependências do servidor..."
+          echo "📦 Limpando node_modules antigo do servidor (se existir)..."
           cd ../server
-          npm ci --omit=dev || npm install --omit=dev || echo "⚠️ npm install falhou, mas continuando..."
+          rm -rf node_modules package-lock.json || true
+          echo "📦 Instalando dependências do servidor..."
+          npm install --omit=dev || { echo "❌ npm install do servidor falhou!"; exit 1; }
           
           # 5.5. Executar migrations necessárias
           echo "🔄 Executando migrations..."
