@@ -114,7 +114,7 @@ export default function AdminProducts() {
         console.error("❌ [AdminProducts] Erro completo:", JSON.stringify(err, null, 2));
         console.error("❌ [AdminProducts] Mensagem:", err.message);
         console.error("❌ [AdminProducts] Response:", err.response);
-        setError(err.message || "Erro ao carregar produtos");
+        setError(err.message || "Error loading products");
         setLoading(false);
       });
   }, [filters, showArchived]);
@@ -148,7 +148,7 @@ export default function AdminProducts() {
       })
       .catch(function(err) {
         console.error("Erro ao pesquisar produtos:", err);
-        setError(err.message || "Erro ao pesquisar produtos");
+        setError(err.message || "Error searching products");
         setLoading(false);
       });
   }, [searchQuery, loadProducts]);
@@ -235,7 +235,7 @@ export default function AdminProducts() {
 
   // Arquivar produto
   var handleArchive = function(productId) {
-    if (!window.confirm("Tem certeza que deseja arquivar este produto? Ele não ficará visível.")) {
+    if (!window.confirm("Are you sure you want to archive this product? It will not be visible.")) {
       return;
     }
     
@@ -244,8 +244,8 @@ export default function AdminProducts() {
         loadProducts();
       })
       .catch(function(err) {
-        console.error("Erro ao arquivar produto:", err);
-        alert("Erro ao arquivar produto: " + (err.message || "Erro desconhecido"));
+        console.error("Error archiving product:", err);
+        alert("Error archiving product: " + (err.message || "Unknown error"));
       });
   };
   
@@ -256,14 +256,14 @@ export default function AdminProducts() {
         loadProducts();
       })
       .catch(function(err) {
-        console.error("Erro ao desarquivar produto:", err);
-        alert("Erro ao desarquivar produto: " + (err.message || "Erro desconhecido"));
+        console.error("Error unarchiving product:", err);
+        alert("Error unarchiving product: " + (err.message || "Unknown error"));
       });
   };
   
   // Deletar produto permanentemente (hard delete)
   var handleDelete = function(productId) {
-    if (!window.confirm("⚠️ ATENÇÃO: Esta ação é PERMANENTE e não pode ser desfeita!\n\nTem certeza que deseja DELETAR PERMANENTEMENTE este produto da base de dados?")) {
+    if (!window.confirm("⚠️ WARNING: This action is PERMANENT and cannot be undone!\n\nAre you sure you want to PERMANENTLY DELETE this product from the database?")) {
       return;
     }
     
@@ -272,8 +272,8 @@ export default function AdminProducts() {
         loadProducts();
       })
       .catch(function(err) {
-        console.error("Erro ao deletar produto:", err);
-        alert("Erro ao deletar produto: " + (err.message || "Erro desconhecido"));
+        console.error("Error deleting product:", err);
+        alert("Error deleting product: " + (err.message || "Unknown error"));
       });
   };
 
@@ -297,7 +297,7 @@ export default function AdminProducts() {
   // Handler para adicionar cor
   var handleAddColor = function() {
     var newColors = Object.assign({}, formData.availableColors);
-    var colorName = 'Nova Cor ' + (Object.keys(newColors).length + 1);
+    var colorName = 'New Color ' + (Object.keys(newColors).length + 1);
     newColors[colorName] = '#FFFFFF';
     setFormData(function(prev) {
       return Object.assign({}, prev, { availableColors: newColors });
@@ -338,7 +338,7 @@ export default function AdminProducts() {
   var handleSubmit = function() {
     // Validar campos obrigatórios
     if (!formData.name || formData.name.trim() === '') {
-      setError("O campo 'Nome' é obrigatório");
+      setError("The 'Name' field is required");
       return;
     }
     
@@ -403,7 +403,7 @@ export default function AdminProducts() {
       })
       .catch(function(err) {
         console.error("Erro ao salvar produto:", err);
-        var errorMessage = err.response?.data?.error || err.message || "Erro ao salvar produto";
+        var errorMessage = err.response?.data?.error || err.message || "Error saving product";
         if (err.response?.data?.details) {
           errorMessage += ": " + err.response.data.details;
         }
@@ -423,10 +423,10 @@ export default function AdminProducts() {
   return (
     <div className="flex-1 min-h-0 overflow-hidden p-6 flex flex-col">
       <PageTitle 
-        title="Administração de Produtos" 
+        title="Product Administration" 
         userName={userName} 
-        lead="Gerir produtos da loja" 
-        subtitle="Criar, editar e deletar produtos" 
+        lead="Manage store products" 
+        subtitle="Create, edit and delete products" 
       />
       
       {/* Barra de ações e filtros */}
@@ -434,27 +434,27 @@ export default function AdminProducts() {
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1 flex items-center gap-2">
             <Input
-              placeholder="Pesquisar produtos..."
+              placeholder="Search products..."
               value={searchQuery}
               onValueChange={setSearchQuery}
               startContent={<Icon icon="lucide:search" className="text-default-400" />}
               className="max-w-xs"
             />
-            <Button onPress={handleSearch} color="primary">Pesquisar</Button>
+            <Button onPress={handleSearch} color="primary">Search</Button>
           </div>
           <Button 
             color="primary" 
             onPress={handleCreateNew}
             startContent={<Icon icon="lucide:plus" />}
           >
-            Criar Novo Produto
+            Create New Product
           </Button>
         </div>
         
         {/* Filtros */}
         <div className="flex gap-2 flex-wrap">
           <Select
-            placeholder="Tipo"
+            placeholder="Type"
             selectedKeys={filters.type ? [filters.type] : []}
             onSelectionChange={function(keys) {
               var selected = Array.from(keys)[0] || "";
@@ -469,7 +469,7 @@ export default function AdminProducts() {
           </Select>
           
           <Select
-            placeholder="Localização"
+            placeholder="Location"
             selectedKeys={filters.location ? [filters.location] : []}
             onSelectionChange={function(keys) {
               var selected = Array.from(keys)[0] || "";
@@ -494,8 +494,8 @@ export default function AdminProducts() {
             }}
             className="w-40"
           >
-            <SelectItem key="true">Sim</SelectItem>
-            <SelectItem key="false">Não</SelectItem>
+            <SelectItem key="true">Yes</SelectItem>
+            <SelectItem key="false">No</SelectItem>
           </Select>
           
           <Button
@@ -505,14 +505,14 @@ export default function AdminProducts() {
               setSearchQuery("");
             }}
           >
-            Limpar Filtros
+            Clear Filters
           </Button>
           
           <Checkbox
             isSelected={showArchived}
             onValueChange={setShowArchived}
           >
-            Mostrar Arquivados
+            Show Archived
           </Checkbox>
         </div>
       </div>
@@ -522,24 +522,24 @@ export default function AdminProducts() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <Icon icon="lucide:loader-2" className="text-4xl animate-spin mx-auto mb-2" />
-            <p>A carregar produtos...</p>
+            <p>Loading products...</p>
           </div>
         </div>
       ) : error ? (
         <Card className="p-6">
           <CardBody>
-            <p className="text-danger">Erro: {error}</p>
-            <Button onPress={loadProducts} className="mt-4">Tentar Novamente</Button>
+            <p className="text-danger">Error: {error}</p>
+            <Button onPress={loadProducts} className="mt-4">Try Again</Button>
           </CardBody>
         </Card>
       ) : filteredProducts.length === 0 ? (
         <Card className="p-6">
           <CardBody>
-            <p className="text-center text-default-500">Nenhum produto encontrado</p>
+            <p className="text-center text-default-500">No products found</p>
             <p className="text-center text-default-400 text-sm mt-2">
-              Total de produtos carregados: {products.length} | 
-              Query de pesquisa: "{searchQuery}" | 
-              Filtros ativos: {JSON.stringify(filters)}
+              Total products loaded: {products.length} | 
+              Search query: "{searchQuery}" | 
+              Active filters: {JSON.stringify(filters)}
             </p>
           </CardBody>
         </Card>
@@ -564,7 +564,7 @@ export default function AdminProducts() {
                       )}
                       {!product.isActive && (
                         <Chip size="sm" color="warning" className="absolute top-2 right-2">
-                          Arquivado
+                          Archived
                         </Chip>
                       )}
                     </div>
@@ -584,7 +584,7 @@ export default function AdminProducts() {
                           onPress={function() { handleEdit(product); }}
                           startContent={<Icon icon="lucide:edit" />}
                         >
-                          Editar
+                          Edit
                         </Button>
                         {product.isActive ? (
                           <Button
@@ -594,7 +594,7 @@ export default function AdminProducts() {
                             onPress={function() { handleArchive(product.id); }}
                             startContent={<Icon icon="lucide:archive" />}
                           >
-                            Arquivar
+                            Archive
                           </Button>
                         ) : (
                           <Button
@@ -604,7 +604,7 @@ export default function AdminProducts() {
                             onPress={function() { handleUnarchive(product.id); }}
                             startContent={<Icon icon="lucide:archive-restore" />}
                           >
-                            Desarquivar
+                            Unarchive
                           </Button>
                         )}
                         <Button
@@ -614,7 +614,7 @@ export default function AdminProducts() {
                           onPress={function() { handleDelete(product.id); }}
                           startContent={<Icon icon="lucide:trash-2" />}
                         >
-                          Deletar
+                          Delete
                         </Button>
                       </div>
                     </div>
@@ -633,14 +633,14 @@ export default function AdminProducts() {
             return (
               <>
                 <ModalHeader>
-                  {editingProduct ? "Editar Produto" : "Criar Novo Produto"}
+                  {editingProduct ? "Edit Product" : "Create New Product"}
                 </ModalHeader>
                 <ModalBody>
                   <div className="space-y-4">
                     {/* Campos básicos */}
                     <div className="grid grid-cols-2 gap-4">
                       <Input
-                        label="Nome"
+                        label="Name"
                         placeholder="Ex: IPL317R"
                         value={formData.name}
                         onValueChange={function(val) {
@@ -651,7 +651,7 @@ export default function AdminProducts() {
                         isRequired
                       />
                       <Input
-                        label="Preço (€)"
+                        label="Price (€)"
                         type="number"
                         placeholder="1299"
                         value={formData.price}
@@ -673,9 +673,9 @@ export default function AdminProducts() {
                         }}
                       />
                       <Input
-                        label="Preço Antigo (€)"
+                        label="Old Price (€)"
                         type="number"
-                        placeholder="Opcional"
+                        placeholder="Optional"
                         value={formData.oldPrice}
                         onValueChange={function(val) {
                           setFormData(function(prev) {
@@ -688,8 +688,8 @@ export default function AdminProducts() {
                     {/* Dropdowns */}
                     <div className="grid grid-cols-2 gap-4">
                       <Select
-                        label="Tipo"
-                        placeholder="Selecione o tipo"
+                        label="Type"
+                        placeholder="Select type"
                         selectedKeys={formData.type ? [formData.type] : []}
                         onSelectionChange={function(keys) {
                           var selected = Array.from(keys)[0] || "";
@@ -703,8 +703,8 @@ export default function AdminProducts() {
                       </Select>
                       
                       <Select
-                        label="Localização"
-                        placeholder="Selecione a localização"
+                        label="Location"
+                        placeholder="Select location"
                         selectedKeys={formData.location ? [formData.location] : []}
                         onSelectionChange={function(keys) {
                           var selected = Array.from(keys)[0] || "";
@@ -718,7 +718,7 @@ export default function AdminProducts() {
                       </Select>
                       
                       <Input
-                        label="Uso"
+                        label="Usage"
                         placeholder="Ex: Shopping"
                         value={formData.usage}
                         onValueChange={function(val) {
@@ -729,8 +729,8 @@ export default function AdminProducts() {
                       />
                       
                       <Select
-                        label="Montagem"
-                        placeholder="Selecione a montagem"
+                        label="Mount"
+                        placeholder="Select mount"
                         selectedKeys={formData.mount ? [formData.mount] : []}
                         onSelectionChange={function(keys) {
                           var selected = Array.from(keys)[0] || "";
@@ -739,8 +739,8 @@ export default function AdminProducts() {
                           });
                         }}
                       >
-                        <SelectItem key="Poste">Poste</SelectItem>
-                        <SelectItem key="Chão">Chão</SelectItem>
+                        <SelectItem key="Poste">Pole</SelectItem>
+                        <SelectItem key="Chão">Floor</SelectItem>
                         <SelectItem key="Transversal">Transversal</SelectItem>
                       </Select>
                     </div>
@@ -749,7 +749,7 @@ export default function AdminProducts() {
                     <div className="grid grid-cols-2 gap-4">
                       {/* Imagem Dia */}
                       <div>
-                        <label className="block text-sm font-medium mb-2">Imagem Dia</label>
+                        <label className="block text-sm font-medium mb-2">Day Image</label>
                         <input
                           ref={dayImageInputRef}
                           type="file"
@@ -767,23 +767,23 @@ export default function AdminProducts() {
                           }}
                           startContent={<Icon icon="lucide:upload" />}
                         >
-                          {imageFiles.dayImage ? imageFiles.dayImage.name : "Selecionar Imagem Dia"}
+                          {imageFiles.dayImage ? imageFiles.dayImage.name : "Select Day Image"}
                         </Button>
                         {imagePreviews.dayImage && (
                           <div className="mt-2">
                             <Image
                               src={imagePreviews.dayImage}
-                              alt="Preview dia"
+                              alt="Day preview"
                               className="max-h-32 object-contain rounded-lg"
                             />
                           </div>
                         )}
-                        <p className="text-xs text-default-500 mt-1">Thumbnail será gerado automaticamente</p>
+                        <p className="text-xs text-default-500 mt-1">Thumbnail will be generated automatically</p>
                       </div>
                       
                       {/* Imagem Noite */}
                       <div>
-                        <label className="block text-sm font-medium mb-2">Imagem Noite</label>
+                        <label className="block text-sm font-medium mb-2">Night Image</label>
                         <input
                           ref={nightImageInputRef}
                           type="file"
@@ -801,13 +801,13 @@ export default function AdminProducts() {
                           }}
                           startContent={<Icon icon="lucide:upload" />}
                         >
-                          {imageFiles.nightImage ? imageFiles.nightImage.name : "Selecionar Imagem Noite"}
+                          {imageFiles.nightImage ? imageFiles.nightImage.name : "Select Night Image"}
                         </Button>
                         {imagePreviews.nightImage && (
                           <div className="mt-2">
                             <Image
                               src={imagePreviews.nightImage}
-                              alt="Preview noite"
+                              alt="Night preview"
                               className="max-h-32 object-contain rounded-lg"
                             />
                           </div>
@@ -816,7 +816,7 @@ export default function AdminProducts() {
                       
                       {/* Animação/Vídeo */}
                       <div>
-                        <label className="block text-sm font-medium mb-2">Animação/Vídeo</label>
+                        <label className="block text-sm font-medium mb-2">Animation/Video</label>
                         <input
                           ref={animationInputRef}
                           type="file"
@@ -834,7 +834,7 @@ export default function AdminProducts() {
                           }}
                           startContent={<Icon icon="lucide:video" />}
                         >
-                          {imageFiles.animation ? imageFiles.animation.name : "Selecionar Vídeo"}
+                          {imageFiles.animation ? imageFiles.animation.name : "Select Video"}
                         </Button>
                       </div>
                     </div>
@@ -842,19 +842,19 @@ export default function AdminProducts() {
                     {/* Cores Disponíveis */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-medium">Cores Disponíveis</label>
+                        <label className="block text-sm font-medium">Available Colors</label>
                         <Button
                           size="sm"
                           variant="flat"
                           onPress={handleAddColor}
                           startContent={<Icon icon="lucide:plus" />}
                         >
-                          Adicionar Cor
+                          Add Color
                         </Button>
                       </div>
                       <div className="flex flex-wrap gap-3 p-4 border border-default-200 rounded-lg">
                         {Object.keys(formData.availableColors).length === 0 ? (
-                          <p className="text-sm text-default-500">Nenhuma cor adicionada</p>
+                          <p className="text-sm text-default-500">No colors added</p>
                         ) : (
                           Object.keys(formData.availableColors).map(function(colorName) {
                             return (
@@ -900,7 +900,7 @@ export default function AdminProducts() {
                     {/* Tags */}
                     <div>
                       <Input
-                        label="Tags (separadas por vírgula)"
+                        label="Tags (comma separated)"
                         placeholder="trending, christmas, sale"
                         value={formData.tags.join(", ")}
                         onValueChange={function(val) {
@@ -918,10 +918,10 @@ export default function AdminProducts() {
 
                     {/* Specs */}
                     <div className="space-y-2">
-                      <h4 className="font-medium">Especificações Técnicas</h4>
+                      <h4 className="font-medium">Technical Specifications</h4>
                       <Textarea
-                        label="Descrição"
-                        placeholder="Descrição do produto"
+                        label="Description"
+                        placeholder="Product description"
                         value={formData.specs.descricao}
                         onValueChange={function(val) {
                           setFormData(function(prev) {
@@ -933,7 +933,7 @@ export default function AdminProducts() {
                       />
                       <div className="grid grid-cols-2 gap-2">
                         <Input
-                          label="Técnicas"
+                          label="Technical"
                           placeholder="Ex: 230V AC, IP65, 48W"
                           value={formData.specs.tecnicas}
                           onValueChange={function(val) {
@@ -944,7 +944,7 @@ export default function AdminProducts() {
                           }}
                         />
                         <Input
-                          label="Dimensões"
+                          label="Dimensions"
                           placeholder="Ex: 2.80 m x 0.80 m"
                           value={formData.specs.dimensoes}
                           onValueChange={function(val) {
@@ -955,7 +955,7 @@ export default function AdminProducts() {
                           }}
                         />
                         <Input
-                          label="Peso"
+                          label="Weight"
                           placeholder="Ex: 11 kg"
                           value={formData.specs.weight}
                           onValueChange={function(val) {
@@ -966,7 +966,7 @@ export default function AdminProducts() {
                           }}
                         />
                         <Input
-                          label="Efeitos"
+                          label="Effects"
                           placeholder="Ex: SLOWFLASH & SOFT XLED"
                           value={formData.specs.effects}
                           onValueChange={function(val) {
@@ -977,7 +977,7 @@ export default function AdminProducts() {
                           }}
                         />
                         <Input
-                          label="Materiais"
+                          label="Materials"
                           placeholder="Ex: LED modules, aluminum"
                           value={formData.specs.materiais}
                           onValueChange={function(val) {
@@ -988,7 +988,7 @@ export default function AdminProducts() {
                           }}
                         />
                         <Input
-                          label="Política de Stock"
+                          label="Stock Policy"
                           placeholder="Ex: Made to order"
                           value={formData.specs.stockPolicy}
                           onValueChange={function(val) {
@@ -1011,7 +1011,7 @@ export default function AdminProducts() {
                           });
                         }}
                       >
-                        É Source Image
+                        Is Source Image
                       </Checkbox>
                       <Checkbox
                         isSelected={formData.isActive}
@@ -1021,17 +1021,17 @@ export default function AdminProducts() {
                           });
                         }}
                       >
-                        Produto Ativo
+                        Active Product
                       </Checkbox>
                     </div>
                   </div>
                 </ModalBody>
                 <ModalFooter>
                   <Button variant="flat" onPress={onClose}>
-                    Cancelar
+                    Cancel
                   </Button>
                   <Button color="primary" onPress={handleSubmit} isLoading={loading}>
-                    {editingProduct ? "Atualizar" : "Criar"}
+                    {editingProduct ? "Update" : "Create"}
                   </Button>
                 </ModalFooter>
               </>
