@@ -143,6 +143,7 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
       size="4xl"
       placement="center"
       scrollBehavior="inside"
+      hideCloseButton
       classNames={{
         base: "max-w-[1400px] w-[96vw] max-h-[92vh] my-4 bg-default-100 dark:bg-content1",
         body: "py-4 overflow-y-auto"
@@ -359,7 +360,13 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button variant="flat" onPress={close}>Close</Button>
+              <Button 
+                variant="flat" 
+                onPress={close}
+                className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-sm"
+              >
+                Close
+              </Button>
             </ModalFooter>
           </>
         )}
