@@ -25,6 +25,10 @@ export function transformApiProduct(apiProduct) {
     season: apiProduct.season || null,
     releaseYear: apiProduct.releaseYear || null,
     oldPrice: apiProduct.oldPrice || null,
+    height: apiProduct.height || null,
+    width: apiProduct.width || null,
+    depth: apiProduct.depth || null,
+    diameter: apiProduct.diameter || null,
   };
   
   return transformed;
