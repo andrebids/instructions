@@ -9,19 +9,17 @@ echo    PROJECT MANAGER - THECORE
 echo ========================================
 echo.
 echo 1. 🚀 INICIAR PROJETO
-echo 2. 🛑 PARAR PROJETO  
-echo 3. 📊 VERIFICAR STATUS
-echo 4. 🔄 REINICIAR PROJETO
-echo 5. ❌ SAIR
+echo 2. 📊 VERIFICAR STATUS
+echo 3. 🔄 REINICIAR PROJETO
+echo 4. ❌ SAIR
 echo.
 echo ========================================
-set /p choice="Escolha uma opção (1-5): "
+set /p choice="Escolha uma opção (1-4): "
 
 if "%choice%"=="1" goto start
-if "%choice%"=="2" goto stop
-if "%choice%"=="3" goto status
-if "%choice%"=="4" goto restart
-if "%choice%"=="5" goto exit
+if "%choice%"=="2" goto status
+if "%choice%"=="3" goto restart
+if "%choice%"=="4" goto exit
 goto menu
 
 :start
@@ -41,18 +39,35 @@ if %errorlevel% neq 0 (
     goto menu
 )
 
-rem Verificar e instalar dependências
+rem Verificar e instalar dependências automaticamente
+echo ========================================
+echo    [0/5] INSTALANDO DEPENDÊNCIAS
+echo ========================================
+echo.
+echo Verificando e instalando dependências do projeto...
+echo Isso pode demorar alguns minutos na primeira vez.
+echo.
 call :check_and_install_dependencies
 if %errorlevel% neq 0 (
+    echo.
     echo ❌ Erro ao instalar dependências
+    echo    Verifique as mensagens acima para mais detalhes
     pause
     goto menu
 )
+echo.
+echo ✅ Dependências verificadas e instaladas!
+echo.
+timeout /t 2 /nobreak >nul
 
 rem Garantir que estamos na raiz do projeto antes de comandos subsequentes
 cd /d "%~dp0"
 
-echo [1/5] Iniciando base de dados PostgreSQL...
+echo ========================================
+echo    [1/5] INICIANDO BASE DE DADOS
+echo ========================================
+echo.
+echo Iniciando base de dados PostgreSQL...
 if "%DOCKER_AVAILABLE%"=="1" (
     %COMPOSE_CMD% -f "%~dp0docker-compose.dev.yml" up -d
     if %errorlevel% neq 0 (
@@ -68,7 +83,11 @@ if "%DOCKER_AVAILABLE%"=="1" (
 )
 echo.
 
-echo [2/5] Aguardando PostgreSQL estar pronto...
+echo ========================================
+echo    [2/5] AGUARDANDO POSTGRESQL
+echo ========================================
+echo.
+echo Aguardando PostgreSQL estar pronto...
 echo    Aguardando 5 segundos para garantir que o PostgreSQL está completamente iniciado...
 timeout /t 5 /nobreak >nul
 echo    Verificando conectividade com PostgreSQL...
@@ -81,7 +100,11 @@ if %errorlevel% neq 0 (
 )
 echo.
 
-echo [3/5] Executando setup da base de dados (migrations)...
+echo ========================================
+echo    [3/5] EXECUTANDO SETUP DA BD
+echo ========================================
+echo.
+echo Executando setup da base de dados (migrations)...
 cd /d "%~dp0server"
 echo    Este passo irá:
 echo    - Verificar conexão com a base de dados
@@ -132,7 +155,11 @@ if "%SETUP_SUCCESS%"=="1" (
 )
 echo.
 
-echo [4/5] Iniciando servidor backend...
+echo ========================================
+echo    [4/5] INICIANDO SERVIDOR BACKEND
+echo ========================================
+echo.
+echo Iniciando servidor backend...
 start /min "Backend Server" cmd /k cd /d "%~dp0server" ^&^& npm run dev
 echo ✅ Servidor backend iniciado em http://localhost:5000
 echo.
@@ -162,7 +189,11 @@ if "%BACKEND_ONLINE%"=="0" (
 )
 echo.
 
-echo [5/5] Iniciando cliente frontend...
+echo ========================================
+echo    [5/5] INICIANDO CLIENTE FRONTEND
+echo ========================================
+echo.
+echo Iniciando cliente frontend...
 start /min "Frontend Client" cmd /k cd /d "%~dp0client" ^&^& npm run dev
 echo ✅ Cliente frontend iniciado
 echo.
