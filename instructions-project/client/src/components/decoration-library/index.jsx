@@ -166,9 +166,9 @@ export const DecorationLibrary = ({
         ) : (
           <DecorationGrid 
             decorations={finalDecorations.map(function(d){
-              // Resolver a URL exibida conforme o modo, mas manter ambas
+              // Priorizar versão de noite na biblioteca; se não houver, cair para dia e depois thumbnail
               var resolved = Object.assign({}, d);
-              resolved.imageUrl = isDayMode ? (d.imageUrlDay || d.thumbnailUrl) : (d.imageUrlNight || d.imageUrlDay || d.thumbnailUrl);
+              resolved.imageUrl = d.imageUrlNight || d.imageUrlDay || d.thumbnailUrl;
               return resolved;
             })}
             isLoading={isLoading}

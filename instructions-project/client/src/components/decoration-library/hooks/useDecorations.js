@@ -106,6 +106,39 @@ export const useDecorations = () => {
         console.log('[LIB] results', mapped.length);
 
         if (!cancelled) {
+          // Construir estatísticas por categoria + escolher thumbnail aleatória (preferir versão Night) por categoria (reservoir sampling)
+          var catStats = {};
+          for (var j = 0; j < mapped.length; j++) {
+            var item = mapped[j];
+            var catId = item.category;
+            if (!catStats[catId]) {
+              catStats[catId] = { count: 0, thumbDay: null, thumbNight: null };
+            }
+            catStats[catId].count += 1;
+            // Reservoir sampling para escolher item aleatório uniformemente
+            var k = catStats[catId].count;
+            if (Math.floor(Math.random() * k) === 0) {
+              catStats[catId].thumbDay = item.imageUrlDay || item.thumbnailUrl || null;
+              catStats[catId].thumbNight = item.imageUrlNight || item.thumbnailUrl || item.imageUrlDay || null;
+            }
+          }
+
+          // Gerar lista de categorias com thumbnail e count
+          var mountNameMap2 = { 'Poste': 'Pole', 'Chão': 'Floor', 'Transversal': 'Transversal' };
+          var finalCategories = [];
+          for (var catKey in catStats) {
+            if (!catStats.hasOwnProperty(catKey)) continue;
+            var displayName = catKey;
+            if (mountNameMap2[catKey]) displayName = mountNameMap2[catKey];
+            var chosenNight = catStats[catKey].thumbNight || catStats[catKey].thumbDay;
+            var chosenDay = catStats[catKey].thumbDay || catStats[catKey].thumbNight;
+            finalCategories.push({ id: catKey, name: displayName, count: catStats[catKey].count, thumbnail: chosenDay, thumbnailNight: chosenNight });
+          }
+
+          if (finalCategories.length > 0) {
+            setCategories(finalCategories);
+          }
+
           setDecorations(mapped);
           setHasMore(Boolean(data && typeof data.total === 'number' ? (page * 24) < data.total : mapped.length === 24));
         }
