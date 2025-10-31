@@ -16,6 +16,8 @@ import {
   Checkbox,
   Textarea,
   useDisclosure,
+  Accordion,
+  AccordionItem,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { productsAPI } from "../services/api";
@@ -46,6 +48,33 @@ export default function AdminProducts() {
   var [availableYears, setAvailableYears] = React.useState(initializeYears());
   var { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
   var [editingProduct, setEditingProduct] = React.useState(null);
+  
+  // Mapeamento de cores para valores hexadecimais (versão escura com tom suave)
+  var getPrintColorStyle = function(colorName, isSelected) {
+    var colorMap = {
+      "WHITE": { bg: "#8C8780", text: "#FFF9E6" },
+      "DARK BLUE": { bg: "#2C4466", text: "#6BAAFF" },
+      "ICE BLUE": { bg: "#3A5F6F", text: "#87E5FF" },
+      "GREY": { bg: "#5A5A5A", text: "#E6E6E6" },
+      "YELLOW": { bg: "#8C7A3C", text: "#FFE44D" },
+      "BLACK": { bg: "#4A4A4A", text: "#D0D0D0" },
+      "GOLD": { bg: "#8C7A3C", text: "#FFD700" },
+      "ORANGE": { bg: "#8C5C3C", text: "#FF9554" },
+      "PINK": { bg: "#8C5C6E", text: "#FFB5DA" },
+      "RED": { bg: "#8C3C3C", text: "#FF6B6B" },
+      "LIGHT GREEN": { bg: "#5C7A5A", text: "#8FFF8F" },
+      "DARK GREEN": { bg: "#4A6642", text: "#6BFF6B" },
+      "PASTEL GREEN": { bg: "#6A8C6A", text: "#A8FFA8" },
+      "PURPLE": { bg: "#6A5C8C", text: "#C47FFF" },
+    };
+    // Só aplicar cor se estiver selecionado
+    if (!isSelected) return {};
+    var colorData = colorMap[colorName] || { bg: "#8C8780", text: "#E0A830" };
+    return {
+      backgroundColor: colorData.bg,
+      color: colorData.text,
+    };
+  };
   var [formData, setFormData] = React.useState({
     name: "",
     price: "",
@@ -63,6 +92,10 @@ export default function AdminProducts() {
       effects: "",
       materiais: "",
       stockPolicy: "",
+      printType: "",
+      printColor: "",
+      sparkle: "",
+      sparkles: "",
     },
     availableColors: {},
     videoFile: "",
@@ -549,6 +582,25 @@ export default function AdminProducts() {
       finalTags = newTags;
     }
     
+    // Filtrar specs para remover campos vazios
+    var cleanedSpecs = {};
+    if (formData.specs) {
+      Object.keys(formData.specs).forEach(function(key) {
+        var value = formData.specs[key];
+        // Manter apenas valores não vazios
+        if (value !== "" && value !== null && value !== undefined) {
+          // Para arrays, verificar se não estão vazios
+          if (Array.isArray(value)) {
+            if (value.length > 0) {
+              cleanedSpecs[key] = value;
+            }
+          } else {
+            cleanedSpecs[key] = value;
+          }
+        }
+      });
+    }
+    
     // Criar objeto com os dados (productsAPI.create cria o FormData internamente)
     var data = {
       name: formData.name,
@@ -560,7 +612,7 @@ export default function AdminProducts() {
       mount: toNullIfEmpty(formData.mount),
       videoFile: toNullIfEmpty(formData.videoFile),
       tags: finalTags,
-      specs: formData.specs || null,
+      specs: Object.keys(cleanedSpecs).length > 0 ? cleanedSpecs : null,
       availableColors: formData.availableColors || {},
       variantProductByColor: formData.variantProductByColor || null,
       isActive: formData.isActive !== undefined ? formData.isActive : true,
@@ -963,14 +1015,12 @@ export default function AdminProducts() {
                         onSelectionChange={function(keys) {
                           var keysArray = Array.from(keys);
                           var selected = keysArray.length > 0 ? String(keysArray[0]) : "";
-                          console.log('🎯 [Collection Year] onSelectionChange:', selected, 'availableYears:', availableYears);
                           setFormData(function(prev) {
                             return Object.assign({}, prev, { releaseYear: selected });
                           });
                         }}
                       >
                         {function() {
-                          console.log('🎯 [Collection Year] Rendering items, availableYears:', availableYears, 'formData.releaseYear:', formData.releaseYear);
                           var yearItems = [];
                           for (var i = 0; i < availableYears.length; i++) {
                             var year = availableYears[i];
@@ -1258,29 +1308,130 @@ export default function AdminProducts() {
                         />
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-2">
-                        <Input
-                          label="Effects"
-                          placeholder="Ex: SLOWFLASH & SOFT XLED"
-                          value={formData.specs.effects}
-                          onValueChange={function(val) {
-                            setFormData(function(prev) {
-                              var newSpecs = Object.assign({}, prev.specs, { effects: val });
-                              return Object.assign({}, prev, { specs: newSpecs });
-                            });
-                          }}
-                        />
-                        <Input
-                          label="Materials"
-                          placeholder="Ex: LED modules, aluminum"
-                          value={formData.specs.materiais}
-                          onValueChange={function(val) {
-                            setFormData(function(prev) {
-                              var newSpecs = Object.assign({}, prev.specs, { materiais: val });
-                              return Object.assign({}, prev, { specs: newSpecs });
-                            });
-                          }}
-                        />
+                      <div className="space-y-2">
+                        <Accordion>
+                          <AccordionItem key="materials" title="Materials">
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <Select
+                                  label="Print Type"
+                                  placeholder="Select print type"
+                                  selectedKeys={formData.specs.printType ? new Set([formData.specs.printType]) : new Set()}
+                                  onSelectionChange={function(keys) {
+                                    var selected = Array.from(keys)[0] || "";
+                                    setFormData(function(prev) {
+                                      var newSpecs = Object.assign({}, prev.specs, { printType: selected, printColor: "" });
+                                      return Object.assign({}, prev, { specs: newSpecs });
+                                    });
+                                  }}
+                                >
+                                  <SelectItem key="BIOPRINT">BIOPRINT</SelectItem>
+                                  <SelectItem key="RECYPRINT">RECYPRINT</SelectItem>
+                                  <SelectItem key="FLEXIPRINT">FLEXIPRINT</SelectItem>
+                                  <SelectItem key="FLEXIPRINT IGNIFUGE">FLEXIPRINT IGNIFUGE</SelectItem>
+                                  <SelectItem key="PRINT IGNIFUGE">PRINT IGNIFUGE</SelectItem>
+                                </Select>
+                                <Select
+                                  label="Print Color"
+                                  placeholder="Select color(s)"
+                                  isDisabled={!formData.specs.printType}
+                                  selectionMode="multiple"
+                                  selectedKeys={formData.specs.printColor ? (Array.isArray(formData.specs.printColor) ? new Set(formData.specs.printColor) : new Set([formData.specs.printColor])) : new Set()}
+                                  onSelectionChange={function(keys) {
+                                    var selected = Array.from(keys);
+                                    setFormData(function(prev) {
+                                      var newSpecs = Object.assign({}, prev.specs, { printColor: selected });
+                                      return Object.assign({}, prev, { specs: newSpecs });
+                                    });
+                                  }}
+                                >
+                                  {function() {
+                                    var colors = ["WHITE", "DARK BLUE", "ICE BLUE", "GREY", "YELLOW", "BLACK", "GOLD", "ORANGE", "PINK", "RED", "LIGHT GREEN", "DARK GREEN", "PASTEL GREEN", "PURPLE"];
+                                    var selectedColors = formData.specs.printColor ? (Array.isArray(formData.specs.printColor) ? formData.specs.printColor : [formData.specs.printColor]) : [];
+                                    return colors.map(function(colorName) {
+                                      var isSelected = selectedColors.includes(colorName);
+                                      var colorStyle = getPrintColorStyle(colorName, isSelected);
+                                      return (
+                                        <SelectItem 
+                                          key={colorName}
+                                          textValue={colorName}
+                                          style={colorStyle}
+                                        >
+                                          {colorName}
+                                        </SelectItem>
+                                      );
+                                    });
+                                  }()}
+                                </Select>
+                              </div>
+                              <Select
+                                label="LED"
+                                placeholder="Select LED type"
+                                selectedKeys={formData.specs.effects ? new Set([formData.specs.effects]) : new Set()}
+                                onSelectionChange={function(keys) {
+                                  var selected = Array.from(keys)[0] || "";
+                                  setFormData(function(prev) {
+                                    var newSpecs = Object.assign({}, prev.specs, { effects: selected });
+                                    return Object.assign({}, prev, { specs: newSpecs });
+                                  });
+                                }}
+                              >
+                                <SelectItem key="LED AMBER">LED AMBER</SelectItem>
+                                <SelectItem key="LED WARM WHITE">LED WARM WHITE</SelectItem>
+                                <SelectItem key="LED WARM WHITE + WARM WHITE FLASH">LED WARM WHITE + WARM WHITE FLASH</SelectItem>
+                                <SelectItem key="LED WARM WHITE + PURE WHITE FLASH">LED WARM WHITE + PURE WHITE FLASH</SelectItem>
+                                <SelectItem key="LED WARM WHITE + PURE WHITE SLOW FLASH">LED WARM WHITE + PURE WHITE SLOW FLASH</SelectItem>
+                                <SelectItem key="LED PURE WHITE">LED PURE WHITE</SelectItem>
+                                <SelectItem key="LED PURE WHITE + PURE WHITE FLASH">LED PURE WHITE + PURE WHITE FLASH</SelectItem>
+                                <SelectItem key="LED PURE WHITE + WARM WHITE SLOW FLASH">LED PURE WHITE + WARM WHITE SLOW FLASH</SelectItem>
+                                <SelectItem key="LED PURE WHITE + PURE WHITE SLOW FLASH">LED PURE WHITE + PURE WHITE SLOW FLASH</SelectItem>
+                                <SelectItem key="LED BLUE">LED BLUE</SelectItem>
+                                <SelectItem key="LED BLUE + PURE WHITE FLASH">LED BLUE + PURE WHITE FLASH</SelectItem>
+                                <SelectItem key="LED BLUE + PURE WHITE SLOW FLASH">LED BLUE + PURE WHITE SLOW FLASH</SelectItem>
+                                <SelectItem key="LED PINK">LED PINK</SelectItem>
+                                <SelectItem key="LED PINK + PURE WHITE FLASH">LED PINK + PURE WHITE FLASH</SelectItem>
+                                <SelectItem key="LED RED">LED RED</SelectItem>
+                                <SelectItem key="LED RED + PURE WHITE FLASH">LED RED + PURE WHITE FLASH</SelectItem>
+                                <SelectItem key="LED RED + PURE WHITE SLOW FLASH">LED RED + PURE WHITE SLOW FLASH</SelectItem>
+                                <SelectItem key="LED GREEN">LED GREEN</SelectItem>
+                                <SelectItem key="LED GREEN + PURE WHITE FLASH">LED GREEN + PURE WHITE FLASH</SelectItem>
+                                <SelectItem key="RGB">RGB</SelectItem>
+                              </Select>
+                              <Select
+                                label="ANIMATED SPARKLE"
+                                placeholder="Select sparkle color"
+                                selectedKeys={formData.specs.sparkle ? new Set([formData.specs.sparkle]) : new Set()}
+                                onSelectionChange={function(keys) {
+                                  var selected = Array.from(keys)[0] || "";
+                                  setFormData(function(prev) {
+                                    var newSpecs = Object.assign({}, prev.specs, { sparkle: selected });
+                                    return Object.assign({}, prev, { specs: newSpecs });
+                                  });
+                                }}
+                              >
+                                <SelectItem key="WARM WHITE/PURE WHITE">WARM WHITE/PURE WHITE</SelectItem>
+                                <SelectItem key="PURE WHITE">PURE WHITE</SelectItem>
+                              </Select>
+                              <Select
+                                label="ANIMATED SPARKLES"
+                                placeholder="Select sparkles color"
+                                selectedKeys={formData.specs.sparkles ? new Set([formData.specs.sparkles]) : new Set()}
+                                onSelectionChange={function(keys) {
+                                  var selected = Array.from(keys)[0] || "";
+                                  setFormData(function(prev) {
+                                    var newSpecs = Object.assign({}, prev.specs, { sparkles: selected });
+                                    return Object.assign({}, prev, { specs: newSpecs });
+                                  });
+                                }}
+                              >
+                                <SelectItem key="WARM WHITE">WARM WHITE</SelectItem>
+                                <SelectItem key="WARM WHITE/PURE WHITE">WARM WHITE/PURE WHITE</SelectItem>
+                                <SelectItem key="PURE WHITE">PURE WHITE</SelectItem>
+                                <SelectItem key="RGB">RGB</SelectItem>
+                              </Select>
+                            </div>
+                          </AccordionItem>
+                        </Accordion>
                         <Input
                           label="Stock Policy"
                           placeholder="Ex: Made to order"
