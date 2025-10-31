@@ -1784,7 +1784,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
               handleDecorationAdd(newDecoration);
             }}
             enableSearch={true}
-            className="w-48 md:w-56 lg:w-64"
+            className="w-64 md:w-72 lg:w-80"
           />
         </div>
       )}
