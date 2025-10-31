@@ -52,11 +52,6 @@ const Product = sequelize.define('Product', {
     allowNull: true,
     comment: '2D ou 3D',
   },
-  usage: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    comment: 'Ex: Shopping',
-  },
   location: {
     type: DataTypes.STRING,
     allowNull: true,

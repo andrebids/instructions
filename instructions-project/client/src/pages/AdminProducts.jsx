@@ -52,7 +52,6 @@ export default function AdminProducts() {
     stock: "",
     oldPrice: "",
     type: "",
-    usage: "",
     location: "",
     mount: "",
     tags: [],
@@ -67,6 +66,8 @@ export default function AdminProducts() {
     },
     availableColors: {},
     videoFile: "",
+    releaseYear: "",
+    season: "",
   });
   
   var [imageFiles, setImageFiles] = React.useState({
@@ -314,6 +315,7 @@ export default function AdminProducts() {
       availableColors: {},
       videoFile: "",
       releaseYear: "",
+      season: "",
       height: "",
       width: "",
       depth: "",
@@ -367,7 +369,6 @@ export default function AdminProducts() {
       stock: product.stock || "",
       oldPrice: product.oldPrice || "",
       type: product.type || "",
-      usage: product.usage || "",
       location: product.location || "",
       mount: product.mount || "",
       tags: product.tags || [],
@@ -384,6 +385,7 @@ export default function AdminProducts() {
       availableColors: product.availableColors || {},
       videoFile: product.videoFile || "",
       releaseYear: product.releaseYear ? String(product.releaseYear) : "",
+      season: product.season || "",
       height: product.height || "",
       width: product.width || "",
       depth: product.depth || "",
@@ -537,7 +539,6 @@ export default function AdminProducts() {
       stock: formData.stock || 0,
       oldPrice: toNullIfEmpty(formData.oldPrice),
       type: toNullIfEmpty(formData.type),
-      usage: toNullIfEmpty(formData.usage),
       location: toNullIfEmpty(formData.location),
       mount: toNullIfEmpty(formData.mount),
       videoFile: toNullIfEmpty(formData.videoFile),
@@ -880,17 +881,6 @@ export default function AdminProducts() {
                         <SelectItem key="Interior">Interior</SelectItem>
                       </Select>
                       
-                      <Input
-                        label="Usage"
-                        placeholder="Ex: Shopping"
-                        value={formData.usage}
-                        onValueChange={function(val) {
-                          setFormData(function(prev) {
-                            return Object.assign({}, prev, { usage: val });
-                          });
-                        }}
-                      />
-                      
                       <Select
                         label="Mount"
                         placeholder="Select mount"
@@ -930,6 +920,21 @@ export default function AdminProducts() {
                           }
                           return yearItems;
                         }()}
+                      </Select>
+                      
+                      <Select
+                        label="Season"
+                        placeholder="Select season"
+                        selectedKeys={formData.season ? [formData.season] : []}
+                        onSelectionChange={function(keys) {
+                          var selected = Array.from(keys)[0] || "";
+                          setFormData(function(prev) {
+                            return Object.assign({}, prev, { season: selected });
+                          });
+                        }}
+                      >
+                        <SelectItem key="xmas">Xmas</SelectItem>
+                        <SelectItem key="summer">Summer</SelectItem>
                       </Select>
                     </div>
 

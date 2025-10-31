@@ -130,11 +130,6 @@ export async function getAll(req, res) {
       where.location = query.location;
     }
     
-    // Filtro por usage - apenas se não for string vazia
-    if (query.usage && typeof query.usage === 'string' && query.usage.trim() !== '') {
-      where.usage = query.usage;
-    }
-    
     // Filtro por mount - apenas se não for string vazia
     if (query.mount && typeof query.mount === 'string' && query.mount.trim() !== '') {
       where.mount = query.mount;
@@ -239,7 +234,7 @@ export async function getAll(req, res) {
       products = await Product.findAll({
         where: where,
         order: [['name', 'ASC']],
-        attributes: { exclude: ['isSourceImage'] },
+        attributes: { exclude: ['isSourceImage', 'usage'] },
       });
       console.log('✅ [PRODUCTS API] Query executada com sucesso');
     } catch (queryError) {
@@ -417,7 +412,7 @@ export async function getSourceImages(req, res) {
         isActive: true,
       },
       order: [['name', 'ASC']],
-      attributes: { exclude: ['isSourceImage'] },
+      attributes: { exclude: ['isSourceImage', 'usage'] },
     });
     
     // Converter produtos para objetos simples
@@ -459,15 +454,10 @@ export async function search(req, res) {
               [Op.iLike]: '%' + q + '%',
             },
           },
-          {
-            usage: {
-              [Op.iLike]: '%' + q + '%',
-            },
-          },
         ],
       },
       order: [['name', 'ASC']],
-      attributes: { exclude: ['isSourceImage'] },
+      attributes: { exclude: ['isSourceImage', 'usage'] },
     });
     
     // Converter produtos para objetos simples
@@ -486,7 +476,7 @@ export async function search(req, res) {
 export async function getById(req, res) {
   try {
     var product = await Product.findByPk(req.params.id, {
-      attributes: { exclude: ['isSourceImage'] },
+      attributes: { exclude: ['isSourceImage', 'usage'] },
     });
     
     if (!product) {
@@ -652,7 +642,6 @@ export async function create(req, res) {
       thumbnailUrl: thumbnailUrl || toNullIfEmpty(body.thumbnailUrl),
       tags: tags,
       type: toNullIfEmpty(body.type),
-      usage: toNullIfEmpty(body.usage),
       location: toNullIfEmpty(body.location),
       mount: toNullIfEmpty(body.mount),
       specs: specs,
@@ -809,7 +798,6 @@ export async function update(req, res) {
     if (body.stock !== undefined) updateData.stock = parseInt(body.stock, 10) || 0;
     if (body.oldPrice !== undefined) updateData.oldPrice = body.oldPrice ? parseFloat(body.oldPrice) : null;
     if (body.type !== undefined) updateData.type = toNullIfEmpty(body.type);
-    if (body.usage !== undefined) updateData.usage = toNullIfEmpty(body.usage);
     if (body.location !== undefined) updateData.location = toNullIfEmpty(body.location);
     if (body.mount !== undefined) updateData.mount = toNullIfEmpty(body.mount);
     if (body.videoFile !== undefined) updateData.videoFile = toNullIfEmpty(body.videoFile);
