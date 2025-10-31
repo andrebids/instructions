@@ -25,6 +25,9 @@ node src/migrations/add-product-category-fields.js
    - `depth`: DECIMAL(10, 2) - Profundidade em metros (D)
    - `diameter`: DECIMAL(10, 2) - Diâmetro em metros
 
+4. **remove-isSourceImage-field.js** - Remove o campo `isSourceImage` da tabela products:
+   - Remove o campo `isSourceImage`: BOOLEAN - Campo removido porque não é mais necessário
+
 **Nota sobre `releaseYear`**: 
 - Este campo é usado para marcar automaticamente produtos como "new"
 - A tag "new" é adicionada automaticamente aos produtos com o `releaseYear` mais recente
