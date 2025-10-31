@@ -78,7 +78,8 @@ export const useDecorations = () => {
         var mapped = [];
         for (var i = 0; i < list.length; i++) {
           var it = list[i];
-          var catRaw = it.category || it.mount || it.type || 'custom';
+          // Usar SEMPRE o mount como categoria principal
+          var catRaw = it.mount || it.category || it.type || 'custom';
           var cat = typeof catRaw === 'string' ? catRaw : 'custom';
           mapped.push({
             id: it.id,
