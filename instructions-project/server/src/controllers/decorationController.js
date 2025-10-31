@@ -4,25 +4,66 @@ import { Op } from 'sequelize';
 // GET /api/decorations - Listar todas as decorações
 export async function getAll(req, res) {
   try {
-    const { category, tag } = req.query;
-    const where = {};
-    
+    // Logs iniciais e parâmetros
+    console.log('[API] GET /api/decorations', { query: req.query });
+
+    var category = req.query.category;
+    var tag = req.query.tag;
+    var q = req.query.q;
+    var sort = req.query.sort || 'name'; // name | width | height
+    var order = req.query.order === 'desc' ? 'DESC' : 'ASC';
+    var page = parseInt(req.query.page || '1', 10);
+    var limit = parseInt(req.query.limit || '24', 10);
+    if (page < 1) page = 1;
+    if (limit < 1) limit = 24;
+
+    var where = {};
+
     if (category) {
       where.category = category;
     }
-    
+
     if (tag) {
-      where.tags = {
-        [Op.contains]: [tag],
-      };
+      where.tags = { [Op.contains]: [tag] };
     }
-    
-    const decorations = await Decoration.findAll({
+
+    if (q) {
+      where[Op.or] = [
+        { name: { [Op.iLike]: '%' + q + '%' } },
+        { description: { [Op.iLike]: '%' + q + '%' } },
+      ];
+    }
+
+    var validSorts = { name: 'name', width: 'width', height: 'height' };
+    var orderBy = validSorts[sort] || 'name';
+
+    var offset = (page - 1) * limit;
+
+    console.time('[API] decorations:db');
+    const { rows, count } = await Decoration.findAndCountAll({
       where,
-      order: [['name', 'ASC']],
+      order: [[orderBy, order]],
+      offset,
+      limit,
     });
-    
-    res.json(decorations);
+    console.timeEnd('[API] decorations:db');
+
+    // Avisos para itens sem imagens
+    for (var i = 0; i < rows.length; i++) {
+      var d = rows[i];
+      if (!d.thumbnailUrl && !d.thumbnailNightUrl) {
+        console.warn('[API] decoration without thumbnails', { id: d.id, name: d.name });
+      }
+    }
+
+    console.log('[API] decorations:count', rows.length, 'total:', count);
+
+    res.json({
+      items: rows,
+      page,
+      limit,
+      total: count,
+    });
   } catch (error) {
     console.error('Erro ao buscar decorações:', error);
     res.status(500).json({ error: error.message });
