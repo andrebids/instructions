@@ -1130,6 +1130,24 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
     setSelectedImage(image);
   };
 
+  // Trocar as imagens das decorações quando alternar dia/noite
+  useEffect(function() {
+    console.log('[CANVAS] mode', isDayMode ? 'day' : 'night');
+    setDecorations(function(prev) {
+      var next = [];
+      for (var i = 0; i < prev.length; i++) {
+        var d = prev[i];
+        if (d.dayUrl || d.nightUrl) {
+          var nextSrc = isDayMode ? (d.dayUrl || d.src) : (d.nightUrl || d.dayUrl || d.src);
+          next.push(Object.assign({}, d, { src: nextSrc }));
+        } else {
+          next.push(d);
+        }
+      }
+      return next;
+    });
+  }, [isDayMode]);
+
   // Alternar entre modo dia e noite
   const toggleDayNightMode = () => {
     const newMode = !isDayMode;
@@ -1709,6 +1727,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
           {/* Right Sidebar - Decoration Library */}
           <DecorationLibrary
             mode="sidebar"
+            isDayMode={isDayMode}
             disabled={canvasImages.length === 0}
             onDecorationSelect={(decoration) => {
               // ⚠️ VERIFICAR SE HÁ IMAGEM DE FUNDO antes de adicionar decoração
@@ -1730,7 +1749,10 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                 type: decoration.imageUrl ? 'image' : decoration.type, // Se tem imageUrl, tipo = image
                 name: decoration.name,
                 icon: decoration.icon,
-                src: decoration.imageUrl || undefined, // Adicionar src se tiver imageUrl
+                // Guardar URLs para alternância futura
+                dayUrl: decoration.imageUrlDay || decoration.thumbnailUrl || decoration.imageUrl || undefined,
+                nightUrl: decoration.imageUrlNight || undefined,
+                src: decoration.imageUrl || undefined, // URL já resolvida pelo modo atual
                 x: centerX,
                 y: centerY,
                 width: decoration.imageUrl ? 100 : 60, // Imagens PNG maiores
