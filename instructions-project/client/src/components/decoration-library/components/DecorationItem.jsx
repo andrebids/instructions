@@ -5,7 +5,10 @@ import { Icon } from '@iconify/react';
 
 export const DecorationItem = ({ decoration, onSelect }) => {
   const handleDragStart = (e) => {
-    e.dataTransfer.setData('text/plain', JSON.stringify(decoration));
+    // Garantir que o payload leva a URL resolvida atual
+    var payload = Object.assign({}, decoration);
+    payload.imageUrl = decoration.imageUrl;
+    e.dataTransfer.setData('text/plain', JSON.stringify(payload));
     e.dataTransfer.effectAllowed = 'copy';
   };
 
@@ -13,7 +16,9 @@ export const DecorationItem = ({ decoration, onSelect }) => {
     e.preventDefault();
     e.stopPropagation();
     if (onSelect) {
-      onSelect(decoration);
+      var selected = Object.assign({}, decoration);
+      selected.imageUrl = decoration.imageUrl;
+      onSelect(selected);
     }
   };
 

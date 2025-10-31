@@ -20,6 +20,7 @@ function useSourceImages() {
             var item = {
               id: product.id,
               name: product.name || 'Produto sem nome',
+              // Normalizar campos
               thumbnail: product.imagesDayUrl || null,
               nightVersion: product.imagesNightUrl || product.imagesDayUrl || null
             };
@@ -45,6 +46,7 @@ function useSourceImages() {
               });
             }
           }
+          console.log('[SRC] loaded', { count: allowed.length });
           setSourceImages(allowed);
           setLoading(false);
         })
