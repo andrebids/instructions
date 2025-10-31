@@ -109,11 +109,6 @@ export async function getAll(req, res) {
       where.type = query.type;
     }
     
-    // Filtro por isSourceImage - apenas se for 'true' ou 'false' (não string vazia)
-    if (query.isSourceImage !== undefined && query.isSourceImage !== '' && query.isSourceImage !== null) {
-      where.isSourceImage = query.isSourceImage === 'true' || query.isSourceImage === true;
-    }
-    
     // Filtro por isActive - apenas se for 'true' ou 'false' (não string vazia)
     // Por padrão, mostrar apenas produtos ativos (não arquivados)
     // Se showArchived=true, mostrar apenas produtos arquivados (isActive=false)
@@ -244,6 +239,7 @@ export async function getAll(req, res) {
       products = await Product.findAll({
         where: where,
         order: [['name', 'ASC']],
+        attributes: { exclude: ['isSourceImage'] },
       });
       console.log('✅ [PRODUCTS API] Query executada com sucesso');
     } catch (queryError) {
@@ -255,7 +251,7 @@ export async function getAll(req, res) {
     console.log('📦 [PRODUCTS API] Produtos encontrados:', products.length);
     if (products.length > 0) {
       console.log('📦 [PRODUCTS API] Primeiros 3 produtos:', products.slice(0, 3).map(function(p) {
-        return { id: p.id, name: p.name, isSourceImage: p.isSourceImage, isActive: p.isActive };
+        return { id: p.id, name: p.name, isActive: p.isActive };
       }));
     } else {
       console.log('⚠️  [PRODUCTS API] NENHUM PRODUTO ENCONTRADO! Where clause:', JSON.stringify(where));
@@ -270,7 +266,6 @@ export async function getAll(req, res) {
           id: ipl317r.id,
           name: ipl317r.name,
           isActive: ipl317r.isActive,
-          isSourceImage: ipl317r.isSourceImage
         });
         console.log('🔍 [PRODUCTS API] IPL317R não aparece porque:', {
           showArchived: query.showArchived,
@@ -414,15 +409,15 @@ export async function getAll(req, res) {
   }
 }
 
-// GET /api/products/source-images - Listar apenas produtos marcados como Source Images
+// GET /api/products/source-images - Listar todos os produtos ativos
 export async function getSourceImages(req, res) {
   try {
     var products = await Product.findAll({
       where: {
-        isSourceImage: true,
         isActive: true,
       },
       order: [['name', 'ASC']],
+      attributes: { exclude: ['isSourceImage'] },
     });
     
     // Converter produtos para objetos simples
@@ -472,6 +467,7 @@ export async function search(req, res) {
         ],
       },
       order: [['name', 'ASC']],
+      attributes: { exclude: ['isSourceImage'] },
     });
     
     // Converter produtos para objetos simples
@@ -489,7 +485,9 @@ export async function search(req, res) {
 // GET /api/products/:id - Buscar produto por ID
 export async function getById(req, res) {
   try {
-    var product = await Product.findByPk(req.params.id);
+    var product = await Product.findByPk(req.params.id, {
+      attributes: { exclude: ['isSourceImage'] },
+    });
     
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
@@ -661,7 +659,6 @@ export async function create(req, res) {
       availableColors: Object.keys(availableColors).length > 0 ? availableColors : null,
       variantProductByColor: variantProductByColor,
       videoFile: toNullIfEmpty(body.videoFile),
-      isSourceImage: body.isSourceImage === 'true' || body.isSourceImage === true,
       isActive: body.isActive !== 'false' && body.isActive !== false,
       season: toNullIfEmpty(body.season),
       isTrending: body.isTrending === 'true' || body.isTrending === true,
@@ -838,9 +835,6 @@ export async function update(req, res) {
     }
     
     // Processar booleanos
-    if (body.isSourceImage !== undefined) {
-      updateData.isSourceImage = body.isSourceImage === 'true' || body.isSourceImage === true;
-    }
     if (body.isActive !== undefined) {
       updateData.isActive = body.isActive !== 'false' && body.isActive !== false;
     }
