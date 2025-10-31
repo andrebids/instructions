@@ -146,18 +146,22 @@ jobs:
           
           # 4. Instalar dependências do client e fazer build
           echo "📦 Limpando node_modules antigo (se existir)..."
-          rm -rf node_modules package-lock.json || true
-          echo "📦 Instalando dependências do frontend..."
-          npm install || { echo "❌ npm install falhou!"; exit 1; }
+          rm -rf node_modules || true
+          # Garantir permissões corretas (evita diretórios com dono root de execuções antigas)
+          sudo chown -R "$USER":"$USER" . || true
+          echo "📦 Instalando dependências do frontend (npm ci)..."
+          # Usar npm ci para instalações reprodutíveis em CI
+          npm ci --no-audit --no-fund || { echo "❌ npm ci do frontend falhou!"; exit 1; }
           echo "📦 Fazendo build do frontend..."
           npm run build || { echo "❌ Build do frontend falhou!"; exit 1; }
           
           # 5. Instalar dependências do server
           echo "📦 Limpando node_modules antigo do servidor (se existir)..."
           cd ../server
-          rm -rf node_modules package-lock.json || true
-          echo "📦 Instalando dependências do servidor..."
-          npm install --omit=dev || { echo "❌ npm install do servidor falhou!"; exit 1; }
+          rm -rf node_modules || true
+          sudo chown -R "$USER":"$USER" . || true
+          echo "📦 Instalando dependências do servidor (npm ci)..."
+          npm ci --omit=dev --no-audit --no-fund || { echo "❌ npm ci do servidor falhou!"; exit 1; }
           
           # 5.5. Executar migrations necessárias
           echo "🔄 Executando migrations..."

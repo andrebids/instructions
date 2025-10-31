@@ -13,6 +13,8 @@ export const useDecorations = () => {
       try {
         console.log('[LIB] fetch categories');
         var serverCategories = [];
+        // Mapa de exibição EN para mounts conhecidos
+        var mountNameMap = { 'Poste': 'Pole', 'Chão': 'Floor', 'Transversal': 'Transversal' };
         try {
           serverCategories = await decorationsAPI.getCategories();
         } catch (eCat) {
@@ -24,7 +26,8 @@ export const useDecorations = () => {
           var normalized = [];
           for (var i = 0; i < serverCategories.length; i++) {
             var id = serverCategories[i];
-            normalized.push({ id: id, name: id });
+            var display = mountNameMap[id] || id;
+            normalized.push({ id: id, name: display });
           }
           setCategories(normalized);
         }
@@ -61,11 +64,15 @@ export const useDecorations = () => {
           list = products;
 
           // Derivar categorias a partir de mount/type
+          var mountNameMap = { 'Poste': 'Pole', 'Chão': 'Floor', 'Transversal': 'Transversal' };
           var catMap = {};
           for (var ci = 0; ci < products.length; ci++) {
             var p = products[ci];
             var catRaw = (p && p.mount) ? String(p.mount) : (p && p.type) ? String(p.type) : 'custom';
-            if (!catMap[catRaw]) catMap[catRaw] = { id: catRaw, name: catRaw };
+            if (!catMap[catRaw]) {
+              var display = mountNameMap[catRaw] || catRaw;
+              catMap[catRaw] = { id: catRaw, name: display };
+            }
           }
           var derived = [];
           for (var key in catMap) {
