@@ -122,7 +122,7 @@ export default function ShopCategory() {
     <div className="flex-1 min-h-0 overflow-auto p-6">
       <PageTitle title="Shop" userName={userName} lead={`Here's your catalog, ${userName}`} subtitle={categoryDescription} />
       <div className="mb-4">
-        <h1 className="text-4xl md:text-6xl font-extrabold uppercase tracking-wider text-foreground mt-6 text-center" style={{ textShadow: "0 6px 22px rgba(0,0,0,0.35)" }}>
+        <h1 className="text-4xl md:text-6xl font-extrabold uppercase tracking-wider text-foreground mt-6 text-center">
           <span>{typedTitle}</span>
           <span className={`ml-1 inline-block w-[2px] h-[1em] align-[-0.2em] bg-current ${typingDone ? 'opacity-0' : 'animate-pulse'}`}></span>
         </h1>

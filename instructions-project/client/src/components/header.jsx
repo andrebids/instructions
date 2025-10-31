@@ -169,7 +169,6 @@ export function Header() {
             }
           }}>
             <DropdownItem key="settings">My Settings</DropdownItem>
-            <DropdownItem key="team">Team Settings</DropdownItem>
             <DropdownItem key="logout" color="danger">
               Log Out
             </DropdownItem>
