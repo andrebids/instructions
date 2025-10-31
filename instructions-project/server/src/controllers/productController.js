@@ -537,7 +537,7 @@ export async function create(req, res) {
       // Auto-gerar thumbnail se não foi fornecido
       if (!files.thumbnail || !files.thumbnail[0]) {
         try {
-          var thumbnailFilename = 'thumb_' + path.basename(processedDayImagePath).replace(/\.[^/.]+$/, '.jpg');
+          var thumbnailFilename = 'thumb_' + path.basename(processedDayImagePath).replace(/\.[^/.]+$/, '.webp');
           var thumbnailPath = path.join(path.dirname(processedDayImagePath), thumbnailFilename);
           await generateThumbnail(processedDayImagePath, thumbnailPath, 300, 300);
           thumbnailUrl = '/uploads/products/' + thumbnailFilename;
@@ -829,7 +829,7 @@ export async function update(req, res) {
       // Auto-gerar thumbnail se não foi fornecido e a imagem de dia mudou
       if (!files.thumbnail || !files.thumbnail[0]) {
         try {
-          var thumbnailFilename = 'thumb_' + path.basename(finalDayImagePath).replace(/\.[^/.]+$/, '.jpg');
+          var thumbnailFilename = 'thumb_' + path.basename(finalDayImagePath).replace(/\.[^/.]+$/, '.webp');
           var thumbnailPath = path.join(path.dirname(finalDayImagePath), thumbnailFilename);
           await generateThumbnail(finalDayImagePath, thumbnailPath, 300, 300);
           updateData.thumbnailUrl = '/uploads/products/' + thumbnailFilename;
