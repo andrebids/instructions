@@ -224,7 +224,11 @@ export default function ShopCategory() {
               className="border-red-500/40 hover:border-red-500 bg-transparent text-red-500 hover:bg-red-500/5 focus-visible:ring-2 focus-visible:ring-red-500/50"
               onPress={()=> navigate('/favorites')}
             >
-              <Icon icon="lucide:heart" className="text-red-500 text-2xl" />
+              <Icon 
+                icon="mdi:heart" 
+                className="text-red-500 text-2xl"
+                style={{ fill: '#ef4444' }}
+              />
             </Button>
           </div>
         </div>
