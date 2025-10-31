@@ -18,18 +18,73 @@ export async function generateThumbnail(imagePath, outputPath, width = 300, heig
       fs.mkdirSync(dir, { recursive: true });
     }
     
-    // Gerar thumbnail
+    // Gerar thumbnail em WebP
     await sharp(imagePath)
       .resize(width, height, {
         fit: 'cover',
         position: 'center',
       })
-      .jpeg({ quality: 85 })
+      .ensureAlpha() // Garante transparência se existir
+      .webp({ quality: 85 })
       .toFile(outputPath);
     
     return outputPath;
   } catch (error) {
     console.error('Erro ao gerar thumbnail:', error);
+    throw error;
+  }
+}
+
+/**
+ * Remove fundo de imagens PNG (inferindo pixels de fundo baseado em thresholds)
+ * @param {string} imagePath - Caminho da imagem original
+ * @param {string} outputPath - Caminho onde salvar a imagem sem fundo
+ * @param {number} threshold - Threshold para detecção de fundo (padrão: 80)
+ * @returns {Promise<string>} - Caminho da imagem processada
+ */
+export async function removeBackground(imagePath, outputPath, threshold = 80) {
+  try {
+    console.log('🔄 [removeBackground] Removendo fundo da imagem:', imagePath);
+    
+    // Carregar imagem e dados de pixels
+    const image = sharp(imagePath);
+    const { data, info } = await image
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    
+    // Processar pixels para remover fundo
+    // Se o pixel for muito escuro (fundos pretos/cinza escuro), tornar transparente
+    const pixels = new Uint8ClampedArray(data);
+    for (let i = 0; i < pixels.length; i += 4) {
+      const r = pixels[i];
+      const g = pixels[i + 1];
+      const b = pixels[i + 2];
+      
+      // Calcular brilho
+      const brightness = (r + g + b) / 3;
+      
+      // Se for um pixel escuro (como fundo preto), tornar transparente
+      if (brightness < threshold) {
+        pixels[i + 3] = 0; // alpha = 0 (transparente)
+      }
+    }
+    
+    // Salvar resultado
+    await sharp(pixels, {
+      raw: {
+        width: info.width,
+        height: info.height,
+        channels: 4
+      }
+    })
+      .png()
+      .toFile(outputPath);
+    
+    console.log('✅ [removeBackground] Fundo removido com sucesso:', outputPath);
+    return outputPath;
+  } catch (error) {
+    console.error('❌ [removeBackground] Erro ao remover fundo:', error);
     throw error;
   }
 }
@@ -59,6 +114,7 @@ export async function convertToWebP(imagePath, outputPath, quality = 85) {
     // Converter para WebP usando sharp
     const statBefore = fs.existsSync(imagePath) ? fs.statSync(imagePath) : null;
     await sharp(imagePath)
+      .ensureAlpha() // Garante canal alpha para transparência
       .webp({ quality: quality })
       .toFile(outputPath);
     const statAfter = fs.existsSync(outputPath) ? fs.statSync(outputPath) : null;
@@ -105,14 +161,41 @@ export async function processImageToWebP(imagePath, originalFilename) {
       throw new Error('Arquivo original não encontrado: ' + imagePath);
     }
     
+    // Se for PNG, remover fundo primeiro
+    var imageToProcess = imagePath;
+    if (ext === '.png') {
+      try {
+        var noBgPath = imagePath.replace(/\.png$/, '_no-bg.png');
+        console.log('🔄 [processImageToWebP] Removendo fundo da imagem PNG:', {
+          from: imagePath,
+          to: noBgPath
+        });
+        await removeBackground(imagePath, noBgPath);
+        imageToProcess = noBgPath;
+      } catch (bgError) {
+        console.warn('⚠️  [processImageToWebP] Erro ao remover fundo:', bgError.message);
+        // Continuar com a imagem original se falhar
+      }
+    }
+    
     // Converter para WebP
     var webpPath = imagePath.replace(/\.[^/.]+$/, '.webp');
     console.log('🔄 [processImageToWebP] Convertendo para WebP:', {
-      from: imagePath,
+      from: imageToProcess,
       to: webpPath
     });
     
-    await convertToWebP(imagePath, webpPath, 85);
+    await convertToWebP(imageToProcess, webpPath, 85);
+    
+    // Limpar arquivo temporário sem fundo se foi criado
+    if (imageToProcess !== imagePath && fs.existsSync(imageToProcess)) {
+      try {
+        fs.unlinkSync(imageToProcess);
+        console.log('✅ [processImageToWebP] Arquivo temporário removido:', imageToProcess);
+      } catch (cleanError) {
+        console.warn('⚠️  [processImageToWebP] Erro ao remover arquivo temporário:', cleanError.message);
+      }
+    }
     
     // Verificar se o WebP foi criado com sucesso antes de remover o original
     if (fs.existsSync(webpPath)) {
