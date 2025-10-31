@@ -341,9 +341,11 @@ export default function AdminProducts() {
     
     // Verificar se o ano do produto está na lista disponível e adicionar se necessário
     var productYear = product.releaseYear;
-    if (productYear) {
+    var releaseYearStr = "";
+    if (productYear !== null && productYear !== undefined && productYear !== "") {
       var yearValue = parseInt(productYear, 10);
       if (!isNaN(yearValue)) {
+        releaseYearStr = String(yearValue);
         var yearExists = false;
         for (var i = 0; i < availableYears.length; i++) {
           if (availableYears[i] === yearValue) {
@@ -384,7 +386,7 @@ export default function AdminProducts() {
       },
       availableColors: product.availableColors || {},
       videoFile: product.videoFile || "",
-      releaseYear: product.releaseYear ? String(product.releaseYear) : "",
+      releaseYear: releaseYearStr,
       season: product.season || "",
       height: product.height || "",
       width: product.width || "",
@@ -451,19 +453,29 @@ export default function AdminProducts() {
 
   // Handler para upload de imagens
   var handleImageChange = function(field, file) {
-    if (!file) return;
+    if (!file) {
+      console.warn('⚠️ [AdminProducts] handleImageChange: arquivo não fornecido para', field);
+      return;
+    }
+    
+    console.log('📸 [AdminProducts] handleImageChange:', field, file.name, file.type, file.size);
     
     var reader = new FileReader();
+    reader.onerror = function(error) {
+      console.error('❌ [AdminProducts] Erro ao ler arquivo:', error);
+    };
     reader.onload = function(e) {
       var newPreviews = Object.assign({}, imagePreviews);
       newPreviews[field] = e.target.result;
       setImagePreviews(newPreviews);
+      console.log('✅ [AdminProducts] Preview atualizado para', field);
     };
     reader.readAsDataURL(file);
     
     var newFiles = Object.assign({}, imageFiles);
     newFiles[field] = file;
     setImageFiles(newFiles);
+    console.log('✅ [AdminProducts] Arquivo adicionado ao estado:', field, file.name);
   };
 
   // Handler para adicionar cor (selecionar de cores disponíveis)
@@ -720,11 +732,21 @@ export default function AdminProducts() {
                 <Card key={product.id} className="h-full">
                   <CardBody className="p-0">
                     <div className="relative h-48 bg-content2">
-                      <Image
-                        removeWrapper
-                        src={product.imagesNightUrl || product.imagesDayUrl || "/demo-images/placeholder.png"}
+                      <img
+                        src={product.thumbnailUrl || product.imagesNightUrl || product.imagesDayUrl || "/demo-images/placeholder.png"}
                         alt={product.name}
                         className="w-full h-full object-contain"
+                        decoding="async"
+                        loading="lazy"
+                        onError={function(e) {
+                          if (e.target.dataset.fallbackAttempted === 'true') return;
+                          e.target.dataset.fallbackAttempted = 'true';
+                          if (product.imagesDayUrl && e.target.src.indexOf(product.imagesDayUrl) < 0) {
+                            e.target.src = product.imagesDayUrl;
+                          } else {
+                            e.target.src = "/demo-images/placeholder.png";
+                          }
+                        }}
                       />
                       {!product.isActive && (
                         <Chip size="sm" color="warning" className="absolute top-2 right-2">
@@ -900,9 +922,10 @@ export default function AdminProducts() {
                       <Select
                         label="Ano da Coleção"
                         placeholder="Selecione o ano"
-                        selectedKeys={formData.releaseYear ? [formData.releaseYear] : []}
+                        selectedKeys={formData.releaseYear ? [String(formData.releaseYear)] : []}
                         onSelectionChange={function(keys) {
-                          var selected = Array.from(keys)[0] || "";
+                          var keysArray = Array.from(keys);
+                          var selected = keysArray.length > 0 ? String(keysArray[0]) : "";
                           setFormData(function(prev) {
                             return Object.assign({}, prev, { releaseYear: selected });
                           });
@@ -912,8 +935,9 @@ export default function AdminProducts() {
                           var yearItems = [];
                           for (var i = 0; i < availableYears.length; i++) {
                             var year = availableYears[i];
+                            var yearStr = String(year);
                             yearItems.push(
-                              <SelectItem key={String(year)} value={String(year)}>
+                              <SelectItem key={yearStr} value={yearStr}>
                                 {year}
                               </SelectItem>
                             );
@@ -948,9 +972,13 @@ export default function AdminProducts() {
                           type="file"
                           accept="image/*"
                           onChange={function(e) {
-                            handleImageChange("dayImage", e.target.files[0]);
+                            var file = e.target.files && e.target.files[0];
+                            if (file) {
+                              handleImageChange("dayImage", file);
+                            }
                           }}
                           className="hidden"
+                          aria-label="Selecionar imagem do dia"
                         />
                         <Button
                           variant="bordered"
@@ -982,9 +1010,13 @@ export default function AdminProducts() {
                           type="file"
                           accept="image/*"
                           onChange={function(e) {
-                            handleImageChange("nightImage", e.target.files[0]);
+                            var file = e.target.files && e.target.files[0];
+                            if (file) {
+                              handleImageChange("nightImage", file);
+                            }
                           }}
                           className="hidden"
+                          aria-label="Selecionar imagem da noite"
                         />
                         <Button
                           variant="bordered"
@@ -1015,9 +1047,13 @@ export default function AdminProducts() {
                           type="file"
                           accept="video/*"
                           onChange={function(e) {
-                            handleImageChange("animation", e.target.files[0]);
+                            var file = e.target.files && e.target.files[0];
+                            if (file) {
+                              handleImageChange("animation", file);
+                            }
                           }}
                           className="hidden"
+                          aria-label="Selecionar animação ou vídeo"
                         />
                         <Button
                           variant="bordered"

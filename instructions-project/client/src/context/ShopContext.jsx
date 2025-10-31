@@ -1,5 +1,7 @@
 import React from "react";
 import { products as mockProducts, projects as mockProjects, categories as mockCategories } from "../services/shop.mock";
+import { productsAPI } from "../services/api";
+import { transformApiProduct } from "../utils/productUtils";
 
 const ShopContext = React.createContext(null);
 
@@ -22,9 +24,47 @@ function persistState(state) {
 }
 
 export function ShopProvider({ children }) {
-  const [products] = React.useState(mockProducts);
+  const [products, setProducts] = React.useState([]);
+  const [productsLoading, setProductsLoading] = React.useState(true);
+  const [productsError, setProductsError] = React.useState(null);
   const [projects] = React.useState(mockProjects);
   const [categories] = React.useState(mockCategories);
+  
+  // Buscar produtos da API na montagem
+  React.useEffect(function() {
+    var fetchProducts = function() {
+      setProductsLoading(true);
+      setProductsError(null);
+      
+      productsAPI.getAll({ isActive: true })
+        .then(function(apiProducts) {
+          if (Array.isArray(apiProducts)) {
+            var transformed = [];
+            for (var i = 0; i < apiProducts.length; i++) {
+              var transformedProduct = transformApiProduct(apiProducts[i]);
+              if (transformedProduct) {
+                transformed.push(transformedProduct);
+              }
+            }
+            setProducts(transformed);
+            setProductsLoading(false);
+          } else {
+            console.warn('⚠️ [ShopContext] API retornou dados não-array, usando fallback');
+            setProducts(mockProducts);
+            setProductsLoading(false);
+          }
+        })
+        .catch(function(error) {
+          console.error('❌ [ShopContext] Erro ao buscar produtos da API:', error);
+          setProductsError(error.message || 'Erro ao carregar produtos');
+          // Fallback para dados mockados em caso de erro
+          setProducts(mockProducts);
+          setProductsLoading(false);
+        });
+    };
+    
+    fetchProducts();
+  }, []);
   const [cartByProject, setCartByProject] = React.useState(() => {
     const persisted = loadPersistedState();
     return persisted?.cartByProject || {};

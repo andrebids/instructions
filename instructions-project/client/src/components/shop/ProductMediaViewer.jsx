@@ -66,7 +66,9 @@ export default function ProductMediaViewer({ product, initialMode = "night", cla
   }, [mediaIndex, videoSrc]);
 
   if (!product) return null;
-  const imageSrc = mode === "day" ? product.images?.day : product.images?.night;
+  const imageSrc = mode === "day" 
+    ? product.images?.day 
+    : (product.images?.night || product.images?.day);
 
   const totalMedia = 1 + (product?.videoFile ? 1 : 0);
 

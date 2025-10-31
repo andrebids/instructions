@@ -2,7 +2,7 @@ import { Product } from '../models/index.js';
 import { Op } from 'sequelize';
 import path from 'path';
 import fs from 'fs';
-import { generateThumbnail } from '../utils/imageUtils.js';
+import { generateThumbnail, processImageToWebP } from '../utils/imageUtils.js';
 
 // Função helper para atualizar tag "new" baseado no releaseYear mais recente
 async function updateNewTagForProducts() {
@@ -511,14 +511,27 @@ export async function create(req, res) {
     
     if (files.dayImage && files.dayImage[0]) {
       var dayImagePath = files.dayImage[0].path;
-      imagesDayUrl = '/uploads/products/' + files.dayImage[0].filename;
+      var dayImageFilename = files.dayImage[0].filename;
+      
+      // Converter imagem para WebP
+      try {
+        var processedDayImagePath = await processImageToWebP(dayImagePath, dayImageFilename);
+        var processedDayImageFilename = path.basename(processedDayImagePath);
+        imagesDayUrl = '/uploads/products/' + processedDayImageFilename;
+        console.log('✅ Imagem do dia convertida para WebP:', imagesDayUrl);
+      } catch (webpError) {
+        console.warn('⚠️  Erro ao converter imagem do dia para WebP:', webpError.message);
+        // Usar imagem original em caso de erro
+        imagesDayUrl = '/uploads/products/' + dayImageFilename;
+        var processedDayImagePath = dayImagePath;
+      }
       
       // Auto-gerar thumbnail se não foi fornecido
       if (!files.thumbnail || !files.thumbnail[0]) {
         try {
-          var thumbnailFilename = 'thumb_' + files.dayImage[0].filename.replace(/\.[^/.]+$/, '.jpg');
-          var thumbnailPath = path.join(path.dirname(dayImagePath), thumbnailFilename);
-          await generateThumbnail(dayImagePath, thumbnailPath, 300, 300);
+          var thumbnailFilename = 'thumb_' + path.basename(processedDayImagePath).replace(/\.[^/.]+$/, '.jpg');
+          var thumbnailPath = path.join(path.dirname(processedDayImagePath), thumbnailFilename);
+          await generateThumbnail(processedDayImagePath, thumbnailPath, 300, 300);
           thumbnailUrl = '/uploads/products/' + thumbnailFilename;
           console.log('✅ Thumbnail auto-gerado:', thumbnailUrl);
         } catch (thumbError) {
@@ -530,7 +543,20 @@ export async function create(req, res) {
     }
     
     if (files.nightImage && files.nightImage[0]) {
-      imagesNightUrl = '/uploads/products/' + files.nightImage[0].filename;
+      var nightImagePath = files.nightImage[0].path;
+      var nightImageFilename = files.nightImage[0].filename;
+      
+      // Converter imagem para WebP
+      try {
+        var processedNightImagePath = await processImageToWebP(nightImagePath, nightImageFilename);
+        var processedNightImageFilename = path.basename(processedNightImagePath);
+        imagesNightUrl = '/uploads/products/' + processedNightImageFilename;
+        console.log('✅ Imagem da noite convertida para WebP:', imagesNightUrl);
+      } catch (webpError) {
+        console.warn('⚠️  Erro ao converter imagem da noite para WebP:', webpError.message);
+        // Usar imagem original em caso de erro
+        imagesNightUrl = '/uploads/products/' + nightImageFilename;
+      }
     }
     
     if (files.animation && files.animation[0]) {
@@ -737,14 +763,61 @@ export async function update(req, res) {
     
     if (files.dayImage && files.dayImage[0]) {
       var dayImagePath = files.dayImage[0].path;
-      updateData.imagesDayUrl = '/uploads/products/' + files.dayImage[0].filename;
+      var dayImageFilename = files.dayImage[0].filename;
+      
+      console.log('📸 [UPDATE] Processando imagem do dia:', {
+        originalPath: dayImagePath,
+        originalFilename: dayImageFilename,
+        fileExists: fs.existsSync(dayImagePath)
+      });
+      
+      // Converter imagem para WebP
+      try {
+        var processedDayImagePath = await processImageToWebP(dayImagePath, dayImageFilename);
+        var processedDayImageFilename = path.basename(processedDayImagePath);
+        
+        // Verificar se o arquivo processado existe
+        if (!fs.existsSync(processedDayImagePath)) {
+          console.error('❌ [UPDATE] Arquivo processado não encontrado:', processedDayImagePath);
+          throw new Error('Arquivo processado não encontrado após conversão');
+        }
+        
+        updateData.imagesDayUrl = '/uploads/products/' + processedDayImageFilename;
+        
+        // Verificar novamente se o arquivo existe antes de salvar
+        var finalFilePath = path.resolve(process.cwd(), 'public', 'uploads', 'products', processedDayImageFilename);
+        if (!fs.existsSync(finalFilePath)) {
+          console.error('❌ [UPDATE] Arquivo não encontrado no caminho final:', finalFilePath);
+          // Tentar usar o caminho processado diretamente
+          finalFilePath = processedDayImagePath;
+        }
+        
+        console.log('✅ [UPDATE] Imagem do dia convertida para WebP:', {
+          url: updateData.imagesDayUrl,
+          filePath: processedDayImagePath,
+          finalFilePath: finalFilePath,
+          fileExists: fs.existsSync(finalFilePath),
+          basename: processedDayImageFilename
+        });
+        var finalDayImagePath = processedDayImagePath;
+      } catch (webpError) {
+        console.warn('⚠️  [UPDATE] Erro ao converter imagem do dia para WebP:', webpError.message);
+        // Verificar se o arquivo original ainda existe
+        if (fs.existsSync(dayImagePath)) {
+          updateData.imagesDayUrl = '/uploads/products/' + dayImageFilename;
+          var finalDayImagePath = dayImagePath;
+          console.log('📸 [UPDATE] Usando imagem original:', updateData.imagesDayUrl);
+        } else {
+          console.error('❌ [UPDATE] Arquivo original também não existe:', dayImagePath);
+        }
+      }
       
       // Auto-gerar thumbnail se não foi fornecido e a imagem de dia mudou
       if (!files.thumbnail || !files.thumbnail[0]) {
         try {
-          var thumbnailFilename = 'thumb_' + files.dayImage[0].filename.replace(/\.[^/.]+$/, '.jpg');
-          var thumbnailPath = path.join(path.dirname(dayImagePath), thumbnailFilename);
-          await generateThumbnail(dayImagePath, thumbnailPath, 300, 300);
+          var thumbnailFilename = 'thumb_' + path.basename(finalDayImagePath).replace(/\.[^/.]+$/, '.jpg');
+          var thumbnailPath = path.join(path.dirname(finalDayImagePath), thumbnailFilename);
+          await generateThumbnail(finalDayImagePath, thumbnailPath, 300, 300);
           updateData.thumbnailUrl = '/uploads/products/' + thumbnailFilename;
           console.log('✅ Thumbnail auto-gerado:', updateData.thumbnailUrl);
         } catch (thumbError) {
@@ -756,7 +829,20 @@ export async function update(req, res) {
     }
     
     if (files.nightImage && files.nightImage[0]) {
-      updateData.imagesNightUrl = '/uploads/products/' + files.nightImage[0].filename;
+      var nightImagePath = files.nightImage[0].path;
+      var nightImageFilename = files.nightImage[0].filename;
+      
+      // Converter imagem para WebP
+      try {
+        var processedNightImagePath = await processImageToWebP(nightImagePath, nightImageFilename);
+        var processedNightImageFilename = path.basename(processedNightImagePath);
+        updateData.imagesNightUrl = '/uploads/products/' + processedNightImageFilename;
+        console.log('✅ Imagem da noite convertida para WebP:', updateData.imagesNightUrl);
+      } catch (webpError) {
+        console.warn('⚠️  Erro ao converter imagem da noite para WebP:', webpError.message);
+        // Usar imagem original em caso de erro
+        updateData.imagesNightUrl = '/uploads/products/' + nightImageFilename;
+      }
     } else if (body.imagesNightUrl !== undefined) {
       updateData.imagesNightUrl = body.imagesNightUrl || null;
     }

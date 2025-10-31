@@ -21,7 +21,7 @@ function useSourceImages() {
               id: product.id,
               name: product.name || 'Produto sem nome',
               thumbnail: product.imagesDayUrl || null,
-              nightVersion: product.imagesNightUrl || null,
+              nightVersion: product.imagesNightUrl || product.imagesDayUrl || null,
             });
           }
           setSourceImages(formatted);
