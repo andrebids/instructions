@@ -9,6 +9,7 @@ import OrderAssignModal from "../components/shop/OrderAssignModal";
 import { PageTitle } from "../components/page-title";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import { getProductsByCategory } from "../utils/productUtils";
 
 export default function ShopCategory() {
   const { category } = useParams();
@@ -63,7 +64,9 @@ export default function ShopCategory() {
   }, [fullTitle]);
 
   const isTrending = category === "trending";
-  const productsInCategory = React.useMemo(() => products.filter((p) => p.tags?.includes(category)), [products, category]);
+  const productsInCategory = React.useMemo(function() {
+    return getProductsByCategory(products, category);
+  }, [products, category]);
 
   // Price limits and range
   const priceLimits = React.useMemo(() => {
@@ -77,44 +80,106 @@ export default function ShopCategory() {
     setPriceRange([priceLimits.min, priceLimits.max]);
   }, [priceLimits.min, priceLimits.max]);
 
-  const filtered = React.useMemo(() => {
-    const list = products.filter((p) => {
-      if (!p.tags?.includes(category)) return false;
-      if (query && !p.name.toLowerCase().includes(query.toLowerCase())) return false;
-      if (filters.type && p.type !== filters.type) return false;
-      if (filters.usage && p.usage !== filters.usage) return false;
-      if (filters.location && p.location !== filters.location) return false;
-      if (filters.mount && p.mount !== filters.mount) return false;
-      if (filters.eco) {
-        const materialsText = String(p?.specs?.materiais || p?.materials || "").toLowerCase();
-        const isEco = Boolean(p?.eco) || (Array.isArray(p?.tags) && p.tags.includes("eco")) || /(recy|recycled|recycle|bioprint|bio|eco)/.test(materialsText);
-        if (!isEco) return false;
+  const filtered = React.useMemo(function() {
+    // Primeiro filtrar por categoria usando getProductsByCategory
+    var categoryProducts = getProductsByCategory(products, category);
+    var list = [];
+    
+    // Aplicar filtros adicionais
+    for (var i = 0; i < categoryProducts.length; i++) {
+      var p = categoryProducts[i];
+      var include = true;
+      
+      if (query && p.name.toLowerCase().indexOf(query.toLowerCase()) === -1) {
+        include = false;
       }
-      if (filters.color && Array.isArray(filters.color) && filters.color.length > 0) {
-        const hasAny = filters.color.some((c) => Boolean(p.images?.colors?.[c]));
-        if (!hasAny) return false;
+      if (include && filters.type && p.type !== filters.type) {
+        include = false;
       }
-      if (filters.dimKey && Array.isArray(filters.dimRange) && filters.dimRange.length === 2) {
-        const dimValue = p?.specs?.dimensions?.[filters.dimKey];
-        if (!(typeof dimValue === 'number' && Number.isFinite(dimValue))) return false;
-        if (dimValue < filters.dimRange[0] || dimValue > filters.dimRange[1]) return false;
+      if (include && filters.usage && p.usage !== filters.usage) {
+        include = false;
       }
-      if (typeof filters.minStock === 'number') {
-        const computeStock = (id) => { try { let s=0; for (const ch of String(id||'')) s+=ch.charCodeAt(0); return 5 + (s % 60); } catch(_){ return 20; } };
-        const stock = typeof p.stock === 'number' ? p.stock : computeStock(p.id);
-        if (stock < filters.minStock) return false;
+      if (include && filters.location && p.location !== filters.location) {
+        include = false;
       }
-      if (Array.isArray(priceRange) && priceRange.length === 2) {
-        if (typeof p.price === "number") {
-          if (p.price < priceRange[0] || p.price > priceRange[1]) return false;
+      if (include && filters.mount && p.mount !== filters.mount) {
+        include = false;
+      }
+      if (include && filters.eco) {
+        var specsMateriais = (p && p.specs && p.specs.materiais) ? p.specs.materiais : '';
+        var materials = (p && p.materials) ? p.materials : '';
+        var materialsText = String(specsMateriais || materials || "").toLowerCase();
+        var isEco = Boolean(p && p.eco) || (Array.isArray(p.tags) && p.tags.indexOf("eco") !== -1) || /(recy|recycled|recycle|bioprint|bio|eco)/.test(materialsText);
+        if (!isEco) {
+          include = false;
         }
       }
-      return true;
-    });
-    if (sort === "price-asc") return list.sort((a,b)=>a.price-b.price);
-    if (sort === "price-desc") return list.sort((a,b)=>b.price-a.price);
-    if (sort === "alpha-asc") return list.sort((a,b)=>a.name.localeCompare(b.name));
-    if (sort === "alpha-desc") return list.sort((a,b)=>b.name.localeCompare(a.name));
+      if (include && filters.color && Array.isArray(filters.color) && filters.color.length > 0) {
+        // Suportar tanto images.colors quanto availableColors (formato da API)
+        var imagesColors = (p && p.images && p.images.colors) ? p.images.colors : null;
+        var availableColors = (p && p.availableColors) ? p.availableColors : null;
+        var colorsObj = imagesColors || availableColors || {};
+        var hasAny = false;
+        for (var c_idx = 0; c_idx < filters.color.length; c_idx++) {
+          if (colorsObj[filters.color[c_idx]]) {
+            hasAny = true;
+            break;
+          }
+        }
+        if (!hasAny) {
+          include = false;
+        }
+      }
+      if (include && filters.dimKey && Array.isArray(filters.dimRange) && filters.dimRange.length === 2) {
+        var specsDimensions = (p && p.specs && p.specs.dimensions) ? p.specs.dimensions : null;
+        var dimValue = (specsDimensions && specsDimensions[filters.dimKey]) ? specsDimensions[filters.dimKey] : null;
+        if (!(typeof dimValue === 'number' && Number.isFinite(dimValue))) {
+          include = false;
+        } else if (dimValue < filters.dimRange[0] || dimValue > filters.dimRange[1]) {
+          include = false;
+        }
+      }
+      if (include && typeof filters.minStock === 'number') {
+        var computeStock = function(id) { 
+          try { 
+            var s = 0; 
+            for (var ch_idx = 0; ch_idx < String(id||'').length; ch_idx++) {
+              s += String(id||'').charCodeAt(ch_idx);
+            }
+            return 5 + (s % 60); 
+          } catch(_) { 
+            return 20; 
+          } 
+        };
+        var stock = typeof p.stock === 'number' ? p.stock : computeStock(p.id);
+        if (stock < filters.minStock) {
+          include = false;
+        }
+      }
+      if (include && Array.isArray(priceRange) && priceRange.length === 2) {
+        if (typeof p.price === "number") {
+          if (p.price < priceRange[0] || p.price > priceRange[1]) {
+            include = false;
+          }
+        }
+      }
+      
+      if (include) {
+        list.push(p);
+      }
+    }
+    
+    // Aplicar ordenação
+    if (sort === "price-asc") {
+      list.sort(function(a, b) { return a.price - b.price; });
+    } else if (sort === "price-desc") {
+      list.sort(function(a, b) { return b.price - a.price; });
+    } else if (sort === "alpha-asc") {
+      list.sort(function(a, b) { return a.name.localeCompare(b.name); });
+    } else if (sort === "alpha-desc") {
+      list.sort(function(a, b) { return b.name.localeCompare(a.name); });
+    }
+    
     return list;
   }, [products, category, filters, query, sort, priceRange]);
 

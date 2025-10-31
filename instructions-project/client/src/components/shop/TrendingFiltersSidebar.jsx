@@ -310,17 +310,44 @@ export default function TrendingFiltersSidebar({
         <AccordionItem key="color" aria-label="Color" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Color</span></div>}>
           <div className="flex flex-wrap gap-3">
             {colorOptions.map((c) => {
-              const isActive = Array.isArray(filters.color) && filters.color.includes(c.key);
+              var isActive = false;
+              if (Array.isArray(filters.color)) {
+                for (var i = 0; i < filters.color.length; i++) {
+                  if (filters.color[i] === c.key) {
+                    isActive = true;
+                    break;
+                  }
+                }
+              }
+              
+              var handleColorClick = function() {
+                var current = Array.isArray(filters.color) ? filters.color : [];
+                var next = [];
+                
+                if (isActive) {
+                  // Remover a cor se já estiver selecionada
+                  for (var j = 0; j < current.length; j++) {
+                    if (current[j] !== c.key) {
+                      next.push(current[j]);
+                    }
+                  }
+                } else {
+                  // Adicionar a cor se não estiver selecionada
+                  for (var k = 0; k < current.length; k++) {
+                    next.push(current[k]);
+                  }
+                  next.push(c.key);
+                }
+                
+                handle("color", next);
+              };
+              
               return (
                 <Tooltip key={c.key} content={`${c.label}${itemsCount[c.countKey] ? ` (${itemsCount[c.countKey]})` : ""}`}>
                   <button
                     type="button"
                     aria-label={c.label}
-                    onClick={() => {
-                      const current = Array.isArray(filters.color) ? filters.color : [];
-                      const next = isActive ? current.filter((x) => x !== c.key) : [...current, c.key];
-                      handle("color", next);
-                    }}
+                    onClick={handleColorClick}
                     className={`w-8 h-8 rounded-full border ${isActive ? "ring-2 ring-primary" : "border-default-200"}`}
                     style={{ background: c.gradient || c.swatch, boxShadow: c.bordered ? "inset 0 0 0 1px rgba(0,0,0,0.1)" : undefined }}
                   />

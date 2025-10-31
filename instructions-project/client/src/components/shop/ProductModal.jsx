@@ -118,7 +118,9 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
   }, [mediaIndex, videoSrc]);
 
   if (!activeProduct) return null;
-  const imageSrc = mode === "day" ? activeProduct.images?.day : activeProduct.images?.night;
+  const imageSrc = mode === "day" 
+    ? activeProduct.images?.day 
+    : (activeProduct.images?.night || activeProduct.images?.day);
   const stock = getAvailableStock(activeProduct);
   const isOutOfStock = stock <= 0;
 
