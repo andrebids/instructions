@@ -287,6 +287,11 @@ export async function getAll(req, res) {
               } else if (typeof plainProduct.specs === 'string') {
                 plainProduct.specs = JSON.parse(plainProduct.specs);
               }
+              
+              // Debug para IPL317R
+              if (plainProduct.id === 'IPL317R') {
+                console.log('🔍 [PRODUCTS API GET] IPL317R specs do banco:', JSON.stringify(plainProduct.specs, null, 2));
+              }
             }
           } catch (e) {
             console.warn('⚠️  [PRODUCTS API] Erro ao processar specs do produto ' + plainProduct.id + ':', e.message);
@@ -900,9 +905,24 @@ export async function create(req, res) {
     // Converter para objeto simples antes de enviar
     var productResponse = product.get({ plain: true });
     
-    // Debug: verificar materiais após salvar
-    if (productResponse.specs && productResponse.specs.materiais !== undefined) {
-      console.log('✅ [PRODUCTS API CREATE] Materiais salvos:', productResponse.specs.materiais);
+    // Debug: verificar specs após salvar
+    if (productResponse.specs) {
+      console.log('✅ [PRODUCTS API CREATE] Specs salvos:', JSON.stringify(productResponse.specs, null, 2));
+      if (productResponse.specs.materiais !== undefined) {
+        console.log('✅ [PRODUCTS API CREATE] Materiais salvos:', productResponse.specs.materiais);
+      }
+      if (productResponse.specs.softXLED !== undefined) {
+        console.log('✅ [PRODUCTS API CREATE] SOFT XLED salvo:', productResponse.specs.softXLED);
+      }
+      if (productResponse.specs.sparkles !== undefined) {
+        console.log('✅ [PRODUCTS API CREATE] Sparkles salvos:', productResponse.specs.sparkles);
+      }
+      if (productResponse.specs.effects !== undefined) {
+        console.log('✅ [PRODUCTS API CREATE] Effects salvos:', productResponse.specs.effects);
+      }
+      if (productResponse.specs.printType !== undefined) {
+        console.log('✅ [PRODUCTS API CREATE] Print Type salvo:', productResponse.specs.printType);
+      }
     }
     console.log('💾 [PRODUCT SAVED] URLs persistidas:', {
       id: productResponse.id,
@@ -1072,8 +1092,22 @@ export async function update(req, res) {
       try {
         updateData.specs = typeof body.specs === 'string' ? JSON.parse(body.specs) : body.specs;
         console.log('📦 [PRODUCTS API UPDATE] Specs processados:', JSON.stringify(updateData.specs, null, 2));
-        if (updateData.specs && updateData.specs.materiais !== undefined) {
-          console.log('📦 [PRODUCTS API UPDATE] Materiais no specs:', updateData.specs.materiais);
+        if (updateData.specs) {
+          if (updateData.specs.materiais !== undefined) {
+            console.log('📦 [PRODUCTS API UPDATE] Materiais no specs:', updateData.specs.materiais);
+          }
+          if (updateData.specs.softXLED !== undefined) {
+            console.log('📦 [PRODUCTS API UPDATE] SOFT XLED no specs:', updateData.specs.softXLED);
+          }
+          if (updateData.specs.sparkles !== undefined) {
+            console.log('📦 [PRODUCTS API UPDATE] Sparkles no specs:', updateData.specs.sparkles);
+          }
+          if (updateData.specs.effects !== undefined) {
+            console.log('📦 [PRODUCTS API UPDATE] Effects no specs:', updateData.specs.effects);
+          }
+          if (updateData.specs.printType !== undefined) {
+            console.log('📦 [PRODUCTS API UPDATE] Print Type no specs:', updateData.specs.printType);
+          }
         }
       } catch (e) {
         console.warn('Erro ao processar specs:', e);
@@ -1215,9 +1249,24 @@ export async function update(req, res) {
     // Converter para objeto simples antes de enviar
     var productResponse = product.get({ plain: true });
     
-    // Debug: verificar materiais após atualizar
-    if (productResponse.specs && productResponse.specs.materiais !== undefined) {
-      console.log('✅ [PRODUCTS API UPDATE] Materiais salvos:', productResponse.specs.materiais);
+    // Debug: verificar specs após atualizar
+    if (productResponse.specs) {
+      console.log('✅ [PRODUCTS API UPDATE] Specs salvos:', JSON.stringify(productResponse.specs, null, 2));
+      if (productResponse.specs.materiais !== undefined) {
+        console.log('✅ [PRODUCTS API UPDATE] Materiais salvos:', productResponse.specs.materiais);
+      }
+      if (productResponse.specs.softXLED !== undefined) {
+        console.log('✅ [PRODUCTS API UPDATE] SOFT XLED salvo:', productResponse.specs.softXLED);
+      }
+      if (productResponse.specs.sparkles !== undefined) {
+        console.log('✅ [PRODUCTS API UPDATE] Sparkles salvos:', productResponse.specs.sparkles);
+      }
+      if (productResponse.specs.effects !== undefined) {
+        console.log('✅ [PRODUCTS API UPDATE] Effects salvos:', productResponse.specs.effects);
+      }
+      if (productResponse.specs.printType !== undefined) {
+        console.log('✅ [PRODUCTS API UPDATE] Print Type salvo:', productResponse.specs.printType);
+      }
     }
     
     res.json(productResponse);

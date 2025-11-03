@@ -9,7 +9,7 @@ import { WeightField } from "./Components/WeightField";
 import { EffectsField } from "./Components/EffectsField";
 import { AnimatedSparklesField } from "./Components/AnimatedSparklesField";
 import { AluminiumField } from "./Components/AluminiumField";
-import { BioprintField } from "./Components/BioprintField";
+import { SoftXLEDField } from "./Components/SoftXLEDField";
 
 export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct, onAdd }) {
   const { products, compare, toggleCompare, getAvailableStock } = useShop();
@@ -245,14 +245,21 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                             <div className="space-y-2">
                               <ComponentsField materials={activeBase?.specs?.materiais} size="xs" />
                               <PrintFields printType={activeBase?.specs?.printType} printColor={activeBase?.specs?.printColor} size="xs" />
-                              <AluminiumField aluminium={activeBase?.specs?.aluminium} size="xs" />
-                              <BioprintField bioprint={activeBase?.specs?.bioprint} size="xs" />
-                              <WeightField weight={activeBase?.specs?.weight} size="xs" />
+                              <SoftXLEDField softXLED={activeBase?.specs?.softXLED} size="xs" />
                               <EffectsField effects={activeBase?.specs?.effects} size="xs" />
                               <AnimatedSparklesField sparkles={activeBase?.specs?.sparkles} size="xs" />
                             </div>
                           </div>
                         </div>
+                        {activeBase?.specs?.weight && (
+                          <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
+                            <Icon icon="lucide:scale" className="text-default-500 text-sm mt-0.5" />
+                            <div>
+                              <div className="text-default-500">Weight</div>
+                              <div className="leading-6 text-foreground/90 break-words">{activeBase.specs.weight} kg</div>
+                            </div>
+                          </div>
+                        )}
                         <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
                           <Icon icon="lucide:file-text" className="text-default-500 text-sm mt-0.5" />
                           <div>
@@ -343,14 +350,21 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                             <div className="space-y-2">
                               <ComponentsField materials={selected?.specs?.materiais} size="xs" />
                               <PrintFields printType={selected?.specs?.printType} printColor={selected?.specs?.printColor} size="xs" />
-                              <AluminiumField aluminium={selected?.specs?.aluminium} size="xs" />
-                              <BioprintField bioprint={selected?.specs?.bioprint} size="xs" />
-                              <WeightField weight={selected?.specs?.weight} size="xs" />
+                              <SoftXLEDField softXLED={selected?.specs?.softXLED} size="xs" />
                               <EffectsField effects={selected?.specs?.effects} size="xs" />
                               <AnimatedSparklesField sparkles={selected?.specs?.sparkles} size="xs" />
                             </div>
                           </div>
                         </div>
+                        {selected?.specs?.weight && (
+                          <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
+                            <Icon icon="lucide:scale" className="text-default-500 text-sm mt-0.5" />
+                            <div>
+                              <div className="text-default-500">Weight</div>
+                              <div className="leading-6 text-foreground/90 break-words">{selected.specs.weight} kg</div>
+                            </div>
+                          </div>
+                        )}
                         <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
                           <Icon icon="lucide:file-text" className="text-default-500 text-sm mt-0.5" />
                           <div>
