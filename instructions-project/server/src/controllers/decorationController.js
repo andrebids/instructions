@@ -70,39 +70,77 @@ export async function getAll(req, res) {
   }
 }
 
-// GET /api/decorations/search - Pesquisar decorações
+// GET /api/decorations/search - Pesquisar decorações com filtros e paginação
 export async function search(req, res) {
   try {
-    const { q } = req.query;
-    
-    if (!q) {
-      return res.status(400).json({ error: 'Query parameter "q" is required' });
+    console.log('[API] GET /api/decorations/search', { query: req.query });
+
+    // Parâmetros (tudo opcional)
+    var q = req.query.q;
+    var category = req.query.category || req.query.categoryId;
+    var heightMin = parseInt(req.query.heightMin || '0', 10);
+    var heightMax = parseInt(req.query.heightMax || '0', 10);
+    var priceMin = req.query.priceMin ? parseFloat(req.query.priceMin) : null;
+    var priceMax = req.query.priceMax ? parseFloat(req.query.priceMax) : null;
+
+    // Aceita, mas ainda não aplicado: stockMin, colors, dimensions
+    // Mantido para compatibilidade futura sem quebrar clientes
+    var page = parseInt(req.query.page || '1', 10);
+    var limit = parseInt(req.query.limit || '24', 10);
+    if (page < 1) page = 1;
+    if (limit < 1) limit = 24;
+
+    var sort = req.query.sort || 'name'; // name | width | height | price
+    var order = req.query.order === 'desc' ? 'DESC' : 'ASC';
+
+    var where = {};
+
+    if (category) {
+      where.category = category;
     }
-    
-    const decorations = await Decoration.findAll({
-      where: {
-        [Op.or]: [
-          {
-            name: {
-              [Op.iLike]: `%${q}%`,
-            },
-          },
-          {
-            description: {
-              [Op.iLike]: `%${q}%`,
-            },
-          },
-          {
-            tags: {
-              [Op.overlap]: [q],
-            },
-          },
-        ],
-      },
-      order: [['name', 'ASC']],
+
+    if (q) {
+      where[Op.or] = [
+        { name: { [Op.iLike]: '%' + q + '%' } },
+        { description: { [Op.iLike]: '%' + q + '%' } },
+        { tags: { [Op.overlap]: [q] } },
+      ];
+    }
+
+    if (heightMin && heightMin > 0) {
+      where.height = Object.assign(where.height || {}, { [Op.gte]: heightMin });
+    }
+    if (heightMax && heightMax > 0) {
+      where.height = Object.assign(where.height || {}, { [Op.lte]: heightMax });
+    }
+
+    if (priceMin !== null && !isNaN(priceMin)) {
+      where.price = Object.assign(where.price || {}, { [Op.gte]: priceMin });
+    }
+    if (priceMax !== null && !isNaN(priceMax)) {
+      where.price = Object.assign(where.price || {}, { [Op.lte]: priceMax });
+    }
+
+    var validSorts = { name: 'name', width: 'width', height: 'height', price: 'price' };
+    var orderBy = validSorts[sort] || 'name';
+
+    var offset = (page - 1) * limit;
+
+    console.time('[API] decorations:search:db');
+    const { rows, count } = await Decoration.findAndCountAll({
+      where,
+      order: [[orderBy, order]],
+      offset,
+      limit,
     });
-    
-    res.json(decorations);
+    console.timeEnd('[API] decorations:search:db');
+
+    res.json({
+      items: rows,
+      page,
+      limit,
+      total: count,
+    });
   } catch (error) {
     console.error('Erro ao pesquisar decorações:', error);
     res.status(500).json({ error: error.message });

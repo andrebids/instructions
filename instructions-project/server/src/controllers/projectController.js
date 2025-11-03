@@ -108,10 +108,46 @@ export async function getById(req, res) {
 // POST /api/projects - Criar novo projeto
 export async function create(req, res) {
   try {
+    console.log('💾 [SERVER] ===== CRIANDO NOVO PROJETO =====');
+    
+    // Log das zonas se existirem
+    if (req.body.snapZonesByImage && Object.keys(req.body.snapZonesByImage).length > 0) {
+      var zonasResumo = {};
+      for (var imageId in req.body.snapZonesByImage) {
+        var zones = req.body.snapZonesByImage[imageId];
+        zonasResumo[imageId] = {
+          day: zones?.day?.length || 0,
+          night: zones?.night?.length || 0,
+          total: (zones?.day?.length || 0) + (zones?.night?.length || 0)
+        };
+      }
+      console.log('💾 [SERVER] Projeto criado COM zonas:', JSON.stringify(zonasResumo, null, 2));
+    } else {
+      console.log('💾 [SERVER] Projeto criado SEM zonas');
+    }
+    
     const project = await Project.create(req.body);
+    
+    // Verificar o que foi realmente guardado
+    if (project.snapZonesByImage) {
+      var zonasGuardadas = {};
+      for (var imgId in project.snapZonesByImage) {
+        var z = project.snapZonesByImage[imgId];
+        zonasGuardadas[imgId] = {
+          day: z?.day?.length || 0,
+          night: z?.night?.length || 0,
+          total: (z?.day?.length || 0) + (z?.night?.length || 0)
+        };
+      }
+      console.log('✅ [SERVER] Zonas guardadas na BD após criação:', JSON.stringify(zonasGuardadas, null, 2));
+    }
+    
+    console.log('✅ [SERVER] Projeto criado com ID:', project.id);
     res.status(201).json(project);
   } catch (error) {
-    console.error('Erro ao criar projeto:', error);
+    console.error('❌ [SERVER] ===== ERRO AO CRIAR PROJETO =====');
+    console.error('❌ [SERVER] Erro:', error.message);
+    console.error('❌ [SERVER] Stack:', error.stack);
     res.status(400).json({ error: error.message });
   }
 }
@@ -188,31 +224,81 @@ export async function toggleFavorite(req, res) {
 // PATCH /api/projects/:id/canvas - Atualizar dados do canvas (zonas, decorações, etc)
 export async function updateCanvas(req, res) {
   try {
+    console.log('💾 [SERVER] ===== RECEBENDO ATUALIZAÇÃO DE CANVAS =====');
+    console.log('💾 [SERVER] Projeto ID:', req.params.id);
+    console.log('💾 [SERVER] Body recebido:', {
+      temSnapZonesByImage: req.body.snapZonesByImage !== undefined,
+      temCanvasDecorations: req.body.canvasDecorations !== undefined,
+      temCanvasImages: req.body.canvasImages !== undefined,
+      temDecorationsByImage: req.body.decorationsByImage !== undefined
+    });
+    
     const project = await Project.findByPk(req.params.id);
     
     if (!project) {
+      console.error('❌ [SERVER] Projeto não encontrado:', req.params.id);
       return res.status(404).json({ error: 'Project not found' });
     }
     
     var updateData = {};
     if (req.body.snapZonesByImage !== undefined) {
       updateData.snapZonesByImage = req.body.snapZonesByImage;
+      
+      // Log detalhado das zonas recebidas
+      var zonasResumo = {};
+      for (var imageId in req.body.snapZonesByImage) {
+        var zones = req.body.snapZonesByImage[imageId];
+        zonasResumo[imageId] = {
+          day: zones?.day?.length || 0,
+          night: zones?.night?.length || 0,
+          total: (zones?.day?.length || 0) + (zones?.night?.length || 0)
+        };
+      }
+      console.log('💾 [SERVER] Zonas recebidas (resumo):', JSON.stringify(zonasResumo, null, 2));
+      console.log('💾 [SERVER] Zonas completas:', JSON.stringify(req.body.snapZonesByImage, null, 2));
     }
     if (req.body.canvasDecorations !== undefined) {
       updateData.canvasDecorations = req.body.canvasDecorations;
+      console.log('💾 [SERVER] CanvasDecorations recebidas:', Array.isArray(req.body.canvasDecorations) ? req.body.canvasDecorations.length : 'N/A');
     }
     if (req.body.canvasImages !== undefined) {
       updateData.canvasImages = req.body.canvasImages;
+      console.log('💾 [SERVER] CanvasImages recebidas:', Array.isArray(req.body.canvasImages) ? req.body.canvasImages.length : 'N/A');
     }
     if (req.body.decorationsByImage !== undefined) {
       updateData.decorationsByImage = req.body.decorationsByImage;
+      console.log('💾 [SERVER] DecorationsByImage recebidas:', Object.keys(req.body.decorationsByImage || {}).length, 'imagens');
     }
     
+    console.log('💾 [SERVER] Dados a atualizar:', Object.keys(updateData));
+    console.log('💾 [SERVER] Salvando na base de dados...');
+    
     await project.update(updateData);
-    console.log('✅ Canvas atualizado para projeto:', req.params.id, updateData);
+    
+    // Verificar o que foi realmente guardado
+    await project.reload();
+    
+    console.log('✅ [SERVER] ===== CANVAS ATUALIZADO COM SUCESSO =====');
+    console.log('✅ [SERVER] Projeto ID:', req.params.id);
+    if (project.snapZonesByImage) {
+      var zonasGuardadas = {};
+      for (var imgId in project.snapZonesByImage) {
+        var z = project.snapZonesByImage[imgId];
+        zonasGuardadas[imgId] = {
+          day: z?.day?.length || 0,
+          night: z?.night?.length || 0,
+          total: (z?.day?.length || 0) + (z?.night?.length || 0)
+        };
+      }
+      console.log('✅ [SERVER] Zonas guardadas na BD (resumo):', JSON.stringify(zonasGuardadas, null, 2));
+    }
+    
     res.json(project);
   } catch (error) {
-    console.error('Erro ao atualizar canvas:', error);
+    console.error('❌ [SERVER] ===== ERRO AO ATUALIZAR CANVAS =====');
+    console.error('❌ [SERVER] Projeto ID:', req.params.id);
+    console.error('❌ [SERVER] Erro:', error.message);
+    console.error('❌ [SERVER] Stack:', error.stack);
     res.status(400).json({ error: error.message });
   }
 }
