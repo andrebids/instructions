@@ -146,7 +146,10 @@ export function getProductsByCategory(products, categoryId) {
       // Verificar season apenas se não for null/undefined/vazio
       var hasSummerSeason = false;
       var hasNonSummerSeason = false;
+      var seasonDefined = false;
+      
       if (p.season && typeof p.season === 'string' && p.season.trim() !== '') {
+        seasonDefined = true;
         var seasonLower = String(p.season).toLowerCase().trim();
         if (seasonLower === 'summer') {
           hasSummerSeason = true;
@@ -156,31 +159,30 @@ export function getProductsByCategory(products, categoryId) {
         }
       }
       
-      // Só incluir se tem tag "summer" OU season="summer"
-      // E NÃO incluir se tem season diferente de "summer"
-      matches = (hasSummerTag || hasSummerSeason) && !hasNonSummerSeason;
-      
-      // Debug: log produtos que estão sendo marcados como summer
-      if (matches) {
-        console.log('🔍 [getProductsByCategory] Produto marcado como SUMMER:', {
-          id: p.id,
-          name: p.name,
-          hasSummerTag: hasSummerTag,
-          hasSummerSeason: hasSummerSeason,
-          season: p.season,
-          tags: p.tags
-        });
+      // Incluir se:
+      // 1. Tem tag "summer" E não tem season definido (ou season está vazio/null)
+      // 2. OU tem season="summer"
+      // NÃO incluir se tem season diferente de "summer"
+      if (hasNonSummerSeason) {
+        // Produto tem season definido e não é "summer" → excluir
+        matches = false;
+      } else {
+        // Produto não tem season definido ou tem season="summer" → verificar tag ou season
+        matches = hasSummerTag || hasSummerSeason;
       }
       
-      // Debug: log produtos que foram EXCLUÍDOS porque têm season diferente
-      if ((hasSummerTag || hasSummerSeason) && hasNonSummerSeason) {
-        console.log('⚠️ [getProductsByCategory] Produto EXCLUÍDO de SUMMER (season diferente):', {
-          id: p.id,
-          name: p.name,
-          season: p.season,
-          tags: p.tags
-        });
-      }
+      // Debug: log TODOS os produtos avaliados para summer
+      console.log((matches ? '✅' : '❌') + ' [getProductsByCategory] Produto avaliado para SUMMER:', {
+        id: p.id,
+        name: p.name,
+        matches: matches,
+        hasSummerTag: hasSummerTag,
+        hasSummerSeason: hasSummerSeason,
+        hasNonSummerSeason: hasNonSummerSeason,
+        seasonDefined: seasonDefined,
+        season: p.season || '(vazio/null)',
+        tags: Array.isArray(p.tags) ? p.tags.join(', ') : '(nenhuma)'
+      });
     } else {
       // Fallback: verificar se tem a tag correspondente
       if (Array.isArray(p.tags)) {
