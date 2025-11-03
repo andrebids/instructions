@@ -1,16 +1,19 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Chip } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { useShop } from '../../context/ShopContext';
 
 /**
- * Card de produto para feed estilo TikTok
- * Mostra vídeo (se disponível) ou imagem com informações do produto ao lado
+ * Product card for TikTok-style feed
+ * Displays video (if available) or image with product information on the side
  */
 export default function ProductFeedCard({ product, isActive = false, onPlay, onPause }) {
   const videoRef = useRef(null);
+  const infoPanelRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasVideo, setHasVideo] = useState(false);
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const { toggleFavorite, favorites, getAvailableStock } = useShop();
 
   const isFavorited = favorites?.includes(product?.id);
@@ -18,7 +21,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
   const isOutOfStock = stock <= 0;
   const isLowStock = stock > 0 && stock <= 10;
 
-  // Cores disponíveis
+  // Available colors
   const colorKeys = Object.keys(product?.images?.colors || {});
   const colorKeyToStyle = {
     brancoPuro: "#ffffff",
@@ -29,24 +32,24 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
     azul: "#3b82f6",
   };
 
-  // Verificar se produto tem vídeo
+  // Check if product has video
   useEffect(() => {
     const videoUrl = product?.videoFile || product?.animationUrl;
     setHasVideo(Boolean(videoUrl));
   }, [product]);
 
-  // Auto-play/pause baseado em isActive
+  // Auto-play/pause based on isActive
   useEffect(() => {
     if (!videoRef.current || !hasVideo) return;
 
     if (isActive) {
       videoRef.current.play().catch(err => {
-        console.warn('Erro ao reproduzir vídeo:', err);
+        console.warn('Error playing video:', err);
       });
       setIsPlaying(true);
     } else {
       videoRef.current.pause();
-      videoRef.current.currentTime = 0; // Reset para início
+      videoRef.current.currentTime = 0; // Reset to start
       setIsPlaying(false);
     }
   }, [isActive, hasVideo]);
@@ -61,30 +64,71 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       onPause?.();
     } else {
       videoRef.current.play().catch(err => {
-        console.warn('Erro ao reproduzir vídeo:', err);
+        console.warn('Error playing video:', err);
       });
       setIsPlaying(true);
       onPlay?.();
     }
   };
 
-  // Construir URL do vídeo
+  // Build video URL
   const getVideoUrl = () => {
     const videoFile = product?.videoFile || product?.animationUrl;
     if (!videoFile) return null;
     
-    // Se já é uma URL completa (http/https), usar diretamente
+    // If already a complete URL (http/https), use directly
     if (videoFile.startsWith('http://') || videoFile.startsWith('https://')) {
       return videoFile;
     }
     
-    // Se começa com /, é um caminho absoluto do servidor
+    // If starts with /, it's an absolute server path
     if (videoFile.startsWith('/')) {
       return videoFile;
     }
     
-    // Caso contrário, assumir que é relativo a /SHOP/TRENDING/VIDEO/
+    // Otherwise, assume it's relative to /SHOP/TRENDING/VIDEO/
     return `/SHOP/TRENDING/VIDEO/${videoFile}`;
+  };
+
+  // Helper function to format text to Title Case
+  const toTitleCase = (str) => {
+    if (!str) return '';
+    return str
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  // Helper function to capitalize first letter, preserving special cases like "3D"
+  const capitalize = (str) => {
+    if (!str) return '';
+    // Handle "3D" or "3d" case - keep D uppercase
+    if (str.toLowerCase() === '3d' || str.toLowerCase() === '3 d') {
+      return '3D';
+    }
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
+  // Helper function to translate mount from Portuguese to English
+  const translateMount = (mount) => {
+    if (!mount) return '';
+    const mountMap = {
+      'chão': 'Floor',
+      'poste': 'Pole',
+      'transversal': 'Transverse',
+    };
+    const lowerMount = mount.toLowerCase().trim();
+    return mountMap[lowerMount] || capitalize(mount);
+  };
+
+  // Helper function to format materials string
+  const formatMaterials = (materialsStr) => {
+    if (!materialsStr) return '';
+    // Split by comma, trim each part, apply title case, then join
+    return materialsStr
+      .split(',')
+      .map(material => toTitleCase(material.trim()))
+      .join(', ');
   };
 
   const videoUrl = getVideoUrl();
@@ -93,29 +137,65 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100) 
     : null;
 
+  // Helper function to format weight with unit
+  const formatWeight = (weight) => {
+    if (!weight) return '';
+    const weightStr = String(weight).trim();
+    // Check if already has a unit (kg, g, etc)
+    if (/\d+\s*(kg|g|lb|oz)/i.test(weightStr)) {
+      return weightStr;
+    }
+    // If it's just a number, add "kg"
+    return `${weightStr} kg`;
+  };
+
+  // Format product values
+  const formattedType = product?.type ? capitalize(product.type) : null;
+  const formattedLocation = product?.location ? capitalize(product.location) : null;
+  const formattedMount = product?.mount ? translateMount(product.mount) : null;
+  const formattedDescription = product.specs?.descricao ? capitalize(product.specs.descricao) : null;
+  const formattedMaterials = product.specs?.materiais ? formatMaterials(product.specs.materiais) : null;
+  const formattedWeight = product.specs?.weight ? formatWeight(product.specs.weight) : null;
+
+  // No need to measure panel width anymore - using Framer Motion for slide animation
+
+  // Handle swipe from right edge to open panel
+  const handleSwipeStart = useCallback((e) => {
+    const touch = e.touches?.[0];
+    const clientX = touch?.clientX || e.clientX;
+    // Only trigger from right 15% of screen
+    if (clientX >= window.innerWidth * 0.85) {
+      setIsInfoOpen(true);
+    }
+  }, []);
+
   if (!product) return null;
 
   return (
-    <div className="relative w-full h-screen flex-shrink-0 flex items-center bg-black">
-      {/* Container principal: Vídeo/Imagem à esquerda, Info à direita */}
-      <div className="flex w-full h-full">
-        {/* Área de vídeo/imagem - ocupa ~70% da largura */}
+    <div 
+      className="relative w-full h-screen flex-shrink-0 flex bg-black overflow-hidden"
+      onTouchStart={handleSwipeStart}
+      onMouseDown={handleSwipeStart}
+    >
+      {/* Main container: Video full width, info panel overlay */}
+      <div className="flex w-full h-full relative">
+        {/* Video/image area - full width */}
         <div 
-          className="relative w-[70%] h-full bg-black flex items-center justify-center cursor-pointer"
+          className="relative w-full h-full bg-black flex items-center justify-center cursor-pointer"
           onClick={handleVideoClick}
         >
           {hasVideo && videoUrl ? (
             <video
               ref={videoRef}
               src={videoUrl}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain bg-black"
               loop
               muted
               playsInline
               preload="metadata"
               onError={(e) => {
-                console.warn('Erro ao carregar vídeo:', videoUrl, e);
-                // Se vídeo falhar, mostrar imagem de fallback
+                console.warn('Error loading video:', videoUrl, e);
+                // If video fails, show fallback image
                 setHasVideo(false);
               }}
               onClick={(e) => {
@@ -127,11 +207,11 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             <img
               src={imageUrl}
               alt={product.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain bg-black"
             />
           )}
 
-          {/* Overlay de controles quando pausado */}
+          {/* Control overlay when paused */}
           {hasVideo && !isPlaying && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
               <Button
@@ -145,7 +225,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             </div>
           )}
 
-          {/* Badge de desconto */}
+          {/* Discount badge */}
           {discountPct && (
             <Chip 
               size="sm" 
@@ -156,155 +236,237 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               {discountPct}% OFF
             </Chip>
           )}
+
+          {/* Open button - visible when panel is closed */}
+          {!isInfoOpen && (
+            <Button
+              isIconOnly
+              radius="full"
+              size="lg"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80"
+              onPress={() => setIsInfoOpen(true)}
+              aria-label="Open product info"
+            >
+              <Icon icon="lucide:chevron-left" className="text-2xl" />
+            </Button>
+          )}
         </div>
 
-        {/* Painel de informações - ocupa ~30% da largura */}
-        <div className="w-[30%] h-full bg-gradient-to-l from-black/95 via-black/90 to-transparent p-6 flex flex-col justify-between overflow-y-auto">
-          {/* Informações principais */}
-          <div className="flex-1 flex flex-col justify-end">
-            <h3 className="text-white text-2xl font-bold mb-2">{product.name}</h3>
+        {/* Information panel - slides in from right, hidden by default */}
+        <AnimatePresence>
+          {isInfoOpen && (
+            <>
+              {/* Overlay - closes panel when clicked */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0 bg-black/30 backdrop-blur-sm z-30"
+                onClick={() => setIsInfoOpen(false)}
+              />
+
+              {/* Panel */}
+              <motion.div
+                ref={infoPanelRef}
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="absolute right-0 top-0 h-full w-[40%] md:w-[30%] bg-black/98 backdrop-blur-sm p-3 md:p-8 flex flex-col justify-between overflow-y-auto border-l border-white/5 z-40"
+                onClick={(e) => e.stopPropagation()}
+              >
+          {/* Main information */}
+          <div className="flex-1 flex flex-col justify-end space-y-3 md:space-y-6">
+            {/* Product name - Maximum emphasis */}
+            <div>
+              <h3 className="text-white text-lg md:text-3xl font-extrabold mb-1 md:mb-3 leading-tight tracking-tight line-clamp-2">
+                {product.name}
+              </h3>
+            </div>
             
-            {/* Preço */}
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-white text-3xl font-bold">
+            {/* Price - Second emphasis */}
+            <div className="flex items-baseline gap-2 md:gap-3 flex-wrap">
+              <span className="text-white text-xl md:text-4xl font-black leading-none">
                 €{product.price?.toFixed(2) || '0.00'}
               </span>
               {product.oldPrice && (
-                <span className="text-gray-400 line-through text-lg">
+                <span className="text-gray-400 line-through text-sm md:text-xl font-medium">
                   €{product.oldPrice.toFixed(2)}
                 </span>
               )}
             </div>
 
-            {/* Stock */}
-            <div className="mb-3 text-sm">
-              {isOutOfStock ? (
-                <span className="text-red-400">Out of stock</span>
-              ) : (
-                <span className={`${isLowStock ? 'text-yellow-400' : 'text-green-400'}`}>
-                  Stock: <span className="font-semibold">{stock}</span>
-                </span>
+            {/* Stock and Tags - Grouped */}
+            <div className="space-y-2 md:space-y-3">
+              {/* Stock */}
+              <div>
+                {isOutOfStock ? (
+                  <span className="text-red-400 text-sm md:text-base font-medium">Out of stock</span>
+                ) : (
+                  <span className={`text-sm md:text-base font-medium ${isLowStock ? 'text-yellow-400' : 'text-green-400'}`}>
+                    Stock: <span className="font-bold">{stock}</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Tags */}
+              {Array.isArray(product.tags) && product.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {product.tags.slice(0, 4).map((tag, idx) => (
+                    <Chip
+                      key={idx}
+                      size="sm"
+                      variant="flat"
+                      className="bg-gray-800/80 text-white border border-white/10 px-3 py-1 font-medium text-xs"
+                    >
+                      {toTitleCase(tag)}
+                    </Chip>
+                  ))}
+                </div>
               )}
             </div>
 
-            {/* Tags */}
-            {Array.isArray(product.tags) && product.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                {product.tags.slice(0, 4).map((tag, idx) => (
-                  <Chip
-                    key={idx}
-                    size="sm"
-                    variant="flat"
-                    className="bg-white/10 text-white border-white/20"
-                  >
-                    {tag}
-                  </Chip>
-                ))}
-              </div>
-            )}
-
-            {/* Cores disponíveis */}
+            {/* Available Colors */}
             {colorKeys.length > 0 && (
-              <div className="mb-4">
-                <div className="text-gray-400 text-xs mb-2">Available Colors</div>
-                <div className="flex items-center gap-2 flex-wrap">
+              <div className="space-y-2">
+                <div className="text-gray-400 text-xs md:text-sm font-medium">Available Colors</div>
+                <div className="flex items-center gap-3 flex-wrap">
                   {colorKeys.slice(0, 6).map((key) => (
                     <div
                       key={key}
-                      className="w-6 h-6 rounded-full border-2 border-white/30"
+                      className="w-7 h-7 rounded-full border-2 border-white/20 shadow-sm"
                       style={{ 
                         background: colorKeyToStyle[key] || '#e5e7eb',
-                        boxShadow: key === 'brancoPuro' ? 'inset 0 0 0 1px rgba(0,0,0,0.2)' : undefined,
+                        boxShadow: key === 'brancoPuro' ? 'inset 0 0 0 1px rgba(0,0,0,0.15)' : undefined,
                       }}
                       title={key}
                     />
                   ))}
                   {colorKeys.length > 6 && (
-                    <span className="text-gray-400 text-xs">+{colorKeys.length - 6}</span>
+                    <span className="text-gray-500 text-sm font-medium">+{colorKeys.length - 6}</span>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Tipo, Localização, Mount */}
-            {(product.type || product.location || product.mount) && (
-              <div className="mb-4 space-y-1">
-                {product.type && (
-                  <div className="text-xs text-gray-400">
-                    <span className="text-gray-500">Type: </span>
-                    <span className="text-white">{product.type}</span>
+            {/* Type, Location, Mount - Grouped */}
+            {(formattedType || formattedLocation || formattedMount) && (
+              <div className="space-y-1.5 md:space-y-2">
+                {formattedType && (
+                  <div className="text-xs md:text-sm">
+                    <span className="text-gray-500 font-medium">Type: </span>
+                    <span className="text-white font-semibold">{formattedType}</span>
                   </div>
                 )}
-                {product.location && (
-                  <div className="text-xs text-gray-400">
-                    <span className="text-gray-500">Location: </span>
-                    <span className="text-white">{product.location}</span>
+                {formattedLocation && (
+                  <div className="text-xs md:text-sm">
+                    <span className="text-gray-500 font-medium">Location: </span>
+                    <span className="text-white font-semibold">{formattedLocation}</span>
                   </div>
                 )}
-                {product.mount && (
-                  <div className="text-xs text-gray-400">
-                    <span className="text-gray-500">Mount: </span>
-                    <span className="text-white">{product.mount}</span>
+                {formattedMount && (
+                  <div className="text-xs md:text-sm">
+                    <span className="text-gray-500 font-medium">Mount: </span>
+                    <span className="text-white font-semibold">{formattedMount}</span>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Dimensões */}
+            {/* Dimensions */}
             {(product.height || product.width || product.depth || product.diameter) && (
-              <div className="mb-4">
-                <div className="text-xs text-gray-500 mb-1">Dimensions</div>
-                <div className="text-xs text-gray-300 space-y-0.5">
-                  {product.height && <div>H: {product.height}m</div>}
-                  {product.width && <div>W: {product.width}m</div>}
-                  {product.depth && <div>D: {product.depth}m</div>}
-                  {product.diameter && <div>Ø: {product.diameter}m</div>}
+              <div className="space-y-1.5 md:space-y-2">
+                <div className="text-gray-500 text-xs md:text-sm font-medium">Dimensions</div>
+                <div className="space-y-0.5 md:space-y-1">
+                  {product.height && (
+                    <div className="text-xs md:text-sm">
+                      <span className="text-gray-400">H: </span>
+                      <span className="text-white font-medium">{product.height}m</span>
+                    </div>
+                  )}
+                  {product.width && (
+                    <div className="text-xs md:text-sm">
+                      <span className="text-gray-400">W: </span>
+                      <span className="text-white font-medium">{product.width}m</span>
+                    </div>
+                  )}
+                  {product.depth && (
+                    <div className="text-xs md:text-sm">
+                      <span className="text-gray-400">D: </span>
+                      <span className="text-white font-medium">{product.depth}m</span>
+                    </div>
+                  )}
+                  {product.diameter && (
+                    <div className="text-xs md:text-sm">
+                      <span className="text-gray-400">Ø: </span>
+                      <span className="text-white font-medium">{product.diameter}m</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Descrição/Especificações resumidas */}
-            {product.specs?.descricao && (
-              <div className="mb-4">
-                <p className="text-gray-300 text-sm line-clamp-4">
-                  {product.specs.descricao}
+            {/* Description */}
+            {formattedDescription && (
+              <div className="space-y-1.5 md:space-y-2">
+                <p className="text-white text-sm md:text-base leading-relaxed">
+                  {formattedDescription}
                 </p>
               </div>
             )}
 
-            {/* Especificações técnicas resumidas */}
+            {/* Technical specifications */}
             {product.specs && (
-              <div className="mb-4 space-y-2">
-                {product.specs.weight && (
-                  <div className="text-xs">
-                    <span className="text-gray-500">Weight: </span>
-                    <span className="text-white">{product.specs.weight}</span>
+              <div className="space-y-2 md:space-y-3">
+                {formattedWeight && (
+                  <div className="text-xs md:text-sm">
+                    <span className="text-gray-500 font-medium">Weight: </span>
+                    <span className="text-white font-semibold">{formattedWeight}</span>
                   </div>
                 )}
-                {product.specs.materiais && (
-                  <div className="text-xs">
-                    <span className="text-gray-500">Materials: </span>
-                    <span className="text-white">{product.specs.materiais}</span>
+                {formattedMaterials && (
+                  <div className="space-y-1">
+                    <div className="text-gray-500 text-xs md:text-sm font-medium">Materials:</div>
+                    <p className="text-white text-xs md:text-sm leading-relaxed">
+                      {formattedMaterials}
+                    </p>
                   </div>
                 )}
               </div>
             )}
           </div>
 
-          {/* Botões de ação */}
-          <div className="flex flex-col gap-3">
+          {/* Close button */}
+          <div className="flex justify-between items-center mb-2">
             <Button
+              isIconOnly
+              size="sm"
               radius="full"
-              className={`${
+              variant="light"
+              className="text-white hover:bg-white/10"
+              onPress={() => setIsInfoOpen(false)}
+              aria-label="Close panel"
+            >
+              <Icon icon="lucide:x" className="text-lg" />
+            </Button>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex flex-col gap-2 md:gap-3 pt-3 md:pt-6 mt-3 md:mt-6 border-t border-white/10">
+            <Button
+              radius="md"
+              size="sm"
+              className={`font-semibold text-xs md:text-base ${
                 isFavorited 
-                  ? 'bg-red-500 text-white' 
-                  : 'bg-white/10 text-white border border-white/20'
+                  ? 'bg-red-500 hover:bg-red-600 text-white' 
+                  : 'bg-white/10 hover:bg-white/15 text-white border border-white/20'
               }`}
               startContent={
                 <Icon 
                   icon={isFavorited ? "mdi:heart" : "mdi:heart-outline"} 
-                  className={isFavorited ? "text-red-500" : ""}
-                  style={isFavorited ? { fill: '#ef4444' } : {}}
+                  className="text-base md:text-xl"
+                  style={isFavorited ? { fill: 'currentColor' } : {}}
                 />
               }
               onPress={() => toggleFavorite?.(product.id)}
@@ -313,15 +475,19 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             </Button>
 
             <Button
-              radius="full"
+              radius="md"
+              size="sm"
               variant="bordered"
-              className="bg-white/10 text-white border-white/20"
-              startContent={<Icon icon="lucide:share-2" />}
+              className="bg-gray-900/50 hover:bg-gray-800/50 text-white border-white/20 font-semibold text-xs md:text-base"
+              startContent={<Icon icon="lucide:share-2" className="text-base md:text-xl" />}
             >
               Share
             </Button>
           </div>
-        </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
