@@ -108,9 +108,9 @@ export const decorationsAPI = {
     return response.data;
   },
 
-  // GET /api/decorations/search?q=query
-  search: async (query) => {
-    const response = await api.get('/decorations/search', { params: { q: query } });
+  // GET /api/decorations/search com suporte a filtros e paginação
+  search: async (params = {}) => {
+    const response = await api.get('/decorations/search', { params });
     return response.data;
   },
 

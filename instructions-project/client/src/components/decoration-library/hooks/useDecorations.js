@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { decorationsAPI, productsAPI } from '../../../services/api';
 
-export const useDecorations = () => {
+export const useDecorations = (initialFilters) => {
   const [decorations, setDecorations] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const debounceTimer = useRef(null);
 
   useEffect(() => {
     async function loadInitial() {
@@ -46,9 +47,9 @@ export const useDecorations = () => {
         console.log('[LIB] fetch', { page });
         var data = null;
         try {
-          data = await decorationsAPI.getAll({ page, limit: 24 });
+          data = await decorationsAPI.getAll({ page: page, limit: 24 });
         } catch (e1) {
-          console.warn('[LIB] decorationsAPI.getAll failed, trying productsAPI');
+          console.warn('[LIB] decorations fetch failed, trying productsAPI');
         }
         var list = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
 
@@ -88,6 +89,12 @@ export const useDecorations = () => {
           // Usar SEMPRE o mount como categoria principal
           var catRaw = it.mount || it.category || it.type || 'custom';
           var cat = typeof catRaw === 'string' ? catRaw : 'custom';
+          // Placeholders para stock/cor/dimensões
+          var stockVal = typeof it.stock === 'number' ? it.stock : (function(){
+            try { var s=0; var sid=String(it.id||''); for (var ii=0; ii<sid.length; ii++) s+=sid.charCodeAt(ii); return 5 + (s % 60); } catch(_){ return 20; }
+          })();
+          var colorVal = it.color || (Array.isArray(it.tags) && it.tags.length ? it.tags[0] : '');
+          var specsVal = it.specs || { dimensions: {} };
           mapped.push({
             id: it.id,
             name: it.name,
@@ -98,8 +105,15 @@ export const useDecorations = () => {
             imageUrlDay: it.thumbnailUrl || it.imagesDayUrl || null,
             imageUrlNight: it.thumbnailNightUrl || it.imagesNightUrl || null,
             thumbnailUrl: it.thumbnailUrl || it.imagesDayUrl || null,
-            width: it.width,
-            height: it.height,
+            width: typeof it.width === 'number' ? it.width : null,
+            height: typeof it.height === 'number' ? Number(it.height) : null, // Garantir que é número
+            price: typeof it.price === 'number' ? it.price : null,
+            stock: stockVal,
+            color: colorVal,
+            specs: specsVal,
+            // Incluir availableColors para filtragem de cores funcionar corretamente
+            availableColors: it.availableColors || null,
+            tags: it.tags || [],
           });
         }
 
@@ -152,7 +166,9 @@ export const useDecorations = () => {
       }
     }
 
-    loadDecorations();
+    // Debounce somente para paginação
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(function(){ loadDecorations(); }, 100);
     return () => { cancelled = true; };
   }, [page]);
 

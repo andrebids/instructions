@@ -7,7 +7,8 @@ import { useDecorationSearch } from './hooks/useDecorationSearch';
 import { SearchBar } from './components/SearchBar';
 import { CategoryMenu } from './components/CategoryMenu';
 import { DecorationGrid } from './components/DecorationGrid';
-import { PropertyFilters } from './components/PropertyFilters';
+import { DecorationFiltersCompact } from './components/DecorationFiltersCompact';
+import filterDecorations from './utils/filterDecorations';
 
 export const DecorationLibrary = ({ 
   onDecorationSelect, 
@@ -22,58 +23,24 @@ export const DecorationLibrary = ({
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [viewMode, setViewMode] = useState('categories'); // 'categories' or 'decorations'
   const [filters, setFilters] = useState({
-    height: 10,
-    dimension: 'all'
+    heightMin: 0,
+    heightMax: 0,
+    color: []
   });
   
-  // Load decorations data
-  const { decorations, categories, isLoading, filterByCategory } = useDecorations();
+  // Carregar dados (sem dependência de filtros)
+  const { decorations, categories, isLoading, hasMore, setPage, filterByCategory } = useDecorations();
   
   // Search hook
   const { searchTerm, setSearchTerm, filteredDecorations: searchResults } = useDecorationSearch(decorations);
   
-  // Combine filters: category + search + property filters
+  // Filtragem client-side igual ao /shop/trending
   const finalDecorations = useMemo(() => {
-    let result = decorations;
-    
-    // Apply category filter
-    if (activeCategory) {
-      const filtered = filterByCategory(activeCategory);
-      console.log('[LIB] filter category', activeCategory, '->', filtered.length);
-      result = filtered;
-    }
-    
-    // Apply search filter if active
-    if (searchTerm && searchResults.length > 0) {
-      // If search is active, use only search results
-      // but limit to selected category
-      if (activeCategory) {
-        result = searchResults.filter(dec => dec.category === activeCategory);
-      } else {
-        result = searchResults;
-      }
-    }
-    
-    // Apply property filters
-    if (enableFilters) {
-      result = result.filter(decoration => {
-        // Filter by dimension type (2D vs 3D)
-        if (filters.dimension !== 'all') {
-          if (filters.dimension === '2d') {
-            // Filter for 2D decorations (transversal and pole categories)
-            if (!['transversal', 'pole'].includes(decoration.category)) return false;
-          } else if (filters.dimension === '3d') {
-            // Filter for 3D decorations (3d and custom categories)
-            if (!['3d', 'custom'].includes(decoration.category)) return false;
-          }
-        }
-        
-        return true;
-      });
-    }
-    
+    console.log('[LIB] Aplicando filtros', { filters, activeCategory, searchTerm, totalDecorations: decorations.length });
+    var result = filterDecorations(decorations, filters, activeCategory, searchTerm);
+    console.log('[LIB] Resultado filtrado', { count: result.length });
     return result;
-  }, [decorations, activeCategory, searchTerm, searchResults, filterByCategory, filters, enableFilters]);
+  }, [decorations, filters, activeCategory, searchTerm]);
   
   const handleCategorySelect = (categoryId) => {
     console.log('📂 [DecorationLibrary] Selecting category:', categoryId);
@@ -105,8 +72,8 @@ export const DecorationLibrary = ({
   // };
   
   const containerClasses = mode === "sidebar" 
-    ? `border-l border-divider bg-content1/30 flex flex-col flex-shrink-0 ${className}`
-    : `bg-content1 rounded-lg border border-divider ${className}`;
+    ? `border-l border-divider bg-content1/30 flex flex-col flex-shrink-0 h-full overflow-y-auto ${className}`
+    : `bg-content1 rounded-lg border border-divider h-full overflow-y-auto ${className}`;
   
   return (
     // TODO: Quando dnd-kit estiver instalado, adicionar DndContext:
@@ -146,18 +113,22 @@ export const DecorationLibrary = ({
         />
       )}
       
-      {/* Property Filters - visible when in decorations view */}
+      {/* Compact Filters - visível na visão de decorações */}
       {enableFilters && (viewMode === 'decorations' || searchTerm) && (
         <div className="p-3 md:p-4 border-b border-divider">
-          <PropertyFilters
-            onFiltersChange={handleFiltersChange}
+          <DecorationFiltersCompact
+            value={filters}
+            decorations={decorations}
+            onChange={function(f){
+              setFilters(f);
+            }}
             disabled={disabled}
           />
         </div>
       )}
       
       {/* Content based on view mode and search */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1">
         {viewMode === 'categories' && !searchTerm ? (
           <CategoryMenu
             categories={categories}
@@ -174,6 +145,18 @@ export const DecorationLibrary = ({
             isLoading={isLoading}
             onSelect={onDecorationSelect}
           />
+        )}
+        {/* Paginação simples */}
+        {(!isLoading && hasMore && viewMode === 'decorations') && (
+          <div className="p-3 border-t border-divider">
+            <button
+              className="w-full text-sm py-1.5 rounded-md bg-default-100 hover:bg-default-200"
+              onClick={function(){ setPage(function(p){ return p + 1; }); }}
+              disabled={disabled}
+            >
+              Load more
+            </button>
+          </div>
         )}
       </div>
     </aside>
