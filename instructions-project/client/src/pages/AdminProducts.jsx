@@ -71,6 +71,46 @@ export default function AdminProducts() {
     return new Set(validSelectedColors);
   };
   
+  // Função helper para filtrar valores válidos de effects (LED)
+  var getValidLEDEffects = function(effects) {
+    var validEffects = ["LED AMBER", "LED WARM WHITE", "LED WARM WHITE + WARM WHITE FLASH", "LED WARM WHITE + PURE WHITE FLASH", "LED WARM WHITE + PURE WHITE SLOW FLASH", "LED PURE WHITE", "LED PURE WHITE + PURE WHITE FLASH", "LED PURE WHITE + WARM WHITE SLOW FLASH", "LED PURE WHITE + PURE WHITE SLOW FLASH", "LED BLUE", "LED BLUE + PURE WHITE FLASH", "LED BLUE + PURE WHITE SLOW FLASH", "LED PINK", "LED PINK + PURE WHITE FLASH", "LED RED", "LED RED + PURE WHITE FLASH", "LED RED + PURE WHITE SLOW FLASH", "LED GREEN", "LED GREEN + PURE WHITE FLASH", "RGB"];
+    if (!effects) {
+      return new Set();
+    }
+    var selectedEffects = Array.isArray(effects) ? effects : [effects];
+    var validSelectedEffects = selectedEffects.filter(function(effect) {
+      if (!effect || typeof effect !== 'string') {
+        return false;
+      }
+      var isValid = validEffects.includes(effect);
+      if (!isValid && effect.trim() !== '') {
+        console.warn("⚠️ [LED EFFECTS] Valor inválido filtrado:", effect);
+      }
+      return isValid;
+    });
+    return new Set(validSelectedEffects);
+  };
+  
+  // Função helper para filtrar valores válidos de sparkles (ANIMATED SPARKLES)
+  var getValidSparkles = function(sparkles) {
+    var validSparkles = ["WARM WHITE", "WARM WHITE/PURE WHITE", "PURE WHITE", "RGB"];
+    if (!sparkles) {
+      return new Set();
+    }
+    var selectedSparkles = Array.isArray(sparkles) ? sparkles : [sparkles];
+    var validSelectedSparkles = selectedSparkles.filter(function(sparkle) {
+      if (!sparkle || typeof sparkle !== 'string') {
+        return false;
+      }
+      var isValid = validSparkles.includes(sparkle);
+      if (!isValid && sparkle.trim() !== '') {
+        console.warn("⚠️ [SPARKLES] Valor inválido filtrado:", sparkle);
+      }
+      return isValid;
+    });
+    return new Set(validSelectedSparkles);
+  };
+  
   // Mapeamento de cores para valores hexadecimais (versão escura com tom suave)
   var getPrintColorStyle = function(colorName, isSelected) {
     var colorMap = {
@@ -434,6 +474,55 @@ export default function AdminProducts() {
       filteredPrintColor = validColors.length > 0 ? (validColors.length === 1 ? validColors[0] : validColors) : null;
     }
     
+    // Filtrar effects (LED) para remover valores inválidos
+    var filteredEffects = null;
+    if (productSpecs.effects) {
+      var validSet = getValidLEDEffects(productSpecs.effects);
+      var validEffects = Array.from(validSet);
+      filteredEffects = validEffects.length > 0 ? (validEffects.length === 1 ? validEffects[0] : validEffects) : null;
+    }
+    
+    // Filtrar sparkles (ANIMATED SPARKLES) para remover valores inválidos
+    var filteredSparkles = null;
+    if (productSpecs.sparkles) {
+      var validSet = getValidSparkles(productSpecs.sparkles);
+      var validSparkles = Array.from(validSet);
+      filteredSparkles = validSparkles.length > 0 ? (validSparkles.length === 1 ? validSparkles[0] : validSparkles) : null;
+    }
+    
+    // Sincronizar materiais: garantir que effects e sparkles estejam no campo materiais
+    var syncedMateriais = productSpecs.materiais || "";
+    if (filteredEffects) {
+      var effectsArray = Array.isArray(filteredEffects) ? filteredEffects : [filteredEffects];
+      effectsArray.forEach(function(effect) {
+        if (effect && syncedMateriais.indexOf(effect) === -1) {
+          syncedMateriais = syncedMateriais.trim();
+          if (syncedMateriais) {
+            syncedMateriais += ", " + effect;
+          } else {
+            syncedMateriais = effect;
+          }
+        }
+      });
+    }
+    if (filteredSparkles) {
+      var sparklesArray = Array.isArray(filteredSparkles) ? filteredSparkles : [filteredSparkles];
+      var validSparklesList = ["WARM WHITE", "WARM WHITE/PURE WHITE", "PURE WHITE", "RGB"];
+      sparklesArray.forEach(function(sparkle) {
+        if (sparkle && validSparklesList.includes(sparkle)) {
+          var pattern = "ANIMATED SPARKLES " + sparkle;
+          if (syncedMateriais.indexOf(pattern) === -1) {
+            syncedMateriais = syncedMateriais.trim();
+            if (syncedMateriais) {
+              syncedMateriais += ", " + pattern;
+            } else {
+              syncedMateriais = pattern;
+            }
+          }
+        }
+      });
+    }
+    
     setFormData({
       name: product.name || "",
       price: product.price || "",
@@ -446,6 +535,9 @@ export default function AdminProducts() {
       isActive: product.isActive !== false,
       specs: Object.assign({}, productSpecs, {
         printColor: filteredPrintColor !== null ? filteredPrintColor : "",
+        effects: filteredEffects !== null ? filteredEffects : null,
+        sparkles: filteredSparkles !== null ? filteredSparkles : null,
+        materiais: syncedMateriais,
       }),
       availableColors: product.availableColors || {},
       videoFile: product.videoFile || "",
@@ -613,7 +705,12 @@ export default function AdminProducts() {
       Object.keys(formData.specs).forEach(function(key) {
         var value = formData.specs[key];
         // Manter apenas valores não vazios
-        if (value !== "" && value !== null && value !== undefined) {
+        // Para strings, verificar se não está vazia após trim
+        if (typeof value === 'string') {
+          if (value.trim() !== '') {
+            cleanedSpecs[key] = value;
+          }
+        } else if (value !== "" && value !== null && value !== undefined) {
           // Para arrays, verificar se não estão vazios
           if (Array.isArray(value)) {
             if (value.length > 0) {
@@ -624,6 +721,11 @@ export default function AdminProducts() {
           }
         }
       });
+    }
+    
+    // Debug: verificar materiais antes de enviar
+    if (cleanedSpecs.materiais !== undefined) {
+      console.log('📦 [AdminProducts] Materiais a enviar:', cleanedSpecs.materiais);
     }
     
     // Criar objeto com os dados (productsAPI.create cria o FormData internamente)
@@ -1400,12 +1502,52 @@ export default function AdminProducts() {
                               </div>
                               <Select
                                 label="LED"
-                                placeholder="Select LED type"
-                                selectedKeys={formData.specs.effects ? new Set([formData.specs.effects]) : new Set()}
+                                placeholder="Select LED type(s)"
+                                selectionMode="multiple"
+                                selectedKeys={(function() {
+                                  try {
+                                    return getValidLEDEffects(formData.specs?.effects);
+                                  } catch (e) {
+                                    console.error("Erro ao filtrar effects:", e);
+                                    return new Set();
+                                  }
+                                })()}
                                 onSelectionChange={function(keys) {
-                                  var selected = Array.from(keys)[0] || "";
+                                  var selected = Array.from(keys);
                                   setFormData(function(prev) {
-                                    var newSpecs = Object.assign({}, prev.specs, { effects: selected });
+                                    var currentMateriais = prev.specs.materiais || "";
+                                    var currentEffects = prev.specs.effects;
+                                    
+                                    // Obter lista de todas as opções LED válidas
+                                    var validLEDEffects = ["LED AMBER", "LED WARM WHITE", "LED WARM WHITE + WARM WHITE FLASH", "LED WARM WHITE + PURE WHITE FLASH", "LED WARM WHITE + PURE WHITE SLOW FLASH", "LED PURE WHITE", "LED PURE WHITE + PURE WHITE FLASH", "LED PURE WHITE + WARM WHITE SLOW FLASH", "LED PURE WHITE + PURE WHITE SLOW FLASH", "LED BLUE", "LED BLUE + PURE WHITE FLASH", "LED BLUE + PURE WHITE SLOW FLASH", "LED PINK", "LED PINK + PURE WHITE FLASH", "LED RED", "LED RED + PURE WHITE FLASH", "LED RED + PURE WHITE SLOW FLASH", "LED GREEN", "LED GREEN + PURE WHITE FLASH", "RGB"];
+                                    
+                                    // Remover todos os LED existentes do campo materiais
+                                    var newMateriais = validLEDEffects.reduce(function(acc, effect) {
+                                      return acc
+                                        .replace(new RegExp(",\\s*" + effect.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "g"), "")
+                                        .replace(new RegExp(effect.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b\\s*,?", "g"), "");
+                                    }, currentMateriais);
+                                    
+                                    // Adicionar os selecionados ao campo materiais
+                                    if (selected.length > 0) {
+                                      newMateriais = newMateriais.trim();
+                                      if (newMateriais) {
+                                        newMateriais += ", " + selected.join(", ");
+                                      } else {
+                                        newMateriais = selected.join(", ");
+                                      }
+                                    }
+                                    
+                                    // Limpar vírgulas duplas e espaços extras
+                                    newMateriais = newMateriais
+                                      .replace(/,\s*,/g, ",")
+                                      .replace(/^\s*,\s*|\s*,\s*$/g, "")
+                                      .trim();
+                                    
+                                    var newSpecs = Object.assign({}, prev.specs, {
+                                      effects: selected.length > 0 ? (selected.length === 1 ? selected[0] : selected) : null,
+                                      materiais: newMateriais
+                                    });
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
                                 }}
@@ -1472,6 +1614,65 @@ export default function AdminProducts() {
                                 <SelectItem key="COMET STRING LED PURE WHITE" textValue="COMET STRING LED PURE WHITE">COMET STRING LED PURE WHITE</SelectItem>
                               </Select>
                               <Select
+                                label="LIGHT STRING"
+                                placeholder="Select color(s)"
+                                selectionMode="multiple"
+                                selectedKeys={(function() {
+                                  var m = formData.specs?.materiais || "";
+                                  var colors = ["WARM WHITE", "PURE WHITE", "BLUE", "YELLOW", "ORANGE", "PINK", "RED", "GREEN"];
+                                  var selected = colors.filter(function(color) {
+                                    return m.includes("LIGHT STRING " + color);
+                                  });
+                                  return new Set(selected);
+                                })()}
+                                onSelectionChange={function(keys) {
+                                  var selected = Array.from(keys);
+                                  setFormData(function(prev) {
+                                    var currentMateriais = prev.specs.materiais || "";
+                                    var colors = ["WARM WHITE", "PURE WHITE", "BLUE", "YELLOW", "ORANGE", "PINK", "RED", "GREEN"];
+                                    
+                                    // Remover todos os LIGHT STRING existentes
+                                    var newMateriais = colors.reduce(function(acc, color) {
+                                      var pattern = "LIGHT STRING " + color;
+                                      return acc
+                                        .replace(new RegExp(",\\s*" + pattern.replace(/\s+/g, "\\s+") + "\\b", "g"), "")
+                                        .replace(new RegExp(pattern.replace(/\s+/g, "\\s+") + "\\b\\s*,?", "g"), "");
+                                    }, currentMateriais);
+                                    
+                                    // Adicionar os selecionados
+                                    if (selected.length > 0) {
+                                      var toAdd = selected.map(function(color) {
+                                        return "LIGHT STRING " + color;
+                                      });
+                                      newMateriais = newMateriais.trim();
+                                      if (newMateriais) {
+                                        newMateriais += ", " + toAdd.join(", ");
+                                      } else {
+                                        newMateriais = toAdd.join(", ");
+                                      }
+                                    }
+                                    
+                                    // Limpar vírgulas duplas e espaços extras
+                                    newMateriais = newMateriais
+                                      .replace(/,\s*,/g, ",")
+                                      .replace(/^\s*,\s*|\s*,\s*$/g, "")
+                                      .trim();
+                                    
+                                    var newSpecs = Object.assign({}, prev.specs, { materiais: newMateriais });
+                                    return Object.assign({}, prev, { specs: newSpecs });
+                                  });
+                                }}
+                              >
+                                <SelectItem key="WARM WHITE" textValue="WARM WHITE">WARM WHITE</SelectItem>
+                                <SelectItem key="PURE WHITE" textValue="PURE WHITE">PURE WHITE</SelectItem>
+                                <SelectItem key="BLUE" textValue="BLUE">BLUE</SelectItem>
+                                <SelectItem key="YELLOW" textValue="YELLOW">YELLOW</SelectItem>
+                                <SelectItem key="ORANGE" textValue="ORANGE">ORANGE</SelectItem>
+                                <SelectItem key="PINK" textValue="PINK">PINK</SelectItem>
+                                <SelectItem key="RED" textValue="RED">RED</SelectItem>
+                                <SelectItem key="GREEN" textValue="GREEN">GREEN</SelectItem>
+                              </Select>
+                              <Select
                                 label="ANIMATED SPARKLE"
                                 placeholder="Select sparkle color"
                                 selectedKeys={formData.specs.sparkle ? new Set([formData.specs.sparkle]) : new Set()}
@@ -1488,12 +1689,53 @@ export default function AdminProducts() {
                               </Select>
                               <Select
                                 label="ANIMATED SPARKLES"
-                                placeholder="Select sparkles color"
-                                selectedKeys={formData.specs.sparkles ? new Set([formData.specs.sparkles]) : new Set()}
+                                placeholder="Select sparkles color(s)"
+                                selectionMode="multiple"
+                                selectedKeys={(function() {
+                                  try {
+                                    return getValidSparkles(formData.specs?.sparkles);
+                                  } catch (e) {
+                                    console.error("Erro ao filtrar sparkles:", e);
+                                    return new Set();
+                                  }
+                                })()}
                                 onSelectionChange={function(keys) {
-                                  var selected = Array.from(keys)[0] || "";
+                                  var selected = Array.from(keys);
                                   setFormData(function(prev) {
-                                    var newSpecs = Object.assign({}, prev.specs, { sparkles: selected });
+                                    var currentMateriais = prev.specs.materiais || "";
+                                    var validSparkles = ["WARM WHITE", "WARM WHITE/PURE WHITE", "PURE WHITE", "RGB"];
+                                    
+                                    // Remover todos os ANIMATED SPARKLES existentes do campo materiais
+                                    var newMateriais = validSparkles.reduce(function(acc, sparkle) {
+                                      var pattern = "ANIMATED SPARKLES " + sparkle;
+                                      return acc
+                                        .replace(new RegExp(",\\s*" + pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "g"), "")
+                                        .replace(new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b\\s*,?", "g"), "");
+                                    }, currentMateriais);
+                                    
+                                    // Adicionar os selecionados ao campo materiais
+                                    if (selected.length > 0) {
+                                      var toAdd = selected.map(function(sparkle) {
+                                        return "ANIMATED SPARKLES " + sparkle;
+                                      });
+                                      newMateriais = newMateriais.trim();
+                                      if (newMateriais) {
+                                        newMateriais += ", " + toAdd.join(", ");
+                                      } else {
+                                        newMateriais = toAdd.join(", ");
+                                      }
+                                    }
+                                    
+                                    // Limpar vírgulas duplas e espaços extras
+                                    newMateriais = newMateriais
+                                      .replace(/,\s*,/g, ",")
+                                      .replace(/^\s*,\s*|\s*,\s*$/g, "")
+                                      .trim();
+                                    
+                                    var newSpecs = Object.assign({}, prev.specs, {
+                                      sparkles: selected.length > 0 ? (selected.length === 1 ? selected[0] : selected) : null,
+                                      materiais: newMateriais
+                                    });
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
                                 }}

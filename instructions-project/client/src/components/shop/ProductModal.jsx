@@ -6,6 +6,11 @@ import RequestInfoModal from "./RequestInfoModal";
 import CompareSuggestModal from "./CompareSuggestModal";
 import FavoriteFolderModal from "./FavoriteFolderModal";
 import { useShop } from "../../context/ShopContext";
+import { ComponentsField } from "./Components/ComponentsField";
+import { PrintFields } from "./Components/PrintFields";
+import { WeightField } from "./Components/WeightField";
+import { EffectsField } from "./Components/EffectsField";
+import { AnimatedSparklesField } from "./Components/AnimatedSparklesField";
 
 export default function ProductModal({ isOpen, onOpenChange, product, onOrder, enableQuantity = false }) {
   const { getAvailableStock, products, favorites, compare, toggleFavorite, toggleCompare } = useShop();
@@ -384,9 +389,25 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
 
                     <div className="flex items-start gap-2">
                       <Icon icon="lucide:layers" className="text-default-500 text-lg mt-0.5" />
+                      <div className="flex-1 min-w-0 space-y-3">
+                        <div>
+                          <div className="text-default-500 text-sm mb-3">Materials</div>
+                          <div className="space-y-3">
+                            <ComponentsField materials={activeProduct.specs?.materiais} />
+                            <PrintFields printType={activeProduct.specs?.printType} printColor={activeProduct.specs?.printColor} />
+                            <WeightField weight={activeProduct.specs?.weight} />
+                            <EffectsField effects={activeProduct.specs?.effects} />
+                            <AnimatedSparklesField sparkles={activeProduct.specs?.sparkles} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <Icon icon="lucide:file-text" className="text-default-500 text-lg mt-0.5" />
                       <div>
-                        <div className="text-default-500 text-sm">Materials</div>
-                        <div>{activeProduct.specs?.materiais}</div>
+                        <div className="text-default-500 text-sm">Description</div>
+                        <div>{activeProduct.specs?.descricao}</div>
                       </div>
                     </div>
 
@@ -395,34 +416,6 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                       <div>
                         <div className="text-default-500 text-sm">Technical</div>
                         <div>{activeProduct.specs?.tecnicas}</div>
-                      </div>
-                    </div>
-
-                    {activeProduct.specs?.weight && (
-                      <div className="flex items-start gap-2">
-                        <Icon icon="lucide:scale" className="text-default-500 text-lg mt-0.5" />
-                        <div>
-                          <div className="text-default-500 text-sm">Weight</div>
-                          <div>{activeProduct.specs?.weight} kg</div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeProduct.specs?.effects && (
-                      <div className="flex items-start gap-2">
-                        <Icon icon="lucide:sparkles" className="text-default-500 text-lg mt-0.5" />
-                        <div>
-                          <div className="text-default-500 text-sm">LED / Effects</div>
-                          <div>{activeProduct.specs?.effects}</div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-start gap-2">
-                      <Icon icon="lucide:file-text" className="text-default-500 text-lg mt-0.5" />
-                      <div>
-                        <div className="text-default-500 text-sm">Description</div>
-                        <div>{activeProduct.specs?.descricao}</div>
                       </div>
                     </div>
                   </div>

@@ -548,7 +548,7 @@ export async function getById(req, res) {
       if (isNaN(productData.oldPrice)) productData.oldPrice = null;
     }
     
-    // Garantir que releaseYear é um número válidoFilter
+    // Garantir que releaseYear é um número válidoFilterUpdate
     if (productData.releaseYear !== null && productData.releaseYear !== undefined) {
       productData.releaseYear = parseInt(String(productData.releaseYear), 10);
       if (isNaN(productData.releaseYear)) productData.releaseYear = null;
@@ -753,6 +753,10 @@ export async function create(req, res) {
     if (body.specs) {
       try {
         specs = typeof body.specs === 'string' ? JSON.parse(body.specs) : body.specs;
+        console.log('📦 [PRODUCTS API CREATE] Specs processados:', JSON.stringify(specs, null, 2));
+        if (specs && specs.materiais !== undefined) {
+          console.log('📦 [PRODUCTS API CREATE] Materiais no specs:', specs.materiais);
+        }
       } catch (e) {
         console.warn('Erro ao processar specs:', e);
       }
@@ -895,6 +899,11 @@ export async function create(req, res) {
     
     // Converter para objeto simples antes de enviar
     var productResponse = product.get({ plain: true });
+    
+    // Debug: verificar materiais após salvar
+    if (productResponse.specs && productResponse.specs.materiais !== undefined) {
+      console.log('✅ [PRODUCTS API CREATE] Materiais salvos:', productResponse.specs.materiais);
+    }
     console.log('💾 [PRODUCT SAVED] URLs persistidas:', {
       id: productResponse.id,
       imagesDayUrl: productResponse.imagesDayUrl,
@@ -1062,6 +1071,10 @@ export async function update(req, res) {
     if (body.specs !== undefined) {
       try {
         updateData.specs = typeof body.specs === 'string' ? JSON.parse(body.specs) : body.specs;
+        console.log('📦 [PRODUCTS API UPDATE] Specs processados:', JSON.stringify(updateData.specs, null, 2));
+        if (updateData.specs && updateData.specs.materiais !== undefined) {
+          console.log('📦 [PRODUCTS API UPDATE] Materiais no specs:', updateData.specs.materiais);
+        }
       } catch (e) {
         console.warn('Erro ao processar specs:', e);
       }
@@ -1201,6 +1214,11 @@ export async function update(req, res) {
     
     // Converter para objeto simples antes de enviar
     var productResponse = product.get({ plain: true });
+    
+    // Debug: verificar materiais após atualizar
+    if (productResponse.specs && productResponse.specs.materiais !== undefined) {
+      console.log('✅ [PRODUCTS API UPDATE] Materiais salvos:', productResponse.specs.materiais);
+    }
     
     res.json(productResponse);
   } catch (error) {

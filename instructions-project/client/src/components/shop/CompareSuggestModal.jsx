@@ -3,6 +3,11 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input
 import { useShop } from "../../context/ShopContext";
 import { Icon } from "@iconify/react";
 import ProductMediaViewer from "./ProductMediaViewer";
+import { ComponentsField } from "./Components/ComponentsField";
+import { PrintFields } from "./Components/PrintFields";
+import { WeightField } from "./Components/WeightField";
+import { EffectsField } from "./Components/EffectsField";
+import { AnimatedSparklesField } from "./Components/AnimatedSparklesField";
 
 export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct, onAdd }) {
   const { products, compare, toggleCompare, getAvailableStock } = useShop();
@@ -233,9 +238,22 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                         </div>
                         <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
                           <Icon icon="lucide:layers" className="text-default-500 text-sm mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-default-500 mb-2">Materials</div>
+                            <div className="space-y-2">
+                              <ComponentsField materials={activeBase?.specs?.materiais} size="xs" />
+                              <PrintFields printType={activeBase?.specs?.printType} printColor={activeBase?.specs?.printColor} size="xs" />
+                              <WeightField weight={activeBase?.specs?.weight} size="xs" />
+                              <EffectsField effects={activeBase?.specs?.effects} size="xs" />
+                              <AnimatedSparklesField sparkles={activeBase?.specs?.sparkles} size="xs" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
+                          <Icon icon="lucide:file-text" className="text-default-500 text-sm mt-0.5" />
                           <div>
-                            <div className="text-default-500">Materials</div>
-                            <div className="leading-6 text-foreground/90 break-words">{activeBase?.specs?.materiais || '-'}</div>
+                            <div className="text-default-500">Description</div>
+                            <div className="leading-6 text-foreground/90 break-words">{activeBase?.specs?.descricao || '-'}</div>
                           </div>
                         </div>
                         <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
@@ -245,24 +263,6 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                             <div className="leading-6 text-foreground/90 break-words">{activeBase?.specs?.tecnicas || '-'}</div>
                           </div>
                         </div>
-                        {activeBase?.specs?.weight && (
-                          <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
-                            <Icon icon="lucide:scale" className="text-default-500 text-sm mt-0.5" />
-                            <div>
-                              <div className="text-default-500">Weight</div>
-                              <div className="leading-6 text-foreground/90">{activeBase?.specs?.weight} kg</div>
-                            </div>
-                          </div>
-                        )}
-                        {activeBase?.specs?.effects && (
-                          <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
-                            <Icon icon="lucide:sparkles" className="text-default-500 text-sm mt-0.5" />
-                            <div>
-                              <div className="text-default-500">LED / Effects</div>
-                              <div className="leading-6 text-foreground/90 break-words">{activeBase?.specs?.effects}</div>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </>
                   )}
@@ -334,9 +334,22 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                         </div>
                         <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
                           <Icon icon="lucide:layers" className="text-default-500 text-sm mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-default-500 mb-2">Materials</div>
+                            <div className="space-y-2">
+                              <ComponentsField materials={selected?.specs?.materiais} size="xs" />
+                              <PrintFields printType={selected?.specs?.printType} printColor={selected?.specs?.printColor} size="xs" />
+                              <WeightField weight={selected?.specs?.weight} size="xs" />
+                              <EffectsField effects={selected?.specs?.effects} size="xs" />
+                              <AnimatedSparklesField sparkles={selected?.specs?.sparkles} size="xs" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
+                          <Icon icon="lucide:file-text" className="text-default-500 text-sm mt-0.5" />
                           <div>
-                            <div className="text-default-500">Materials</div>
-                            <div className="leading-6 text-foreground/90 break-words">{selected?.specs?.materiais || '-'}</div>
+                            <div className="text-default-500">Description</div>
+                            <div className="leading-6 text-foreground/90 break-words">{selected?.specs?.descricao || '-'}</div>
                           </div>
                         </div>
                         <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
@@ -346,24 +359,6 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                             <div className="leading-6 text-foreground/90 break-words">{selected?.specs?.tecnicas || '-'}</div>
                           </div>
                         </div>
-                        {selected?.specs?.weight && (
-                          <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
-                            <Icon icon="lucide:scale" className="text-default-500 text-sm mt-0.5" />
-                            <div>
-                              <div className="text-default-500">Weight</div>
-                              <div className="leading-6 text-foreground/90">{selected?.specs?.weight} kg</div>
-                            </div>
-                          </div>
-                        )}
-                        {selected?.specs?.effects && (
-                          <div className="flex items-start gap-3 col-span-2 md:col-span-1 py-0.5">
-                            <Icon icon="lucide:sparkles" className="text-default-500 text-sm mt-0.5" />
-                            <div>
-                              <div className="text-default-500">LED / Effects</div>
-                              <div className="leading-6 text-foreground/90 break-words">{selected?.specs?.effects}</div>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </>
                   )}
