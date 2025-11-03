@@ -35,6 +35,26 @@ export default function TrendingFiltersSidebar({
     }
   };
 
+  // Get available years from products
+  const availableYears = React.useMemo(() => {
+    const yearsSet = new Set();
+    const currentYear = new Date().getFullYear();
+    // Add years from current year down to 2020
+    for (let year = currentYear; year >= 2020; year--) {
+      yearsSet.add(year);
+    }
+    // Add years from products
+    products.forEach((p) => {
+      if (p.releaseYear) {
+        const year = typeof p.releaseYear === 'number' ? p.releaseYear : parseInt(p.releaseYear, 10);
+        if (!isNaN(year)) {
+          yearsSet.add(year);
+        }
+      }
+    });
+    return Array.from(yearsSet).sort((a, b) => b - a);
+  }, [products]);
+
   const itemsCount = React.useMemo(() => ({
     all: products.length,
     type2D: products.filter((p) => p.type === "2D").length,
@@ -115,9 +135,24 @@ export default function TrendingFiltersSidebar({
     return [dimValues.min, dimValues.max];
   }, [dimRange, dimValues.min, dimValues.max]);
 
+  // Get selected location label
+  const getSelectedLocationLabel = () => {
+    if (!filters.location) return "All";
+    if (filters.location === "Interior") return "Indoor";
+    if (filters.location === "Exterior") return "Outdoor";
+    return "All";
+  };
+
+  // Get selected year
+  const getSelectedYear = () => {
+    if (!filters.releaseYear || filters.releaseYear === "") return null;
+    const year = typeof filters.releaseYear === 'number' ? filters.releaseYear : parseInt(filters.releaseYear, 10);
+    return !isNaN(year) ? year : null;
+  };
+
   return (
     <aside className={`space-y-6 ${className}`}>
-      <Accordion variant="splitted" defaultExpandedKeys={["type", "location", "price", "color", "mount", "usage", "dimensions"]} selectionMode="multiple">
+      <Accordion variant="splitted" defaultExpandedKeys={["type", "location", "collectionYear", "price", "color", "mount", "usage", "dimensions"]} selectionMode="multiple">
         {/* Type */}
         <AccordionItem key="type" aria-label="Type" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Type</span></div>}>
           <ul className="space-y-2">
@@ -233,21 +268,98 @@ export default function TrendingFiltersSidebar({
         </AccordionItem>
 
         {/* Location */}
-        <AccordionItem key="location" aria-label="Location" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Location</span></div>}>
-          <div className="flex flex-col gap-2">
-            <label className="flex items-center gap-2">
-              <input type="radio" name="location" className="accent-current" checked={filters.location === ""} onChange={() => handle("location", "")} />
-              <span>All <span className="text-default-500">({itemsCount.indoor + itemsCount.outdoor})</span></span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="radio" name="location" className="accent-current" checked={filters.location === "Interior"} onChange={() => handle("location", "Interior")} />
-              <span>Indoor <span className="text-default-500">({itemsCount.indoor})</span></span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="radio" name="location" className="accent-current" checked={filters.location === "Exterior"} onChange={() => handle("location", "Exterior")} />
-              <span>Outdoor <span className="text-default-500">({itemsCount.outdoor})</span></span>
-            </label>
-          </div>
+        <AccordionItem 
+          key="location" 
+          aria-label="Location" 
+          title={
+            <div className="flex items-center justify-between w-full">
+              <div className="flex flex-col gap-1">
+                <span className="font-semibold text-default-500">Location</span>
+                <span className="text-sm text-foreground font-medium">{getSelectedLocationLabel()}</span>
+              </div>
+            </div>
+          }
+        >
+          <ul className="space-y-2">
+            {[
+              { value: "", label: "All", count: itemsCount.indoor + itemsCount.outdoor },
+              { value: "Interior", label: "Indoor", count: itemsCount.indoor },
+              { value: "Exterior", label: "Outdoor", count: itemsCount.outdoor },
+            ].map((opt) => {
+              const isSelected = filters.location === opt.value;
+              return (
+                <li key={opt.value || "all"}>
+                  <button
+                    type="button"
+                    onClick={() => handle("location", opt.value)}
+                    className={`flex w-full items-center justify-between rounded-md px-2 py-2 text-left transition-all ${
+                      isSelected
+                        ? "bg-content2 border-2 border-primary"
+                        : "hover:bg-content2/50 border-2 border-transparent"
+                    }`}
+                  >
+                    <span className={isSelected ? "text-foreground" : "text-default-400"}>{opt.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-default-500 text-sm">({opt.count})</span>
+                      {isSelected && (
+                        <Icon icon="lucide:check" className="text-white text-sm" />
+                      )}
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </AccordionItem>
+
+        {/* Collection Year */}
+        <AccordionItem 
+          key="collectionYear" 
+          aria-label="Collection Year" 
+          title={
+            <div className="flex items-center justify-between w-full">
+              <div className="flex flex-col gap-1">
+                <span className="font-semibold text-default-500">Collection Year</span>
+                {getSelectedYear() && (
+                  <span className="text-sm text-foreground font-medium">{getSelectedYear()}</span>
+                )}
+              </div>
+            </div>
+          }
+        >
+          <ul className="space-y-2">
+            {availableYears.map((year) => {
+              const yearStr = String(year);
+              const isSelected = filters.releaseYear === yearStr || filters.releaseYear === year;
+              const count = products.filter((p) => {
+                const productYear = p.releaseYear;
+                const yearValue = typeof productYear === 'number' ? productYear : parseInt(productYear, 10);
+                return !isNaN(yearValue) && yearValue === year;
+              }).length;
+              
+              return (
+                <li key={year}>
+                  <button
+                    type="button"
+                    onClick={() => handle("releaseYear", isSelected ? "" : yearStr)}
+                    className={`flex w-full items-center justify-between rounded-md px-2 py-2 text-left transition-all ${
+                      isSelected
+                        ? "bg-content2 border-2 border-primary"
+                        : "hover:bg-content2/50 border-2 border-transparent"
+                    }`}
+                  >
+                    <span className={isSelected ? "text-foreground" : "text-default-400"}>{year}</span>
+                    <div className="flex items-center gap-2">
+                      {count > 0 && <span className="text-default-500 text-sm">({count})</span>}
+                      {isSelected && (
+                        <Icon icon="lucide:check" className="text-white text-sm" />
+                      )}
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </AccordionItem>
 
         {/* Price */}

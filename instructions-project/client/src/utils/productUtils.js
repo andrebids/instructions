@@ -7,7 +7,7 @@ export function transformApiProduct(apiProduct) {
     name: apiProduct.name || '',
     price: typeof apiProduct.price === 'number' ? apiProduct.price : parseFloat(apiProduct.price) || 0,
     stock: typeof apiProduct.stock === 'number' ? apiProduct.stock : 0,
-    videoFile: apiProduct.videoFile || null,
+    videoFile: apiProduct.animationUrl || apiProduct.videoFile || null,
     images: {
       day: apiProduct.imagesDayUrl || apiProduct.thumbnailUrl || null,
       night: apiProduct.imagesNightUrl || apiProduct.imagesDayUrl || apiProduct.thumbnailUrl || null,

@@ -78,7 +78,26 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
     const baseFromEnv = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
     // Use relative path by default (empty string) for same-origin requests
     const apiBase = baseFromEnv || '';
-    const srcUrl = `${apiBase}/api/media/${encodeURIComponent(activeProduct.videoFile)}`;
+    
+    // Map video path correctly (handles both /uploads/ and /api/media/)
+    const mapPath = function(path) {
+      if (!path) return path;
+      if (apiBase) return path.indexOf('/uploads/') === 0 ? (apiBase + path) : path;
+      // sem VITE_API_URL: usar /api/uploads para passar no proxy
+      return path.indexOf('/uploads/') === 0 ? ('/api' + path) : path;
+    };
+    
+    // Check if videoFile is already a full path or just a filename
+    let srcUrl;
+    if (activeProduct.videoFile.indexOf('/uploads/') === 0) {
+      // It's a full path, use it directly with mapPath
+      const mapped = mapPath(activeProduct.videoFile);
+      srcUrl = mapped;
+    } else {
+      // It's just a filename, use /api/media
+      srcUrl = `${apiBase}/api/media/${encodeURIComponent(activeProduct.videoFile)}`;
+    }
+    
     let revokedUrl = null;
     const controller = new AbortController();
     setIsLoadingVideo(true);
