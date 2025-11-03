@@ -124,9 +124,15 @@ export function getProductsByCategory(products, categoryId) {
           }
         }
       }
-      matches = hasChristmasTag || String(p.season).toLowerCase() === 'xmas';
+      // Verificar season apenas se não for null/undefined/vazio
+      var hasChristmasSeason = false;
+      if (p.season && typeof p.season === 'string' && p.season.trim() !== '') {
+        hasChristmasSeason = String(p.season).toLowerCase().trim() === 'xmas';
+      }
+      matches = hasChristmasTag || hasChristmasSeason;
     } else if (category === 'summer') {
       // Tag "summer" OU season="summer"
+      // IMPORTANTE: Excluir produtos com season diferente de "summer" (ex: "xmas")
       var hasSummerTag = false;
       if (Array.isArray(p.tags)) {
         for (var o = 0; o < p.tags.length; o++) {
@@ -136,7 +142,45 @@ export function getProductsByCategory(products, categoryId) {
           }
         }
       }
-      matches = hasSummerTag || String(p.season).toLowerCase() === 'summer';
+      
+      // Verificar season apenas se não for null/undefined/vazio
+      var hasSummerSeason = false;
+      var hasNonSummerSeason = false;
+      if (p.season && typeof p.season === 'string' && p.season.trim() !== '') {
+        var seasonLower = String(p.season).toLowerCase().trim();
+        if (seasonLower === 'summer') {
+          hasSummerSeason = true;
+        } else {
+          // Se tem season mas não é "summer", marcar como não-summer
+          hasNonSummerSeason = true;
+        }
+      }
+      
+      // Só incluir se tem tag "summer" OU season="summer"
+      // E NÃO incluir se tem season diferente de "summer"
+      matches = (hasSummerTag || hasSummerSeason) && !hasNonSummerSeason;
+      
+      // Debug: log produtos que estão sendo marcados como summer
+      if (matches) {
+        console.log('🔍 [getProductsByCategory] Produto marcado como SUMMER:', {
+          id: p.id,
+          name: p.name,
+          hasSummerTag: hasSummerTag,
+          hasSummerSeason: hasSummerSeason,
+          season: p.season,
+          tags: p.tags
+        });
+      }
+      
+      // Debug: log produtos que foram EXCLUÍDOS porque têm season diferente
+      if ((hasSummerTag || hasSummerSeason) && hasNonSummerSeason) {
+        console.log('⚠️ [getProductsByCategory] Produto EXCLUÍDO de SUMMER (season diferente):', {
+          id: p.id,
+          name: p.name,
+          season: p.season,
+          tags: p.tags
+        });
+      }
     } else {
       // Fallback: verificar se tem a tag correspondente
       if (Array.isArray(p.tags)) {
