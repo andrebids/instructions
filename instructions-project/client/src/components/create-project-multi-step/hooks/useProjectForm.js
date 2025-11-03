@@ -59,7 +59,8 @@ export const useProjectForm = (onClose) => {
       const projectData = {
         name: formData.name,
         clientName: formData.clientName,
-        projectType: formData.projectType,
+        // Se projectType for null (skip), usar 'decor' como padrão (compatibilidade com BD)
+        projectType: formData.projectType || 'decor',
         status: formData.status,
         location: formData.location,
         description: formData.description,

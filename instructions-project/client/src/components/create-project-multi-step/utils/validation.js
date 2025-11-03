@@ -17,16 +17,21 @@ export const validateStepProjectDetails = (formData) => {
   return isValid;
 };
 
-// Validação do Step 2: Project Type
+// Validação do Step 2: Project Type (agora opcional - pode ser null)
 export const validateStepProjectType = (formData) => {
+  // Se projectType for null, é válido (pode fazer skip)
+  // Se projectType for "simu", precisa ter simuWorkflow definido
+  // Se projectType for "logo" ou outro, é válido
   const isValid = (
-    formData.projectType !== null &&
-    (formData.projectType !== "simu" || formData.simuWorkflow !== null)
+    formData.projectType === null || // Permite skip (não selecionar nada)
+    formData.projectType !== "simu" || // Se não for simu, é válido
+    (formData.projectType === "simu" && formData.simuWorkflow !== null) // Se for simu, precisa workflow
   );
   
   logger.validation("project-type", isValid, {
     projectType: formData.projectType,
-    simuWorkflow: formData.simuWorkflow
+    simuWorkflow: formData.simuWorkflow,
+    canSkip: formData.projectType === null
   });
   
   return isValid;
