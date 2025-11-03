@@ -8,6 +8,8 @@ import { PrintFields } from "./Components/PrintFields";
 import { WeightField } from "./Components/WeightField";
 import { EffectsField } from "./Components/EffectsField";
 import { AnimatedSparklesField } from "./Components/AnimatedSparklesField";
+import { AluminiumField } from "./Components/AluminiumField";
+import { BioprintField } from "./Components/BioprintField";
 
 export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct, onAdd }) {
   const { products, compare, toggleCompare, getAvailableStock } = useShop();
@@ -243,6 +245,8 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                             <div className="space-y-2">
                               <ComponentsField materials={activeBase?.specs?.materiais} size="xs" />
                               <PrintFields printType={activeBase?.specs?.printType} printColor={activeBase?.specs?.printColor} size="xs" />
+                              <AluminiumField aluminium={activeBase?.specs?.aluminium} size="xs" />
+                              <BioprintField bioprint={activeBase?.specs?.bioprint} size="xs" />
                               <WeightField weight={activeBase?.specs?.weight} size="xs" />
                               <EffectsField effects={activeBase?.specs?.effects} size="xs" />
                               <AnimatedSparklesField sparkles={activeBase?.specs?.sparkles} size="xs" />
@@ -339,6 +343,8 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                             <div className="space-y-2">
                               <ComponentsField materials={selected?.specs?.materiais} size="xs" />
                               <PrintFields printType={selected?.specs?.printType} printColor={selected?.specs?.printColor} size="xs" />
+                              <AluminiumField aluminium={selected?.specs?.aluminium} size="xs" />
+                              <BioprintField bioprint={selected?.specs?.bioprint} size="xs" />
                               <WeightField weight={selected?.specs?.weight} size="xs" />
                               <EffectsField effects={selected?.specs?.effects} size="xs" />
                               <AnimatedSparklesField sparkles={selected?.specs?.sparkles} size="xs" />

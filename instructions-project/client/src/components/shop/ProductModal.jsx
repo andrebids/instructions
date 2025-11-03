@@ -11,6 +11,8 @@ import { PrintFields } from "./Components/PrintFields";
 import { WeightField } from "./Components/WeightField";
 import { EffectsField } from "./Components/EffectsField";
 import { AnimatedSparklesField } from "./Components/AnimatedSparklesField";
+import { AluminiumField } from "./Components/AluminiumField";
+import { BioprintField } from "./Components/BioprintField";
 
 export default function ProductModal({ isOpen, onOpenChange, product, onOrder, enableQuantity = false }) {
   const { getAvailableStock, products, favorites, compare, toggleFavorite, toggleCompare } = useShop();
@@ -395,6 +397,8 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                           <div className="space-y-3">
                             <ComponentsField materials={activeProduct.specs?.materiais} />
                             <PrintFields printType={activeProduct.specs?.printType} printColor={activeProduct.specs?.printColor} />
+                            <AluminiumField aluminium={activeProduct.specs?.aluminium} />
+                            <BioprintField bioprint={activeProduct.specs?.bioprint} />
                             <WeightField weight={activeProduct.specs?.weight} />
                             <EffectsField effects={activeProduct.specs?.effects} />
                             <AnimatedSparklesField sparkles={activeProduct.specs?.sparkles} />

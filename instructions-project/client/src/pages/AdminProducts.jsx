@@ -111,6 +111,46 @@ export default function AdminProducts() {
     return new Set(validSelectedSparkles);
   };
   
+  // Função helper para filtrar valores válidos de aluminium (mesmas cores do Print Color)
+  var getValidAluminiumColors = function(aluminium) {
+    var validColors = ["WHITE", "DARK BLUE", "ICE BLUE", "GREY", "YELLOW", "BLACK", "GOLD", "ORANGE", "PINK", "RED", "LIGHT GREEN", "DARK GREEN", "PASTEL GREEN", "PURPLE"];
+    if (!aluminium) {
+      return new Set();
+    }
+    var selectedColors = Array.isArray(aluminium) ? aluminium : [aluminium];
+    var validSelectedColors = selectedColors.filter(function(color) {
+      if (!color || typeof color !== 'string') {
+        return false;
+      }
+      var isValid = validColors.includes(color);
+      if (!isValid && color.trim() !== '') {
+        console.warn("⚠️ [ALUMINIUM] Valor inválido filtrado:", color);
+      }
+      return isValid;
+    });
+    return new Set(validSelectedColors);
+  };
+  
+  // Função helper para filtrar valores válidos de bioprint (mesmas cores do Print Color)
+  var getValidBioprintColors = function(bioprint) {
+    var validColors = ["WHITE", "DARK BLUE", "ICE BLUE", "GREY", "YELLOW", "BLACK", "GOLD", "ORANGE", "PINK", "RED", "LIGHT GREEN", "DARK GREEN", "PASTEL GREEN", "PURPLE"];
+    if (!bioprint) {
+      return new Set();
+    }
+    var selectedColors = Array.isArray(bioprint) ? bioprint : [bioprint];
+    var validSelectedColors = selectedColors.filter(function(color) {
+      if (!color || typeof color !== 'string') {
+        return false;
+      }
+      var isValid = validColors.includes(color);
+      if (!isValid && color.trim() !== '') {
+        console.warn("⚠️ [BIOPRINT] Valor inválido filtrado:", color);
+      }
+      return isValid;
+    });
+    return new Set(validSelectedColors);
+  };
+  
   // Mapeamento de cores para valores hexadecimais (versão escura com tom suave)
   var getPrintColorStyle = function(colorName, isSelected) {
     var colorMap = {
@@ -156,6 +196,8 @@ export default function AdminProducts() {
       stockPolicy: "",
       printType: "",
       printColor: "",
+      aluminium: "",
+      bioprint: "",
       sparkle: "",
       sparkles: "",
     },
@@ -407,6 +449,12 @@ export default function AdminProducts() {
         effects: "",
         materiais: "",
         stockPolicy: "",
+        printType: "",
+        printColor: "",
+        aluminium: "",
+        bioprint: "",
+        sparkle: "",
+        sparkles: "",
       },
       availableColors: {},
       videoFile: "",
@@ -482,6 +530,22 @@ export default function AdminProducts() {
       filteredEffects = validEffects.length > 0 ? (validEffects.length === 1 ? validEffects[0] : validEffects) : null;
     }
     
+    // Filtrar aluminium para remover valores inválidos
+    var filteredAluminium = null;
+    if (productSpecs.aluminium) {
+      var validSet = getValidAluminiumColors(productSpecs.aluminium);
+      var validColors = Array.from(validSet);
+      filteredAluminium = validColors.length > 0 ? (validColors.length === 1 ? validColors[0] : validColors) : null;
+    }
+    
+    // Filtrar bioprint para remover valores inválidos
+    var filteredBioprint = null;
+    if (productSpecs.bioprint) {
+      var validSet = getValidBioprintColors(productSpecs.bioprint);
+      var validColors = Array.from(validSet);
+      filteredBioprint = validColors.length > 0 ? (validColors.length === 1 ? validColors[0] : validColors) : null;
+    }
+    
     // Filtrar sparkles (ANIMATED SPARKLES) para remover valores inválidos
     var filteredSparkles = null;
     if (productSpecs.sparkles) {
@@ -536,6 +600,8 @@ export default function AdminProducts() {
       specs: Object.assign({}, productSpecs, {
         printColor: filteredPrintColor !== null ? filteredPrintColor : "",
         effects: filteredEffects !== null ? filteredEffects : null,
+        aluminium: filteredAluminium !== null ? filteredAluminium : null,
+        bioprint: filteredBioprint !== null ? filteredBioprint : null,
         sparkles: filteredSparkles !== null ? filteredSparkles : null,
         materiais: syncedMateriais,
       }),
@@ -1671,6 +1737,82 @@ export default function AdminProducts() {
                                 <SelectItem key="PINK" textValue="PINK">PINK</SelectItem>
                                 <SelectItem key="RED" textValue="RED">RED</SelectItem>
                                 <SelectItem key="GREEN" textValue="GREEN">GREEN</SelectItem>
+                              </Select>
+                              <Select
+                                label="Aluminium"
+                                placeholder="Select color(s)"
+                                selectionMode="multiple"
+                                selectedKeys={(function() {
+                                  try {
+                                    return getValidAluminiumColors(formData.specs?.aluminium);
+                                  } catch (e) {
+                                    console.error("Erro ao filtrar aluminium:", e);
+                                    return new Set();
+                                  }
+                                })()}
+                                onSelectionChange={function(keys) {
+                                  var selected = Array.from(keys);
+                                  setFormData(function(prev) {
+                                    var newSpecs = Object.assign({}, prev.specs, { aluminium: selected.length > 0 ? (selected.length === 1 ? selected[0] : selected) : null });
+                                    return Object.assign({}, prev, { specs: newSpecs });
+                                  });
+                                }}
+                              >
+                                {function() {
+                                  var colors = ["WHITE", "DARK BLUE", "ICE BLUE", "GREY", "YELLOW", "BLACK", "GOLD", "ORANGE", "PINK", "RED", "LIGHT GREEN", "DARK GREEN", "PASTEL GREEN", "PURPLE"];
+                                  var selectedColors = formData.specs.aluminium ? (Array.isArray(formData.specs.aluminium) ? formData.specs.aluminium : [formData.specs.aluminium]) : [];
+                                  return colors.map(function(colorName) {
+                                    var isSelected = selectedColors.includes(colorName);
+                                    var colorStyle = getPrintColorStyle(colorName, isSelected);
+                                    return (
+                                      <SelectItem 
+                                        key={colorName}
+                                        textValue={colorName}
+                                        style={colorStyle}
+                                      >
+                                        {colorName}
+                                      </SelectItem>
+                                    );
+                                  });
+                                }()}
+                              </Select>
+                              <Select
+                                label="Bioprint"
+                                placeholder="Select color(s)"
+                                selectionMode="multiple"
+                                selectedKeys={(function() {
+                                  try {
+                                    return getValidBioprintColors(formData.specs?.bioprint);
+                                  } catch (e) {
+                                    console.error("Erro ao filtrar bioprint:", e);
+                                    return new Set();
+                                  }
+                                })()}
+                                onSelectionChange={function(keys) {
+                                  var selected = Array.from(keys);
+                                  setFormData(function(prev) {
+                                    var newSpecs = Object.assign({}, prev.specs, { bioprint: selected.length > 0 ? (selected.length === 1 ? selected[0] : selected) : null });
+                                    return Object.assign({}, prev, { specs: newSpecs });
+                                  });
+                                }}
+                              >
+                                {function() {
+                                  var colors = ["WHITE", "DARK BLUE", "ICE BLUE", "GREY", "YELLOW", "BLACK", "GOLD", "ORANGE", "PINK", "RED", "LIGHT GREEN", "DARK GREEN", "PASTEL GREEN", "PURPLE"];
+                                  var selectedColors = formData.specs.bioprint ? (Array.isArray(formData.specs.bioprint) ? formData.specs.bioprint : [formData.specs.bioprint]) : [];
+                                  return colors.map(function(colorName) {
+                                    var isSelected = selectedColors.includes(colorName);
+                                    var colorStyle = getPrintColorStyle(colorName, isSelected);
+                                    return (
+                                      <SelectItem 
+                                        key={colorName}
+                                        textValue={colorName}
+                                        style={colorStyle}
+                                      >
+                                        {colorName}
+                                      </SelectItem>
+                                    );
+                                  });
+                                }()}
                               </Select>
                               <Select
                                 label="ANIMATED SPARKLE"
