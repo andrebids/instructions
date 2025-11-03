@@ -1,9 +1,23 @@
 import React from "react";
-import { Card } from "@heroui/react";
+import { Card, Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { getLocalTimeZone } from "@internationalized/date";
+import { SimulationCarousel } from "./SimulationCarousel";
 
 export function StepConfirmDetails({ formData, error }) {
+  const hasSimulations = formData.canvasImages && formData.canvasImages.length > 0;
+  const simulationCount = formData.canvasImages?.length || 0;
+  
+  const handleCreatePresentation = () => {
+    // Placeholder - será implementado depois com template
+    console.log('Create Presentation clicked - placeholder');
+  };
+  
+  const handleExportMovie = () => {
+    // Placeholder - será implementado depois
+    console.log('Export AI Movie clicked - placeholder');
+  };
+  
   return (
     <div className="space-y-6">
       <h2 className="text-xl sm:text-2xl font-bold">Confirm Details</h2>
@@ -78,37 +92,78 @@ export function StepConfirmDetails({ formData, error }) {
           </div>
         </Card>
         
-        {/* AI Designer Card - apenas se for AI workflow */}
-        {formData.projectType === "simu" && formData.simuWorkflow === "ai" && (
+        {/* AI Generated Simulations Card - apenas se for AI workflow e houver simulações */}
+        {formData.projectType === "simu" && formData.simuWorkflow === "ai" && hasSimulations && (
           <Card className="p-4">
             <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
               <Icon icon="lucide:sparkles" className="text-primary" />
-              AI Generated Decorations
+              AI Generated Simulations
             </h3>
-            <div className="space-y-3 text-sm">
+            <div className="space-y-4">
               <div>
-                <span className="text-default-500">Decorations Generated:</span>
+                <span className="text-default-500">Simulations Generated:</span>
                 <p className="font-medium">
-                  {formData.canvasDecorations?.length || 0} decorations
+                  {simulationCount} simulation{simulationCount !== 1 ? 's' : ''}
                 </p>
               </div>
-              {formData.canvasDecorations && formData.canvasDecorations.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {formData.canvasDecorations.map((decoration, index) => (
-                    <div
-                      key={decoration.id || index}
-                      className="flex items-center gap-2 p-2 bg-default-50 rounded"
-                    >
-                      <div
-                        className="w-4 h-4 rounded"
-                        style={{ backgroundColor: decoration.color }}
-                      />
-                      <span className="text-xs font-medium capitalize">
-                        {decoration.type}
-                      </span>
-                    </div>
-                  ))}
+              
+              {/* Carrossel de Simulações */}
+              <SimulationCarousel
+                canvasImages={formData.canvasImages}
+                decorationsByImage={formData.decorationsByImage || {}}
+              />
+            </div>
+          </Card>
+        )}
+        
+        {/* Export Options Card */}
+        {formData.projectType === "simu" && formData.simuWorkflow === "ai" && (
+          <Card className="p-4">
+            <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+              <Icon icon="lucide:download" className="text-primary" />
+              Export Options
+            </h3>
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  color="primary"
+                  variant="flat"
+                  startContent={<Icon icon="lucide:file-text" />}
+                  onPress={handleCreatePresentation}
+                  className="flex-1"
+                >
+                  Create Presentation
+                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    color="default"
+                    variant="flat"
+                    startContent={<Icon icon="lucide:file" />}
+                    onPress={handleCreatePresentation}
+                  >
+                    PDF
+                  </Button>
+                  <Button
+                    color="default"
+                    variant="flat"
+                    startContent={<Icon icon="lucide:presentation" />}
+                    onPress={handleCreatePresentation}
+                  >
+                    PowerPoint
+                  </Button>
                 </div>
+              </div>
+              
+              {hasSimulations && (
+                <Button
+                  color="secondary"
+                  variant="flat"
+                  startContent={<Icon icon="lucide:video" />}
+                  onPress={handleExportMovie}
+                  className="w-full"
+                >
+                  Export AI Movie (with simulations)
+                </Button>
               )}
             </div>
           </Card>
