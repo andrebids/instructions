@@ -548,7 +548,7 @@ export async function getById(req, res) {
       if (isNaN(productData.oldPrice)) productData.oldPrice = null;
     }
     
-    // Garantir que releaseYear é um número válido
+    // Garantir que releaseYear é um número válidoFilter
     if (productData.releaseYear !== null && productData.releaseYear !== undefined) {
       productData.releaseYear = parseInt(String(productData.releaseYear), 10);
       if (isNaN(productData.releaseYear)) productData.releaseYear = null;

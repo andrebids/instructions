@@ -49,6 +49,28 @@ export default function AdminProducts() {
   var { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
   var [editingProduct, setEditingProduct] = React.useState(null);
   
+  // Função helper para filtrar valores válidos de printColor
+  var getValidPrintColors = function(printColor) {
+    var validColors = ["WHITE", "DARK BLUE", "ICE BLUE", "GREY", "YELLOW", "BLACK", "GOLD", "ORANGE", "PINK", "RED", "LIGHT GREEN", "DARK GREEN", "PASTEL GREEN", "PURPLE"];
+    if (!printColor) {
+      return new Set();
+    }
+    var selectedColors = Array.isArray(printColor) ? printColor : [printColor];
+    var validSelectedColors = selectedColors.filter(function(color) {
+      if (!color || typeof color !== 'string') {
+        return false;
+      }
+      // Verificar se o valor está na lista de cores válidas (case sensitive)
+      var isValid = validColors.includes(color);
+      if (!isValid && color.trim() !== '') {
+        // Log apenas se for um valor inválido e não vazio
+        console.warn("⚠️ [PRINT COLOR] Valor inválido filtrado:", color);
+      }
+      return isValid;
+    });
+    return new Set(validSelectedColors);
+  };
+  
   // Mapeamento de cores para valores hexadecimais (versão escura com tom suave)
   var getPrintColorStyle = function(colorName, isSelected) {
     var colorMap = {
@@ -403,6 +425,15 @@ export default function AdminProducts() {
     // Atualizar anos disponíveis ANTES de abrir o modal
     setAvailableYears(updatedYears);
     
+    // Filtrar printColor para remover valores inválidos
+    var productSpecs = product.specs || {};
+    var filteredPrintColor = null;
+    if (productSpecs.printColor) {
+      var validSet = getValidPrintColors(productSpecs.printColor);
+      var validColors = Array.from(validSet);
+      filteredPrintColor = validColors.length > 0 ? (validColors.length === 1 ? validColors[0] : validColors) : null;
+    }
+    
     setFormData({
       name: product.name || "",
       price: product.price || "",
@@ -413,15 +444,9 @@ export default function AdminProducts() {
       mount: product.mount || "",
       tags: product.tags || [],
       isActive: product.isActive !== false,
-      specs: product.specs || {
-        descricao: "",
-        tecnicas: "",
-        dimensoes: "",
-        weight: "",
-        effects: "",
-        materiais: "",
-        stockPolicy: "",
-      },
+      specs: Object.assign({}, productSpecs, {
+        printColor: filteredPrintColor !== null ? filteredPrintColor : "",
+      }),
       availableColors: product.availableColors || {},
       videoFile: product.videoFile || "",
       releaseYear: releaseYearStr,
@@ -726,6 +751,7 @@ export default function AdminProducts() {
         <div className="flex gap-2 flex-wrap">
           <Select
             placeholder="Type"
+            aria-label="Filter by product type"
             selectedKeys={filters.type ? new Set([filters.type]) : new Set()}
             onSelectionChange={function(keys) {
               var selected = Array.from(keys)[0] || "";
@@ -735,12 +761,13 @@ export default function AdminProducts() {
             }}
             className="w-40"
           >
-            <SelectItem key="2D">2D</SelectItem>
-            <SelectItem key="3D">3D</SelectItem>
+            <SelectItem key="2D" textValue="2D">2D</SelectItem>
+            <SelectItem key="3D" textValue="3D">3D</SelectItem>
           </Select>
           
           <Select
             placeholder="Location"
+            aria-label="Filter by location"
             selectedKeys={filters.location ? new Set([filters.location]) : new Set()}
             onSelectionChange={function(keys) {
               var selected = Array.from(keys)[0] || "";
@@ -750,8 +777,8 @@ export default function AdminProducts() {
             }}
             className="w-40"
           >
-            <SelectItem key="Exterior">Exterior</SelectItem>
-            <SelectItem key="Interior">Interior</SelectItem>
+            <SelectItem key="Exterior" textValue="Exterior">Exterior</SelectItem>
+            <SelectItem key="Interior" textValue="Interior">Interior</SelectItem>
           </Select>
           
           <Button
@@ -973,8 +1000,8 @@ export default function AdminProducts() {
                           });
                         }}
                       >
-                        <SelectItem key="2D">2D</SelectItem>
-                        <SelectItem key="3D">3D</SelectItem>
+                        <SelectItem key="2D" textValue="2D">2D</SelectItem>
+                        <SelectItem key="3D" textValue="3D">3D</SelectItem>
                       </Select>
                       
                       <Select
@@ -988,8 +1015,8 @@ export default function AdminProducts() {
                           });
                         }}
                       >
-                        <SelectItem key="Exterior">Exterior</SelectItem>
-                        <SelectItem key="Interior">Interior</SelectItem>
+                        <SelectItem key="Exterior" textValue="Exterior">Exterior</SelectItem>
+                        <SelectItem key="Interior" textValue="Interior">Interior</SelectItem>
                       </Select>
                       
                       <Select
@@ -1003,9 +1030,9 @@ export default function AdminProducts() {
                           });
                         }}
                       >
-                        <SelectItem key="Poste">Pole</SelectItem>
-                        <SelectItem key="Chão">Floor</SelectItem>
-                        <SelectItem key="Transversal">Transversal</SelectItem>
+                        <SelectItem key="Poste" textValue="Pole">Pole</SelectItem>
+                        <SelectItem key="Chão" textValue="Floor">Floor</SelectItem>
+                        <SelectItem key="Transversal" textValue="Transversal">Transversal</SelectItem>
                       </Select>
                       
                       <Select
@@ -1026,7 +1053,7 @@ export default function AdminProducts() {
                             var year = availableYears[i];
                             var yearStr = String(year);
                             yearItems.push(
-                              <SelectItem key={yearStr}>
+                              <SelectItem key={yearStr} textValue={yearStr}>
                                 {year}
                               </SelectItem>
                             );
@@ -1046,8 +1073,8 @@ export default function AdminProducts() {
                           });
                         }}
                       >
-                        <SelectItem key="xmas">Xmas</SelectItem>
-                        <SelectItem key="summer">Summer</SelectItem>
+                        <SelectItem key="xmas" textValue="Xmas">Xmas</SelectItem>
+                        <SelectItem key="summer" textValue="Summer">Summer</SelectItem>
                       </Select>
                     </div>
 
@@ -1325,18 +1352,25 @@ export default function AdminProducts() {
                                     });
                                   }}
                                 >
-                                  <SelectItem key="BIOPRINT">BIOPRINT</SelectItem>
-                                  <SelectItem key="RECYPRINT">RECYPRINT</SelectItem>
-                                  <SelectItem key="FLEXIPRINT">FLEXIPRINT</SelectItem>
-                                  <SelectItem key="FLEXIPRINT IGNIFUGE">FLEXIPRINT IGNIFUGE</SelectItem>
-                                  <SelectItem key="PRINT IGNIFUGE">PRINT IGNIFUGE</SelectItem>
+                                  <SelectItem key="BIOPRINT" textValue="BIOPRINT">BIOPRINT</SelectItem>
+                                  <SelectItem key="RECYPRINT" textValue="RECYPRINT">RECYPRINT</SelectItem>
+                                  <SelectItem key="FLEXIPRINT" textValue="FLEXIPRINT">FLEXIPRINT</SelectItem>
+                                  <SelectItem key="FLEXIPRINT IGNIFUGE" textValue="FLEXIPRINT IGNIFUGE">FLEXIPRINT IGNIFUGE</SelectItem>
+                                  <SelectItem key="PRINT IGNIFUGE" textValue="PRINT IGNIFUGE">PRINT IGNIFUGE</SelectItem>
                                 </Select>
                                 <Select
                                   label="Print Color"
                                   placeholder="Select color(s)"
                                   isDisabled={!formData.specs.printType}
                                   selectionMode="multiple"
-                                  selectedKeys={formData.specs.printColor ? (Array.isArray(formData.specs.printColor) ? new Set(formData.specs.printColor) : new Set([formData.specs.printColor])) : new Set()}
+                                  selectedKeys={(function() {
+                                    try {
+                                      return getValidPrintColors(formData.specs?.printColor);
+                                    } catch (e) {
+                                      console.error("Erro ao filtrar printColor:", e);
+                                      return new Set();
+                                    }
+                                  })()}
                                   onSelectionChange={function(keys) {
                                     var selected = Array.from(keys);
                                     setFormData(function(prev) {
@@ -1376,26 +1410,66 @@ export default function AdminProducts() {
                                   });
                                 }}
                               >
-                                <SelectItem key="LED AMBER">LED AMBER</SelectItem>
-                                <SelectItem key="LED WARM WHITE">LED WARM WHITE</SelectItem>
-                                <SelectItem key="LED WARM WHITE + WARM WHITE FLASH">LED WARM WHITE + WARM WHITE FLASH</SelectItem>
-                                <SelectItem key="LED WARM WHITE + PURE WHITE FLASH">LED WARM WHITE + PURE WHITE FLASH</SelectItem>
-                                <SelectItem key="LED WARM WHITE + PURE WHITE SLOW FLASH">LED WARM WHITE + PURE WHITE SLOW FLASH</SelectItem>
-                                <SelectItem key="LED PURE WHITE">LED PURE WHITE</SelectItem>
-                                <SelectItem key="LED PURE WHITE + PURE WHITE FLASH">LED PURE WHITE + PURE WHITE FLASH</SelectItem>
-                                <SelectItem key="LED PURE WHITE + WARM WHITE SLOW FLASH">LED PURE WHITE + WARM WHITE SLOW FLASH</SelectItem>
-                                <SelectItem key="LED PURE WHITE + PURE WHITE SLOW FLASH">LED PURE WHITE + PURE WHITE SLOW FLASH</SelectItem>
-                                <SelectItem key="LED BLUE">LED BLUE</SelectItem>
-                                <SelectItem key="LED BLUE + PURE WHITE FLASH">LED BLUE + PURE WHITE FLASH</SelectItem>
-                                <SelectItem key="LED BLUE + PURE WHITE SLOW FLASH">LED BLUE + PURE WHITE SLOW FLASH</SelectItem>
-                                <SelectItem key="LED PINK">LED PINK</SelectItem>
-                                <SelectItem key="LED PINK + PURE WHITE FLASH">LED PINK + PURE WHITE FLASH</SelectItem>
-                                <SelectItem key="LED RED">LED RED</SelectItem>
-                                <SelectItem key="LED RED + PURE WHITE FLASH">LED RED + PURE WHITE FLASH</SelectItem>
-                                <SelectItem key="LED RED + PURE WHITE SLOW FLASH">LED RED + PURE WHITE SLOW FLASH</SelectItem>
-                                <SelectItem key="LED GREEN">LED GREEN</SelectItem>
-                                <SelectItem key="LED GREEN + PURE WHITE FLASH">LED GREEN + PURE WHITE FLASH</SelectItem>
-                                <SelectItem key="RGB">RGB</SelectItem>
+                                <SelectItem key="LED AMBER" textValue="LED AMBER">LED AMBER</SelectItem>
+                                <SelectItem key="LED WARM WHITE" textValue="LED WARM WHITE">LED WARM WHITE</SelectItem>
+                                <SelectItem key="LED WARM WHITE + WARM WHITE FLASH" textValue="LED WARM WHITE + WARM WHITE FLASH">LED WARM WHITE + WARM WHITE FLASH</SelectItem>
+                                <SelectItem key="LED WARM WHITE + PURE WHITE FLASH" textValue="LED WARM WHITE + PURE WHITE FLASH">LED WARM WHITE + PURE WHITE FLASH</SelectItem>
+                                <SelectItem key="LED WARM WHITE + PURE WHITE SLOW FLASH" textValue="LED WARM WHITE + PURE WHITE SLOW FLASH">LED WARM WHITE + PURE WHITE SLOW FLASH</SelectItem>
+                                <SelectItem key="LED PURE WHITE" textValue="LED PURE WHITE">LED PURE WHITE</SelectItem>
+                                <SelectItem key="LED PURE WHITE + PURE WHITE FLASH" textValue="LED PURE WHITE + PURE WHITE FLASH">LED PURE WHITE + PURE WHITE FLASH</SelectItem>
+                                <SelectItem key="LED PURE WHITE + WARM WHITE SLOW FLASH" textValue="LED PURE WHITE + WARM WHITE SLOW FLASH">LED PURE WHITE + WARM WHITE SLOW FLASH</SelectItem>
+                                <SelectItem key="LED PURE WHITE + PURE WHITE SLOW FLASH" textValue="LED PURE WHITE + PURE WHITE SLOW FLASH">LED PURE WHITE + PURE WHITE SLOW FLASH</SelectItem>
+                                <SelectItem key="LED BLUE" textValue="LED BLUE">LED BLUE</SelectItem>
+                                <SelectItem key="LED BLUE + PURE WHITE FLASH" textValue="LED BLUE + PURE WHITE FLASH">LED BLUE + PURE WHITE FLASH</SelectItem>
+                                <SelectItem key="LED BLUE + PURE WHITE SLOW FLASH" textValue="LED BLUE + PURE WHITE SLOW FLASH">LED BLUE + PURE WHITE SLOW FLASH</SelectItem>
+                                <SelectItem key="LED PINK" textValue="LED PINK">LED PINK</SelectItem>
+                                <SelectItem key="LED PINK + PURE WHITE FLASH" textValue="LED PINK + PURE WHITE FLASH">LED PINK + PURE WHITE FLASH</SelectItem>
+                                <SelectItem key="LED RED" textValue="LED RED">LED RED</SelectItem>
+                                <SelectItem key="LED RED + PURE WHITE FLASH" textValue="LED RED + PURE WHITE FLASH">LED RED + PURE WHITE FLASH</SelectItem>
+                                <SelectItem key="LED RED + PURE WHITE SLOW FLASH" textValue="LED RED + PURE WHITE SLOW FLASH">LED RED + PURE WHITE SLOW FLASH</SelectItem>
+                                <SelectItem key="LED GREEN" textValue="LED GREEN">LED GREEN</SelectItem>
+                                <SelectItem key="LED GREEN + PURE WHITE FLASH" textValue="LED GREEN + PURE WHITE FLASH">LED GREEN + PURE WHITE FLASH</SelectItem>
+                                <SelectItem key="RGB" textValue="RGB">RGB</SelectItem>
+                              </Select>
+                              {console.log("🔍 [DEBUG] Renderizando COMET STRING field") || null}
+                              <Select
+                                label="COMET STRING"
+                                placeholder="Select option"
+                                selectedKeys={(function() {
+                                  var m = formData.specs?.materiais || "";
+                                  return m.includes("COMET STRING LED PURE WHITE") ? new Set(["COMET STRING LED PURE WHITE"]) : new Set();
+                                })()}
+                                onSelectionChange={function(keys) {
+                                  var selected = Array.from(keys)[0] || "";
+                                  setFormData(function(prev) {
+                                    var currentMateriais = prev.specs.materiais || "";
+                                    var newMateriais = "";
+                                    
+                                    if (selected === "COMET STRING LED PURE WHITE") {
+                                      if (!currentMateriais.includes("COMET STRING LED PURE WHITE")) {
+                                        newMateriais = currentMateriais.trim();
+                                        if (newMateriais) {
+                                          newMateriais += ", COMET STRING LED PURE WHITE";
+                                        } else {
+                                          newMateriais = "COMET STRING LED PURE WHITE";
+                                        }
+                                      } else {
+                                        newMateriais = currentMateriais;
+                                      }
+                                    } else {
+                                      newMateriais = currentMateriais
+                                        .replace(/,\s*COMET STRING LED PURE WHITE/g, "")
+                                        .replace(/COMET STRING LED PURE WHITE\s*,?/g, "")
+                                        .replace(/^\s*,\s*|\s*,\s*$/g, "")
+                                        .trim();
+                                    }
+                                    
+                                    var newSpecs = Object.assign({}, prev.specs, { materiais: newMateriais });
+                                    return Object.assign({}, prev, { specs: newSpecs });
+                                  });
+                                }}
+                              >
+                                <SelectItem key="COMET STRING LED PURE WHITE" textValue="COMET STRING LED PURE WHITE">COMET STRING LED PURE WHITE</SelectItem>
                               </Select>
                               <Select
                                 label="ANIMATED SPARKLE"
@@ -1409,8 +1483,8 @@ export default function AdminProducts() {
                                   });
                                 }}
                               >
-                                <SelectItem key="WARM WHITE/PURE WHITE">WARM WHITE/PURE WHITE</SelectItem>
-                                <SelectItem key="PURE WHITE">PURE WHITE</SelectItem>
+                                <SelectItem key="WARM WHITE/PURE WHITE" textValue="WARM WHITE/PURE WHITE">WARM WHITE/PURE WHITE</SelectItem>
+                                <SelectItem key="PURE WHITE" textValue="PURE WHITE">PURE WHITE</SelectItem>
                               </Select>
                               <Select
                                 label="ANIMATED SPARKLES"
@@ -1424,10 +1498,10 @@ export default function AdminProducts() {
                                   });
                                 }}
                               >
-                                <SelectItem key="WARM WHITE">WARM WHITE</SelectItem>
-                                <SelectItem key="WARM WHITE/PURE WHITE">WARM WHITE/PURE WHITE</SelectItem>
-                                <SelectItem key="PURE WHITE">PURE WHITE</SelectItem>
-                                <SelectItem key="RGB">RGB</SelectItem>
+                                <SelectItem key="WARM WHITE" textValue="WARM WHITE">WARM WHITE</SelectItem>
+                                <SelectItem key="WARM WHITE/PURE WHITE" textValue="WARM WHITE/PURE WHITE">WARM WHITE/PURE WHITE</SelectItem>
+                                <SelectItem key="PURE WHITE" textValue="PURE WHITE">PURE WHITE</SelectItem>
+                                <SelectItem key="RGB" textValue="RGB">RGB</SelectItem>
                               </Select>
                             </div>
                           </AccordionItem>

@@ -16,7 +16,7 @@ export default function ShopCategory() {
   const { products } = useShop();
   const navigate = useNavigate();
   const { userName } = useUser();
-  const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false, dimKey: "", dimRange: null });
+  const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false, dimKey: "", dimRange: null, releaseYear: "" });
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [selected, setSelected] = React.useState({ product: null, variant: null });
   const [filtersOpen, setFiltersOpen] = React.useState(false);
@@ -156,6 +156,14 @@ export default function ShopCategory() {
           include = false;
         }
       }
+      if (include && filters.releaseYear && filters.releaseYear !== "") {
+        var productYear = p.releaseYear;
+        var yearValue = typeof productYear === 'number' ? productYear : parseInt(productYear, 10);
+        var filterYear = typeof filters.releaseYear === 'number' ? filters.releaseYear : parseInt(filters.releaseYear, 10);
+        if (isNaN(yearValue) || yearValue !== filterYear) {
+          include = false;
+        }
+      }
       if (include && Array.isArray(priceRange) && priceRange.length === 2) {
         if (typeof p.price === "number") {
           if (p.price < priceRange[0] || p.price > priceRange[1]) {
@@ -221,7 +229,7 @@ export default function ShopCategory() {
               radius="full"
               className="bg-[#e4e3e8] text-foreground/80 hover:text-foreground dark:bg-content1 shadow-sm"
               startContent={<Icon icon="lucide:rotate-ccw" className="text-sm" />}
-          onPress={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false, dimKey: "", dimRange: null }); setPriceRange([priceLimits.min, priceLimits.max]); setQuery(""); }}
+          onPress={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false, dimKey: "", dimRange: null, releaseYear: "" }); setPriceRange([priceLimits.min, priceLimits.max]); setQuery(""); }}
             >
               Clear filters
             </Button>
