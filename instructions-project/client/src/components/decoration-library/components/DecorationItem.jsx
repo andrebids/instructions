@@ -58,6 +58,18 @@ export const DecorationItem = ({ decoration, onSelect }) => {
         <p className="text-[9px] text-default-400 truncate">
           {decoration.ref}
         </p>
+        {/* Compact info: price/stock/color quando disponível */}
+        <div className="mt-1 space-y-0.5">
+          {typeof decoration.price !== 'undefined' && decoration.price !== null && (
+            <p className="text-[9px] text-default-500 truncate">$ {String(decoration.price)}</p>
+          )}
+          {typeof decoration.stock !== 'undefined' && decoration.stock !== null && (
+            <p className="text-[9px] text-default-500 truncate">Stock: {String(decoration.stock)}</p>
+          )}
+          {decoration.color && (
+            <p className="text-[9px] text-default-500 truncate">Color: {String(decoration.color)}</p>
+          )}
+        </div>
       </div>
       
       {/* Drag indicator */}

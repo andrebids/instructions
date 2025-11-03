@@ -73,6 +73,22 @@ export const useProjectForm = (onClose) => {
         decorationsByImage: formData.decorationsByImage || {},
       };
       
+      // Log detalhado das zonas incluídas na criação
+      if (projectData.snapZonesByImage && Object.keys(projectData.snapZonesByImage).length > 0) {
+        var zonasResumo = {};
+        for (var imageId in projectData.snapZonesByImage) {
+          var zones = projectData.snapZonesByImage[imageId];
+          zonasResumo[imageId] = {
+            day: zones?.day?.length || 0,
+            night: zones?.night?.length || 0,
+            total: (zones?.day?.length || 0) + (zones?.night?.length || 0)
+          };
+        }
+        console.log('💾 [CREATE PROJECT] Criando projeto COM zonas:', JSON.stringify(zonasResumo, null, 2));
+      } else {
+        console.log('💾 [CREATE PROJECT] Criando projeto SEM zonas');
+      }
+      
       logger.api('projects', 'POST', projectData);
       logger.lifecycle('useProjectForm', 'Submitting project', projectData);
       
