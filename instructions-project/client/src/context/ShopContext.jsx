@@ -38,7 +38,7 @@ export function ShopProvider({ children }) {
       
       productsAPI.getAll({ isActive: true })
         .then(function(apiProducts) {
-          if (Array.isArray(apiProducts)) {
+          if (Array.isArray(apiProducts) && apiProducts.length > 0) {
             var transformed = [];
             for (var i = 0; i < apiProducts.length; i++) {
               var transformedProduct = transformApiProduct(apiProducts[i]);
@@ -46,19 +46,20 @@ export function ShopProvider({ children }) {
                 transformed.push(transformedProduct);
               }
             }
+            console.log('✅ [ShopContext] Produtos carregados da API:', transformed.length);
             setProducts(transformed);
             setProductsLoading(false);
           } else {
-            console.warn('⚠️ [ShopContext] API retornou dados não-array, usando fallback');
-            setProducts(mockProducts);
+            console.warn('⚠️ [ShopContext] API retornou dados vazios ou inválidos');
+            setProducts([]);
             setProductsLoading(false);
           }
         })
         .catch(function(error) {
           console.error('❌ [ShopContext] Erro ao buscar produtos da API:', error);
           setProductsError(error.message || 'Erro ao carregar produtos');
-          // Fallback para dados mockados em caso de erro
-          setProducts(mockProducts);
+          // NÃO usar dados mockados - apenas array vazio
+          setProducts([]);
           setProductsLoading(false);
         });
     };

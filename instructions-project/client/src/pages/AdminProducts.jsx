@@ -131,25 +131,26 @@ export default function AdminProducts() {
     return new Set(validSelectedColors);
   };
   
-  // Função helper para filtrar valores válidos de bioprint (mesmas cores do Print Color)
-  var getValidBioprintColors = function(bioprint) {
-    var validColors = ["WHITE", "DARK BLUE", "ICE BLUE", "GREY", "YELLOW", "BLACK", "GOLD", "ORANGE", "PINK", "RED", "LIGHT GREEN", "DARK GREEN", "PASTEL GREEN", "PURPLE"];
-    if (!bioprint) {
+  // Função helper para filtrar valores válidos de SOFT XLED
+  var getValidSoftXLED = function(softXLED) {
+    var validOptions = ["PURE WHITE"];
+    if (!softXLED) {
       return new Set();
     }
-    var selectedColors = Array.isArray(bioprint) ? bioprint : [bioprint];
-    var validSelectedColors = selectedColors.filter(function(color) {
-      if (!color || typeof color !== 'string') {
+    var selectedOptions = Array.isArray(softXLED) ? softXLED : [softXLED];
+    var validSelectedOptions = selectedOptions.filter(function(option) {
+      if (!option || typeof option !== 'string') {
         return false;
       }
-      var isValid = validColors.includes(color);
-      if (!isValid && color.trim() !== '') {
-        console.warn("⚠️ [BIOPRINT] Valor inválido filtrado:", color);
+      var isValid = validOptions.includes(option);
+      if (!isValid && option.trim() !== '') {
+        console.warn("⚠️ [SOFT XLED] Valor inválido filtrado:", option);
       }
       return isValid;
     });
-    return new Set(validSelectedColors);
+    return new Set(validSelectedOptions);
   };
+  
   
   // Mapeamento de cores para valores hexadecimais (versão escura com tom suave)
   var getPrintColorStyle = function(colorName, isSelected) {
@@ -197,7 +198,7 @@ export default function AdminProducts() {
       printType: "",
       printColor: "",
       aluminium: "",
-      bioprint: "",
+      softXLED: "",
       sparkle: "",
       sparkles: "",
     },
@@ -452,7 +453,7 @@ export default function AdminProducts() {
         printType: "",
         printColor: "",
         aluminium: "",
-        bioprint: "",
+        softXLED: "",
         sparkle: "",
         sparkles: "",
       },
@@ -538,12 +539,12 @@ export default function AdminProducts() {
       filteredAluminium = validColors.length > 0 ? (validColors.length === 1 ? validColors[0] : validColors) : null;
     }
     
-    // Filtrar bioprint para remover valores inválidos
-    var filteredBioprint = null;
-    if (productSpecs.bioprint) {
-      var validSet = getValidBioprintColors(productSpecs.bioprint);
-      var validColors = Array.from(validSet);
-      filteredBioprint = validColors.length > 0 ? (validColors.length === 1 ? validColors[0] : validColors) : null;
+    // Filtrar SOFT XLED para remover valores inválidos
+    var filteredSoftXLED = null;
+    if (productSpecs.softXLED) {
+      var validSet = getValidSoftXLED(productSpecs.softXLED);
+      var validOptions = Array.from(validSet);
+      filteredSoftXLED = validOptions.length > 0 ? (validOptions.length === 1 ? validOptions[0] : validOptions) : null;
     }
     
     // Filtrar sparkles (ANIMATED SPARKLES) para remover valores inválidos
@@ -601,7 +602,7 @@ export default function AdminProducts() {
         printColor: filteredPrintColor !== null ? filteredPrintColor : "",
         effects: filteredEffects !== null ? filteredEffects : null,
         aluminium: filteredAluminium !== null ? filteredAluminium : null,
-        bioprint: filteredBioprint !== null ? filteredBioprint : null,
+        softXLED: filteredSoftXLED !== null ? filteredSoftXLED : null,
         sparkles: filteredSparkles !== null ? filteredSparkles : null,
         materiais: syncedMateriais,
       }),
@@ -789,9 +790,22 @@ export default function AdminProducts() {
       });
     }
     
-    // Debug: verificar materiais antes de enviar
+    // Debug: verificar specs antes de enviar
+    console.log('📦 [AdminProducts] Specs limpos a enviar:', JSON.stringify(cleanedSpecs, null, 2));
     if (cleanedSpecs.materiais !== undefined) {
       console.log('📦 [AdminProducts] Materiais a enviar:', cleanedSpecs.materiais);
+    }
+    if (cleanedSpecs.softXLED !== undefined) {
+      console.log('📦 [AdminProducts] SOFT XLED a enviar:', cleanedSpecs.softXLED);
+    }
+    if (cleanedSpecs.sparkles !== undefined) {
+      console.log('📦 [AdminProducts] Sparkles a enviar:', cleanedSpecs.sparkles);
+    }
+    if (cleanedSpecs.effects !== undefined) {
+      console.log('📦 [AdminProducts] Effects a enviar:', cleanedSpecs.effects);
+    }
+    if (cleanedSpecs.printType !== undefined) {
+      console.log('📦 [AdminProducts] Print Type a enviar:', cleanedSpecs.printType);
     }
     
     // Criar objeto com os dados (productsAPI.create cria o FormData internamente)
@@ -1777,42 +1791,25 @@ export default function AdminProducts() {
                                 }()}
                               </Select>
                               <Select
-                                label="Bioprint"
-                                placeholder="Select color(s)"
-                                selectionMode="multiple"
+                                label="SOFT XLED"
+                                placeholder="Select color"
                                 selectedKeys={(function() {
                                   try {
-                                    return getValidBioprintColors(formData.specs?.bioprint);
+                                    return getValidSoftXLED(formData.specs?.softXLED);
                                   } catch (e) {
-                                    console.error("Erro ao filtrar bioprint:", e);
+                                    console.error("Erro ao filtrar softXLED:", e);
                                     return new Set();
                                   }
                                 })()}
                                 onSelectionChange={function(keys) {
-                                  var selected = Array.from(keys);
+                                  var selected = Array.from(keys)[0] || "";
                                   setFormData(function(prev) {
-                                    var newSpecs = Object.assign({}, prev.specs, { bioprint: selected.length > 0 ? (selected.length === 1 ? selected[0] : selected) : null });
+                                    var newSpecs = Object.assign({}, prev.specs, { softXLED: selected || null });
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
                                 }}
                               >
-                                {function() {
-                                  var colors = ["WHITE", "DARK BLUE", "ICE BLUE", "GREY", "YELLOW", "BLACK", "GOLD", "ORANGE", "PINK", "RED", "LIGHT GREEN", "DARK GREEN", "PASTEL GREEN", "PURPLE"];
-                                  var selectedColors = formData.specs.bioprint ? (Array.isArray(formData.specs.bioprint) ? formData.specs.bioprint : [formData.specs.bioprint]) : [];
-                                  return colors.map(function(colorName) {
-                                    var isSelected = selectedColors.includes(colorName);
-                                    var colorStyle = getPrintColorStyle(colorName, isSelected);
-                                    return (
-                                      <SelectItem 
-                                        key={colorName}
-                                        textValue={colorName}
-                                        style={colorStyle}
-                                      >
-                                        {colorName}
-                                      </SelectItem>
-                                    );
-                                  });
-                                }()}
+                                <SelectItem key="PURE WHITE" textValue="PURE WHITE">PURE WHITE</SelectItem>
                               </Select>
                               <Select
                                 label="ANIMATED SPARKLE"

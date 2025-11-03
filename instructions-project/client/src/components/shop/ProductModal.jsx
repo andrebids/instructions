@@ -12,7 +12,7 @@ import { WeightField } from "./Components/WeightField";
 import { EffectsField } from "./Components/EffectsField";
 import { AnimatedSparklesField } from "./Components/AnimatedSparklesField";
 import { AluminiumField } from "./Components/AluminiumField";
-import { BioprintField } from "./Components/BioprintField";
+import { SoftXLEDField } from "./Components/SoftXLEDField";
 
 export default function ProductModal({ isOpen, onOpenChange, product, onOrder, enableQuantity = false }) {
   const { getAvailableStock, products, favorites, compare, toggleFavorite, toggleCompare } = useShop();
@@ -395,17 +395,38 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                         <div>
                           <div className="text-default-500 text-sm mb-3">Materials</div>
                           <div className="space-y-3">
+                            {(() => {
+                              // Debug: log specs for troubleshooting
+                              if (activeProduct.id === 'IPL317R') {
+                                console.log('🔍 [ProductModal] IPL317R specs:', {
+                                  printType: activeProduct.specs?.printType,
+                                  printColor: activeProduct.specs?.printColor,
+                                  effects: activeProduct.specs?.effects,
+                                  sparkles: activeProduct.specs?.sparkles,
+                                  materiais: activeProduct.specs?.materiais
+                                });
+                              }
+                              return null;
+                            })()}
                             <ComponentsField materials={activeProduct.specs?.materiais} />
                             <PrintFields printType={activeProduct.specs?.printType} printColor={activeProduct.specs?.printColor} />
-                            <AluminiumField aluminium={activeProduct.specs?.aluminium} />
-                            <BioprintField bioprint={activeProduct.specs?.bioprint} />
-                            <WeightField weight={activeProduct.specs?.weight} />
+                            <SoftXLEDField softXLED={activeProduct.specs?.softXLED} />
                             <EffectsField effects={activeProduct.specs?.effects} />
                             <AnimatedSparklesField sparkles={activeProduct.specs?.sparkles} />
                           </div>
                         </div>
                       </div>
                     </div>
+
+                    {activeProduct.specs?.weight && (
+                      <div className="flex items-start gap-2">
+                        <Icon icon="lucide:scale" className="text-default-500 text-lg mt-0.5" />
+                        <div>
+                          <div className="text-default-500 text-sm">Weight</div>
+                          <div>{activeProduct.specs.weight} kg</div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex items-start gap-2">
                       <Icon icon="lucide:file-text" className="text-default-500 text-lg mt-0.5" />

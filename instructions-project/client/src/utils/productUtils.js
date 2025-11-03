@@ -18,7 +18,23 @@ export function transformApiProduct(apiProduct) {
     usage: apiProduct.usage || null,
     location: apiProduct.location || null,
     mount: apiProduct.mount || null,
-    specs: apiProduct.specs || {},
+    specs: (function() {
+      try {
+        if (apiProduct.specs) {
+          // Criar cópia profunda do specs para evitar referências
+          var specsCopy = JSON.parse(JSON.stringify(apiProduct.specs));
+          // Debug para produto específico
+          if (apiProduct.id === 'IPL317R' || apiProduct.name === 'IPL317R') {
+            console.log('🔍 [transformApiProduct] IPL317R specs do banco:', JSON.stringify(specsCopy, null, 2));
+          }
+          return specsCopy;
+        }
+        return {};
+      } catch (e) {
+        console.error('⚠️ [transformApiProduct] Erro ao processar specs:', e, apiProduct.id);
+        return apiProduct.specs || {};
+      }
+    })(),
     variantProductByColor: apiProduct.variantProductByColor || null,
     isTrending: apiProduct.isTrending || false,
     isOnSale: apiProduct.isOnSale || false,
