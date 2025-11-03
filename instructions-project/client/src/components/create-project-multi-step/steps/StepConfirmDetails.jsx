@@ -25,7 +25,11 @@ export function StepConfirmDetails({ formData, error }) {
             </div>
             <div>
               <span className="text-default-500">Type:</span>
-              <p className="font-medium capitalize">{formData.projectType || "—"}</p>
+              <p className="font-medium capitalize">
+                {formData.projectType 
+                  ? formData.projectType 
+                  : "Not specified (will use 'decor' as default)"}
+              </p>
             </div>
             {formData.projectType === "simu" && (
               <div className="col-span-2">

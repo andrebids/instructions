@@ -24,7 +24,7 @@ export function StepProjectType({ formData, onInputChange }) {
         <div className="text-center">
           <h2 className="text-xl sm:text-2xl font-bold">Project Type</h2>
           <p className="text-sm sm:text-base text-default-500 mt-1">
-            Select the type of project
+            Select the type of project (optional - you can skip this step)
           </p>
         </div>
         
@@ -38,7 +38,14 @@ export function StepProjectType({ formData, onInputChange }) {
                 description={projectType.description}
                 image={projectType.image}
                 isSelected={formData.projectType === projectType.type}
-                onSelect={() => onInputChange("projectType", projectType.type)}
+                onSelect={() => {
+                  // Se já está selecionado, desmarcar (permitir skip)
+                  if (formData.projectType === projectType.type) {
+                    onInputChange("projectType", null);
+                  } else {
+                    onInputChange("projectType", projectType.type);
+                  }
+                }}
               />
             ))}
           </div>
