@@ -85,16 +85,6 @@ export const DecorationLibrary = ({
           <h3 className="text-base md:text-lg font-semibold">
             {viewMode === 'categories' && !searchTerm ? 'Categories' : 'Decorations'}
           </h3>
-          {(viewMode === 'decorations' || searchTerm) && (
-            <button
-              onClick={handleBackToCategories}
-              className="text-default-500 hover:text-default-700 transition-colors"
-              title="Back to categories"
-              disabled={disabled}
-            >
-              <Icon icon="lucide:arrow-left" className="text-lg" />
-            </button>
-          )}
         </div>
         {disabled && (
           <p className="text-xs text-warning mt-2">
@@ -127,6 +117,21 @@ export const DecorationLibrary = ({
         </div>
       )}
       
+      {/* Back to categories closer to selectors (filters/grid) */}
+      {(viewMode === 'decorations' || searchTerm) && (
+        <div className="px-3 md:px-4 pt-3 pb-2 border-b border-divider">
+          <button
+            onClick={handleBackToCategories}
+            className="flex items-center gap-2 text-default-500 hover:text-default-700 transition-colors"
+            title="Back to categories"
+            disabled={disabled}
+          >
+            <Icon icon="lucide:arrow-left" className="text-lg" />
+            <span className="text-sm">Back to categories</span>
+          </button>
+        </div>
+      )}
+
       {/* Content based on view mode and search */}
       <div className="flex-1">
         {viewMode === 'categories' && !searchTerm ? (

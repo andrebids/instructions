@@ -170,6 +170,12 @@ export const productsAPI = {
     return response.data;
   },
 
+  // GET /api/products/categories
+  getCategories: async () => {
+    const response = await api.get('/products/categories');
+    return response.data;
+  },
+
   // GET /api/products/search?q=query
   search: async (query) => {
     const response = await api.get('/products/search', { params: { q: query } });
