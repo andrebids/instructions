@@ -23,6 +23,7 @@ export default function ProductFeed() {
   const { products, loading, error } = useProductFeed();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSnowEnabled, setIsSnowEnabled] = useState(true);
   const cardRefs = useRef({});
   const scrollContainerRef = useRef(null);
 
@@ -106,33 +107,56 @@ export default function ProductFeed() {
   }
 
   return (
-    <div className="w-full h-screen overflow-hidden bg-black relative">
-      {/* Vídeo de fundo em loop */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="fixed inset-0 w-full h-full object-cover z-30 opacity-20"
-        style={{ pointerEvents: 'none' }}
-      >
-        <source src="/snooooow.webm" type="video/webm" />
-      </video>
+          <div className="w-full h-screen overflow-hidden bg-black relative">
+        {/* Vídeo de fundo em loop */}
+        {isSnowEnabled && (
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="fixed inset-0 w-full h-full object-cover z-30 opacity-20"
+            style={{ pointerEvents: 'none' }}
+          >
+            <source src="/snooooow.webm" type="video/webm" />
+          </video>
+        )}
 
-      {/* Botão Hambúrguer - Fixo no canto superior esquerdo */}
-      <Button
-        isIconOnly
-        radius="full"
-        className="fixed top-4 left-4 z-50 bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80 shadow-lg"
-        size="lg"
-        onPress={() => setIsMenuOpen(!isMenuOpen)}
-        aria-label="Toggle menu"
-      >
-        <Icon 
-          icon={isMenuOpen ? "lucide:x" : "lucide:menu"} 
-          className="text-2xl"
-        />
-      </Button>
+                {/* Botão Hambúrguer - Fixo no canto superior esquerdo */}
+        <Button
+          isIconOnly
+          radius="full"
+          className="fixed top-4 left-4 z-50 bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80 shadow-lg"
+          size="lg"
+          onPress={() => setIsMenuOpen(!isMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          <Icon 
+            icon={isMenuOpen ? "lucide:x" : "lucide:menu"} 
+            className="text-2xl"
+          />
+        </Button>
+
+                                   {/* Botão para desligar/ligar efeito da neve - lado esquerdo */}
+          <Tooltip content={isSnowEnabled ? "Desligar neve" : "Ligar neve"} placement="right">
+            <Button
+              isIconOnly
+              radius="full"
+              className={`fixed left-4 top-20 z-50 backdrop-blur-md text-white border border-white/20 shadow-lg ${
+                isSnowEnabled 
+                  ? 'bg-blue-400/60 hover:bg-blue-400/80' 
+                  : 'bg-black/60 hover:bg-black/80'
+              }`}
+              size="lg"
+              onPress={() => setIsSnowEnabled(!isSnowEnabled)}
+              aria-label={isSnowEnabled ? "Desligar neve" : "Ligar neve"}
+            >
+              <Icon 
+                icon="lucide:snowflake" 
+                className="text-2xl"
+              />
+            </Button>
+          </Tooltip>
 
       {/* Overlay escuro quando menu aberto */}
       <AnimatePresence>
