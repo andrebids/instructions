@@ -38,7 +38,7 @@ export const DecorationLibrary = ({
   const finalDecorations = useMemo(() => {
     console.log('[LIB] Aplicando filtros', { filters, activeCategory, searchTerm, totalDecorations: decorations.length });
     var result = filterDecorations(decorations, filters, activeCategory, searchTerm);
-    console.log('[LIB] Resultado filtrado', { count: result.length });
+    console.log('[LIB] Resultado filtrado', { count: result.length, colors: filters && filters.color });
     return result;
   }, [decorations, filters, activeCategory, searchTerm]);
   
@@ -110,9 +110,11 @@ export const DecorationLibrary = ({
             value={filters}
             decorations={decorations}
             onChange={function(f){
+              console.log('[LIB] onChange filters from UI', f);
               setFilters(f);
             }}
             disabled={disabled}
+            isInCategory={Boolean(activeCategory) && !searchTerm}
           />
         </div>
       )}

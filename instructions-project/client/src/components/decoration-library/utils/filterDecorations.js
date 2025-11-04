@@ -16,6 +16,65 @@ export function filterDecorations(items, filters, categoryId, searchTerm) {
   if (!Array.isArray(items)) return [];
   var list = [];
   var q = String(searchTerm || '').toLowerCase();
+  if (filters && Array.isArray(filters.color)) {
+    try { console.log('[FILTER] Incoming filters', { colors: filters.color, heightMin: filters.heightMin, heightMax: filters.heightMax }); } catch(_) {}
+  }
+
+  // Normalização de chaves de cor (sinónimos vindos do backend)
+  var normalizeColorKey = function(key) {
+    var k = String(key || '').toLowerCase().trim();
+    if (k === 'brancoquente' || k === 'warmwhite' || k === 'warm white' || k === 'ww' || k === 'quente') return 'brancoquente';
+    if (k === 'brancopuro' || k === 'white' || k === 'purewhite' || k === 'pure white' || k === 'pw') return 'brancopuro';
+    if (k === 'rgb') return 'rgb';
+    if (k === 'vermelho' || k === 'red') return 'vermelho';
+    if (k === 'verde' || k === 'green') return 'verde';
+    if (k === 'azul' || k === 'blue') return 'azul';
+    return k;
+  };
+
+  // Constrói um set simples de cores disponíveis para um item (a partir de várias fontes)
+  var getAvailableColorSet = function(d) {
+    var set = {};
+    try {
+      var ac = d && d.availableColors ? d.availableColors : null;
+      if (typeof ac === 'string') {
+        try { ac = JSON.parse(ac); } catch(_) { ac = null; }
+      }
+      // Caso objeto { key: true/false }
+      if (ac && typeof ac === 'object' && !Array.isArray(ac)) {
+        for (var key in ac) {
+          if (ac.hasOwnProperty(key) && ac[key]) {
+            set[normalizeColorKey(key)] = true;
+          }
+        }
+      }
+      // Caso array [ 'red', 'green' ]
+      if (Array.isArray(ac)) {
+        for (var i = 0; i < ac.length; i++) {
+          set[normalizeColorKey(ac[i])] = true;
+        }
+      }
+    } catch(_) {}
+
+    // Fallback: campo color
+    try {
+      var dc = d && d.color ? String(d.color) : '';
+      if (dc) set[normalizeColorKey(dc)] = true;
+    } catch(_) {}
+
+    // Fallback: tags
+    try {
+      if (Array.isArray(d && d.tags)) {
+        for (var t = 0; t < d.tags.length; t++) {
+          set[normalizeColorKey(d.tags[t])] = true;
+        }
+      }
+    } catch(_) {}
+
+    return set;
+  };
+
+  var debugLogged = 0;
 
   for (var i = 0; i < items.length; i++) {
     var d = items[i];
@@ -45,59 +104,17 @@ export function filterDecorations(items, filters, categoryId, searchTerm) {
     }
 
     if (include && filters && filters.color && Array.isArray(filters.color) && filters.color.length > 0) {
-      var colorMatch = false;
-      
-      // Verificar availableColors (objeto com chaves de cores) - formato principal dos produtos
-      var availableColors = d && d.availableColors ? d.availableColors : null;
-      if (availableColors && typeof availableColors === 'object') {
-        // Se for string, tentar fazer parse
-        if (typeof availableColors === 'string') {
-          try {
-            availableColors = JSON.parse(availableColors);
-          } catch (e) {
-            console.warn('[FILTER] Erro ao fazer parse de availableColors:', e);
-            availableColors = null;
-          }
-        }
-        
-        // Verificar se alguma das cores do filtro existe no availableColors
-        if (availableColors && typeof availableColors === 'object') {
-          for (var ci = 0; ci < filters.color.length; ci++) {
-            var filterColorKey = String(filters.color[ci]);
-            if (availableColors.hasOwnProperty(filterColorKey) && availableColors[filterColorKey]) {
-              colorMatch = true;
-              break;
-            }
-          }
-        }
+      var colorSet = getAvailableColorSet(d);
+      var matched = false;
+      for (var ci = 0; ci < filters.color.length; ci++) {
+        var norm = normalizeColorKey(filters.color[ci]);
+        if (colorSet[norm]) { matched = true; break; }
       }
-      
-      // Fallback: verificar d.color (string) e tags para compatibilidade
-      if (!colorMatch) {
-        var dc = String(d && d.color ? d.color : '');
-        // Verificar tags para compatibilidade
-        var tagsMatch = false;
-        if (Array.isArray(d && d.tags)) {
-          for (var ti = 0; ti < d.tags.length; ti++) {
-            for (var cti = 0; cti < filters.color.length; cti++) {
-              if (String(d.tags[ti]).toLowerCase() === String(filters.color[cti]).toLowerCase()) {
-                tagsMatch = true;
-                break;
-              }
-            }
-            if (tagsMatch) break;
-          }
-        }
-        // Verificar se d.color corresponde a alguma cor do filtro
-        for (var c = 0; c < filters.color.length; c++) {
-          if (dc.toLowerCase() === String(filters.color[c]).toLowerCase() || tagsMatch) {
-            colorMatch = true;
-            break;
-          }
-        }
+      if (debugLogged < 5) {
+        try { console.log('[FILTER] Color check for item', (items && items[0] && items[0].id) ? d.id : '(id?)', { colorSet: colorSet, filters: filters.color }); } catch(_) {}
+        debugLogged++;
       }
-      
-      if (!colorMatch) include = false;
+      if (!matched) include = false;
     }
 
     if (include && filters && filters.mount) {
