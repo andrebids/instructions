@@ -284,28 +284,23 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             </div>
           )}
 
-          {/* Botão de simulação animada - apenas para GX349L */}
+          {/* Botão de simulação animada - apenas para GX349L - posicionado na lateral esquerda por baixo do botão de neve */}
           {isGX349L && hasVideo && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.2 }}
-              className="absolute bottom-4 left-4 z-40"
+              className="absolute left-4 top-36 z-40"
             >
               <Button
-                radius="md"
-                size="sm"
-                className={`font-semibold text-xs md:text-sm ${
+                isIconOnly
+                radius="full"
+                size="lg"
+                className={`backdrop-blur-md shadow-lg text-white border border-white/20 ${
                   showAnimationSimulation
-                    ? 'bg-primary hover:bg-primary-600 text-white'
-                    : 'bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md'
+                    ? 'bg-blue-400/60 hover:bg-blue-400/80'
+                    : 'bg-black/60 hover:bg-black/80'
                 }`}
-                startContent={
-                  <Icon 
-                    icon={showAnimationSimulation ? "lucide:video" : "lucide:play-circle"} 
-                    className="text-base md:text-lg"
-                  />
-                }
                 onPress={() => {
                   const wasPlaying = isPlaying;
                   setShowAnimationSimulation(!showAnimationSimulation);
@@ -322,8 +317,12 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                   }, 100);
                 }}
                 aria-label={showAnimationSimulation ? "Ver vídeo normal" : "Ver simulação animada"}
+                title={showAnimationSimulation ? "Vídeo Normal" : "Simulação Animada"}
               >
-                {showAnimationSimulation ? "Vídeo Normal" : "Simulação Animada"}
+                <Icon 
+                  icon="lucide:film" 
+                  className="text-2xl"
+                />
               </Button>
             </motion.div>
           )}
