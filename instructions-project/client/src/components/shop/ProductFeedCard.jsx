@@ -909,34 +909,15 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                             onClick={() => {
                               setShowSuggestions(false);
                               
-                              // Se for GX350LW, trocar o vídeo em vez de navegar
-                              if (similarProduct.name === 'GX350LW' || similarProduct.id?.includes('GX350LW')) {
-                                // Guardar o estado atual de simulação animada antes de trocar
-                                setPreviousAnimationState(showAnimationSimulation);
-                                setSelectedSuggestionVideo('/SIMU_GX350LW_ANIM.webm');
-                                setShowAnimationSimulation(false); // Reset para mostrar o vídeo da sugestão
-                                // Reset video e recomeçar se estava tocando
-                                setTimeout(() => {
-                                  if (videoRef.current) {
-                                    videoRef.current.currentTime = 0;
-                                    if (isPlaying && isActive) {
-                                      videoRef.current.play().catch(err => {
-                                        console.warn('Error playing video:', err);
-                                      });
-                                    }
-                                  }
-                                }, 100);
-                              } else if (onProductSelect) {
+                              // Navegar para qualquer produto (incluindo GX350LW) sempre mostra o vídeo normal
+                              if (onProductSelect) {
                                 // Reset todos os estados quando navegar para outro produto
                                 // IMPORTANTE: Resetar ANTES de navegar para garantir que o novo produto começa com vídeo normal
                                 setSelectedSuggestionVideo(null);
                                 setShowAnimationSimulation(false);
                                 setPreviousAnimationState(false);
                                 
-                                // Fechar o modal de sugestões primeiro
-                                setShowSuggestions(false);
-                                
-                                // Navegar para o produto imediatamente (o useEffect vai garantir o reset)
+                                // Navegar para o produto (mostrará vídeo normal por default)
                                 onProductSelect(similarProduct.id);
                               }
                             }}
