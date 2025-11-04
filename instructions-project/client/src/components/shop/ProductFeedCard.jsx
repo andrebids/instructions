@@ -309,10 +309,15 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       onMouseDown={handleSwipeStart}
     >
       {/* Main container: Video full width, info panel overlay */}
-      <div className="flex w-full h-full relative">
-        {/* Video/image area - full width */}
+      <div className="flex w-full h-full relative items-center">
+        {/* Video/image area - container do vídeo (quadrado rosa) - apenas o tamanho do vídeo */}
         <div 
-          className="relative w-full h-full bg-black flex items-center justify-center cursor-pointer"
+          className="relative w-full bg-black flex items-center justify-center cursor-pointer overflow-hidden border-4 border-red-500 mx-auto"
+          style={{
+            aspectRatio: '16/9', // Proporção do vídeo
+            maxHeight: '100vh',
+            maxWidth: '100%',
+          }}
           onClick={handleVideoClick}
         >
           {hasVideo && videoUrl ? (
@@ -357,10 +362,10 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             </div>
           )}
 
-          {/* Botão invisível para abrir sugestões - área clicável apenas no tamanho do quadrado vermelho (urso) - apenas quando está em simulação animada ou há vídeo de sugestão ativo */}
+          {/* Botão invisível para abrir sugestões - área clicável no local do risco verde (urso polar) - posição relativa ao container do vídeo - apenas quando está em simulação animada ou há vídeo de sugestão ativo */}
           {(showAnimationSimulation || selectedSuggestionVideo) && (
             <div
-              className="absolute z-20 cursor-pointer"
+              className="absolute z-20 cursor-pointer border-2 border-green-500"
               onClick={(e) => {
                 // Não abrir sugestões se clicar em um botão ou elemento interativo
                 const target = e.target;
@@ -372,13 +377,19 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               }}
               style={{ 
                 pointerEvents: 'auto',
-                // Posicionar no local do quadrado verde (urso polar) e rodar 90 graus
-                width: '250px',
-                height: '350px',
-                left: '50%',
-                bottom: 'calc(10% - 100px)', // Baixar 100px total
-                transform: 'translateX(-50%) rotate(90deg)',
+                // Posição relativa ao container do vídeo (retângulo vermelho) - sobre o urso polar (retângulo rosa)
+                // O urso está no centro, encostado à parte inferior do container vermelho
+                // Tamanhos proporcionais ao container do vídeo
+                width: '25%', // 25% da largura do container
+                height: '35%', // 35% da altura do container
+                position: 'absolute',
+                left: '50%', // Centro horizontal do container
+                bottom: '0px', // Encostado à parte inferior do container
+                transform: 'translateX(-50%) rotate(90deg)', // Centralizar e rodar
                 transformOrigin: 'center center',
+                // Garantir que não sai do container
+                maxWidth: '100%',
+                maxHeight: '100%',
               }}
               aria-label="Open suggestions"
             />
