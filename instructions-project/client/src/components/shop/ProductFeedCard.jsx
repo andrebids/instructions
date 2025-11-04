@@ -312,7 +312,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       <div className="flex w-full h-full relative items-center">
         {/* Video/image area - container do vídeo (quadrado rosa) - apenas o tamanho do vídeo */}
         <div 
-          className="relative w-full bg-black flex items-center justify-center cursor-pointer overflow-hidden border-4 border-red-500 mx-auto"
+          className="relative w-full bg-black flex items-center justify-center cursor-pointer overflow-hidden mx-auto"
           style={{
             aspectRatio: '16/9', // Proporção do vídeo
             maxHeight: '100vh',
@@ -365,7 +365,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
           {/* Botão invisível para abrir sugestões - área clicável no local do risco verde (urso polar) - posição relativa ao container do vídeo - apenas quando está em simulação animada ou há vídeo de sugestão ativo */}
           {(showAnimationSimulation || selectedSuggestionVideo) && (
             <div
-              className="absolute z-20 cursor-pointer border-2 border-green-500"
+              className="absolute z-20 cursor-pointer"
               onClick={(e) => {
                 // Não abrir sugestões se clicar em um botão ou elemento interativo
                 const target = e.target;
