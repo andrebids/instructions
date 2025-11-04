@@ -12,25 +12,50 @@ export const useDecorations = (initialFilters) => {
   useEffect(() => {
     async function loadInitial() {
       try {
-        console.log('[LIB] fetch categories');
+        console.log('[LIB] fetch categories from shop');
         var serverCategories = [];
         // Mapa de exibição EN para mounts conhecidos
         var mountNameMap = { 'Poste': 'Pole', 'Chão': 'Floor', 'Transversal': 'Transversal' };
+        
+        // Buscar categorias diretamente da loja (produtos)
         try {
-          serverCategories = await decorationsAPI.getCategories();
+          serverCategories = await productsAPI.getCategories();
+          console.log('[LIB] categories from shop:', serverCategories);
         } catch (eCat) {
-          console.warn('[LIB] categories via decorations failed, will derive from products');
+          console.warn('[LIB] categories via products failed, trying decorations API as fallback');
+          try {
+            // Fallback: tentar decorations API
+            var decorationsCategories = await decorationsAPI.getCategories();
+            if (Array.isArray(decorationsCategories)) {
+              // Converter formato de decorations para formato esperado
+              var normalized = [];
+              for (var i = 0; i < decorationsCategories.length; i++) {
+                var id = decorationsCategories[i];
+                var display = mountNameMap[id] || id;
+                normalized.push({ id: id, name: display });
+              }
+              serverCategories = normalized;
+            }
+          } catch (eDec) {
+            console.warn('[LIB] categories via decorations also failed:', eDec);
+          }
         }
 
         if (serverCategories && serverCategories.length > 0) {
-          // Manter o nome exatamente como na loja
-          var normalized = [];
-          for (var i = 0; i < serverCategories.length; i++) {
-            var id = serverCategories[i];
-            var display = mountNameMap[id] || id;
-            normalized.push({ id: id, name: display });
+          // Se já vem no formato correto { id, name }, usar diretamente
+          // Caso contrário, normalizar
+          if (serverCategories[0] && typeof serverCategories[0] === 'object' && serverCategories[0].id) {
+            setCategories(serverCategories);
+          } else {
+            // Normalizar formato antigo
+            var normalized = [];
+            for (var j = 0; j < serverCategories.length; j++) {
+              var catId = typeof serverCategories[j] === 'object' ? serverCategories[j].id : serverCategories[j];
+              var catName = typeof serverCategories[j] === 'object' ? serverCategories[j].name : (mountNameMap[catId] || catId);
+              normalized.push({ id: catId, name: catName });
+            }
+            setCategories(normalized);
           }
-          setCategories(normalized);
         }
       } catch (e) {
         console.warn('[LIB] categories error', e && e.message);
@@ -44,33 +69,35 @@ export const useDecorations = (initialFilters) => {
     async function loadDecorations() {
       try {
         setIsLoading(true);
-        console.log('[LIB] fetch', { page });
-        var data = null;
+        console.log('[LIB] fetch products from shop', { page });
+        var list = [];
+        
+        // Buscar produtos diretamente da loja
         try {
-          data = await decorationsAPI.getAll({ page: page, limit: 24 });
+          var products = await productsAPI.getAll({ isActive: true });
+          console.log('[LIB] products from shop:', products.length);
+          list = Array.isArray(products) ? products : [];
         } catch (e1) {
-          console.warn('[LIB] decorations fetch failed, trying productsAPI');
-        }
-        var list = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-
-        // Fallback: se não vier nada de /decorations, buscar /products
-        if (list.length === 0) {
-          console.log('[LIB] fallback to productsAPI.getAll');
-          var products = [];
+          console.warn('[LIB] productsAPI.getAll failed, trying decorationsAPI as fallback');
           try {
-            products = await productsAPI.getAll({ isActive: true });
+            // Fallback: tentar decorations API
+            var data = await decorationsAPI.getAll({ page: page, limit: 24 });
+            list = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+            console.log('[LIB] decorations from API:', list.length);
           } catch (e2) {
-            console.error('[LIB] productsAPI.getAll error', e2 && e2.message);
+            console.error('[LIB] decorationsAPI.getAll also failed:', e2 && e2.message);
+            list = [];
           }
-          list = products;
+        }
 
-          // Derivar categorias a partir de mount/type
+        // Se não encontrou produtos e categorias ainda não foram carregadas, derivar categorias
+        if (list.length > 0 && categories.length === 0) {
           var mountNameMap = { 'Poste': 'Pole', 'Chão': 'Floor', 'Transversal': 'Transversal' };
           var catMap = {};
-          for (var ci = 0; ci < products.length; ci++) {
-            var p = products[ci];
+          for (var ci = 0; ci < list.length; ci++) {
+            var p = list[ci];
             var catRaw = (p && p.mount) ? String(p.mount) : (p && p.type) ? String(p.type) : 'custom';
-            if (!catMap[catRaw]) {
+            if (catRaw && catRaw !== 'custom' && !catMap[catRaw]) {
               var display = mountNameMap[catRaw] || catRaw;
               catMap[catRaw] = { id: catRaw, name: display };
             }
@@ -79,7 +106,10 @@ export const useDecorations = (initialFilters) => {
           for (var key in catMap) {
             if (catMap.hasOwnProperty(key)) derived.push(catMap[key]);
           }
-          if (derived.length > 0) setCategories(derived);
+          if (derived.length > 0) {
+            console.log('[LIB] derived categories from products:', derived.length);
+            setCategories(derived);
+          }
         }
 
         // Mapear campos para o frontend
@@ -89,6 +119,20 @@ export const useDecorations = (initialFilters) => {
           // Usar SEMPRE o mount como categoria principal
           var catRaw = it.mount || it.category || it.type || 'custom';
           var cat = typeof catRaw === 'string' ? catRaw : 'custom';
+          
+          // Verificar se é produto de summer (season ou tag)
+          var isSummer = false;
+          if (it.season && String(it.season).toLowerCase() === 'summer') {
+            isSummer = true;
+          } else if (Array.isArray(it.tags)) {
+            for (var t = 0; t < it.tags.length; t++) {
+              if (String(it.tags[t]).toLowerCase() === 'summer') {
+                isSummer = true;
+                break;
+              }
+            }
+          }
+          
           // Placeholders para stock/cor/dimensões
           var stockVal = typeof it.stock === 'number' ? it.stock : (function(){
             try { var s=0; var sid=String(it.id||''); for (var ii=0; ii<sid.length; ii++) s+=sid.charCodeAt(ii); return 5 + (s % 60); } catch(_){ return 20; }
@@ -101,9 +145,9 @@ export const useDecorations = (initialFilters) => {
             ref: it.sku || it.id,
             category: cat,
             icon: '✨',
-            // Backend usa thumbnailUrl/thumbnailNightUrl
-            imageUrlDay: it.thumbnailUrl || it.imagesDayUrl || null,
-            imageUrlNight: it.thumbnailNightUrl || it.imagesNightUrl || null,
+            // Backend usa imagesDayUrl/imagesNightUrl (thumbnailUrl é apenas para listagem, pode não ter versão noite)
+            imageUrlDay: it.imagesDayUrl || it.thumbnailUrl || null,
+            imageUrlNight: it.imagesNightUrl || it.imagesDayUrl || it.thumbnailUrl || null,
             thumbnailUrl: it.thumbnailUrl || it.imagesDayUrl || null,
             width: typeof it.width === 'number' ? it.width : null,
             height: typeof it.height === 'number' ? Number(it.height) : null, // Garantir que é número
@@ -114,44 +158,180 @@ export const useDecorations = (initialFilters) => {
             // Incluir availableColors para filtragem de cores funcionar corretamente
             availableColors: it.availableColors || null,
             tags: it.tags || [],
+            isSummer: isSummer, // Marcar produtos de summer
           });
         }
 
         console.log('[LIB] results', mapped.length);
+        
+        // Debug: verificar produtos Transversal antes do processamento
+        var transversalProducts = list.filter(function(p) {
+          var mount = p.mount || p.category || p.type || '';
+          return String(mount).toLowerCase() === 'transversal';
+        });
+        if (transversalProducts.length > 0) {
+          console.log('[LIB] 🔍 [DEBUG TRANSVERSAL] Produtos encontrados antes do mapeamento:', transversalProducts.map(function(p) {
+            return {
+              id: p.id,
+              name: p.name,
+              mount: p.mount,
+              thumbnailUrl: p.thumbnailUrl,
+              imagesDayUrl: p.imagesDayUrl,
+              imagesNightUrl: p.imagesNightUrl
+            };
+          }));
+        }
 
         if (!cancelled) {
-          // Construir estatísticas por categoria + escolher thumbnail aleatória (preferir versão Night) por categoria (reservoir sampling)
+          // Construir estatísticas por categoria + escolher thumbnail
           var catStats = {};
           for (var j = 0; j < mapped.length; j++) {
             var item = mapped[j];
             var catId = item.category;
             if (!catStats[catId]) {
-              catStats[catId] = { count: 0, thumbDay: null, thumbNight: null };
+              catStats[catId] = { count: 0, thumbDay: null, thumbNight: null, hasSummerProducts: false };
             }
             catStats[catId].count += 1;
-            // Reservoir sampling para escolher item aleatório uniformemente
-            var k = catStats[catId].count;
-            if (Math.floor(Math.random() * k) === 0) {
-              catStats[catId].thumbDay = item.imageUrlDay || item.thumbnailUrl || null;
-              catStats[catId].thumbNight = item.imageUrlNight || item.thumbnailUrl || item.imageUrlDay || null;
+            
+            // Marcar se categoria tem produtos de summer
+            if (item.isSummer) {
+              catStats[catId].hasSummerProducts = true;
+            }
+            
+            // Escolher primeira thumbnail válida encontrada (garantir que sempre temos uma se disponível)
+            var itemThumbDay = item.imageUrlDay || item.thumbnailUrl || null;
+            var itemThumbNight = item.imageUrlNight || item.thumbnailUrl || item.imageUrlDay || null;
+            
+            // Se ainda não temos thumbnail day e este item tem uma, usar
+            if (!catStats[catId].thumbDay && itemThumbDay) {
+              catStats[catId].thumbDay = itemThumbDay;
+              console.log('[LIB] Thumbnail day encontrada para categoria', catId, ':', itemThumbDay);
+            }
+            
+            // Se ainda não temos thumbnail night e este item tem uma, usar (preferir night, exceto para summer)
+            // Para summer, sempre usar day, então não precisamos da night
+            if (!catStats[catId].hasSummerProducts && !catStats[catId].thumbNight && itemThumbNight) {
+              catStats[catId].thumbNight = itemThumbNight;
+              console.log('[LIB] Thumbnail night encontrada para categoria', catId, ':', itemThumbNight);
+            }
+            
+            // Log de debug detalhado para categoria Transversal
+            if (catId === 'Transversal') {
+              console.log('[LIB] 🔍 [DEBUG TRANSVERSAL] Item processado:', {
+                id: item.id,
+                name: item.name,
+                mount: item.category,
+                imageUrlDay: item.imageUrlDay,
+                imageUrlNight: item.imageUrlNight,
+                thumbnailUrl: item.thumbnailUrl,
+                hasThumbDay: !!itemThumbDay,
+                hasThumbNight: !!itemThumbNight,
+                itemThumbDay: itemThumbDay,
+                itemThumbNight: itemThumbNight,
+                catStatsThumbDay: catStats[catId].thumbDay,
+                catStatsThumbNight: catStats[catId].thumbNight,
+                count: catStats[catId].count
+              });
             }
           }
 
           // Gerar lista de categorias com thumbnail e count
+          // Fazer merge com categorias existentes para preservar informações
           var mountNameMap2 = { 'Poste': 'Pole', 'Chão': 'Floor', 'Transversal': 'Transversal' };
-          var finalCategories = [];
-          for (var catKey in catStats) {
-            if (!catStats.hasOwnProperty(catKey)) continue;
-            var displayName = catKey;
-            if (mountNameMap2[catKey]) displayName = mountNameMap2[catKey];
-            var chosenNight = catStats[catKey].thumbNight || catStats[catKey].thumbDay;
-            var chosenDay = catStats[catKey].thumbDay || catStats[catKey].thumbNight;
-            finalCategories.push({ id: catKey, name: displayName, count: catStats[catKey].count, thumbnail: chosenDay, thumbnailNight: chosenNight });
-          }
-
-          if (finalCategories.length > 0) {
-            setCategories(finalCategories);
-          }
+          
+          // Usar setCategories com função para acessar estado atual sem dependência
+          setCategories(function(prevCategories) {
+            var categoriesMap = {};
+            
+            // Primeiro, adicionar categorias existentes ao mapa
+            for (var ex = 0; ex < prevCategories.length; ex++) {
+              var existingCat = prevCategories[ex];
+              categoriesMap[existingCat.id] = Object.assign({}, existingCat);
+            }
+            
+            // Depois, atualizar ou adicionar categorias com stats e thumbnails
+            for (var catKey in catStats) {
+              if (!catStats.hasOwnProperty(catKey)) continue;
+              var displayName = catKey;
+              if (mountNameMap2[catKey]) displayName = mountNameMap2[catKey];
+              
+              var catStat = catStats[catKey];
+              var isSummerCategory = catStat.hasSummerProducts;
+              
+              // Para categorias de summer: sempre usar versão dia
+              // Para outras categorias: preferir versão noite, com fallback para dia
+              var chosenThumbnail, chosenThumbnailNight;
+              
+              if (isSummerCategory) {
+                // Summer: sempre usar versão dia (não usar noite)
+                chosenThumbnail = catStat.thumbDay || null;
+                chosenThumbnailNight = null; // Summer não usa versão noite
+              } else {
+                // Outras categorias: preferir versão noite por padrão (como default), fallback para dia
+                // thumbnailNight será usado como padrão pelo CategoryMenu
+                // thumbnail será usado como fallback se thumbnailNight não existir
+                chosenThumbnailNight = catStat.thumbNight || catStat.thumbDay || null; // Versão noite (preferida), com fallback para dia
+                chosenThumbnail = catStat.thumbDay || null; // Versão dia (fallback)
+              }
+              
+              // Log de debug para Transversal
+              if (catKey === 'Transversal') {
+                console.log('[LIB] 🔍 [DEBUG TRANSVERSAL] Thumbnails escolhidas:', {
+                  catKey: catKey,
+                  isSummer: isSummerCategory,
+                  thumbDay: catStat.thumbDay,
+                  thumbNight: catStat.thumbNight,
+                  chosenThumbnail: chosenThumbnail,
+                  chosenThumbnailNight: chosenThumbnailNight,
+                  count: catStat.count
+                });
+              }
+              
+              // Se categoria já existe, atualizar com thumbnails e count
+              if (categoriesMap[catKey]) {
+                categoriesMap[catKey].count = catStat.count;
+                // Atualizar thumbnails sempre que encontrarmos uma válida (não apenas se não tiver)
+                if (chosenThumbnail) {
+                  categoriesMap[catKey].thumbnail = chosenThumbnail;
+                }
+                if (chosenThumbnailNight) {
+                  categoriesMap[catKey].thumbnailNight = chosenThumbnailNight;
+                }
+                // Se for summer e tinha thumbnailNight, remover
+                if (isSummerCategory && categoriesMap[catKey].thumbnailNight) {
+                  categoriesMap[catKey].thumbnailNight = null;
+                }
+              } else {
+                // Nova categoria - adicionar completa
+                categoriesMap[catKey] = { 
+                  id: catKey, 
+                  name: displayName, 
+                  count: catStat.count, 
+                  thumbnail: chosenThumbnail, 
+                  thumbnailNight: chosenThumbnailNight 
+                };
+              }
+            }
+            
+            // Converter mapa de volta para array
+            var finalCategories = [];
+            for (var mapKey in categoriesMap) {
+              if (categoriesMap.hasOwnProperty(mapKey)) {
+                finalCategories.push(categoriesMap[mapKey]);
+              }
+            }
+            
+            // Ordenar por nome para consistência
+            finalCategories.sort(function(a, b) {
+              return a.name.localeCompare(b.name);
+            });
+            
+            console.log('[LIB] Final categories with thumbnails:', finalCategories.map(function(c) { 
+              return { id: c.id, name: c.name, hasThumbnail: !!(c.thumbnail || c.thumbnailNight), count: c.count }; 
+            }));
+            
+            return finalCategories;
+          });
 
           setDecorations(mapped);
           setHasMore(Boolean(data && typeof data.total === 'number' ? (page * 24) < data.total : mapped.length === 24));
