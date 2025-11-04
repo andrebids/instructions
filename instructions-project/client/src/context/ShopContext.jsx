@@ -147,14 +147,18 @@ export function ShopProvider({ children }) {
     return reserved;
   }, [cartByProject]);
 
-  const getAvailableStock = React.useCallback((product) => {
+  const getBaseStock = React.useCallback((product) => {
     const computeStock = (id) => {
       try { let sum = 0; for (const ch of String(id||'')) sum += ch.charCodeAt(0); return 5 + (sum % 60); } catch (_) { return 20; }
     };
-    const base = typeof product?.stock === 'number' ? product.stock : computeStock(product?.id);
+    return typeof product?.stock === 'number' ? product.stock : computeStock(product?.id);
+  }, []);
+
+  const getAvailableStock = React.useCallback((product) => {
+    const base = getBaseStock(product);
     const reserved = getReservedQuantity(product?.id);
     return Math.max(0, base - reserved);
-  }, [getReservedQuantity]);
+  }, [getReservedQuantity, getBaseStock]);
 
   const toggleFavorite = React.useCallback((productId) => {
     setFavorites((prev) => {
@@ -342,10 +346,11 @@ export function ShopProvider({ children }) {
     toggleProductInFolder,
     toggleCompare,
     getReservedQuantity,
+    getBaseStock,
     getAvailableStock,
     projectStatusById,
     projectBudgetById,
-  }), [products, projects, categories, cartByProject, totalsByProject, addToProject, favorites, favoriteFolders, compare, toggleFavorite, createFavoriteFolder, renameFavoriteFolder, deleteFavoriteFolder, toggleProductInFolder, toggleCompare, getReservedQuantity, getAvailableStock, projectStatusById, projectBudgetById]);
+  }), [products, projects, categories, cartByProject, totalsByProject, addToProject, favorites, favoriteFolders, compare, toggleFavorite, createFavoriteFolder, renameFavoriteFolder, deleteFavoriteFolder, toggleProductInFolder, toggleCompare, getReservedQuantity, getBaseStock, getAvailableStock, projectStatusById, projectBudgetById]);
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 }
