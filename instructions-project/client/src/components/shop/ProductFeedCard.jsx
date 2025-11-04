@@ -66,6 +66,15 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
     setHasVideo(Boolean(videoUrl) || hasSimulationVideo);
   }, [product, isGX349L, isGX350LW]);
 
+  // Reset simulação animada e vídeo de sugestão quando o produto muda
+  useEffect(() => {
+    // Quando muda de produto, resetar para vídeo normal
+    // IMPORTANTE: Garantir que sempre começa com vídeo normal, não com simulação animada
+    setShowAnimationSimulation(false);
+    setSelectedSuggestionVideo(null);
+    setPreviousAnimationState(false);
+  }, [product?.id]);
+
   // Auto-play/pause based on isActive
   useEffect(() => {
     if (!videoRef.current || !hasVideo) return;
@@ -143,6 +152,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       return '/SIMU_GX350LW_ANIM.webm';
     }
     
+    // Por default, sempre retornar o vídeo normal do produto
     const videoFile = product?.videoFile || product?.animationUrl;
     if (!videoFile) return null;
     
@@ -917,7 +927,16 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                                   }
                                 }, 100);
                               } else if (onProductSelect) {
-                                setSelectedSuggestionVideo(null); // Reset quando selecionar outro produto
+                                // Reset todos os estados quando navegar para outro produto
+                                // IMPORTANTE: Resetar ANTES de navegar para garantir que o novo produto começa com vídeo normal
+                                setSelectedSuggestionVideo(null);
+                                setShowAnimationSimulation(false);
+                                setPreviousAnimationState(false);
+                                
+                                // Fechar o modal de sugestões primeiro
+                                setShowSuggestions(false);
+                                
+                                // Navegar para o produto imediatamente (o useEffect vai garantir o reset)
                                 onProductSelect(similarProduct.id);
                               }
                             }}
