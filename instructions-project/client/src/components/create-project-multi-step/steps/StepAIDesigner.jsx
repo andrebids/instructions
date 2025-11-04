@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Card, CardFooter, Button, Spinner, Progress, Image } from "@heroui/react";
+import { Card, CardFooter, Button, Spinner, Progress, Image, Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { DecorationLibrary } from "../../decoration-library";
 import { Stage, Layer, Image as KonvaImage, Transformer, Rect, Circle } from 'react-konva';
@@ -1009,6 +1009,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   }, [formData?.snapZonesByImage, formData?.id]); // Executar quando formData.snapZonesByImage ou formData.id mudar
   const [analyzingImageId, setAnalyzingImageId] = useState(null); // ID da imagem que está sendo analisada
   const [analysisComplete, setAnalysisComplete] = useState({}); // Mapeia quais imagens já foram analisadas
+  const [conversionComplete, setConversionComplete] = useState({}); // Mapeia quais imagens já completaram a conversão para noite
   const [showUnifiedPanel, setShowUnifiedPanel] = useState(false); // Painel unificado oculto por padrão
   const [isEditingZones, setIsEditingZones] = useState(false); // Modo de edição visual
   const [tempZones, setTempZones] = useState([]); // Zonas temporárias sendo criadas no modo edição
@@ -1072,10 +1073,35 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
 
 
   // Adicionar imagem source ao canvas (substitui a anterior)
-  const handleImageAddToCanvas = (image, useDayMode = isDayMode) => {
+  const handleImageAddToCanvas = (image, useDayMode = null) => {
     console.log('📸🖼️ ===== SOURCE IMAGE CLICADA =====');
     console.log('📸 Nome:', image.name);
     console.log('📸 ID:', image.id);
+    
+    // Verificar se conversão foi completada antes de permitir clique
+    if (!conversionComplete[image.id]) {
+      console.log('⚠️ Conversão ainda não completada para imagem:', image.id);
+      return; // Bloquear clique se conversão não estiver completa
+    }
+    
+    // Se useDayMode não foi especificado, determinar o modo baseado em:
+    // - Se a análise foi completada e é uma nova seleção (imagem diferente), usar noite primeiro
+    // - Caso contrário, usar o modo atual (isDayMode)
+    if (useDayMode === null) {
+      const isNewImageSelection = !selectedImage || selectedImage.id !== image.id;
+      const isAnalysisComplete = analysisComplete[image.id] === true;
+      const hasNightVersion = !!image.nightVersion;
+      
+      // Se é uma nova seleção, análise completa e tem versão noturna, mostrar noite primeiro
+      if (isNewImageSelection && isAnalysisComplete && hasNightVersion) {
+        useDayMode = false; // Modo noite
+        setIsDayMode(false); // Atualizar estado para refletir no botão toggle
+        console.log('🌙 Exibindo versão de noite primeiro (análise completa)');
+      } else {
+        useDayMode = isDayMode; // Usar modo atual
+      }
+    }
+    
     console.log('📸 Modo:', useDayMode ? 'Day' : 'Night');
     
     // 1. Guardar decorações da imagem anterior antes de trocar
@@ -1370,6 +1396,47 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
     });
   };
 
+  // Rastrear quando conversão para noite completa
+  useEffect(function() {
+    // Quando activeGifIndex muda, marcar imagem anterior como convertida (se houver)
+    if (activeGifIndex >= 0 && activeGifIndex < uploadedImages.length) {
+      var imageId = uploadedImages[activeGifIndex].id;
+      
+      // Marcar conversão como completa após 4000ms (duração da animação)
+      var timeoutId = setTimeout(function() {
+        setConversionComplete(function(prev) {
+          var updated = {};
+          for (var key in prev) {
+            updated[key] = prev[key];
+          }
+          updated[imageId] = true;
+          console.log('✅ Conversão completa para imagem:', imageId);
+          return updated;
+        });
+      }, 4000); // Duração da animação do NightThumb
+      
+      return function() {
+        clearTimeout(timeoutId);
+      };
+    } else if (activeGifIndex === -1 && uploadedImages.length > 0) {
+      // Quando activeGifIndex volta para -1, todas as imagens foram convertidas
+      // Marcar a última imagem como convertida
+      var lastImageId = uploadedImages[uploadedImages.length - 1].id;
+      setConversionComplete(function(prev) {
+        if (!prev[lastImageId]) {
+          var updated = {};
+          for (var key in prev) {
+            updated[key] = prev[key];
+          }
+          updated[lastImageId] = true;
+          console.log('✅ Conversão completa para última imagem:', lastImageId);
+          return updated;
+        }
+        return prev;
+      });
+    }
+  }, [activeGifIndex, uploadedImages]);
+
   // Detectar quando conversão para noite completa e disparar análise YOLO12 sequencialmente
   useEffect(function() {
     if (activeGifIndex >= 0 && activeGifIndex < uploadedImages.length) {
@@ -1469,7 +1536,9 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   var imageZones = selectedImage ? (snapZonesByImage[selectedImage.id] || { day: [], night: [] }) : { day: [], night: [] };
   // Usar zonas do modo atual (dia ou noite), não ambas
   var mode = isDayMode ? 'day' : 'night';
-  var currentSnapZones = imageZones[mode] || [];
+  // Filtrar zonas apenas se análise foi completada
+  var rawZones = imageZones[mode] || [];
+  var currentSnapZones = (selectedImage && analysisComplete[selectedImage.id]) ? rawZones : [];
   var allZonesForDisplay = isEditingZones ? [...currentSnapZones, ...tempZones] : currentSnapZones;
   
   // Debug: log detalhado quando imagem é selecionada ou modo muda
@@ -1644,64 +1713,88 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
               <h3 className="text-base md:text-lg font-semibold">Source Images</h3>
             </div>
             <div className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4 space-y-2 md:space-y-3">
-              {uploadedImages.map((image, index) => (
-                <div key={image.id} className="relative">
-                  <Card
-                    isFooterBlurred
-                    isPressable
-                    className={`cursor-pointer border-none transition-all duration-200 ${
-                      selectedImage?.id === image.id 
-                        ? 'ring-2 ring-primary shadow-lg' 
-                        : 'hover:ring-1 hover:ring-primary/50'
-                    }`}
-                    radius="lg"
-                    onPress={() => {
-                      console.log('🖱️ CARD CLICADO - Imagem:', image.name);
-                      handleImageAddToCanvas(image);
-                    }}
-                  >
-                    {/* NightThumb com animação de dia para noite */}
-                    <NightThumb
-                      dayImage={image.thumbnail}
-                      nightImage={image.nightVersion}
-                      filename={image.name}
-                      isActive={index === activeGifIndex}
-                      duration={4000}
-                    />
-                    
-                    <Image
-                      alt={image.name}
-                      className="object-cover"
-                      height={120}
-                      src={image.thumbnail}
-                      width="100%"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
-                    <div className="w-full h-full hidden items-center justify-center bg-default-100">
-                      <Icon icon="lucide:image" className="text-4xl text-default-400" />
-                    </div>
-                    
-                    <CardFooter className="absolute bg-black/40 bottom-0 z-10 py-1 pointer-events-none">
-                      <div className="flex grow gap-2 items-center">
-                        <p className="text-tiny text-white/80 truncate">{image.name}</p>
-                      </div>
-                      {selectedImage?.id === image.id && (
-                        <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                          <Icon icon="lucide:check" className="text-white text-xs" />
+              {uploadedImages.map((image, index) => {
+                const isConverted = conversionComplete[image.id] === true;
+                const isDisabled = !isConverted;
+                
+                return (
+                  <div key={image.id} className="relative">
+                    <Tooltip
+                      content={isDisabled ? "Aguardando conversão para noite..." : ""}
+                      isDisabled={!isDisabled}
+                      placement="right"
+                    >
+                      <Card
+                        isFooterBlurred
+                        isPressable={!isDisabled}
+                        isDisabled={isDisabled}
+                        className={`border-none transition-all duration-200 ${
+                          isDisabled
+                            ? 'cursor-not-allowed opacity-60'
+                            : selectedImage?.id === image.id 
+                              ? 'cursor-pointer ring-2 ring-primary shadow-lg' 
+                              : 'cursor-pointer hover:ring-1 hover:ring-primary/50'
+                        }`}
+                        radius="lg"
+                        onPress={() => {
+                          if (!isDisabled) {
+                            console.log('🖱️ CARD CLICADO - Imagem:', image.name);
+                            handleImageAddToCanvas(image);
+                          }
+                        }}
+                      >
+                        {/* NightThumb com animação de dia para noite */}
+                        <NightThumb
+                          dayImage={image.thumbnail}
+                          nightImage={image.nightVersion}
+                          filename={image.name}
+                          isActive={index === activeGifIndex}
+                          duration={4000}
+                        />
+                        
+                        {/* Overlay de loading/bloqueio durante conversão */}
+                        {!isConverted && (
+                          <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg">
+                            <Spinner size="md" color="primary" />
+                            <p className="text-white text-xs mt-2 font-medium">Converting...</p>
+                          </div>
+                        )}
+                        
+                        <Image
+                          alt={image.name}
+                          className="object-cover"
+                          height={120}
+                          src={image.thumbnail}
+                          width="100%"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                        <div className="w-full h-full hidden items-center justify-center bg-default-100">
+                          <Icon icon="lucide:image" className="text-4xl text-default-400" />
                         </div>
-                      )}
-                    </CardFooter>
-                  </Card>
+                        
+                        <CardFooter className="absolute bg-black/40 bottom-0 z-10 py-1 pointer-events-none">
+                          <div className="flex grow gap-2 items-center">
+                            <p className="text-tiny text-white/80 truncate">{image.name}</p>
+                          </div>
+                          {selectedImage?.id === image.id && (
+                            <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                              <Icon icon="lucide:check" className="text-white text-xs" />
+                            </div>
+                          )}
+                        </CardFooter>
+                      </Card>
+                    </Tooltip>
                   
-                  {/* Overlay de análise YOLO12 no thumbnail específico - FORA do Card para garantir z-index */}
-                  {analyzingImageId === image.id && (
-                    <YOLO12ThumbnailOverlay duration={2500} />
-                  )}
-                </div>
-              ))}
+                    {/* Overlay de análise YOLO12 no thumbnail específico - FORA do Card para garantir z-index */}
+                    {analyzingImageId === image.id && (
+                      <YOLO12ThumbnailOverlay duration={2500} />
+                    )}
+                  </div>
+                );
+              })}
 
               {/* Fake add image card (placed after sources) */}
               <Card
@@ -1797,7 +1890,13 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                   decorations={decorations}
                   canvasImages={canvasImages}
                   selectedImage={selectedImage}
-                  snapZones={showSnapZones ? allZonesForDisplay : []}
+                  snapZones={
+                    showSnapZones && 
+                    selectedImage && 
+                    analysisComplete[selectedImage.id] 
+                      ? allZonesForDisplay 
+                      : []
+                  }
                   isDayMode={isDayMode}
                   isEditingZones={isEditingZones}
                   analysisComplete={analysisComplete}
