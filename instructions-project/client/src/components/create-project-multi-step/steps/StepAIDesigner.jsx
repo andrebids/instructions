@@ -1013,6 +1013,8 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   const [showUnifiedPanel, setShowUnifiedPanel] = useState(false); // Painel unificado oculto por padrão
   const [isEditingZones, setIsEditingZones] = useState(false); // Modo de edição visual
   const [tempZones, setTempZones] = useState([]); // Zonas temporárias sendo criadas no modo edição
+  const [zonesWarning, setZonesWarning] = useState(false); // Estado para mostrar aviso sobre zonas
+  const prevActiveGifIndexRef = useRef(-1); // Rastrear índice anterior do GIF ativo
   
   // Carregar Source Images da API usando hook
   var { sourceImages, loading: sourceImagesLoading, error: sourceImagesError } = useSourceImages();
@@ -1065,8 +1067,8 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
       }, 8500); // 500ms + 4000ms + 4000ms
       
       setTimeout(() => {
-        setActiveGifIndex(-1); // Desaparece após todas convertidas
-      }, 12500); // 500ms + 4000ms * 3
+        setActiveGifIndex(-1); // Desaparece após todas convertidas (dar tempo extra para a 3ª imagem completar)
+      }, 13000); // 500ms + 4000ms * 3 + 500ms extra para garantir que a 3ª imagem completa
     }, 300);
   };
 
@@ -1399,41 +1401,93 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
   // Rastrear quando conversão para noite completa
   useEffect(function() {
     // Quando activeGifIndex muda, marcar imagem anterior como convertida (se houver)
+    var prevIndex = prevActiveGifIndexRef.current;
+    
     if (activeGifIndex >= 0 && activeGifIndex < uploadedImages.length) {
       var imageId = uploadedImages[activeGifIndex].id;
+      
+      // Se mudou para uma nova imagem, marcar a anterior como convertida imediatamente
+      if (prevIndex >= 0 && prevIndex < uploadedImages.length && prevIndex !== activeGifIndex) {
+        var prevImageId = uploadedImages[prevIndex].id;
+        setConversionComplete(function(prev) {
+          if (!prev[prevImageId]) {
+            var updated = {};
+            for (var key in prev) {
+              updated[key] = prev[key];
+            }
+            updated[prevImageId] = true;
+            console.log('✅ Conversão completa para imagem anterior:', prevImageId);
+            return updated;
+          }
+          return prev;
+        });
+      }
       
       // Marcar conversão como completa após 4000ms (duração da animação)
       var timeoutId = setTimeout(function() {
         setConversionComplete(function(prev) {
-          var updated = {};
-          for (var key in prev) {
-            updated[key] = prev[key];
+          if (!prev[imageId]) {
+            var updated = {};
+            for (var key in prev) {
+              updated[key] = prev[key];
+            }
+            updated[imageId] = true;
+            console.log('✅ Conversão completa para imagem:', imageId);
+            return updated;
           }
-          updated[imageId] = true;
-          console.log('✅ Conversão completa para imagem:', imageId);
-          return updated;
+          return prev;
         });
       }, 4000); // Duração da animação do NightThumb
+      
+      // Atualizar ref do índice anterior
+      prevActiveGifIndexRef.current = activeGifIndex;
       
       return function() {
         clearTimeout(timeoutId);
       };
     } else if (activeGifIndex === -1 && uploadedImages.length > 0) {
       // Quando activeGifIndex volta para -1, todas as imagens foram convertidas
-      // Marcar a última imagem como convertida
-      var lastImageId = uploadedImages[uploadedImages.length - 1].id;
-      setConversionComplete(function(prev) {
-        if (!prev[lastImageId]) {
+      // Marcar a última imagem (índice 2) como convertida imediatamente se ainda não foi marcada
+      var lastIndex = uploadedImages.length - 1;
+      if (lastIndex >= 0) {
+        var lastImageId = uploadedImages[lastIndex].id;
+        setConversionComplete(function(prev) {
+          if (!prev[lastImageId]) {
+            var updated = {};
+            for (var key in prev) {
+              updated[key] = prev[key];
+            }
+            updated[lastImageId] = true;
+            console.log('✅ Conversão completa para última imagem (índice', lastIndex + '):', lastImageId);
+            return updated;
+          }
+          return prev;
+        });
+      }
+      
+      // Também marcar qualquer outra imagem que possa ter sido perdida
+      var finalTimeoutId = setTimeout(function() {
+        setConversionComplete(function(prev) {
           var updated = {};
           for (var key in prev) {
             updated[key] = prev[key];
           }
-          updated[lastImageId] = true;
-          console.log('✅ Conversão completa para última imagem:', lastImageId);
+          // Marcar todas as imagens que ainda não foram marcadas
+          for (var i = 0; i < uploadedImages.length; i++) {
+            var imgId = uploadedImages[i].id;
+            if (!updated[imgId]) {
+              updated[imgId] = true;
+              console.log('✅ Conversão completa para imagem final (backup):', imgId);
+            }
+          }
           return updated;
-        }
-        return prev;
-      });
+        });
+        prevActiveGifIndexRef.current = -1;
+      }, 100); // Pequeno delay para garantir que timeouts anteriores completaram
+      
+      return function() {
+        clearTimeout(finalTimeoutId);
+      };
     }
   }, [activeGifIndex, uploadedImages]);
 
@@ -1715,6 +1769,9 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
             <div className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4 space-y-2 md:space-y-3">
               {uploadedImages.map((image, index) => {
                 const isConverted = conversionComplete[image.id] === true;
+                const isCurrentlyConverting = index === activeGifIndex && activeGifIndex >= 0;
+                // Mostrar overlay apenas se não foi convertida E não está sendo convertida agora (a animação já mostra o processo)
+                const showOverlay = !isConverted && !isCurrentlyConverting;
                 const isDisabled = !isConverted;
                 
                 return (
@@ -1752,8 +1809,8 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                           duration={4000}
                         />
                         
-                        {/* Overlay de loading/bloqueio durante conversão */}
-                        {!isConverted && (
+                        {/* Overlay de loading/bloqueio durante conversão - apenas quando não está sendo convertida agora */}
+                        {showOverlay && (
                           <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg">
                             <Spinner size="md" color="primary" />
                             <p className="text-white text-xs mt-2 font-medium">Converting...</p>
@@ -1828,7 +1885,7 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
           {/* Center Canvas Area */}
           <div className="flex-1 min-h-0 flex flex-col bg-content1">
             <div className="h-full flex flex-col p-3 md:p-4 lg:p-6">
-              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <div className="flex items-center justify-between mb-3 md:mb-4">
                 <h3 className="text-base md:text-lg font-semibold text-center flex-1">Decoration Canvas</h3>
                 <div className="flex gap-2">
                   <Button
@@ -1842,7 +1899,15 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                       />
                     }
                     onPress={toggleDayNightMode}
-                    isDisabled={canvasImages.length === 0}
+                    isDisabled={
+                      canvasImages.length === 0 || 
+                      (selectedImage && !conversionComplete[selectedImage.id])
+                    }
+                    title={
+                      selectedImage && !conversionComplete[selectedImage.id]
+                        ? "Aguardando conversão para noite..."
+                        : undefined
+                    }
                   >
                     {isDayMode ? 'Day' : 'Night'}
                   </Button>
@@ -1851,7 +1916,15 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                     variant="light"
                     title="Show/Hide Zones"
                     startContent={<Icon icon={"lucide:eye"} />}
-                    onPress={() => setShowSnapZones(!showSnapZones)}
+                    onPress={() => {
+                      // Verificar se análise foi completada antes de alternar zonas
+                      if (selectedImage && !analysisComplete[selectedImage.id]) {
+                        setZonesWarning(true);
+                        setTimeout(() => setZonesWarning(false), 3000); // Esconder após 3 segundos
+                        return;
+                      }
+                      setShowSnapZones(!showSnapZones);
+                    }}
                     isDisabled={canvasImages.length === 0}
                   >
                     Zones
@@ -1878,6 +1951,12 @@ export const StepAIDesigner = ({ formData, onInputChange }) => {
                 {noBgWarning && (
                   <div className="mb-2 p-2 rounded-md bg-warning-50 border border-warning-200 text-warning-700 text-sm">
                     ⚠️ Select a background image to add PNGs
+                  </div>
+                )}
+                {zonesWarning && (
+                  <div className="mb-2 p-3 rounded-md bg-warning-50 border border-warning-200 text-warning-700 text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <Icon icon="lucide:alert-circle" className="text-warning-600 flex-shrink-0" />
+                    <span>Zones are not available yet. Please wait for the analysis to complete.</span>
                   </div>
                 )}
                 <KonvaCanvas
