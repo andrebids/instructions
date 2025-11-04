@@ -225,32 +225,122 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             </div>
           )}
 
-          {/* Discount badge */}
-          {discountPct && (
-            <Chip 
-              size="sm" 
-              color="danger" 
-              variant="solid" 
-              className="absolute left-4 top-4 z-10"
-            >
-              {discountPct}% OFF
-            </Chip>
-          )}
-
-          {/* Open button - visible when panel is closed */}
-          {!isInfoOpen && (
-            <Button
-              isIconOnly
-              radius="full"
-              size="lg"
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80"
-              onPress={() => setIsInfoOpen(true)}
-              aria-label="Open product info"
-            >
-              <Icon icon="lucide:chevron-left" className="text-2xl" />
-            </Button>
-          )}
         </div>
+
+        {/* Main information overlay - compact, positioned at top-right corner to minimize overlap */}
+        {!isInfoOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+            className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 lg:top-6 lg:right-6 z-20 bg-black/90 backdrop-blur-md rounded-md sm:rounded-lg md:rounded-xl px-2 py-2 sm:px-2.5 sm:py-2.5 md:px-4 md:py-3 lg:px-5 lg:py-4 border border-white/20 shadow-2xl pointer-events-auto max-w-[160px] md:max-w-[240px] lg:max-w-[280px]"
+            style={{
+              marginTop: 'env(safe-area-inset-top, 0)',
+              marginRight: 'env(safe-area-inset-right, 0)',
+              transform: 'translateZ(0)', // Force hardware acceleration
+            }}
+          >
+              <div className="flex flex-col gap-1 sm:gap-1.5 md:gap-2 lg:gap-3 min-w-[120px] sm:min-w-[140px] md:min-w-[200px] lg:min-w-[240px] max-w-[160px] md:max-w-[240px] lg:max-w-[280px] overflow-hidden">
+                {/* Name with discount badge */}
+                <div className="flex items-start gap-1.5 md:gap-2 justify-between w-full">
+                  <h3 className="text-white text-[11px] sm:text-xs md:text-sm lg:text-base font-bold leading-tight line-clamp-2 flex-1 min-w-0">
+                    {product.name}
+                  </h3>
+                  {discountPct && (
+                    <Chip 
+                      size="sm" 
+                      color="danger" 
+                      variant="solid" 
+                      className="flex-shrink-0 text-[9px] sm:text-[10px] md:text-xs h-4 sm:h-5 md:h-6 px-1.5 sm:px-2 md:px-2.5 whitespace-nowrap"
+                    >
+                      {discountPct}% OFF
+                    </Chip>
+                  )}
+                </div>
+
+                {/* Price */}
+                <div className="flex items-baseline gap-0.5 sm:gap-1 md:gap-1.5 flex-wrap">
+                  <span className="text-white text-base sm:text-lg md:text-xl lg:text-2xl font-black leading-none tracking-tight">
+                    €{product.price?.toFixed(2) || '0.00'}
+                  </span>
+                  {product.oldPrice && (
+                    <span className="text-gray-400 line-through text-[9px] sm:text-[10px] md:text-xs font-medium">
+                      €{product.oldPrice.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Stock */}
+                <div>
+                  {isOutOfStock ? (
+                    <span className="text-red-400 text-[9px] sm:text-[10px] md:text-xs font-semibold">Out of stock</span>
+                  ) : (
+                    <span className={`text-[9px] sm:text-[10px] md:text-xs font-semibold ${isLowStock ? 'text-yellow-400' : 'text-green-400'}`}>
+                      Stock: <span className="font-bold">{stock}</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Dimensions - check both product level and specs */}
+                {(() => {
+                  const height = product.height || product.specs?.height;
+                  const width = product.width || product.specs?.width;
+                  const depth = product.depth || product.specs?.depth;
+                  const diameter = product.diameter || product.specs?.diameter;
+                  
+                  if (height || width || depth || diameter) {
+                    return (
+                      <div className="pt-0.5 md:pt-1 border-t border-white/10">
+                        <div className="text-gray-300 text-[8px] sm:text-[9px] md:text-[10px] font-semibold mb-0.5 md:mb-1 uppercase tracking-wide">DIMENSIONS</div>
+                        <div className="space-y-0.5 text-white">
+                          {height && (
+                            <div className="text-[9px] sm:text-[10px] md:text-xs">
+                              <span className="text-gray-400 font-medium">H: </span>
+                              <span className="font-semibold">{height}m</span>
+                            </div>
+                          )}
+                          {width && (
+                            <div className="text-[9px] sm:text-[10px] md:text-xs">
+                              <span className="text-gray-400 font-medium">W: </span>
+                              <span className="font-semibold">{width}m</span>
+                            </div>
+                          )}
+                          {depth && (
+                            <div className="text-[9px] sm:text-[10px] md:text-xs">
+                              <span className="text-gray-400 font-medium">D: </span>
+                              <span className="font-semibold">{depth}m</span>
+                            </div>
+                          )}
+                          {diameter && (
+                            <div className="text-[9px] sm:text-[10px] md:text-xs">
+                              <span className="text-gray-400 font-medium">Ø: </span>
+                              <span className="font-semibold">{diameter}m</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+          </motion.div>
+        )}
+
+        {/* Open button - visible when panel is closed, positioned in the middle vertically */}
+        {!isInfoOpen && (
+          <Button
+            isIconOnly
+            radius="full"
+            size="lg"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80"
+            onPress={() => setIsInfoOpen(true)}
+            aria-label="Open product info"
+          >
+            <Icon icon="lucide:chevron-left" className="text-2xl" />
+          </Button>
+        )}
 
         {/* Information panel - slides in from right, hidden by default */}
         <AnimatePresence>
@@ -273,32 +363,47 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="absolute right-0 top-0 h-full w-[40%] md:w-[30%] bg-black/98 backdrop-blur-sm p-3 md:p-8 flex flex-col justify-between overflow-y-auto border-l border-white/5 z-40"
+                className="absolute right-0 top-0 h-full w-[40%] md:w-[30%] bg-black/98 backdrop-blur-sm p-3 md:p-6 flex flex-col overflow-y-auto border-l border-white/5 z-40"
                 onClick={(e) => e.stopPropagation()}
               >
-          {/* Main information */}
-          <div className="flex-1 flex flex-col justify-end space-y-3 md:space-y-6">
+          {/* Close button - top left */}
+          <div className="absolute top-3 md:top-4 left-3 md:left-4 z-50">
+            <Button
+              isIconOnly
+              size="sm"
+              radius="full"
+              variant="light"
+              className="text-white hover:bg-white/10"
+              onPress={() => setIsInfoOpen(false)}
+              aria-label="Close panel"
+            >
+              <Icon icon="lucide:x" className="text-lg" />
+            </Button>
+          </div>
+
+          {/* Main information - starts from top with padding for close button */}
+          <div className="flex flex-col pt-12 md:pt-14 space-y-4 md:space-y-5 flex-1">
             {/* Product name - Maximum emphasis */}
             <div>
-              <h3 className="text-white text-lg md:text-3xl font-extrabold mb-1 md:mb-3 leading-tight tracking-tight line-clamp-2">
+              <h3 className="text-white text-xl md:text-3xl font-extrabold leading-tight tracking-tight line-clamp-2">
                 {product.name}
               </h3>
             </div>
             
             {/* Price - Second emphasis */}
             <div className="flex items-baseline gap-2 md:gap-3 flex-wrap">
-              <span className="text-white text-xl md:text-4xl font-black leading-none">
+              <span className="text-white text-2xl md:text-4xl font-black leading-none">
                 €{product.price?.toFixed(2) || '0.00'}
               </span>
               {product.oldPrice && (
-                <span className="text-gray-400 line-through text-sm md:text-xl font-medium">
+                <span className="text-gray-400 line-through text-base md:text-xl font-medium">
                   €{product.oldPrice.toFixed(2)}
                 </span>
               )}
             </div>
 
             {/* Stock and Tags - Grouped */}
-            <div className="space-y-2 md:space-y-3">
+            <div className="space-y-2">
               {/* Stock */}
               <div>
                 {isOutOfStock ? (
@@ -352,7 +457,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
 
             {/* Type, Location, Mount - Grouped */}
             {(formattedType || formattedLocation || formattedMount) && (
-              <div className="space-y-1.5 md:space-y-2">
+              <div className="space-y-1">
                 {formattedType && (
                   <div className="text-xs md:text-sm">
                     <span className="text-gray-500 font-medium">Type: </span>
@@ -374,42 +479,52 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               </div>
             )}
 
-            {/* Dimensions */}
-            {(product.height || product.width || product.depth || product.diameter) && (
-              <div className="space-y-1.5 md:space-y-2">
-                <div className="text-gray-500 text-xs md:text-sm font-medium">Dimensions</div>
-                <div className="space-y-0.5 md:space-y-1">
-                  {product.height && (
-                    <div className="text-xs md:text-sm">
-                      <span className="text-gray-400">H: </span>
-                      <span className="text-white font-medium">{product.height}m</span>
+            {/* Dimensions - check both product level and specs */}
+            {(() => {
+              const height = product.height || product.specs?.height;
+              const width = product.width || product.specs?.width;
+              const depth = product.depth || product.specs?.depth;
+              const diameter = product.diameter || product.specs?.diameter;
+              
+              if (height || width || depth || diameter) {
+                return (
+                  <div className="space-y-1">
+                    <div className="text-gray-500 text-xs md:text-sm font-medium">Dimensions</div>
+                    <div className="space-y-0.5">
+                      {height && (
+                        <div className="text-xs md:text-sm">
+                          <span className="text-gray-400">H: </span>
+                          <span className="text-white font-medium">{height}m</span>
+                        </div>
+                      )}
+                      {width && (
+                        <div className="text-xs md:text-sm">
+                          <span className="text-gray-400">W: </span>
+                          <span className="text-white font-medium">{width}m</span>
+                        </div>
+                      )}
+                      {depth && (
+                        <div className="text-xs md:text-sm">
+                          <span className="text-gray-400">D: </span>
+                          <span className="text-white font-medium">{depth}m</span>
+                        </div>
+                      )}
+                      {diameter && (
+                        <div className="text-xs md:text-sm">
+                          <span className="text-gray-400">Ø: </span>
+                          <span className="text-white font-medium">{diameter}m</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {product.width && (
-                    <div className="text-xs md:text-sm">
-                      <span className="text-gray-400">W: </span>
-                      <span className="text-white font-medium">{product.width}m</span>
-                    </div>
-                  )}
-                  {product.depth && (
-                    <div className="text-xs md:text-sm">
-                      <span className="text-gray-400">D: </span>
-                      <span className="text-white font-medium">{product.depth}m</span>
-                    </div>
-                  )}
-                  {product.diameter && (
-                    <div className="text-xs md:text-sm">
-                      <span className="text-gray-400">Ø: </span>
-                      <span className="text-white font-medium">{product.diameter}m</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
             {/* Description */}
             {formattedDescription && (
-              <div className="space-y-1.5 md:space-y-2">
+              <div>
                 <p className="text-white text-sm md:text-base leading-relaxed">
                   {formattedDescription}
                 </p>
@@ -418,7 +533,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
 
             {/* Technical specifications */}
             {product.specs && (
-              <div className="space-y-2 md:space-y-3">
+              <div className="space-y-2">
                 {formattedWeight && (
                   <div className="text-xs md:text-sm">
                     <span className="text-gray-500 font-medium">Weight: </span>
@@ -435,25 +550,9 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                 )}
               </div>
             )}
-          </div>
 
-          {/* Close button */}
-          <div className="flex justify-between items-center mb-2">
-            <Button
-              isIconOnly
-              size="sm"
-              radius="full"
-              variant="light"
-              className="text-white hover:bg-white/10"
-              onPress={() => setIsInfoOpen(false)}
-              aria-label="Close panel"
-            >
-              <Icon icon="lucide:x" className="text-lg" />
-            </Button>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-col gap-2 md:gap-3 pt-3 md:pt-6 mt-3 md:mt-6 border-t border-white/10">
+            {/* Action buttons - at the bottom */}
+            <div className="flex flex-col gap-2 md:gap-3 pt-4 md:pt-6 mt-auto border-t border-white/10">
             <Button
               radius="md"
               size="sm"
@@ -483,6 +582,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             >
               Share
             </Button>
+            </div>
           </div>
               </motion.div>
             </>
