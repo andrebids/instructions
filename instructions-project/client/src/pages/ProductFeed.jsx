@@ -137,12 +137,12 @@ export default function ProductFeed() {
           />
         </Button>
 
-                                   {/* Botão para desligar/ligar efeito da neve - lado esquerdo */}
-          <Tooltip content={isSnowEnabled ? "Desligar neve" : "Ligar neve"} placement="right">
-            <Button
-              isIconOnly
-              radius="full"
-              className={`fixed left-4 top-20 z-50 backdrop-blur-md text-white border border-white/20 shadow-lg ${
+        {/* Botão para desligar/ligar efeito da neve - lado esquerdo */}
+        <Tooltip content={isSnowEnabled ? "Desligar neve" : "Ligar neve"} placement="right">
+          <Button
+            isIconOnly
+            radius="full"
+            className={`fixed left-4 top-20 z-50 backdrop-blur-md text-white border border-white/20 shadow-lg ${
                 isSnowEnabled 
                   ? 'bg-blue-400/60 hover:bg-blue-400/80' 
                   : 'bg-black/60 hover:bg-black/80'
