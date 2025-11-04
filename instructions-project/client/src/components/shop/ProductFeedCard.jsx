@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button, Chip } from '@heroui/react';
+import { Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ScrollShadow, Image } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { useShop } from '../../context/ShopContext';
 
@@ -8,13 +8,14 @@ import { useShop } from '../../context/ShopContext';
  * Product card for TikTok-style feed
  * Displays video (if available) or image with product information on the side
  */
-export default function ProductFeedCard({ product, isActive = false, onPlay, onPause }) {
+export default function ProductFeedCard({ product, isActive = false, onPlay, onPause, onProductSelect }) {
   const videoRef = useRef(null);
   const infoPanelRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasVideo, setHasVideo] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
-  const { toggleFavorite, favorites, getAvailableStock } = useShop();
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const { toggleFavorite, favorites, getAvailableStock, products } = useShop();
 
   const isFavorited = favorites?.includes(product?.id);
   const stock = getAvailableStock?.(product) ?? 0;
@@ -168,6 +169,52 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       setIsInfoOpen(true);
     }
   }, []);
+
+  // Find similar products based on tags, type, location, mount
+  const getSimilarProducts = useCallback(() => {
+    if (!products || !Array.isArray(products) || !product) return [];
+    
+    const currentProduct = product;
+    const similarities = products
+      .filter(p => p.id !== currentProduct.id)
+      .map(p => {
+        let score = 0;
+        
+        // Match tags
+        const currentTags = currentProduct.tags || [];
+        const productTags = p.tags || [];
+        const commonTags = currentTags.filter(tag => productTags.includes(tag));
+        score += commonTags.length * 3; // Tags are important
+        
+        // Match type
+        if (currentProduct.type && p.type && currentProduct.type === p.type) {
+          score += 5;
+        }
+        
+        // Match location
+        if (currentProduct.location && p.location && currentProduct.location === p.location) {
+          score += 4;
+        }
+        
+        // Match mount
+        if (currentProduct.mount && p.mount && currentProduct.mount === p.mount) {
+          score += 3;
+        }
+        
+        // Match category (if available)
+        if (currentProduct.category && p.category && currentProduct.category === p.category) {
+          score += 2;
+        }
+        
+        return { product: p, score };
+      })
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6) // Top 6 similar products
+      .map(item => item.product);
+    
+    return similarities;
+  }, [products, product]);
 
   if (!product) return null;
 
@@ -578,9 +625,10 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               size="sm"
               variant="bordered"
               className="bg-gray-900/50 hover:bg-gray-800/50 text-white border-white/20 font-semibold text-xs md:text-base"
-              startContent={<Icon icon="lucide:share-2" className="text-base md:text-xl" />}
+              startContent={<Icon icon="lucide:sparkles" className="text-base md:text-xl" />}
+              onPress={() => setShowSuggestions(true)}
             >
-              Share
+              Suggestions
             </Button>
             </div>
           </div>
@@ -588,6 +636,81 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             </>
           )}
         </AnimatePresence>
+
+        {/* Suggestions Modal */}
+        <Modal 
+          isOpen={showSuggestions} 
+          onClose={() => setShowSuggestions(false)}
+          size="2xl"
+          scrollBehavior="inside"
+          classNames={{
+            base: "bg-gray-900 border border-white/10",
+            header: "border-b border-white/10",
+            body: "py-4",
+          }}
+        >
+          <ModalContent>
+            <ModalHeader className="text-white text-xl font-bold">
+              Similar Products
+            </ModalHeader>
+            <ModalBody>
+              <ScrollShadow className="max-h-[60vh]">
+                {(() => {
+                  const similarProducts = getSimilarProducts();
+                  if (similarProducts.length === 0) {
+                    return (
+                      <div className="text-center py-8 text-gray-400">
+                        <Icon icon="lucide:info" className="text-4xl mb-2 mx-auto" />
+                        <p>No similar products found.</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {similarProducts.map((similarProduct) => {
+                        const similarImageUrl = similarProduct?.images?.day || similarProduct?.images?.night || similarProduct?.images?.thumbnailUrl;
+                        return (
+                          <div
+                            key={similarProduct.id}
+                            className="bg-gray-800/50 rounded-lg overflow-hidden border border-white/10 hover:border-white/20 transition-all cursor-pointer group"
+                            onClick={() => {
+                              setShowSuggestions(false);
+                              if (onProductSelect) {
+                                onProductSelect(similarProduct.id);
+                              }
+                            }}
+                          >
+                            {similarImageUrl && (
+                              <div className="relative w-full aspect-square bg-black overflow-hidden">
+                                <Image
+                                  src={similarImageUrl}
+                                  alt={similarProduct.name}
+                                  className="w-full h-full object-contain"
+                                  classNames={{
+                                    wrapper: "w-full h-full",
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            )}
+                            <div className="p-3">
+                              <h4 className="text-white font-semibold text-sm line-clamp-2 mb-1">
+                                {similarProduct.name}
+                              </h4>
+                              <p className="text-white font-bold text-base">
+                                €{similarProduct.price?.toFixed(2) || '0.00'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </ScrollShadow>
+            </ModalBody>
+          </ModalContent>
+        </Modal>
       </div>
     </div>
   );
