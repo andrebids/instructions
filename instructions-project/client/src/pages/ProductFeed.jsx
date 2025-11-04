@@ -24,6 +24,7 @@ export default function ProductFeed() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const cardRefs = useRef({});
+  const scrollContainerRef = useRef(null);
 
   // Callback para IntersectionObserver
   const handleIntersection = useCallback((entries) => {
@@ -56,6 +57,24 @@ export default function ProductFeed() {
       observer.disconnect();
     };
   }, [handleIntersection, products.length]);
+
+  // Função para navegar para um produto específico com scroll suave
+  const navigateToProduct = useCallback((productId) => {
+    const index = products.findIndex(p => p.id === productId);
+    if (index !== -1) {
+      setActiveIndex(index);
+      const cardElement = cardRefs.current[productId];
+      
+      if (cardElement) {
+        // Usar scrollIntoView nativo do navegador que já é otimizado e suave
+        cardElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }
+    }
+  }, [products]);
 
   if (loading) {
     return (
@@ -181,7 +200,7 @@ export default function ProductFeed() {
       </AnimatePresence>
 
       {/* Conteúdo do feed */}
-      <div className="h-full overflow-y-auto snap-y snap-mandatory scroll-smooth">
+      <div ref={scrollContainerRef} className="h-full overflow-y-auto snap-y snap-mandatory scroll-smooth">
         {products.map((product, index) => (
           <motion.div
             key={product.id}
@@ -205,6 +224,7 @@ export default function ProductFeed() {
               isActive={index === activeIndex}
               onPlay={() => setActiveIndex(index)}
               onPause={() => setActiveIndex(-1)}
+              onProductSelect={navigateToProduct}
             />
           </motion.div>
         ))}
