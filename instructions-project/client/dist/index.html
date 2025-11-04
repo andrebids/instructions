@@ -1,14 +1,24 @@
 <!doctype html>
-<html lang="pt-PT">
+<html lang="en" class="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Instructions Project</title>
-    <script type="module" crossorigin src="/assets/index-4bNFvZoC.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DfgFKMY2.css">
+    <title>TheCore</title>
+    <link rel="icon" href="/logo.webp" type="image/webp" />
+    
+    
+    <script>
+      // Prevent flash of unstyled content by applying saved theme immediately
+      (function() {
+        const savedTheme = localStorage.getItem('heroui-theme') || 'light';
+        document.documentElement.classList.add(savedTheme);
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-DhbO1TnZ.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-WkbWpGJg.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"></div>
   </body>
   </html>
 

@@ -1528,4 +1528,63 @@ export async function getAvailableColors(req, res) {
   }
 }
 
+// GET /api/products/categories - Listar categorias únicas baseadas no campo mount
+export async function getCategories(req, res) {
+  try {
+    console.log('📂 [PRODUCTS API] GET /api/products/categories - Buscando categorias');
+    
+    // Buscar todos os produtos ativos com mount
+    var products = await Product.findAll({
+      where: {
+        isActive: true,
+        mount: { 
+          [Op.and]: [
+            { [Op.ne]: null },
+            { [Op.ne]: '' }
+          ]
+        } // Apenas produtos com mount definido e não vazio
+      },
+      attributes: ['mount'],
+      order: [['mount', 'ASC']]
+    });
+    
+    // Extrair categorias únicas usando um objeto para evitar duplicatas
+    var categoriesMap = {};
+    var mountNameMap = { 'Poste': 'Pole', 'Chão': 'Floor', 'Transversal': 'Transversal' };
+    
+    for (var i = 0; i < products.length; i++) {
+      var mount = products[i].mount;
+      if (mount && typeof mount === 'string' && mount.trim() !== '') {
+        if (!categoriesMap[mount]) {
+          var displayName = mountNameMap[mount] || mount;
+          categoriesMap[mount] = {
+            id: mount,
+            name: displayName
+          };
+        }
+      }
+    }
+    
+    // Converter objeto em array
+    var categories = [];
+    for (var key in categoriesMap) {
+      if (categoriesMap.hasOwnProperty(key)) {
+        categories.push(categoriesMap[key]);
+      }
+    }
+    
+    // Ordenar por nome
+    categories.sort(function(a, b) {
+      return a.name.localeCompare(b.name);
+    });
+    
+    console.log('📂 [PRODUCTS API] Categorias encontradas:', categories.length);
+    
+    res.json(categories);
+  } catch (error) {
+    console.error('❌ [GET CATEGORIES] Erro ao buscar categorias:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
 
