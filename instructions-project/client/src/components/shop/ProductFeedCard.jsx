@@ -282,12 +282,12 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                   )}
                 </div>
 
-                {/* Dimensions - check both product level and specs */}
+                {/* Dimensions - check product level, specs, and specs.dimensions */}
                 {(() => {
-                  const height = product.height || product.specs?.height;
-                  const width = product.width || product.specs?.width;
-                  const depth = product.depth || product.specs?.depth;
-                  const diameter = product.diameter || product.specs?.diameter;
+                  const height = product.height || product.specs?.height || product.specs?.dimensions?.heightM;
+                  const width = product.width || product.specs?.width || product.specs?.dimensions?.widthM;
+                  const depth = product.depth || product.specs?.depth || product.specs?.dimensions?.depthM;
+                  const diameter = product.diameter || product.specs?.diameter || product.specs?.dimensions?.diameterM;
                   
                   if (height || width || depth || diameter) {
                     return (
@@ -479,12 +479,12 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               </div>
             )}
 
-            {/* Dimensions - check both product level and specs */}
+            {/* Dimensions - check product level, specs, and specs.dimensions */}
             {(() => {
-              const height = product.height || product.specs?.height;
-              const width = product.width || product.specs?.width;
-              const depth = product.depth || product.specs?.depth;
-              const diameter = product.diameter || product.specs?.diameter;
+              const height = product.height || product.specs?.height || product.specs?.dimensions?.heightM;
+              const width = product.width || product.specs?.width || product.specs?.dimensions?.widthM;
+              const depth = product.depth || product.specs?.depth || product.specs?.dimensions?.depthM;
+              const diameter = product.diameter || product.specs?.diameter || product.specs?.dimensions?.diameterM;
               
               if (height || width || depth || diameter) {
                 return (
