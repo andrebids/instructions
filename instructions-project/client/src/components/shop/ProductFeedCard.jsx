@@ -15,12 +15,17 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
   const [hasVideo, setHasVideo] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  // Estado para controlar se está mostrando simulação animada (apenas para GX349L)
+  const [showAnimationSimulation, setShowAnimationSimulation] = useState(false);
   const { toggleFavorite, favorites, getAvailableStock, products } = useShop();
 
   const isFavorited = favorites?.includes(product?.id);
   const stock = getAvailableStock?.(product) ?? 0;
   const isOutOfStock = stock <= 0;
   const isLowStock = stock > 0 && stock <= 10;
+
+  // Verificar se é o produto GX349L
+  const isGX349L = product?.name === 'GX349L' || product?.id === 'prd-005';
 
   // Available colors
   const colorKeys = Object.keys(product?.images?.colors || {});
@@ -33,11 +38,12 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
     azul: "#3b82f6",
   };
 
-  // Check if product has video
+  // Check if product has video (incluindo simulação animada para GX349L)
   useEffect(() => {
     const videoUrl = product?.videoFile || product?.animationUrl;
-    setHasVideo(Boolean(videoUrl));
-  }, [product]);
+    const hasSimulationVideo = isGX349L; // GX349L sempre tem vídeo de simulação disponível
+    setHasVideo(Boolean(videoUrl) || hasSimulationVideo);
+  }, [product, isGX349L]);
 
   // Auto-play/pause based on isActive
   useEffect(() => {
@@ -53,7 +59,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       videoRef.current.currentTime = 0; // Reset to start
       setIsPlaying(false);
     }
-  }, [isActive, hasVideo]);
+  }, [isActive, hasVideo, showAnimationSimulation]); // Adicionar showAnimationSimulation para recarregar quando mudar
 
   // Toggle play/pause manual
   const handleVideoClick = () => {
@@ -74,6 +80,11 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
 
   // Build video URL
   const getVideoUrl = () => {
+    // Se for GX349L e estiver mostrando simulação animada, usar o vídeo da simulação
+    if (isGX349L && showAnimationSimulation) {
+      return '/SIMU_GX349L_ANIM.webm';
+    }
+    
     const videoFile = product?.videoFile || product?.animationUrl;
     if (!videoFile) return null;
     
@@ -233,6 +244,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
         >
           {hasVideo && videoUrl ? (
             <video
+              key={videoUrl} // Key para forçar recarregar quando o vídeo mudar
               ref={videoRef}
               src={videoUrl}
               className="w-full h-full object-contain bg-black"
@@ -270,6 +282,50 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                 <Icon icon="lucide:play" className="text-4xl ml-1" />
               </Button>
             </div>
+          )}
+
+          {/* Botão de simulação animada - apenas para GX349L */}
+          {isGX349L && hasVideo && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+              className="absolute bottom-4 left-4 z-40"
+            >
+              <Button
+                radius="md"
+                size="sm"
+                className={`font-semibold text-xs md:text-sm ${
+                  showAnimationSimulation
+                    ? 'bg-primary hover:bg-primary-600 text-white'
+                    : 'bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md'
+                }`}
+                startContent={
+                  <Icon 
+                    icon={showAnimationSimulation ? "lucide:video" : "lucide:play-circle"} 
+                    className="text-base md:text-lg"
+                  />
+                }
+                onPress={() => {
+                  const wasPlaying = isPlaying;
+                  setShowAnimationSimulation(!showAnimationSimulation);
+                  // Reset video e recomeçar se estava tocando
+                  setTimeout(() => {
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = 0;
+                      if (wasPlaying && isActive) {
+                        videoRef.current.play().catch(err => {
+                          console.warn('Error playing video:', err);
+                        });
+                      }
+                    }
+                  }, 100);
+                }}
+                aria-label={showAnimationSimulation ? "Ver vídeo normal" : "Ver simulação animada"}
+              >
+                {showAnimationSimulation ? "Vídeo Normal" : "Simulação Animada"}
+              </Button>
+            </motion.div>
           )}
 
         </div>
@@ -600,6 +656,42 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
 
             {/* Action buttons - at the bottom */}
             <div className="flex flex-col gap-2 md:gap-3 pt-4 md:pt-6 mt-auto border-t border-white/10">
+            {/* Botão de simulação animada - apenas para GX349L, também no painel de informações */}
+            {isGX349L && hasVideo && (
+              <Button
+                radius="md"
+                size="sm"
+                className={`font-semibold text-xs md:text-base ${
+                  showAnimationSimulation
+                    ? 'bg-primary hover:bg-primary-600 text-white'
+                    : 'bg-white/10 hover:bg-white/15 text-white border border-white/20'
+                }`}
+                startContent={
+                  <Icon 
+                    icon={showAnimationSimulation ? "lucide:video" : "lucide:play-circle"} 
+                    className="text-base md:text-xl"
+                  />
+                }
+                onPress={() => {
+                  const wasPlaying = isPlaying;
+                  setShowAnimationSimulation(!showAnimationSimulation);
+                  // Reset video e recomeçar se estava tocando
+                  setTimeout(() => {
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = 0;
+                      if (wasPlaying && isActive) {
+                        videoRef.current.play().catch(err => {
+                          console.warn('Error playing video:', err);
+                        });
+                      }
+                    }
+                  }, 100);
+                }}
+              >
+                {showAnimationSimulation ? "Ver Vídeo Normal" : "Ver Simulação Animada"}
+              </Button>
+            )}
+
             <Button
               radius="md"
               size="sm"
