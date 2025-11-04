@@ -281,7 +281,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
-            className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 lg:top-6 lg:right-6 z-20 bg-black/90 backdrop-blur-md rounded-md sm:rounded-lg md:rounded-xl px-2 py-2 sm:px-2.5 sm:py-2.5 md:px-4 md:py-3 lg:px-5 lg:py-4 border border-white/20 shadow-2xl pointer-events-auto max-w-[160px] md:max-w-[240px] lg:max-w-[280px]"
+                         className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 lg:top-6 lg:right-6 z-40 bg-black/90 backdrop-blur-md rounded-md sm:rounded-lg md:rounded-xl px-2 py-2 sm:px-2.5 sm:py-2.5 md:px-4 md:py-3 lg:px-5 lg:py-4 border border-white/20 shadow-2xl pointer-events-auto max-w-[160px] md:max-w-[240px] lg:max-w-[280px]"
             style={{
               marginTop: 'env(safe-area-inset-top, 0)',
               marginRight: 'env(safe-area-inset-right, 0)',
@@ -381,7 +381,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             isIconOnly
             radius="full"
             size="lg"
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80"
+                         className="absolute right-4 top-1/2 -translate-y-1/2 z-40 bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80"
             onPress={() => setIsInfoOpen(true)}
             aria-label="Open product info"
           >
@@ -399,7 +399,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="absolute inset-0 bg-black/30 backdrop-blur-sm z-30"
+                                 className="absolute inset-0 bg-black/30 backdrop-blur-sm z-40"
                 onClick={() => setIsInfoOpen(false)}
               />
 
@@ -410,11 +410,11 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="absolute right-0 top-0 h-full w-[40%] md:w-[30%] bg-black/98 backdrop-blur-sm p-3 md:p-6 flex flex-col overflow-y-auto border-l border-white/5 z-40"
+                                 className="absolute right-0 top-0 h-full w-[40%] md:w-[30%] bg-black/98 backdrop-blur-sm p-3 md:p-6 flex flex-col overflow-y-auto border-l border-white/5 z-50"
                 onClick={(e) => e.stopPropagation()}
               >
           {/* Close button - top left */}
-          <div className="absolute top-3 md:top-4 left-3 md:left-4 z-50">
+                     <div className="absolute top-3 md:top-4 left-3 md:left-4 z-60">
             <Button
               isIconOnly
               size="sm"

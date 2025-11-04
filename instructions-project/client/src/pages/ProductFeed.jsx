@@ -107,6 +107,18 @@ export default function ProductFeed() {
 
   return (
     <div className="w-full h-screen overflow-hidden bg-black relative">
+      {/* Vídeo de fundo em loop */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="fixed inset-0 w-full h-full object-cover z-30 opacity-20"
+        style={{ pointerEvents: 'none' }}
+      >
+        <source src="/snooooow.webm" type="video/webm" />
+      </video>
+
       {/* Botão Hambúrguer - Fixo no canto superior esquerdo */}
       <Button
         isIconOnly
@@ -200,7 +212,7 @@ export default function ProductFeed() {
       </AnimatePresence>
 
       {/* Conteúdo do feed */}
-      <div ref={scrollContainerRef} className="h-full overflow-y-auto snap-y snap-mandatory scroll-smooth">
+      <div ref={scrollContainerRef} className="h-full overflow-y-auto snap-y snap-mandatory scroll-smooth relative z-20">
         {products.map((product, index) => (
           <motion.div
             key={product.id}
