@@ -24,6 +24,8 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
   // Flag para indicar se o estado foi alterado manualmente (não deve ser sobrescrito pelo useEffect)
   const [manuallyToggled, setManuallyToggled] = useState(false);
   const previousProductIdRef = useRef(product?.id);
+  const manuallyToggledRef = useRef(false); // Ref para garantir que não seja sobrescrito durante re-renders
+  const lastToggleTimeRef = useRef(0); // Timestamp do último toggle para evitar sobrescrita imediata
   const { toggleFavorite, favorites, getBaseStock, getAvailableStock, products, getReservedQuantity } = useShop();
 
   const isFavorited = favorites?.includes(product?.id);
@@ -71,12 +73,37 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
 
   // Reset simulação animada e vídeo de sugestão quando o produto muda
   useEffect(() => {
+    console.log('🔄 [useEffect] Executando', {
+      manuallyToggled,
+      manuallyToggledRef: manuallyToggledRef.current,
+      productId: product?.id,
+      initialAnimationSimulation,
+      showAnimationSimulation,
+      timeSinceLastToggle: Date.now() - lastToggleTimeRef.current
+    });
+    
+    // Se foi alterado manualmente (verificar tanto state quanto ref), NUNCA sobrescrever o estado
+    // Também verificar se foi alterado há menos de 2000ms (proteção adicional contra timing issues)
+    const recentlyToggled = Date.now() - lastToggleTimeRef.current < 2000;
+    
+    if (manuallyToggled || manuallyToggledRef.current || recentlyToggled) {
+      console.log('🔄 [useEffect] Bloqueado - foi alterado manualmente', {
+        manuallyToggled,
+        manuallyToggledRef: manuallyToggledRef.current,
+        recentlyToggled
+      });
+      return;
+    }
+    
     // Verificar se o produto realmente mudou
     const productChanged = previousProductIdRef.current !== product?.id;
     
     if (productChanged) {
+      console.log('🔄 [useEffect] Produto mudou, aplicando estado inicial');
       // Produto mudou: resetar flag e aplicar estado inicial
-      setManuallyToggled(false);
+      setManuallyToggled(false); // Resetar flag quando produto muda
+      manuallyToggledRef.current = false; // Resetar ref também
+      lastToggleTimeRef.current = 0; // Resetar timestamp também
       previousProductIdRef.current = product?.id;
       
       // Se há um estado inicial de simulação animada passado como prop, usar esse estado
@@ -88,16 +115,34 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       }
       setSelectedSuggestionVideo(null);
       setPreviousAnimationState(false);
-    } else if (!manuallyToggled) {
+    } else {
+      console.log('🔄 [useEffect] Produto não mudou, mas initialAnimationSimulation pode ter mudado');
       // Produto não mudou mas initialAnimationSimulation pode ter mudado
-      // Aplicar apenas se não foi alterado manualmente
-      if (initialAnimationSimulation && (isGX349L || isGX350LW)) {
-        setShowAnimationSimulation(true);
+      // Aplicar apenas se não foi alterado manualmente (já verificado acima)
+      // IMPORTANTE: Se manuallyToggledRef está true ou foi recentemente alterado, não fazer nada mesmo que initialAnimationSimulation mude
+      if (manuallyToggledRef.current || recentlyToggled) {
+        console.log('🔄 [useEffect] Bloqueado - manuallyToggledRef é true ou foi recentemente alterado', {
+          manuallyToggledRef: manuallyToggledRef.current,
+          recentlyToggled
+        });
+        return;
+      }
+      
+      // Verificar se o estado atual já está correto antes de atualizar
+      const shouldBeSimulation = initialAnimationSimulation && (isGX349L || isGX350LW);
+      if (showAnimationSimulation !== shouldBeSimulation) {
+        if (shouldBeSimulation) {
+          console.log('🔄 [useEffect] Aplicando simulação animada');
+          setShowAnimationSimulation(true);
+        } else {
+          console.log('🔄 [useEffect] Aplicando vídeo normal');
+          setShowAnimationSimulation(false);
+        }
       } else {
-        setShowAnimationSimulation(false);
+        console.log('🔄 [useEffect] Estado já está correto, não precisa atualizar');
       }
     }
-  }, [product?.id, initialAnimationSimulation, isGX349L, isGX350LW, manuallyToggled]);
+  }, [product?.id, initialAnimationSimulation, isGX349L, isGX350LW]); // Removido manuallyToggled das dependências para evitar execuções desnecessárias
 
   // O vídeo será automaticamente recarregado quando videoUrl mudar devido à key={videoUrl}
   // O onLoadedData no elemento vídeo garante que seja reproduzido quando carregar
@@ -135,50 +180,94 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
     }
   };
 
-  // Handler para botão de simulação animada
+  // Handler para botão de simulação animada - usado tanto no botão do lado esquerdo quanto no painel de informações
   const handleAnimationSimulationToggle = () => {
+    console.log('🎬 [handleAnimationSimulationToggle] Clicado', {
+      selectedSuggestionVideo: !!selectedSuggestionVideo,
+      showAnimationSimulation,
+      originalProductId,
+      productId: product?.id
+    });
+    
     // Se há um vídeo selecionado de sugestões, voltar ao vídeo original
     if (selectedSuggestionVideo) {
       setSelectedSuggestionVideo(null);
       // Restaurar o estado de simulação animada anterior
       setShowAnimationSimulation(previousAnimationState);
-      setManuallyToggled(false); // Não é uma alteração manual neste caso
+      manuallyToggledRef.current = false;
+      setManuallyToggled(false);
     } else {
       // Caso contrário, alternar normalmente entre vídeo normal e simulação
       const newState = !showAnimationSimulation;
-      setShowAnimationSimulation(newState);
-      setManuallyToggled(true); // Marcar como alterado manualmente
       
-      // Se está voltando ao vídeo normal e é o produto original, limpar o originalProductId
-      if (!newState && originalProductId && originalProductId === product?.id && onClearOriginalProduct) {
-        // Limpar o originalProductId sem navegar
-        onClearOriginalProduct();
+      console.log('🎬 [handleAnimationSimulationToggle] Alternando estado', {
+        from: showAnimationSimulation,
+        to: newState
+      });
+      
+      // CRÍTICO: Marcar como alterado manualmente ANTES de qualquer outra ação
+      // Isso garante que o useEffect não sobrescreva o estado
+      manuallyToggledRef.current = true;
+      setManuallyToggled(true);
+      lastToggleTimeRef.current = Date.now(); // Marcar timestamp do toggle
+      
+      console.log('🎬 [handleAnimationSimulationToggle] Estado ANTES:', {
+        showAnimationSimulation,
+        newState,
+        manuallyToggledRef: manuallyToggledRef.current,
+        timestamp: lastToggleTimeRef.current
+      });
+      
+      // Atualizar o estado local usando função de atualização para garantir que seja aplicado
+      setShowAnimationSimulation(prevState => {
+        console.log('🎬 [handleAnimationSimulationToggle] setShowAnimationSimulation chamado', {
+          prevState,
+          newState,
+          willUpdate: prevState !== newState
+        });
+        return newState;
+      });
+      
+      console.log('🎬 [handleAnimationSimulationToggle] Estado DEPOIS:', {
+        showAnimationSimulation: newState,
+        manuallyToggledRef: manuallyToggledRef.current
+      });
+      
+      // Depois limpar o estado no ProductFeed se necessário
+      // IMPORTANTE: Limpar após um pequeno delay para garantir que o estado local seja atualizado primeiro
+      if (!newState && onClearOriginalProduct) {
+        console.log('🎬 [handleAnimationSimulationToggle] Limpando estado no ProductFeed');
+        // Usar setTimeout para garantir que o estado local seja atualizado antes de limpar no ProductFeed
+        setTimeout(() => {
+          onClearOriginalProduct();
+        }, 50);
       }
     }
-    
-    // O vídeo será recarregado automaticamente devido à key={videoUrl} no elemento video
-    // O useEffect que monitora videoUrl também garantirá o recarregamento e play automático
   };
 
   // Build video URL
   const getVideoUrl = () => {
     // Se houver vídeo selecionado de sugestões, usar esse
     if (selectedSuggestionVideo) {
+      console.log('🎥 [getVideoUrl] Usando vídeo de sugestão:', selectedSuggestionVideo);
       return selectedSuggestionVideo;
     }
     
     // Se for GX349L e estiver mostrando simulação animada, usar o vídeo da simulação
     if (isGX349L && showAnimationSimulation) {
+      console.log('🎥 [getVideoUrl] GX349L - Simulação animada');
       return '/SIMU_GX349L_ANIM.webm';
     }
     
     // Se for GX350LW e estiver mostrando simulação animada, usar o vídeo da simulação
     if (isGX350LW && showAnimationSimulation) {
+      console.log('🎥 [getVideoUrl] GX350LW - Simulação animada');
       return '/SIMU_GX350LW_ANIM.webm';
     }
     
     // Por default, sempre retornar o vídeo normal do produto
     const videoFile = product?.videoFile || product?.animationUrl;
+    console.log('🎥 [getVideoUrl] Vídeo normal:', videoFile, 'showAnimationSimulation:', showAnimationSimulation);
     if (!videoFile) return null;
     
     // If already a complete URL (http/https), use directly
@@ -237,6 +326,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
   };
 
   const videoUrl = getVideoUrl();
+  console.log('🎬 [ProductFeedCard Render] videoUrl:', videoUrl, 'showAnimationSimulation:', showAnimationSimulation, 'manuallyToggledRef:', manuallyToggledRef.current);
   const imageUrl = product?.images?.day || product?.images?.night || product?.images?.thumbnailUrl;
   const discountPct = product?.oldPrice 
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100) 
@@ -439,34 +529,6 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             />
           )}
 
-          {/* Botão de simulação animada - apenas para GX349L e GX350LW - posicionado na lateral esquerda por baixo do botão de neve */}
-          {(isGX349L || isGX350LW) && hasVideo && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              className="fixed left-4 top-36 z-40"
-            >
-              <Button
-                isIconOnly
-                radius="full"
-                size="lg"
-                className={`shadow-lg text-white border border-white/20 ${
-                  showAnimationSimulation || selectedSuggestionVideo
-                    ? 'bg-blue-400/60 hover:bg-blue-400/80'
-                    : 'bg-black/60 hover:bg-black/80'
-                }`}
-                onPress={handleAnimationSimulationToggle}
-                aria-label={selectedSuggestionVideo ? "Ver vídeo original" : (showAnimationSimulation ? "Ver vídeo normal" : "Ver simulação animada")}
-                title={selectedSuggestionVideo ? "Vídeo Original" : (showAnimationSimulation ? "Vídeo Normal" : "Simulação Animada")}
-              >
-                <Icon 
-                  icon="lucide:film" 
-                  className="text-2xl"
-                />
-              </Button>
-            </motion.div>
-          )}
 
         </div>
 
