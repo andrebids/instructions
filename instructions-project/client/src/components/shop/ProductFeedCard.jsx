@@ -79,6 +79,9 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
     setPreviousAnimationState(false);
   }, [product?.id, initialAnimationSimulation, isGX349L, isGX350LW]);
 
+  // O vídeo será automaticamente recarregado quando videoUrl mudar devido à key={videoUrl}
+  // O onLoadedData no elemento vídeo garante que seja reproduzido quando carregar
+
   // Auto-play/pause based on isActive
   useEffect(() => {
     if (!videoRef.current || !hasVideo) return;
@@ -93,7 +96,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       videoRef.current.currentTime = 0; // Reset to start
       setIsPlaying(false);
     }
-  }, [isActive, hasVideo, showAnimationSimulation, selectedSuggestionVideo]); // Adicionar showAnimationSimulation e selectedSuggestionVideo para recarregar quando mudar
+  }, [isActive, hasVideo]); // Remover showAnimationSimulation e selectedSuggestionVideo daqui pois já são tratados no useEffect acima
 
   // Toggle play/pause manual
   const handleVideoClick = () => {
@@ -114,8 +117,6 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
 
   // Handler para botão de simulação animada
   const handleAnimationSimulationToggle = () => {
-    const wasPlaying = isPlaying;
-    
     // Se há um vídeo selecionado de sugestões, voltar ao vídeo original
     if (selectedSuggestionVideo) {
       setSelectedSuggestionVideo(null);
@@ -126,17 +127,8 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       setShowAnimationSimulation(!showAnimationSimulation);
     }
     
-    // Reset video e recomeçar se estava tocando
-    setTimeout(() => {
-      if (videoRef.current) {
-        videoRef.current.currentTime = 0;
-        if (wasPlaying && isActive) {
-          videoRef.current.play().catch(err => {
-            console.warn('Error playing video:', err);
-          });
-        }
-      }
-    }, 100);
+    // O vídeo será recarregado automaticamente devido à key={videoUrl} no elemento video
+    // O useEffect que monitora videoUrl também garantirá o recarregamento e play automático
   };
 
   // Build video URL
@@ -344,6 +336,15 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               muted
               playsInline
               preload="metadata"
+              onLoadedData={() => {
+                // Quando o vídeo carregar, reproduzir se estiver ativo
+                if (isActive && videoRef.current) {
+                  videoRef.current.play().catch(err => {
+                    console.warn('Error playing video:', err);
+                  });
+                  setIsPlaying(true);
+                }
+              }}
               onError={(e) => {
                 console.warn('Error loading video:', videoUrl, e);
                 // If video fails, show fallback image
