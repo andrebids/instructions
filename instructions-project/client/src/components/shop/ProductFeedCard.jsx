@@ -434,14 +434,12 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       onMouseDown={handleSwipeStart}
     >
       {/* Main container: Video full width, info panel overlay */}
-      <div className="flex w-full h-full relative items-center">
-        {/* Video/image area - container do vídeo (quadrado rosa) - apenas o tamanho do vídeo */}
+      <div className="flex w-full h-full relative items-center justify-center p-2 sm:p-4 md:p-6">
+        {/* Video/image area - container do vídeo - ocupar mais espaço na tela */}
         <div 
-          className="relative w-full bg-black flex items-center justify-center cursor-pointer overflow-hidden mx-auto"
+          className="relative w-full h-full bg-black flex items-center justify-center cursor-pointer overflow-hidden"
           style={{
-            aspectRatio: '16/9', // Proporção do vídeo
-            maxHeight: '100vh',
-            maxWidth: '100%',
+            minHeight: '80vh', // Garantir que ocupe pelo menos 80% da altura da tela
           }}
           onClick={handleVideoClick}
         >
@@ -451,6 +449,12 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               ref={videoRef}
               src={videoUrl}
               className="w-full h-full object-contain bg-black"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                width: 'auto',
+                height: 'auto',
+              }}
               loop
               muted
               playsInline
@@ -479,6 +483,12 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               src={imageUrl}
               alt={product.name}
               className="w-full h-full object-contain bg-black"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                width: 'auto',
+                height: 'auto',
+              }}
             />
           )}
 
