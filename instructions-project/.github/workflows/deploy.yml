@@ -1,6 +1,7 @@
 name: Deploy Instructions Project
 
 # Workflow atualizado: usa git pull diretamente (sem rsync) para deploy mais rápido e fiável
+# Versão: 2.0 - Deploy direto via SSH sem rsync
 on:
   push:
     branches: [ master, main ]
