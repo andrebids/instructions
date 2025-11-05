@@ -27,6 +27,7 @@ export default function ProductFeed() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSnowEnabled, setIsSnowEnabled] = useState(true);
   const [productAnimationStates, setProductAnimationStates] = useState({}); // Estado para guardar se cada produto deve iniciar em modo simulação animada
+  const [originalProductId, setOriginalProductId] = useState(null); // ID do produto original quando navega em modo simulação animada
   const cardRefs = useRef({});
   const scrollContainerRef = useRef(null);
 
@@ -79,7 +80,7 @@ export default function ProductFeed() {
   }, [handleIntersection, products.length]);
 
   // Função para navegar para um produto específico - substitui no mesmo lugar sem scroll
-  const navigateToProduct = useCallback((productId, startWithAnimation = false) => {
+  const navigateToProduct = useCallback((productId, startWithAnimation = false, fromProductId = null) => {
     const index = products.findIndex(p => p.id === productId);
     if (index !== -1) {
       // Guardar o estado de simulação animada para este produto
@@ -88,6 +89,11 @@ export default function ProductFeed() {
           ...prev,
           [productId]: startWithAnimation
         }));
+      }
+      
+      // Se está navegando em modo simulação animada e veio de outro produto, guardar o produto original
+      if (startWithAnimation && fromProductId && fromProductId !== productId) {
+        setOriginalProductId(fromProductId);
       }
       
       // Atualizar o índice ativo
@@ -124,7 +130,7 @@ export default function ProductFeed() {
         }
       }, 50); // Pequeno delay para garantir que o modal seja fechado
     }
-  }, [products]);
+  }, [products, activeIndex, originalProductId]);
 
   if (loading) {
     return (
@@ -311,6 +317,19 @@ export default function ProductFeed() {
               onPause={() => setActiveIndex(-1)}
               onProductSelect={navigateToProduct}
               initialAnimationSimulation={productAnimationStates[product.id] || false}
+              originalProductId={originalProductId}
+              onResetOriginalProduct={() => {
+                if (originalProductId) {
+                  navigateToProduct(originalProductId, true);
+                  // Limpar o originalProductId após navegar
+                  setTimeout(() => {
+                    setOriginalProductId(null);
+                  }, 100);
+                }
+              }}
+              onClearOriginalProduct={() => {
+                setOriginalProductId(null);
+              }}
             />
           </motion.div>
         ))}

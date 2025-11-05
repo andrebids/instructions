@@ -8,7 +8,7 @@ import { useShop } from '../../context/ShopContext';
  * Product card for TikTok-style feed
  * Displays video (if available) or image with product information on the side
  */
-export default function ProductFeedCard({ product, isActive = false, onPlay, onPause, onProductSelect, initialAnimationSimulation = false }) {
+export default function ProductFeedCard({ product, isActive = false, onPlay, onPause, onProductSelect, initialAnimationSimulation = false, originalProductId = null, onResetOriginalProduct, onClearOriginalProduct }) {
   const videoRef = useRef(null);
   const infoPanelRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -21,6 +21,9 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
   const [selectedSuggestionVideo, setSelectedSuggestionVideo] = useState(null);
   // Estado para guardar o estado de simulação animada antes de selecionar uma sugestão
   const [previousAnimationState, setPreviousAnimationState] = useState(false);
+  // Flag para indicar se o estado foi alterado manualmente (não deve ser sobrescrito pelo useEffect)
+  const [manuallyToggled, setManuallyToggled] = useState(false);
+  const previousProductIdRef = useRef(product?.id);
   const { toggleFavorite, favorites, getBaseStock, getAvailableStock, products, getReservedQuantity } = useShop();
 
   const isFavorited = favorites?.includes(product?.id);
@@ -68,16 +71,33 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
 
   // Reset simulação animada e vídeo de sugestão quando o produto muda
   useEffect(() => {
-    // Se há um estado inicial de simulação animada passado como prop, usar esse estado
-    // Caso contrário, resetar para vídeo normal
-    if (initialAnimationSimulation && (isGX349L || isGX350LW)) {
-      setShowAnimationSimulation(true);
-    } else {
-      setShowAnimationSimulation(false);
+    // Verificar se o produto realmente mudou
+    const productChanged = previousProductIdRef.current !== product?.id;
+    
+    if (productChanged) {
+      // Produto mudou: resetar flag e aplicar estado inicial
+      setManuallyToggled(false);
+      previousProductIdRef.current = product?.id;
+      
+      // Se há um estado inicial de simulação animada passado como prop, usar esse estado
+      // Caso contrário, resetar para vídeo normal
+      if (initialAnimationSimulation && (isGX349L || isGX350LW)) {
+        setShowAnimationSimulation(true);
+      } else {
+        setShowAnimationSimulation(false);
+      }
+      setSelectedSuggestionVideo(null);
+      setPreviousAnimationState(false);
+    } else if (!manuallyToggled) {
+      // Produto não mudou mas initialAnimationSimulation pode ter mudado
+      // Aplicar apenas se não foi alterado manualmente
+      if (initialAnimationSimulation && (isGX349L || isGX350LW)) {
+        setShowAnimationSimulation(true);
+      } else {
+        setShowAnimationSimulation(false);
+      }
     }
-    setSelectedSuggestionVideo(null);
-    setPreviousAnimationState(false);
-  }, [product?.id, initialAnimationSimulation, isGX349L, isGX350LW]);
+  }, [product?.id, initialAnimationSimulation, isGX349L, isGX350LW, manuallyToggled]);
 
   // O vídeo será automaticamente recarregado quando videoUrl mudar devido à key={videoUrl}
   // O onLoadedData no elemento vídeo garante que seja reproduzido quando carregar
@@ -122,9 +142,18 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       setSelectedSuggestionVideo(null);
       // Restaurar o estado de simulação animada anterior
       setShowAnimationSimulation(previousAnimationState);
+      setManuallyToggled(false); // Não é uma alteração manual neste caso
     } else {
       // Caso contrário, alternar normalmente entre vídeo normal e simulação
-      setShowAnimationSimulation(!showAnimationSimulation);
+      const newState = !showAnimationSimulation;
+      setShowAnimationSimulation(newState);
+      setManuallyToggled(true); // Marcar como alterado manualmente
+      
+      // Se está voltando ao vídeo normal e é o produto original, limpar o originalProductId
+      if (!newState && originalProductId && originalProductId === product?.id && onClearOriginalProduct) {
+        // Limpar o originalProductId sem navegar
+        onClearOriginalProduct();
+      }
     }
     
     // O vídeo será recarregado automaticamente devido à key={videoUrl} no elemento video
@@ -853,8 +882,51 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                   }
                   const originalImageUrl = product?.images?.day || product?.images?.night || product?.images?.thumbnailUrl;
                   
+                  // Encontrar produto original se existir
+                  const originalProduct = originalProductId && products?.find(p => p.id === originalProductId);
+                  const showOriginalProductOption = showAnimationSimulation && originalProductId && originalProductId !== product?.id && onResetOriginalProduct && originalProduct;
+                  const originalProductImageUrl = originalProduct?.images?.day || originalProduct?.images?.night || originalProduct?.images?.thumbnailUrl;
+                  
                   return (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {/* Opção para voltar ao produto original quando está em modo simulação animada e navegou para outro produto */}
+                      {showOriginalProductOption && (
+                        <div
+                          key="original-product"
+                          className="bg-blue-900/30 rounded-lg overflow-hidden border-2 border-blue-500/50 hover:border-blue-500 transition-all cursor-pointer group"
+                          onClick={() => {
+                            setShowSuggestions(false);
+                            onResetOriginalProduct();
+                          }}
+                        >
+                          {originalProductImageUrl && (
+                            <div className="relative w-full aspect-square bg-black overflow-hidden">
+                              <Image
+                                src={originalProductImageUrl}
+                                alt={originalProduct.name}
+                                className="w-full h-full object-contain"
+                                classNames={{
+                                  wrapper: "w-full h-full",
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-blue-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <div className="absolute top-2 right-2 bg-blue-500/90 rounded-full p-1.5">
+                                <Icon icon="lucide:rotate-ccw" className="text-white text-sm" />
+                              </div>
+                            </div>
+                          )}
+                          <div className="p-3">
+                            <h4 className="text-white font-semibold text-sm line-clamp-2 mb-1 flex items-center gap-1">
+                              <Icon icon="lucide:rotate-ccw" className="text-xs" />
+                              {originalProduct.name} (Original)
+                            </h4>
+                            <p className="text-white font-bold text-base">
+                              €{originalProduct.price?.toFixed(2) || '0.00'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Opção para voltar ao produto original quando um vídeo de sugestão está ativo */}
                       {selectedSuggestionVideo && (
                         <div
@@ -930,11 +1002,11 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                                 setTimeout(() => {
                                   // Se estiver em modo simulação animada e o novo produto suportar, preservar o estado
                                   if (shouldPreserveAnimation) {
-                                    // Passar o estado de simulação animada para o novo produto
-                                    onProductSelect(similarProduct.id, true); // true = iniciar em modo simulação animada
+                                    // Passar o estado de simulação animada para o novo produto e guardar o produto atual como original
+                                    onProductSelect(similarProduct.id, true, product?.id); // true = iniciar em modo simulação animada, product.id = produto atual (original)
                                   } else {
                                     // Caso contrário, navegar para vídeo normal
-                                    onProductSelect(similarProduct.id, false); // false = iniciar em modo vídeo normal
+                                    onProductSelect(similarProduct.id, false);
                                   }
                                 }, 50); // Pequeno delay para garantir que o modal seja fechado
                               }
