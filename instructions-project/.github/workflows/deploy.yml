@@ -1,7 +1,8 @@
-name: Deploy Instructions Project
+name: Deploy Instructions Project - Git Pull Direct
 
 # Workflow atualizado: usa git pull diretamente (sem rsync) para deploy mais rápido e fiável
 # Versão: 2.0 - Deploy direto via SSH sem rsync
+# Este workflow NÃO usa rsync - apenas git pull direto no servidor
 on:
   push:
     branches: [ master, main ]
