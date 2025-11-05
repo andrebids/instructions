@@ -437,7 +437,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       <div className="flex w-full h-full relative items-center justify-center p-2 sm:p-4 md:p-6">
         {/* Video/image area - container do vídeo - proporção landscape como os quadrados azuis */}
         <div 
-          className="relative w-full bg-black flex items-center justify-center cursor-pointer overflow-hidden mx-auto border-2 border-blue-500"
+          className="relative w-full bg-black flex items-center justify-center cursor-pointer overflow-hidden mx-auto"
           style={{
             // Proporção landscape (horizontal) como os quadrados azuis
             aspectRatio: '16/9', // Proporção landscape padrão
@@ -514,7 +514,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
           {/* Botão invisível para abrir sugestões - área clicável no local do risco verde (urso polar) - posição relativa ao container do vídeo - apenas quando está em simulação animada ou há vídeo de sugestão ativo */}
           {(showAnimationSimulation || selectedSuggestionVideo) && (
             <div
-              className="absolute z-20 cursor-pointer border-2 border-pink-500"
+              className="absolute z-20 cursor-pointer"
               onClick={(e) => {
                 // Não abrir sugestões se clicar em um botão ou elemento interativo
                 const target = e.target;
