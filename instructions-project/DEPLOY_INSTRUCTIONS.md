@@ -143,8 +143,12 @@ O workflow vai:
 - ✅ Fazer git pull no servidor
 - ✅ Garantir que Docker Compose (PostgreSQL) está a correr
 - ✅ Atualizar `.env` do servidor (DB_HOST=localhost)
-- ✅ Instalar dependências
+- ✅ Instalar dependências do servidor
+- ✅ Fazer build do cliente
 - ✅ Reiniciar PM2 com o servidor
+- ✅ Verificar se servidor está online
+
+**Nota:** O PM2 está configurado para iniciar automaticamente após reinícios do servidor (via systemd).
 
 ## 🔍 Troubleshooting
 
