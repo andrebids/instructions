@@ -78,7 +78,7 @@ export default function ProductFeed() {
     };
   }, [handleIntersection, products.length]);
 
-  // Função para navegar para um produto específico - substitui no mesmo lugar sem scroll suave
+  // Função para navegar para um produto específico - substitui no mesmo lugar sem scroll
   const navigateToProduct = useCallback((productId, startWithAnimation = false) => {
     const index = products.findIndex(p => p.id === productId);
     if (index !== -1) {
@@ -90,21 +90,39 @@ export default function ProductFeed() {
         }));
       }
       
-      // Atualizar o índice ativo para substituir o produto atual no mesmo lugar
+      // Atualizar o índice ativo
       setActiveIndex(index);
       
-      // Fazer scroll instantâneo (sem animação) para que o produto apareça imediatamente no lugar do atual
+      // Fazer scroll instantâneo apenas se o produto não estiver visível
+      // Remover temporariamente scroll-smooth para evitar animação
       setTimeout(() => {
         const cardElement = cardRefs.current[productId];
-        if (cardElement) {
-          // Scroll instantâneo sem animação - substitui no mesmo lugar
-          cardElement.scrollIntoView({ 
-            behavior: 'auto', // 'auto' = instantâneo, sem animação suave
-            block: 'start',
-            inline: 'nearest'
-          });
+        const container = scrollContainerRef.current;
+        
+        if (cardElement && container) {
+          // Verificar se o produto já está visível na viewport
+          const rect = cardElement.getBoundingClientRect();
+          const containerRect = container.getBoundingClientRect();
+          const isVisible = rect.top >= containerRect.top && rect.bottom <= containerRect.bottom;
+          
+          // Apenas fazer scroll se o produto não estiver visível
+          if (!isVisible) {
+            // Remover classe scroll-smooth temporariamente
+            container.classList.remove('scroll-smooth');
+            
+            // Calcular a posição exata do elemento
+            const elementTop = cardElement.offsetTop;
+            
+            // Usar scrollTop diretamente - é instantâneo, sem animação
+            container.scrollTop = elementTop;
+            
+            // Restaurar scroll-smooth após um pequeno delay
+            setTimeout(() => {
+              container.classList.add('scroll-smooth');
+            }, 10);
+          }
         }
-      }, 50); // Pequeno delay apenas para garantir que o modal seja fechado
+      }, 50); // Pequeno delay para garantir que o modal seja fechado
     }
   }, [products]);
 
