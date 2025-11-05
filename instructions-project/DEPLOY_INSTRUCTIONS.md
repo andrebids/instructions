@@ -169,6 +169,103 @@ O workflow vai:
 2. Verifica DB_HOST no `.env`: deve ser `localhost` (não IP externo)
 3. Testa conexão: `cd server && npm run check-connection`
 
+## 🔧 Deploy Manual via SSH
+
+Se o GitHub Actions não estiver a funcionar, podes fazer deploy manualmente diretamente no servidor:
+
+### Opção 1: Usar o Script deploy-server.sh
+
+```bash
+# 1. Conectar ao servidor
+ssh -i ~/.ssh/thecore andre@136.116.79.244
+
+# 2. Ir ao diretório do projeto
+cd /home/andre/apps/instructions/instructions-project
+
+# 3. Copiar o script deploy-server.sh para o servidor (do teu PC)
+# Ou criar o script diretamente no servidor:
+cat > deploy-server.sh << 'EOF'
+#!/bin/bash
+# ... (conteúdo do script)
+EOF
+
+# 4. Dar permissões e executar
+chmod +x deploy-server.sh
+./deploy-server.sh
+```
+
+### Opção 2: Comandos Manuais Passo a Passo
+
+```bash
+# 1. Conectar ao servidor
+ssh -i ~/.ssh/thecore andre@136.116.79.244
+
+# 2. Ir ao diretório do projeto
+cd /home/andre/apps/instructions/instructions-project
+
+# 3. Atualizar código
+git fetch origin
+git reset --hard origin/main
+
+# 4. Iniciar Docker Compose (PostgreSQL)
+docker compose -f docker-compose.prod.yml up -d
+
+# 5. Configurar .env do servidor
+cd server
+cat > .env << EOF
+DB_HOST=localhost
+DB_PORT=5433
+DB_NAME=instructions_demo
+DB_USER=demo_user
+DB_PASSWORD=demo_password
+PORT=5000
+NODE_ENV=production
+EOF
+
+# 6. Instalar dependências do servidor
+npm ci --omit=dev
+
+# 7. Build do cliente
+cd ../client
+npm ci
+npm run build
+
+# 8. Reiniciar PM2
+cd ../server
+pm2 delete instructions-server 2>/dev/null || true
+pm2 start npm --name instructions-server -- start
+pm2 save
+
+# 9. Verificar status
+pm2 status
+curl http://localhost:5000/health
+```
+
+### Opção 3: Copiar e Colar Comando Único
+
+```bash
+ssh -i ~/.ssh/thecore andre@136.116.79.244 << 'ENDSSH'
+cd /home/andre/apps/instructions/instructions-project && \
+git fetch origin && git reset --hard origin/main && \
+docker compose -f docker-compose.prod.yml up -d && \
+cd server && \
+echo "DB_HOST=localhost" > .env && \
+echo "DB_PORT=5433" >> .env && \
+echo "DB_NAME=instructions_demo" >> .env && \
+echo "DB_USER=demo_user" >> .env && \
+echo "DB_PASSWORD=demo_password" >> .env && \
+echo "PORT=5000" >> .env && \
+echo "NODE_ENV=production" >> .env && \
+npm ci --omit=dev && \
+cd ../client && npm ci && npm run build && \
+cd ../server && \
+pm2 delete instructions-server 2>/dev/null || true && \
+pm2 start npm --name instructions-server -- start && \
+pm2 save && \
+pm2 status
+ENDSSH
+```
+
 ## 📞 URLs Importantes
 
 - **Backend API**: http://136.116.79.244:5000/api
