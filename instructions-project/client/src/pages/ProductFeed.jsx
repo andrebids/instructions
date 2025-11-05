@@ -192,26 +192,78 @@ export default function ProductFeed() {
           />
         </Button>
 
-        {/* Botão para desligar/ligar efeito da neve - lado esquerdo */}
-        <Tooltip content={isSnowEnabled ? "Desligar neve" : "Ligar neve"} placement="right">
-          <Button
-            isIconOnly
-            radius="full"
-            className={`fixed left-4 top-20 z-50 backdrop-blur-md text-white border border-white/20 shadow-lg ${
-                isSnowEnabled 
-                  ? 'bg-blue-400/60 hover:bg-blue-400/80' 
-                  : 'bg-black/60 hover:bg-black/80'
-              }`}
-              size="lg"
-              onPress={() => setIsSnowEnabled(!isSnowEnabled)}
-              aria-label={isSnowEnabled ? "Desligar neve" : "Ligar neve"}
-            >
-              <Icon 
-                icon="lucide:snowflake" 
-                className="text-2xl"
-              />
-            </Button>
-          </Tooltip>
+        {/* Container para botões do lado esquerdo - mantém posição relativa em qualquer resolução */}
+        <div className="fixed left-4 top-20 z-50 flex flex-col gap-4">
+          {/* Botão para desligar/ligar efeito da neve */}
+          <Tooltip content={isSnowEnabled ? "Desligar neve" : "Ligar neve"} placement="right">
+            <Button
+              isIconOnly
+              radius="full"
+              className={`backdrop-blur-md text-white border border-white/20 shadow-lg ${
+                  isSnowEnabled 
+                    ? 'bg-blue-400/60 hover:bg-blue-400/80' 
+                    : 'bg-black/60 hover:bg-black/80'
+                }`}
+                size="lg"
+                onPress={() => setIsSnowEnabled(!isSnowEnabled)}
+                aria-label={isSnowEnabled ? "Desligar neve" : "Ligar neve"}
+              >
+                <Icon 
+                  icon="lucide:snowflake" 
+                  className="text-2xl"
+                />
+              </Button>
+            </Tooltip>
+
+          {/* Botão de simulação animada - apenas para GX349L e GX350LW */}
+          {(() => {
+            const activeProduct = products[activeIndex];
+            // Usar a mesma lógica de detecção do ProductFeedCard
+            const isGX349L = activeProduct?.name === 'GX349L' || activeProduct?.id === 'prd-005';
+            const isGX350LW = activeProduct?.name === 'GX350LW' || activeProduct?.id?.includes('GX350LW');
+            const hasVideo = activeProduct?.videoFile || activeProduct?.animationUrl || isGX349L || isGX350LW;
+            const isAnimationMode = productAnimationStates[activeProduct?.id] || false;
+            
+            if ((isGX349L || isGX350LW) && hasVideo) {
+              return (
+                <Tooltip 
+                  content={isAnimationMode ? "Ver vídeo normal" : "Ver simulação animada"} 
+                  placement="right"
+                >
+                  <Button
+                    isIconOnly
+                    radius="full"
+                    className={`backdrop-blur-md text-white border border-white/20 shadow-lg ${
+                      isAnimationMode 
+                        ? 'bg-blue-400/60 hover:bg-blue-400/80' 
+                        : 'bg-black/60 hover:bg-black/80'
+                    }`}
+                    size="lg"
+                    onPress={() => {
+                      if (activeProduct?.id) {
+                        setProductAnimationStates(prev => ({
+                          ...prev,
+                          [activeProduct.id]: !isAnimationMode
+                        }));
+                        // Limpar originalProductId se estiver voltando ao vídeo normal
+                        if (isAnimationMode) {
+                          setOriginalProductId(null);
+                        }
+                      }
+                    }}
+                    aria-label={isAnimationMode ? "Ver vídeo normal" : "Ver simulação animada"}
+                  >
+                    <Icon 
+                      icon="lucide:film" 
+                      className="text-2xl"
+                    />
+                  </Button>
+                </Tooltip>
+              );
+            }
+            return null;
+          })()}
+        </div>
 
       {/* Overlay escuro quando menu aberto */}
       <AnimatePresence>
@@ -328,6 +380,20 @@ export default function ProductFeed() {
                 }
               }}
               onClearOriginalProduct={() => {
+                const currentProductId = product.id;
+                console.log('🧹 [ProductFeed] onClearOriginalProduct chamado para produto:', currentProductId);
+                
+                // Limpar o estado de simulação animada para este produto PRIMEIRO
+                if (currentProductId) {
+                  setProductAnimationStates(prev => {
+                    const updated = { ...prev };
+                    updated[currentProductId] = false;
+                    console.log('🧹 [ProductFeed] Estado de simulação limpo para:', currentProductId, 'novo estado:', updated);
+                    return updated;
+                  });
+                }
+                
+                // Limpar o originalProductId depois
                 setOriginalProductId(null);
               }}
             />
