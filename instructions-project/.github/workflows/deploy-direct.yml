@@ -7,9 +7,15 @@ on:
     branches: [ master, main ]
   workflow_dispatch: {}
 
+# Limitar a apenas 1 deploy por vez para evitar sobrecarga
+concurrency:
+  group: deploy-instructions
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 10  # Timeout total de 10 minutos
     
     steps:
       - name: Deploy via SSH (Git Pull Direct)
@@ -23,6 +29,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
+          command_timeout: 8m  # Timeout de 8 minutos por comando SSH
           envs: NODE_ENV,PM2_NAME,PORT
           script: |
             # Definir diretórios do projeto
@@ -104,26 +111,26 @@ jobs:
             fi
             echo ""
             
-            # 4. Instalar dependências do servidor
+            # 4. Instalar dependências do servidor (com timeout)
             echo "📦 [4/6] Instalando dependências do servidor..."
             cd "${SERVER_DIR}"
             if [ -f package-lock.json ]; then
-              npm ci --omit=dev || npm install --omit=dev
+              timeout 180 npm ci --omit=dev --maxsockets=1 || timeout 180 npm install --omit=dev --maxsockets=1
             else
-              npm install --omit=dev
+              timeout 180 npm install --omit=dev --maxsockets=1
             fi
             echo "✅ Dependências do servidor instaladas"
             echo ""
             
-            # 5. Build do cliente (se necessário)
+            # 5. Build do cliente (com timeout e limite de memória)
             echo "🏗️  [5/6] Fazendo build do cliente..."
             cd "${CLIENT_DIR}"
             if [ -f package-lock.json ]; then
-              npm ci || npm install
+              timeout 180 npm ci --maxsockets=1 || timeout 180 npm install --maxsockets=1
             else
-              npm install
+              timeout 180 npm install --maxsockets=1
             fi
-            npm run build
+            NODE_OPTIONS="--max-old-space-size=2048" timeout 300 npm run build
             echo "✅ Cliente compilado"
             echo ""
             
