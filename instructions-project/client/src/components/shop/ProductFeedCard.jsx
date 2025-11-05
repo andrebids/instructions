@@ -8,7 +8,7 @@ import { useShop } from '../../context/ShopContext';
  * Product card for TikTok-style feed
  * Displays video (if available) or image with product information on the side
  */
-export default function ProductFeedCard({ product, isActive = false, onPlay, onPause, onProductSelect }) {
+export default function ProductFeedCard({ product, isActive = false, onPlay, onPause, onProductSelect, initialAnimationSimulation = false }) {
   const videoRef = useRef(null);
   const infoPanelRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -68,12 +68,16 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
 
   // Reset simulação animada e vídeo de sugestão quando o produto muda
   useEffect(() => {
-    // Quando muda de produto, resetar para vídeo normal
-    // IMPORTANTE: Garantir que sempre começa com vídeo normal, não com simulação animada
-    setShowAnimationSimulation(false);
+    // Se há um estado inicial de simulação animada passado como prop, usar esse estado
+    // Caso contrário, resetar para vídeo normal
+    if (initialAnimationSimulation && (isGX349L || isGX350LW)) {
+      setShowAnimationSimulation(true);
+    } else {
+      setShowAnimationSimulation(false);
+    }
     setSelectedSuggestionVideo(null);
     setPreviousAnimationState(false);
-  }, [product?.id]);
+  }, [product?.id, initialAnimationSimulation, isGX349L, isGX350LW]);
 
   // Auto-play/pause based on isActive
   useEffect(() => {
@@ -902,23 +906,36 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                       
                       {similarProducts.map((similarProduct) => {
                         const similarImageUrl = similarProduct?.images?.day || similarProduct?.images?.night || similarProduct?.images?.thumbnailUrl;
+                        const isSimilarGX349L = similarProduct?.name === 'GX349L' || similarProduct?.id === 'prd-005';
+                        const isSimilarGX350LW = similarProduct?.name === 'GX350LW' || similarProduct?.id?.includes('GX350LW');
+                        const similarSupportsAnimation = isSimilarGX349L || isSimilarGX350LW;
+                        
+                        // Determinar se deve preservar o estado de simulação animada
+                        // Preservar apenas se:
+                        // 1. Estamos em modo simulação animada (não vídeo de sugestão)
+                        // 2. O novo produto também suporta simulação animada
+                        const shouldPreserveAnimation = showAnimationSimulation && similarSupportsAnimation;
+                        
                         return (
                           <div
                             key={similarProduct.id}
                             className="bg-gray-800/50 rounded-lg overflow-hidden border border-white/10 hover:border-white/20 transition-all cursor-pointer group"
                             onClick={() => {
+                              // Fechar o modal primeiro
                               setShowSuggestions(false);
                               
-                              // Navegar para qualquer produto (incluindo GX350LW) sempre mostra o vídeo normal
                               if (onProductSelect) {
-                                // Reset todos os estados quando navegar para outro produto
-                                // IMPORTANTE: Resetar ANTES de navegar para garantir que o novo produto começa com vídeo normal
-                                setSelectedSuggestionVideo(null);
-                                setShowAnimationSimulation(false);
-                                setPreviousAnimationState(false);
-                                
-                                // Navegar para o produto (mostrará vídeo normal por default)
-                                onProductSelect(similarProduct.id);
+                                // Usar setTimeout para garantir que o modal seja fechado antes de navegar
+                                setTimeout(() => {
+                                  // Se estiver em modo simulação animada e o novo produto suportar, preservar o estado
+                                  if (shouldPreserveAnimation) {
+                                    // Passar o estado de simulação animada para o novo produto
+                                    onProductSelect(similarProduct.id, true); // true = iniciar em modo simulação animada
+                                  } else {
+                                    // Caso contrário, navegar para vídeo normal
+                                    onProductSelect(similarProduct.id, false); // false = iniciar em modo vídeo normal
+                                  }
+                                }, 50); // Pequeno delay para garantir que o modal seja fechado
                               }
                             }}
                           >
