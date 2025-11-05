@@ -17,7 +17,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20  # Timeout total de 20 minutos
+    timeout-minutes: 10  # Timeout total de 10 minutos
     
     steps:
       - name: Deploy via SSH (Git Pull)
@@ -31,7 +31,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          command_timeout: 15m  # Timeout de 15 minutos por comando SSH
+          command_timeout: 8m  # Timeout de 8 minutos por comando SSH
           envs: NODE_ENV,PM2_NAME,PORT
           script: |
             # Definir diretórios do projeto
@@ -117,9 +117,9 @@ jobs:
             echo "📦 [4/6] Instalando dependências do servidor..."
             cd "${SERVER_DIR}"
             if [ -f package-lock.json ]; then
-              timeout 300 npm ci --omit=dev --maxsockets=1 || timeout 300 npm install --omit=dev --maxsockets=1
+              timeout 180 npm ci --omit=dev --maxsockets=1 || timeout 180 npm install --omit=dev --maxsockets=1
             else
-              timeout 300 npm install --omit=dev --maxsockets=1
+              timeout 180 npm install --omit=dev --maxsockets=1
             fi
             echo "✅ Dependências do servidor instaladas"
             echo ""
@@ -128,11 +128,11 @@ jobs:
             echo "🏗️  [5/6] Fazendo build do cliente..."
             cd "${CLIENT_DIR}"
             if [ -f package-lock.json ]; then
-              timeout 300 npm ci --maxsockets=1 || timeout 300 npm install --maxsockets=1
+              timeout 180 npm ci --maxsockets=1 || timeout 180 npm install --maxsockets=1
             else
-              timeout 300 npm install --maxsockets=1
+              timeout 180 npm install --maxsockets=1
             fi
-            NODE_OPTIONS="--max-old-space-size=2048" timeout 600 npm run build
+            NODE_OPTIONS="--max-old-space-size=2048" timeout 300 npm run build
             echo "✅ Cliente compilado"
             echo ""
             

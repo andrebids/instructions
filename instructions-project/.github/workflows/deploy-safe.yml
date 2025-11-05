@@ -15,7 +15,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # Timeout total de 15 minutos
+    timeout-minutes: 8  # Timeout total de 8 minutos
     
     steps:
       - name: Deploy via SSH (Lightweight)
@@ -29,7 +29,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          command_timeout: 10m  # Timeout de 10 minutos por comando
+          command_timeout: 7m  # Timeout de 7 minutos por comando
           envs: NODE_ENV,PM2_NAME,PORT
           script: |
             set -e  # Parar em caso de erro
@@ -71,19 +71,19 @@ jobs:
             echo "OK: .env configurado"
             echo ""
             
-            echo "[5/7] Instalando dependencias do servidor (timeout 5min)..."
+            echo "[5/7] Instalando dependencias do servidor (timeout 3min)..."
             cd "${SERVER_DIR}"
             # Usar timeout e limitar concorrência do npm
-            timeout 300 npm ci --omit=dev --maxsockets=1 --prefer-offline || timeout 300 npm install --omit=dev --maxsockets=1 --prefer-offline || exit 1
+            timeout 180 npm ci --omit=dev --maxsockets=1 --prefer-offline || timeout 180 npm install --omit=dev --maxsockets=1 --prefer-offline || exit 1
             echo "OK: Dependencias do servidor instaladas"
             echo ""
             
-            echo "[6/7] Build do cliente (timeout 10min)..."
+            echo "[6/7] Build do cliente (timeout 5min)..."
             cd "${CLIENT_DIR}"
             # Instalar dependências em background para não bloquear
-            timeout 300 npm ci --maxsockets=1 --prefer-offline || timeout 300 npm install --maxsockets=1 --prefer-offline || exit 1
+            timeout 180 npm ci --maxsockets=1 --prefer-offline || timeout 180 npm install --maxsockets=1 --prefer-offline || exit 1
             # Build com limite de memória
-            NODE_OPTIONS="--max-old-space-size=2048" timeout 600 npm run build || exit 1
+            NODE_OPTIONS="--max-old-space-size=2048" timeout 300 npm run build || exit 1
             echo "OK: Cliente compilado"
             echo ""
             
