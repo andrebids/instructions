@@ -435,11 +435,16 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
     >
       {/* Main container: Video full width, info panel overlay */}
       <div className="flex w-full h-full relative items-center justify-center p-2 sm:p-4 md:p-6">
-        {/* Video/image area - container do vídeo - ocupar mais espaço na tela */}
+        {/* Video/image area - container do vídeo - proporção landscape como os quadrados azuis */}
         <div 
-          className="relative w-full h-full bg-black flex items-center justify-center cursor-pointer overflow-hidden"
+          className="relative w-full bg-black flex items-center justify-center cursor-pointer overflow-hidden mx-auto border-2 border-blue-500"
           style={{
-            minHeight: '80vh', // Garantir que ocupe pelo menos 80% da altura da tela
+            // Proporção landscape (horizontal) como os quadrados azuis
+            aspectRatio: '16/9', // Proporção landscape padrão
+            maxHeight: '85vh', // Limitar altura máxima a 85% da viewport
+            maxWidth: '100%',
+            width: '100%', // Garantir que use toda a largura disponível
+            position: 'relative', // Garantir que elementos absolutos filhos sejam relativos a este container
           }}
           onClick={handleVideoClick}
         >
@@ -509,7 +514,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
           {/* Botão invisível para abrir sugestões - área clicável no local do risco verde (urso polar) - posição relativa ao container do vídeo - apenas quando está em simulação animada ou há vídeo de sugestão ativo */}
           {(showAnimationSimulation || selectedSuggestionVideo) && (
             <div
-              className="absolute z-20 cursor-pointer"
+              className="absolute z-20 cursor-pointer border-2 border-pink-500"
               onClick={(e) => {
                 // Não abrir sugestões se clicar em um botão ou elemento interativo
                 const target = e.target;
@@ -521,19 +526,19 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               }}
               style={{ 
                 pointerEvents: 'auto',
-                // Posição relativa ao container do vídeo (retângulo vermelho) - sobre o urso polar (retângulo rosa)
-                // O urso está no centro, encostado à parte inferior do container vermelho
-                // Tamanhos proporcionais ao container do vídeo
-                width: '25%', // 25% da largura do container
-                height: '35%', // 35% da altura do container
+                // Posição relativa ao container do vídeo - no centro horizontal, encostado à parte inferior
+                // O urso está no centro, encostado à parte inferior do container do vídeo
+                width: '30%', // Aproximadamente o tamanho do urso polar
+                height: '40%', // Altura do urso polar
                 position: 'absolute',
                 left: '50%', // Centro horizontal do container
                 bottom: '0px', // Encostado à parte inferior do container
-                transform: 'translateX(-50%) rotate(90deg)', // Centralizar e rodar
-                transformOrigin: 'center center',
-                // Garantir que não sai do container
-                maxWidth: '100%',
-                maxHeight: '100%',
+                transform: 'translateX(-50%)', // Centralizar horizontalmente
+                // Garantir que não sai do container - restringir ao container do vídeo
+                maxWidth: 'calc(100% - 0px)', // Não ultrapassar o container
+                maxHeight: 'calc(100% - 0px)', // Não ultrapassar o container
+                minWidth: '0px',
+                minHeight: '0px',
               }}
               aria-label="Open suggestions"
             />
