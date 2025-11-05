@@ -26,6 +26,7 @@ export default function ProductFeed() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSnowEnabled, setIsSnowEnabled] = useState(true);
+  const [productAnimationStates, setProductAnimationStates] = useState({}); // Estado para guardar se cada produto deve iniciar em modo simulação animada
   const cardRefs = useRef({});
   const scrollContainerRef = useRef(null);
 
@@ -77,21 +78,33 @@ export default function ProductFeed() {
     };
   }, [handleIntersection, products.length]);
 
-  // Função para navegar para um produto específico com scroll suave
-  const navigateToProduct = useCallback((productId) => {
+  // Função para navegar para um produto específico - substitui no mesmo lugar sem scroll suave
+  const navigateToProduct = useCallback((productId, startWithAnimation = false) => {
     const index = products.findIndex(p => p.id === productId);
     if (index !== -1) {
-      setActiveIndex(index);
-      const cardElement = cardRefs.current[productId];
-      
-      if (cardElement) {
-        // Usar scrollIntoView nativo do navegador que já é otimizado e suave
-        cardElement.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start',
-          inline: 'nearest'
-        });
+      // Guardar o estado de simulação animada para este produto
+      if (startWithAnimation !== undefined) {
+        setProductAnimationStates(prev => ({
+          ...prev,
+          [productId]: startWithAnimation
+        }));
       }
+      
+      // Atualizar o índice ativo para substituir o produto atual no mesmo lugar
+      setActiveIndex(index);
+      
+      // Fazer scroll instantâneo (sem animação) para que o produto apareça imediatamente no lugar do atual
+      setTimeout(() => {
+        const cardElement = cardRefs.current[productId];
+        if (cardElement) {
+          // Scroll instantâneo sem animação - substitui no mesmo lugar
+          cardElement.scrollIntoView({ 
+            behavior: 'auto', // 'auto' = instantâneo, sem animação suave
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 50); // Pequeno delay apenas para garantir que o modal seja fechado
     }
   }, [products]);
 
@@ -279,6 +292,7 @@ export default function ProductFeed() {
               onPlay={() => setActiveIndex(index)}
               onPause={() => setActiveIndex(-1)}
               onProductSelect={navigateToProduct}
+              initialAnimationSimulation={productAnimationStates[product.id] || false}
             />
           </motion.div>
         ))}
