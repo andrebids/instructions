@@ -1,5 +1,6 @@
 name: Deploy Instructions Project
 
+# Workflow atualizado: usa git pull diretamente (sem rsync) para deploy mais rápido e fiável
 on:
   push:
     branches: [ master, main ]
@@ -132,6 +133,18 @@ jobs:
             cd "${SERVER_DIR}"
             pm2 start npm --name ${PM2_NAME_FINAL} -- start
             pm2 save
+            echo ""
+            
+            # Aguardar servidor iniciar
+            echo "⏳ Aguardando servidor iniciar..."
+            sleep 5
+            
+            # Verificar se servidor está online
+            if curl -f -s http://localhost:5000/health > /dev/null 2>&1; then
+              echo "✅ Servidor online e respondendo!"
+            else
+              echo "⚠️ Servidor pode não estar totalmente pronto ainda"
+            fi
             echo ""
             
             # Verificar status final
