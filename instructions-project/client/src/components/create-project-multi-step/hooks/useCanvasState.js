@@ -63,8 +63,9 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
    * @param {boolean|null} useDayMode - Modo dia/noite (null = auto-determinar)
    * @param {Object} conversionComplete - Mapeia quais imagens completaram conversão
    * @param {Object} analysisComplete - Mapeia quais imagens completaram análise
+   * @param {Object|null} cartoucheData - Dados do cartouche para esta imagem (se existir)
    */
-  const handleImageAddToCanvas = (image, useDayMode = null, conversionComplete = {}, analysisComplete = {}) => {
+  const handleImageAddToCanvas = (image, useDayMode = null, conversionComplete = {}, analysisComplete = {}, cartoucheData = null) => {
     console.log('📸🖼️ ===== SOURCE IMAGE CLICADA =====');
     console.log('📸 Nome:', image.name);
     console.log('📸 ID:', image.id);
@@ -127,8 +128,69 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
     
     console.log('✅ Imagem adicionada ao canvas:', newImageLayer);
     
-    // SUBSTITUI a imagem anterior (não adiciona)
-    setCanvasImages([newImageLayer]);
+    // Verificar se é a mesma imagem (apenas mudança de modo dia/noite)
+    const isSameImage = selectedImage && selectedImage.id === image.id;
+    
+    // Se for a mesma imagem, preservar o cartouche; caso contrário, carregar/remover conforme necessário
+    if (isSameImage) {
+      // Preservar cartouche ao trocar apenas o modo dia/noite
+      const existingCartouche = canvasImages.find(img => img.isCartouche);
+      if (existingCartouche) {
+        // Atualizar cartouche com novas dimensões da imagem de fundo (caso mudem)
+        const updatedCartouche = {
+          ...existingCartouche,
+          x: newImageLayer.x,
+          y: newImageLayer.y,
+          width: newImageLayer.width,
+          height: newImageLayer.height
+        };
+        // Atualizar apenas a imagem de fundo, mantendo o cartouche atualizado
+        setCanvasImages([newImageLayer, updatedCartouche]);
+        console.log('🔄 Preservando cartouche ao trocar modo dia/noite');
+      } else {
+        // Não há cartouche, apenas substituir a imagem
+        setCanvasImages([newImageLayer]);
+      }
+    } else {
+      // Nova imagem selecionada - verificar se há cartouche salvo para esta imagem
+      console.log('🔍 Verificando cartouche para nova imagem:', image.id, {
+        cartoucheData,
+        hasCartouche: cartoucheData?.hasCartouche
+      });
+      
+      if (cartoucheData && cartoucheData.hasCartouche === true) {
+        // Carregar cartouche salvo para esta imagem
+        const cartouchePath = '/cartouches/CARTOUCHEpaysage.png';
+        const cartoucheImage = {
+          id: `cartouche-${Date.now()}`,
+          type: 'image',
+          name: 'Cartouche',
+          src: cartouchePath,
+          x: newImageLayer.x,
+          y: newImageLayer.y,
+          width: newImageLayer.width,
+          height: newImageLayer.height,
+          isCartouche: true
+        };
+        setCanvasImages([newImageLayer, cartoucheImage]);
+        console.log('✅ Carregando cartouche salvo para imagem:', image.id, {
+          cartoucheImage: {
+            x: cartoucheImage.x,
+            y: cartoucheImage.y,
+            width: cartoucheImage.width,
+            height: cartoucheImage.height
+          }
+        });
+      } else {
+        // Não há cartouche salvo, apenas substituir a imagem
+        setCanvasImages([newImageLayer]);
+        console.log('🔄 Nova imagem selecionada - sem cartouche salvo ou hasCartouche !== true', {
+          cartoucheData,
+          hasCartouche: cartoucheData?.hasCartouche
+        });
+      }
+    }
+    
     setSelectedImage(image);
   };
 
