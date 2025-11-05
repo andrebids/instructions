@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardFooter, Button, Spinner, Progress, Image, Tooltip } from "@heroui/react";
+import { Card, CardFooter, Button, Spinner, Progress, Image, Tooltip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { DecorationLibrary } from "../../decoration-library";
 import { NightThumb } from '../../NightThumb';
@@ -8,6 +8,7 @@ import { UnifiedSnapZonesPanel } from './UnifiedSnapZonesPanel';
 import { UploadModal } from '../components/UploadModal';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { KonvaCanvas } from '../components/konva/KonvaCanvas';
+import { StreetNameInput } from '../components/StreetNameInput';
 import { useCanvasState } from '../hooks/useCanvasState';
 import { useSnapZones } from '../hooks/useSnapZones';
 import { useImageConversion } from '../hooks/useImageConversion';
@@ -20,6 +21,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   // Estados locais adicionais (não extraídos para hooks)
   const [showUnifiedPanel, setShowUnifiedPanel] = useState(false); // Painel unificado oculto por padrão
   const [zonesWarning, setZonesWarning] = useState(false); // Estado para mostrar aviso sobre zonas
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false); // Modal de informações de localização
 
   // Usar hooks customizados - ordem importa para dependências
   const canvasState = useCanvasState({ 
@@ -58,12 +60,30 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
     }, 300);
   };
 
-  // Wrapper para handleImageAddToCanvas que também salva decorações
+  // Wrapper para handleImageAddToCanvas que também salva decorações e cartouche
   const handleImageAddToCanvas = (image, useDayMode = null) => {
+    // Obter estado atual do cartoucheByImage (usar formData como base)
+    let currentCartoucheByImage = formData?.cartoucheByImage || {};
+    
     // Guardar decorações da imagem anterior antes de trocar
     if (canvasState.selectedImage && canvasState.selectedImage.id !== image.id) {
       console.log('💾 Guardando decorações da imagem anterior:', canvasState.selectedImage.id, canvasState.decorations.length, 'decorações');
       decorationManagement.saveDecorationsForImage(canvasState.selectedImage.id, canvasState.decorations);
+      
+      // Guardar estado do cartouche da imagem anterior (sempre salvar, mesmo se não houver)
+      const hasCartouche = canvasState.canvasImages.some(img => img.isCartouche);
+      currentCartoucheByImage = {
+        ...currentCartoucheByImage,
+        [canvasState.selectedImage.id]: {
+          ...getCartoucheForImage(canvasState.selectedImage.id),
+          hasCartouche: hasCartouche // Salvar se tem ou não tem cartouche
+        }
+      };
+      onInputChange?.({ target: { name: 'cartoucheByImage', value: currentCartoucheByImage } });
+      console.log('💾 Guardando estado do cartouche para imagem:', canvasState.selectedImage.id, {
+        hasCartouche,
+        cartoucheData: currentCartoucheByImage[canvasState.selectedImage.id]
+      });
     }
     
     // Carregar decorações da nova imagem do mapeamento
@@ -71,8 +91,22 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
     console.log('📂 Carregando decorações da imagem:', image.id, newImageDecorations.length, 'decorações');
     canvasState.setDecorations(newImageDecorations);
     
+    // Obter dados do cartouche para a nova imagem (usar objeto atualizado, não formData que pode estar desatualizado)
+    const cartoucheDataForImage = currentCartoucheByImage[image.id];
+    console.log('📂 Dados do cartouche para imagem:', image.id, cartoucheDataForImage, {
+      hasCartouche: cartoucheDataForImage?.hasCartouche,
+      allCartoucheData: currentCartoucheByImage
+    });
+    
     // Adicionar imagem ao canvas (passar conversionComplete e analysisComplete)
-    canvasState.handleImageAddToCanvas(image, useDayMode, imageConversion.conversionComplete, imageConversion.analysisComplete);
+    // O cartouche será carregado dentro de handleImageAddToCanvas no useCanvasState
+    canvasState.handleImageAddToCanvas(
+      image, 
+      useDayMode, 
+      imageConversion.conversionComplete, 
+      imageConversion.analysisComplete,
+      cartoucheDataForImage // Passar dados do cartouche para carregar
+    );
   };
 
   // Handlers de decoração que também atualizam o mapeamento
@@ -116,7 +150,14 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
     if (canvasState.selectedImage && canvasState.canvasImages.length > 0) {
       console.log('🌓 Alternando modo:', newMode ? 'Day' : 'Night');
       // Usar handleImageAddToCanvas do canvasState diretamente para evitar loops
-      canvasState.handleImageAddToCanvas(canvasState.selectedImage, newMode, imageConversion.conversionComplete, imageConversion.analysisComplete);
+      // Passar dados do cartouche para preservar quando alternar modo
+      canvasState.handleImageAddToCanvas(
+        canvasState.selectedImage, 
+        newMode, 
+        imageConversion.conversionComplete, 
+        imageConversion.analysisComplete,
+        formData?.cartoucheByImage?.[canvasState.selectedImage.id] // Passar dados do cartouche
+      );
       
       // Se alternando para modo noite e análise ainda não foi feita, disparar análise YOLO12
       if (newMode === false && canvasState.selectedImage && !imageConversion.analysisComplete[canvasState.selectedImage.id]) {
@@ -138,6 +179,168 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
         }, 500);
       }
     }
+  };
+
+  // Funções auxiliares para cartouche por imagem
+  const getDefaultStreetName = (imageIndex) => {
+    // Nomes de ruas francesas comuns
+    const frenchStreets = [
+      "Mairie",           // Primeira imagem
+      "Rue de la République",
+      "Avenue des Champs-Élysées",
+      "Boulevard Saint-Michel",
+      "Rue de Rivoli",
+      "Place de la Concorde",
+      "Rue du Faubourg Saint-Antoine",
+      "Avenue Montaigne",
+      "Boulevard Haussmann",
+      "Rue de Vaugirard",
+      "Place Vendôme",
+      "Rue de la Paix",
+      "Avenue des Ternes",
+      "Boulevard Voltaire",
+      "Rue de Belleville"
+    ];
+    
+    // Se for a primeira imagem (índice 0), retorna "Mairie"
+    if (imageIndex === 0) {
+      return "Mairie";
+    }
+    
+    // Para outras imagens, usa nomes da lista, circulando se necessário
+    return frenchStreets[imageIndex % frenchStreets.length] || `Rue ${imageIndex}`;
+  };
+
+  // Função pura para obter cartouche (sem side effects)
+  const getCartoucheForImage = (imageId) => {
+    const cartouche = formData?.cartoucheByImage?.[imageId];
+    
+    // Se não existe entrada, calcular valores padrão baseados no índice da imagem
+    if (!cartouche) {
+      const imageIndex = canvasState.uploadedImages.findIndex(img => img.id === imageId);
+      const defaultStreetName = imageIndex >= 0 ? getDefaultStreetName(imageIndex) : "";
+      
+      return {
+        streetOrZone: defaultStreetName,
+        option: "base"
+      };
+    }
+    
+    return {
+      streetOrZone: cartouche.streetOrZone !== undefined ? cartouche.streetOrZone : "",
+      option: cartouche.option !== undefined ? cartouche.option : "base"
+    };
+  };
+
+  // Inicializar valores padrão para todas as imagens quando são carregadas
+  useEffect(() => {
+    if (canvasState.uploadedImages.length > 0) {
+      const currentCartoucheByImage = formData?.cartoucheByImage || {};
+      let needsUpdate = false;
+      const updatedCartoucheByImage = { ...currentCartoucheByImage };
+
+      canvasState.uploadedImages.forEach((image, index) => {
+        // Se não existe entrada para esta imagem, criar com valores padrão
+        if (!updatedCartoucheByImage[image.id]) {
+          const defaultStreetName = getDefaultStreetName(index);
+          updatedCartoucheByImage[image.id] = {
+            streetOrZone: defaultStreetName,
+            option: "base"
+          };
+          needsUpdate = true;
+        }
+      });
+
+      // Atualizar apenas se houver mudanças
+      if (needsUpdate) {
+        onInputChange?.({ target: { name: 'cartoucheByImage', value: updatedCartoucheByImage } });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasState.uploadedImages.map(img => img.id).join(',')]); // Executar quando IDs das imagens mudarem
+
+  const updateCartoucheForImage = (imageId, updates) => {
+    const currentCartoucheByImage = formData?.cartoucheByImage || {};
+    const current = currentCartoucheByImage[imageId] || getCartoucheForImage(imageId);
+    
+    const updatedCartoucheByImage = {
+      ...currentCartoucheByImage,
+      [imageId]: { ...current, ...updates }
+    };
+    
+    onInputChange?.({ target: { name: 'cartoucheByImage', value: updatedCartoucheByImage } });
+  };
+
+  const getDefaultProjectName = () => {
+    return formData?.projectName || "Mairie du Soleil";
+  };
+
+  const handleProjectNameChange = (value) => {
+    const currentProjectName = getDefaultProjectName();
+    
+    // Atualizar o projectName
+    onInputChange?.({ target: { name: 'projectName', value } });
+    
+    // Se está alterando para um valor diferente do default, 
+    // o projectName já é global, então não precisa duplicar
+    // O projectName é compartilhado entre todas as imagens
+  };
+
+  // Função para aplicar o cartouche como overlay no canvas
+  const handleApplyCartouche = () => {
+    if (canvasState.canvasImages.length === 0 || !canvasState.selectedImage) {
+      console.warn('⚠️ Não há imagem de fundo no canvas ou imagem selecionada');
+      return;
+    }
+
+    const cartouchePath = '/cartouches/CARTOUCHEpaysage.png';
+    
+    // Encontrar a imagem de fundo no canvas (primeira imagem que não é cartouche)
+    const backgroundImage = canvasState.canvasImages.find(img => !img.isCartouche);
+    
+    if (!backgroundImage) {
+      console.warn('⚠️ Não foi possível encontrar a imagem de fundo');
+      return;
+    }
+    
+    // Usar as mesmas dimensões e posição da imagem de fundo para o cartouche
+    // O cartouche ficará como uma moldura por cima da imagem
+    const cartoucheImage = {
+      id: `cartouche-${Date.now()}`,
+      type: 'image',
+      name: 'Cartouche',
+      src: cartouchePath,
+      x: backgroundImage.x, // Mesma posição X da imagem de fundo
+      y: backgroundImage.y, // Mesma posição Y da imagem de fundo
+      width: backgroundImage.width, // Mesma largura da imagem de fundo
+      height: backgroundImage.height, // Mesma altura da imagem de fundo
+      isCartouche: true // Flag para identificar como cartouche
+    };
+
+    // Remover cartouches anteriores (se houver) e adicionar o novo
+    const filteredImages = canvasState.canvasImages.filter(img => !img.isCartouche);
+    canvasState.setCanvasImages([...filteredImages, cartoucheImage]);
+    
+    // Salvar que o cartouche foi aplicado para esta imagem
+    const currentCartoucheByImage = formData?.cartoucheByImage || {};
+    const updatedCartoucheByImage = {
+      ...currentCartoucheByImage,
+      [canvasState.selectedImage.id]: {
+        ...getCartoucheForImage(canvasState.selectedImage.id),
+        hasCartouche: true // Flag para indicar que o cartouche foi aplicado
+      }
+    };
+    onInputChange?.({ target: { name: 'cartoucheByImage', value: updatedCartoucheByImage } });
+    
+    console.log('✅ Cartouche aplicado ao canvas e salvo para imagem:', canvasState.selectedImage.id, {
+      width: backgroundImage.width,
+      height: backgroundImage.height,
+      x: backgroundImage.x,
+      y: backgroundImage.y
+    });
+    
+    // Fechar o modal após aplicar
+    setIsLocationModalOpen(false);
   };
 
   // Salvamento automático
@@ -373,6 +576,18 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                   </Button>
                   <Button
                     size="sm"
+                    variant="flat"
+                    color="default"
+                    startContent={<Icon icon="lucide:map-pin" className="text-default-500" />}
+                    onPress={() => setIsLocationModalOpen(true)}
+                    isDisabled={!canvasState.selectedImage || canvasState.canvasImages.length === 0}
+                    title={!canvasState.selectedImage ? "Select an image first" : undefined}
+                    aria-label="Open cartouche information"
+                  >
+                    Cartouche
+                  </Button>
+                  <Button
+                    size="sm"
                     variant="light"
                     title="Show/Hide Zones"
                     aria-label="Show or hide snap zones"
@@ -442,6 +657,15 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                   isEditingZones={snapZones.isEditingZones}
                   analysisComplete={imageConversion.analysisComplete}
                   showSnapZones={canvasState.showSnapZones}
+                  cartoucheInfo={
+                    canvasState.selectedImage && canvasState.canvasImages.some(img => img.isCartouche)
+                      ? {
+                          projectName: getDefaultProjectName(),
+                          streetOrZone: getCartoucheForImage(canvasState.selectedImage.id).streetOrZone,
+                          option: getCartoucheForImage(canvasState.selectedImage.id).option
+                        }
+                      : null
+                  }
                   onZoneCreate={(zone) => {
                     console.log('🎨 [DEBUG] Zona criada no canvas, adicionando a tempZones:', zone);
                     snapZones.setTempZones(function(prev) {
@@ -500,6 +724,53 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
           />
         </div>
       )}
+      
+      {/* Location Information Modal */}
+      <Modal 
+        isOpen={isLocationModalOpen && canvasState.selectedImage !== null} 
+        onClose={() => setIsLocationModalOpen(false)}
+        size="lg"
+        scrollBehavior="inside"
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <h3 className="text-lg font-semibold">Cartouche Information</h3>
+            <p className="text-sm text-default-500">Enter project name, street or zone, and option</p>
+          </ModalHeader>
+          <ModalBody>
+            {canvasState.selectedImage && (
+              <StreetNameInput
+                projectName={getDefaultProjectName()}
+                streetOrZone={getCartoucheForImage(canvasState.selectedImage.id).streetOrZone}
+                option={getCartoucheForImage(canvasState.selectedImage.id).option}
+                onProjectNameChange={handleProjectNameChange}
+                onStreetOrZoneChange={(value) => {
+                  updateCartoucheForImage(canvasState.selectedImage.id, { streetOrZone: value });
+                }}
+                onOptionChange={(value) => {
+                  updateCartoucheForImage(canvasState.selectedImage.id, { option: value });
+                }}
+              />
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button 
+              variant="light"
+              onPress={() => setIsLocationModalOpen(false)}
+            >
+              Close
+            </Button>
+            <Button 
+              color="primary" 
+              onPress={handleApplyCartouche}
+              isDisabled={canvasState.canvasImages.length === 0}
+              startContent={<Icon icon="lucide:check" />}
+            >
+              Apply
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 };

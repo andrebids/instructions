@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import { URLImage } from './URLImage';
 import { DecorationItem } from './DecorationItem';
 import { SnapZoneMarkers } from './SnapZoneMarkers';
+import { CartoucheText } from './CartoucheText';
 import { checkSnapToZone } from '../../utils/snapZoneUtils';
 import { getDecorationColor } from '../../utils/decorationUtils';
 
@@ -28,7 +29,8 @@ export const KonvaCanvas = ({
   isEditingZones = false,
   onZoneCreate = null,
   analysisComplete = {}, // Nova prop para verificar se análise YOLO completou
-  showSnapZones = true
+  showSnapZones = true,
+  cartoucheInfo = null // Informações do cartouche: { projectName, streetOrZone, option }
 }) => {
   const stageRef = useRef(null);
   const containerRef = useRef(null);
@@ -298,6 +300,10 @@ export const KonvaCanvas = ({
         onMouseMove={isEditingZones ? handleMouseMoveZone : undefined}
         onMouseUp={isEditingZones ? handleMouseUpZone : undefined}
         onTouchStart={checkDeselect}
+        clipX={0}
+        clipY={0}
+        clipWidth={stageSize.width}
+        clipHeight={stageSize.height}
         className={`rounded-lg ${
           canvasImages.length > 0 || dragOver
             ? (dragOver 
@@ -321,6 +327,7 @@ export const KonvaCanvas = ({
             />
           ))}
         </Layer>
+
 
         {/* Layer 1.5: Snap Zone Markers (mostrar por padrão, ocultar apenas se showSnapZones for false) */}
         <Layer>
@@ -382,6 +389,43 @@ export const KonvaCanvas = ({
             />
           ))}
         </Layer>
+
+        {/* Layer 3: Cartouche Text (texto sobre o cartouche - deve ficar por cima de tudo) */}
+        {cartoucheInfo && (() => {
+          const cartoucheImage = canvasImages.find(img => img.isCartouche);
+          const backgroundImage = canvasImages.find(img => !img.isCartouche && img.isSourceImage);
+          
+          console.log('🎨 [KonvaCanvas] Renderizando CartoucheText:', {
+            hasCartoucheInfo: !!cartoucheInfo,
+            cartoucheInfo,
+            cartoucheImage,
+            backgroundImage: backgroundImage ? {
+              x: backgroundImage.x,
+              y: backgroundImage.y,
+              width: backgroundImage.width,
+              height: backgroundImage.height
+            } : null,
+            cartoucheImageCount: canvasImages.filter(img => img.isCartouche).length,
+            allCanvasImages: canvasImages.map(img => ({ id: img.id, isCartouche: img.isCartouche }))
+          });
+          
+          if (!cartoucheImage) {
+            console.warn('⚠️ [KonvaCanvas] Não encontrou cartoucheImage no canvasImages');
+            return null;
+          }
+          
+          return (
+            <Layer>
+              <CartoucheText
+                cartoucheImage={cartoucheImage}
+                backgroundImage={backgroundImage}
+                projectName={cartoucheInfo.projectName}
+                streetOrZone={cartoucheInfo.streetOrZone}
+                option={cartoucheInfo.option}
+              />
+            </Layer>
+          );
+        })()}
       </Stage>
 
       {/* Botão de remover - HTML overlay */}
