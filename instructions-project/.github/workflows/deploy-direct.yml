@@ -1,0 +1,157 @@
+name: Deploy Direct - Git Pull Only
+
+# Workflow simplificado: apenas git pull direto (SEM rsync)
+# Usa apenas SSH para executar comandos no servidor
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy via SSH (Git Pull Direct)
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          NODE_ENV: ${{ secrets.NODE_ENV }}
+          PM2_NAME: ${{ secrets.PM2_NAME }}
+          PORT: ${{ secrets.PORT }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          envs: NODE_ENV,PM2_NAME,PORT
+          script: |
+            # Definir diretórios do projeto
+            PROJECT_ROOT="/home/andre/apps/instructions/instructions-project"
+            SERVER_DIR="${PROJECT_ROOT}/server"
+            CLIENT_DIR="${PROJECT_ROOT}/client"
+            
+            echo "🚀 Iniciando deploy do Instructions Project..."
+            echo ""
+            
+            # 1. Garantir que Docker Compose está a correr
+            echo "🐳 [1/6] Verificando Docker Compose (PostgreSQL)..."
+            cd "${PROJECT_ROOT}"
+            if command -v docker-compose &> /dev/null; then
+              docker-compose -f docker-compose.prod.yml up -d || docker-compose -f docker-compose.dev.yml up -d
+            elif command -v docker &> /dev/null && docker compose version &> /dev/null; then
+              docker compose -f docker-compose.prod.yml up -d || docker compose -f docker-compose.dev.yml up -d
+            fi
+            echo "✅ PostgreSQL verificado/iniciado"
+            echo ""
+            
+            # 2. Atualizar código via git pull
+            echo "📥 [2/6] Atualizando código via git pull..."
+            cd "${PROJECT_ROOT}"
+            if [ -d .git ]; then
+              git fetch origin
+              CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+              if [ "$CURRENT_BRANCH" = "master" ] || [ "$CURRENT_BRANCH" = "main" ]; then
+                git reset --hard origin/${CURRENT_BRANCH}
+              else
+                git reset --hard origin/master 2>/dev/null || git reset --hard origin/main 2>/dev/null
+              fi
+              echo "✅ Código atualizado da branch ${CURRENT_BRANCH}"
+            else
+              echo "❌ Diretório .git não encontrado!"
+              echo "⚠️ Execute manualmente: git clone <repo-url> ${PROJECT_ROOT}"
+              exit 1
+            fi
+            echo ""
+            
+            # 3. Atualizar .env do servidor
+            echo "🔧 [3/6] Configurando variáveis de ambiente..."
+            cd "${SERVER_DIR}"
+            if [ -f .env ]; then
+              # Garantir DB_HOST=localhost
+              if grep -q "^DB_HOST=" .env; then
+                sed -i 's|^DB_HOST=.*$|DB_HOST=localhost|' .env
+              else
+                echo "DB_HOST=localhost" >> .env
+              fi
+              
+              # Atualizar PORT
+              PORT_FINAL="${PORT:-5000}"
+              if grep -q "^PORT=" .env; then
+                sed -i "s|^PORT=.*$|PORT=${PORT_FINAL}|" .env
+              else
+                echo "PORT=${PORT_FINAL}" >> .env
+              fi
+              
+              # Atualizar NODE_ENV
+              NODE_ENV_FINAL="${NODE_ENV:-production}"
+              if grep -q "^NODE_ENV=" .env; then
+                sed -i "s|^NODE_ENV=.*$|NODE_ENV=${NODE_ENV_FINAL}|" .env
+              else
+                echo "NODE_ENV=${NODE_ENV_FINAL}" >> .env
+              fi
+              
+              echo "✅ .env atualizado"
+            else
+              echo "⚠️ Ficheiro .env não encontrado, criando..."
+              echo "DB_HOST=localhost" > .env
+              echo "DB_PORT=5433" >> .env
+              echo "DB_NAME=instructions_demo" >> .env
+              echo "DB_USER=demo_user" >> .env
+              echo "DB_PASSWORD=demo_password" >> .env
+              echo "PORT=${PORT:-5000}" >> .env
+              echo "NODE_ENV=${NODE_ENV:-production}" >> .env
+              echo "✅ .env criado"
+            fi
+            echo ""
+            
+            # 4. Instalar dependências do servidor
+            echo "📦 [4/6] Instalando dependências do servidor..."
+            cd "${SERVER_DIR}"
+            if [ -f package-lock.json ]; then
+              npm ci --omit=dev || npm install --omit=dev
+            else
+              npm install --omit=dev
+            fi
+            echo "✅ Dependências do servidor instaladas"
+            echo ""
+            
+            # 5. Build do cliente (se necessário)
+            echo "🏗️  [5/6] Fazendo build do cliente..."
+            cd "${CLIENT_DIR}"
+            if [ -f package-lock.json ]; then
+              npm ci || npm install
+            else
+              npm install
+            fi
+            npm run build
+            echo "✅ Cliente compilado"
+            echo ""
+            
+            # 6. Reiniciar PM2
+            echo "🔄 [6/6] Reiniciando servidor com PM2..."
+            PM2_NAME_FINAL="${PM2_NAME:-instructions-server}"
+            pm2 delete ${PM2_NAME_FINAL} 2>/dev/null || true
+            cd "${SERVER_DIR}"
+            pm2 start npm --name ${PM2_NAME_FINAL} -- start
+            pm2 save
+            echo ""
+            
+            # Aguardar servidor iniciar
+            echo "⏳ Aguardando servidor iniciar..."
+            sleep 5
+            
+            # Verificar se servidor está online
+            if curl -f -s http://localhost:5000/health > /dev/null 2>&1; then
+              echo "✅ Servidor online e respondendo!"
+            else
+              echo "⚠️ Servidor pode não estar totalmente pronto ainda"
+            fi
+            echo ""
+            
+            # Verificar status final
+            echo "📊 Status final:"
+            pm2 status
+            echo ""
+            echo "✅ Deploy concluído com sucesso!"
+            echo "🌐 Servidor disponível em: https://136.116.79.244"
+
