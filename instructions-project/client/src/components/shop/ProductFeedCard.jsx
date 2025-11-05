@@ -17,15 +17,36 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
   const [showSuggestions, setShowSuggestions] = useState(false);
   // Estado para controlar se está mostrando simulação animada (apenas para GX349L)
   const [showAnimationSimulation, setShowAnimationSimulation] = useState(false);
-  const { toggleFavorite, favorites, getAvailableStock, products } = useShop();
+  // Estado para controlar vídeo selecionado de sugestões
+  const [selectedSuggestionVideo, setSelectedSuggestionVideo] = useState(null);
+  // Estado para guardar o estado de simulação animada antes de selecionar uma sugestão
+  const [previousAnimationState, setPreviousAnimationState] = useState(false);
+  const { toggleFavorite, favorites, getBaseStock, getAvailableStock, products, getReservedQuantity } = useShop();
 
   const isFavorited = favorites?.includes(product?.id);
-  const stock = getAvailableStock?.(product) ?? 0;
+  const stock = getBaseStock?.(product) ?? 0; // Usar stock total (base) em vez de stock disponível
+  const availableStock = getAvailableStock?.(product) ?? 0;
+  const reservedStock = getReservedQuantity?.(product?.id) ?? 0;
   const isOutOfStock = stock <= 0;
   const isLowStock = stock > 0 && stock <= 10;
 
-  // Verificar se é o produto GX349L
+  // Debug: Log informações de stock para GX349L
+  React.useEffect(() => {
+    if (product?.name === 'GX349L' || product?.id === 'prd-005') {
+      console.log('📦 [ProductFeedCard] GX349L Stock Info:', {
+        productId: product?.id,
+        productName: product?.name,
+        baseStock: stock,
+        availableStock: availableStock,
+        reservedStock: reservedStock,
+        difference: stock - availableStock
+      });
+    }
+  }, [product?.id, product?.name, stock, availableStock, reservedStock]);
+
+  // Verificar se é o produto GX349L ou GX350LW
   const isGX349L = product?.name === 'GX349L' || product?.id === 'prd-005';
+  const isGX350LW = product?.name === 'GX350LW' || product?.id?.includes('GX350LW');
 
   // Available colors
   const colorKeys = Object.keys(product?.images?.colors || {});
@@ -38,12 +59,21 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
     azul: "#3b82f6",
   };
 
-  // Check if product has video (incluindo simulação animada para GX349L)
+  // Check if product has video (incluindo simulação animada para GX349L e GX350LW)
   useEffect(() => {
     const videoUrl = product?.videoFile || product?.animationUrl;
-    const hasSimulationVideo = isGX349L; // GX349L sempre tem vídeo de simulação disponível
+    const hasSimulationVideo = isGX349L || isGX350LW; // GX349L e GX350LW sempre têm vídeo de simulação disponível
     setHasVideo(Boolean(videoUrl) || hasSimulationVideo);
-  }, [product, isGX349L]);
+  }, [product, isGX349L, isGX350LW]);
+
+  // Reset simulação animada e vídeo de sugestão quando o produto muda
+  useEffect(() => {
+    // Quando muda de produto, resetar para vídeo normal
+    // IMPORTANTE: Garantir que sempre começa com vídeo normal, não com simulação animada
+    setShowAnimationSimulation(false);
+    setSelectedSuggestionVideo(null);
+    setPreviousAnimationState(false);
+  }, [product?.id]);
 
   // Auto-play/pause based on isActive
   useEffect(() => {
@@ -59,7 +89,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       videoRef.current.currentTime = 0; // Reset to start
       setIsPlaying(false);
     }
-  }, [isActive, hasVideo, showAnimationSimulation]); // Adicionar showAnimationSimulation para recarregar quando mudar
+  }, [isActive, hasVideo, showAnimationSimulation, selectedSuggestionVideo]); // Adicionar showAnimationSimulation e selectedSuggestionVideo para recarregar quando mudar
 
   // Toggle play/pause manual
   const handleVideoClick = () => {
@@ -78,13 +108,51 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
     }
   };
 
+  // Handler para botão de simulação animada
+  const handleAnimationSimulationToggle = () => {
+    const wasPlaying = isPlaying;
+    
+    // Se há um vídeo selecionado de sugestões, voltar ao vídeo original
+    if (selectedSuggestionVideo) {
+      setSelectedSuggestionVideo(null);
+      // Restaurar o estado de simulação animada anterior
+      setShowAnimationSimulation(previousAnimationState);
+    } else {
+      // Caso contrário, alternar normalmente entre vídeo normal e simulação
+      setShowAnimationSimulation(!showAnimationSimulation);
+    }
+    
+    // Reset video e recomeçar se estava tocando
+    setTimeout(() => {
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+        if (wasPlaying && isActive) {
+          videoRef.current.play().catch(err => {
+            console.warn('Error playing video:', err);
+          });
+        }
+      }
+    }, 100);
+  };
+
   // Build video URL
   const getVideoUrl = () => {
+    // Se houver vídeo selecionado de sugestões, usar esse
+    if (selectedSuggestionVideo) {
+      return selectedSuggestionVideo;
+    }
+    
     // Se for GX349L e estiver mostrando simulação animada, usar o vídeo da simulação
     if (isGX349L && showAnimationSimulation) {
       return '/SIMU_GX349L_ANIM.webm';
     }
     
+    // Se for GX350LW e estiver mostrando simulação animada, usar o vídeo da simulação
+    if (isGX350LW && showAnimationSimulation) {
+      return '/SIMU_GX350LW_ANIM.webm';
+    }
+    
+    // Por default, sempre retornar o vídeo normal do produto
     const videoFile = product?.videoFile || product?.animationUrl;
     if (!videoFile) return null;
     
@@ -182,14 +250,24 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
   }, []);
 
   // Find similar products based on tags, type, location, mount
+  // Inclui especificamente a GX350LW nas sugestões
   const getSimilarProducts = useCallback(() => {
     if (!products || !Array.isArray(products) || !product) return [];
     
     const currentProduct = product;
+    
+    // Sempre incluir GX350LW nas sugestões se existir
+    const gx350LW = products.find(p => p.name === 'GX350LW' || p.id?.includes('GX350LW'));
+    
     const similarities = products
       .filter(p => p.id !== currentProduct.id)
       .map(p => {
         let score = 0;
+        
+        // Boost para GX350LW
+        if (p.name === 'GX350LW' || p.id?.includes('GX350LW')) {
+          score += 100; // Prioridade máxima
+        }
         
         // Match tags
         const currentTags = currentProduct.tags || [];
@@ -224,6 +302,11 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       .slice(0, 6) // Top 6 similar products
       .map(item => item.product);
     
+    // Se GX350LW não está nos resultados mas existe, adicionar no início
+    if (gx350LW && !similarities.find(p => p.id === gx350LW.id)) {
+      similarities.unshift(gx350LW);
+    }
+    
     return similarities;
   }, [products, product]);
 
@@ -236,10 +319,15 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       onMouseDown={handleSwipeStart}
     >
       {/* Main container: Video full width, info panel overlay */}
-      <div className="flex w-full h-full relative">
-        {/* Video/image area - full width */}
+      <div className="flex w-full h-full relative items-center">
+        {/* Video/image area - container do vídeo (quadrado rosa) - apenas o tamanho do vídeo */}
         <div 
-          className="relative w-full h-full bg-black flex items-center justify-center cursor-pointer"
+          className="relative w-full bg-black flex items-center justify-center cursor-pointer overflow-hidden mx-auto"
+          style={{
+            aspectRatio: '16/9', // Proporção do vídeo
+            maxHeight: '100vh',
+            maxWidth: '100%',
+          }}
           onClick={handleVideoClick}
         >
           {hasVideo && videoUrl ? (
@@ -272,11 +360,11 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
 
           {/* Control overlay when paused */}
           {hasVideo && !isPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20">
               <Button
                 isIconOnly
                 radius="full"
-                className="bg-white/20 backdrop-blur-md text-white border border-white/20"
+                className="bg-white/20 text-white border border-white/20"
                 size="lg"
               >
                 <Icon icon="lucide:play" className="text-4xl ml-1" />
@@ -284,8 +372,41 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             </div>
           )}
 
-          {/* Botão de simulação animada - apenas para GX349L - posicionado na lateral esquerda por baixo do botão de neve */}
-          {isGX349L && hasVideo && (
+          {/* Botão invisível para abrir sugestões - área clicável no local do risco verde (urso polar) - posição relativa ao container do vídeo - apenas quando está em simulação animada ou há vídeo de sugestão ativo */}
+          {(showAnimationSimulation || selectedSuggestionVideo) && (
+            <div
+              className="absolute z-20 cursor-pointer"
+              onClick={(e) => {
+                // Não abrir sugestões se clicar em um botão ou elemento interativo
+                const target = e.target;
+                if (target.closest('button') || target.closest('[role="button"]')) {
+                  return;
+                }
+                e.stopPropagation();
+                setShowSuggestions(true);
+              }}
+              style={{ 
+                pointerEvents: 'auto',
+                // Posição relativa ao container do vídeo (retângulo vermelho) - sobre o urso polar (retângulo rosa)
+                // O urso está no centro, encostado à parte inferior do container vermelho
+                // Tamanhos proporcionais ao container do vídeo
+                width: '25%', // 25% da largura do container
+                height: '35%', // 35% da altura do container
+                position: 'absolute',
+                left: '50%', // Centro horizontal do container
+                bottom: '0px', // Encostado à parte inferior do container
+                transform: 'translateX(-50%) rotate(90deg)', // Centralizar e rodar
+                transformOrigin: 'center center',
+                // Garantir que não sai do container
+                maxWidth: '100%',
+                maxHeight: '100%',
+              }}
+              aria-label="Open suggestions"
+            />
+          )}
+
+          {/* Botão de simulação animada - apenas para GX349L e GX350LW - posicionado na lateral esquerda por baixo do botão de neve */}
+          {(isGX349L || isGX350LW) && hasVideo && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -296,28 +417,14 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                 isIconOnly
                 radius="full"
                 size="lg"
-                className={`backdrop-blur-md shadow-lg text-white border border-white/20 ${
-                  showAnimationSimulation
+                className={`shadow-lg text-white border border-white/20 ${
+                  showAnimationSimulation || selectedSuggestionVideo
                     ? 'bg-blue-400/60 hover:bg-blue-400/80'
                     : 'bg-black/60 hover:bg-black/80'
                 }`}
-                onPress={() => {
-                  const wasPlaying = isPlaying;
-                  setShowAnimationSimulation(!showAnimationSimulation);
-                  // Reset video e recomeçar se estava tocando
-                  setTimeout(() => {
-                    if (videoRef.current) {
-                      videoRef.current.currentTime = 0;
-                      if (wasPlaying && isActive) {
-                        videoRef.current.play().catch(err => {
-                          console.warn('Error playing video:', err);
-                        });
-                      }
-                    }
-                  }, 100);
-                }}
-                aria-label={showAnimationSimulation ? "Ver vídeo normal" : "Ver simulação animada"}
-                title={showAnimationSimulation ? "Vídeo Normal" : "Simulação Animada"}
+                onPress={handleAnimationSimulationToggle}
+                aria-label={selectedSuggestionVideo ? "Ver vídeo original" : (showAnimationSimulation ? "Ver vídeo normal" : "Ver simulação animada")}
+                title={selectedSuggestionVideo ? "Vídeo Original" : (showAnimationSimulation ? "Vídeo Normal" : "Simulação Animada")}
               >
                 <Icon 
                   icon="lucide:film" 
@@ -336,7 +443,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
-                         className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 lg:top-6 lg:right-6 z-40 bg-black/90 backdrop-blur-md rounded-md sm:rounded-lg md:rounded-xl px-2 py-2 sm:px-2.5 sm:py-2.5 md:px-4 md:py-3 lg:px-5 lg:py-4 border border-white/20 shadow-2xl pointer-events-auto max-w-[160px] md:max-w-[240px] lg:max-w-[280px]"
+                         className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 lg:top-6 lg:right-6 z-40 bg-black/90 rounded-md sm:rounded-lg md:rounded-xl px-2 py-2 sm:px-2.5 sm:py-2.5 md:px-4 md:py-3 lg:px-5 lg:py-4 border border-white/20 shadow-2xl pointer-events-auto max-w-[160px] md:max-w-[240px] lg:max-w-[280px]"
             style={{
               marginTop: 'env(safe-area-inset-top, 0)',
               marginRight: 'env(safe-area-inset-right, 0)',
@@ -436,7 +543,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             isIconOnly
             radius="full"
             size="lg"
-                         className="absolute right-4 top-1/2 -translate-y-1/2 z-40 bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80"
+                         className="absolute right-4 top-1/2 -translate-y-1/2 z-40 bg-black/60 text-white border border-white/20 hover:bg-black/80"
             onPress={() => setIsInfoOpen(true)}
             aria-label="Open product info"
           >
@@ -454,7 +561,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                                 className="absolute inset-0 bg-black/30 backdrop-blur-sm z-40"
+                                 className="absolute inset-0 bg-black/30 z-40"
                 onClick={() => setIsInfoOpen(false)}
               />
 
@@ -465,7 +572,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                                 className="absolute right-0 top-0 h-full w-[40%] md:w-[30%] bg-black/98 backdrop-blur-sm p-3 md:p-6 flex flex-col overflow-y-auto border-l border-white/5 z-50"
+                                 className="absolute right-0 top-0 h-full w-[40%] md:w-[30%] bg-black/98 p-3 md:p-6 flex flex-col overflow-y-auto border-l border-white/5 z-50"
                 onClick={(e) => e.stopPropagation()}
               >
           {/* Close button - top left */}
@@ -655,39 +762,22 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
 
             {/* Action buttons - at the bottom */}
             <div className="flex flex-col gap-2 md:gap-3 pt-4 md:pt-6 mt-auto border-t border-white/10">
-            {/* Botão de simulação animada - apenas para GX349L, também no painel de informações */}
-            {isGX349L && hasVideo && (
+            {/* Botão de simulação animada - apenas para GX349L e GX350LW, também no painel de informações */}
+            {(isGX349L || isGX350LW) && (
               <Button
                 radius="md"
                 size="sm"
-                className={`font-semibold text-xs md:text-base ${
-                  showAnimationSimulation
-                    ? 'bg-primary hover:bg-primary-600 text-white'
-                    : 'bg-white/10 hover:bg-white/15 text-white border border-white/20'
-                }`}
+                variant="bordered"
+                className="bg-gray-900/50 hover:bg-gray-800/50 text-white border-white/20 font-semibold text-xs md:text-base"
                 startContent={
                   <Icon 
-                    icon={showAnimationSimulation ? "lucide:video" : "lucide:play-circle"} 
+                    icon={selectedSuggestionVideo ? "lucide:rotate-ccw" : (showAnimationSimulation ? "lucide:video" : "lucide:play-circle")} 
                     className="text-base md:text-xl"
                   />
                 }
-                onPress={() => {
-                  const wasPlaying = isPlaying;
-                  setShowAnimationSimulation(!showAnimationSimulation);
-                  // Reset video e recomeçar se estava tocando
-                  setTimeout(() => {
-                    if (videoRef.current) {
-                      videoRef.current.currentTime = 0;
-                      if (wasPlaying && isActive) {
-                        videoRef.current.play().catch(err => {
-                          console.warn('Error playing video:', err);
-                        });
-                      }
-                    }
-                  }, 100);
-                }}
+                onPress={handleAnimationSimulationToggle}
               >
-                {showAnimationSimulation ? "Ver Vídeo Normal" : "Ver Simulação Animada"}
+                {selectedSuggestionVideo ? "Ver Vídeo Original" : (showAnimationSimulation ? "Ver Vídeo Normal" : "Ver Simulação Animada")}
               </Button>
             )}
 
@@ -756,8 +846,60 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                       </div>
                     );
                   }
+                  const originalImageUrl = product?.images?.day || product?.images?.night || product?.images?.thumbnailUrl;
+                  
                   return (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {/* Opção para voltar ao produto original quando um vídeo de sugestão está ativo */}
+                      {selectedSuggestionVideo && (
+                        <div
+                          className="bg-blue-900/30 rounded-lg overflow-hidden border-2 border-blue-500/50 hover:border-blue-500 transition-all cursor-pointer group"
+                            onClick={() => {
+                              setShowSuggestions(false);
+                              setSelectedSuggestionVideo(null);
+                              // Restaurar o estado de simulação animada anterior
+                              setShowAnimationSimulation(previousAnimationState);
+                              // Reset video e recomeçar se estava tocando
+                              setTimeout(() => {
+                                if (videoRef.current) {
+                                  videoRef.current.currentTime = 0;
+                                  if (isPlaying && isActive) {
+                                    videoRef.current.play().catch(err => {
+                                      console.warn('Error playing video:', err);
+                                    });
+                                  }
+                                }
+                              }, 100);
+                            }}
+                        >
+                          {originalImageUrl && (
+                            <div className="relative w-full aspect-square bg-black overflow-hidden">
+                              <Image
+                                src={originalImageUrl}
+                                alt={product.name}
+                                className="w-full h-full object-contain"
+                                classNames={{
+                                  wrapper: "w-full h-full",
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-blue-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <div className="absolute top-2 right-2 bg-blue-500/90 rounded-full p-1.5">
+                                <Icon icon="lucide:rotate-ccw" className="text-white text-sm" />
+                              </div>
+                            </div>
+                          )}
+                          <div className="p-3">
+                            <h4 className="text-white font-semibold text-sm line-clamp-2 mb-1 flex items-center gap-1">
+                              <Icon icon="lucide:rotate-ccw" className="text-xs" />
+                              {product.name} (Original)
+                            </h4>
+                            <p className="text-white font-bold text-base">
+                              €{product.price?.toFixed(2) || '0.00'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
                       {similarProducts.map((similarProduct) => {
                         const similarImageUrl = similarProduct?.images?.day || similarProduct?.images?.night || similarProduct?.images?.thumbnailUrl;
                         return (
@@ -766,7 +908,16 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                             className="bg-gray-800/50 rounded-lg overflow-hidden border border-white/10 hover:border-white/20 transition-all cursor-pointer group"
                             onClick={() => {
                               setShowSuggestions(false);
+                              
+                              // Navegar para qualquer produto (incluindo GX350LW) sempre mostra o vídeo normal
                               if (onProductSelect) {
+                                // Reset todos os estados quando navegar para outro produto
+                                // IMPORTANTE: Resetar ANTES de navegar para garantir que o novo produto começa com vídeo normal
+                                setSelectedSuggestionVideo(null);
+                                setShowAnimationSimulation(false);
+                                setPreviousAnimationState(false);
+                                
+                                // Navegar para o produto (mostrará vídeo normal por default)
                                 onProductSelect(similarProduct.id);
                               }
                             }}

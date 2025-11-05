@@ -81,7 +81,7 @@ export function Header() {
               </Button>
             </Badge>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-0 bg-background/70 backdrop-blur-lg border border-default-200/30 rounded-xl shadow-xl">
+          <PopoverContent className="w-80 p-0 bg-background/70 border border-default-200/30 rounded-xl shadow-xl">
             <div className="p-4 border-b border-divider/50">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-lg">Recent Updates</h3>
