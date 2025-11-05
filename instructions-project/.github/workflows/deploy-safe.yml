@@ -1,7 +1,7 @@
 name: Deploy Safe - Lightweight
 
 # Workflow otimizado para não sobrecarregar o servidor
-# Versão: 3.0 - Deploy leve com timeouts e concorrência limitada
+# Versão: 3.1 - Deploy leve com timeouts e concorrência limitada (sem rsync)
 on:
   push:
     branches: [ master, main ]
