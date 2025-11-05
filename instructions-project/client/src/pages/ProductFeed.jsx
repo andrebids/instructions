@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
 import { useProductFeed } from '../hooks/useProductFeed';
 import ProductFeedCard from '../components/shop/ProductFeedCard';
 import { Spinner, Button, Tooltip } from '@heroui/react';
 import { Icon } from '@iconify/react';
+import { useShop } from '../context/ShopContext';
 
 /**
  * Página de feed de produtos estilo TikTok
@@ -20,12 +21,29 @@ const navigationItems = [
 ];
 
 export default function ProductFeed() {
-  const { products, loading, error } = useProductFeed();
+  const { products: allProducts, loading, error } = useProductFeed();
+  const { getBaseStock, getAvailableStock } = useShop();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSnowEnabled, setIsSnowEnabled] = useState(true);
   const cardRefs = useRef({});
   const scrollContainerRef = useRef(null);
+
+  // Filtrar apenas produtos com stock disponível e ordenar por stock total (base) decrescente
+  const products = useMemo(() => {
+    if (!allProducts || !Array.isArray(allProducts)) return [];
+    
+    return allProducts
+      .filter(product => {
+        const availableStock = getAvailableStock?.(product) ?? 0;
+        return availableStock > 0; // Filtrar por stock disponível (para não mostrar produtos sem stock)
+      })
+      .sort((a, b) => {
+        const stockA = getBaseStock?.(a) ?? 0; // Ordenar por stock total (base)
+        const stockB = getBaseStock?.(b) ?? 0;
+        return stockB - stockA; // Ordem decrescente
+      });
+  }, [allProducts, getBaseStock, getAvailableStock]);
 
   // Callback para IntersectionObserver
   const handleIntersection = useCallback((entries) => {
