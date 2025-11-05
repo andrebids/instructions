@@ -1,0 +1,66 @@
+name: Deploy Ultra Light - No Build on Server
+
+# Workflow super leve: apenas atualiza código e reinicia PM2
+# NÃO faz npm install nem build no servidor - assume que já está instalado
+# Versão: 4.0 - Deploy mínimo para não sobrecarregar servidor
+on:
+  workflow_dispatch: {}  # Apenas manual - não automático
+
+# Limitar a apenas 1 deploy por vez
+concurrency:
+  group: deploy-instructions
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5  # Timeout muito curto - apenas git pull e restart
+    
+    steps:
+      - name: Deploy Ultra Light (Git Pull + PM2 Restart Only)
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          NODE_ENV: ${{ secrets.NODE_ENV }}
+          PM2_NAME: ${{ secrets.PM2_NAME }}
+          PORT: ${{ secrets.PORT }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          command_timeout: 4m  # Timeout curto
+          envs: NODE_ENV,PM2_NAME,PORT
+          script: |
+            set -e
+            
+            PROJECT_ROOT="/home/andre/apps/instructions/instructions-project"
+            SERVER_DIR="${PROJECT_ROOT}/server"
+            
+            echo "[1/4] Verificando recursos..."
+            uptime
+            free -h | head -2
+            echo ""
+            
+            echo "[2/4] Atualizando código (git pull)..."
+            cd "${PROJECT_ROOT}"
+            timeout 60 git fetch origin || exit 1
+            timeout 30 git reset --hard origin/main || exit 1
+            echo "OK: Codigo atualizado"
+            echo ""
+            
+            echo "[3/4] Verificando Docker..."
+            cd "${PROJECT_ROOT}"
+            timeout 30 docker compose -f docker-compose.prod.yml ps -q 2>/dev/null || docker compose -f docker-compose.prod.yml up -d || true
+            echo "OK: Docker verificado"
+            echo ""
+            
+            echo "[4/4] Reiniciando PM2..."
+            PM2_NAME_FINAL="${PM2_NAME:-instructions-server}"
+            cd "${SERVER_DIR}"
+            pm2 restart ${PM2_NAME_FINAL} || pm2 delete ${PM2_NAME_FINAL} && pm2 start npm --name ${PM2_NAME_FINAL} -- start
+            pm2 save
+            sleep 2
+            pm2 status
+            echo ""
+            echo "OK: Deploy concluido (sem build no servidor)"
+
