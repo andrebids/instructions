@@ -11,15 +11,17 @@ echo.
 echo 1. 🚀 INICIAR PROJETO
 echo 2. 📊 VERIFICAR STATUS
 echo 3. 🔄 REINICIAR PROJETO
-echo 4. ❌ SAIR
+echo 4. 📤 FAZER BUILD E ENVIAR PARA SERVIDOR
+echo 5. ❌ SAIR
 echo.
 echo ========================================
-set /p choice="Escolha uma opção (1-4): "
+set /p choice="Escolha uma opção (1-5): "
 
 if "%choice%"=="1" goto start
 if "%choice%"=="2" goto status
 if "%choice%"=="3" goto restart
-if "%choice%"=="4" goto exit
+if "%choice%"=="4" goto deploy_build
+if "%choice%"=="5" goto exit
 goto menu
 
 :start
@@ -365,6 +367,71 @@ echo.
 
 echo [2/2] Iniciando projeto novamente...
 call :start
+goto menu
+
+:deploy_build
+cls
+echo ========================================
+echo    BUILD E DEPLOY PARA SERVIDOR
+echo ========================================
+echo.
+echo Este processo irá:
+echo 1. Fazer build do cliente localmente
+echo 2. Enviar ficheiros compilados para o servidor
+echo 3. Atualizar o servidor com o novo build
+echo.
+echo ⚠️  NOTA: O servidor remoto deve estar acessível via SSH
+echo    Certifique-se de que a chave SSH está configurada
+echo.
+set /p confirm="Continuar? (S/N): "
+if /i not "%confirm%"=="S" (
+    echo Operação cancelada.
+    timeout /t 2 /nobreak >nul
+    goto menu
+)
+echo.
+echo ========================================
+echo    EXECUTANDO BUILD E DEPLOY
+echo ========================================
+echo.
+
+rem Verificar se o script PowerShell existe
+if not exist "%~dp0upload-build.ps1" (
+    echo ❌ Script upload-build.ps1 não encontrado!
+    echo    Certifique-se de que o ficheiro existe na raiz do projeto.
+    echo.
+    pause
+    goto menu
+)
+
+rem Executar o script PowerShell
+echo Executando script de build e deploy...
+powershell.exe -ExecutionPolicy Bypass -File "%~dp0upload-build.ps1"
+set "DEPLOY_SUCCESS=%errorlevel%"
+
+echo.
+if %DEPLOY_SUCCESS% equ 0 (
+    echo ========================================
+    echo    ✅ BUILD E DEPLOY CONCLUÍDO!
+    echo ========================================
+    echo.
+    echo O build foi enviado com sucesso para o servidor.
+    echo O servidor remoto foi atualizado.
+    echo.
+) else (
+    echo ========================================
+    echo    ❌ ERRO NO DEPLOY
+    echo ========================================
+    echo.
+    echo O deploy falhou. Verifique:
+    echo 1. Servidor está acessível via SSH
+    echo 2. Chave SSH está configurada corretamente
+    echo 3. Build local foi concluído com sucesso
+    echo 4. Verifique os erros acima para mais detalhes
+    echo.
+)
+
+pause
 goto menu
 
 :exit
