@@ -36,6 +36,9 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
   // Estado para controlar se mostra NEW ou USED no painel de informações
   const [productType, setProductType] = React.useState("new"); // "new" ou "used"
   
+  // Estado para detectar tamanho da viewport
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+  
   // Extrair informações de stock e preços dos specs para uso no painel de informações
   const usedStock = product?.specs?.usedStock ? parseInt(product.specs.usedStock, 10) : null;
   const usedPrice = product?.specs?.usedPrice ? parseFloat(product.specs.usedPrice) : null;
@@ -163,6 +166,160 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       }
     }
   }, [product?.id, initialAnimationSimulation, isGX349L, isGX350LW]); // Removido manuallyToggled das dependências para evitar execuções desnecessárias
+
+  // Detectar tamanho da viewport para ajustar scale em resoluções específicas
+  useEffect(() => {
+    const updateViewportSize = () => {
+      setViewportSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    updateViewportSize();
+    window.addEventListener('resize', updateViewportSize);
+    return () => window.removeEventListener('resize', updateViewportSize);
+  }, []);
+
+  // Detectar orientação
+  const isPortrait = viewportSize.height > viewportSize.width;
+  const isLandscape = viewportSize.width > viewportSize.height;
+
+  // Configurações específicas por produto, resolução e orientação
+  // Formato: { width, height, orientation } => { padding, aspectRatio, maxHeight, maxWidth, scale }
+  const getProductLayoutConfig = React.useMemo(() => {
+    const width = viewportSize.width;
+    const height = viewportSize.height;
+    const orientation = isPortrait ? 'portrait' : 'landscape';
+    const productId = product?.id || product?.name || '';
+
+    // Configurações específicas por resolução/orientação
+    const resolutionConfigs = {
+      // iPad Air 5 - 1180 x 820 (landscape)
+      '1180x820-landscape': {
+        padding: 'p-2',
+        aspectRatio: '16/9',
+        maxHeight: '80vh',
+        maxWidth: '100%',
+        scale: 1.05,
+      },
+      // iPad Air 5 - 820 x 1180 (portrait)
+      '820x1180-portrait': {
+        padding: 'p-2',
+        aspectRatio: '9/16',
+        maxHeight: '88vh',
+        maxWidth: '100%',
+        scale: 1.1,
+      },
+      // iPad Air S - 1780 x 820 (landscape)
+      '1780x820-landscape': {
+        padding: 'p-2 sm:p-3 md:p-4',
+        aspectRatio: '16/9',
+        maxHeight: '80vh',
+        maxWidth: '100%',
+        scale: 1.05,
+      },
+      // iPad Air S - 820 x 1780 (portrait)
+      '820x1780-portrait': {
+        padding: 'p-2',
+        aspectRatio: '9/16',
+        maxHeight: '88vh',
+        maxWidth: '100%',
+        scale: 1.15,
+      },
+      // Macbook Air - 793 x 970 (portrait)
+      '793x970-portrait': {
+        padding: 'p-2 sm:p-3',
+        aspectRatio: '9/16',
+        maxHeight: '90vh',
+        maxWidth: '100%',
+        scale: 1.2,
+      },
+      // Macbook Air - 970 x 793 (landscape)
+      '970x793-landscape': {
+        padding: 'p-2',
+        aspectRatio: '16/9',
+        maxHeight: '80vh',
+        maxWidth: '100%',
+        scale: 1.05,
+      },
+      // iPhone 14 Pro - 393 x 852 (portrait)
+      '393x852-portrait': {
+        padding: 'p-1',
+        aspectRatio: '9/16',
+        maxHeight: '90vh',
+        maxWidth: '100%',
+        scale: 1.15,
+      },
+      // iPhone 14 Pro Max - 405 x 932 (portrait)
+      '405x932-portrait': {
+        padding: 'p-1',
+        aspectRatio: '9/16',
+        maxHeight: '90vh',
+        maxWidth: '100%',
+        scale: 1.15,
+      },
+      // Pixel 7 Pro - 412 x 915 (portrait)
+      '412x915-portrait': {
+        padding: 'p-1',
+        aspectRatio: '9/16',
+        maxHeight: '90vh',
+        maxWidth: '100%',
+        scale: 1.15,
+      },
+      // Pixel 7 Pro - 480 x 1040 (portrait)
+      '480x1040-portrait': {
+        padding: 'p-1',
+        aspectRatio: '9/16',
+        maxHeight: '90vh',
+        maxWidth: '100%',
+        scale: 1.15,
+      },
+    };
+
+    // Tentar encontrar configuração exata
+    const exactKey = `${width}x${height}-${orientation}`;
+    if (resolutionConfigs[exactKey]) {
+      return resolutionConfigs[exactKey];
+    }
+
+    // Tentar encontrar configuração com margem de erro (±50px)
+    for (const [key, config] of Object.entries(resolutionConfigs)) {
+      const [keyWidth, keyHeight, keyOrientation] = key.split(/[x-]/);
+      const keyW = parseInt(keyWidth);
+      const keyH = parseInt(keyHeight);
+      
+      if (
+        Math.abs(width - keyW) < 50 &&
+        Math.abs(height - keyH) < 50 &&
+        keyOrientation === orientation
+      ) {
+        return config;
+      }
+    }
+
+    // Configuração padrão baseada na orientação
+    if (isPortrait) {
+      return {
+        padding: 'p-1',
+        aspectRatio: '9/16',
+        maxHeight: '90vh',
+        maxWidth: '100%',
+        scale: 1.15,
+      };
+    } else {
+      // Desktop/Landscape - configuração muito conservadora para produtos altos como IPL317R
+      return {
+        padding: 'p-2',
+        aspectRatio: '16/9',
+        maxHeight: '80vh',
+        maxWidth: '100%',
+        scale: 1.05,
+      };
+    }
+  }, [viewportSize.width, viewportSize.height, isPortrait, product?.id, product?.name]);
+
+  const layoutConfig = getProductLayoutConfig;
 
   // O vídeo será automaticamente recarregado quando videoUrl mudar devido à key={videoUrl}
   // O onLoadedData no elemento vídeo garante que seja reproduzido quando carregar
@@ -455,17 +612,16 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       onMouseDown={handleSwipeStart}
     >
       {/* Main container: Video full width, info panel overlay */}
-      <div className="flex w-full h-full relative items-center justify-center p-2 sm:p-4 md:p-6">
-        {/* Video/image area - container do vídeo - proporção landscape como os quadrados azuis */}
+      <div className={`flex w-full h-full relative items-center justify-center ${layoutConfig.padding}`}>
+        {/* Video/image area - container do vídeo - configuração específica por resolução/orientação */}
         <div 
-          className="relative w-full bg-black flex items-center justify-center cursor-pointer overflow-hidden mx-auto"
+          className="relative bg-black flex items-center justify-center cursor-pointer overflow-hidden mx-auto"
           style={{
-            // Proporção landscape (horizontal) como os quadrados azuis
-            aspectRatio: '16/9', // Proporção landscape padrão
-            maxHeight: '85vh', // Limitar altura máxima a 85% da viewport
-            maxWidth: '100%',
-            width: '100%', // Garantir que use toda a largura disponível
-            position: 'relative', // Garantir que elementos absolutos filhos sejam relativos a este container
+            aspectRatio: layoutConfig.aspectRatio,
+            maxHeight: layoutConfig.maxHeight,
+            maxWidth: layoutConfig.maxWidth,
+            width: '100%',
+            position: 'relative',
           }}
           onClick={handleVideoClick}
         >
@@ -476,10 +632,10 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               src={videoUrl}
               className="w-full h-full object-contain bg-black"
               style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                width: 'auto',
-                height: 'auto',
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                transform: `scale(${layoutConfig.scale})`, // Escala específica por resolução/orientação
               }}
               loop
               muted
@@ -510,10 +666,10 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               alt={product.name}
               className="w-full h-full object-contain bg-black"
               style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                width: 'auto',
-                height: 'auto',
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                transform: `scale(${layoutConfig.scale})`, // Escala específica por resolução/orientação
               }}
             />
           )}
@@ -722,261 +878,263 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             </Button>
           </div>
 
-          {/* Main information - compact layout, sem scroll */}
-          <div className="flex flex-col pt-8 md:pt-10 h-full overflow-hidden">
-            {/* Content area - sem scroll, tudo visível */}
+          {/* Main information - responsive layout, tudo visível sem scroll */}
+          <div className="flex flex-col pt-4 md:pt-6 h-full overflow-hidden">
+            {/* Content area - flexbox para distribuir espaço, sem scroll */}
             <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-              {/* Product name - compact */}
-              <div className="mb-1">
-                <h3 className="text-white text-base md:text-lg font-extrabold leading-tight line-clamp-1">
-                  {product.name}
-                </h3>
-              </div>
-              
-              {/* Tabs para alternar entre NEW e USED */}
-              {(usedPrice || usedStock) && (
-                <div className="flex gap-1 mb-1 border-b border-white/10 pb-0.5">
-                  <button
-                    onClick={() => setProductType("new")}
-                    className={`px-2 py-0.5 text-[10px] font-medium transition-colors ${
-                      productType === "new"
-                        ? "text-white border-b-2 border-white"
-                        : "text-gray-400 hover:text-white"
-                    }`}
-                  >
-                    NEW
-                  </button>
-                  <button
-                    onClick={() => setProductType("used")}
-                    className={`px-2 py-0.5 text-[10px] font-medium transition-colors ${
-                      productType === "used"
-                        ? "text-white border-b-2 border-white"
-                        : "text-gray-400 hover:text-white"
-                    }`}
-                  >
-                    USED
-                  </button>
-                </div>
-              )}
-              
-              {/* Price - compact */}
-              {displayPrice && (
-                <div className="mb-1 flex items-baseline gap-1 flex-wrap">
-                  <span className="text-white text-lg md:text-xl font-black leading-none">
-                    €{displayPrice.toFixed(2)}
-                  </span>
-                  {displayOldPrice && (
-                    <span className="text-gray-400 line-through text-[10px] md:text-xs font-medium">
-                      €{displayOldPrice.toFixed(2)}
-                    </span>
-                  )}
-                  {displayRentalPrice && (
-                    <span className="text-blue-400 leading-none">
-                      <span className="text-[10px] md:text-xs font-medium">Rent: </span>
-                      <span className="text-lg md:text-xl font-black">€{displayRentalPrice.toFixed(2)}</span>
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {/* Stock and Tags - compact */}
-              <div className="mb-1 space-y-0.5">
-                {/* Stock */}
-                <div>
-                  {displayIsOutOfStock ? (
-                    <span className="text-red-400 text-[10px] md:text-xs font-medium">Out of stock</span>
-                  ) : (
-                    <span className={`text-[10px] md:text-xs font-medium ${displayIsLowStock ? 'text-yellow-400' : 'text-green-400'}`}>
-                      Stock: <span className="font-bold">{displayStock}</span>
-                    </span>
-                  )}
-                </div>
-
-                {/* Tags - compact */}
-                {Array.isArray(product.tags) && product.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-0.5">
-                    {product.tags.slice(0, 2).map((tag, idx) => (
-                      <Chip
-                        key={idx}
-                        size="sm"
-                        variant="flat"
-                        className="bg-gray-800/80 text-white border border-white/10 px-1.5 py-0.5 font-medium text-[9px]"
+              {/* Content - otimizado para caber sem scroll */}
+              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-1 scrollbar-hide">
+                {/* Product name */}
+                <div className="mb-1.5">
+                  <h3 className="text-white text-base md:text-lg font-extrabold leading-tight mb-1">
+                    {product.name}
+                  </h3>
+                  
+                  {/* Tabs para alternar entre NEW e USED */}
+                  {(usedPrice || usedStock) && (
+                    <div className="flex gap-1.5 border-b border-white/10 pb-0.5">
+                      <button
+                        onClick={() => setProductType("new")}
+                        className={`px-2 py-0.5 text-[10px] md:text-xs font-medium transition-colors ${
+                          productType === "new"
+                            ? "text-white border-b-2 border-white"
+                            : "text-gray-400 hover:text-white"
+                        }`}
                       >
-                        {toTitleCase(tag)}
-                      </Chip>
-                    ))}
+                        NEW
+                      </button>
+                      <button
+                        onClick={() => setProductType("used")}
+                        className={`px-2 py-0.5 text-[10px] md:text-xs font-medium transition-colors ${
+                          productType === "used"
+                            ? "text-white border-b-2 border-white"
+                            : "text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        USED
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Price */}
+                {displayPrice && (
+                  <div className="mb-1.5 flex items-baseline gap-1.5 flex-wrap">
+                    <span className="text-white text-lg md:text-xl font-black leading-none">
+                      €{displayPrice.toFixed(2)}
+                    </span>
+                    {displayOldPrice && (
+                      <span className="text-gray-400 line-through text-[10px] md:text-xs font-medium">
+                        €{displayOldPrice.toFixed(2)}
+                      </span>
+                    )}
+                    {displayRentalPrice && (
+                      <span className="text-blue-400 leading-none">
+                        <span className="text-[10px] md:text-xs font-medium">Rent: </span>
+                        <span className="text-lg md:text-xl font-black">€{displayRentalPrice.toFixed(2)}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Stock and Tags */}
+                <div className="mb-1.5 space-y-0.5">
+                  {/* Stock */}
+                  <div>
+                    {displayIsOutOfStock ? (
+                      <span className="text-red-400 text-[10px] md:text-xs font-medium">Out of stock</span>
+                    ) : (
+                      <span className={`text-[10px] md:text-xs font-medium ${displayIsLowStock ? 'text-yellow-400' : 'text-green-400'}`}>
+                        Stock: <span className="font-bold">{displayStock}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Tags */}
+                  {Array.isArray(product.tags) && product.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {product.tags.slice(0, 2).map((tag, idx) => (
+                        <Chip
+                          key={idx}
+                          size="sm"
+                          variant="flat"
+                          className="bg-gray-800/80 text-white border border-white/10 px-1.5 py-0.5 font-medium text-[9px] md:text-[10px]"
+                        >
+                          {toTitleCase(tag)}
+                        </Chip>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Colors */}
+                {colorKeys.length > 0 && (
+                  <div className="mb-1.5">
+                    <div className="text-gray-400 text-[10px] md:text-xs font-medium mb-0.5">Colors</div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {colorKeys.slice(0, 6).map((key) => (
+                        <div
+                          key={key}
+                          className="w-4 h-4 md:w-5 md:h-5 rounded-full border-2 border-white/20 shadow-sm"
+                          style={{ 
+                            background: colorKeyToStyle[key] || '#e5e7eb',
+                            boxShadow: key === 'brancoPuro' ? 'inset 0 0 0 1px rgba(0,0,0,0.15)' : undefined,
+                          }}
+                          title={key}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Type, Location, Mount - compacto */}
+                {(formattedType || formattedLocation || formattedMount) && (
+                  <div className="mb-1.5 space-y-0.5">
+                    {formattedType && (
+                      <div className="text-[10px] md:text-xs">
+                        <span className="text-blue-300 font-medium">Type: </span>
+                        <span className="text-white font-semibold">{formattedType}</span>
+                      </div>
+                    )}
+                    {formattedLocation && (
+                      <div className="text-[10px] md:text-xs">
+                        <span className="text-blue-300 font-medium">Location: </span>
+                        <span className="text-white font-semibold">{formattedLocation}</span>
+                      </div>
+                    )}
+                    {formattedMount && (
+                      <div className="text-[10px] md:text-xs">
+                        <span className="text-blue-300 font-medium">Mount: </span>
+                        <span className="text-white font-semibold">{formattedMount}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Dimensions - compacto */}
+                {(() => {
+                  const height = product.height || product.specs?.height || product.specs?.dimensions?.heightM;
+                  const width = product.width || product.specs?.width || product.specs?.dimensions?.widthM;
+                  const depth = product.depth || product.specs?.depth || product.specs?.dimensions?.depthM;
+                  const diameter = product.diameter || product.specs?.diameter || product.specs?.dimensions?.diameterM;
+                  
+                  if (height || width || depth || diameter) {
+                    return (
+                      <div className="mb-1.5">
+                        <div className="text-blue-300 text-[10px] md:text-xs font-medium mb-0.5">Dimensions</div>
+                        <div className="space-y-0.5">
+                          {height && (
+                            <div className="text-[10px] md:text-xs">
+                              <span className="text-blue-300">H: </span>
+                              <span className="text-white font-medium">{height}m</span>
+                            </div>
+                          )}
+                          {width && (
+                            <div className="text-[10px] md:text-xs">
+                              <span className="text-blue-300">W: </span>
+                              <span className="text-white font-medium">{width}m</span>
+                            </div>
+                          )}
+                          {depth && (
+                            <div className="text-[10px] md:text-xs">
+                              <span className="text-blue-300">D: </span>
+                              <span className="text-white font-medium">{depth}m</span>
+                            </div>
+                          )}
+                          {diameter && (
+                            <div className="text-[10px] md:text-xs">
+                              <span className="text-blue-300">Ø: </span>
+                              <span className="text-white font-medium">{diameter}m</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Description - texto completo, sem cortes */}
+                {formattedDescription && (
+                  <div className="mb-1.5">
+                    <div className="text-blue-300 text-[10px] md:text-xs font-medium mb-0.5">Description</div>
+                    <p className="text-white text-[10px] md:text-xs leading-tight">
+                      {formattedDescription}
+                    </p>
+                  </div>
+                )}
+
+                {/* Weight */}
+                {formattedWeight && (
+                  <div className="mb-1.5 text-[10px] md:text-xs">
+                    <span className="text-blue-300 font-medium">Weight: </span>
+                    <span className="text-white font-semibold">{formattedWeight}</span>
+                  </div>
+                )}
+
+                {/* Materials - texto completo, sem cortes */}
+                {formattedMaterials && (
+                  <div className="mb-1.5">
+                    <div className="text-blue-300 text-[10px] md:text-xs font-medium mb-0.5">Materials</div>
+                    <p className="text-white text-[10px] md:text-xs leading-tight">
+                      {formattedMaterials}
+                    </p>
                   </div>
                 )}
               </div>
 
-              {/* Available Colors - compact */}
-              {colorKeys.length > 0 && (
-                <div className="mb-1">
-                  <div className="text-gray-400 text-[9px] md:text-[10px] font-medium mb-0.5">Colors</div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {colorKeys.slice(0, 6).map((key) => (
-                      <div
-                        key={key}
-                        className="w-4 h-4 md:w-5 md:h-5 rounded-full border-2 border-white/20 shadow-sm"
-                        style={{ 
-                          background: colorKeyToStyle[key] || '#e5e7eb',
-                          boxShadow: key === 'brancoPuro' ? 'inset 0 0 0 1px rgba(0,0,0,0.15)' : undefined,
-                        }}
-                        title={key}
+              {/* Action buttons - fixos no fundo, compactos */}
+              <div className="flex flex-col gap-1 pt-1.5 border-t border-white/10 shrink-0">
+                {/* Botão de simulação animada - apenas para GX349L e GX350LW */}
+                {(isGX349L || isGX350LW) && (
+                  <Button
+                    radius="sm"
+                    size="sm"
+                    variant="bordered"
+                    className="bg-gray-900/50 hover:bg-gray-800/50 text-white border-white/20 font-medium text-xs py-1.5"
+                    startContent={
+                      <Icon 
+                        icon={selectedSuggestionVideo ? "lucide:rotate-ccw" : (showAnimationSimulation ? "lucide:video" : "lucide:play-circle")} 
+                        className="text-sm"
                       />
-                    ))}
-                  </div>
-                </div>
-              )}
+                    }
+                    onPress={handleAnimationSimulationToggle}
+                  >
+                    {selectedSuggestionVideo ? "Original" : (showAnimationSimulation ? "Normal" : "Animation")}
+                  </Button>
+                )}
 
-              {/* Type, Location, Mount - compact grid */}
-              {(formattedType || formattedLocation || formattedMount) && (
-                <div className="mb-1 space-y-0.5">
-                  {formattedType && (
-                    <div className="text-[9px] md:text-[10px]">
-                      <span className="text-gray-500 font-medium">Type: </span>
-                      <span className="text-white font-semibold">{formattedType}</span>
-                    </div>
-                  )}
-                  {formattedLocation && (
-                    <div className="text-[9px] md:text-[10px]">
-                      <span className="text-gray-500 font-medium">Location: </span>
-                      <span className="text-white font-semibold">{formattedLocation}</span>
-                    </div>
-                  )}
-                  {formattedMount && (
-                    <div className="text-[9px] md:text-[10px]">
-                      <span className="text-gray-500 font-medium">Mount: </span>
-                      <span className="text-white font-semibold">{formattedMount}</span>
-                    </div>
-                  )}
-                </div>
-              )}
+                <Button
+                  radius="sm"
+                  size="sm"
+                  className={`font-medium text-xs py-1.5 ${
+                    isFavorited 
+                      ? 'bg-red-500 hover:bg-red-600 text-white' 
+                      : 'bg-white/10 hover:bg-white/15 text-white border border-white/20'
+                  }`}
+                  startContent={
+                    <Icon 
+                      icon={isFavorited ? "mdi:heart" : "mdi:heart-outline"} 
+                      className="text-sm"
+                      style={isFavorited ? { fill: 'currentColor' } : {}}
+                    />
+                  }
+                  onPress={() => toggleFavorite?.(product.id)}
+                >
+                  {isFavorited ? 'Favorited' : 'Favorite'}
+                </Button>
 
-              {/* Dimensions - compact */}
-              {(() => {
-                const height = product.height || product.specs?.height || product.specs?.dimensions?.heightM;
-                const width = product.width || product.specs?.width || product.specs?.dimensions?.widthM;
-                const depth = product.depth || product.specs?.depth || product.specs?.dimensions?.depthM;
-                const diameter = product.diameter || product.specs?.diameter || product.specs?.dimensions?.diameterM;
-                
-                if (height || width || depth || diameter) {
-                  return (
-                    <div className="mb-1">
-                      <div className="text-gray-500 text-[9px] md:text-[10px] font-medium mb-0.5">Dimensions</div>
-                      <div className="space-y-0.5">
-                        {height && (
-                          <div className="text-[9px] md:text-[10px]">
-                            <span className="text-gray-400">H: </span>
-                            <span className="text-white font-medium">{height}m</span>
-                          </div>
-                        )}
-                        {width && (
-                          <div className="text-[9px] md:text-[10px]">
-                            <span className="text-gray-400">W: </span>
-                            <span className="text-white font-medium">{width}m</span>
-                          </div>
-                        )}
-                        {depth && (
-                          <div className="text-[9px] md:text-[10px]">
-                            <span className="text-gray-400">D: </span>
-                            <span className="text-white font-medium">{depth}m</span>
-                          </div>
-                        )}
-                        {diameter && (
-                          <div className="text-[9px] md:text-[10px]">
-                            <span className="text-gray-400">Ø: </span>
-                            <span className="text-white font-medium">{diameter}m</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-
-              {/* Description - compact, limitado */}
-              {formattedDescription && (
-                <div className="mb-1">
-                  <p className="text-white text-[9px] md:text-[10px] leading-tight line-clamp-1">
-                    {formattedDescription}
-                  </p>
-                </div>
-              )}
-
-              {/* Technical specifications - compact */}
-              {product.specs && (
-                <div className="mb-1 space-y-0.5">
-                  {formattedWeight && (
-                    <div className="text-[9px] md:text-[10px]">
-                      <span className="text-gray-500 font-medium">Weight: </span>
-                      <span className="text-white font-semibold">{formattedWeight}</span>
-                    </div>
-                  )}
-                  {formattedMaterials && (
-                    <div>
-                      <div className="text-gray-500 text-[9px] md:text-[10px] font-medium mb-0.5">Materials:</div>
-                      <p className="text-white text-[9px] md:text-[10px] leading-tight line-clamp-1">
-                        {formattedMaterials}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Action buttons - fixed at bottom */}
-            <div className="flex flex-col gap-1 md:gap-1.5 pt-1.5 border-t border-white/10 shrink-0">
-            {/* Botão de simulação animada - apenas para GX349L e GX350LW */}
-            {(isGX349L || isGX350LW) && (
-              <Button
-                radius="md"
-                size="sm"
-                variant="bordered"
-                className="bg-gray-900/50 hover:bg-gray-800/50 text-white border-white/20 font-semibold text-[9px] md:text-[10px] py-1"
-                startContent={
-                  <Icon 
-                    icon={selectedSuggestionVideo ? "lucide:rotate-ccw" : (showAnimationSimulation ? "lucide:video" : "lucide:play-circle")} 
-                    className="text-xs"
-                  />
-                }
-                onPress={handleAnimationSimulationToggle}
-              >
-                {selectedSuggestionVideo ? "Original" : (showAnimationSimulation ? "Normal" : "Animation")}
-              </Button>
-            )}
-
-            <Button
-              radius="md"
-              size="sm"
-              className={`font-semibold text-[9px] md:text-[10px] py-1 ${
-                isFavorited 
-                  ? 'bg-red-500 hover:bg-red-600 text-white' 
-                  : 'bg-white/10 hover:bg-white/15 text-white border border-white/20'
-              }`}
-              startContent={
-                <Icon 
-                  icon={isFavorited ? "mdi:heart" : "mdi:heart-outline"} 
-                  className="text-xs"
-                  style={isFavorited ? { fill: 'currentColor' } : {}}
-                />
-              }
-              onPress={() => toggleFavorite?.(product.id)}
-            >
-              {isFavorited ? 'Favorited' : 'Favorite'}
-            </Button>
-
-            <Button
-              radius="md"
-              size="sm"
-              variant="bordered"
-              className="bg-gray-900/50 hover:bg-gray-800/50 text-white border-white/20 font-semibold text-[9px] md:text-[10px] py-1"
-              startContent={<Icon icon="lucide:sparkles" className="text-xs" />}
-              onPress={() => setShowSuggestions(true)}
-            >
-              Suggestions
-            </Button>
+                <Button
+                  radius="sm"
+                  size="sm"
+                  variant="bordered"
+                  className="bg-gray-900/50 hover:bg-gray-800/50 text-white border-white/20 font-medium text-xs py-1.5"
+                  startContent={<Icon icon="lucide:sparkles" className="text-sm" />}
+                  onPress={() => setShowSuggestions(true)}
+                >
+                  Suggestions
+                </Button>
+              </div>
             </div>
           </div>
               </motion.div>
