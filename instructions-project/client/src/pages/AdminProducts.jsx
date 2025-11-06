@@ -645,7 +645,47 @@ export default function AdminProducts() {
       type: product.type || "",
       location: product.location || "",
       mount: product.mount || "",
-      tags: product.tags || [],
+      tags: (function() {
+        // Normalizar tags: converter para lowercase e mapear variações
+        var productTags = product.tags || [];
+        var normalizedTags = [];
+        var tagMap = {
+          "sale": "sale",
+          "priority": "priority",
+          "priori": "priority",
+          "new": "new",
+          "trending": "trending",
+          "summer": "summer",
+          "christmas": "christmas",
+          "xmas": "christmas"
+        };
+        
+        for (var i = 0; i < productTags.length; i++) {
+          var tag = String(productTags[i]).toLowerCase().trim();
+          // Verificar se é uma tag conhecida
+          if (tagMap[tag]) {
+            normalizedTags.push(tagMap[tag]);
+          } else if (tag === "sale" || tag.indexOf("sale") >= 0) {
+            normalizedTags.push("sale");
+          } else if (tag === "priority" || tag.indexOf("priority") >= 0 || tag.indexOf("priori") >= 0) {
+            normalizedTags.push("priority");
+          } else if (tag === "new") {
+            normalizedTags.push("new");
+          } else if (tag === "trending" || tag.indexOf("trending") >= 0) {
+            normalizedTags.push("trending");
+          } else if (tag === "summer" || tag.indexOf("summer") >= 0) {
+            normalizedTags.push("summer");
+          } else if (tag === "christmas" || tag.indexOf("christmas") >= 0 || tag.indexOf("xmas") >= 0) {
+            normalizedTags.push("christmas");
+          } else {
+            // Manter outras tags que não são as principais
+            normalizedTags.push(tag);
+          }
+        }
+        
+        // Remover duplicados
+        return Array.from(new Set(normalizedTags));
+      })(),
       isActive: product.isActive !== false,
       specs: Object.assign({}, specsWithoutUsed, {
         printColor: filteredPrintColor !== null ? filteredPrintColor : "",
@@ -796,23 +836,40 @@ export default function AdminProducts() {
     var hasPrice = newPrice && parseFloat(newPrice) > 0;
     var isOnSale = hasOldPrice && hasPrice && parseFloat(newOldPrice) > parseFloat(newPrice);
     
-    // Verificar se tag "sale" já existe
-    var hasSaleTag = false;
+    // Normalizar tags existentes para IDs padrão
+    var normalizedFinalTags = [];
     for (var i = 0; i < finalTags.length; i++) {
-      if (finalTags[i].toLowerCase() === 'sale') {
-        hasSaleTag = true;
-        break;
+      var tag = String(finalTags[i]).toLowerCase().trim();
+      if (tag === "sale" || tag.indexOf("sale") >= 0) {
+        if (normalizedFinalTags.indexOf("sale") === -1) normalizedFinalTags.push("sale");
+      } else if (tag === "priority" || tag.indexOf("priority") >= 0 || tag.indexOf("priori") >= 0) {
+        if (normalizedFinalTags.indexOf("priority") === -1) normalizedFinalTags.push("priority");
+      } else if (tag === "new") {
+        if (normalizedFinalTags.indexOf("new") === -1) normalizedFinalTags.push("new");
+      } else if (tag === "trending" || tag.indexOf("trending") >= 0) {
+        if (normalizedFinalTags.indexOf("trending") === -1) normalizedFinalTags.push("trending");
+      } else if (tag === "summer" || tag.indexOf("summer") >= 0) {
+        if (normalizedFinalTags.indexOf("summer") === -1) normalizedFinalTags.push("summer");
+      } else if (tag === "christmas" || tag.indexOf("christmas") >= 0 || tag.indexOf("xmas") >= 0) {
+        if (normalizedFinalTags.indexOf("christmas") === -1) normalizedFinalTags.push("christmas");
+      } else {
+        // Manter outras tags que não são as principais
+        if (normalizedFinalTags.indexOf(tag) === -1) normalizedFinalTags.push(tag);
       }
     }
+    finalTags = normalizedFinalTags;
+    
+    // Verificar se tag "sale" já existe
+    var hasSaleTag = finalTags.indexOf("sale") !== -1;
     
     // Adicionar tag "sale" se houver desconto, remover se não houver
     if (isOnSale && !hasSaleTag) {
-      finalTags.push('sale');
+      finalTags.push("sale");
     } else if (!isOnSale && hasSaleTag) {
       // Remover tag "sale"
       var newTags = [];
       for (var j = 0; j < finalTags.length; j++) {
-        if (finalTags[j].toLowerCase() !== 'sale') {
+        if (finalTags[j] !== "sale") {
           newTags.push(finalTags[j]);
         }
       }
@@ -1143,6 +1200,48 @@ export default function AdminProducts() {
                     </div>
                     <div className="p-4">
                       <h3 className="font-semibold text-lg mb-1">{product.name}</h3>
+                      {/* Tags */}
+                      {product.tags && Array.isArray(product.tags) && product.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {product.tags.map(function(tag) {
+                            var tagLower = String(tag).toLowerCase();
+                            var tagConfig = null;
+                            
+                            if (tagLower === "sale" || tagLower.indexOf("sale") >= 0) {
+                              tagConfig = { label: "Sale", color: "#ef4444", bgColor: "#ef444420" };
+                            } else if (tagLower === "priority" || tagLower.indexOf("priority") >= 0 || tagLower.indexOf("priori") >= 0) {
+                              tagConfig = { label: "PRIORITY", color: "#f59e0b", bgColor: "#f59e0b20" };
+                            } else if (tagLower === "new") {
+                              tagConfig = { label: "New", color: "#10b981", bgColor: "#10b98120" };
+                            } else if (tagLower === "trending" || tagLower.indexOf("trending") >= 0) {
+                              tagConfig = { label: "Trending", color: "#8b5cf6", bgColor: "#8b5cf620" };
+                            } else if (tagLower === "summer" || tagLower.indexOf("summer") >= 0) {
+                              tagConfig = { label: "Summer", color: "#f59e0b", bgColor: "#f59e0b20" };
+                            } else if (tagLower === "christmas" || tagLower.indexOf("christmas") >= 0 || tagLower.indexOf("xmas") >= 0) {
+                              tagConfig = { label: "Christmas", color: "#ef4444", bgColor: "#ef444420" };
+                            } else {
+                              tagConfig = { label: String(tag), color: "#6b7280", bgColor: "#6b728020" };
+                            }
+                            
+                            return (
+                              <Chip
+                                key={tag}
+                                size="sm"
+                                style={{
+                                  backgroundColor: tagConfig.bgColor,
+                                  color: tagConfig.color,
+                                  borderColor: tagConfig.color,
+                                  borderWidth: "1px",
+                                  borderStyle: "solid"
+                                }}
+                                className="text-xs font-medium"
+                              >
+                                {tagConfig.label}
+                              </Chip>
+                            );
+                          })}
+                        </div>
+                      )}
                       <p className="text-default-500 text-sm mb-2">
                         €{product.price}
                         {product.oldPrice && (
@@ -1609,21 +1708,110 @@ export default function AdminProducts() {
 
                     {/* Tags */}
                     <div>
-                      <Input
-                        label="Tags (comma separated)"
-                        placeholder="trending, christmas, sale"
-                        value={formData.tags.join(", ")}
-                        onValueChange={function(val) {
-                          var tagsArray = val.split(",").map(function(tag) {
-                            return tag.trim();
-                          }).filter(function(tag) {
-                            return tag.length > 0;
-                          });
+                      <Select
+                        label="Tags"
+                        placeholder="Select tags"
+                        selectionMode="multiple"
+                        selectedKeys={new Set(formData.tags || [])}
+                        onSelectionChange={function(keys) {
+                          var selectedTags = Array.from(keys);
                           setFormData(function(prev) {
-                            return Object.assign({}, prev, { tags: tagsArray });
+                            return Object.assign({}, prev, { tags: selectedTags });
                           });
                         }}
-                      />
+                          renderValue={function(items) {
+                            if (items.length === 0) {
+                              return "No tags selected";
+                            }
+                            var tagConfigs = {
+                              "sale": { label: "Sale", color: "#ef4444" },
+                              "priority": { label: "PRIORITY", color: "#f59e0b" },
+                              "new": { label: "New", color: "#10b981" },
+                              "trending": { label: "Trending", color: "#8b5cf6" },
+                              "summer": { label: "Summer", color: "#f59e0b" },
+                              "christmas": { label: "Christmas", color: "#ef4444" }
+                            };
+                            return items.map(function(item) {
+                              var config = tagConfigs[item.key] || { label: item.key, color: "#6b7280" };
+                              return (
+                                <Chip
+                                  key={item.key}
+                                  size="sm"
+                                  style={{ backgroundColor: config.color + "20", color: config.color }}
+                                  className="mr-1"
+                                >
+                                  {config.label}
+                                </Chip>
+                              );
+                            });
+                          }}
+                      >
+                        <SelectItem
+                          key="sale"
+                          textValue="Sale"
+                          startContent={
+                            <div className="w-4 h-4 rounded flex items-center justify-center" style={{ backgroundColor: "#ef4444" }}>
+                              <Icon icon="lucide:tag" className="text-white text-xs" />
+                            </div>
+                          }
+                        >
+                          Sale
+                        </SelectItem>
+                        <SelectItem
+                          key="priority"
+                          textValue="PRIORITY"
+                          startContent={
+                            <div className="w-4 h-4 rounded flex items-center justify-center" style={{ backgroundColor: "#f59e0b" }}>
+                              <Icon icon="lucide:star" className="text-white text-xs" />
+                            </div>
+                          }
+                        >
+                          PRIORITY
+                        </SelectItem>
+                        <SelectItem
+                          key="new"
+                          textValue="New"
+                          startContent={
+                            <div className="w-4 h-4 rounded flex items-center justify-center" style={{ backgroundColor: "#10b981" }}>
+                              <Icon icon="lucide:sparkles" className="text-white text-xs" />
+                            </div>
+                          }
+                        >
+                          New
+                        </SelectItem>
+                        <SelectItem
+                          key="trending"
+                          textValue="Trending"
+                          startContent={
+                            <div className="w-4 h-4 rounded flex items-center justify-center" style={{ backgroundColor: "#8b5cf6" }}>
+                              <Icon icon="lucide:trending-up" className="text-white text-xs" />
+                            </div>
+                          }
+                        >
+                          Trending
+                        </SelectItem>
+                        <SelectItem
+                          key="summer"
+                          textValue="Summer"
+                          startContent={
+                            <div className="w-4 h-4 rounded flex items-center justify-center" style={{ backgroundColor: "#f59e0b" }}>
+                              <Icon icon="lucide:sun" className="text-white text-xs" />
+                            </div>
+                          }
+                        >
+                          Summer
+                        </SelectItem>
+                        <SelectItem
+                          key="christmas"
+                          textValue="Christmas"
+                          startContent={
+                            <div className="w-4 h-4 rounded flex items-center justify-center" style={{ backgroundColor: "#ef4444" }}>
+                              <Icon icon="lucide:gift" className="text-white text-xs" />
+                            </div>
+                          }
+                        >
+                          Christmas
+                        </SelectItem>
                     </div>
 
                     {/* Specs */}
