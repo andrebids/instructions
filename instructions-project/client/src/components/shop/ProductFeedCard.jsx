@@ -771,8 +771,9 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                     </span>
                   )}
                   {displayRentalPrice && (
-                    <span className="text-blue-400 text-[10px] font-medium">
-                      Rent: €{displayRentalPrice.toFixed(2)}
+                    <span className="text-blue-400 leading-none">
+                      <span className="text-[10px] md:text-xs font-medium">Rent: </span>
+                      <span className="text-lg md:text-xl font-black">€{displayRentalPrice.toFixed(2)}</span>
                     </span>
                   )}
                 </div>

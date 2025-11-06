@@ -496,7 +496,10 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                           <div className="text-sm text-default-500 line-through">€{displayOldPrice.toFixed(2)}</div>
                         )}
                         {displayRentalPrice && (
-                          <div className="text-sm text-primary-400">Rent: €{displayRentalPrice.toFixed(2)}</div>
+                          <div className="text-primary-400">
+                            <span className="text-sm font-medium">Rent: </span>
+                            <span className="text-2xl font-bold">€{displayRentalPrice.toFixed(2)}</span>
+                          </div>
                         )}
                       </div>
                     )}
