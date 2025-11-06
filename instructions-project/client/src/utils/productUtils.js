@@ -8,6 +8,8 @@ export function transformApiProduct(apiProduct) {
     price: typeof apiProduct.price === 'number' ? apiProduct.price : parseFloat(apiProduct.price) || 0,
     stock: typeof apiProduct.stock === 'number' ? apiProduct.stock : 0,
     videoFile: apiProduct.animationUrl || apiProduct.videoFile || null,
+    animationUrl: apiProduct.animationUrl || null,
+    animationSimulationUrl: apiProduct.animationSimulationUrl || null,
     images: {
       day: apiProduct.imagesDayUrl || apiProduct.thumbnailUrl || null,
       night: apiProduct.imagesNightUrl || apiProduct.imagesDayUrl || apiProduct.thumbnailUrl || null,
@@ -46,6 +48,12 @@ export function transformApiProduct(apiProduct) {
     depth: apiProduct.depth || null,
     diameter: apiProduct.diameter || null,
   };
+  
+  // Debug: verificar animationSimulationUrl para IPL337W
+  if (apiProduct.id === 'IPL337W' || apiProduct.name === 'IPL337W') {
+    console.log('🔍 [transformApiProduct] IPL337W - animationSimulationUrl do API:', apiProduct.animationSimulationUrl);
+    console.log('🔍 [transformApiProduct] IPL337W - animationSimulationUrl transformado:', transformed.animationSimulationUrl);
+  }
   
   return transformed;
 }
