@@ -180,9 +180,19 @@ export default function AdminProducts() {
   };
   var [formData, setFormData] = React.useState({
     name: "",
-    price: "",
     stock: "",
-    oldPrice: "",
+    usedStock: "",
+    prices: {
+      new: {
+        price: "",
+        oldPrice: "",
+        rentalPrice: "",
+      },
+      used: {
+        price: "",
+        rentalPrice: "",
+      },
+    },
     type: "",
     location: "",
     mount: "",
@@ -433,9 +443,19 @@ export default function AdminProducts() {
     setEditingProduct(null);
     setFormData({
       name: "",
-      price: "",
       stock: "",
-      oldPrice: "",
+      usedStock: "",
+      prices: {
+        new: {
+          price: "",
+          oldPrice: "",
+          rentalPrice: "",
+        },
+        used: {
+          price: "",
+          rentalPrice: "",
+        },
+      },
       type: "",
       usage: "",
       location: "",
@@ -588,17 +608,41 @@ export default function AdminProducts() {
       });
     }
     
+    // Extrair preços: price e oldPrice são para produtos novos
+    // usedPrice, usedStock e rental prices podem estar em specs
+    var usedPrice = productSpecs.usedPrice || "";
+    var usedStock = productSpecs.usedStock || "";
+    var newRentalPrice = productSpecs.newRentalPrice || "";
+    var usedRentalPrice = productSpecs.usedRentalPrice || "";
+    
+    // Criar specs sem campos de preços usados e rental (para não duplicar, já que estão em prices)
+    var specsWithoutUsed = Object.assign({}, productSpecs);
+    delete specsWithoutUsed.usedPrice;
+    delete specsWithoutUsed.usedStock;
+    delete specsWithoutUsed.newRentalPrice;
+    delete specsWithoutUsed.usedRentalPrice;
+    
     setFormData({
       name: product.name || "",
-      price: product.price || "",
       stock: product.stock || "",
-      oldPrice: product.oldPrice || "",
+      usedStock: usedStock,
+      prices: {
+        new: {
+          price: product.price || "",
+          oldPrice: product.oldPrice || "",
+          rentalPrice: newRentalPrice,
+        },
+        used: {
+          price: usedPrice,
+          rentalPrice: usedRentalPrice,
+        },
+      },
       type: product.type || "",
       location: product.location || "",
       mount: product.mount || "",
       tags: product.tags || [],
       isActive: product.isActive !== false,
-      specs: Object.assign({}, productSpecs, {
+      specs: Object.assign({}, specsWithoutUsed, {
         printColor: filteredPrintColor !== null ? filteredPrintColor : "",
         effects: filteredEffects !== null ? filteredEffects : null,
         aluminium: filteredAluminium !== null ? filteredAluminium : null,
@@ -737,11 +781,13 @@ export default function AdminProducts() {
       return value;
     };
     
-    // Processar tags e adicionar/remover tag "sale" automaticamente baseado em oldPrice
+    // Processar tags e adicionar/remover tag "sale" automaticamente baseado em oldPrice (apenas para produtos novos)
     var finalTags = formData.tags || [];
-    var hasOldPrice = formData.oldPrice && parseFloat(formData.oldPrice) > 0;
-    var hasPrice = formData.price && parseFloat(formData.price) > 0;
-    var isOnSale = hasOldPrice && hasPrice && parseFloat(formData.oldPrice) > parseFloat(formData.price);
+    var newPrice = formData.prices.new.price || "";
+    var newOldPrice = formData.prices.new.oldPrice || "";
+    var hasOldPrice = newOldPrice && parseFloat(newOldPrice) > 0;
+    var hasPrice = newPrice && parseFloat(newPrice) > 0;
+    var isOnSale = hasOldPrice && hasPrice && parseFloat(newOldPrice) > parseFloat(newPrice);
     
     // Verificar se tag "sale" já existe
     var hasSaleTag = false;
@@ -809,11 +855,46 @@ export default function AdminProducts() {
     }
     
     // Criar objeto com os dados (productsAPI.create cria o FormData internamente)
+    // Preços novos: usar price e oldPrice
+    // Preço usado, stock usado e rental prices: armazenar em specs
+    var newPriceValue = formData.prices.new.price || "";
+    var newOldPriceValue = formData.prices.new.oldPrice || "";
+    var usedPriceValue = formData.prices.used.price || "";
+    var usedStockValue = formData.usedStock || "";
+    var newRentalPriceValue = formData.prices.new.rentalPrice || "";
+    var usedRentalPriceValue = formData.prices.used.rentalPrice || "";
+    
+    // Adicionar campos aos specs apenas se existirem valores
+    // Se não existirem, garantir que sejam removidos (não incluir no cleanedSpecs)
+    if (usedPriceValue && usedPriceValue.trim() !== "") {
+      cleanedSpecs.usedPrice = usedPriceValue;
+    } else {
+      delete cleanedSpecs.usedPrice;
+    }
+    
+    if (usedStockValue && usedStockValue.trim() !== "") {
+      cleanedSpecs.usedStock = usedStockValue;
+    } else {
+      delete cleanedSpecs.usedStock;
+    }
+    
+    if (newRentalPriceValue && newRentalPriceValue.trim() !== "") {
+      cleanedSpecs.newRentalPrice = newRentalPriceValue;
+    } else {
+      delete cleanedSpecs.newRentalPrice;
+    }
+    
+    if (usedRentalPriceValue && usedRentalPriceValue.trim() !== "") {
+      cleanedSpecs.usedRentalPrice = usedRentalPriceValue;
+    } else {
+      delete cleanedSpecs.usedRentalPrice;
+    }
+    
     var data = {
       name: formData.name,
-      price: formData.price || 0,
+      price: newPriceValue || 0,
       stock: formData.stock || 0,
-      oldPrice: toNullIfEmpty(formData.oldPrice),
+      oldPrice: toNullIfEmpty(newOldPriceValue),
       type: toNullIfEmpty(formData.type),
       location: toNullIfEmpty(formData.location),
       mount: toNullIfEmpty(formData.mount),
@@ -1134,17 +1215,7 @@ export default function AdminProducts() {
                         }}
                         isRequired
                       />
-                      <Input
-                        label="Price (€)"
-                        type="number"
-                        placeholder="1299"
-                        value={formData.price}
-                        onValueChange={function(val) {
-                          setFormData(function(prev) {
-                            return Object.assign({}, prev, { price: val });
-                          });
-                        }}
-                      />
+                      <div></div>
                       <Input
                         label="Stock"
                         type="number"
@@ -1157,17 +1228,103 @@ export default function AdminProducts() {
                         }}
                       />
                       <Input
-                        label="Old Price (€)"
+                        label="Used Stock"
                         type="number"
-                        placeholder="Optional"
-                        value={formData.oldPrice}
+                        placeholder="10"
+                        value={formData.usedStock}
                         onValueChange={function(val) {
                           setFormData(function(prev) {
-                            return Object.assign({}, prev, { oldPrice: val });
+                            return Object.assign({}, prev, { usedStock: val });
                           });
                         }}
                       />
                     </div>
+
+                    {/* Preços em Accordion */}
+                    <Accordion>
+                      <AccordionItem key="prices" title="Prices" subtitle="Configure prices for new and used products">
+                        <div className="space-y-4 pt-2">
+                          {/* Preços para Produtos Novos */}
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm">New Product</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                              <Input
+                                label="Price (€)"
+                                type="number"
+                                placeholder="1299"
+                                value={formData.prices.new.price}
+                                onValueChange={function(val) {
+                                  setFormData(function(prev) {
+                                    var newPrices = Object.assign({}, prev.prices);
+                                    newPrices.new = Object.assign({}, newPrices.new, { price: val });
+                                    return Object.assign({}, prev, { prices: newPrices });
+                                  });
+                                }}
+                              />
+                              <Input
+                                label="Old Price (€)"
+                                type="number"
+                                placeholder="Optional"
+                                value={formData.prices.new.oldPrice}
+                                onValueChange={function(val) {
+                                  setFormData(function(prev) {
+                                    var newPrices = Object.assign({}, prev.prices);
+                                    newPrices.new = Object.assign({}, newPrices.new, { oldPrice: val });
+                                    return Object.assign({}, prev, { prices: newPrices });
+                                  });
+                                }}
+                              />
+                              <Input
+                                label="Rental Price (€)"
+                                type="number"
+                                placeholder="299"
+                                value={formData.prices.new.rentalPrice}
+                                onValueChange={function(val) {
+                                  setFormData(function(prev) {
+                                    var newPrices = Object.assign({}, prev.prices);
+                                    newPrices.new = Object.assign({}, newPrices.new, { rentalPrice: val });
+                                    return Object.assign({}, prev, { prices: newPrices });
+                                  });
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Preços para Produtos Usados */}
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm">Used Product</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                              <Input
+                                label="Used Price (€)"
+                                type="number"
+                                placeholder="899"
+                                value={formData.prices.used.price}
+                                onValueChange={function(val) {
+                                  setFormData(function(prev) {
+                                    var newPrices = Object.assign({}, prev.prices);
+                                    newPrices.used = Object.assign({}, newPrices.used, { price: val });
+                                    return Object.assign({}, prev, { prices: newPrices });
+                                  });
+                                }}
+                              />
+                              <Input
+                                label="Used Rental Price (€)"
+                                type="number"
+                                placeholder="199"
+                                value={formData.prices.used.rentalPrice}
+                                onValueChange={function(val) {
+                                  setFormData(function(prev) {
+                                    var newPrices = Object.assign({}, prev.prices);
+                                    newPrices.used = Object.assign({}, newPrices.used, { rentalPrice: val });
+                                    return Object.assign({}, prev, { prices: newPrices });
+                                  });
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </AccordionItem>
+                    </Accordion>
 
                     {/* Dropdowns */}
                     <div className="grid grid-cols-2 gap-4">
