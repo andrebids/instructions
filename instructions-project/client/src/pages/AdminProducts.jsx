@@ -1038,9 +1038,59 @@ export default function AdminProducts() {
 
   // Filtrar produtos
   var filteredProducts = products;
+  
+  // Aplicar filtro de pesquisa
   if (searchQuery) {
-    filteredProducts = products.filter(function(p) {
+    filteredProducts = filteredProducts.filter(function(p) {
       return p.name.toLowerCase().indexOf(searchQuery.toLowerCase()) >= 0;
+    });
+  }
+  
+  // Aplicar filtro de tipo
+  if (filters.type) {
+    filteredProducts = filteredProducts.filter(function(p) {
+      return p.type === filters.type;
+    });
+  }
+  
+  // Aplicar filtro de localização
+  if (filters.location) {
+    filteredProducts = filteredProducts.filter(function(p) {
+      return p.location === filters.location;
+    });
+  }
+  
+  // Aplicar filtro de tag
+  if (filters.tag) {
+    var tagFilter = String(filters.tag).toLowerCase();
+    filteredProducts = filteredProducts.filter(function(p) {
+      if (!p.tags || !Array.isArray(p.tags)) return false;
+      for (var i = 0; i < p.tags.length; i++) {
+        var tag = String(p.tags[i]).toLowerCase();
+        // Normalizar tags para comparação
+        if (tagFilter === "priority" && (tag === "priority" || tag.indexOf("priority") >= 0 || tag.indexOf("priori") >= 0)) {
+          return true;
+        }
+        if (tagFilter === "sale" && (tag === "sale" || tag.indexOf("sale") >= 0)) {
+          return true;
+        }
+        if (tagFilter === "new" && tag === "new") {
+          return true;
+        }
+        if (tagFilter === "trending" && (tag === "trending" || tag.indexOf("trending") >= 0)) {
+          return true;
+        }
+        if (tagFilter === "summer" && (tag === "summer" || tag.indexOf("summer") >= 0)) {
+          return true;
+        }
+        if (tagFilter === "christmas" && (tag === "christmas" || tag.indexOf("christmas") >= 0 || tag.indexOf("xmas") >= 0)) {
+          return true;
+        }
+        if (tag === tagFilter) {
+          return true;
+        }
+      }
+      return false;
     });
   }
 
@@ -1107,6 +1157,26 @@ export default function AdminProducts() {
           >
             <SelectItem key="Exterior" textValue="Exterior">Exterior</SelectItem>
             <SelectItem key="Interior" textValue="Interior">Interior</SelectItem>
+          </Select>
+          
+          <Select
+            placeholder="Tag"
+            aria-label="Filter by tag"
+            selectedKeys={filters.tag ? new Set([filters.tag]) : new Set()}
+            onSelectionChange={function(keys) {
+              var selected = Array.from(keys)[0] || "";
+              setFilters(function(prev) {
+                return Object.assign({}, prev, { tag: selected });
+              });
+            }}
+            className="w-40"
+          >
+            <SelectItem key="priority" textValue="PRIORITY">PRIORITY</SelectItem>
+            <SelectItem key="sale" textValue="Sale">Sale</SelectItem>
+            <SelectItem key="new" textValue="New">New</SelectItem>
+            <SelectItem key="trending" textValue="Trending">Trending</SelectItem>
+            <SelectItem key="summer" textValue="Summer">Summer</SelectItem>
+            <SelectItem key="christmas" textValue="Christmas">Christmas</SelectItem>
           </Select>
           
           <Button
@@ -1203,43 +1273,62 @@ export default function AdminProducts() {
                       {/* Tags */}
                       {product.tags && Array.isArray(product.tags) && product.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-2">
-                          {product.tags.map(function(tag) {
-                            var tagLower = String(tag).toLowerCase();
-                            var tagConfig = null;
+                          {(function() {
+                            // Helper function to get tag priority for sorting (lower number = higher priority)
+                            var getTagPriority = function(tag) {
+                              var tagLower = String(tag).toLowerCase();
+                              if (tagLower === "priority" || tagLower.indexOf("priority") >= 0 || tagLower.indexOf("priori") >= 0) return 1;
+                              if (tagLower === "sale" || tagLower.indexOf("sale") >= 0) return 2;
+                              if (tagLower === "new") return 3;
+                              if (tagLower === "trending" || tagLower.indexOf("trending") >= 0) return 4;
+                              if (tagLower === "summer" || tagLower.indexOf("summer") >= 0) return 4;
+                              if (tagLower === "christmas" || tagLower.indexOf("christmas") >= 0 || tagLower.indexOf("xmas") >= 0) return 4;
+                              return 5; // Other tags
+                            };
                             
-                            if (tagLower === "sale" || tagLower.indexOf("sale") >= 0) {
-                              tagConfig = { label: "Sale", color: "#ef4444", bgColor: "#ef444420" };
-                            } else if (tagLower === "priority" || tagLower.indexOf("priority") >= 0 || tagLower.indexOf("priori") >= 0) {
-                              tagConfig = { label: "PRIORITY", color: "#f59e0b", bgColor: "#f59e0b20" };
-                            } else if (tagLower === "new") {
-                              tagConfig = { label: "New", color: "#10b981", bgColor: "#10b98120" };
-                            } else if (tagLower === "trending" || tagLower.indexOf("trending") >= 0) {
-                              tagConfig = { label: "Trending", color: "#8b5cf6", bgColor: "#8b5cf620" };
-                            } else if (tagLower === "summer" || tagLower.indexOf("summer") >= 0) {
-                              tagConfig = { label: "Summer", color: "#f59e0b", bgColor: "#f59e0b20" };
-                            } else if (tagLower === "christmas" || tagLower.indexOf("christmas") >= 0 || tagLower.indexOf("xmas") >= 0) {
-                              tagConfig = { label: "Christmas", color: "#ef4444", bgColor: "#ef444420" };
-                            } else {
-                              tagConfig = { label: String(tag), color: "#6b7280", bgColor: "#6b728020" };
-                            }
+                            // Sort tags by priority
+                            var sortedTags = product.tags.slice().sort(function(a, b) {
+                              return getTagPriority(a) - getTagPriority(b);
+                            });
                             
-                            return (
-                              <Chip
-                                key={tag}
-                                size="sm"
-                                style={{
-                                  backgroundColor: tagConfig.bgColor,
-                                  color: tagConfig.color,
-                                  borderColor: tagConfig.color,
-                                  borderWidth: "1px",
-                                  borderStyle: "solid"
-                                }}
-                                className="text-xs font-medium"
-                              >
-                                {tagConfig.label}
-                              </Chip>
-                            );
-                          })}
+                            return sortedTags.map(function(tag) {
+                              var tagLower = String(tag).toLowerCase();
+                              var tagConfig = null;
+                              
+                              if (tagLower === "sale" || tagLower.indexOf("sale") >= 0) {
+                                tagConfig = { label: "Sale", color: "#ef4444", bgColor: "#ef444420" };
+                              } else if (tagLower === "priority" || tagLower.indexOf("priority") >= 0 || tagLower.indexOf("priori") >= 0) {
+                                tagConfig = { label: "PRIORITY", color: "#f59e0b", bgColor: "#f59e0b20" };
+                              } else if (tagLower === "new") {
+                                tagConfig = { label: "New", color: "#10b981", bgColor: "#10b98120" };
+                              } else if (tagLower === "trending" || tagLower.indexOf("trending") >= 0) {
+                                tagConfig = { label: "Trending", color: "#8b5cf6", bgColor: "#8b5cf620" };
+                              } else if (tagLower === "summer" || tagLower.indexOf("summer") >= 0) {
+                                tagConfig = { label: "Summer", color: "#f59e0b", bgColor: "#f59e0b20" };
+                              } else if (tagLower === "christmas" || tagLower.indexOf("christmas") >= 0 || tagLower.indexOf("xmas") >= 0) {
+                                tagConfig = { label: "Christmas", color: "#ef4444", bgColor: "#ef444420" };
+                              } else {
+                                tagConfig = { label: String(tag), color: "#6b7280", bgColor: "#6b728020" };
+                              }
+                              
+                              return (
+                                <Chip
+                                  key={tag}
+                                  size="sm"
+                                  style={{
+                                    backgroundColor: tagConfig.bgColor,
+                                    color: tagConfig.color,
+                                    borderColor: tagConfig.color,
+                                    borderWidth: "1px",
+                                    borderStyle: "solid"
+                                  }}
+                                  className="text-xs font-medium"
+                                >
+                                  {tagConfig.label}
+                                </Chip>
+                              );
+                            });
+                          })()}
                         </div>
                       )}
                       <p className="text-default-500 text-sm mb-2">
@@ -1719,32 +1808,32 @@ export default function AdminProducts() {
                             return Object.assign({}, prev, { tags: selectedTags });
                           });
                         }}
-                          renderValue={function(items) {
-                            if (items.length === 0) {
-                              return "No tags selected";
-                            }
-                            var tagConfigs = {
-                              "sale": { label: "Sale", color: "#ef4444" },
-                              "priority": { label: "PRIORITY", color: "#f59e0b" },
-                              "new": { label: "New", color: "#10b981" },
-                              "trending": { label: "Trending", color: "#8b5cf6" },
-                              "summer": { label: "Summer", color: "#f59e0b" },
-                              "christmas": { label: "Christmas", color: "#ef4444" }
-                            };
-                            return items.map(function(item) {
-                              var config = tagConfigs[item.key] || { label: item.key, color: "#6b7280" };
-                              return (
-                                <Chip
-                                  key={item.key}
-                                  size="sm"
-                                  style={{ backgroundColor: config.color + "20", color: config.color }}
-                                  className="mr-1"
-                                >
-                                  {config.label}
-                                </Chip>
-                              );
-                            });
-                          }}
+                        renderValue={function(items) {
+                          if (items.length === 0) {
+                            return "No tags selected";
+                          }
+                          var tagConfigs = {
+                            "sale": { label: "Sale", color: "#ef4444" },
+                            "priority": { label: "PRIORITY", color: "#f59e0b" },
+                            "new": { label: "New", color: "#10b981" },
+                            "trending": { label: "Trending", color: "#8b5cf6" },
+                            "summer": { label: "Summer", color: "#f59e0b" },
+                            "christmas": { label: "Christmas", color: "#ef4444" }
+                          };
+                          return items.map(function(item) {
+                            var config = tagConfigs[item.key] || { label: item.key, color: "#6b7280" };
+                            return (
+                              <Chip
+                                key={item.key}
+                                size="sm"
+                                style={{ backgroundColor: config.color + "20", color: config.color }}
+                                className="mr-1"
+                              >
+                                {config.label}
+                              </Chip>
+                            );
+                          });
+                        }}
                       >
                         <SelectItem
                           key="sale"
@@ -1812,6 +1901,7 @@ export default function AdminProducts() {
                         >
                           Christmas
                         </SelectItem>
+                      </Select>
                     </div>
 
                     {/* Specs */}
