@@ -32,8 +32,27 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
   const stock = getBaseStock?.(product) ?? 0; // Usar stock total (base) em vez de stock disponível
   const availableStock = getAvailableStock?.(product) ?? 0;
   const reservedStock = getReservedQuantity?.(product?.id) ?? 0;
+  
+  // Estado para controlar se mostra NEW ou USED no painel de informações
+  const [productType, setProductType] = React.useState("new"); // "new" ou "used"
+  
+  // Extrair informações de stock e preços dos specs para uso no painel de informações
+  const usedStock = product?.specs?.usedStock ? parseInt(product.specs.usedStock, 10) : null;
+  const usedPrice = product?.specs?.usedPrice ? parseFloat(product.specs.usedPrice) : null;
+  const newRentalPrice = product?.specs?.newRentalPrice ? parseFloat(product.specs.newRentalPrice) : null;
+  const usedRentalPrice = product?.specs?.usedRentalPrice ? parseFloat(product.specs.usedRentalPrice) : null;
+  
+  // Para preview: apenas stock novo
   const isOutOfStock = stock <= 0;
   const isLowStock = stock > 0 && stock <= 10;
+  
+  // Para painel de informações: considerar tipo selecionado
+  const displayStock = productType === "new" ? stock : (usedStock || 0);
+  const displayPrice = productType === "new" ? product.price : (usedPrice || null);
+  const displayOldPrice = productType === "new" ? product.oldPrice : null;
+  const displayRentalPrice = productType === "new" ? newRentalPrice : usedRentalPrice;
+  const displayIsOutOfStock = productType === "new" ? (stock <= 0) : (!usedStock || usedStock <= 0);
+  const displayIsLowStock = productType === "new" ? (stock > 0 && stock <= 10) : (usedStock && usedStock > 0 && usedStock <= 10);
 
   // Debug: Log informações de stock para GX349L
   React.useEffect(() => {
@@ -105,6 +124,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       manuallyToggledRef.current = false; // Resetar ref também
       lastToggleTimeRef.current = 0; // Resetar timestamp também
       previousProductIdRef.current = product?.id;
+      setProductType("new"); // Resetar para NEW quando produto muda
       
       // Se há um estado inicial de simulação animada passado como prop, usar esse estado
       // Caso contrário, resetar para vídeo normal
@@ -170,7 +190,8 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
     if (isPlaying) {
       videoRef.current.pause();
       setIsPlaying(false);
-      onPause?.();
+      // Não chamar onPause quando pausado manualmente - mantém o produto ativo para o botão do lado esquerdo permanecer visível
+      // onPause?.();
     } else {
       videoRef.current.play().catch(err => {
         console.warn('Error playing video:', err);
@@ -683,11 +704,11 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                                 className="absolute right-0 top-0 h-full w-[40%] md:w-[30%] bg-black/98 p-3 md:p-6 flex flex-col overflow-y-auto border-l border-white/5 z-50"
+                className="absolute right-0 top-0 h-full w-[40%] md:w-[30%] bg-black/98 p-2 md:p-3 flex flex-col overflow-hidden border-l border-white/5 z-50"
                 onClick={(e) => e.stopPropagation()}
               >
           {/* Close button - top left */}
-                     <div className="absolute top-3 md:top-4 left-3 md:left-4 z-60">
+                     <div className="absolute top-2 md:top-3 left-2 md:left-3 z-60">
             <Button
               isIconOnly
               size="sm"
@@ -697,205 +718,238 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               onPress={() => setIsInfoOpen(false)}
               aria-label="Close panel"
             >
-              <Icon icon="lucide:x" className="text-lg" />
+              <Icon icon="lucide:x" className="text-base md:text-lg" />
             </Button>
           </div>
 
-          {/* Main information - starts from top with padding for close button */}
-          <div className="flex flex-col pt-12 md:pt-14 space-y-4 md:space-y-5 flex-1">
-            {/* Product name - Maximum emphasis */}
-            <div>
-              <h3 className="text-white text-xl md:text-3xl font-extrabold leading-tight tracking-tight line-clamp-2">
-                {product.name}
-              </h3>
-            </div>
-            
-            {/* Price - Second emphasis */}
-            <div className="flex items-baseline gap-2 md:gap-3 flex-wrap">
-              <span className="text-white text-2xl md:text-4xl font-black leading-none">
-                €{product.price?.toFixed(2) || '0.00'}
-              </span>
-              {product.oldPrice && (
-                <span className="text-gray-400 line-through text-base md:text-xl font-medium">
-                  €{product.oldPrice.toFixed(2)}
-                </span>
-              )}
-            </div>
-
-            {/* Stock and Tags - Grouped */}
-            <div className="space-y-2">
-              {/* Stock */}
-              <div>
-                {isOutOfStock ? (
-                  <span className="text-red-400 text-sm md:text-base font-medium">Out of stock</span>
-                ) : (
-                  <span className={`text-sm md:text-base font-medium ${isLowStock ? 'text-yellow-400' : 'text-green-400'}`}>
-                    Stock: <span className="font-bold">{stock}</span>
-                  </span>
-                )}
+          {/* Main information - compact layout, sem scroll */}
+          <div className="flex flex-col pt-8 md:pt-10 h-full overflow-hidden">
+            {/* Content area - sem scroll, tudo visível */}
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+              {/* Product name - compact */}
+              <div className="mb-1">
+                <h3 className="text-white text-base md:text-lg font-extrabold leading-tight line-clamp-1">
+                  {product.name}
+                </h3>
               </div>
-
-              {/* Tags */}
-              {Array.isArray(product.tags) && product.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {product.tags.slice(0, 4).map((tag, idx) => (
-                    <Chip
-                      key={idx}
-                      size="sm"
-                      variant="flat"
-                      className="bg-gray-800/80 text-white border border-white/10 px-3 py-1 font-medium text-xs"
-                    >
-                      {toTitleCase(tag)}
-                    </Chip>
-                  ))}
+              
+              {/* Tabs para alternar entre NEW e USED */}
+              {(usedPrice || usedStock) && (
+                <div className="flex gap-1 mb-1 border-b border-white/10 pb-0.5">
+                  <button
+                    onClick={() => setProductType("new")}
+                    className={`px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                      productType === "new"
+                        ? "text-white border-b-2 border-white"
+                        : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    NEW
+                  </button>
+                  <button
+                    onClick={() => setProductType("used")}
+                    className={`px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                      productType === "used"
+                        ? "text-white border-b-2 border-white"
+                        : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    USED
+                  </button>
                 </div>
               )}
-            </div>
-
-            {/* Available Colors */}
-            {colorKeys.length > 0 && (
-              <div className="space-y-2">
-                <div className="text-gray-400 text-xs md:text-sm font-medium">Available Colors</div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  {colorKeys.slice(0, 6).map((key) => (
-                    <div
-                      key={key}
-                      className="w-7 h-7 rounded-full border-2 border-white/20 shadow-sm"
-                      style={{ 
-                        background: colorKeyToStyle[key] || '#e5e7eb',
-                        boxShadow: key === 'brancoPuro' ? 'inset 0 0 0 1px rgba(0,0,0,0.15)' : undefined,
-                      }}
-                      title={key}
-                    />
-                  ))}
-                  {colorKeys.length > 6 && (
-                    <span className="text-gray-500 text-sm font-medium">+{colorKeys.length - 6}</span>
+              
+              {/* Price - compact */}
+              {displayPrice && (
+                <div className="mb-1 flex items-baseline gap-1 flex-wrap">
+                  <span className="text-white text-lg md:text-xl font-black leading-none">
+                    €{displayPrice.toFixed(2)}
+                  </span>
+                  {displayOldPrice && (
+                    <span className="text-gray-400 line-through text-[10px] md:text-xs font-medium">
+                      €{displayOldPrice.toFixed(2)}
+                    </span>
+                  )}
+                  {displayRentalPrice && (
+                    <span className="text-blue-400 text-[10px] font-medium">
+                      Rent: €{displayRentalPrice.toFixed(2)}
+                    </span>
                   )}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Type, Location, Mount - Grouped */}
-            {(formattedType || formattedLocation || formattedMount) && (
-              <div className="space-y-1">
-                {formattedType && (
-                  <div className="text-xs md:text-sm">
-                    <span className="text-gray-500 font-medium">Type: </span>
-                    <span className="text-white font-semibold">{formattedType}</span>
-                  </div>
-                )}
-                {formattedLocation && (
-                  <div className="text-xs md:text-sm">
-                    <span className="text-gray-500 font-medium">Location: </span>
-                    <span className="text-white font-semibold">{formattedLocation}</span>
-                  </div>
-                )}
-                {formattedMount && (
-                  <div className="text-xs md:text-sm">
-                    <span className="text-gray-500 font-medium">Mount: </span>
-                    <span className="text-white font-semibold">{formattedMount}</span>
+              {/* Stock and Tags - compact */}
+              <div className="mb-1 space-y-0.5">
+                {/* Stock */}
+                <div>
+                  {displayIsOutOfStock ? (
+                    <span className="text-red-400 text-[10px] md:text-xs font-medium">Out of stock</span>
+                  ) : (
+                    <span className={`text-[10px] md:text-xs font-medium ${displayIsLowStock ? 'text-yellow-400' : 'text-green-400'}`}>
+                      Stock: <span className="font-bold">{displayStock}</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Tags - compact */}
+                {Array.isArray(product.tags) && product.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-0.5">
+                    {product.tags.slice(0, 2).map((tag, idx) => (
+                      <Chip
+                        key={idx}
+                        size="sm"
+                        variant="flat"
+                        className="bg-gray-800/80 text-white border border-white/10 px-1.5 py-0.5 font-medium text-[9px]"
+                      >
+                        {toTitleCase(tag)}
+                      </Chip>
+                    ))}
                   </div>
                 )}
               </div>
-            )}
 
-            {/* Dimensions - check product level, specs, and specs.dimensions */}
-            {(() => {
-              const height = product.height || product.specs?.height || product.specs?.dimensions?.heightM;
-              const width = product.width || product.specs?.width || product.specs?.dimensions?.widthM;
-              const depth = product.depth || product.specs?.depth || product.specs?.dimensions?.depthM;
-              const diameter = product.diameter || product.specs?.diameter || product.specs?.dimensions?.diameterM;
-              
-              if (height || width || depth || diameter) {
-                return (
-                  <div className="space-y-1">
-                    <div className="text-gray-500 text-xs md:text-sm font-medium">Dimensions</div>
-                    <div className="space-y-0.5">
-                      {height && (
-                        <div className="text-xs md:text-sm">
-                          <span className="text-gray-400">H: </span>
-                          <span className="text-white font-medium">{height}m</span>
-                        </div>
-                      )}
-                      {width && (
-                        <div className="text-xs md:text-sm">
-                          <span className="text-gray-400">W: </span>
-                          <span className="text-white font-medium">{width}m</span>
-                        </div>
-                      )}
-                      {depth && (
-                        <div className="text-xs md:text-sm">
-                          <span className="text-gray-400">D: </span>
-                          <span className="text-white font-medium">{depth}m</span>
-                        </div>
-                      )}
-                      {diameter && (
-                        <div className="text-xs md:text-sm">
-                          <span className="text-gray-400">Ø: </span>
-                          <span className="text-white font-medium">{diameter}m</span>
-                        </div>
-                      )}
+              {/* Available Colors - compact */}
+              {colorKeys.length > 0 && (
+                <div className="mb-1">
+                  <div className="text-gray-400 text-[9px] md:text-[10px] font-medium mb-0.5">Colors</div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {colorKeys.slice(0, 6).map((key) => (
+                      <div
+                        key={key}
+                        className="w-4 h-4 md:w-5 md:h-5 rounded-full border-2 border-white/20 shadow-sm"
+                        style={{ 
+                          background: colorKeyToStyle[key] || '#e5e7eb',
+                          boxShadow: key === 'brancoPuro' ? 'inset 0 0 0 1px rgba(0,0,0,0.15)' : undefined,
+                        }}
+                        title={key}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Type, Location, Mount - compact grid */}
+              {(formattedType || formattedLocation || formattedMount) && (
+                <div className="mb-1 space-y-0.5">
+                  {formattedType && (
+                    <div className="text-[9px] md:text-[10px]">
+                      <span className="text-gray-500 font-medium">Type: </span>
+                      <span className="text-white font-semibold">{formattedType}</span>
                     </div>
-                  </div>
-                );
-              }
-              return null;
-            })()}
+                  )}
+                  {formattedLocation && (
+                    <div className="text-[9px] md:text-[10px]">
+                      <span className="text-gray-500 font-medium">Location: </span>
+                      <span className="text-white font-semibold">{formattedLocation}</span>
+                    </div>
+                  )}
+                  {formattedMount && (
+                    <div className="text-[9px] md:text-[10px]">
+                      <span className="text-gray-500 font-medium">Mount: </span>
+                      <span className="text-white font-semibold">{formattedMount}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {/* Description */}
-            {formattedDescription && (
-              <div>
-                <p className="text-white text-sm md:text-base leading-relaxed">
-                  {formattedDescription}
-                </p>
-              </div>
-            )}
+              {/* Dimensions - compact */}
+              {(() => {
+                const height = product.height || product.specs?.height || product.specs?.dimensions?.heightM;
+                const width = product.width || product.specs?.width || product.specs?.dimensions?.widthM;
+                const depth = product.depth || product.specs?.depth || product.specs?.dimensions?.depthM;
+                const diameter = product.diameter || product.specs?.diameter || product.specs?.dimensions?.diameterM;
+                
+                if (height || width || depth || diameter) {
+                  return (
+                    <div className="mb-1">
+                      <div className="text-gray-500 text-[9px] md:text-[10px] font-medium mb-0.5">Dimensions</div>
+                      <div className="space-y-0.5">
+                        {height && (
+                          <div className="text-[9px] md:text-[10px]">
+                            <span className="text-gray-400">H: </span>
+                            <span className="text-white font-medium">{height}m</span>
+                          </div>
+                        )}
+                        {width && (
+                          <div className="text-[9px] md:text-[10px]">
+                            <span className="text-gray-400">W: </span>
+                            <span className="text-white font-medium">{width}m</span>
+                          </div>
+                        )}
+                        {depth && (
+                          <div className="text-[9px] md:text-[10px]">
+                            <span className="text-gray-400">D: </span>
+                            <span className="text-white font-medium">{depth}m</span>
+                          </div>
+                        )}
+                        {diameter && (
+                          <div className="text-[9px] md:text-[10px]">
+                            <span className="text-gray-400">Ø: </span>
+                            <span className="text-white font-medium">{diameter}m</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
-            {/* Technical specifications */}
-            {product.specs && (
-              <div className="space-y-2">
-                {formattedWeight && (
-                  <div className="text-xs md:text-sm">
-                    <span className="text-gray-500 font-medium">Weight: </span>
-                    <span className="text-white font-semibold">{formattedWeight}</span>
-                  </div>
-                )}
-                {formattedMaterials && (
-                  <div className="space-y-1">
-                    <div className="text-gray-500 text-xs md:text-sm font-medium">Materials:</div>
-                    <p className="text-white text-xs md:text-sm leading-relaxed">
-                      {formattedMaterials}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+              {/* Description - compact, limitado */}
+              {formattedDescription && (
+                <div className="mb-1">
+                  <p className="text-white text-[9px] md:text-[10px] leading-tight line-clamp-1">
+                    {formattedDescription}
+                  </p>
+                </div>
+              )}
 
-            {/* Action buttons - at the bottom */}
-            <div className="flex flex-col gap-2 md:gap-3 pt-4 md:pt-6 mt-auto border-t border-white/10">
-            {/* Botão de simulação animada - apenas para GX349L e GX350LW, também no painel de informações */}
+              {/* Technical specifications - compact */}
+              {product.specs && (
+                <div className="mb-1 space-y-0.5">
+                  {formattedWeight && (
+                    <div className="text-[9px] md:text-[10px]">
+                      <span className="text-gray-500 font-medium">Weight: </span>
+                      <span className="text-white font-semibold">{formattedWeight}</span>
+                    </div>
+                  )}
+                  {formattedMaterials && (
+                    <div>
+                      <div className="text-gray-500 text-[9px] md:text-[10px] font-medium mb-0.5">Materials:</div>
+                      <p className="text-white text-[9px] md:text-[10px] leading-tight line-clamp-1">
+                        {formattedMaterials}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons - fixed at bottom */}
+            <div className="flex flex-col gap-1 md:gap-1.5 pt-1.5 border-t border-white/10 shrink-0">
+            {/* Botão de simulação animada - apenas para GX349L e GX350LW */}
             {(isGX349L || isGX350LW) && (
               <Button
                 radius="md"
                 size="sm"
                 variant="bordered"
-                className="bg-gray-900/50 hover:bg-gray-800/50 text-white border-white/20 font-semibold text-xs md:text-base"
+                className="bg-gray-900/50 hover:bg-gray-800/50 text-white border-white/20 font-semibold text-[9px] md:text-[10px] py-1"
                 startContent={
                   <Icon 
                     icon={selectedSuggestionVideo ? "lucide:rotate-ccw" : (showAnimationSimulation ? "lucide:video" : "lucide:play-circle")} 
-                    className="text-base md:text-xl"
+                    className="text-xs"
                   />
                 }
                 onPress={handleAnimationSimulationToggle}
               >
-                {selectedSuggestionVideo ? "Ver Vídeo Original" : (showAnimationSimulation ? "Ver Vídeo Normal" : "Ver Simulação Animada")}
+                {selectedSuggestionVideo ? "Original" : (showAnimationSimulation ? "Normal" : "Animation")}
               </Button>
             )}
 
             <Button
               radius="md"
               size="sm"
-              className={`font-semibold text-xs md:text-base ${
+              className={`font-semibold text-[9px] md:text-[10px] py-1 ${
                 isFavorited 
                   ? 'bg-red-500 hover:bg-red-600 text-white' 
                   : 'bg-white/10 hover:bg-white/15 text-white border border-white/20'
@@ -903,7 +957,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               startContent={
                 <Icon 
                   icon={isFavorited ? "mdi:heart" : "mdi:heart-outline"} 
-                  className="text-base md:text-xl"
+                  className="text-xs"
                   style={isFavorited ? { fill: 'currentColor' } : {}}
                 />
               }
@@ -916,8 +970,8 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               radius="md"
               size="sm"
               variant="bordered"
-              className="bg-gray-900/50 hover:bg-gray-800/50 text-white border-white/20 font-semibold text-xs md:text-base"
-              startContent={<Icon icon="lucide:sparkles" className="text-base md:text-xl" />}
+              className="bg-gray-900/50 hover:bg-gray-800/50 text-white border-white/20 font-semibold text-[9px] md:text-[10px] py-1"
+              startContent={<Icon icon="lucide:sparkles" className="text-xs" />}
               onPress={() => setShowSuggestions(true)}
             >
               Suggestions

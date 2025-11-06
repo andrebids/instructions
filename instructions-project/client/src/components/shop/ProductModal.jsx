@@ -43,6 +43,9 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
   const [zoom, setZoom] = React.useState(1);
   const [zoomOrigin, setZoomOrigin] = React.useState({ xPct: 50, yPct: 50 });
   
+  // Estado para controlar se mostra NEW ou USED
+  const [productType, setProductType] = React.useState("new"); // "new" ou "used"
+  
 
   // Active product can change when user selects a color
   const [activeProduct, setActiveProduct] = React.useState(product);
@@ -53,6 +56,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
       setMediaIndex(0);
       setVideoError(false);
       setActiveProduct(product);
+      setProductType("new"); // Reset para NEW quando abrir modal
       // pick default color only when there are real variant mappings
       const defaultColor = (() => {
         const mapKeys = Object.keys(product?.variantProductByColor || {});
@@ -157,8 +161,20 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
   const imageSrcWithBuster = imageSrc 
     ? imageSrc + '?v=' + encodeURIComponent(String(activeProduct.updatedAt || activeProduct.id || '1')) 
     : imageSrc;
+  
+  // Extrair informações de stock e preços dos specs
   const stock = getAvailableStock(activeProduct);
-  const isOutOfStock = stock <= 0;
+  const usedStock = activeProduct?.specs?.usedStock ? parseInt(activeProduct.specs.usedStock, 10) : null;
+  const usedPrice = activeProduct?.specs?.usedPrice ? parseFloat(activeProduct.specs.usedPrice) : null;
+  const newRentalPrice = activeProduct?.specs?.newRentalPrice ? parseFloat(activeProduct.specs.newRentalPrice) : null;
+  const usedRentalPrice = activeProduct?.specs?.usedRentalPrice ? parseFloat(activeProduct.specs.usedRentalPrice) : null;
+  
+  // Calcular valores de exibição baseado no tipo selecionado
+  const displayStock = productType === "new" ? stock : (usedStock || 0);
+  const displayPrice = productType === "new" ? activeProduct.price : (usedPrice || null);
+  const displayOldPrice = productType === "new" ? activeProduct.oldPrice : null;
+  const displayRentalPrice = productType === "new" ? newRentalPrice : usedRentalPrice;
+  const isOutOfStock = productType === "new" ? (stock <= 0) : (!usedStock || usedStock <= 0);
 
   const formatDimensions = (specs, product) => {
     // Prioridade: campos height/width/depth/diameter do produto (vindos do AdminProducts)
@@ -445,15 +461,51 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                     </div>
                   </div>
 
+                  {/* Tabs para alternar entre NEW e USED */}
+                  {(usedPrice || usedStock) && (
+                    <div className="mt-5 flex gap-2 border-b border-default-200 pb-2">
+                      <button
+                        onClick={() => setProductType("new")}
+                        className={`px-4 py-2 text-sm font-medium transition-colors ${
+                          productType === "new"
+                            ? "text-primary border-b-2 border-primary"
+                            : "text-default-500 hover:text-default-700"
+                        }`}
+                      >
+                        NEW
+                      </button>
+                      <button
+                        onClick={() => setProductType("used")}
+                        className={`px-4 py-2 text-sm font-medium transition-colors ${
+                          productType === "used"
+                            ? "text-primary border-b-2 border-primary"
+                            : "text-default-500 hover:text-default-700"
+                        }`}
+                      >
+                        USED
+                      </button>
+                    </div>
+                  )}
+
                   {/* Price and stock stacked */}
                   <div className="mt-5">
-                    <div className="text-2xl font-bold text-primary">€{activeProduct.price}</div>
+                    {displayPrice && (
+                      <div className="space-y-1">
+                        <div className="text-2xl font-bold text-primary">€{displayPrice.toFixed(2)}</div>
+                        {displayOldPrice && (
+                          <div className="text-sm text-default-500 line-through">€{displayOldPrice.toFixed(2)}</div>
+                        )}
+                        {displayRentalPrice && (
+                          <div className="text-sm text-primary-400">Rent: €{displayRentalPrice.toFixed(2)}</div>
+                        )}
+                      </div>
+                    )}
                     <div className="mt-1.5 text-sm">
                       <span className="text-default-500 mr-1">Stock:</span>
                       {isOutOfStock ? (
                         <span className="text-danger-400">Out of stock</span>
                       ) : (
-                        <span className={`${stock <= 10 ? 'text-warning' : 'text-default-600'}`}>{stock}</span>
+                        <span className={`${displayStock <= 10 ? 'text-warning' : 'text-default-600'}`}>{displayStock}</span>
                       )}
                     </div>
                     {(() => {
