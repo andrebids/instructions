@@ -643,7 +643,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       <div className={`flex w-full h-full relative items-center justify-center ${layoutConfig.padding}`}>
         {/* Video/image area - container do vídeo - configuração específica por resolução/orientação */}
         <div 
-          className={`relative bg-black flex items-center justify-center cursor-pointer overflow-hidden mx-auto ${isIPL && isLandscape ? 'border border-white/30' : ''}`}
+          className="relative bg-black flex items-center justify-center cursor-pointer overflow-hidden mx-auto"
           style={{
             aspectRatio: layoutConfig.aspectRatio,
             maxHeight: layoutConfig.maxHeight,
@@ -750,7 +750,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             <>
               {/* Botão invisível à esquerda - encostado à borda esquerda do conteúdo visual, movido um botão em direção ao centro */}
               <div
-                className="absolute z-20 cursor-pointer border border-white/30"
+                className="absolute z-20 cursor-pointer"
                 onClick={(e) => {
                   const target = e.target;
                   if (target.closest('button') || target.closest('[role="button"]')) {
@@ -783,7 +783,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               
               {/* Botão invisível à direita - encostado à borda direita do conteúdo visual, movido um botão em direção ao centro */}
               <div
-                className="absolute z-20 cursor-pointer border border-white/30"
+                className="absolute z-20 cursor-pointer"
                 onClick={(e) => {
                   const target = e.target;
                   if (target.closest('button') || target.closest('[role="button"]')) {
