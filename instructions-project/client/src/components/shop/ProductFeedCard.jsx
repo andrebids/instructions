@@ -8,7 +8,7 @@ import { useShop } from '../../context/ShopContext';
  * Product card for TikTok-style feed
  * Displays video (if available) or image with product information on the side
  */
-export default function ProductFeedCard({ product, isActive = false, onPlay, onPause, onProductSelect, initialAnimationSimulation = false, originalProductId = null, onResetOriginalProduct, onClearOriginalProduct }) {
+export default function ProductFeedCard({ product, isActive = false, onPlay, onPause, onProductSelect, initialAnimationSimulation = false, onAnimationSimulationChange, originalProductId = null, onResetOriginalProduct, onClearOriginalProduct }) {
   const videoRef = useRef(null);
   const infoPanelRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -38,6 +38,14 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
   
   // Estado para detectar tamanho da viewport
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+  
+  // Debug: verificar se animationSimulationUrl está presente para IPL337W
+  useEffect(() => {
+    if (product?.id === 'IPL337W' || product?.name === 'IPL337W') {
+      console.log('🔍 [ProductFeedCard] IPL337W - animationSimulationUrl:', product?.animationSimulationUrl);
+      console.log('🔍 [ProductFeedCard] IPL337W - produto completo:', product);
+    }
+  }, [product]);
   
   // Extrair informações de stock e preços dos specs para uso no painel de informações
   const usedStock = product?.specs?.usedStock ? parseInt(product.specs.usedStock, 10) : null;
@@ -74,6 +82,8 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
   // Verificar se é o produto GX349L ou GX350LW
   const isGX349L = product?.name === 'GX349L' || product?.id === 'prd-005';
   const isGX350LW = product?.name === 'GX350LW' || product?.id?.includes('GX350LW');
+  // Verificar se é um produto IPL (começa com "IPL")
+  const isIPL = product?.name?.startsWith('IPL') || product?.id?.startsWith('IPL');
 
   // Available colors
   const colorKeys = Object.keys(product?.images?.colors || {});
@@ -86,12 +96,13 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
     azul: "#3b82f6",
   };
 
-  // Check if product has video (incluindo simulação animada para GX349L e GX350LW)
+  // Check if product has video (incluindo simulação animada)
   useEffect(() => {
     const videoUrl = product?.videoFile || product?.animationUrl;
-    const hasSimulationVideo = isGX349L || isGX350LW; // GX349L e GX350LW sempre têm vídeo de simulação disponível
+    // Só considerar simulação animada disponível se o produto tiver animationSimulationUrl
+    const hasSimulationVideo = Boolean(product?.animationSimulationUrl);
     setHasVideo(Boolean(videoUrl) || hasSimulationVideo);
-  }, [product, isGX349L, isGX350LW]);
+  }, [product, isGX349L, isGX350LW, isIPL]);
 
   // Reset simulação animada e vídeo de sugestão quando o produto muda
   useEffect(() => {
@@ -103,19 +114,6 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       showAnimationSimulation,
       timeSinceLastToggle: Date.now() - lastToggleTimeRef.current
     });
-    
-    // Se foi alterado manualmente (verificar tanto state quanto ref), NUNCA sobrescrever o estado
-    // Também verificar se foi alterado há menos de 2000ms (proteção adicional contra timing issues)
-    const recentlyToggled = Date.now() - lastToggleTimeRef.current < 2000;
-    
-    if (manuallyToggled || manuallyToggledRef.current || recentlyToggled) {
-      console.log('🔄 [useEffect] Bloqueado - foi alterado manualmente', {
-        manuallyToggled,
-        manuallyToggledRef: manuallyToggledRef.current,
-        recentlyToggled
-      });
-      return;
-    }
     
     // Verificar se o produto realmente mudou
     const productChanged = previousProductIdRef.current !== product?.id;
@@ -130,8 +128,9 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       setProductType("new"); // Resetar para NEW quando produto muda
       
       // Se há um estado inicial de simulação animada passado como prop, usar esse estado
-      // Caso contrário, resetar para vídeo normal
-      if (initialAnimationSimulation && (isGX349L || isGX350LW)) {
+      // Também verificar se o produto tem animationSimulationUrl
+      const hasAnimationSimulation = product?.animationSimulationUrl ? true : false;
+      if (initialAnimationSimulation && hasAnimationSimulation) {
         setShowAnimationSimulation(true);
       } else {
         setShowAnimationSimulation(false);
@@ -139,33 +138,33 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       setSelectedSuggestionVideo(null);
       setPreviousAnimationState(false);
     } else {
-      console.log('🔄 [useEffect] Produto não mudou, mas initialAnimationSimulation pode ter mudado');
+      console.log('🔄 [useEffect] Produto não mudou, verificando sincronização com initialAnimationSimulation');
       // Produto não mudou mas initialAnimationSimulation pode ter mudado
-      // Aplicar apenas se não foi alterado manualmente (já verificado acima)
-      // IMPORTANTE: Se manuallyToggledRef está true ou foi recentemente alterado, não fazer nada mesmo que initialAnimationSimulation mude
-      if (manuallyToggledRef.current || recentlyToggled) {
-        console.log('🔄 [useEffect] Bloqueado - manuallyToggledRef é true ou foi recentemente alterado', {
-          manuallyToggledRef: manuallyToggledRef.current,
-          recentlyToggled
-        });
-        return;
-      }
+      // Se initialAnimationSimulation mudou e é diferente do estado atual, sincronizar
+      const hasAnimationSimulation = product?.animationSimulationUrl ? true : false;
+      const shouldBeSimulation = initialAnimationSimulation && hasAnimationSimulation;
       
-      // Verificar se o estado atual já está correto antes de atualizar
-      const shouldBeSimulation = initialAnimationSimulation && (isGX349L || isGX350LW);
-      if (showAnimationSimulation !== shouldBeSimulation) {
-        if (shouldBeSimulation) {
-          console.log('🔄 [useEffect] Aplicando simulação animada');
-          setShowAnimationSimulation(true);
-        } else {
-          console.log('🔄 [useEffect] Aplicando vídeo normal');
-          setShowAnimationSimulation(false);
-        }
+      // Se o estado externo mudou e é diferente do estado interno, sincronizar
+      // Mas apenas se não foi alterado manualmente há menos de 500ms (evitar conflitos)
+      const recentlyToggled = Date.now() - lastToggleTimeRef.current < 500;
+      
+      if (!recentlyToggled && showAnimationSimulation !== shouldBeSimulation) {
+        console.log('🔄 [useEffect] Sincronizando estado com initialAnimationSimulation externo', {
+          current: showAnimationSimulation,
+          shouldBe: shouldBeSimulation,
+          initialAnimationSimulation
+        });
+        setShowAnimationSimulation(shouldBeSimulation);
+        // Resetar flag manual quando sincronizado externamente
+        manuallyToggledRef.current = false;
+        setManuallyToggled(false);
+      } else if (recentlyToggled) {
+        console.log('🔄 [useEffect] Bloqueado - foi alterado manualmente recentemente');
       } else {
-        console.log('🔄 [useEffect] Estado já está correto, não precisa atualizar');
+        console.log('🔄 [useEffect] Estado já está sincronizado');
       }
     }
-  }, [product?.id, initialAnimationSimulation, isGX349L, isGX350LW]); // Removido manuallyToggled das dependências para evitar execuções desnecessárias
+  }, [product?.id, initialAnimationSimulation, product?.animationSimulationUrl]); // Removido manuallyToggled das dependências para evitar execuções desnecessárias
 
   // Detectar tamanho da viewport para ajustar scale em resoluções específicas
   useEffect(() => {
@@ -374,6 +373,10 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       setShowAnimationSimulation(previousAnimationState);
       manuallyToggledRef.current = false;
       setManuallyToggled(false);
+      // Notificar mudança para sincronizar com botão externo
+      if (onAnimationSimulationChange) {
+        onAnimationSimulationChange(previousAnimationState);
+      }
     } else {
       // Caso contrário, alternar normalmente entre vídeo normal e simulação
       const newState = !showAnimationSimulation;
@@ -406,6 +409,11 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
         return newState;
       });
       
+      // Notificar mudança para sincronizar com botão externo
+      if (onAnimationSimulationChange) {
+        onAnimationSimulationChange(newState);
+      }
+      
       console.log('🎬 [handleAnimationSimulationToggle] Estado DEPOIS:', {
         showAnimationSimulation: newState,
         manuallyToggledRef: manuallyToggledRef.current
@@ -431,16 +439,36 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       return selectedSuggestionVideo;
     }
     
-    // Se for GX349L e estiver mostrando simulação animada, usar o vídeo da simulação
-    if (isGX349L && showAnimationSimulation) {
-      console.log('🎥 [getVideoUrl] GX349L - Simulação animada');
-      return '/SIMU_GX349L_ANIM.webm';
-    }
-    
-    // Se for GX350LW e estiver mostrando simulação animada, usar o vídeo da simulação
-    if (isGX350LW && showAnimationSimulation) {
-      console.log('🎥 [getVideoUrl] GX350LW - Simulação animada');
-      return '/SIMU_GX350LW_ANIM.webm';
+    // Se estiver mostrando simulação animada, usar animationSimulationUrl se existir
+    if (showAnimationSimulation) {
+      // Verificar se o produto tem animationSimulationUrl
+      if (product?.animationSimulationUrl) {
+        const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
+        const simulationUrl = product.animationSimulationUrl;
+        
+        // If already a complete URL (http/https), use directly
+        if (simulationUrl.startsWith('http://') || simulationUrl.startsWith('https://')) {
+          console.log('🎥 [getVideoUrl] Vídeo de simulação animada (URL completa):', simulationUrl);
+          return simulationUrl;
+        }
+        
+        // If starts with /, it's an absolute server path
+        if (simulationUrl.startsWith('/')) {
+          console.log('🎥 [getVideoUrl] Vídeo de simulação animada (path absoluto):', simulationUrl);
+          return simulationUrl;
+        }
+        
+        // Otherwise, assume it's relative to /uploads/
+        const absUrl = simulationUrl.indexOf('/uploads/') === 0 
+          ? (baseApi ? (baseApi + simulationUrl) : ('/api' + simulationUrl))
+          : simulationUrl;
+        console.log('🎥 [getVideoUrl] Vídeo de simulação animada:', absUrl);
+        return absUrl;
+      }
+      
+      // Fallback para produtos específicos (GX349L e GX350LW) apenas se não tiver animationSimulationUrl
+      // Removido fallback hardcoded pois os vídeos não existem nesses caminhos
+      console.log('⚠️ [getVideoUrl] Produto em modo simulação animada mas sem animationSimulationUrl');
     }
     
     // Por default, sempre retornar o vídeo normal do produto
@@ -615,7 +643,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       <div className={`flex w-full h-full relative items-center justify-center ${layoutConfig.padding}`}>
         {/* Video/image area - container do vídeo - configuração específica por resolução/orientação */}
         <div 
-          className="relative bg-black flex items-center justify-center cursor-pointer overflow-hidden mx-auto"
+          className={`relative bg-black flex items-center justify-center cursor-pointer overflow-hidden mx-auto ${isIPL && isLandscape ? 'border border-white/30' : ''}`}
           style={{
             aspectRatio: layoutConfig.aspectRatio,
             maxHeight: layoutConfig.maxHeight,
@@ -630,7 +658,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
               key={videoUrl} // Key para forçar recarregar quando o vídeo mudar
               ref={videoRef}
               src={videoUrl}
-              className="w-full h-full object-contain bg-black"
+              className="w-full h-full object-contain bg-black relative"
               style={{
                 width: '100%',
                 height: '100%',
@@ -664,7 +692,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             <img
               src={imageUrl}
               alt={product.name}
-              className="w-full h-full object-contain bg-black"
+              className="w-full h-full object-contain bg-black relative"
               style={{
                 width: '100%',
                 height: '100%',
@@ -688,8 +716,8 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             </div>
           )}
 
-          {/* Botão invisível para abrir sugestões - área clicável no local do risco verde (urso polar) - posição relativa ao container do vídeo - apenas quando está em simulação animada ou há vídeo de sugestão ativo */}
-          {(showAnimationSimulation || selectedSuggestionVideo) && (
+          {/* Botão invisível para abrir sugestões - área clicável no local do risco verde (urso polar) - posição relativa ao container do vídeo - apenas quando está em simulação animada ou há vídeo de sugestão ativo - apenas para produtos GX */}
+          {(showAnimationSimulation || selectedSuggestionVideo) && (isGX349L || isGX350LW) && (
             <div
               className="absolute z-20 cursor-pointer"
               onClick={(e) => {
@@ -705,20 +733,87 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                 pointerEvents: 'auto',
                 // Posição relativa ao container do vídeo - no centro horizontal, encostado à parte inferior
                 // O urso está no centro, encostado à parte inferior do container do vídeo
-                width: '30%', // Aproximadamente o tamanho do urso polar
-                height: '40%', // Altura do urso polar
+                // Ajustar para o tamanho efetivo do conteúdo visual considerando o scale
+                width: `${30 / layoutConfig.scale}%`, // Ajustar ao tamanho efetivo
+                height: `${40 / layoutConfig.scale}%`, // Ajustar ao tamanho efetivo
                 position: 'absolute',
-                left: '50%', // Centro horizontal do container
-                bottom: '0px', // Encostado à parte inferior do container
+                left: `${50 - (30 / layoutConfig.scale / 2)}%`, // Centralizar considerando o scale
+                bottom: `${(100 - 100 * layoutConfig.scale) / 2}%`, // Ajustar à parte inferior do conteúdo visual
                 transform: 'translateX(-50%)', // Centralizar horizontalmente
-                // Garantir que não sai do container - restringir ao container do vídeo
-                maxWidth: 'calc(100% - 0px)', // Não ultrapassar o container
-                maxHeight: 'calc(100% - 0px)', // Não ultrapassar o container
-                minWidth: '0px',
-                minHeight: '0px',
               }}
               aria-label="Open suggestions"
             />
+          )}
+
+          {/* Botões invisíveis para produtos IPL - dois botões, um à esquerda e outro à direita, no centro vertical encostados às bordas do conteúdo visual */}
+          {isIPL && (showAnimationSimulation || selectedSuggestionVideo) && (
+            <>
+              {/* Botão invisível à esquerda - encostado à borda esquerda do conteúdo visual, movido um botão em direção ao centro */}
+              <div
+                className="absolute z-20 cursor-pointer border border-white/30"
+                onClick={(e) => {
+                  const target = e.target;
+                  if (target.closest('button') || target.closest('[role="button"]')) {
+                    return;
+                  }
+                  e.stopPropagation();
+                  setShowSuggestions(true);
+                }}
+                style={{ 
+                  pointerEvents: 'auto',
+                  // O conteúdo visual está centralizado e tem scale aplicado
+                  // Com object-fit: contain e scale, o conteúdo visual ocupa scale * 100% do espaço
+                  // O espaço vazio é (100 - scale * 100) / 2 de cada lado
+                  // Para encostar à esquerda do conteúdo visual: começar após o espaço vazio esquerdo
+                  // Movido um botão (15 / scale %) em direção ao centro
+                  // No layout vertical: dobrar a largura e crescer em direção à borda esquerda
+                  width: `${isPortrait ? (15 / layoutConfig.scale) * 2 : 15 / layoutConfig.scale}%`,
+                  height: `${isLandscape ? (30 / layoutConfig.scale) * 1.5 : 30 / layoutConfig.scale}%`, // No desktop, aumentar 50% para cima e para baixo
+                  position: 'absolute',
+                  // Posição esquerda: no portrait, ajustar para crescer em direção à borda (reduzir left)
+                  // No landscape, manter offset atual
+                  left: isPortrait
+                    ? `${(100 - 100 * layoutConfig.scale) / 2 + (15 / layoutConfig.scale) * 2 - (15 / layoutConfig.scale)}%` // Em portrait, reduzir left para crescer em direção à borda
+                    : `${(100 - 100 * layoutConfig.scale) / 2 + (15 / layoutConfig.scale) * 2}%`, // Em landscape, manter offset
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                }}
+                aria-label="Open suggestions left"
+              />
+              
+              {/* Botão invisível à direita - encostado à borda direita do conteúdo visual, movido um botão em direção ao centro */}
+              <div
+                className="absolute z-20 cursor-pointer border border-white/30"
+                onClick={(e) => {
+                  const target = e.target;
+                  if (target.closest('button') || target.closest('[role="button"]')) {
+                    return;
+                  }
+                  e.stopPropagation();
+                  setShowSuggestions(true);
+                }}
+                style={{ 
+                  pointerEvents: 'auto',
+                  // O conteúdo visual está centralizado e tem scale aplicado
+                  // Com object-fit: contain e scale, o conteúdo visual ocupa scale * 100% do espaço
+                  // O espaço vazio é (100 - scale * 100) / 2 de cada lado
+                  // Para encostar à direita do conteúdo visual: posicionar no final do conteúdo visual
+                  // Movido um botão (15 / scale %) em direção ao centro
+                  // No layout vertical: dobrar a largura e crescer em direção à borda direita
+                  width: `${isPortrait ? (15 / layoutConfig.scale) * 2 : 15 / layoutConfig.scale}%`,
+                  height: `${isLandscape ? (30 / layoutConfig.scale) * 1.5 : 30 / layoutConfig.scale}%`, // No desktop, aumentar 50% para cima e para baixo
+                  position: 'absolute',
+                  // Posição direita: no portrait, ajustar para crescer em direção à borda (reduzir right)
+                  // No landscape, manter offset atual
+                  right: isPortrait
+                    ? `${(100 - 100 * layoutConfig.scale) / 2 + (15 / layoutConfig.scale) * 2 - (15 / layoutConfig.scale)}%` // Em portrait, reduzir right para crescer em direção à borda
+                    : `${(100 - 100 * layoutConfig.scale) / 2 + (15 / layoutConfig.scale) * 2}%`, // Em landscape, manter offset
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                }}
+                aria-label="Open suggestions right"
+              />
+            </>
           )}
 
 
@@ -1085,8 +1180,8 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
 
               {/* Action buttons - fixos no fundo, compactos */}
               <div className="flex flex-col gap-1 pt-1.5 border-t border-white/10 shrink-0">
-                {/* Botão de simulação animada - apenas para GX349L e GX350LW */}
-                {(isGX349L || isGX350LW) && (
+                {/* Botão de simulação animada - aparece apenas se o produto tiver animationSimulationUrl */}
+                {product?.animationSimulationUrl && (
                   <Button
                     radius="sm"
                     size="sm"

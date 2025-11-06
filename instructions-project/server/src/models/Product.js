@@ -38,6 +38,11 @@ const Product = sequelize.define('Product', {
     allowNull: true,
     comment: 'URL do vídeo/animação (webm, mp4)',
   },
+  animationSimulationUrl: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'URL do vídeo de simulação animada',
+  },
   thumbnailUrl: {
     type: DataTypes.STRING,
     allowNull: true,

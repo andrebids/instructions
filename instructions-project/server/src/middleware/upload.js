@@ -49,7 +49,7 @@ function fileFilter(req, file, cb) {
   var allowedVideoTypes = /webm|mp4/;
   var ext = path.extname(file.originalname).toLowerCase().replace('.', '');
   
-  if (file.fieldname === 'animation') {
+  if (file.fieldname === 'animation' || file.fieldname === 'animationSimulation') {
     if (allowedVideoTypes.test(ext)) {
       console.log('✅ [UPLOAD] Vídeo aceite:', file.originalname);
       cb(null, true);
@@ -80,6 +80,7 @@ var uploadProductImages = multer({
   { name: 'dayImage', maxCount: 1 },
   { name: 'nightImage', maxCount: 1 },
   { name: 'animation', maxCount: 1 },
+  { name: 'animationSimulation', maxCount: 1 },
   { name: 'thumbnail', maxCount: 1 },
 ]);
 
@@ -95,7 +96,7 @@ function uploadProductImagesWithLimits(req, res, next) {
       var allowedVideoTypes = /webm|mp4/;
       var ext = path.extname(file.originalname).toLowerCase().replace('.', '');
       
-      if (file.fieldname === 'animation') {
+      if (file.fieldname === 'animation' || file.fieldname === 'animationSimulation') {
         if (allowedVideoTypes.test(ext)) {
           cb(null, true);
         } else {
@@ -118,6 +119,7 @@ function uploadProductImagesWithLimits(req, res, next) {
     { name: 'dayImage', maxCount: 1 },
     { name: 'nightImage', maxCount: 1 },
     { name: 'animation', maxCount: 1 },
+    { name: 'animationSimulation', maxCount: 1 },
     { name: 'thumbnail', maxCount: 1 },
   ]);
   
@@ -136,6 +138,12 @@ function uploadProductImagesWithLimits(req, res, next) {
     if (req.files && req.files.animation && req.files.animation[0]) {
       if (req.files.animation[0].size > videoLimit) {
         return res.status(400).json({ error: 'Vídeo muito grande. Máximo: 50MB' });
+      }
+    }
+    
+    if (req.files && req.files.animationSimulation && req.files.animationSimulation[0]) {
+      if (req.files.animationSimulation[0].size > videoLimit) {
+        return res.status(400).json({ error: 'Vídeo de simulação muito grande. Máximo: 50MB' });
       }
     }
     

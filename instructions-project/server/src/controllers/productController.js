@@ -1,5 +1,6 @@
 import { Product } from '../models/index.js';
-import { Op } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
+import sequelize from '../config/database.js';
 import path from 'path';
 import fs from 'fs';
 import { generateThumbnail, processImageToWebP } from '../utils/imageUtils.js';
@@ -240,7 +241,45 @@ export async function getAll(req, res) {
     } catch (queryError) {
       console.error('❌ [PRODUCTS API] Erro ao executar query:', queryError);
       console.error('❌ [PRODUCTS API] Query Error Stack:', queryError.stack);
-      throw queryError; // Re-throw para ser capturado pelo catch externo
+      
+      // Se o erro for relacionado a coluna não encontrada (animationSimulationUrl), tentar com query raw
+      if (queryError.message && (queryError.message.includes('column') || queryError.message.includes('does not exist') || queryError.message.includes('animationSimulationUrl'))) {
+        console.warn('⚠️ [PRODUCTS API] Campo animationSimulationUrl não existe ainda. Executando migração automática ou usando query alternativa...');
+        
+        // Tentar executar a migração automaticamente
+        try {
+          const checkColumn = await sequelize.query(
+            `SELECT column_name 
+             FROM information_schema.columns 
+             WHERE table_name = 'products' AND column_name = 'animationSimulationUrl'`,
+            { type: QueryTypes.SELECT }
+          );
+          
+          if (!checkColumn || checkColumn.length === 0) {
+            console.log('🔄 [PRODUCTS API] Adicionando campo animationSimulationUrl...');
+            await sequelize.query(
+              `ALTER TABLE products ADD COLUMN IF NOT EXISTS "animationSimulationUrl" VARCHAR(255) NULL;`,
+              { type: QueryTypes.RAW }
+            );
+            console.log('✅ [PRODUCTS API] Campo animationSimulationUrl adicionado!');
+            
+            // Tentar novamente a query
+            products = await Product.findAll({
+              where: where,
+              order: [['name', 'ASC']],
+              attributes: { exclude: ['isSourceImage', 'usage'] },
+            });
+          } else {
+            // Campo existe mas ainda há erro, re-throw
+            throw queryError;
+          }
+        } catch (migrationError) {
+          console.error('❌ [PRODUCTS API] Erro ao adicionar campo:', migrationError);
+          throw queryError; // Re-throw o erro original
+        }
+      } else {
+        throw queryError; // Re-throw para ser capturado pelo catch externo
+      }
     }
     
     console.log('📦 [PRODUCTS API] Produtos encontrados:', products.length);
@@ -288,10 +327,22 @@ export async function getAll(req, res) {
                 plainProduct.specs = JSON.parse(plainProduct.specs);
               }
               
-              // Debug para IPL317R
-              if (plainProduct.id === 'IPL317R') {
-                console.log('🔍 [PRODUCTS API GET] IPL317R specs do banco:', JSON.stringify(plainProduct.specs, null, 2));
-              }
+          // Debug para IPL317R
+          if (plainProduct.id === 'IPL317R') {
+            console.log('🔍 [PRODUCTS API GET] IPL317R specs do banco:', JSON.stringify(plainProduct.specs, null, 2));
+          }
+          
+          // Debug para IPL337W - verificar animationSimulationUrl
+          if (plainProduct.id === 'IPL337W' || plainProduct.name === 'IPL337W') {
+            console.log('🔍 [PRODUCTS API GET] IPL337W - animationSimulationUrl:', plainProduct.animationSimulationUrl);
+            console.log('🔍 [PRODUCTS API GET] IPL337W - produto completo (campos principais):', {
+              id: plainProduct.id,
+              name: plainProduct.name,
+              animationSimulationUrl: plainProduct.animationSimulationUrl,
+              animationUrl: plainProduct.animationUrl,
+              videoFile: plainProduct.videoFile
+            });
+          }
             }
           } catch (e) {
             console.warn('⚠️  [PRODUCTS API] Erro ao processar specs do produto ' + plainProduct.id + ':', e.message);
@@ -675,6 +726,7 @@ export async function create(req, res) {
     var imagesDayUrl = null;
     var imagesNightUrl = null;
     var animationUrl = null;
+    var animationSimulationUrl = null;
     var thumbnailUrl = null;
     var availableColors = {};
     
@@ -730,6 +782,10 @@ export async function create(req, res) {
     
     if (files.animation && files.animation[0]) {
       animationUrl = '/uploads/products/' + files.animation[0].filename;
+    }
+    
+    if (files.animationSimulation && files.animationSimulation[0]) {
+      animationSimulationUrl = '/uploads/products/' + files.animationSimulation[0].filename;
     }
     
     if (files.thumbnail && files.thumbnail[0]) {
@@ -838,6 +894,7 @@ export async function create(req, res) {
       imagesDayUrl: imagesDayUrl || toNullIfEmpty(body.imagesDayUrl),
       imagesNightUrl: imagesNightUrl || toNullIfEmpty(body.imagesNightUrl),
       animationUrl: animationUrl || toNullIfEmpty(body.animationUrl),
+      animationSimulationUrl: animationSimulationUrl || toNullIfEmpty(body.animationSimulationUrl),
       thumbnailUrl: thumbnailUrl || toNullIfEmpty(body.thumbnailUrl),
       tags: tags,
       type: toNullIfEmpty(body.type),
@@ -1050,6 +1107,12 @@ export async function update(req, res) {
       updateData.animationUrl = '/uploads/products/' + files.animation[0].filename;
     } else if (body.animationUrl !== undefined) {
       updateData.animationUrl = body.animationUrl || null;
+    }
+    
+    if (files.animationSimulation && files.animationSimulation[0]) {
+      updateData.animationSimulationUrl = '/uploads/products/' + files.animationSimulation[0].filename;
+    } else if (body.animationSimulationUrl !== undefined) {
+      updateData.animationSimulationUrl = body.animationSimulationUrl || null;
     }
     
     if (files.thumbnail && files.thumbnail[0]) {
@@ -1402,6 +1465,17 @@ export async function deleteProduct(req, res) {
         console.log('🎬 [DELETE PRODUCT] Ficheiro de animação encontrado:', animationPath);
       } else {
         console.log('⚠️  [DELETE PRODUCT] Ficheiro de animação não encontrado:', animationPath);
+      }
+    }
+    
+    // Adicionar vídeo de simulação animada
+    if (product.animationSimulationUrl) {
+      var animationSimulationPath = path.join(process.cwd(), 'public', product.animationSimulationUrl);
+      if (fs.existsSync(animationSimulationPath)) {
+        filesToDelete.push({ path: animationSimulationPath, type: 'animationSimulationUrl' });
+        console.log('🎬 [DELETE PRODUCT] Ficheiro de simulação animada encontrado:', animationSimulationPath);
+      } else {
+        console.log('⚠️  [DELETE PRODUCT] Ficheiro de simulação animada não encontrado:', animationSimulationPath);
       }
     }
     

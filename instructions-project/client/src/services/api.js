@@ -190,7 +190,7 @@ export const productsAPI = {
     for (var key in data) {
       if (data.hasOwnProperty(key)) {
         // Ignorar campos de ficheiro (serão adicionados separadamente)
-        if (key === 'dayImage' || key === 'nightImage' || key === 'animation' || key === 'thumbnail' || key === 'colorImages') {
+        if (key === 'dayImage' || key === 'nightImage' || key === 'animation' || key === 'animationSimulation' || key === 'thumbnail' || key === 'colorImages') {
           continue;
         }
         
@@ -212,6 +212,7 @@ export const productsAPI = {
     if (data.dayImage) formData.append('dayImage', data.dayImage);
     if (data.nightImage) formData.append('nightImage', data.nightImage);
     if (data.animation) formData.append('animation', data.animation);
+    if (data.animationSimulation) formData.append('animationSimulation', data.animationSimulation);
     if (data.thumbnail) formData.append('thumbnail', data.thumbnail);
     if (data.colorImages && Array.isArray(data.colorImages)) {
       for (var i = 0; i < data.colorImages.length; i++) {
@@ -235,7 +236,7 @@ export const productsAPI = {
     for (var key in data) {
       if (data.hasOwnProperty(key)) {
         // Ignorar campos de ficheiro (serão adicionados separadamente)
-        if (key === 'dayImage' || key === 'nightImage' || key === 'animation' || key === 'thumbnail' || key === 'colorImages') {
+        if (key === 'dayImage' || key === 'nightImage' || key === 'animation' || key === 'animationSimulation' || key === 'thumbnail' || key === 'colorImages') {
           continue;
         }
         
@@ -257,6 +258,7 @@ export const productsAPI = {
     if (data.dayImage) formData.append('dayImage', data.dayImage);
     if (data.nightImage) formData.append('nightImage', data.nightImage);
     if (data.animation) formData.append('animation', data.animation);
+    if (data.animationSimulation) formData.append('animationSimulation', data.animationSimulation);
     if (data.thumbnail) formData.append('thumbnail', data.thumbnail);
     if (data.colorImages && Array.isArray(data.colorImages)) {
       for (var i = 0; i < data.colorImages.length; i++) {

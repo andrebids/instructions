@@ -222,18 +222,21 @@ export default function AdminProducts() {
     dayImage: null,
     nightImage: null,
     animation: null,
+    animationSimulation: null,
   });
   
   var [imagePreviews, setImagePreviews] = React.useState({
     dayImage: null,
     nightImage: null,
     animation: null,
+    animationSimulation: null,
   });
   
   // Referências para inputs de ficheiro escondidos
   var dayImageInputRef = React.useRef(null);
   var nightImageInputRef = React.useRef(null);
   var animationInputRef = React.useRef(null);
+  var animationSimulationInputRef = React.useRef(null);
 
   // Carregar produtos
   var loadProducts = React.useCallback(function() {
@@ -490,11 +493,13 @@ export default function AdminProducts() {
       dayImage: null,
       nightImage: null,
       animation: null,
+      animationSimulation: null,
     });
     setImagePreviews({
       dayImage: null,
       nightImage: null,
       animation: null,
+      animationSimulation: null,
     });
     loadAvailableColors();
     onModalOpen();
@@ -663,11 +668,13 @@ export default function AdminProducts() {
       dayImage: product.imagesDayUrl || null,
       nightImage: product.imagesNightUrl || null,
       animation: product.animationUrl || null,
+      animationSimulation: product.animationSimulationUrl || null,
     });
     setImageFiles({
       dayImage: null,
       nightImage: null,
       animation: null,
+      animationSimulation: null,
     });
     loadAvailableColors();
     onModalOpen();
@@ -918,6 +925,7 @@ export default function AdminProducts() {
     if (imageFiles.dayImage) data.dayImage = imageFiles.dayImage;
     if (imageFiles.nightImage) data.nightImage = imageFiles.nightImage;
     if (imageFiles.animation) data.animation = imageFiles.animation;
+    if (imageFiles.animationSimulation) data.animationSimulation = imageFiles.animationSimulation;
     if (imageFiles.thumbnail) data.thumbnail = imageFiles.thumbnail;
     
     console.log('📦 [AdminProducts] Enviando dados:', {
@@ -1520,6 +1528,43 @@ export default function AdminProducts() {
                         >
                           {imageFiles.animation ? imageFiles.animation.name : "Select Video"}
                         </Button>
+                      </div>
+                      
+                      {/* Vídeo Simulação Animada */}
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Animation Simulation Video</label>
+                        <input
+                          ref={animationSimulationInputRef}
+                          type="file"
+                          accept="video/*"
+                          onChange={function(e) {
+                            var file = e.target.files && e.target.files[0];
+                            if (file) {
+                              handleImageChange("animationSimulation", file);
+                            }
+                          }}
+                          className="hidden"
+                          aria-label="Selecionar vídeo de simulação animada"
+                        />
+                        <Button
+                          variant="bordered"
+                          className="w-full"
+                          onPress={function() {
+                            animationSimulationInputRef.current?.click();
+                          }}
+                          startContent={<Icon icon="lucide:play-circle" />}
+                        >
+                          {imageFiles.animationSimulation ? imageFiles.animationSimulation.name : "Select Simulation Video"}
+                        </Button>
+                        {imagePreviews.animationSimulation && (
+                          <div className="mt-2">
+                            <video
+                              src={imagePreviews.animationSimulation}
+                              controls
+                              className="max-h-32 w-full object-contain rounded-lg"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 

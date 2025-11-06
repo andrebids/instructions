@@ -215,16 +215,14 @@ export default function ProductFeed() {
               </Button>
             </Tooltip>
 
-          {/* Botão de simulação animada - apenas para GX349L e GX350LW */}
+          {/* Botão de simulação animada - aparece se o produto tiver animationSimulationUrl */}
           {(() => {
             const activeProduct = products[activeIndex];
-            // Usar a mesma lógica de detecção do ProductFeedCard
-            const isGX349L = activeProduct?.name === 'GX349L' || activeProduct?.id === 'prd-005';
-            const isGX350LW = activeProduct?.name === 'GX350LW' || activeProduct?.id?.includes('GX350LW');
-            const hasVideo = activeProduct?.videoFile || activeProduct?.animationUrl || isGX349L || isGX350LW;
+            // Verificar se o produto tem animationSimulationUrl
+            const hasAnimationSimulation = Boolean(activeProduct?.animationSimulationUrl);
             const isAnimationMode = productAnimationStates[activeProduct?.id] || false;
             
-            if ((isGX349L || isGX350LW) && hasVideo) {
+            if (hasAnimationSimulation) {
               return (
                 <Tooltip 
                   content={isAnimationMode ? "Ver vídeo normal" : "Ver simulação animada"} 
@@ -369,6 +367,13 @@ export default function ProductFeed() {
               onPause={() => setActiveIndex(-1)}
               onProductSelect={navigateToProduct}
               initialAnimationSimulation={productAnimationStates[product.id] || false}
+              onAnimationSimulationChange={(newState) => {
+                // Atualizar o estado quando o botão dentro do ProductFeedCard for clicado
+                setProductAnimationStates(prev => ({
+                  ...prev,
+                  [product.id]: newState
+                }));
+              }}
               originalProductId={originalProductId}
               onResetOriginalProduct={() => {
                 if (originalProductId) {
