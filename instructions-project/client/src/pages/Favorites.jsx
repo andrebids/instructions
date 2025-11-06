@@ -1,6 +1,7 @@
 import React from "react";
 import { Button, Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 import ProductGrid from "../components/shop/ProductGrid";
 import { PageTitle } from "../components/page-title";
@@ -9,6 +10,7 @@ import EditNameModal from "../components/common/EditNameModal";
 import { useUser } from "../context/UserContext";
 
 export default function Favorites() {
+  const navigate = useNavigate();
   const { userName } = useUser();
   const { products, favorites, favoriteFolders, createFavoriteFolder, renameFavoriteFolder, deleteFavoriteFolder } = useShop();
   const [selectedFolderId, setSelectedFolderId] = React.useState('all');
@@ -81,6 +83,17 @@ export default function Favorites() {
     <>
     <div className="flex-1 min-h-0 overflow-auto p-6">
       <PageTitle title="Favorites" userName={userName} lead={`Your saved products, ${userName}`} />
+      <div className="mb-4">
+        <Button
+          variant="light"
+          radius="full"
+          onPress={() => navigate(-1)}
+          aria-label="Go back"
+          startContent={<Icon icon="lucide:arrow-left" className="text-xl" />}
+        >
+          Back
+        </Button>
+      </div>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-base md:text-lg font-semibold text-foreground mt-2">Favorite folders</h2>
         <div className="flex items-center gap-2">
