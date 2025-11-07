@@ -14,6 +14,7 @@ import { useSnapZones } from '../hooks/useSnapZones';
 import { useImageConversion } from '../hooks/useImageConversion';
 import { useDecorationManagement } from '../hooks/useDecorationManagement';
 import { useCanvasPersistence } from '../hooks/useCanvasPersistence';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { getDecorationColor } from '../utils/decorationUtils';
 import { getCenterPosition } from '../utils/canvasCalculations';
 
@@ -22,6 +23,15 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   const [showUnifiedPanel, setShowUnifiedPanel] = useState(false); // Painel unificado oculto por padrão
   const [zonesWarning, setZonesWarning] = useState(false); // Estado para mostrar aviso sobre zonas
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false); // Modal de informações de localização
+  const [isDecorationDrawerOpen, setIsDecorationDrawerOpen] = useState(false); // Drawer de decorações
+  
+  // Hook para detectar responsividade
+  const { shouldUseDrawer, isMobile, isTablet, width } = useResponsiveLayout();
+  
+  // Debug: log para verificar detecção
+  useEffect(() => {
+    console.log('📱 [ResponsiveLayout]', { shouldUseDrawer, isMobile, isTablet, width });
+  }, [shouldUseDrawer, isMobile, isTablet, width]);
 
   // Usar hooks customizados - ordem importa para dependências
   const canvasState = useCanvasState({ 
@@ -420,9 +430,9 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
       
       {/* Main Content Area - 3 Column Layout */}
       {canvasState.uploadStep === 'done' && (
-        <div className="flex-1 flex overflow-hidden min-h-0">
+        <div className="flex-1 flex overflow-hidden min-h-0 relative">
           {/* Left Sidebar - Image Thumbnails */}
-          <aside className="w-32 md:w-40 lg:w-48 border-r border-divider bg-content1/30 flex flex-col flex-shrink-0">
+          <aside className={(isMobile ? 'w-24' : 'w-32') + ' sm:w-32 md:w-40 lg:w-48 border-r border-divider bg-content1/30 flex flex-col flex-shrink-0'}>
             <div className="p-3 md:p-4 border-b border-divider text-center">
               <h3 className="text-base md:text-lg font-semibold">Source Images</h3>
             </div>
@@ -445,13 +455,13 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                         isFooterBlurred
                         isPressable={!isDisabled}
                         isDisabled={isDisabled}
-                        className={`border-none transition-all duration-200 ${
+                        className={
                           isDisabled
-                            ? 'cursor-not-allowed opacity-60'
+                            ? 'border-none transition-all duration-200 cursor-not-allowed opacity-60'
                             : canvasState.selectedImage?.id === image.id 
-                              ? 'cursor-pointer ring-2 ring-primary shadow-lg' 
-                              : 'cursor-pointer hover:ring-1 hover:ring-primary/50'
-                        }`}
+                              ? 'border-none transition-all duration-200 cursor-pointer ring-2 ring-primary shadow-lg'
+                              : 'border-none transition-all duration-200 cursor-pointer hover:ring-1 hover:ring-primary/50'
+                        }
                         radius="lg"
                         onPress={() => {
                           if (!isDisabled) {
@@ -459,7 +469,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                             handleImageAddToCanvas(image);
                           }
                         }}
-                        aria-label={`Select source image ${image.name}`}
+                        aria-label={'Select source image ' + image.name}
                       >
                         {/* NightThumb com animação de dia para noite */}
                         <NightThumb
@@ -683,45 +693,137 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
             </div>
           </div>
 
-          {/* Right Sidebar - Decoration Library */}
-          <DecorationLibrary
-            mode="sidebar"
-            isDayMode={canvasState.isDayMode}
-            disabled={canvasState.canvasImages.length === 0}
-            onDecorationSelect={(decoration) => {
-              // ⚠️ VERIFICAR SE HÁ IMAGEM DE FUNDO antes de adicionar decoração
-              if (canvasState.canvasImages.length === 0) {
-                console.warn('⚠️ Adicione primeiro uma imagem de fundo!');
-                canvasState.setNoBgWarning(true);
-                setTimeout(() => canvasState.setNoBgWarning(false), 2000);
-                return;
-              }
+          {/* Right Sidebar - Decoration Library (desktop) ou Drawer (mobile/tablet landscape) */}
+          {!shouldUseDrawer ? (
+            <DecorationLibrary
+              mode="sidebar"
+              isDayMode={canvasState.isDayMode}
+              disabled={canvasState.canvasImages.length === 0}
+              onDecorationSelect={(decoration) => {
+                // ⚠️ VERIFICAR SE HÁ IMAGEM DE FUNDO antes de adicionar decoração
+                if (canvasState.canvasImages.length === 0) {
+                  console.warn('⚠️ Adicione primeiro uma imagem de fundo!');
+                  canvasState.setNoBgWarning(true);
+                  setTimeout(() => canvasState.setNoBgWarning(false), 2000);
+                  return;
+                }
+                
+                // Usar dimensões virtuais do canvas (sempre 1200x600)
+                const { centerX, centerY } = getCenterPosition(1200, 600);
+                
+                // Criar nova decoração para o canvas na posição central
+                const newDecoration = {
+                  id: 'dec-' + Date.now(), // ID único com prefixo
+                  type: decoration.imageUrl ? 'image' : decoration.type, // Se tem imageUrl, tipo = image
+                  name: decoration.name,
+                  icon: decoration.icon,
+                  // Guardar URLs para alternância futura
+                  dayUrl: decoration.imageUrlDay || decoration.thumbnailUrl || decoration.imageUrl || undefined,
+                  nightUrl: decoration.imageUrlNight || undefined,
+                  src: decoration.imageUrl || undefined, // URL já resolvida pelo modo atual
+                  x: centerX,
+                  y: centerY,
+                  width: decoration.imageUrl ? 200 : 120, // 2x maior: 100->200, 60->120
+                  height: decoration.imageUrl ? 200 : 120, // 2x maior: 100->200, 60->120
+                  rotation: 0, // Rotação inicial
+                  color: getDecorationColor(decoration.type)
+                };
+                handleDecorationAdd(newDecoration);
+              }}
+              enableSearch={true}
+              className="w-64 md:w-72 lg:w-80"
+            />
+          ) : (
+            <>
+              {/* Drawer Overlay */}
+              {isDecorationDrawerOpen && (
+                <div 
+                  className="fixed inset-0 bg-black/50 z-40"
+                  onClick={() => setIsDecorationDrawerOpen(false)}
+                />
+              )}
               
-              // Usar dimensões virtuais do canvas (sempre 1200x600)
-              const { centerX, centerY } = getCenterPosition(1200, 600);
+              {/* Drawer */}
+              <div
+                className={
+                  'fixed top-0 right-0 h-full w-80 md:w-96 bg-content1 border-l border-divider z-50 transform transition-transform duration-300 ease-in-out ' +
+                  (isDecorationDrawerOpen ? 'translate-x-0' : 'translate-x-full')
+                }
+              >
+                <div className="h-full flex flex-col">
+                  {/* Drawer Header */}
+                  <div className="p-4 border-b border-divider flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Decorations</h3>
+                    <Button
+                      isIconOnly
+                      variant="light"
+                      size="sm"
+                      onPress={() => setIsDecorationDrawerOpen(false)}
+                      aria-label="Close drawer"
+                    >
+                      <Icon icon="lucide:x" />
+                    </Button>
+                  </div>
+                  
+                  {/* Drawer Content */}
+                  <div className="flex-1 overflow-hidden">
+                    <DecorationLibrary
+                      mode="drawer"
+                      isDayMode={canvasState.isDayMode}
+                      disabled={canvasState.canvasImages.length === 0}
+                      onDecorationSelect={(decoration) => {
+                        // ⚠️ VERIFICAR SE HÁ IMAGEM DE FUNDO antes de adicionar decoração
+                        if (canvasState.canvasImages.length === 0) {
+                          console.warn('⚠️ Adicione primeiro uma imagem de fundo!');
+                          canvasState.setNoBgWarning(true);
+                          setTimeout(() => canvasState.setNoBgWarning(false), 2000);
+                          return;
+                        }
+                        
+                        // Usar dimensões virtuais do canvas (sempre 1200x600)
+                        const { centerX, centerY } = getCenterPosition(1200, 600);
+                        
+                        // Criar nova decoração para o canvas na posição central
+                        const newDecoration = {
+                          id: 'dec-' + Date.now(), // ID único com prefixo
+                          type: decoration.imageUrl ? 'image' : decoration.type, // Se tem imageUrl, tipo = image
+                          name: decoration.name,
+                          icon: decoration.icon,
+                          // Guardar URLs para alternância futura
+                          dayUrl: decoration.imageUrlDay || decoration.thumbnailUrl || decoration.imageUrl || undefined,
+                          nightUrl: decoration.imageUrlNight || undefined,
+                          src: decoration.imageUrl || undefined, // URL já resolvida pelo modo atual
+                          x: centerX,
+                          y: centerY,
+                          width: decoration.imageUrl ? 200 : 120, // 2x maior: 100->200, 60->120
+                          height: decoration.imageUrl ? 200 : 120, // 2x maior: 100->200, 60->120
+                          rotation: 0, // Rotação inicial
+                          color: getDecorationColor(decoration.type)
+                        };
+                        handleDecorationAdd(newDecoration);
+                      }}
+                      enableSearch={true}
+                      className="h-full"
+                    />
+                  </div>
+                </div>
+              </div>
               
-              // Criar nova decoração para o canvas na posição central
-              const newDecoration = {
-                id: `dec-${Date.now()}`, // ID único com prefixo
-                type: decoration.imageUrl ? 'image' : decoration.type, // Se tem imageUrl, tipo = image
-                name: decoration.name,
-                icon: decoration.icon,
-                // Guardar URLs para alternância futura
-                dayUrl: decoration.imageUrlDay || decoration.thumbnailUrl || decoration.imageUrl || undefined,
-                nightUrl: decoration.imageUrlNight || undefined,
-                src: decoration.imageUrl || undefined, // URL já resolvida pelo modo atual
-                x: centerX,
-                y: centerY,
-                width: decoration.imageUrl ? 200 : 120, // 2x maior: 100->200, 60->120
-                height: decoration.imageUrl ? 200 : 120, // 2x maior: 100->200, 60->120
-                rotation: 0, // Rotação inicial
-                color: getDecorationColor(decoration.type)
-              };
-              handleDecorationAdd(newDecoration);
-            }}
-            enableSearch={true}
-            className="w-64 md:w-72 lg:w-80"
-          />
+              {/* Botão flutuante para abrir drawer - sempre visível quando drawer está ativo */}
+              {shouldUseDrawer && (
+                <Button
+                  className="fixed bottom-4 right-4 z-30 shadow-lg"
+                  color="primary"
+                  isIconOnly
+                  size="lg"
+                  onPress={() => setIsDecorationDrawerOpen(true)}
+                  aria-label="Open decorations library"
+                >
+                  <Icon icon="lucide:package" className="text-xl" />
+                </Button>
+              )}
+            </>
+          )}
         </div>
       )}
       
