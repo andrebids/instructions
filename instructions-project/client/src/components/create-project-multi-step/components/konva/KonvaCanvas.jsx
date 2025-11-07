@@ -172,19 +172,11 @@ export const KonvaCanvas = ({
       return;
     }
     
-    // Verificar se o toque foi numa decoração (não desselecionar se for)
+    // Desselecionar apenas quando clica diretamente no stage (área vazia)
     const target = e.target;
     const stage = e.target.getStage();
     
-    // Se o target não é o stage e é uma imagem arrastável, não fazer nada
-    // (deixar o Konva lidar com o drag)
-    if (target !== stage && target.getAttr('draggable')) {
-      return;
-    }
-    
-    // Desselecionar apenas quando clica em área vazia
-    const clickedOnEmpty = target === stage;
-    if (clickedOnEmpty) {
+    if (target === stage) {
       console.log('❌ Desselecionado');
       setSelectedId(null);
     }
@@ -311,16 +303,21 @@ export const KonvaCanvas = ({
         onMouseMove={isEditingZones ? handleMouseMoveZone : undefined}
         onMouseUp={isEditingZones ? handleMouseUpZone : undefined}
         onTouchStart={(e) => {
-          // Só chamar checkDeselect se não for uma decoração arrastável
+          // Não fazer nada aqui - deixar o evento propagar para o KonvaImage
+          // O checkDeselect será chamado apenas se clicar no stage vazio
           const target = e.target;
-          if (target === e.target.getStage() || !target.getAttr('draggable')) {
+          const stage = e.target.getStage();
+          // Se clicou no stage vazio, desselecionar
+          if (target === stage) {
             checkDeselect(e);
           }
+          // Se clicou numa decoração, deixar o evento propagar para o onTouchStart do KonvaImage
         }}
         onTouchEnd={(e) => {
-          // Similar ao onTouchStart
+          // Similar ao onTouchStart - apenas desselecionar se clicar no stage vazio
           const target = e.target;
-          if (target === e.target.getStage() || !target.getAttr('draggable')) {
+          const stage = e.target.getStage();
+          if (target === stage) {
             checkDeselect(e);
           }
         }}
