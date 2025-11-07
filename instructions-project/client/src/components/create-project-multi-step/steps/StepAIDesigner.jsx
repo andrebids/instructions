@@ -631,6 +631,19 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                   >
                     Clear All
                   </Button>
+                  {/* Botão para abrir drawer de decorações (apenas em mobile/tablet) */}
+                  {shouldUseDrawer && (
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="primary"
+                      startContent={<Icon icon="lucide:package" />}
+                      onPress={() => setIsDecorationDrawerOpen(true)}
+                      aria-label="Open decorations library"
+                    >
+                      Decorations
+                    </Button>
+                  )}
                 </div>
               </div>
               
@@ -809,19 +822,6 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                 </div>
               </div>
               
-              {/* Botão flutuante para abrir drawer - sempre visível quando drawer está ativo */}
-              {shouldUseDrawer && (
-                <Button
-                  className="fixed bottom-4 right-4 z-30 shadow-lg"
-                  color="primary"
-                  isIconOnly
-                  size="lg"
-                  onPress={() => setIsDecorationDrawerOpen(true)}
-                  aria-label="Open decorations library"
-                >
-                  <Icon icon="lucide:package" className="text-xl" />
-                </Button>
-              )}
             </>
           )}
         </div>
