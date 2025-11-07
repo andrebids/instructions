@@ -84,7 +84,12 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
   // No external event handling needed
   // Load video as Blob to avoid servers that don't honor Range requests (416)
   React.useEffect(() => {
-    if (mediaIndex !== 1 || !activeProduct?.videoFile) return;
+    if (mediaIndex !== 1 || !activeProduct?.videoFile) {
+      setVideoSrc(null);
+      setIsLoadingVideo(false);
+      return;
+    }
+    
     // Prefer same-origin relative URL to leverage Vite proxy and avoid CORS
     const baseFromEnv = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
     // Use relative path by default (empty string) for same-origin requests
@@ -100,38 +105,66 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
     
     // Check if videoFile is already a full path or just a filename
     let srcUrl;
-    if (activeProduct.videoFile.indexOf('/uploads/') === 0) {
+    const videoFile = activeProduct.videoFile;
+    
+    // Check for full URLs (http/https)
+    if (videoFile.startsWith('http://') || videoFile.startsWith('https://')) {
+      srcUrl = videoFile;
+    } else if (videoFile.indexOf('/uploads/') === 0) {
       // It's a full path, use it directly with mapPath
-      const mapped = mapPath(activeProduct.videoFile);
+      const mapped = mapPath(videoFile);
       srcUrl = mapped;
+    } else if (videoFile.startsWith('/')) {
+      // It's an absolute path starting with /
+      srcUrl = videoFile;
     } else {
-      // It's just a filename, use /api/media
-      srcUrl = `${apiBase}/api/media/${encodeURIComponent(activeProduct.videoFile)}`;
+      // It's just a filename, try multiple possible locations
+      // First try /api/media, then try /SHOP/TRENDING/VIDEO/ (like ProductFeedCard)
+      srcUrl = `${apiBase}/api/media/${encodeURIComponent(videoFile)}`;
     }
+    
+    console.log('🎥 [ProductModal] Loading video:', { videoFile, srcUrl, mediaIndex });
     
     let revokedUrl = null;
     const controller = new AbortController();
     setIsLoadingVideo(true);
     setVideoError(false);
+    
+    // Try to fetch as blob first
     fetch(srcUrl, { signal: controller.signal })
       .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+          console.warn('⚠️ [ProductModal] Video fetch failed:', res.status, srcUrl);
+          throw new Error(`HTTP ${res.status}`);
+        }
         return res.blob();
       })
       .then((blob) => {
         const objectUrl = URL.createObjectURL(blob);
         revokedUrl = objectUrl;
+        console.log('✅ [ProductModal] Video loaded as blob:', objectUrl);
         setVideoSrc(objectUrl);
+        setIsLoadingVideo(false);
       })
-      .catch(() => {
-        // Fallback to direct URL if fetch fails (still works in most setups)
-        setVideoSrc(srcUrl);
-      })
-      .finally(() => setIsLoadingVideo(false));
+      .catch((err) => {
+        console.warn('⚠️ [ProductModal] Video fetch error, using direct URL:', err);
+        // Fallback to direct URL if fetch fails
+        // Also try alternative path if original failed
+        if (!videoFile.startsWith('/') && !videoFile.startsWith('http')) {
+          const altUrl = `/SHOP/TRENDING/VIDEO/${videoFile}`;
+          console.log('🔄 [ProductModal] Trying alternative path:', altUrl);
+          setVideoSrc(altUrl);
+        } else {
+          setVideoSrc(srcUrl);
+        }
+        setIsLoadingVideo(false);
+      });
 
     return () => {
       controller.abort();
-      if (revokedUrl) URL.revokeObjectURL(revokedUrl);
+      if (revokedUrl) {
+        URL.revokeObjectURL(revokedUrl);
+      }
     };
   }, [mediaIndex, activeProduct?.videoFile]);
 
@@ -293,8 +326,11 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                       <div className="absolute inset-0 bg-black flex items-center justify-center">
                         {isLoadingVideo ? (
                           <div className="text-sm text-default-500">A carregar vídeo…</div>
+                        ) : videoError ? (
+                          <div className="text-sm text-danger">Erro ao carregar vídeo</div>
                         ) : (
                           <video
+                            key={videoSrc || activeProduct.videoFile}
                             ref={videoRef}
                             autoPlay
                             loop
@@ -303,7 +339,26 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                             preload="auto"
                             poster={activeProduct.images?.day}
                             className="w-full h-full object-contain bg-black"
-                            onError={() => setVideoError(true)}
+                            onError={(e) => {
+                              console.error('❌ [ProductModal] Video error:', e);
+                              setVideoError(true);
+                              // Try alternative path if current one failed
+                              const videoFile = activeProduct.videoFile;
+                              if (videoSrc && !videoFile.startsWith('/') && !videoFile.startsWith('http')) {
+                                const altUrl = `/SHOP/TRENDING/VIDEO/${videoFile}`;
+                                console.log('🔄 [ProductModal] Video error, trying alternative:', altUrl);
+                                setVideoSrc(altUrl);
+                                setVideoError(false);
+                              }
+                            }}
+                            onLoadedData={() => {
+                              console.log('✅ [ProductModal] Video loaded successfully');
+                              setVideoError(false);
+                            }}
+                            onCanPlay={() => {
+                              console.log('✅ [ProductModal] Video can play');
+                              setVideoError(false);
+                            }}
                             src={videoSrc || `/api/media/${encodeURIComponent(activeProduct.videoFile)}`}
                           />
                         )}
