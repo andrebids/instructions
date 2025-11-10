@@ -73,6 +73,8 @@ export const DecorationLibrary = ({
   
   const containerClasses = mode === "sidebar" 
     ? `border-l border-divider bg-content1/30 flex flex-col flex-shrink-0 h-full overflow-y-auto ${className}`
+    : mode === "drawer"
+    ? `bg-content1 flex flex-col h-full overflow-y-auto ${className}`
     : `bg-content1 rounded-lg border border-divider h-full overflow-y-auto ${className}`;
   
   return (

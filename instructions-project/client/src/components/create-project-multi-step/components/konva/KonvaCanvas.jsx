@@ -172,9 +172,11 @@ export const KonvaCanvas = ({
       return;
     }
     
-    // Desselecionar quando clica em área vazia
-    const clickedOnEmpty = e.target === e.target.getStage();
-    if (clickedOnEmpty) {
+    // Desselecionar apenas quando clica diretamente no stage (área vazia)
+    const target = e.target;
+    const stage = e.target.getStage();
+    
+    if (target === stage) {
       console.log('❌ Desselecionado');
       setSelectedId(null);
     }
@@ -285,6 +287,7 @@ export const KonvaCanvas = ({
     <div 
       ref={containerRef}
       className="relative h-full w-full overflow-hidden"
+      style={{ touchAction: 'none' }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -299,7 +302,25 @@ export const KonvaCanvas = ({
         onMouseDown={isEditingZones ? handleMouseDownZone : checkDeselect}
         onMouseMove={isEditingZones ? handleMouseMoveZone : undefined}
         onMouseUp={isEditingZones ? handleMouseUpZone : undefined}
-        onTouchStart={checkDeselect}
+        onTouchStart={(e) => {
+          // Não fazer nada aqui - deixar o evento propagar para o KonvaImage
+          // O checkDeselect será chamado apenas se clicar no stage vazio
+          const target = e.target;
+          const stage = e.target.getStage();
+          // Se clicou no stage vazio, desselecionar
+          if (target === stage) {
+            checkDeselect(e);
+          }
+          // Se clicou numa decoração, deixar o evento propagar para o onTouchStart do KonvaImage
+        }}
+        onTouchEnd={(e) => {
+          // Similar ao onTouchStart - apenas desselecionar se clicar no stage vazio
+          const target = e.target;
+          const stage = e.target.getStage();
+          if (target === stage) {
+            checkDeselect(e);
+          }
+        }}
         clipX={0}
         clipY={0}
         clipWidth={stageSize.width}
