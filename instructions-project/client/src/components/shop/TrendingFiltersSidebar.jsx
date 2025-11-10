@@ -152,7 +152,182 @@ export default function TrendingFiltersSidebar({
 
   return (
     <aside className={`space-y-6 ${className}`}>
-      <Accordion variant="splitted" defaultExpandedKeys={["type", "location", "collectionYear", "price", "color", "mount", "usage", "dimensions"]} selectionMode="multiple">
+      <Accordion variant="splitted" defaultExpandedKeys={["mount", "stock", "price", "color", "collectionYear", "type", "dimensions", "usage", "location"]} selectionMode="multiple">
+        {/* Category */}
+        <AccordionItem key="mount" aria-label="Category" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Category</span></div>}>
+          <ul className="space-y-2">
+            {mountOptions.map((opt) => (
+              <li key={opt.value}>
+                <button
+                  type="button"
+                  onClick={() => handle("mount", filters.mount === opt.value ? "" : opt.value)}
+                  className={`flex w-full items-center justify-between rounded-md px-2 py-2 text-left hover:bg-content2 ${filters.mount === opt.value ? "bg-content2" : ""}`}
+                >
+                  <span>{opt.label}</span>
+                  <span className="text-default-500">({itemsCount[opt.countKey]})</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </AccordionItem>
+
+        {/* Stock */}
+        <AccordionItem key="stock" aria-label="Stock" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Stock</span></div>}>
+          <div className="space-y-3">
+            {typeof Slider !== 'undefined' ? (
+              <Slider
+                aria-label="Minimum stock"
+                minValue={0}
+                maxValue={maxStock}
+                step={1}
+                className="max-w-full"
+                value={minStock}
+                onChange={(value)=> handle('minStock', Array.isArray(value) ? value[0] : Number(value))}
+                showTooltip
+              />
+            ) : (
+              <input type="range" min={0} max={maxStock} value={minStock} onChange={(e)=> handle('minStock', Number(e.target.value))} className="w-full" />
+            )}
+            <div className="text-sm">Stock: <span className="font-medium">{minStock}+</span></div>
+          </div>
+        </AccordionItem>
+
+        {/* Price */}
+        <AccordionItem key="price" aria-label="Price" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Price</span></div>}>
+          <div className="space-y-3">
+            {/* Try HeroUI range first */}
+            {typeof Slider !== "undefined" ? (
+              <Slider
+                aria-label="Price range"
+                minValue={min}
+                maxValue={max}
+                step={1}
+                className="max-w-full"
+                value={priceRange}
+                onChange={handlePriceChange}
+                showTooltip
+                formatOptions={{ style: "currency", currency: "EUR" }}
+              />
+            ) : (
+              // Basic fallback visual range (two native range inputs)
+              <div className="space-y-2">
+                <div className="relative h-2 rounded-full bg-default-200">
+                  <div
+                    className="absolute top-0 h-2 bg-primary rounded-full"
+                    style={{ left: `${((priceRange[0] - min) / (max - min)) * 100}%`, width: `${((priceRange[1] - priceRange[0]) / (max - min)) * 100}%` }}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="range" min={min} max={max} value={priceRange[0]} onChange={(e) => onPriceChange?.([Math.min(Number(e.target.value), priceRange[1] - 1), priceRange[1]])} className="w-full" />
+                  <input type="range" min={min} max={max} value={priceRange[1]} onChange={(e) => onPriceChange?.([priceRange[0], Math.max(Number(e.target.value), priceRange[0] + 1)])} className="w-full" />
+                </div>
+              </div>
+            )}
+            <div className="text-sm">Price: <span className="font-medium">€{priceRange[0]}</span> - <span className="font-medium">€{priceRange[1]}</span></div>
+          </div>
+        </AccordionItem>
+
+        {/* Color */}
+        <AccordionItem key="color" aria-label="Color" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Color</span></div>}>
+          <div className="flex flex-wrap gap-3">
+            {colorOptions.map((c) => {
+              var isActive = false;
+              if (Array.isArray(filters.color)) {
+                for (var i = 0; i < filters.color.length; i++) {
+                  if (filters.color[i] === c.key) {
+                    isActive = true;
+                    break;
+                  }
+                }
+              }
+              
+              var handleColorClick = function() {
+                var current = Array.isArray(filters.color) ? filters.color : [];
+                var next = [];
+                
+                if (isActive) {
+                  // Remover a cor se já estiver selecionada
+                  for (var j = 0; j < current.length; j++) {
+                    if (current[j] !== c.key) {
+                      next.push(current[j]);
+                    }
+                  }
+                } else {
+                  // Adicionar a cor se não estiver selecionada
+                  for (var k = 0; k < current.length; k++) {
+                    next.push(current[k]);
+                  }
+                  next.push(c.key);
+                }
+                
+                handle("color", next);
+              };
+              
+              return (
+                <Tooltip key={c.key} content={`${c.label}${itemsCount[c.countKey] ? ` (${itemsCount[c.countKey]})` : ""}`}>
+                  <button
+                    type="button"
+                    aria-label={c.label}
+                    onClick={handleColorClick}
+                    className={`w-8 h-8 rounded-full border ${isActive ? "ring-2 ring-primary" : "border-default-200"}`}
+                    style={{ background: c.gradient || c.swatch, boxShadow: c.bordered ? "inset 0 0 0 1px rgba(0,0,0,0.1)" : undefined }}
+                  />
+                </Tooltip>
+              );
+            })}
+          </div>
+        </AccordionItem>
+
+        {/* Collection Year */}
+        <AccordionItem 
+          key="collectionYear" 
+          aria-label="Collection Year" 
+          title={
+            <div className="flex items-center justify-between w-full">
+              <div className="flex flex-col gap-1">
+                <span className="font-semibold text-default-500">Collection Year</span>
+                {getSelectedYear() && (
+                  <span className="text-sm text-foreground font-medium">{getSelectedYear()}</span>
+                )}
+              </div>
+            </div>
+          }
+        >
+          <ul className="space-y-2">
+            {availableYears.map((year) => {
+              const yearStr = String(year);
+              const isSelected = filters.releaseYear === yearStr || filters.releaseYear === year;
+              const count = products.filter((p) => {
+                const productYear = p.releaseYear;
+                const yearValue = typeof productYear === 'number' ? productYear : parseInt(productYear, 10);
+                return !isNaN(yearValue) && yearValue === year;
+              }).length;
+              
+              return (
+                <li key={year}>
+                  <button
+                    type="button"
+                    onClick={() => handle("releaseYear", isSelected ? "" : yearStr)}
+                    className={`flex w-full items-center justify-between rounded-md px-2 py-2 text-left transition-all ${
+                      isSelected
+                        ? "bg-content2 border-2 border-primary"
+                        : "hover:bg-content2/50 border-2 border-transparent"
+                    }`}
+                  >
+                    <span className={isSelected ? "text-foreground" : "text-default-400"}>{year}</span>
+                    <div className="flex items-center gap-2">
+                      {count > 0 && <span className="text-default-500 text-sm">({count})</span>}
+                      {isSelected && (
+                        <Icon icon="lucide:check" className="text-white text-sm" />
+                      )}
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </AccordionItem>
+
         {/* Type */}
         <AccordionItem key="type" aria-label="Type" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Type</span></div>}>
           <ul className="space-y-2">
@@ -309,181 +484,6 @@ export default function TrendingFiltersSidebar({
                 </li>
               );
             })}
-          </ul>
-        </AccordionItem>
-
-        {/* Collection Year */}
-        <AccordionItem 
-          key="collectionYear" 
-          aria-label="Collection Year" 
-          title={
-            <div className="flex items-center justify-between w-full">
-              <div className="flex flex-col gap-1">
-                <span className="font-semibold text-default-500">Collection Year</span>
-                {getSelectedYear() && (
-                  <span className="text-sm text-foreground font-medium">{getSelectedYear()}</span>
-                )}
-              </div>
-            </div>
-          }
-        >
-          <ul className="space-y-2">
-            {availableYears.map((year) => {
-              const yearStr = String(year);
-              const isSelected = filters.releaseYear === yearStr || filters.releaseYear === year;
-              const count = products.filter((p) => {
-                const productYear = p.releaseYear;
-                const yearValue = typeof productYear === 'number' ? productYear : parseInt(productYear, 10);
-                return !isNaN(yearValue) && yearValue === year;
-              }).length;
-              
-              return (
-                <li key={year}>
-                  <button
-                    type="button"
-                    onClick={() => handle("releaseYear", isSelected ? "" : yearStr)}
-                    className={`flex w-full items-center justify-between rounded-md px-2 py-2 text-left transition-all ${
-                      isSelected
-                        ? "bg-content2 border-2 border-primary"
-                        : "hover:bg-content2/50 border-2 border-transparent"
-                    }`}
-                  >
-                    <span className={isSelected ? "text-foreground" : "text-default-400"}>{year}</span>
-                    <div className="flex items-center gap-2">
-                      {count > 0 && <span className="text-default-500 text-sm">({count})</span>}
-                      {isSelected && (
-                        <Icon icon="lucide:check" className="text-white text-sm" />
-                      )}
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </AccordionItem>
-
-        {/* Price */}
-        <AccordionItem key="price" aria-label="Price" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Price</span></div>}>
-          <div className="space-y-3">
-            {/* Try HeroUI range first */}
-            {typeof Slider !== "undefined" ? (
-              <Slider
-                aria-label="Price range"
-                minValue={min}
-                maxValue={max}
-                step={1}
-                className="max-w-full"
-                value={priceRange}
-                onChange={handlePriceChange}
-                showTooltip
-                formatOptions={{ style: "currency", currency: "EUR" }}
-              />
-            ) : (
-              // Basic fallback visual range (two native range inputs)
-              <div className="space-y-2">
-                <div className="relative h-2 rounded-full bg-default-200">
-                  <div
-                    className="absolute top-0 h-2 bg-primary rounded-full"
-                    style={{ left: `${((priceRange[0] - min) / (max - min)) * 100}%`, width: `${((priceRange[1] - priceRange[0]) / (max - min)) * 100}%` }}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <input type="range" min={min} max={max} value={priceRange[0]} onChange={(e) => onPriceChange?.([Math.min(Number(e.target.value), priceRange[1] - 1), priceRange[1]])} className="w-full" />
-                  <input type="range" min={min} max={max} value={priceRange[1]} onChange={(e) => onPriceChange?.([priceRange[0], Math.max(Number(e.target.value), priceRange[0] + 1)])} className="w-full" />
-                </div>
-              </div>
-            )}
-            <div className="text-sm">Price: <span className="font-medium">€{priceRange[0]}</span> - <span className="font-medium">€{priceRange[1]}</span></div>
-          </div>
-        </AccordionItem>
-
-        {/* Stock */}
-        <AccordionItem key="stock" aria-label="Stock" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Stock</span></div>}>
-          <div className="space-y-3">
-            {typeof Slider !== 'undefined' ? (
-              <Slider
-                aria-label="Minimum stock"
-                minValue={0}
-                maxValue={maxStock}
-                step={1}
-                className="max-w-full"
-                value={minStock}
-                onChange={(value)=> handle('minStock', Array.isArray(value) ? value[0] : Number(value))}
-                showTooltip
-              />
-            ) : (
-              <input type="range" min={0} max={maxStock} value={minStock} onChange={(e)=> handle('minStock', Number(e.target.value))} className="w-full" />
-            )}
-            <div className="text-sm">Stock: <span className="font-medium">{minStock}+</span></div>
-          </div>
-        </AccordionItem>
-
-        {/* Color */}
-        <AccordionItem key="color" aria-label="Color" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Color</span></div>}>
-          <div className="flex flex-wrap gap-3">
-            {colorOptions.map((c) => {
-              var isActive = false;
-              if (Array.isArray(filters.color)) {
-                for (var i = 0; i < filters.color.length; i++) {
-                  if (filters.color[i] === c.key) {
-                    isActive = true;
-                    break;
-                  }
-                }
-              }
-              
-              var handleColorClick = function() {
-                var current = Array.isArray(filters.color) ? filters.color : [];
-                var next = [];
-                
-                if (isActive) {
-                  // Remover a cor se já estiver selecionada
-                  for (var j = 0; j < current.length; j++) {
-                    if (current[j] !== c.key) {
-                      next.push(current[j]);
-                    }
-                  }
-                } else {
-                  // Adicionar a cor se não estiver selecionada
-                  for (var k = 0; k < current.length; k++) {
-                    next.push(current[k]);
-                  }
-                  next.push(c.key);
-                }
-                
-                handle("color", next);
-              };
-              
-              return (
-                <Tooltip key={c.key} content={`${c.label}${itemsCount[c.countKey] ? ` (${itemsCount[c.countKey]})` : ""}`}>
-                  <button
-                    type="button"
-                    aria-label={c.label}
-                    onClick={handleColorClick}
-                    className={`w-8 h-8 rounded-full border ${isActive ? "ring-2 ring-primary" : "border-default-200"}`}
-                    style={{ background: c.gradient || c.swatch, boxShadow: c.bordered ? "inset 0 0 0 1px rgba(0,0,0,0.1)" : undefined }}
-                  />
-                </Tooltip>
-              );
-            })}
-          </div>
-        </AccordionItem>
-
-        {/* Category (was Mount) - align style with Type (full-width selectable rows) */}
-        <AccordionItem key="mount" aria-label="Category" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Category</span></div>}>
-          <ul className="space-y-2">
-            {mountOptions.map((opt) => (
-              <li key={opt.value}>
-                <button
-                  type="button"
-                  onClick={() => handle("mount", filters.mount === opt.value ? "" : opt.value)}
-                  className={`flex w-full items-center justify-between rounded-md px-2 py-2 text-left hover:bg-content2 ${filters.mount === opt.value ? "bg-content2" : ""}`}
-                >
-                  <span>{opt.label}</span>
-                  <span className="text-default-500">({itemsCount[opt.countKey]})</span>
-                </button>
-              </li>
-            ))}
           </ul>
         </AccordionItem>
       </Accordion>

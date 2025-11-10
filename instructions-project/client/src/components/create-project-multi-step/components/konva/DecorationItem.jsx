@@ -140,6 +140,15 @@ export const DecorationItem = ({
           draggable
           onClick={onSelect}
           onTap={onSelect}
+          onTouchStart={(e) => {
+            // Selecionar a decoração quando tocar nela
+            // Não prevenir comportamento padrão para permitir drag
+            onSelect();
+          }}
+          onDragStart={(e) => {
+            // Garantir seleção quando inicia drag
+            onSelect();
+          }}
           onDragMove={handleDragMove}
           onDragEnd={handleDragEnd}
           onTransformEnd={handleTransformEnd}
