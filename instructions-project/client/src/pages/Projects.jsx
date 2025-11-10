@@ -38,7 +38,7 @@ export default function Projects() {
   };
 
   return (
-    <div className="flex-1 min-h-0 overflow-auto p-6">
+    <div className="flex-1 min-h-0 overflow-auto p-6 pb-24 md:pb-6">
       <PageTitle title="Projects" userName={userName} lead={`Manage your projects, ${userName}`} subtitle="Review projects and budgets." className="mb-6" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

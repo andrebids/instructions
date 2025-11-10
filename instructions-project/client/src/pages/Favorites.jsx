@@ -81,7 +81,7 @@ export default function Favorites() {
 
   return (
     <>
-    <div className="flex-1 min-h-0 overflow-auto p-6">
+    <div className="flex-1 min-h-0 overflow-auto p-6 pb-24 md:pb-6">
       <PageTitle title="Favorites" userName={userName} lead={`Your saved products, ${userName}`} />
       <div className="mb-4">
         <Button

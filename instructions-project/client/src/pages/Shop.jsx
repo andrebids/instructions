@@ -208,7 +208,7 @@ export default function Shop() {
   }, [products, filters, query, sort, priceRange]);
 
   return (
-    <div className="flex-1 min-h-0 overflow-auto p-6">
+    <div className="flex-1 min-h-0 overflow-auto p-6 pb-24 md:pb-6">
       <PageTitle title="Shop" userName={userName} lead={`Here's your catalog, ${userName}`} subtitle={mainDescription} />
       
       {/* Mobile filter button */}
@@ -220,8 +220,8 @@ export default function Shop() {
       {filtersOpen && (
         <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setFiltersOpen(false)} />
       )}
-      <div className="md:flex md:items-start md:gap-4">
-        <div className={`fixed left-0 top-0 bottom-0 z-50 w-80 bg-background border-r border-divider p-4 transition-transform transform ${filtersOpen ? 'translate-x-0' : '-translate-x-full'} md:static md:translate-x-0 md:z-auto md:w-80 md:bg-transparent md:border-0 md:rounded-none md:top-auto md:h-auto md:overflow-visible`}> 
+      <div className="md:flex md:items-start md:gap-4 xl:gap-6 2xl:gap-8">
+        <div className={`fixed left-0 top-0 bottom-0 z-50 w-80 bg-background border-r border-divider p-4 transition-transform transform ${filtersOpen ? 'translate-x-0' : '-translate-x-full'} md:static md:translate-x-0 md:z-auto md:w-[22rem] xl:w-[26rem] 2xl:w-[32rem] md:bg-transparent md:border-0 md:rounded-none md:top-auto md:h-auto md:overflow-visible`}> 
           <div className="flex items-center justify-between mb-3">
             <div className="font-semibold">Filters</div>
             <Button isIconOnly size="sm" variant="light" className="md:hidden" onPress={() => setFiltersOpen(false)} aria-label="Close filters">✕</Button>

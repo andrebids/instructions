@@ -3,15 +3,7 @@ import { NavLink } from "react-router-dom";
 import { Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useTheme } from "@heroui/use-theme";
-
-const navigationItems = [
-  { name: "Dashboard", icon: "lucide:layout-dashboard", href: "/" },
-  { name: "Statistics", icon: "lucide:bar-chart", href: "/statistics" },
-  { name: "Shop", icon: "lucide:shopping-bag", href: "/shop" },
-  { name: "Feed", icon: "lucide:video", href: "/feed" },
-  { name: "Projects", icon: "lucide:folder", href: "/projects" },
-  { name: "Admin Products", icon: "lucide:package", href: "/admin/products" },
-];
+import { navigationItems } from "../constants/navigation";
 
 export function SidebarNavigation() {
   // Mantemos o hook (pode ser útil para outras reações ao tema)

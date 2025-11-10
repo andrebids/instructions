@@ -11,6 +11,7 @@ import Landing from "./pages/Landing";
 import AdminProducts from "./pages/AdminProducts";
 import ProductFeed from "./pages/ProductFeed";
 import { SignedIn, SignedOut, SignIn, SignUp } from "@clerk/clerk-react";
+import { MobileBottomNav } from "./components/mobile-bottom-nav";
 
 function AppLayout() {
   const location = useLocation();
@@ -22,10 +23,10 @@ function AppLayout() {
 
   return (
     <div className="bg-background text-foreground flex h-screen">
-      <aside className="w-20">
+      <aside className="hidden md:block w-20">
         <SidebarNavigation />
       </aside>
-      <main className="flex flex-1 flex-col overflow-hidden">
+      <main className="flex flex-1 flex-col overflow-hidden pb-24 md:pb-0">
         <Header />
         <Routes>
           <Route path="/" element={<Dashboard />} />
@@ -37,6 +38,7 @@ function AppLayout() {
           <Route path="/admin/products" element={<AdminProducts />} />
         </Routes>
       </main>
+      <MobileBottomNav className="md:hidden" />
     </div>
   );
 }

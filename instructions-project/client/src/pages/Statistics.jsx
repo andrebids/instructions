@@ -433,7 +433,7 @@ export default function Statistics() {
   ];
 
     return (
-      <div className="flex-1 min-h-0 overflow-auto p-6">
+      <div className="flex-1 min-h-0 overflow-auto p-6 pb-24 md:pb-6">
       {/* Header with greeting and year filter */}
       <div className="mb-6 flex items-center justify-between">
         <div>

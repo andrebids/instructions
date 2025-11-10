@@ -7,20 +7,13 @@ import { Spinner, Button, Tooltip } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { useShop } from '../context/ShopContext';
 import { compareProductsByTagHierarchy } from '../utils/tagHierarchy';
+import { navigationItems } from '../constants/navigation';
+import { MobileBottomNav } from '../components/mobile-bottom-nav';
 
 /**
  * Página de feed de produtos estilo TikTok
  * Mostra produtos em scroll vertical com vídeos priorizados
  */
-const navigationItems = [
-  { name: "Dashboard", icon: "lucide:layout-dashboard", href: "/" },
-  { name: "Statistics", icon: "lucide:bar-chart", href: "/statistics" },
-  { name: "Shop", icon: "lucide:shopping-bag", href: "/shop" },
-  { name: "Feed", icon: "lucide:video", href: "/feed" },
-  { name: "Projects", icon: "lucide:folder", href: "/projects" },
-  { name: "Admin Products", icon: "lucide:package", href: "/admin/products" },
-];
-
 export default function ProductFeed() {
   const { products: allProducts, loading, error } = useProductFeed();
   const { getBaseStock, getAvailableStock } = useShop();
@@ -204,8 +197,8 @@ export default function ProductFeed() {
           />
         </Button>
 
-        {/* Container para botões do lado esquerdo - mantém posição relativa em qualquer resolução */}
-        <div className="fixed left-4 top-20 z-50 flex flex-col gap-4">
+        {/* Container para botões do lado esquerdo - visível apenas em desktop */}
+        <div className="fixed left-4 top-20 z-50 hidden md:flex flex-col gap-4">
           {/* Botão para desligar/ligar efeito da neve */}
           <Tooltip content={isSnowEnabled ? "Desligar neve" : "Ligar neve"} placement="right">
             <Button
@@ -352,8 +345,10 @@ export default function ProductFeed() {
         )}
       </AnimatePresence>
 
+      <MobileBottomNav onLinkClick={() => setIsMenuOpen(false)} />
+
       {/* Conteúdo do feed */}
-      <div ref={scrollContainerRef} className="h-full overflow-y-auto snap-y snap-mandatory scroll-smooth relative z-20">
+      <div ref={scrollContainerRef} className="h-full overflow-y-auto snap-y snap-mandatory scroll-smooth relative z-20 pb-24 md:pb-0">
         {products.map((product, index) => (
           <motion.div
             key={product.id}

@@ -1138,7 +1138,7 @@ export default function AdminProducts() {
   });
 
   return (
-    <div className="flex-1 min-h-0 overflow-hidden p-6 flex flex-col">
+    <div className="flex-1 min-h-0 overflow-hidden p-6 pb-24 md:pb-6 flex flex-col">
       <PageTitle 
         title="Product Administration" 
         userName={userName} 
@@ -1268,7 +1268,7 @@ export default function AdminProducts() {
           </CardBody>
         </Card>
       ) : (
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pb-24 md:pb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredProducts.map(function(product) {
               return (
