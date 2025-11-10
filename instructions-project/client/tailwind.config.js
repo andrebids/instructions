@@ -28,6 +28,9 @@ export default {
     })
   ],
   theme: {
+    screens: {
+      tablet: "1366px",
+    },
     extend: {
       fontFamily: {
         sans: ["Urbanist", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Arial", "Noto Sans", "sans-serif"],
