@@ -8,6 +8,11 @@ import OrderAssignModal from "../components/shop/OrderAssignModal";
 import { PageTitle } from "../components/page-title";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import {
+  compareProductsByTagHierarchy,
+  getProductHierarchyIndex,
+  getNormalizedProductTags,
+} from "../utils/tagHierarchy";
 
 export default function Shop() {
   const { products } = useShop();
@@ -133,110 +138,70 @@ export default function Shop() {
       }
     }
     
-    // Helper function to check if product has a tag (case insensitive)
-    var hasTag = function(product, tagName) {
-      if (!product.tags || !Array.isArray(product.tags)) return false;
-      var tagLower = tagName.toLowerCase();
-      for (var i = 0; i < product.tags.length; i++) {
-        if (String(product.tags[i]).toLowerCase() === tagLower) {
-          return true;
-        }
-      }
-      return false;
-    };
-    
-    // Helper function to count tags (excluding priority)
     var getOtherTagsCount = function(product) {
-      if (!product.tags || !Array.isArray(product.tags)) return 0;
+      var normalizedTags = getNormalizedProductTags(product);
+      if (!Array.isArray(normalizedTags) || normalizedTags.length === 0) return 0;
       var count = 0;
-      for (var i = 0; i < product.tags.length; i++) {
-        var tag = String(product.tags[i]).toLowerCase();
-        if (tag !== "priority") {
-          count++;
-        }
+      for (var i = 0; i < normalizedTags.length; i++) {
+        if (normalizedTags[i] !== "priority") count++;
       }
       return count;
     };
     
-    // Helper function to get stock value
     var getStock = function(product) {
-      if (typeof product.stock === 'number') return product.stock;
-      // Fallback calculation if stock is not a number
+      if (typeof product.stock === 'number' && Number.isFinite(product.stock)) return product.stock;
       try {
-        var s = 0;
+        var sum = 0;
         var id = String(product.id || '');
-        for (var ch_idx = 0; ch_idx < id.length; ch_idx++) {
-          s += id.charCodeAt(ch_idx);
+        for (var idx = 0; idx < id.length; idx++) {
+          sum += id.charCodeAt(idx);
         }
-        return 5 + (s % 60);
+        return 5 + (sum % 60);
       } catch(_) {
         return 20;
       }
     };
     
-    // Helper function to get tag priority (lower number = higher priority)
-    var getTagPriority = function(product) {
-      if (hasTag(product, "priority")) return 1; // Highest priority
-      if (hasTag(product, "sale")) return 2; // Second priority
-      if (hasTag(product, "new")) return 3; // Third priority
-      if (hasTag(product, "trending") || hasTag(product, "summer") || hasTag(product, "christmas")) return 4; // Fourth priority (lower than New)
-      return 5; // Default priority
-    };
-    
-    // Sort by tag priority and then by complex rules within PRIORITY
     list.sort(function(a, b) {
-      var priorityA = getTagPriority(a);
-      var priorityB = getTagPriority(b);
+      var hierarchyComparison = compareProductsByTagHierarchy(a, b);
+      if (hierarchyComparison !== 0) return hierarchyComparison;
       
-      // If different tag priorities, sort by priority
-      if (priorityA !== priorityB) {
-        return priorityA - priorityB;
-      }
+      var hierarchyIndex = getProductHierarchyIndex(a);
       
-      // If both are PRIORITY, apply complex sorting rules
-      if (priorityA === 1 && priorityB === 1) {
-        // Check if they have other tags (besides priority)
+      if (hierarchyIndex === 0) {
         var otherTagsA = getOtherTagsCount(a);
         var otherTagsB = getOtherTagsCount(b);
-        
-        // Products with other tags come first
         if (otherTagsA !== otherTagsB) {
-          return otherTagsB - otherTagsA; // More tags = higher priority
+          return otherTagsB - otherTagsA;
         }
         
-        // If both have same number of other tags (including 0), sort by stock
         var stockA = getStock(a);
         var stockB = getStock(b);
-        
         if (stockA !== stockB) {
-          return stockB - stockA; // Higher stock = higher priority
+          return stockB - stockA;
         }
         
-        // If stock is equal, sort by price (higher to lower)
-        var priceA = typeof a.price === 'number' ? a.price : 0;
-        var priceB = typeof b.price === 'number' ? b.price : 0;
-        
+        var priceA = typeof a.price === "number" && Number.isFinite(a.price) ? a.price : 0;
+        var priceB = typeof b.price === "number" && Number.isFinite(b.price) ? b.price : 0;
         if (priceA !== priceB) {
-          return priceB - priceA; // Higher price = higher priority
+          return priceB - priceA;
         }
         
-        // If everything is equal, maintain order
-        return 0;
+        return (a.name || "").localeCompare(b.name || "");
       }
       
-      // For Sale and other products, apply user-selected sorting
-      if (sort === "price-asc") {
-        return a.price - b.price;
-      } else if (sort === "price-desc") {
-        return b.price - a.price;
-      } else if (sort === "alpha-asc") {
-        return a.name.localeCompare(b.name);
-      } else if (sort === "alpha-desc") {
-        return b.name.localeCompare(a.name);
+      switch (sort) {
+        case "price-asc":
+          return (typeof a.price === "number" ? a.price : 0) - (typeof b.price === "number" ? b.price : 0);
+        case "price-desc":
+          return (typeof b.price === "number" ? b.price : 0) - (typeof a.price === "number" ? a.price : 0);
+        case "alpha-asc":
+          return (a.name || "").localeCompare(b.name || "");
+        case "alpha-desc":
+          return (b.name || "").localeCompare(a.name || "");
+        default:
+          return (a.name || "").localeCompare(b.name || "");
       }
-      
-      // Default: maintain order within same priority group
-      return 0;
     });
     
     return list;

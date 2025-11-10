@@ -23,6 +23,12 @@ import { Icon } from "@iconify/react";
 import { productsAPI } from "../services/api";
 import { PageTitle } from "../components/page-title";
 import { useUser } from "../context/UserContext";
+import {
+  compareProductsByTagHierarchy,
+  getProductHierarchyIndex,
+  getNormalizedProductTags,
+  normalizeTag,
+} from "../utils/tagHierarchy";
 
 export default function AdminProducts() {
   var { userName } = useUser();
@@ -1037,7 +1043,7 @@ export default function AdminProducts() {
   };
 
   // Filtrar produtos
-  var filteredProducts = products;
+  var filteredProducts = Array.isArray(products) ? products.slice() : [];
   
   // Aplicar filtro de pesquisa
   if (searchQuery) {
@@ -1062,37 +1068,74 @@ export default function AdminProducts() {
   
   // Aplicar filtro de tag
   if (filters.tag) {
-    var tagFilter = String(filters.tag).toLowerCase();
+    var rawTagFilter = String(filters.tag).trim().toLowerCase();
+    var normalizedFilter = normalizeTag(filters.tag);
     filteredProducts = filteredProducts.filter(function(p) {
-      if (!p.tags || !Array.isArray(p.tags)) return false;
-      for (var i = 0; i < p.tags.length; i++) {
-        var tag = String(p.tags[i]).toLowerCase();
-        // Normalizar tags para comparação
-        if (tagFilter === "priority" && (tag === "priority" || tag.indexOf("priority") >= 0 || tag.indexOf("priori") >= 0)) {
-          return true;
-        }
-        if (tagFilter === "sale" && (tag === "sale" || tag.indexOf("sale") >= 0)) {
-          return true;
-        }
-        if (tagFilter === "new" && tag === "new") {
-          return true;
-        }
-        if (tagFilter === "trending" && (tag === "trending" || tag.indexOf("trending") >= 0)) {
-          return true;
-        }
-        if (tagFilter === "summer" && (tag === "summer" || tag.indexOf("summer") >= 0)) {
-          return true;
-        }
-        if (tagFilter === "christmas" && (tag === "christmas" || tag.indexOf("christmas") >= 0 || tag.indexOf("xmas") >= 0)) {
-          return true;
-        }
-        if (tag === tagFilter) {
-          return true;
-        }
+      var normalizedTags = getNormalizedProductTags(p);
+      if (normalizedFilter && normalizedTags.includes(normalizedFilter)) {
+        return true;
       }
-      return false;
+      if (!rawTagFilter) return false;
+      return normalizedTags.some(function(tag) {
+        return tag.indexOf(rawTagFilter) >= 0;
+      });
     });
   }
+
+  var getOtherTagsCount = function(product) {
+    var normalizedTags = getNormalizedProductTags(product);
+    if (!Array.isArray(normalizedTags) || normalizedTags.length === 0) return 0;
+    var count = 0;
+    for (var i = 0; i < normalizedTags.length; i++) {
+      if (normalizedTags[i] !== "priority") count++;
+    }
+    return count;
+  };
+
+  var getStock = function(product) {
+    if (typeof product.stock === "number" && Number.isFinite(product.stock)) return product.stock;
+    try {
+      var sum = 0;
+      var id = String(product.id || "");
+      for (var idx = 0; idx < id.length; idx++) {
+        sum += id.charCodeAt(idx);
+      }
+      return 5 + (sum % 60);
+    } catch (_) {
+      return 20;
+    }
+  };
+
+  filteredProducts = filteredProducts.sort(function(a, b) {
+    var hierarchyComparison = compareProductsByTagHierarchy(a, b);
+    if (hierarchyComparison !== 0) return hierarchyComparison;
+
+    var hierarchyIndex = getProductHierarchyIndex(a);
+
+    if (hierarchyIndex === 0) {
+      var otherTagsA = getOtherTagsCount(a);
+      var otherTagsB = getOtherTagsCount(b);
+      if (otherTagsA !== otherTagsB) {
+        return otherTagsB - otherTagsA;
+      }
+
+      var stockA = getStock(a);
+      var stockB = getStock(b);
+      if (stockA !== stockB) {
+        return stockB - stockA;
+      }
+
+      var priceA = typeof a.price === "number" && Number.isFinite(a.price) ? a.price : 0;
+      var priceB = typeof b.price === "number" && Number.isFinite(b.price) ? b.price : 0;
+      if (priceA !== priceB) {
+        return priceB - priceA;
+      }
+
+      return (a.name || "").localeCompare(b.name || "");
+    }
+
+    return (a.name || "").localeCompare(b.name || "");
+  });
 
   return (
     <div className="flex-1 min-h-0 overflow-hidden p-6 flex flex-col">

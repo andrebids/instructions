@@ -6,6 +6,7 @@ import ProductFeedCard from '../components/shop/ProductFeedCard';
 import { Spinner, Button, Tooltip } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { useShop } from '../context/ShopContext';
+import { compareProductsByTagHierarchy } from '../utils/tagHierarchy';
 
 /**
  * Página de feed de produtos estilo TikTok
@@ -31,7 +32,7 @@ export default function ProductFeed() {
   const cardRefs = useRef({});
   const scrollContainerRef = useRef(null);
 
-  // Filtrar apenas produtos com stock disponível e ordenar por stock total (base) decrescente
+  // Filtrar apenas produtos com stock disponível e ordenar pela hierarquia de tags
   const products = useMemo(() => {
     if (!allProducts || !Array.isArray(allProducts)) return [];
     
@@ -41,9 +42,20 @@ export default function ProductFeed() {
         return availableStock > 0; // Filtrar por stock disponível (para não mostrar produtos sem stock)
       })
       .sort((a, b) => {
-        const stockA = getBaseStock?.(a) ?? 0; // Ordenar por stock total (base)
+        const hierarchyComparison = compareProductsByTagHierarchy(a, b);
+        if (hierarchyComparison !== 0) return hierarchyComparison;
+
+        const aHasVideo = Boolean(a.videoFile || a.images?.video);
+        const bHasVideo = Boolean(b.videoFile || b.images?.video);
+        if (aHasVideo !== bHasVideo) {
+          return aHasVideo ? -1 : 1;
+        }
+
+        const stockA = getBaseStock?.(a) ?? 0;
         const stockB = getBaseStock?.(b) ?? 0;
-        return stockB - stockA; // Ordem decrescente
+        if (stockA !== stockB) return stockB - stockA;
+
+        return (a.name || '').localeCompare(b.name || '');
       });
   }, [allProducts, getBaseStock, getAvailableStock]);
 
