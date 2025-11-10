@@ -13,11 +13,13 @@ import {
   getProductHierarchyIndex,
   getNormalizedProductTags,
 } from "../utils/tagHierarchy";
+import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 
 export default function Shop() {
   const { products } = useShop();
   const navigate = useNavigate();
   const { userName } = useUser();
+  const { isHandheld } = useResponsiveProfile();
   const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false, dimKey: "", dimRange: null, releaseYear: "" });
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [selected, setSelected] = React.useState({ product: null, variant: null });
@@ -208,7 +210,7 @@ export default function Shop() {
   }, [products, filters, query, sort, priceRange]);
 
   return (
-    <div className="flex-1 min-h-0 overflow-auto p-6 pb-24 md:pb-6">
+    <div className={`flex-1 min-h-0 overflow-auto p-6 ${isHandheld ? "pb-24" : "pb-6"}`}>
       <PageTitle title="Shop" userName={userName} lead={`Here's your catalog, ${userName}`} subtitle={mainDescription} />
       
       {/* Mobile filter button */}

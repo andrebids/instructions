@@ -43,7 +43,7 @@ function AppLayout() {
           <Route path="/admin/products" element={<AdminProducts />} />
         </Routes>
       </main>
-      <MobileBottomNav className="md:hidden" />
+      <MobileBottomNav />
     </div>
   );
 }
