@@ -96,7 +96,7 @@ export default function Dashboard() {
   return (
     <>
       {/* Dashboard Content */}
-      <div className={`flex-1 min-h-0 ${showCreateProject ? 'overflow-hidden' : 'overflow-auto p-6'}`}>
+      <div className={`flex-1 min-h-0 ${showCreateProject ? 'overflow-hidden' : 'overflow-auto p-6 pb-24 md:pb-6'}`}>
         {showCreateProject ? (
           <CreateProjectMultiStep 
             onClose={handleCloseCreateProject} 

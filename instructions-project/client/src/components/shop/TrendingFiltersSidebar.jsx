@@ -150,11 +150,224 @@ export default function TrendingFiltersSidebar({
     return !isNaN(year) ? year : null;
   };
 
-  return (
-    <aside className={`space-y-6 ${className}`}>
-      <Accordion variant="splitted" defaultExpandedKeys={["mount", "stock", "price", "color", "collectionYear", "type", "dimensions", "usage", "location"]} selectionMode="multiple">
-        {/* Category */}
-        <AccordionItem key="mount" aria-label="Category" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Category</span></div>}>
+  const [viewport, setViewport] = React.useState(() => ({
+    width: typeof window !== "undefined" ? window.innerWidth : 0,
+    height: typeof window !== "undefined" ? window.innerHeight : 0,
+  }));
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const updateViewport = () => {
+      setViewport({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
+  }, []);
+
+  const isGridLayout = React.useMemo(() => {
+    return viewport.width >= 1600 || (viewport.width >= 1280 && viewport.height >= 900);
+  }, [viewport.width, viewport.height]);
+
+  const formatCurrency = (value) => {
+    if (typeof value !== "number" || Number.isNaN(value)) return "€0";
+    return value.toLocaleString("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+      maximumFractionDigits: value >= 1000 ? 0 : 2,
+    });
+  };
+
+  const formatDimensionValue = (value) => {
+    if (typeof value !== "number" || Number.isNaN(value)) return "-";
+    return value.toFixed(2);
+  };
+
+  const selectedYear = getSelectedYear();
+  const selectedColorsCount = Array.isArray(filters.color) ? filters.color.length : 0;
+  const priceSummary = `${formatCurrency(priceRange[0])} — ${formatCurrency(priceRange[1])}`;
+  const stockSummary = minStock > 0 ? `${minStock}+ minimum` : "All stock levels";
+  const colorSummary = selectedColorsCount ? `${selectedColorsCount} selected` : "All colors";
+  const dimensionSummary = dimKey
+    ? `${dimLabels[dimKey]} • ${formatDimensionValue(effectiveDimRange?.[0])}–${formatDimensionValue(effectiveDimRange?.[1])} m`
+    : "Not selected";
+  const usageSummaryParts = [];
+  if (filters.usage === "Shopping") usageSummaryParts.push("Shopping");
+  if (filters.eco) usageSummaryParts.push("Eco");
+  const usageSummary = usageSummaryParts.length ? usageSummaryParts.join(" • ") : "All";
+  const locationSummary = getSelectedLocationLabel();
+
+  const clearColors = () => onChange?.({ ...filters, color: [] });
+  const clearYear = () => onChange?.({ ...filters, releaseYear: "" });
+  const clearDimensions = () => onChange?.({ ...filters, dimKey: "", dimRange: null });
+  const clearUsage = () => onChange?.({ ...filters, usage: "", eco: false });
+  const clearLocation = () => onChange?.({ ...filters, location: "" });
+
+  const sections = [
+    {
+      key: "category",
+      title: "Category",
+      summary: null,
+      action: filters.mount
+        ? (
+          <Button
+            size="sm"
+            variant="light"
+            className="h-7 px-2 text-xs"
+            onPress={() => handle("mount", "")}
+          >
+            Clear
+          </Button>
+        )
+        : null,
+    },
+    {
+      key: "stock",
+      title: "Stock",
+      summary: stockSummary,
+      action: minStock > 0
+        ? (
+          <Button
+            size="sm"
+            variant="light"
+            className="h-7 px-2 text-xs"
+            onPress={resetStock}
+          >
+            Reset
+          </Button>
+        )
+        : null,
+    },
+    {
+      key: "price",
+      title: "Price",
+      summary: priceSummary,
+      action: (priceRange[0] !== min || priceRange[1] !== max)
+        ? (
+          <Button
+            size="sm"
+            variant="light"
+            className="h-7 px-2 text-xs"
+            onPress={resetPrice}
+          >
+            Reset
+          </Button>
+        )
+        : null,
+    },
+    {
+      key: "color",
+      title: "Color",
+      summary: colorSummary,
+      action: selectedColorsCount
+        ? (
+          <Button
+            size="sm"
+            variant="light"
+            className="h-7 px-2 text-xs"
+            onPress={clearColors}
+          >
+            Clear
+          </Button>
+        )
+        : null,
+      gridSpan: "wide",
+    },
+    {
+      key: "collectionYear",
+      title: "Collection Year",
+      summary: selectedYear ? String(selectedYear) : "All",
+      action: selectedYear
+        ? (
+          <Button
+            size="sm"
+            variant="light"
+            className="h-7 px-2 text-xs"
+            onPress={clearYear}
+          >
+            Clear
+          </Button>
+        )
+        : null,
+    },
+    {
+      key: "type",
+      title: "Type",
+      summary: filters.type ? filters.type : "All",
+      action: filters.type
+        ? (
+          <Button
+            size="sm"
+            variant="light"
+            className="h-7 px-2 text-xs"
+            onPress={() => handle("type", "")}
+          >
+            Clear
+          </Button>
+        )
+        : null,
+    },
+    {
+      key: "dimensions",
+      title: "Dimensions",
+      summary: dimensionSummary,
+      action: dimKey
+        ? (
+          <Button
+            size="sm"
+            variant="light"
+            className="h-7 px-2 text-xs"
+            onPress={clearDimensions}
+          >
+            Clear
+          </Button>
+        )
+        : null,
+    },
+    {
+      key: "usage",
+      title: "Usage",
+      summary: usageSummary,
+      action: (filters.usage || filters.eco)
+        ? (
+          <Button
+            size="sm"
+            variant="light"
+            className="h-7 px-2 text-xs"
+            onPress={clearUsage}
+          >
+            Clear
+          </Button>
+        )
+        : null,
+    },
+    {
+      key: "location",
+      title: "Location",
+      summary: locationSummary,
+      action: filters.location
+        ? (
+          <Button
+            size="sm"
+            variant="light"
+            className="h-7 px-2 text-xs"
+            onPress={clearLocation}
+          >
+            Clear
+          </Button>
+        )
+        : null,
+    },
+  ];
+
+  const renderSectionContent = (sectionKey) => {
+    switch (sectionKey) {
+      case "category":
+        return (
           <ul className="space-y-2">
             {mountOptions.map((opt) => (
               <li key={opt.value}>
@@ -169,10 +382,9 @@ export default function TrendingFiltersSidebar({
               </li>
             ))}
           </ul>
-        </AccordionItem>
-
-        {/* Stock */}
-        <AccordionItem key="stock" aria-label="Stock" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Stock</span></div>}>
+        );
+      case "stock":
+        return (
           <div className="space-y-3">
             {typeof Slider !== 'undefined' ? (
               <Slider
@@ -190,12 +402,10 @@ export default function TrendingFiltersSidebar({
             )}
             <div className="text-sm">Stock: <span className="font-medium">{minStock}+</span></div>
           </div>
-        </AccordionItem>
-
-        {/* Price */}
-        <AccordionItem key="price" aria-label="Price" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Price</span></div>}>
+        );
+      case "price":
+        return (
           <div className="space-y-3">
-            {/* Try HeroUI range first */}
             {typeof Slider !== "undefined" ? (
               <Slider
                 aria-label="Price range"
@@ -209,12 +419,11 @@ export default function TrendingFiltersSidebar({
                 formatOptions={{ style: "currency", currency: "EUR" }}
               />
             ) : (
-              // Basic fallback visual range (two native range inputs)
               <div className="space-y-2">
                 <div className="relative h-2 rounded-full bg-default-200">
                   <div
                     className="absolute top-0 h-2 bg-primary rounded-full"
-                    style={{ left: `${((priceRange[0] - min) / (max - min)) * 100}%`, width: `${((priceRange[1] - priceRange[0]) / (max - min)) * 100}%` }}
+                    style={{ left: `${((priceRange[0] - min) / (max - min || 1)) * 100}%`, width: `${((priceRange[1] - priceRange[0]) / (max - min || 1)) * 100}%` }}
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -223,46 +432,46 @@ export default function TrendingFiltersSidebar({
                 </div>
               </div>
             )}
-            <div className="text-sm">Price: <span className="font-medium">€{priceRange[0]}</span> - <span className="font-medium">€{priceRange[1]}</span></div>
+            <div className="flex items-center justify-between text-sm font-medium text-default-500">
+              <span>{formatCurrency(priceRange[0])}</span>
+              <span>{formatCurrency(priceRange[1])}</span>
+            </div>
           </div>
-        </AccordionItem>
-
-        {/* Color */}
-        <AccordionItem key="color" aria-label="Color" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Color</span></div>}>
+        );
+      case "color":
+        return (
           <div className="flex flex-wrap gap-3">
             {colorOptions.map((c) => {
-              var isActive = false;
+              let isActive = false;
               if (Array.isArray(filters.color)) {
-                for (var i = 0; i < filters.color.length; i++) {
+                for (let i = 0; i < filters.color.length; i++) {
                   if (filters.color[i] === c.key) {
                     isActive = true;
                     break;
                   }
                 }
               }
-              
-              var handleColorClick = function() {
-                var current = Array.isArray(filters.color) ? filters.color : [];
-                var next = [];
-                
+
+              const handleColorClick = () => {
+                const current = Array.isArray(filters.color) ? filters.color : [];
+                const next = [];
+
                 if (isActive) {
-                  // Remover a cor se já estiver selecionada
-                  for (var j = 0; j < current.length; j++) {
+                  for (let j = 0; j < current.length; j++) {
                     if (current[j] !== c.key) {
                       next.push(current[j]);
                     }
                   }
                 } else {
-                  // Adicionar a cor se não estiver selecionada
-                  for (var k = 0; k < current.length; k++) {
+                  for (let k = 0; k < current.length; k++) {
                     next.push(current[k]);
                   }
                   next.push(c.key);
                 }
-                
+
                 handle("color", next);
               };
-              
+
               return (
                 <Tooltip key={c.key} content={`${c.label}${itemsCount[c.countKey] ? ` (${itemsCount[c.countKey]})` : ""}`}>
                   <button
@@ -276,23 +485,9 @@ export default function TrendingFiltersSidebar({
               );
             })}
           </div>
-        </AccordionItem>
-
-        {/* Collection Year */}
-        <AccordionItem 
-          key="collectionYear" 
-          aria-label="Collection Year" 
-          title={
-            <div className="flex items-center justify-between w-full">
-              <div className="flex flex-col gap-1">
-                <span className="font-semibold text-default-500">Collection Year</span>
-                {getSelectedYear() && (
-                  <span className="text-sm text-foreground font-medium">{getSelectedYear()}</span>
-                )}
-              </div>
-            </div>
-          }
-        >
+        );
+      case "collectionYear":
+        return (
           <ul className="space-y-2">
             {availableYears.map((year) => {
               const yearStr = String(year);
@@ -302,34 +497,27 @@ export default function TrendingFiltersSidebar({
                 const yearValue = typeof productYear === 'number' ? productYear : parseInt(productYear, 10);
                 return !isNaN(yearValue) && yearValue === year;
               }).length;
-              
+
               return (
                 <li key={year}>
                   <button
                     type="button"
                     onClick={() => handle("releaseYear", isSelected ? "" : yearStr)}
-                    className={`flex w-full items-center justify-between rounded-md px-2 py-2 text-left transition-all ${
-                      isSelected
-                        ? "bg-content2 border-2 border-primary"
-                        : "hover:bg-content2/50 border-2 border-transparent"
-                    }`}
+                    className={`flex w-full items-center justify-between rounded-md px-2 py-2 text-left transition-all ${isSelected ? "bg-content2 border-2 border-primary" : "hover:bg-content2/50 border-2 border-transparent"}`}
                   >
                     <span className={isSelected ? "text-foreground" : "text-default-400"}>{year}</span>
                     <div className="flex items-center gap-2">
                       {count > 0 && <span className="text-default-500 text-sm">({count})</span>}
-                      {isSelected && (
-                        <Icon icon="lucide:check" className="text-white text-sm" />
-                      )}
+                      {isSelected && <Icon icon="lucide:check" className="text-white text-sm" />}
                     </div>
                   </button>
                 </li>
               );
             })}
           </ul>
-        </AccordionItem>
-
-        {/* Type */}
-        <AccordionItem key="type" aria-label="Type" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Type</span></div>}>
+        );
+      case "type":
+        return (
           <ul className="space-y-2">
             {[
               { value: "", label: "All", count: itemsCount.all },
@@ -348,16 +536,15 @@ export default function TrendingFiltersSidebar({
               </li>
             ))}
           </ul>
-        </AccordionItem>
-
-        {/* Dimensions */}
-        <AccordionItem key="dimensions" aria-label="Dimensions" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Dimensions</span></div>}>
+        );
+      case "dimensions":
+        return (
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm text-default-600">Field</span>
               <Dropdown>
                 <DropdownTrigger>
-                  <Button size="sm" radius="full" variant="bordered" endContent={<Icon icon="lucide:chevron-down" className="text-sm" />}> 
+                  <Button size="sm" radius="full" variant="bordered" endContent={<Icon icon="lucide:chevron-down" className="text-sm" />}>
                     {dimKey ? dimLabels[dimKey] : "Select"}
                   </Button>
                 </DropdownTrigger>
@@ -367,7 +554,6 @@ export default function TrendingFiltersSidebar({
                   selectionMode="single"
                   onAction={(key)=>{
                     const k = String(key);
-                    // Reset range when changing key
                     const next = { ...filters, dimKey: k === "" ? "" : k };
                     if (k === "") {
                       next.dimRange = null;
@@ -375,7 +561,11 @@ export default function TrendingFiltersSidebar({
                       const vals = products
                         .map(p => p?.specs?.dimensions?.[k])
                         .filter(v => typeof v === 'number' && Number.isFinite(v));
-                      if (vals.length) next.dimRange = [Math.min(...vals), Math.max(...vals)];
+                      if (vals.length) {
+                        next.dimRange = [Math.min(...vals), Math.max(...vals)];
+                      } else {
+                        next.dimRange = [0, 0];
+                      }
                     }
                     onChange?.(next);
                   }}
@@ -412,18 +602,17 @@ export default function TrendingFiltersSidebar({
                     <input type="range" min={dimValues.min} max={dimValues.max} step={0.01} value={effectiveDimRange[1]} onChange={(e)=> onChange?.({ ...filters, dimRange: [effectiveDimRange[0], Math.max(Number(e.target.value), effectiveDimRange[0]+0.01)] })} className="w-full" />
                   </div>
                 )}
-                <div className="text-sm">{dimLabels[dimKey]}: <span className="font-medium">{effectiveDimRange[0].toFixed(2)}m</span> - <span className="font-medium">{effectiveDimRange[1].toFixed(2)}m</span></div>
+                <div className="text-sm">{dimLabels[dimKey]}: <span className="font-medium">{formatDimensionValue(effectiveDimRange[0])}m</span> - <span className="font-medium">{formatDimensionValue(effectiveDimRange[1])}m</span></div>
               </div>
             ) : (
               <div className="text-sm text-default-500">Select a dimension to filter</div>
             )}
           </div>
-        </AccordionItem>
-
-        {/* Usage */}
-        <AccordionItem key="usage" aria-label="Usage" title={<div className="flex items-center justify-between w-full"><span className="font-semibold">Usage</span></div>}>
+        );
+      case "usage":
+        return (
           <div className="flex flex-col gap-2">
-            <Checkbox 
+            <Checkbox
               isSelected={filters.usage === "Shopping"}
               onValueChange={(v) => handle("usage", v ? "Shopping" : "")}
               classNames={{ label: "flex items-center gap-1" }}
@@ -431,7 +620,7 @@ export default function TrendingFiltersSidebar({
             >
               <span className="flex items-center gap-1">Shopping Malls <span className="text-default-500">({itemsCount.usageShopping})</span></span>
             </Checkbox>
-            <Checkbox 
+            <Checkbox
               isSelected={Boolean(filters.eco)}
               onValueChange={(v) => handle("eco", v)}
               classNames={{ label: "flex items-center gap-1" }}
@@ -440,21 +629,9 @@ export default function TrendingFiltersSidebar({
               <span className="flex items-center gap-1">Eco <span className="text-default-500">({itemsCount.eco})</span></span>
             </Checkbox>
           </div>
-        </AccordionItem>
-
-        {/* Location */}
-        <AccordionItem 
-          key="location" 
-          aria-label="Location" 
-          title={
-            <div className="flex items-center justify-between w-full">
-              <div className="flex flex-col gap-1">
-                <span className="font-semibold text-default-500">Location</span>
-                <span className="text-sm text-foreground font-medium">{getSelectedLocationLabel()}</span>
-              </div>
-            </div>
-          }
-        >
+        );
+      case "location":
+        return (
           <ul className="space-y-2">
             {[
               { value: "", label: "All", count: itemsCount.indoor + itemsCount.outdoor },
@@ -467,11 +644,7 @@ export default function TrendingFiltersSidebar({
                   <button
                     type="button"
                     onClick={() => handle("location", opt.value)}
-                    className={`flex w-full items-center justify-between rounded-md px-2 py-2 text-left transition-all ${
-                      isSelected
-                        ? "bg-content2 border-2 border-primary"
-                        : "hover:bg-content2/50 border-2 border-transparent"
-                    }`}
+                    className={`flex w-full items-center justify-between rounded-md px-2 py-2 text-left transition-all ${isSelected ? "bg-content2 border-2 border-primary" : "hover:bg-content2/50 border-2 border-transparent"}`}
                   >
                     <span className={isSelected ? "text-foreground" : "text-default-400"}>{opt.label}</span>
                     <div className="flex items-center gap-2">
@@ -485,10 +658,79 @@ export default function TrendingFiltersSidebar({
               );
             })}
           </ul>
-        </AccordionItem>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const accordionDefaultKeys = React.useMemo(
+    () => ["category", "stock", "price", "color", "collectionYear", "type", "dimensions", "usage", "location"],
+    []
+  );
+
+  if (isGridLayout) {
+    return (
+      <aside className={`grid gap-4 xl:grid-cols-2 2xl:grid-cols-3 ${className}`}>
+        {sections.map((section) => (
+          <div
+            key={section.key}
+            className={`rounded-2xl border border-white/10 bg-content1/60 backdrop-blur-sm p-4 shadow-sm ${section.gridSpan === "wide" ? "xl:col-span-2 2xl:col-span-3" : ""}`}
+          >
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <div className="font-semibold text-foreground">{section.title}</div>
+                {section.summary && (
+                  <div className="text-xs text-default-500 mt-1 leading-tight">
+                    {section.summary}
+                  </div>
+                )}
+              </div>
+              {section.action ? (
+                <div className="shrink-0">
+                  {section.action}
+                </div>
+              ) : null}
+            </div>
+            <div className="space-y-3">
+              {renderSectionContent(section.key)}
+            </div>
+          </div>
+        ))}
+      </aside>
+    );
+  }
+
+  return (
+    <aside className={className}>
+      <Accordion variant="splitted" defaultExpandedKeys={accordionDefaultKeys} selectionMode="multiple">
+        {sections.map((section) => (
+          <AccordionItem
+            key={section.key}
+            aria-label={section.title}
+            title={
+              <div className="flex items-center justify-between w-full">
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-semibold">{section.title}</span>
+                  {section.summary && (
+                    <span className="text-xs text-default-500">{section.summary}</span>
+                  )}
+                </div>
+                {section.action ? (
+                  <div className="ml-2 shrink-0">
+                    {section.action}
+                  </div>
+                ) : null}
+              </div>
+            }
+          >
+            {renderSectionContent(section.key)}
+          </AccordionItem>
+        ))}
       </Accordion>
     </aside>
   );
 }
+
 
 
