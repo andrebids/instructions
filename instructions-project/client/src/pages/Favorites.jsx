@@ -8,6 +8,7 @@ import { PageTitle } from "../components/page-title";
 import ConfirmModal from "../components/common/ConfirmModal";
 import EditNameModal from "../components/common/EditNameModal";
 import { useUser } from "../context/UserContext";
+import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 
 export default function Favorites() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export default function Favorites() {
   const [suggestSeed, setSuggestSeed] = React.useState(0);
   const [renameModal, setRenameModal] = React.useState({ open: false, folder: null });
   const [deleteModal, setDeleteModal] = React.useState({ open: false, folder: null });
+  const { isHandheld } = useResponsiveProfile();
 
   const selectedFolder = React.useMemo(() => (favoriteFolders || []).find(f=>f.id===selectedFolderId) || null, [favoriteFolders, selectedFolderId]);
   const productIds = React.useMemo(() => {
@@ -81,7 +83,7 @@ export default function Favorites() {
 
   return (
     <>
-    <div className="flex-1 min-h-0 overflow-auto p-6 pb-24 md:pb-6">
+    <div className={`flex-1 min-h-0 overflow-auto p-6 ${isHandheld ? "pb-24" : "pb-6"}`}>
       <PageTitle title="Favorites" userName={userName} lead={`Your saved products, ${userName}`} />
       <div className="mb-4">
         <Button

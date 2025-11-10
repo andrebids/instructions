@@ -10,12 +10,14 @@ import { AIAssistantChat } from "../components/ai-assistant-chat";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageTitle } from "../components/page-title";
 import { useUser } from "../context/UserContext";
+import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 
 export default function Statistics() {
   const { userName } = useUser();
   const { theme } = useTheme();
   const [year, setYear] = React.useState(2025);
   const [isOpen, setIsOpen] = React.useState(false);
+  const { isHandheld } = useResponsiveProfile();
 
   const years = [2025, 2024, 2023, 2022, 2021];
 
@@ -433,7 +435,7 @@ export default function Statistics() {
   ];
 
     return (
-      <div className="flex-1 min-h-0 overflow-auto p-6 pb-24 md:pb-6">
+      <div className={`flex-1 min-h-0 overflow-auto p-6 ${isHandheld ? "pb-24" : "pb-6"}`}>
       {/* Header with greeting and year filter */}
       <div className="mb-6 flex items-center justify-between">
         <div>

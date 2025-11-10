@@ -10,6 +10,7 @@ import {PageTitle} from "../components/page-title";
 import {AIAssistantChat} from "../components/ai-assistant-chat";
 import {motion, AnimatePresence} from "framer-motion";
 import { useUser } from "../context/UserContext";
+import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 
 export default function Dashboard() {
   const { userName } = useUser();
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
   const [selectedImage, setSelectedImage] = React.useState(null);
+  const { isHandheld } = useResponsiveProfile();
   
   // Imagens carregadas (simuladas)
   const loadedImages = [
@@ -96,7 +98,7 @@ export default function Dashboard() {
   return (
     <>
       {/* Dashboard Content */}
-      <div className={`flex-1 min-h-0 ${showCreateProject ? 'overflow-hidden' : 'overflow-auto p-6 pb-24 md:pb-6'}`}>
+      <div className={`flex-1 min-h-0 ${showCreateProject ? 'overflow-hidden' : `overflow-auto p-6 ${isHandheld ? "pb-24" : "pb-6"}`}`}>
         {showCreateProject ? (
           <CreateProjectMultiStep 
             onClose={handleCloseCreateProject} 

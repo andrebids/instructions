@@ -23,6 +23,7 @@ import { Icon } from "@iconify/react";
 import { productsAPI } from "../services/api";
 import { PageTitle } from "../components/page-title";
 import { useUser } from "../context/UserContext";
+import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 import {
   compareProductsByTagHierarchy,
   getProductHierarchyIndex,
@@ -54,6 +55,7 @@ export default function AdminProducts() {
   var [availableYears, setAvailableYears] = React.useState(initializeYears());
   var { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
   var [editingProduct, setEditingProduct] = React.useState(null);
+  const { isHandheld } = useResponsiveProfile();
   
   // Função helper para filtrar valores válidos de printColor
   var getValidPrintColors = function(printColor) {
@@ -1138,7 +1140,7 @@ export default function AdminProducts() {
   });
 
   return (
-    <div className="flex-1 min-h-0 overflow-hidden p-6 pb-24 md:pb-6 flex flex-col">
+    <div className={`flex-1 min-h-0 overflow-hidden p-6 flex flex-col ${isHandheld ? "pb-24" : "pb-6"}`}>
       <PageTitle 
         title="Product Administration" 
         userName={userName} 
@@ -1268,7 +1270,7 @@ export default function AdminProducts() {
           </CardBody>
         </Card>
       ) : (
-        <div className="flex-1 overflow-y-auto pb-24 md:pb-6">
+        <div className={`flex-1 overflow-y-auto ${isHandheld ? "pb-24" : "pb-6"}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredProducts.map(function(product) {
               return (
