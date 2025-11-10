@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { productsAPI } from '../services/api';
 import { transformApiProduct } from '../utils/productUtils';
+import { compareProductsByTagHierarchy } from '../utils/tagHierarchy';
 
 /**
  * Hook para buscar e ordenar produtos para o feed estilo TikTok
@@ -29,38 +30,16 @@ export function useProductFeed() {
           .map(transformApiProduct)
           .filter(Boolean); // Remove nulls
 
-        // Ordenar: produtos com vídeo primeiro, depois os outros
-        // Dentro de cada grupo, ordenar por relevância (trending, new, etc.)
         const sorted = transformed.sort((a, b) => {
-          // Verificar se tem vídeo (videoFile ou animationUrl)
+          const hierarchyComparison = compareProductsByTagHierarchy(a, b);
+          if (hierarchyComparison !== 0) return hierarchyComparison;
+
           const aHasVideo = Boolean(a.videoFile || a.images?.video);
           const bHasVideo = Boolean(b.videoFile || b.images?.video);
+          if (aHasVideo !== bHasVideo) {
+            return aHasVideo ? -1 : 1;
+          }
 
-          // Prioridade 1: Produtos com vídeo primeiro
-          if (aHasVideo && !bHasVideo) return -1;
-          if (!aHasVideo && bHasVideo) return 1;
-
-          // Prioridade 2: Dentro do mesmo grupo, ordenar por relevância
-          // Trending > New > Sale > outros
-          const aIsTrending = a.isTrending || (Array.isArray(a.tags) && a.tags.some(tag => String(tag).toLowerCase() === 'trending'));
-          const bIsTrending = b.isTrending || (Array.isArray(b.tags) && b.tags.some(tag => String(tag).toLowerCase() === 'trending'));
-
-          if (aIsTrending && !bIsTrending) return -1;
-          if (!aIsTrending && bIsTrending) return 1;
-
-          const aIsNew = Array.isArray(a.tags) && a.tags.some(tag => String(tag).toLowerCase() === 'new');
-          const bIsNew = Array.isArray(b.tags) && b.tags.some(tag => String(tag).toLowerCase() === 'new');
-
-          if (aIsNew && !bIsNew) return -1;
-          if (!aIsNew && bIsNew) return 1;
-
-          const aIsSale = a.isOnSale || (Array.isArray(a.tags) && a.tags.some(tag => String(tag).toLowerCase() === 'sale'));
-          const bIsSale = b.isOnSale || (Array.isArray(b.tags) && b.tags.some(tag => String(tag).toLowerCase() === 'sale'));
-
-          if (aIsSale && !bIsSale) return -1;
-          if (!aIsSale && bIsSale) return 1;
-
-          // Por último, ordenar por nome
           return (a.name || '').localeCompare(b.name || '');
         });
 
