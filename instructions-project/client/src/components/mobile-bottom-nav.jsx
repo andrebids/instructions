@@ -2,12 +2,20 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { navigationItems } from "../constants/navigation";
+import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 
 export function MobileBottomNav({
   items = navigationItems,
   onLinkClick,
   className = "",
+  maxWidth,
 }) {
+  const { isHandheld } = useResponsiveProfile({ maxWidth });
+
+  if (!isHandheld) {
+    return null;
+  }
+
   const handleLinkClick = (callback) => () => {
     if (typeof onLinkClick === "function") {
       onLinkClick();
@@ -18,7 +26,7 @@ export function MobileBottomNav({
   };
 
   const baseClasses =
-    "fixed bottom-0 left-0 right-0 z-30 flex md:hidden items-center justify-around gap-2 bg-black/90 backdrop-blur-md border-t border-white/10 py-3 px-4";
+    "fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around gap-2 bg-black/90 backdrop-blur-md border-t border-white/10 py-3 px-4";
 
   return (
     <nav className={`${baseClasses}${className ? ` ${className}` : ""}`}>

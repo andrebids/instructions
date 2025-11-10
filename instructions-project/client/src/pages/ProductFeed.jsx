@@ -9,6 +9,7 @@ import { useShop } from '../context/ShopContext';
 import { compareProductsByTagHierarchy } from '../utils/tagHierarchy';
 import { navigationItems } from '../constants/navigation';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
+import { useResponsiveProfile } from '../hooks/useResponsiveProfile';
 
 /**
  * Página de feed de produtos estilo TikTok
@@ -24,6 +25,7 @@ export default function ProductFeed() {
   const [originalProductId, setOriginalProductId] = useState(null); // ID do produto original quando navega em modo simulação animada
   const cardRefs = useRef({});
   const scrollContainerRef = useRef(null);
+  const { isHandheld } = useResponsiveProfile();
 
   // Filtrar apenas produtos com stock disponível e ordenar pela hierarquia de tags
   const products = useMemo(() => {
@@ -137,6 +139,12 @@ export default function ProductFeed() {
     }
   }, [products, activeIndex, originalProductId]);
 
+  useEffect(() => {
+    if (!isHandheld && isMenuOpen) {
+      setIsMenuOpen(false);
+    }
+  }, [isHandheld, isMenuOpen]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-black">
@@ -167,7 +175,7 @@ export default function ProductFeed() {
   }
 
   return (
-          <div className="w-full h-screen overflow-hidden bg-black relative">
+    <div className="w-full h-screen overflow-hidden bg-black relative">
         {/* Vídeo de fundo em loop */}
         {isSnowEnabled && (
           <video
@@ -182,23 +190,26 @@ export default function ProductFeed() {
           </video>
         )}
 
-                {/* Botão Hambúrguer - Fixo no canto superior esquerdo */}
-        <Button
-          isIconOnly
-          radius="full"
-          className="fixed top-4 left-4 z-50 bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80 shadow-lg"
-          size="lg"
-          onPress={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          <Icon 
-            icon={isMenuOpen ? "lucide:x" : "lucide:menu"} 
-            className="text-2xl"
-          />
-        </Button>
+        {/* Botão Hambúrguer - Fixo no canto superior esquerdo */}
+        {isHandheld && (
+          <Button
+            isIconOnly
+            radius="full"
+            className="fixed top-4 left-4 z-50 bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80 shadow-lg"
+            size="lg"
+            onPress={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            <Icon 
+              icon={isMenuOpen ? "lucide:x" : "lucide:menu"} 
+              className="text-2xl"
+            />
+          </Button>
+        )}
 
         {/* Container para botões do lado esquerdo - visível apenas em desktop */}
-        <div className="fixed left-4 top-20 z-50 hidden md:flex flex-col gap-4">
+        {!isHandheld && (
+          <div className="fixed left-4 top-20 z-50 flex flex-col gap-4">
           {/* Botão para desligar/ligar efeito da neve */}
           <Tooltip content={isSnowEnabled ? "Desligar neve" : "Ligar neve"} placement="right">
             <Button
@@ -266,89 +277,97 @@ export default function ProductFeed() {
             }
             return null;
           })()}
-        </div>
+          </div>
+        )}
 
       {/* Overlay escuro quando menu aberto */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-            onClick={() => setIsMenuOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+      {isHandheld && (
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+              onClick={() => setIsMenuOpen(false)}
+            />
+          )}
+        </AnimatePresence>
+      )}
 
       {/* Sidebar de navegação */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div
-            initial={{ x: '-100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed left-0 top-0 h-full w-20 bg-black/95 backdrop-blur-md border-r border-white/10 z-50 flex flex-col items-center py-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Logo */}
-            <div className="mb-8">
-              <img
-                src="/light.svg"
-                alt="Logo"
-                className="block dark:hidden w-12 h-12"
-              />
-              <img
-                src="/dark.svg"
-                alt="Logo"
-                className="hidden dark:block w-12 h-12"
-              />
-            </div>
-
-            {/* Ícones de navegação */}
-            <div className="flex-1 flex items-center">
-              <div className="flex flex-col items-center gap-4">
-                {navigationItems.map((item) => (
-                  <Tooltip
-                    key={item.name}
-                    content={item.name}
-                    placement="right"
-                    showArrow
-                    color="default"
-                    delay={300}
-                  >
-                    <NavLink
-                      to={item.href}
-                      aria-label={item.name}
-                      onClick={() => setIsMenuOpen(false)}
-                      className={({ isActive }) =>
-                        `w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-all ` +
-                        (isActive
-                          ? `bg-primary/50 hover:bg-primary/60`
-                          : `bg-white/10 hover:bg-white/20`)
-                      }
-                    >
-                      {({ isActive }) => (
-                        <Icon
-                          icon={item.icon}
-                          className={`${isActive ? "text-white" : "text-gray-400"} text-xl`}
-                        />
-                      )}
-                    </NavLink>
-                  </Tooltip>
-                ))}
+      {isHandheld && (
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed left-0 top-0 h-full w-20 bg-black/95 backdrop-blur-md border-r border-white/10 z-50 flex flex-col items-center py-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Logo */}
+              <div className="mb-8">
+                <img
+                  src="/light.svg"
+                  alt="Logo"
+                  className="block dark:hidden w-12 h-12"
+                />
+                <img
+                  src="/dark.svg"
+                  alt="Logo"
+                  className="hidden dark:block w-12 h-12"
+                />
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+              {/* Ícones de navegação */}
+              <div className="flex-1 flex items-center">
+                <div className="flex flex-col items-center gap-4">
+                  {navigationItems.map((item) => (
+                    <Tooltip
+                      key={item.name}
+                      content={item.name}
+                      placement="right"
+                      showArrow
+                      color="default"
+                      delay={300}
+                    >
+                      <NavLink
+                        to={item.href}
+                        aria-label={item.name}
+                        onClick={() => setIsMenuOpen(false)}
+                        className={({ isActive }) =>
+                          `w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-all ` +
+                          (isActive
+                            ? `bg-primary/50 hover:bg-primary/60`
+                            : `bg-white/10 hover:bg-white/20`)
+                        }
+                      >
+                        {({ isActive }) => (
+                          <Icon
+                            icon={item.icon}
+                            className={`${isActive ? "text-white" : "text-gray-400"} text-xl`}
+                          />
+                        )}
+                      </NavLink>
+                    </Tooltip>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
 
       <MobileBottomNav onLinkClick={() => setIsMenuOpen(false)} />
 
       {/* Conteúdo do feed */}
-      <div ref={scrollContainerRef} className="h-full overflow-y-auto snap-y snap-mandatory scroll-smooth relative z-20 pb-24 md:pb-0">
+      <div
+        ref={scrollContainerRef}
+        className={`h-full overflow-y-auto snap-y snap-mandatory scroll-smooth relative z-20 ${isHandheld ? "pb-24" : "pb-0"}`}
+      >
         {products.map((product, index) => (
           <motion.div
             key={product.id}

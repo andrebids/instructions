@@ -12,10 +12,13 @@ import AdminProducts from "./pages/AdminProducts";
 import ProductFeed from "./pages/ProductFeed";
 import { SignedIn, SignedOut, SignIn, SignUp } from "@clerk/clerk-react";
 import { MobileBottomNav } from "./components/mobile-bottom-nav";
+import { useResponsiveProfile } from "./hooks/useResponsiveProfile";
 
 function AppLayout() {
   const location = useLocation();
   const isFeedPage = location.pathname === '/feed';
+  const { isHandheld } = useResponsiveProfile();
+  const showSidebar = !isHandheld;
 
   if (isFeedPage) {
     return <ProductFeed />;
@@ -23,10 +26,12 @@ function AppLayout() {
 
   return (
     <div className="bg-background text-foreground flex h-screen">
-      <aside className="hidden md:block w-20">
-        <SidebarNavigation />
-      </aside>
-      <main className="flex flex-1 flex-col overflow-hidden pb-24 md:pb-0">
+      {showSidebar && (
+        <aside className="hidden md:block w-20">
+          <SidebarNavigation />
+        </aside>
+      )}
+      <main className={`flex flex-1 flex-col overflow-hidden ${isHandheld ? "pb-24" : "pb-0"}`}>
         <Header />
         <Routes>
           <Route path="/" element={<Dashboard />} />
