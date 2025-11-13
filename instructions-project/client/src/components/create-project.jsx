@@ -13,9 +13,11 @@ import {
   Spinner
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useNavigate } from "react-router-dom";
 import { projectsAPI } from "../services/api";
 
 export function CreateProject({ onClose }) {
+  const navigate = useNavigate();
   const [formData, setFormData] = React.useState({
     name: "",
     clientName: "",
@@ -60,7 +62,12 @@ export function CreateProject({ onClose }) {
       const newProject = await projectsAPI.create(projectData);
       console.log("✅ Project created:", newProject);
       
-      onClose(); // Fecha modal e recarrega dados
+      // Redirecionar para página de notas do projeto
+      if (newProject?.id) {
+        navigate(`/projects/${newProject.id}/notes`);
+      } else {
+        onClose(); // Fallback: fecha modal e recarrega dados
+      }
     } catch (err) {
       console.error("❌ Error creating project:", err);
       setError(err.response?.data?.error || "Failed to create project");

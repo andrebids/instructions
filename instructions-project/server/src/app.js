@@ -7,6 +7,7 @@ import projectRoutes from './routes/projects.js';
 import decorationRoutes from './routes/decorations.js';
 import productRoutes from './routes/products.js';
 import uploadRoutes from './routes/upload.js';
+import { createHocuspocusServer } from './hocuspocus-server.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -231,7 +232,7 @@ async function startServer() {
       console.log('💡 Continuando mesmo assim (migrations devem ser executadas separadamente)');
     }
     
-    // Iniciar servidor
+    // Iniciar servidor Express
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Servidor em http://localhost:${PORT}`);
       console.log(`🌐 Servidor acessível externamente em http://192.168.2.16:${PORT}`);
@@ -240,6 +241,17 @@ async function startServer() {
       console.log(`💚 Health check: http://localhost:${PORT}/health`);
       console.log(`💚 Health check externo: http://192.168.2.16:${PORT}/health`);
     });
+    
+    // Iniciar servidor Hocuspocus para colaboração em tempo real
+    try {
+      const hocuspocusServer = createHocuspocusServer();
+      const hocuspocusPort = process.env.HOCUSPOCUS_PORT || 1234;
+      console.log(`🔌 Servidor Hocuspocus iniciado na porta ${hocuspocusPort}`);
+      console.log(`📝 WebSocket disponível em ws://localhost:${hocuspocusPort}`);
+    } catch (error) {
+      console.error('❌ Erro ao iniciar servidor Hocuspocus:', error);
+      console.warn('⚠️  Continuando sem Hocuspocus (funcionalidade de notas desabilitada)');
+    }
   } catch (error) {
     console.error('❌ Erro ao iniciar servidor:', error);
     console.error('❌ Stack:', error.stack);
