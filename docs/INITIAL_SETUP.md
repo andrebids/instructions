@@ -1,259 +1,219 @@
-## Initial Setup
 
-### Requirements
+# Getting Started
 
-- Mac OS X, Windows ou Linux
-- NPM package + Node.js v8 ou superior
-- Editor de texto ou IDE configurado para React/JSX/ESLint
+## Visão Geral de PWA
 
-### Quick Start
+- Progressive Web Apps (PWAs) são aplicações web que utilizam APIs modernas para oferecer capacidades avançadas, confiabilidade e instalabilidade numa única base de código.
+- Uma PWA típica inclui um manifesto da aplicação web (manifest) para informar o navegador sobre a app e um service worker para gerir a experiência offline.
+- Para quem está a começar, vale a pena explorar o curso **Learn PWA** do Google.
 
-1. Clone o repositório mais recente:
-   ```bash
-   git clone https://github.com/Atyantik/react-pwa.git
-   cd react-pwa
-   ```
-2. Execute `npm install` para instalar dependências (tanto de runtime quanto ferramentas de desenvolvimento listadas em `package.json`).
-3. Inicie o projeto com `npm start` e acesse a app em `http://localhost:3003`.
-4. Para gerar o build de produção, execute `npm run build`; o resultado será gerado a partir de `/src` e emitido em `/dist`.
+## Service Worker
 
-### Directory Structure
+- Funciona como um proxy entre a aplicação web, o navegador e a rede, permitindo experiências offline eficazes, interceptação de pedidos e atualização de assets.
+- É um ficheiro JavaScript registado por origem e caminho, capaz de controlar a página associada, interceptar/modificar pedidos e gerir caches de forma granular.
+- Também expõe APIs como notificações push e background sync.
+- Consulte a documentação oficial da **Service Worker API** para mais detalhes.
 
-```
-project-root
-  |-- /dist/                        # Compilados de saída
-  |-- /node_modules/                # Bibliotecas/utilitários de terceiros
-  |-- /src/                         # Código-fonte da aplicação
-  |    |-- /routes.js               # Componentes de página e configuração de rotas
-  |    |-- /client.js               # Script de inicialização do cliente
-  |    |-- /server.js               # Script de inicialização do servidor
-  |    |__ /webpack.js              # Configuração extra de compilação para pawjs
-  |-- package.json                  # Lista de dependências de terceiros
-  |__ pawconfig.json                # Configuração do PawJS
-```
+## Introdução ao Vite PWA
 
-### PawJS Configuration
+- O `vite-plugin-pwa` facilita a transformação de aplicações existentes em PWAs com configurações mínimas, fornecendo defaults adequados a casos de uso comuns.
+- Principais funcionalidades do plugin:
+  - Geração do manifesto da aplicação web e sua injeção no ponto de entrada.
+  - Geração do service worker de acordo com a estratégia configurada.
+  - Criação do script de registo do service worker no navegador.
 
-O ficheiro `pawconfig.json` controla o comportamento do boilerplate (framework PawJS). Configuração padrão fornecida:
+## Requisitos de Compatibilidade
 
-```json
-{
-  "port": "3003",
-  "host": "0.0.0.0",
-  "appRootUrl": "/",
-  "serviceWorker": false,
-  "serverSideRender": true,
-  "singlePageApplication": false
-}
+- O Vite requer Node.js 18.x.x ou 20+.
+- Alguns templates podem necessitar versões superiores; atualize o Node se o gestor de pacotes alertar.
+
+## Scaffold do Projeto
+
+```bash
+pnpm create @vite-pwa/pwa
 ```
 
-#### Opções disponíveis
+- Siga as instruções solicitadas.
+- Para definir nome do projeto e template diretamente (ex. Vue):
 
-- **port** (`String`, valor padrão `"9090"`): porta onde a aplicação irá correr.
-- **host** (`String`, `"0.0.0.0"`): IP/hostname sem esquema (ex.: `127.0.0.1`, `localhost`).
-- **appRootUrl** (`String`, `"/"`): raiz da app; útil para deploy em subdiretórios, ex. `/react-pwa`.
-- **cdnUrl** (`String`, vazio): URL base de CDN para servir assets. Em CDNs do tipo *push*, enviar arquivos antes do deploy.
-- **serviceWorker** (`Boolean`, `true`): ativa/desativa o Service Worker (evitar em desenvolvimento).
-- **serverSideRender** (`Boolean`, `true`): ativa SSR para melhor SEO e desempenho.
-- **asyncCSS** (`Boolean`, `true`): carrega CSS de forma assíncrona; `false` força carregamento antes do HTML.
-- **clientRootElementId** (`String`, `"app"`): ID do elemento root para montar React.
-- **hstsEnabled** (`Boolean`, `true`): ativa HTTP Strict Transport Security.
-- **hstsmaxAge** (`Integer`, `31536000`): `max-age` do HSTS em segundos.
-- **hstsIncludeSubDomains** (`Boolean`, `true`): aplica HSTS a subdomínios.
-- **hstsPreload** (`Boolean`, `false`): ativa pré-carregamento HSTS em navegadores.
-- **singlePageApplication** (`Boolean`, `false`): força modo SPA com `HashRouter`, indicado para apps sem SSR/SEO.
+```bash
+pnpm create @vite-pwa/pwa my-vue-app --template vue
+```
 
-### Web App Manifest
+- Templates suportados: `vanilla`, `vanilla-ts`, `vue`, `vue-ts`, `react`, `react-ts`, `preact`, `preact-ts`, `lit`, `lit-ts`, `svelte`, `svelte-ts`, `solid`, `solid-ts`.
 
-Configurar o `manifest.json` torna a aplicação progressiva com identidade própria. Configuração padrão do boilerplate:
+## Instalação do Plugin
 
-```json
-{
-  "name": "PawJS",
-  "short_name": "PawJS",
-  "dir": "ltr",
-  "lang": "en-US",
-  "orientation": "any",
-  "start_url": "/",
-  "background_color": "#fff",
-  "theme_color": "#fff",
-  "display": "standalone",
-  "description": "A highly scalable & plug-able, Progressive Web Application foundation with the best Developer Experience.",
-  "icons": [
-    {
-      "src": "/path-to-pwa-icon-size-192x192.png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "/path-to-pwa-icon-size-512x512.png",
-      "sizes": "512x512"
-    }
+```bash
+pnpm add -D vite-plugin-pwa
+```
+
+## Configuração Básica
+
+- Edite `vite.config.js` ou `vite.config.ts`:
+
+```javascript
+import { VitePWA } from 'vite-plugin-pwa'
+
+export default defineConfig({
+  plugins: [
+    VitePWA({ registerType: 'autoUpdate' })
   ]
-}
+})
 ```
 
-**Configuração via `src/routes.js`**
+- Esta configuração mínima gera o manifest, cria o service worker e trata do registo no browser.
+- Veja todas as opções disponíveis em `client.d.ts` do plugin.
 
-```js
-import PwaIcon192 from "./resources/images/path-to-pwa-icon-192x192.png";
-import PwaIcon512 from "./resources/images/path-to-pwa-icon-512x512.png";
+## Opções de Registo do Service Worker
 
-export default class Routes {
-  apply(router) {
-    router.setPwaSchema({
-      name: "MyProgressiveWebApp",
-      short_name: "MyPWA",
-      dir: "ltr",
-      lang: "en-US",
-      icons: [
-        { src: PwaIcon192, sizes: "192x192" },
-        { src: PwaIcon512, sizes: "512x512" }
-      ]
-    });
-    // ... restante configuração de rotas
-  }
-}
-```
+- A opção `injectRegister` controla como o plugin regista o service worker:
+  - `auto` (default): ajusta-se automaticamente; se não importar módulos virtuais, injeta um script; caso contrário, o módulo responsável fará o registo.
+  - `inline`: regista o service worker com um script inline no entry point.
+  - `script`: adiciona uma tag `<script>` no `<head>` apontando para um `registerSW.js` gerado.
+  - `script-defer` (desde v0.17.2+): semelhante a `script`, mas com `defer`.
+  - `null`: não faz nada; deverá registar manualmente ou importar módulos virtuais do plugin.
 
-#### Propriedades-chave
+- Exemplo de configuração explícita:
 
-- **name / short_name**: `short_name` aparece em ecrãs com espaço reduzido (home screen); `name` surge no prompt de instalação.
-- **icons**: array de objetos `{ src, type, sizes }`. Recomenda-se ao menos `192x192` e `512x512`. Pode adicionar mais tamanhos para ajuste fino.
-- **start_url**: URL inicial quando a app é lançada; pode incluir query string para tracking (`"/?utm_source=pwa"`). Deve apontar diretamente para a experiência principal e estar dentro do `scope`.
-- **background_color**: cor do ecrã de splash ao iniciar.
-- **display**: controla UI do browser (`standalone`, `fullscreen`, `minimal-ui`, `browser`). Para poder mostrar o prompt “Add to Home Screen”, use `standalone`.
-- **orientation**: força orientação específica (usar com parcimónia; ex. jogos `landscape`).
-- **scope**: delimita URLs consideradas dentro da app. Sem escopo explícito, assume diretório do manifest. `start_url` deve estar dentro deste escopo.
-- **theme_color**: cor da toolbar e do task switcher.
+```javascript
+import { VitePWA } from 'vite-plugin-pwa'
 
-Mais detalhes: [Web App Manifest - Google Developers](https://developers.google.com/web/fundamentals/web-app-manifest/).
-
-### External Resources
-
-#### Carregar JavaScript externo
-
-Duas abordagens:
-
-1. **Função `loadScript`** (carrega após `componentDidMount` e evita downloads duplicados):
-
-```js
-import { loadScript } from "@pawjs/pawjs/src/utils/utils";
-
-componentDidMount() {
-  loadScript("https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLEMAPS_APIKEY&ver=4.9.4")
-    .then(() => {
-      // callback
+export default defineConfig({
+  plugins: [
+    VitePWA({
+      injectRegister: 'auto'
     })
-    .catch(() => {
-      // tratar erro
-    });
-}
+  ]
+})
 ```
 
-2. **Inserir `<script>` no head** (apenas se SSR estiver ativo):
+- Consulte a secção de Frameworks da documentação do plugin para detalhes sobre os módulos virtuais disponíveis.
 
-```js
-import React from "react";
+## Precache do Service Worker
 
-export default class Server {
-  apply(serverHandler) {
-    serverHandler.hooks.beforeHtmlRender.tap("Add Google Maps JS", (Application) => {
-      Application.htmlProps.head.push(
-        <script
-          key="google_maps"
-          async
-          src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLEMAPS_APIKEY&ver=4.9.4"
-        />
-      );
-      return Application;
-    });
-  }
-}
-```
+- Um service worker com capacidades PWA precisa de um manifest de pré-cache contendo todos os recursos essenciais da aplicação.
+- Durante a instalação, o navegador descarrega os recursos listados, garantindo funcionamento offline e durante interceções de rede.
+- Os recursos são descarregados em background, permitindo que a app continue utilizável enquanto o service worker instala ou atualiza.
+- O `vite-plugin-pwa` (via `workbox-build`) inclui por padrão ficheiros `css`, `js` e `html` gerados no `dist`.
+- Para cachear outros formatos (ex. `ico`, `png`, `svg`), configure `globPatterns` na secção `workbox` (estratégia `generateSW`) ou `injectManifest` conforme necessário.
 
-#### Carregar CSS externo
+```javascript
+import { VitePWA } from 'vite-plugin-pwa'
 
-1. **Função `loadStyle`** (garante que o stylesheet não é baixado novamente):
-
-```js
-import { loadStyle } from "@pawjs/pawjs/src/utils/utils";
-
-componentDidMount() {
-  loadStyle("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css")
-    .then(() => {
-      // callback
+export default defineConfig({
+  plugins: [
+    VitePWA({
+      registerType: 'autoUpdate',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+      }
     })
-    .catch(() => {
-      // tratar erro
-    });
-}
+  ]
+})
 ```
 
-2. **Inserir `<link>`/`<script>` no head** quando SSR está ativo:
+- Para estratégias específicas e inclusão de ativos estáticos, consulte a secção **Static assets handling** da documentação.
 
-```js
-import React from "react";
+## Gestão de Atualizações e Prompts
 
-export default class Server {
-  apply(serverHandler) {
-    serverHandler.hooks.beforeHtmlRender.tap("Add BootStrap CSS", (Application) => {
-      Application.htmlProps.head.push(
-        <link
-          key="bootstrap_css"
-          rel="stylesheet"
-          href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
-        />
-      );
-      return Application;
-    });
-  }
-}
+- O plugin ativa automaticamente `cleanupOutdatedCaches`, removendo ativos antigos quando uma nova versão é publicada; evite desativar esta opção.
+- Em `injectManifest` (v0.18.0+), pode configurar `minify`, `sourcemap` e `enableWorkboxModulesLogs`; a geração de source maps segue `build.sourcemap`.
+- Para gerar source maps do service worker com `generateSW`, defina:
+
+```javascript
+import { VitePWA } from 'vite-plugin-pwa'
+
+export default defineConfig({
+  plugins: [
+    VitePWA({
+      workbox: {
+        sourcemap: true
+      }
+    })
+  ]
+})
 ```
 
-### Internal API com ExpressJS
+- Para recarregamento automático (`registerType: 'autoUpdate'`) sem intervenção do utilizador:
 
-O PawJS (base do ReactPWA) executa a camada SSR com ExpressJS, permitindo expor APIs internas diretamente na aplicação.
+```javascript
+import { registerSW } from 'virtual:pwa-register'
 
-#### Limitações
-
-- Necessário estar em modo **não-SPA** (`singlePageApplication` deve permanecer `false` em `pawconfig.json`).
-- Caso precise de um backend com outro framework (HapiJS, SailsJS, etc.), utilize um projeto separado.
-
-```json
-{
-  "singlePageApplication": false
-}
+registerSW({ immediate: true })
 ```
 
-#### Implementação em 3 passos
+- Tenha atenção: páginas com formulários podem perder dados ao recarregar automaticamente; avalie usar prompts em vez desta abordagem.
+- Para mostrar prompts ao utilizador (ex. atualização ou modo offline), importe `registerSW`:
 
-1. **Isolar API**: criar `src/api` para controllers/middlewares.
+```javascript
+import { registerSW } from 'virtual:pwa-register'
 
-2. **Criar app Express** (exemplo `src/api/index.js`):
+const updateSW = registerSW({
+  onNeedRefresh() {
+    // mostrar modal com opções Atualizar / Cancelar
+  },
+  onOfflineReady() {
+    // informar que a app está pronta para funcionar offline (exibir botão OK)
+  },
+})
 
-```js
-import express from "express";
-
-const app = express();
-
-app.get("/api/timestamp", (req, res) => {
-  res.json({ timestamp: new Date().getTime() });
-});
-
-export default app;
+// Quando o utilizador aceitar atualizar:
+// updateSW()
 ```
 
-3. **Registar middleware** no servidor (`src/server.js`):
+- Em SSR/SSG, registe o service worker apenas no cliente, por exemplo:
 
-```js
-import ApiMiddleware from "./api/index";
-
-export default class ProjectServer {
-  constructor({ addMiddleware }) {
-    addMiddleware(ApiMiddleware);
-  }
-}
+```javascript
+if (typeof window !== 'undefined')
+  import('./pwa')
 ```
 
-Agora `/api/timestamp` responde com JSON. Prefira prefixos como `/api/v1` para evitar conflito com rotas do frontend (`src/routes.js`). Pode empilhar middlewares Express e configurar cache conforme necessário.
+- Garanta que os prompts são fechados quando o utilizador confirma ou recusa a ação.
+
+## Nota Importante (versões < 0.12.2)
+
+- Existe um bug relacionado com `injectRegister`; utilize:
+
+```javascript
+import { VitePWA } from 'vite-plugin-pwa'
+
+export default defineConfig({
+  plugins: [
+    VitePWA({
+      registerType: 'autoUpdate',
+      workbox: {
+        clientsClaim: true,
+        skipWaiting: true
+      }
+    })
+  ]
+})
+```
+
+## Opção para Ambiente de Desenvolvimento
+
+- Ative `devOptions` para testar o manifest e o service worker em `dev`:
+
+```javascript
+import { VitePWA } from 'vite-plugin-pwa'
+
+export default defineConfig({
+  plugins: [
+    VitePWA({
+      registerType: 'autoUpdate',
+      devOptions: {
+        enabled: true
+      }
+    })
+  ]
+})
+```
+
+- Após o build, o manifest é gerado e ligado ao entry point, o service worker é criado e o script de registo é incluído.
+
+## Referências
+
+- O plugin `vite-plugin-pwa` utiliza a biblioteca `workbox-build` para construir o service worker.
+- Consulte as secções **Service Worker Strategies And Behaviors** e **Workbox** para aprofundar conhecimentos.
 

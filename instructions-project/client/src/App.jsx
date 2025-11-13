@@ -13,6 +13,7 @@ import ProductFeed from "./pages/ProductFeed";
 import { SignedIn, SignedOut, SignIn, SignUp } from "@clerk/clerk-react";
 import { MobileBottomNav } from "./components/mobile-bottom-nav";
 import { useResponsiveProfile } from "./hooks/useResponsiveProfile";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
 function AppLayout() {
   const location = useLocation();
@@ -51,6 +52,7 @@ function AppLayout() {
 export default function App() {
   return (
     <>
+      <PWAInstallPrompt />
       <SignedOut>
         <div className="bg-background text-foreground flex h-screen">
           <main className="flex flex-1 flex-col overflow-hidden">
