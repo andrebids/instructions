@@ -75,6 +75,39 @@ async function setup() {
     }
     console.log('');
     
+    // Migration 4: Campo de animação/simulação de produtos
+    console.log('   📋 Migration: Campo de animação/simulação...');
+    try {
+      await execAsync('npm run migrate:animationSimulation');
+      console.log('   ✅ Campo de animação/simulação verificado');
+    } catch (error) {
+      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+      console.log('   💡 Continuando...');
+    }
+    console.log('');
+    
+    // Migration 5: Tabela de notas de projetos
+    console.log('   📋 Migration: Tabela de notas de projetos...');
+    try {
+      await execAsync('npm run migrate:notes');
+      console.log('   ✅ Tabela de notas verificada');
+    } catch (error) {
+      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+      console.log('   💡 Continuando...');
+    }
+    console.log('');
+    
+    // Migration 6: Campo lastEditedStep
+    console.log('   📋 Migration: Campo lastEditedStep...');
+    try {
+      await execAsync('npm run migrate:lastEditedStep');
+      console.log('   ✅ Campo lastEditedStep verificado');
+    } catch (error) {
+      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+      console.log('   💡 Continuando...');
+    }
+    console.log('');
+    
     console.log('✅ Setup concluído com sucesso!');
     console.log('');
     console.log('📝 Próximos passos:');

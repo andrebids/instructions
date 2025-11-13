@@ -28,6 +28,8 @@ $sshKey = if ($env:DEPLOY_SSH_KEY) { $env:DEPLOY_SSH_KEY } else { "$env:USERPROF
 $sshUser = if ($env:DEPLOY_SSH_USER) { $env:DEPLOY_SSH_USER } else { "andre" }
 $sshHost = if ($env:DEPLOY_SSH_HOST) { $env:DEPLOY_SSH_HOST } else { "136.116.79.244" }
 $serverPath = if ($env:DEPLOY_SERVER_PATH) { $env:DEPLOY_SERVER_PATH } else { "/home/andre/apps/instructions/instructions-project/client" }
+$serverRootPath = if ($env:DEPLOY_SERVER_ROOT_PATH) { $env:DEPLOY_SERVER_ROOT_PATH } else { "/home/andre/apps/instructions/instructions-project" }
+$pm2AppName = if ($env:DEPLOY_PM2_APP_NAME) { $env:DEPLOY_PM2_APP_NAME } else { "instructions-server" }
 $siteUrl = if ($env:DEPLOY_SITE_URL) { $env:DEPLOY_SITE_URL } else { "https://136.116.79.244" }
 
 # Verificar se chave SSH existe
@@ -48,7 +50,9 @@ if (-not (Test-Path $sshKey)) {
 
 Write-Host "=== Configuração ===" -ForegroundColor Cyan
 Write-Host "Servidor: $sshUser@$sshHost" -ForegroundColor Gray
-Write-Host "Caminho: $serverPath" -ForegroundColor Gray
+Write-Host "Caminho Cliente: $serverPath" -ForegroundColor Gray
+Write-Host "Caminho Raiz: $serverRootPath" -ForegroundColor Gray
+Write-Host "PM2 App: $pm2AppName" -ForegroundColor Gray
 Write-Host ""
 
 Write-Host "=== 1. Build Local ===" -ForegroundColor Cyan
@@ -87,8 +91,72 @@ echo '✅ Build atualizado no servidor!'
 ls -lh dist/index.html
 "@
 ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" $sshCommands.Replace("`r`n", "`n")
-
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Erro ao atualizar build no servidor!" -ForegroundColor Red
+    exit 1
+}
+Write-Host "✅ Build atualizado no servidor!" -ForegroundColor Green
 Write-Host ""
-Write-Host "✅ Processo concluído!" -ForegroundColor Green
-Write-Host "🌐 Site disponível em: $siteUrl" -ForegroundColor Yellow
+
+Write-Host "=== 4. Executar Migrations ===" -ForegroundColor Cyan
+Write-Host "Executando migrations no servidor remoto..." -ForegroundColor Gray
+$migrationCommands = @"
+cd $serverRootPath/server
+echo '🔄 Executando migrations...'
+npm run setup 2>&1
+MIGRATION_EXIT=`$?
+if [ `$MIGRATION_EXIT -eq 0 ]; then
+    echo '✅ Migrations executadas com sucesso!'
+else
+    echo '⚠️  Aviso: Algumas migrations podem ter falhado, mas continuando...'
+    echo '💡 Verifique os logs acima para detalhes'
+fi
+"@
+ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" $migrationCommands.Replace("`r`n", "`n")
+Write-Host "✅ Migrations processadas!" -ForegroundColor Green
+Write-Host ""
+
+Write-Host "=== 5. Reiniciar Servidor ===" -ForegroundColor Cyan
+Write-Host "Reiniciando servidor PM2..." -ForegroundColor Gray
+$restartCommands = @"
+pm2 restart $pm2AppName 2>&1
+RESTART_EXIT=`$?
+if [ `$RESTART_EXIT -eq 0 ]; then
+    echo '✅ Servidor reiniciado com sucesso!'
+    sleep 2
+    pm2 status $pm2AppName
+    echo ''
+    echo '🔍 Verificando saúde do servidor...'
+    sleep 3
+    curl -s http://localhost:5000/health > /dev/null 2>&1
+    if [ `$? -eq 0 ]; then
+        echo '✅ Servidor está online e respondendo!'
+    else
+        echo '⚠️  Aviso: Servidor pode não estar totalmente pronto ainda'
+    fi
+else
+    echo '❌ Erro ao reiniciar servidor PM2'
+    echo '💡 Verifique: pm2 status'
+    echo '⚠️  Continuando mesmo assim...'
+fi
+"@
+ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" $restartCommands.Replace("`r`n", "`n")
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "⚠️  Aviso: Pode ter havido problemas ao reiniciar o servidor" -ForegroundColor Yellow
+    Write-Host "   Verifique manualmente: ssh $sshUser@$sshHost 'pm2 status'" -ForegroundColor Yellow
+} else {
+    Write-Host "✅ Servidor reiniciado com sucesso!" -ForegroundColor Green
+}
+Write-Host ""
+
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "DEPLOY CONCLUIDO COM SUCESSO!" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Build atualizado" -ForegroundColor Green
+Write-Host "Migrations executadas" -ForegroundColor Green
+Write-Host "Servidor reiniciado" -ForegroundColor Green
+Write-Host ""
+Write-Host "Site disponivel em: $siteUrl" -ForegroundColor Yellow
+Write-Host ""
 
