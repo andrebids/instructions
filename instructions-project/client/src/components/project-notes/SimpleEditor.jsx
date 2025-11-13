@@ -13,9 +13,9 @@ import TaskItem from '@tiptap/extension-task-item';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Spinner } from '@heroui/react';
 import { Icon } from '@iconify/react';
-import { editorAPI } from '../../services/api';
+import { editorAPI, projectsAPI } from '../../services/api';
 
-export function SimpleEditor() {
+export function SimpleEditor({ projectId = null }) {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
@@ -28,9 +28,13 @@ export function SimpleEditor() {
   const [isDrawing, setIsDrawing] = useState(false);
   const drawingCanvasRef = useRef(null);
   const drawingContextRef = useRef(null);
+  const saveTimeoutRef = useRef(null);
+  const hasLoadedRef = useRef(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Configure Tiptap editor
   const editor = useEditor({
+    content: '',
     extensions: [
       StarterKit.configure({
         // Keep all default features
@@ -330,6 +334,65 @@ export function SimpleEditor() {
     }
   }, [editor]);
 
+  // Carregar conteúdo existente quando projectId fornecido
+  useEffect(() => {
+    if (!projectId || !editor || hasLoadedRef.current) return;
+
+    const loadContent = async () => {
+      try {
+        const project = await projectsAPI.getById(projectId);
+        if (project?.description) {
+          editor.commands.setContent(project.description);
+        }
+        // Marcar como carregado mesmo se não houver conteúdo
+        hasLoadedRef.current = true;
+      } catch (error) {
+        console.error('Erro ao carregar notas do projeto:', error);
+        // Marcar como carregado mesmo em caso de erro para permitir salvamento
+        hasLoadedRef.current = true;
+      }
+    };
+
+    loadContent();
+  }, [projectId, editor]);
+
+  // Salvar automaticamente quando conteúdo mudar (debounce de 2 segundos)
+  useEffect(() => {
+    if (!projectId || !editor || !hasLoadedRef.current) return;
+
+    const handleUpdate = () => {
+      // Limpar timeout anterior
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Criar novo timeout
+      saveTimeoutRef.current = setTimeout(async () => {
+        try {
+          setIsSaving(true);
+          const content = editor.getHTML();
+          
+          // Salvar no projeto
+          await projectsAPI.update(projectId, { description: content });
+          console.log('✅ Notas salvas automaticamente');
+        } catch (error) {
+          console.error('❌ Erro ao salvar notas:', error);
+        } finally {
+          setIsSaving(false);
+        }
+      }, 2000); // 2 segundos de debounce
+    };
+
+    editor.on('update', handleUpdate);
+
+    return () => {
+      editor.off('update', handleUpdate);
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [projectId, editor]);
+
   if (!editor) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -581,6 +644,23 @@ export function SimpleEditor() {
           className="w-7 h-7 sm:w-8 sm:h-8 p-0 border border-divider rounded cursor-pointer shrink-0"
           aria-label="Highlight color"
         />
+
+        {/* Saving indicator */}
+        {projectId && (
+          <div className="flex items-center gap-2 text-xs text-default-500 ml-auto shrink-0">
+            {isSaving ? (
+              <>
+                <Spinner size="sm" />
+                <span className="hidden sm:inline">Saving...</span>
+              </>
+            ) : (
+              <span className="flex items-center gap-1">
+                <Icon icon="lucide:check-circle" className="text-success text-sm" />
+                <span className="hidden sm:inline">Saved</span>
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Drawing Canvas Modal */}
