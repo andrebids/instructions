@@ -23,6 +23,7 @@ export default function PWAInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false)
   const [showManualInstructions, setShowManualInstructions] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [safariType, setSafariType] = useState(null) // 'ios' | 'macos' | null
 
   useEffect(() => {
     // Debug logging
@@ -77,15 +78,34 @@ export default function PWAInstallPrompt() {
     const isFirefox = /Firefox/.test(userAgent)
     const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent)
     
-    console.log('[PWA Install] Browser detection:', { isChrome, isEdge, isOpera, isFirefox, isSafari, userAgent })
+    // Detetar tipo de Safari (iOS ou macOS)
+    let safariTypeDetected = null
+    if (isSafari) {
+      const isIOS = /iPhone|iPad|iPod/.test(userAgent) && navigator.standalone !== undefined
+      const isMacOS = /Macintosh|Mac OS X/.test(userAgent) && !isIOS
+      if (isIOS) {
+        safariTypeDetected = 'ios'
+      } else if (isMacOS) {
+        safariTypeDetected = 'macos'
+      }
+      setSafariType(safariTypeDetected)
+    }
+    
+    console.log('[PWA Install] Browser detection:', { isChrome, isEdge, isOpera, isFirefox, isSafari, safariType: safariTypeDetected, userAgent })
+    
+    // Verificar HTTPS (apenas para debug/aviso)
+    const isHTTPS = window.location.protocol === 'https:' || window.location.hostname === 'localhost'
+    if (isSafari && !isHTTPS && window.location.hostname !== 'localhost') {
+      console.warn('[PWA Install] Safari requires HTTPS for PWA installation. Current protocol:', window.location.protocol)
+    }
 
-    // Se após 3 segundos não apareceu o evento e não é mobile, mostrar instruções manuais
+    // Se após 3 segundos não apareceu o evento, mostrar instruções manuais
     const timer = setTimeout(() => {
       console.log('[PWA Install] Timer fired, promptEvent:', !!promptEvent)
-      if (!promptEvent && !mobile && !installed) {
+      if (!promptEvent && !installed) {
         // Verificar se o browser suporta instalação manual
-        if (isChrome || isEdge || isOpera || isFirefox) {
-          console.log('[PWA Install] Showing manual instructions for:', { isChrome, isEdge, isOpera, isFirefox })
+        if (isChrome || isEdge || isOpera || isFirefox || isSafari) {
+          console.log('[PWA Install] Showing manual instructions for:', { isChrome, isEdge, isOpera, isFirefox, isSafari, safariType: safariTypeDetected })
           setShowManualInstructions(true)
           setIsOpen(true)
         } else {
@@ -161,38 +181,78 @@ export default function PWAInstallPrompt() {
             <ModalHeader className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <Icon icon="mdi:download" className="text-2xl text-primary" />
-                <span>Instalar TheCore</span>
+                <span>Install TheCore</span>
               </div>
             </ModalHeader>
             <ModalBody>
               {showManualInstructions ? (
                 <div className="space-y-3">
-                  <p className="text-default-600">
-                    Para instalar a aplicação TheCore no seu computador:
-                  </p>
-                  {/Firefox/.test(navigator.userAgent) ? (
-                    <ol className="list-decimal list-inside space-y-2 text-default-600 text-sm">
-                      <li>Clique no ícone <strong>+</strong> (adicionar à barra de ferramentas) na barra de endereços</li>
-                      <li>Ou vá ao menu do Firefox (☰) → "Mais ferramentas" → "Adicionar à barra de ferramentas"</li>
-                      <li>Ou use o atalho: <kbd className="px-2 py-1 bg-default-100 rounded text-xs">Ctrl+Shift+A</kbd> para abrir o menu de extensões</li>
-                      <li className="text-xs text-default-500 mt-2">
-                        ⚠️ Nota: Firefox tem suporte limitado a PWAs. Para melhor experiência, recomendamos Chrome ou Edge.
-                      </li>
-                    </ol>
+                  {safariType === 'ios' ? (
+                    <>
+                      <p className="text-default-600">
+                        To install TheCore on your iPhone/iPad:
+                      </p>
+                      <ol className="list-decimal list-inside space-y-2 text-default-600 text-sm">
+                        <li>Tap the Share button (↗) at the bottom of Safari</li>
+                        <li>Scroll down and tap "Add to Home Screen"</li>
+                        <li>Tap "Add" to confirm</li>
+                      </ol>
+                      <p className="text-xs text-default-500 mt-3">
+                        💡 Once installed, TheCore will work offline and launch like a native app.
+                      </p>
+                    </>
+                  ) : safariType === 'macos' ? (
+                    <>
+                      <p className="text-default-600">
+                        To install TheCore on your Mac:
+                      </p>
+                      <ol className="list-decimal list-inside space-y-2 text-default-600 text-sm">
+                        <li>Click the Share button (↗) in the Safari toolbar</li>
+                        <li>Select "Add to Dock"</li>
+                      </ol>
+                      <p className="text-xs text-default-400 mt-2">
+                        Or alternatively: Go to File → Add to Dock
+                      </p>
+                      <p className="text-xs text-default-500 mt-3">
+                        💡 Once installed, TheCore will work offline and launch like a native app.
+                      </p>
+                    </>
+                  ) : /Firefox/.test(navigator.userAgent) ? (
+                    <>
+                      <p className="text-default-600">
+                        To install TheCore on your computer:
+                      </p>
+                      <ol className="list-decimal list-inside space-y-2 text-default-600 text-sm">
+                        <li>Click the <strong>+</strong> icon (add to toolbar) in the address bar</li>
+                        <li>Or open the Firefox menu (☰) → "More tools" → "Add to toolbar"</li>
+                        <li>Or use the shortcut: <kbd className="px-2 py-1 bg-default-100 rounded text-xs">Ctrl+Shift+A</kbd> to open the extensions menu</li>
+                        <li className="text-xs text-default-500 mt-2">
+                          ⚠️ Note: Firefox has limited PWA support. For the best experience, we recommend Chrome or Edge.
+                        </li>
+                      </ol>
+                      <p className="text-xs text-default-500 mt-3">
+                        💡 Installing gives you offline access and a faster experience.
+                      </p>
+                    </>
                   ) : (
-                    <ol className="list-decimal list-inside space-y-2 text-default-600 text-sm">
-                      <li>Procure o ícone de instalação <Icon icon="mdi:download" className="inline text-primary" /> na barra de endereços do browser (ao lado do URL)</li>
-                      <li>Ou clique no menu do browser (⋮) e selecione "Instalar TheCore" ou "Instalar aplicação"</li>
-                      <li>Ou use o atalho: <kbd className="px-2 py-1 bg-default-100 rounded text-xs">Ctrl+Shift+I</kbd> (Chrome DevTools) e procure a opção de instalação</li>
-                    </ol>
+                    <>
+                      <p className="text-default-600">
+                        To install TheCore on your computer:
+                      </p>
+                      <ol className="list-decimal list-inside space-y-2 text-default-600 text-sm">
+                        <li>Look for the install icon <Icon icon="mdi:download" className="inline text-primary" /> in your browser's address bar (next to the URL)</li>
+                        <li>Or open the browser menu (⋮) and select "Install TheCore" or "Install app"</li>
+                        <li>Or use the shortcut: <kbd className="px-2 py-1 bg-default-100 rounded text-xs">Ctrl+Shift+I</kbd> (Chrome DevTools) and look for the install option</li>
+                      </ol>
+                      <p className="text-xs text-default-500 mt-3">
+                        💡 Installing gives you offline access and a faster experience.
+                      </p>
+                    </>
                   )}
-                  <p className="text-xs text-default-500 mt-3">
-                    💡 A instalação permite acesso offline e uma experiência mais rápida.
-                  </p>
                 </div>
               ) : (
                 <p className="text-default-600">
-                  Instale a aplicação TheCore no seu dispositivo para uma experiência mais rápida e acesso offline.
+                  Install TheCore on your device for a faster experience and offline access.
                 </p>
               )}
             </ModalBody>
@@ -200,46 +260,46 @@ export default function PWAInstallPrompt() {
               <div className="w-full flex justify-end gap-2">
                 <Button 
                   variant="flat" 
-                  aria-label="Dispensar instalação da aplicação"
+                  aria-label="Dismiss app installation prompt"
                   onPress={() => {
                     handleDismiss()
                     onClose()
                   }}
                 >
-                  Agora não
+                  Not now
                 </Button>
                 {deferredPrompt ? (
                   <Button 
                     color="primary" 
-                    aria-label="Instalar aplicação TheCore"
+                    aria-label="Install TheCore app"
                     onPress={() => {
                       handleInstall()
                       onClose()
                     }}
                   >
-                    Instalar
+                    Install
                   </Button>
                 ) : showManualInstructions ? (
                   <Button 
                     color="primary" 
-                    aria-label="Fechar instruções de instalação"
+                    aria-label="Close installation instructions"
                     onPress={() => {
                       handleDismiss()
                       onClose()
                     }}
                   >
-                    Entendi
+                    Got it
                   </Button>
                 ) : (
                   <Button 
                     color="primary" 
-                    aria-label="Instalar aplicação TheCore"
+                    aria-label="Install TheCore app"
                     onPress={() => {
                       handleInstall()
                       onClose()
                     }}
                   >
-                    Instalar
+                    Install
                   </Button>
                 )}
               </div>
