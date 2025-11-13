@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { projectsAPI } from "../../../services/api";
 import { logger } from "../utils/logger";
 import { getLocalTimeZone } from "@internationalized/date";
@@ -7,6 +8,7 @@ import { getLocalTimeZone } from "@internationalized/date";
 export const TEST_BREAKPOINT_2 = false;
 
 export const useProjectForm = (onClose) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
@@ -105,9 +107,12 @@ export const useProjectForm = (onClose) => {
         id: newProject.id
       }));
       
-      // Logs de teste removidos
-      
-      onClose?.();  // Optional chaining
+      // Redirecionar para página de notas do projeto
+      if (newProject?.id) {
+        navigate(`/projects/${newProject.id}/notes`);
+      } else {
+        onClose?.();  // Fallback: fecha modal e recarrega dados
+      }
     } catch (err) {
       logger.error('useProjectForm.handleSubmit', err);
       

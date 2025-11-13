@@ -22,6 +22,7 @@ import {
   Calendar
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useNavigate } from "react-router-dom";
 import { projectsAPI } from "../services/api.js";
 
 // Status mapping from API to UI
@@ -44,6 +45,8 @@ const statusLabelMap = {
 };
 
 export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
+  const navigate = useNavigate();
+  
   // Transform API data to table format
   const projects = React.useMemo(() => {
     return apiProjects.map(project => ({
@@ -204,6 +207,16 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
       case "actions":
         return (
           <div className="flex items-center gap-2">
+            <Button 
+              isIconOnly 
+              size="sm" 
+              variant="light" 
+              title="View notes" 
+              aria-label="View notes"
+              onPress={() => navigate(`/projects/${project.id}/notes`)}
+            >
+              <Icon icon="lucide:file-text" className="text-lg" />
+            </Button>
             <Button isIconOnly size="sm" variant="light" title="View project" aria-label="View project">
               <Icon icon="lucide:eye" className="text-lg" />
             </Button>

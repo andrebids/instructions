@@ -10,6 +10,7 @@ import Favorites from "./pages/Favorites";
 import Landing from "./pages/Landing";
 import AdminProducts from "./pages/AdminProducts";
 import ProductFeed from "./pages/ProductFeed";
+import ProjectNotes from "./pages/ProjectNotes";
 import { SignedIn, SignedOut, SignIn, SignUp } from "@clerk/clerk-react";
 import { MobileBottomNav } from "./components/mobile-bottom-nav";
 import { useResponsiveProfile } from "./hooks/useResponsiveProfile";
@@ -40,6 +41,7 @@ function AppLayout() {
           <Route path="/shop" element={<Shop />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/projects" element={<Projects />} />
+          <Route path="/projects/:id/notes" element={<ProjectNotes />} />
           <Route path="/orders" element={<Projects />} />
           <Route path="/admin/products" element={<AdminProducts />} />
         </Routes>

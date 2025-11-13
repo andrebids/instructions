@@ -19,10 +19,13 @@
     "migrate:products": "node src/migrations/add-product-category-fields.js",
     "migrate:dimensions": "node src/migrations/add-product-dimensions-fields.js",
     "migrate:animationSimulation": "node src/migrations/add-animation-simulation-url-field.js",
-    "migrate:all": "npm run migrate && npm run migrate:products && npm run migrate:dimensions && npm run migrate:animationSimulation"
+    "migrate:notes": "node src/migrations/create-project-notes-table.js",
+    "migrate:all": "npm run migrate && npm run migrate:products && npm run migrate:dimensions && npm run migrate:animationSimulation && npm run migrate:notes"
   },
   "dependencies": {
     "@clerk/express": "^1.7.42",
+    "@hocuspocus/server": "^2.10.0",
+    "@hocuspocus/extension-database": "^2.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
