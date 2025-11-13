@@ -43,7 +43,8 @@ export function SyncStatus({ projectId, className = '' }) {
     };
 
     checkSyncStatus();
-    const interval = setInterval(checkSyncStatus, 2000); // Check every 2 seconds
+    // Reduzir frequência de verificação para melhorar performance (5 segundos em vez de 2)
+    const interval = setInterval(checkSyncStatus, 5000);
 
     return () => clearInterval(interval);
   }, [projectId, syncState]);

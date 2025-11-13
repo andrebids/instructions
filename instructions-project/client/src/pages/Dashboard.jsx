@@ -88,7 +88,26 @@ export default function Dashboard() {
       }
       
       console.error('❌ Erro ao carregar dados:', err);
-      setError('Failed to load data. Please check if the server is running.');
+      
+      // Mensagem de erro mais detalhada
+      let errorMessage = 'Failed to load data.';
+      if (err.response?.status === 500) {
+        const errorData = err.response?.data;
+        if (errorData?.error) {
+          errorMessage = `Server error: ${errorData.error}`;
+          if (errorData.hint) {
+            errorMessage += ` (${errorData.hint})`;
+          }
+        } else {
+          errorMessage = 'Server error (500). Please check if the server is running and the database is set up correctly.';
+        }
+      } else if (err.response?.status) {
+        errorMessage = `Request failed with status ${err.response.status}`;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -117,6 +136,60 @@ export default function Dashboard() {
     // Recarregar dados após criar projeto
     loadData();
   };
+
+  // Função para remover projeto do estado local
+  const removeProjectFromState = React.useCallback((projectId) => {
+    setProjects(prev => prev.filter(p => p.id !== projectId));
+  }, []);
+
+  // Função para atualizar stats após deletar projeto
+  const updateStatsAfterDelete = React.useCallback((project) => {
+    setStats(prev => {
+      const newStats = { ...prev };
+      
+      // Decrementar total
+      newStats.total = Math.max(0, prev.total - 1);
+      
+      // Decrementar contador baseado no status do projeto
+      const status = project.status;
+      if (status === 'in_progress' && prev.inProgress > 0) {
+        newStats.inProgress = prev.inProgress - 1;
+      } else if (status === 'finished' && prev.finished > 0) {
+        newStats.finished = prev.finished - 1;
+      } else if (status === 'approved' && prev.approved > 0) {
+        newStats.approved = prev.approved - 1;
+      } else if (status === 'cancelled' && prev.cancelled > 0) {
+        newStats.cancelled = prev.cancelled - 1;
+      } else if (status === 'in_queue' && prev.inQueue > 0) {
+        newStats.inQueue = prev.inQueue - 1;
+      }
+      
+      return newStats;
+    });
+  }, []);
+
+  // Função otimizada para atualizar após delete
+  const handleProjectDeleted = React.useCallback((project) => {
+    // Atualização otimista: remover localmente e atualizar stats
+    removeProjectFromState(project.id);
+    updateStatsAfterDelete(project);
+    
+    // Opcional: sincronizar stats com servidor em background (sem bloquear UI)
+    // Isso garante que as stats estejam sempre corretas mesmo se houver discrepâncias
+    projectsAPI.getStats().then(statsData => {
+      setStats({
+        total: statsData.total,
+        inProgress: statsData.inProgress,
+        finished: statsData.finished,
+        approved: statsData.approved,
+        cancelled: statsData.cancelled,
+        inQueue: statsData.inQueue,
+      });
+    }).catch(err => {
+      // Silenciosamente ignorar erro - stats locais já foram atualizadas
+      console.warn('Failed to sync stats after delete:', err);
+    });
+  }, [removeProjectFromState, updateStatsAfterDelete]);
 
   return (
     <>
@@ -223,7 +296,11 @@ export default function Dashboard() {
 
                 {/* Project Table */}
                 <div className="mb-6">
-                  <ProjectTable projects={projects} onProjectsUpdate={loadData} />
+                  <ProjectTable 
+                    projects={projects} 
+                    onProjectsUpdate={loadData}
+                    onProjectDeleted={handleProjectDeleted}
+                  />
                 </div>
               </>
             )}

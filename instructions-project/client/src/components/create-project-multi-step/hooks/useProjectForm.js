@@ -198,10 +198,21 @@ export const useProjectForm = (onClose, projectId = null) => {
   const createTempProject = async () => {
     // Se já existe tempProjectId, não criar novamente
     if (formData.tempProjectId) {
+      console.log('💾 [CREATE TEMP PROJECT] Projeto temporário já existe, usando ID:', formData.tempProjectId);
       return formData.tempProjectId;
     }
 
     try {
+      console.log('💾 [CREATE TEMP PROJECT] ===== CRIANDO PROJETO TEMPORÁRIO =====');
+      console.log('💾 [CREATE TEMP PROJECT] Dados do formulário:', {
+        name: formData.name,
+        clientName: formData.clientName,
+        projectType: formData.projectType || 'decor',
+        location: formData.location,
+        description: formData.description ? `[${formData.description.length} caracteres]` : '[vazio]',
+        budget: formData.budget,
+      });
+      
       const projectData = {
         name: formData.name,
         clientName: formData.clientName,
@@ -214,7 +225,13 @@ export const useProjectForm = (onClose, projectId = null) => {
         endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
       };
       
+      console.log('💾 [CREATE TEMP PROJECT] Enviando dados para API...');
       const newProject = await projectsAPI.create(projectData);
+      
+      console.log('✅ [CREATE TEMP PROJECT] Projeto criado com sucesso!');
+      console.log('✅ [CREATE TEMP PROJECT] ID do projeto:', newProject.id);
+      console.log('✅ [CREATE TEMP PROJECT] Nome:', newProject.name);
+      console.log('✅ [CREATE TEMP PROJECT] Description guardada:', newProject.description ? `[${newProject.description.length} caracteres]` : '[vazio]');
       
       // Guardar ID temporário no formData
       setFormData(prev => ({
@@ -224,8 +241,12 @@ export const useProjectForm = (onClose, projectId = null) => {
       }));
       
       logger.lifecycle('useProjectForm', 'Temporary project created', newProject);
+      console.log('✅ [CREATE TEMP PROJECT] ===== PROJETO TEMPORÁRIO CRIADO COM SUCESSO =====');
       return newProject.id;
     } catch (err) {
+      console.error('❌ [CREATE TEMP PROJECT] ===== ERRO AO CRIAR PROJETO TEMPORÁRIO =====');
+      console.error('❌ [CREATE TEMP PROJECT] Erro:', err.message);
+      console.error('❌ [CREATE TEMP PROJECT] Stack:', err.stack);
       logger.error('useProjectForm.createTempProject', err);
       throw err;
     }

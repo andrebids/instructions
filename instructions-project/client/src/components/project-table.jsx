@@ -47,7 +47,7 @@ const statusLabelMap = {
   "in_queue": "In Queue",
 };
 
-export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
+export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onProjectDeleted }) {
   const navigate = useNavigate();
   
   // Transform API data to table format
@@ -129,7 +129,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
     }
     
     return filtered;
-  }, [deferredFilterValue, statusFilter, favoriteFilter, dateRange]);
+  }, [projects, deferredFilterValue, statusFilter, favoriteFilter, dateRange]);
 
   // Pagination
   const pages = Math.ceil(filteredProjects.length / rowsPerPage) || 1;
@@ -159,7 +159,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
     setPage(1);
   };
 
-  const handleToggleFavorite = async (projectId) => {
+  const handleToggleFavorite = React.useCallback(async (projectId) => {
     try {
       await projectsAPI.toggleFavorite(projectId);
       // Call the callback to refresh projects data
@@ -169,7 +169,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
     } catch (error) {
       console.error('Erro ao alternar favorito:', error);
     }
-  };
+  }, [onProjectsUpdate]);
 
   const handleDeleteClick = (project) => {
     setProjectToDelete(project);
@@ -180,17 +180,30 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
     if (!projectToDelete) return;
     
     setIsDeleting(true);
+    const projectToDeleteCopy = { ...projectToDelete }; // Guardar cópia para usar no callback
+    
     try {
       await projectsAPI.delete(projectToDelete.id);
-      // Call the callback to refresh projects data
-      if (onProjectsUpdate) {
+      
+      // Atualização otimista: usar callback otimizado se disponível
+      if (onProjectDeleted) {
+        onProjectDeleted(projectToDeleteCopy);
+      } else if (onProjectsUpdate) {
+        // Fallback: refresh completo se callback otimizado não estiver disponível
         onProjectsUpdate();
       }
+      
       setProjectToDelete(null);
       // O modal será fechado automaticamente pelo ConfirmModal após a Promise resolver
     } catch (error) {
       console.error('Error deleting project:', error);
       const errorMessage = error.response?.data?.error || error.message || 'Unknown error occurred while deleting project';
+      
+      // Em caso de erro, fazer refresh completo para garantir sincronização
+      if (onProjectsUpdate) {
+        onProjectsUpdate();
+      }
+      
       alert(`Error deleting project: ${errorMessage}`);
       // Re-throw para que o ConfirmModal não feche em caso de erro
       throw error;
@@ -200,7 +213,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
   };
 
 
-  const renderCell = (project, columnKey) => {
+  const renderCell = React.useCallback((project, columnKey) => {
     const cellValue = project[columnKey];
 
     switch (columnKey) {
@@ -286,7 +299,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
       default:
         return cellValue;
     }
-  };
+  }, [handleToggleFavorite, navigate]);
 
   return (
     <div className="space-y-4">

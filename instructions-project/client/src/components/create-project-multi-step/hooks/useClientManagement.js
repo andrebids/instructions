@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MOCK_CLIENTS, getRandomClient, getRandomProjectName } from "../utils/mockData";
+import { MOCK_CLIENTS } from "../utils/mockData";
 
 export const useClientManagement = (setFormData) => {
   const [clients, setClients] = useState([]);
@@ -18,22 +18,6 @@ export const useClientManagement = (setFormData) => {
   const loadClients = async () => {
     try {
       setClients(MOCK_CLIENTS);
-      
-      // Demo: pré-selecionar cliente aleatório
-      if (MOCK_CLIENTS.length > 0) {
-        const defaultClient = getRandomClient();
-        const randomProjectName = getRandomProjectName();
-        
-        setFormData(prev => ({
-          ...prev,
-          name: randomProjectName,
-          selectedClientKey: defaultClient.id,
-          clientId: defaultClient.id,
-          clientName: defaultClient.name,
-          clientEmail: defaultClient.email,
-          clientPhone: defaultClient.phone,
-        }));
-      }
     } catch (err) {
       console.error("Erro ao carregar clientes:", err);
     }
