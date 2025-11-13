@@ -7,7 +7,7 @@ import { getLocalTimeZone, parseDate } from "@internationalized/date";
 // 🧪 Breakpoint de Teste 2
 export const TEST_BREAKPOINT_2 = false;
 
-export const useProjectForm = (onClose, projectId = null) => {
+export const useProjectForm = (onClose, projectId = null, saveStatus = null) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -203,6 +203,9 @@ export const useProjectForm = (onClose, projectId = null) => {
     }
 
     try {
+      // Indicar início do salvamento
+      if (saveStatus) saveStatus.setSaving();
+      
       console.log('💾 [CREATE TEMP PROJECT] ===== CRIANDO PROJETO TEMPORÁRIO =====');
       console.log('💾 [CREATE TEMP PROJECT] Dados do formulário:', {
         name: formData.name,
@@ -240,6 +243,9 @@ export const useProjectForm = (onClose, projectId = null) => {
         id: newProject.id
       }));
       
+      // Indicar salvamento bem-sucedido
+      if (saveStatus) saveStatus.setSaved();
+      
       logger.lifecycle('useProjectForm', 'Temporary project created', newProject);
       console.log('✅ [CREATE TEMP PROJECT] ===== PROJETO TEMPORÁRIO CRIADO COM SUCESSO =====');
       return newProject.id;
@@ -247,6 +253,10 @@ export const useProjectForm = (onClose, projectId = null) => {
       console.error('❌ [CREATE TEMP PROJECT] ===== ERRO AO CRIAR PROJETO TEMPORÁRIO =====');
       console.error('❌ [CREATE TEMP PROJECT] Erro:', err.message);
       console.error('❌ [CREATE TEMP PROJECT] Stack:', err.stack);
+      
+      // Indicar erro no salvamento
+      if (saveStatus) saveStatus.setError();
+      
       logger.error('useProjectForm.createTempProject', err);
       throw err;
     }

@@ -3,7 +3,7 @@ import { Card, CardBody, CardHeader } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { SimpleEditor } from '../../project-notes/SimpleEditor';
 
-export function StepNotes({ formData, onInputChange }) {
+export function StepNotes({ formData, onInputChange, saveStatus }) {
   // Usar projectId temporário ou ID normal
   const projectId = formData.tempProjectId || formData.id;
 
@@ -38,7 +38,7 @@ export function StepNotes({ formData, onInputChange }) {
           </div>
         </CardHeader>
         <CardBody className="p-2 sm:p-6">
-          <SimpleEditor projectId={projectId} />
+          <SimpleEditor projectId={projectId} saveStatus={saveStatus} />
         </CardBody>
       </Card>
     </div>

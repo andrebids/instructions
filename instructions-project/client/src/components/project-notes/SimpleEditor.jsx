@@ -15,7 +15,7 @@ import { Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter
 import { Icon } from '@iconify/react';
 import { editorAPI, projectsAPI } from '../../services/api';
 
-export function SimpleEditor({ projectId = null }) {
+export function SimpleEditor({ projectId = null, saveStatus = null }) {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
@@ -33,6 +33,7 @@ export function SimpleEditor({ projectId = null }) {
   const [isSaving, setIsSaving] = useState(false);
   const hasUnsavedChangesRef = useRef(false);
   const lastSavedContentRef = useRef('');
+  const saveAbortControllerRef = useRef(null);
 
   // Configure Tiptap editor
   const editor = useEditor({
@@ -364,8 +365,11 @@ export function SimpleEditor({ projectId = null }) {
           console.log('✅ [NOTES EDITOR] Conteúdo carregado no editor:', `[${project.description.length} caracteres]`);
         } else {
           console.log('📖 [NOTES EDITOR] Nenhum conteúdo encontrado, editor iniciado vazio');
-          lastSavedContentRef.current = '';
+          // Normalizar conteúdo vazio do Tiptap
+          const emptyContent = editor.getHTML();
+          lastSavedContentRef.current = emptyContent || '';
           hasUnsavedChangesRef.current = false;
+          console.log('📖 [NOTES EDITOR] Conteúdo inicial do editor (vazio):', emptyContent);
         }
         
         // Marcar como carregado mesmo se não houver conteúdo
@@ -384,25 +388,87 @@ export function SimpleEditor({ projectId = null }) {
     loadContent();
   }, [projectId, editor]);
 
+  // Constantes de configuração
+  const MAX_CONTENT_SIZE = 500000; // 500KB (~500.000 caracteres) - limite prático
+  const isDevelopment = import.meta.env.DEV;
+  
+  // Função auxiliar para validar conteúdo
+  const validateContent = useCallback((content) => {
+    if (!content || typeof content !== 'string') {
+      return { valid: false, error: 'Conteúdo inválido' };
+    }
+    
+    // Validar tamanho máximo
+    if (content.length > MAX_CONTENT_SIZE) {
+      return { 
+        valid: false, 
+        error: `Conteúdo muito grande (${content.length} caracteres). Máximo permitido: ${MAX_CONTENT_SIZE.toLocaleString()} caracteres.` 
+      };
+    }
+    
+    // Validar estrutura HTML básica (prevenir HTML malformado)
+    if (content.trim() && !content.includes('<')) {
+      // Se tem conteúdo mas não tem tags HTML, pode ser texto puro - OK
+      return { valid: true };
+    }
+    
+    // Verificar tags não fechadas (validação básica)
+    const openTags = (content.match(/<[^/][^>]*>/g) || []).length;
+    const closeTags = (content.match(/<\/[^>]+>/g) || []).length;
+    const selfClosingTags = (content.match(/<[^>]+\/>/g) || []).length;
+    
+    // Permitir diferença razoável (algumas tags podem ser self-closing)
+    if (Math.abs(openTags - closeTags - selfClosingTags) > 10) {
+      return { valid: false, error: 'HTML malformado detectado' };
+    }
+    
+    return { valid: true };
+  }, []);
+  
+  // Função auxiliar para calcular debounce baseado no tamanho
+  const getDebounceTime = useCallback((contentLength) => {
+    if (contentLength < 1000) return 1000; // 1 segundo para textos pequenos
+    if (contentLength < 10000) return 2000; // 2 segundos para textos médios
+    return 5000; // 5 segundos para textos grandes
+  }, []);
+  
   // Função auxiliar para salvar conteúdo
   const saveContent = useCallback(async (contentToSave, isForced = false) => {
     if (!projectId || !contentToSave) return;
     
+    // Validar conteúdo antes de salvar
+    const validation = validateContent(contentToSave);
+    if (!validation.valid) {
+      console.error('❌ [NOTES EDITOR] Validação falhou:', validation.error);
+      // Mostrar erro ao usuário (poderia usar um toast/notificação)
+      alert(`Erro ao salvar: ${validation.error}`);
+      return;
+    }
+    
     try {
       setIsSaving(true);
+      
+      // Indicar início do salvamento
+      if (saveStatus) saveStatus.setSaving();
+      
       const textToSave = editor?.getText() || '';
       
-      if (isForced) {
-        console.log('🚨 [NOTES EDITOR] ===== SALVAMENTO FORÇADO (CLEANUP) =====');
-      } else {
-        console.log('💾 [NOTES EDITOR] ===== SALVANDO NOTAS =====');
+      if (isDevelopment) {
+        if (isForced) {
+          console.log('🚨 [NOTES EDITOR] ===== SALVAMENTO FORÇADO (CLEANUP) =====');
+        } else {
+          console.log('💾 [NOTES EDITOR] ===== SALVANDO NOTAS =====');
+        }
+        console.log('💾 [NOTES EDITOR] Project ID:', projectId);
+        console.log('💾 [NOTES EDITOR] HTML length:', contentToSave.length, 'caracteres');
+        console.log('💾 [NOTES EDITOR] Text length:', textToSave.length, 'caracteres');
+        console.log('💾 [NOTES EDITOR] Preview do texto:', textToSave.substring(0, 100) + (textToSave.length > 100 ? '...' : ''));
+        // Em desenvolvimento, logar HTML completo; em produção, apenas preview
+        if (isDevelopment) {
+          console.log('💾 [NOTES EDITOR] HTML completo:', contentToSave);
+        }
+        console.log('💾 [NOTES EDITOR] Enviando para API...');
       }
-      console.log('💾 [NOTES EDITOR] Project ID:', projectId);
-      console.log('💾 [NOTES EDITOR] HTML length:', contentToSave.length, 'caracteres');
-      console.log('💾 [NOTES EDITOR] Text length:', textToSave.length, 'caracteres');
-      console.log('💾 [NOTES EDITOR] Preview do texto:', textToSave.substring(0, 100) + (textToSave.length > 100 ? '...' : ''));
-      console.log('💾 [NOTES EDITOR] HTML completo:', contentToSave);
-      console.log('💾 [NOTES EDITOR] Enviando para API...');
       
       // Salvar no projeto
       const updatedProject = await projectsAPI.update(projectId, { description: contentToSave });
@@ -411,69 +477,139 @@ export function SimpleEditor({ projectId = null }) {
       lastSavedContentRef.current = contentToSave;
       hasUnsavedChangesRef.current = false;
       
-      console.log('✅ [NOTES EDITOR] Notas salvas automaticamente com sucesso!');
-      console.log('✅ [NOTES EDITOR] Response da API:', {
-        id: updatedProject.id,
-        descriptionLength: updatedProject.description ? updatedProject.description.length : 0,
-        descriptionPreview: updatedProject.description ? updatedProject.description.substring(0, 100) + (updatedProject.description.length > 100 ? '...' : '') : '[vazio]'
-      });
-      console.log('✅ [NOTES EDITOR] ===== SALVAMENTO CONCLUÍDO =====');
+      // Indicar salvamento bem-sucedido
+      if (saveStatus) saveStatus.setSaved();
+      
+      if (isDevelopment) {
+        console.log('✅ [NOTES EDITOR] Notas salvas automaticamente com sucesso!');
+        console.log('✅ [NOTES EDITOR] Response da API:', {
+          id: updatedProject.id,
+          descriptionLength: updatedProject.description ? updatedProject.description.length : 0,
+          descriptionPreview: updatedProject.description ? updatedProject.description.substring(0, 100) + (updatedProject.description.length > 100 ? '...' : '') : '[vazio]'
+        });
+        console.log('✅ [NOTES EDITOR] ===== SALVAMENTO CONCLUÍDO =====');
+      }
     } catch (error) {
       console.error('❌ [NOTES EDITOR] ===== ERRO AO SALVAR NOTAS =====');
       console.error('❌ [NOTES EDITOR] Project ID:', projectId);
       console.error('❌ [NOTES EDITOR] Erro:', error.message);
       console.error('❌ [NOTES EDITOR] Response:', error.response?.data);
-      console.error('❌ [NOTES EDITOR] Stack:', error.stack);
+      if (isDevelopment) {
+        console.error('❌ [NOTES EDITOR] Stack:', error.stack);
+      }
+      
+      // Indicar erro no salvamento
+      if (saveStatus) saveStatus.setError();
+      
+      // Mostrar erro ao usuário de forma amigável
+      const errorMessage = error.response?.data?.error || error.message || 'Erro ao salvar notas';
+      alert(`Erro ao salvar notas: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }
-  }, [projectId, editor]);
+  }, [projectId, editor, validateContent, isDevelopment, saveStatus]);
 
-  // Salvar automaticamente quando conteúdo mudar (debounce de 1 segundo)
+  // Salvar automaticamente quando conteúdo mudar (debounce adaptativo)
   useEffect(() => {
-    if (!projectId || !editor || !hasLoadedRef.current) return;
+    if (!projectId || !editor || !hasLoadedRef.current) {
+      if (isDevelopment) {
+        console.log('⏸️ [NOTES EDITOR] useEffect de salvamento não executado:', {
+          hasProjectId: !!projectId,
+          hasEditor: !!editor,
+          hasLoaded: hasLoadedRef.current
+        });
+      }
+      return;
+    }
+
+    if (isDevelopment) {
+      console.log('✅ [NOTES EDITOR] Registrando listener de update no editor');
+    }
 
     const handleUpdate = () => {
       // Log quando o evento de update é disparado
       const content = editor.getHTML();
       const textContent = editor.getText();
       
+      if (isDevelopment) {
+        console.log('🔄 [NOTES EDITOR] Evento UPDATE disparado:', {
+          htmlLength: content.length,
+          textLength: textContent.length,
+          htmlPreview: content.substring(0, 100),
+          lastSavedLength: lastSavedContentRef.current.length,
+          lastSavedPreview: lastSavedContentRef.current.substring(0, 100)
+        });
+      }
+      
+      // Normalizar conteúdo vazio (Tiptap pode retornar <p></p> ou <p><br></p>)
+      const normalizedContent = content.trim() === '<p></p>' || content.trim() === '<p><br></p>' ? '' : content;
+      const normalizedLastSaved = lastSavedContentRef.current.trim() === '<p></p>' || lastSavedContentRef.current.trim() === '<p><br></p>' ? '' : lastSavedContentRef.current;
+      
       // Verificar se há mudanças reais
-      if (content === lastSavedContentRef.current) {
+      if (normalizedContent === normalizedLastSaved) {
+        if (isDevelopment) {
+          console.log('⏭️ [NOTES EDITOR] Sem mudanças reais, ignorando salvamento');
+        }
         return; // Sem mudanças, não precisa salvar
       }
       
       hasUnsavedChangesRef.current = true;
       
-      console.log('📝 [NOTES EDITOR] Conteúdo alterado detectado:', {
-        htmlLength: content.length,
-        textLength: textContent.length,
-        preview: textContent.substring(0, 50) + (textContent.length > 50 ? '...' : '')
-      });
+      if (isDevelopment) {
+        console.log('📝 [NOTES EDITOR] Conteúdo alterado detectado - INICIANDO SALVAMENTO:', {
+          htmlLength: content.length,
+          textLength: textContent.length,
+          preview: textContent.substring(0, 50) + (textContent.length > 50 ? '...' : ''),
+          htmlContent: content
+        });
+      }
+      
+      // Cancelar requisição anterior se ainda estiver em andamento
+      if (saveAbortControllerRef.current) {
+        saveAbortControllerRef.current.abort();
+        saveAbortControllerRef.current = null;
+      }
       
       // Limpar timeout anterior
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
 
-      // Criar novo timeout (reduzido para 1 segundo)
+      // Calcular debounce adaptativo baseado no tamanho do conteúdo
+      const debounceTime = getDebounceTime(content.length);
+      
+      if (isDevelopment) {
+        console.log(`⏱️ [NOTES EDITOR] Debounce adaptativo: ${debounceTime}ms (tamanho: ${content.length} chars)`);
+      }
+      
+      // Criar novo timeout com debounce adaptativo
       saveTimeoutRef.current = setTimeout(async () => {
+        if (isDevelopment) {
+          console.log('⏰ [NOTES EDITOR] Timeout executado, salvando conteúdo...');
+        }
         await saveContent(content, false);
-      }, 1000); // 1 segundo de debounce
+      }, debounceTime);
     };
 
     editor.on('update', handleUpdate);
+    if (isDevelopment) {
+      console.log('✅ [NOTES EDITOR] Listener de update registrado com sucesso');
+    }
 
     return () => {
-      console.log('🧹 [NOTES EDITOR] ===== CLEANUP DO USEEFFECT =====');
-      console.log('🧹 [NOTES EDITOR] Project ID:', projectId);
-      console.log('🧹 [NOTES EDITOR] Tem mudanças não salvas:', hasUnsavedChangesRef.current);
+      if (isDevelopment) {
+        console.log('🧹 [NOTES EDITOR] ===== CLEANUP DO USEEFFECT =====');
+        console.log('🧹 [NOTES EDITOR] Project ID:', projectId);
+        console.log('🧹 [NOTES EDITOR] Tem mudanças não salvas:', hasUnsavedChangesRef.current);
+      }
       
       editor.off('update', handleUpdate);
       
       // Salvar conteúdo pendente antes de desmontar
       if (saveTimeoutRef.current) {
-        console.log('🧹 [NOTES EDITOR] Cancelando timeout pendente e salvando conteúdo imediatamente...');
+        if (isDevelopment) {
+          console.log('🧹 [NOTES EDITOR] Cancelando timeout pendente e salvando conteúdo imediatamente...');
+        }
         clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = null;
       }
@@ -484,8 +620,10 @@ export function SimpleEditor({ projectId = null }) {
         const hasChanges = contentToSave !== lastSavedContentRef.current;
         
         if (hasChanges) {
-          console.log('🚨 [NOTES EDITOR] Forçando salvamento de conteúdo pendente antes de desmontar...');
-          console.log('🚨 [NOTES EDITOR] Conteúdo a salvar:', contentToSave.substring(0, 100) + (contentToSave.length > 100 ? '...' : ''));
+          if (isDevelopment) {
+            console.log('🚨 [NOTES EDITOR] Forçando salvamento de conteúdo pendente antes de desmontar...');
+            console.log('🚨 [NOTES EDITOR] Conteúdo a salvar:', contentToSave.substring(0, 100) + (contentToSave.length > 100 ? '...' : ''));
+          }
           
           // Iniciar salvamento assíncrono (não podemos esperar no cleanup, mas podemos iniciar)
           // Usar uma função imediata para capturar os valores antes do cleanup
@@ -497,13 +635,17 @@ export function SimpleEditor({ projectId = null }) {
             }
           })();
         } else {
-          console.log('🧹 [NOTES EDITOR] Nenhuma mudança detectada, não é necessário salvar');
+          if (isDevelopment) {
+            console.log('🧹 [NOTES EDITOR] Nenhuma mudança detectada, não é necessário salvar');
+          }
         }
       }
       
-      console.log('🧹 [NOTES EDITOR] ===== CLEANUP CONCLUÍDO =====');
+      if (isDevelopment) {
+        console.log('🧹 [NOTES EDITOR] ===== CLEANUP CONCLUÍDO =====');
+      }
     };
-  }, [projectId, editor, saveContent]);
+  }, [projectId, editor, saveContent, getDebounceTime, isDevelopment]);
 
   if (!editor) {
     return (
