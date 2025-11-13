@@ -171,17 +171,47 @@ export async function update(req, res) {
 
 // DELETE /api/projects/:id - Deletar projeto
 export async function deleteProject(req, res) {
+  const transaction = await sequelize.transaction();
+  
   try {
-    const project = await Project.findByPk(req.params.id);
+    // Validar ID
+    const projectId = req.params.id;
+    if (!projectId) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Project ID is required' });
+    }
+    
+    // Buscar projeto com suas relações para garantir que existe
+    const project = await Project.findByPk(projectId, { transaction });
     
     if (!project) {
+      await transaction.rollback();
       return res.status(404).json({ error: 'Project not found' });
     }
     
-    await project.destroy();
+    // Deletar projeto (as relações serão deletadas automaticamente devido ao CASCADE)
+    // ProjectElement e ProjectNote têm onDelete: 'CASCADE' configurado
+    await project.destroy({ transaction });
+    
+    // Commit da transação
+    await transaction.commit();
+    
+    console.log(`✅ [PROJECTS API] Projeto ${projectId} deletado com sucesso`);
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {
-    console.error('Erro ao deletar projeto:', error);
+    // Rollback em caso de erro
+    await transaction.rollback();
+    console.error('❌ [PROJECTS API] Erro ao deletar projeto:', error);
+    console.error('❌ [PROJECTS API] Stack:', error.stack);
+    
+    // Verificar se é erro de constraint de foreign key
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(409).json({ 
+        error: 'Cannot delete project: it has associated records that prevent deletion',
+        details: error.message 
+      });
+    }
+    
     res.status(500).json({ error: error.message });
   }
 }

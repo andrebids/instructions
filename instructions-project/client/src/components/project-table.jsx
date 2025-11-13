@@ -19,11 +19,13 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-  Calendar
+  Calendar,
+  useDisclosure
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
 import { projectsAPI } from "../services/api.js";
+import ConfirmModal from "./common/ConfirmModal.jsx";
 
 // Status mapping from API to UI
 const statusColorMap = {
@@ -67,6 +69,11 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
   const [page, setPage] = React.useState(1);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [dateRange, setDateRange] = React.useState({ start: null, end: null });
+  
+  // Estado para modal de confirmação de delete
+  const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onOpenChange: onDeleteModalOpenChange } = useDisclosure();
+  const [projectToDelete, setProjectToDelete] = React.useState(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   // Debounce search using React 18's concurrent rendering hint
   const deferredFilterValue = React.useDeferredValue(filterValue);
@@ -159,6 +166,34 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
     }
   };
 
+  const handleDeleteClick = (project) => {
+    setProjectToDelete(project);
+    onDeleteModalOpen();
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await projectsAPI.delete(projectToDelete.id);
+      // Call the callback to refresh projects data
+      if (onProjectsUpdate) {
+        onProjectsUpdate();
+      }
+      setProjectToDelete(null);
+      // O modal será fechado automaticamente pelo ConfirmModal após a Promise resolver
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      const errorMessage = error.response?.data?.error || error.message || 'Unknown error occurred while deleting project';
+      alert(`Error deleting project: ${errorMessage}`);
+      // Re-throw para que o ConfirmModal não feche em caso de erro
+      throw error;
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
 
   const renderCell = (project, columnKey) => {
     const cellValue = project[columnKey];
@@ -222,6 +257,17 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
             </Button>
             <Button isIconOnly size="sm" variant="light" title="Edit project" aria-label="Edit project">
               <Icon icon="lucide:edit-2" className="text-lg" />
+            </Button>
+            <Button 
+              isIconOnly 
+              size="sm" 
+              variant="light" 
+              title="Delete project" 
+              aria-label="Delete project"
+              className="text-danger hover:text-danger-600"
+              onPress={() => handleDeleteClick(project)}
+            >
+              <Icon icon="lucide:trash-2" className="text-lg" />
             </Button>
           </div>
         );
@@ -393,7 +439,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
           <TableColumn key="startDate">START DATE</TableColumn>
           <TableColumn key="endDate">END DATE</TableColumn>
           <TableColumn key="budget">BUDGET</TableColumn>
-          <TableColumn key="actions" width="120px">ACTIONS</TableColumn>
+          <TableColumn key="actions" width="160px">ACTIONS</TableColumn>
         </TableHeader>
         <TableBody 
           items={items}
@@ -408,6 +454,29 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
           )}
         </TableBody>
       </Table>
+      
+      {/* Modal de confirmação de delete */}
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onOpenChange={onDeleteModalOpenChange}
+        title="Confirm Deletion"
+        description={
+          projectToDelete ? (
+            <div className="space-y-2">
+              <p className="text-default-600">
+                Are you sure you want to delete the project <strong>{projectToDelete.name}</strong>?
+              </p>
+              <p className="text-sm text-default-500">
+                This action cannot be undone. All data related to this project will be permanently removed.
+              </p>
+            </div>
+          ) : null
+        }
+        confirmText={isDeleting ? "Deleting..." : "Delete"}
+        cancelText="Cancel"
+        confirmColor="danger"
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

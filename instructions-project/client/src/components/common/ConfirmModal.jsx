@@ -31,7 +31,28 @@ export default function ConfirmModal({
                 >
                   {cancelText}
                 </Button>
-                <Button color={confirmColor} onPress={() => { onConfirm?.(); close(); }}>{confirmText}</Button>
+                <Button 
+                  color={confirmColor} 
+                  onPress={async () => { 
+                    const result = onConfirm?.();
+                    // Se onConfirm retornar uma Promise, aguardar antes de fechar
+                    if (result instanceof Promise) {
+                      try {
+                        await result;
+                        close();
+                      } catch (error) {
+                        // Não fechar em caso de erro - deixar o componente pai lidar
+                        console.error('Erro na confirmação:', error);
+                      }
+                    } else {
+                      // Se não for Promise, fechar imediatamente
+                      close();
+                    }
+                  }}
+                  isDisabled={confirmText.includes('...')}
+                >
+                  {confirmText}
+                </Button>
               </div>
             </ModalFooter>
           </>
