@@ -98,6 +98,10 @@ export const isStepValid = (stepId, formData) => {
     case "ai-designer":
       isValid = validateStepAIDesigner(formData);
       break;
+    case "notes":
+      // Notes step sempre é válido (opcional)
+      isValid = true;
+      break;
     case "confirm-details":
       isValid = validateStepConfirmDetails(formData);
       break;

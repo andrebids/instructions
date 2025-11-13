@@ -15,6 +15,7 @@ import { AddClientModal } from "./components/AddClientModal";
 
 // Steps
 import { StepProjectDetails } from "./steps/StepProjectDetails";
+import { StepNotes } from "./steps/StepNotes";
 import { StepProjectType } from "./steps/StepProjectType";
 import { StepAIDesigner } from "./steps/StepAIDesigner";
 import { StepConfirmDetails } from "./steps/StepConfirmDetails";
@@ -34,7 +35,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage }) {
   
   // Get visible steps based on project type
   const visibleSteps = getVisibleSteps(formState.formData, STEPS);
-  const navigation = useStepNavigation(formState.formData, visibleSteps);
+  const navigation = useStepNavigation(formState.formData, visibleSteps, formState.createTempProject);
   
   // 🔄 Lifecycle logging
   useEffect(() => {
@@ -90,6 +91,14 @@ export function CreateProjectMultiStep({ onClose, selectedImage }) {
             onClientSelect={clientState.handleClientSelection}
             onClientInputChange={clientState.handleClientInputChange}
             onAddNewClient={() => clientState.setNewClientModal(true)}
+          />
+        );
+      
+      case "notes":
+        return (
+          <StepNotes
+            formData={formState.formData}
+            onInputChange={formState.handleInputChange}
           />
         );
       
@@ -167,6 +176,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage }) {
             onSubmit={formState.handleSubmit}
             isValid={navigation.canProceed()}
             loading={formState.loading}
+            isNavigating={navigation.isNavigating}
           />
         </div>
       </Card>

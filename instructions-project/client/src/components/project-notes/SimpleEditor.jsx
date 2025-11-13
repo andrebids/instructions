@@ -7,40 +7,33 @@ import TextAlign from '@tiptap/extension-text-align';
 import Color from '@tiptap/extension-color';
 import TextStyle from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
-import Collaboration from '@tiptap/extension-collaboration';
-import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
-import { HocuspocusProvider } from '@hocuspocus/provider';
-import { useCallback, useEffect, useMemo } from 'react';
-import { Button } from '@heroui/react';
+import Underline from '@tiptap/extension-underline';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Spinner } from '@heroui/react';
 import { Icon } from '@iconify/react';
+import { editorAPI } from '../../services/api';
 
-export function SimpleEditor({ documentName, hocuspocusUrl }) {
-  // Criar provider Hocuspocus para sincronização colaborativa
-  const provider = useMemo(() => {
-    return new HocuspocusProvider({
-      url: hocuspocusUrl || 'ws://localhost:1234',
-      name: documentName,
-      onConnect: () => {
-        console.log('✅ [Editor] Conectado ao Hocuspocus');
-      },
-      onDisconnect: () => {
-        console.log('❌ [Editor] Desconectado do Hocuspocus');
-      },
-    });
-  }, [documentName, hocuspocusUrl]);
+export function SimpleEditor() {
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [drawingMode, setDrawingMode] = useState(false);
+  const canvasRef = useRef(null);
+  const { isOpen: isLinkModalOpen, onOpen: onLinkModalOpen, onClose: onLinkModalClose } = useDisclosure();
+  const { isOpen: isImageModalOpen, onOpen: onImageModalOpen, onClose: onImageModalClose } = useDisclosure();
+  const [linkUrl, setLinkUrl] = useState('');
+  const [isDrawing, setIsDrawing] = useState(false);
+  const drawingCanvasRef = useRef(null);
+  const drawingContextRef = useRef(null);
 
-  // Configurar editor Tiptap com colaboração
+  // Configure Tiptap editor
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        // Desabilitar heading se quiser usar apenas texto simples
-        // heading: false,
-      }),
-      Collaboration.configure({
-        document: provider.document,
-      }),
-      CollaborationCursor.configure({
-        provider,
+        // Keep all default features
       }),
       Link.configure({
         openOnClick: false,
@@ -50,11 +43,13 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
       }),
       Image.configure({
         HTMLAttributes: {
-          class: 'max-w-full h-auto rounded-lg',
+          class: 'max-w-full h-auto rounded-lg my-4',
         },
+        inline: false,
+        allowBase64: true,
       }),
       Placeholder.configure({
-        placeholder: 'Comece a escrever as suas notas...',
+        placeholder: 'Start writing your notes...',
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],
@@ -64,24 +59,115 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
       Highlight.configure({
         multicolor: true,
       }),
+      Underline,
+      TaskList.configure({
+        HTMLAttributes: {
+          class: 'task-list',
+        },
+      }),
+      TaskItem.configure({
+        nested: true,
+        HTMLAttributes: {
+          class: 'task-item',
+        },
+      }),
     ],
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[400px] p-4',
+        class: 'prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[400px] p-4 max-w-full',
+      },
+      handleDrop: (view, event, slice, moved) => {
+        if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+          event.preventDefault();
+          const file = event.dataTransfer.files[0];
+          if (file.type.startsWith('image/')) {
+            handleImageUpload(file);
+            return true;
+          }
+        }
+        return false;
+      },
+      handlePaste: (view, event, slice) => {
+        const items = Array.from(event.clipboardData?.items || []);
+        for (const item of items) {
+          if (item.type.startsWith('image/')) {
+            event.preventDefault();
+            const file = item.getAsFile();
+            if (file) {
+              handleImageUpload(file);
+              return true;
+            }
+          }
+        }
+        return false;
       },
     },
-  }, [provider]);
+  });
 
-  // Cleanup ao desmontar
-  useEffect(() => {
-    return () => {
-      if (provider) {
-        provider.destroy();
+  // Handle image upload
+  const handleImageUpload = useCallback(async (file) => {
+    if (!file || !file.type.startsWith('image/')) {
+      console.error('Invalid file type');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const response = await editorAPI.uploadImage(file);
+      if (response.success && response.url) {
+        // Use absolute URL if needed
+        const imageUrl = response.url.startsWith('http') 
+          ? response.url 
+          : `${window.location.origin}${response.url}`;
+        
+        editor?.chain().focus().setImage({ src: imageUrl }).run();
+      } else {
+        throw new Error('Upload failed');
       }
-    };
-  }, [provider]);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      // Fallback: use base64
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        editor?.chain().focus().setImage({ src: e.target.result }).run();
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsUploading(false);
+    }
+  }, [editor]);
 
-  // Funções de formatação
+  // Handle file input change
+  const handleFileInputChange = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+    // Reset inputs
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
+    }
+    if (galleryInputRef.current) {
+      galleryInputRef.current.value = '';
+    }
+  }, [handleImageUpload]);
+
+  // Handle camera capture
+  const handleCameraCapture = useCallback(() => {
+    cameraInputRef.current?.click();
+    onImageModalClose();
+  }, [onImageModalClose]);
+
+  // Handle gallery selection
+  const handleGallerySelect = useCallback(() => {
+    galleryInputRef.current?.click();
+    onImageModalClose();
+  }, [onImageModalClose]);
+
+  // Formatting functions
   const toggleBold = useCallback(() => {
     editor?.chain().focus().toggleBold().run();
   }, [editor]);
@@ -90,8 +176,9 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
     editor?.chain().focus().toggleItalic().run();
   }, [editor]);
 
-  // Underline não está disponível no StarterKit por padrão
-  // Removido por enquanto
+  const toggleUnderline = useCallback(() => {
+    editor?.chain().focus().toggleUnderline().run();
+  }, [editor]);
 
   const toggleBulletList = useCallback(() => {
     editor?.chain().focus().toggleBulletList().run();
@@ -99,6 +186,10 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
 
   const toggleOrderedList = useCallback(() => {
     editor?.chain().focus().toggleOrderedList().run();
+  }, [editor]);
+
+  const toggleTaskList = useCallback(() => {
+    editor?.chain().focus().toggleTaskList().run();
   }, [editor]);
 
   const setHeading = useCallback((level) => {
@@ -113,21 +204,41 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
     editor?.chain().focus().setTextAlign(align).run();
   }, [editor]);
 
-  const toggleLink = useCallback(() => {
-    const url = window.prompt('URL:');
-    if (url) {
-      editor?.chain().focus().setLink({ href: url }).run();
+  const setLink = useCallback(() => {
+    const previousUrl = editor?.getAttributes('link').href || '';
+    setLinkUrl(previousUrl);
+    onLinkModalOpen();
+  }, [editor, onLinkModalOpen]);
+
+  const applyLink = useCallback(() => {
+    if (linkUrl) {
+      editor?.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run();
     } else {
-      editor?.chain().focus().unsetLink().run();
+      editor?.chain().focus().extendMarkRange('link').unsetLink().run();
     }
-  }, [editor]);
+    onLinkModalClose();
+    setLinkUrl('');
+  }, [editor, linkUrl, onLinkModalClose]);
+
+  const unsetLink = useCallback(() => {
+    editor?.chain().focus().extendMarkRange('link').unsetLink().run();
+    onLinkModalClose();
+    setLinkUrl('');
+  }, [editor, onLinkModalClose]);
 
   const addImage = useCallback(() => {
-    const url = window.prompt('URL da imagem:');
-    if (url) {
-      editor?.chain().focus().setImage({ src: url }).run();
+    // Check if mobile device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
+                     (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+    
+    if (isMobile) {
+      // Show modal with options on mobile
+      onImageModalOpen();
+    } else {
+      // Direct file input on desktop
+      fileInputRef.current?.click();
     }
-  }, [editor]);
+  }, [onImageModalOpen]);
 
   const undo = useCallback(() => {
     editor?.chain().focus().undo().run();
@@ -137,25 +248,139 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
     editor?.chain().focus().redo().run();
   }, [editor]);
 
+  const setColor = useCallback((color) => {
+    editor?.chain().focus().setColor(color).run();
+  }, [editor]);
+
+  const setHighlight = useCallback((color) => {
+    editor?.chain().focus().toggleHighlight({ color }).run();
+  }, [editor]);
+
+  // Drawing functionality
+  const toggleDrawing = useCallback(() => {
+    setDrawingMode(!drawingMode);
+  }, [drawingMode]);
+
+  useEffect(() => {
+    if (drawingMode && drawingCanvasRef.current) {
+      const canvas = drawingCanvasRef.current;
+      const ctx = canvas.getContext('2d');
+      drawingContextRef.current = ctx;
+      
+      // Set canvas size with proper scaling for retina displays
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      
+      // Set drawing style
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, rect.width, rect.height);
+    }
+  }, [drawingMode]);
+
+  const handleDrawingMouseDown = useCallback((e) => {
+    if (!drawingMode || !drawingContextRef.current) return;
+    setIsDrawing(true);
+    const rect = drawingCanvasRef.current.getBoundingClientRect();
+    const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+    const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+    drawingContextRef.current.beginPath();
+    drawingContextRef.current.moveTo(x, y);
+  }, [drawingMode]);
+
+  const handleDrawingMouseMove = useCallback((e) => {
+    if (!isDrawing || !drawingContextRef.current) return;
+    e.preventDefault();
+    const rect = drawingCanvasRef.current.getBoundingClientRect();
+    const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+    const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+    drawingContextRef.current.lineTo(x, y);
+    drawingContextRef.current.stroke();
+  }, [isDrawing]);
+
+  const handleDrawingMouseUp = useCallback(() => {
+    setIsDrawing(false);
+  }, []);
+
+  const insertDrawing = useCallback(() => {
+    if (!drawingCanvasRef.current) return;
+    // Create a temporary canvas to export at original size
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    const rect = drawingCanvasRef.current.getBoundingClientRect();
+    tempCanvas.width = rect.width;
+    tempCanvas.height = rect.height;
+    tempCtx.drawImage(drawingCanvasRef.current, 0, 0, rect.width, rect.height);
+    
+    const dataUrl = tempCanvas.toDataURL('image/png');
+    editor?.chain().focus().setImage({ src: dataUrl }).run();
+    setDrawingMode(false);
+    setIsDrawing(false);
+    // Clear canvas
+    const ctx = drawingContextRef.current;
+    if (ctx && drawingCanvasRef.current) {
+      ctx.clearRect(0, 0, rect.width, rect.height);
+    }
+  }, [editor]);
+
   if (!editor) {
-    return <div className="p-4">A carregar editor...</div>;
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Spinner size="lg" label="Loading editor..." />
+      </div>
+    );
   }
 
   return (
-    <div className="w-full border border-divider rounded-lg bg-background">
+    <div className="w-full border border-divider rounded-lg bg-background overflow-hidden">
+      {/* Hidden file inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileInputChange}
+        className="hidden"
+      />
+      {/* Camera input for mobile */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileInputChange}
+        className="hidden"
+      />
+      {/* Gallery input for mobile */}
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        multiple={false}
+        onChange={handleFileInputChange}
+        className="hidden"
+      />
+
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 p-3 border-b border-divider bg-content1">
+      <div className="flex flex-wrap items-center gap-1 sm:gap-2 p-2 sm:p-3 border-b border-divider bg-content1 overflow-x-auto">
         {/* Undo/Redo */}
-        <div className="flex gap-1">
+        <div className="flex gap-1 shrink-0">
           <Button
             isIconOnly
             size="sm"
             variant="light"
             onPress={undo}
             isDisabled={!editor.can().undo()}
-            aria-label="Desfazer"
+            aria-label="Undo"
+            className="min-w-[32px]"
           >
-            <Icon icon="lucide:undo" className="text-lg" />
+            <Icon icon="lucide:undo" className="text-base sm:text-lg" />
           </Button>
           <Button
             isIconOnly
@@ -163,31 +388,32 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
             variant="light"
             onPress={redo}
             isDisabled={!editor.can().redo()}
-            aria-label="Refazer"
+            aria-label="Redo"
+            className="min-w-[32px]"
           >
-            <Icon icon="lucide:redo" className="text-lg" />
+            <Icon icon="lucide:redo" className="text-base sm:text-lg" />
           </Button>
         </div>
 
-        <div className="w-px h-6 bg-divider" />
+        <div className="w-px h-6 bg-divider shrink-0" />
 
         {/* Headings */}
         <select
           onChange={(e) => setHeading(parseInt(e.target.value))}
-          className="px-2 py-1 text-sm border border-divider rounded bg-background"
+          className="px-2 py-1 text-xs sm:text-sm border border-divider rounded bg-background shrink-0"
           value={
             editor.isActive('heading', { level: 1 }) ? 1 :
             editor.isActive('heading', { level: 2 }) ? 2 :
             editor.isActive('heading', { level: 3 }) ? 3 : 0
           }
         >
-          <option value={0}>Parágrafo</option>
-          <option value={1}>Título 1</option>
-          <option value={2}>Título 2</option>
-          <option value={3}>Título 3</option>
+          <option value={0}>Paragraph</option>
+          <option value={1}>Heading 1</option>
+          <option value={2}>Heading 2</option>
+          <option value={3}>Heading 3</option>
         </select>
 
-        <div className="w-px h-6 bg-divider" />
+        <div className="w-px h-6 bg-divider shrink-0" />
 
         {/* Text formatting */}
         <Button
@@ -196,9 +422,10 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
           variant={editor.isActive('bold') ? 'solid' : 'light'}
           color={editor.isActive('bold') ? 'primary' : 'default'}
           onPress={toggleBold}
-          aria-label="Negrito"
+          aria-label="Bold"
+          className="min-w-[32px] shrink-0"
         >
-          <Icon icon="lucide:bold" className="text-lg" />
+          <Icon icon="lucide:bold" className="text-base sm:text-lg" />
         </Button>
         <Button
           isIconOnly
@@ -206,11 +433,23 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
           variant={editor.isActive('italic') ? 'solid' : 'light'}
           color={editor.isActive('italic') ? 'primary' : 'default'}
           onPress={toggleItalic}
-          aria-label="Itálico"
+          aria-label="Italic"
+          className="min-w-[32px] shrink-0"
         >
-          <Icon icon="lucide:italic" className="text-lg" />
+          <Icon icon="lucide:italic" className="text-base sm:text-lg" />
         </Button>
-        <div className="w-px h-6 bg-divider" />
+        <Button
+          isIconOnly
+          size="sm"
+          variant={editor.isActive('underline') ? 'solid' : 'light'}
+          color={editor.isActive('underline') ? 'primary' : 'default'}
+          onPress={toggleUnderline}
+          aria-label="Underline"
+          className="min-w-[32px] shrink-0"
+        >
+          <Icon icon="lucide:underline" className="text-base sm:text-lg" />
+        </Button>
+        <div className="w-px h-6 bg-divider shrink-0" />
 
         {/* Lists */}
         <Button
@@ -219,9 +458,10 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
           variant={editor.isActive('bulletList') ? 'solid' : 'light'}
           color={editor.isActive('bulletList') ? 'primary' : 'default'}
           onPress={toggleBulletList}
-          aria-label="Lista com marcadores"
+          aria-label="Bullet list"
+          className="min-w-[32px] shrink-0"
         >
-          <Icon icon="lucide:list" className="text-lg" />
+          <Icon icon="lucide:list" className="text-base sm:text-lg" />
         </Button>
         <Button
           isIconOnly
@@ -229,12 +469,24 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
           variant={editor.isActive('orderedList') ? 'solid' : 'light'}
           color={editor.isActive('orderedList') ? 'primary' : 'default'}
           onPress={toggleOrderedList}
-          aria-label="Lista numerada"
+          aria-label="Ordered list"
+          className="min-w-[32px] shrink-0"
         >
-          <Icon icon="lucide:list-ordered" className="text-lg" />
+          <Icon icon="lucide:list-ordered" className="text-base sm:text-lg" />
+        </Button>
+        <Button
+          isIconOnly
+          size="sm"
+          variant={editor.isActive('taskList') ? 'solid' : 'light'}
+          color={editor.isActive('taskList') ? 'primary' : 'default'}
+          onPress={toggleTaskList}
+          aria-label="Task list"
+          className="min-w-[32px] shrink-0"
+        >
+          <Icon icon="lucide:check-square" className="text-base sm:text-lg" />
         </Button>
 
-        <div className="w-px h-6 bg-divider" />
+        <div className="w-px h-6 bg-divider shrink-0" />
 
         {/* Alignment */}
         <Button
@@ -243,9 +495,10 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
           variant={editor.isActive({ textAlign: 'left' }) ? 'solid' : 'light'}
           color={editor.isActive({ textAlign: 'left' }) ? 'primary' : 'default'}
           onPress={() => setTextAlign('left')}
-          aria-label="Alinhar à esquerda"
+          aria-label="Align left"
+          className="min-w-[32px] shrink-0"
         >
-          <Icon icon="lucide:align-left" className="text-lg" />
+          <Icon icon="lucide:align-left" className="text-base sm:text-lg" />
         </Button>
         <Button
           isIconOnly
@@ -253,9 +506,10 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
           variant={editor.isActive({ textAlign: 'center' }) ? 'solid' : 'light'}
           color={editor.isActive({ textAlign: 'center' }) ? 'primary' : 'default'}
           onPress={() => setTextAlign('center')}
-          aria-label="Alinhar ao centro"
+          aria-label="Align center"
+          className="min-w-[32px] shrink-0"
         >
-          <Icon icon="lucide:align-center" className="text-lg" />
+          <Icon icon="lucide:align-center" className="text-base sm:text-lg" />
         </Button>
         <Button
           isIconOnly
@@ -263,12 +517,13 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
           variant={editor.isActive({ textAlign: 'right' }) ? 'solid' : 'light'}
           color={editor.isActive({ textAlign: 'right' }) ? 'primary' : 'default'}
           onPress={() => setTextAlign('right')}
-          aria-label="Alinhar à direita"
+          aria-label="Align right"
+          className="min-w-[32px] shrink-0"
         >
-          <Icon icon="lucide:align-right" className="text-lg" />
+          <Icon icon="lucide:align-right" className="text-base sm:text-lg" />
         </Button>
 
-        <div className="w-px h-6 bg-divider" />
+        <div className="w-px h-6 bg-divider shrink-0" />
 
         {/* Link & Image */}
         <Button
@@ -276,25 +531,167 @@ export function SimpleEditor({ documentName, hocuspocusUrl }) {
           size="sm"
           variant={editor.isActive('link') ? 'solid' : 'light'}
           color={editor.isActive('link') ? 'primary' : 'default'}
-          onPress={toggleLink}
-          aria-label="Adicionar link"
+          onPress={setLink}
+          aria-label="Add link"
+          className="min-w-[32px] shrink-0"
         >
-          <Icon icon="lucide:link" className="text-lg" />
+          <Icon icon="lucide:link" className="text-base sm:text-lg" />
         </Button>
         <Button
           isIconOnly
           size="sm"
           variant="light"
           onPress={addImage}
-          aria-label="Adicionar imagem"
+          isDisabled={isUploading}
+          aria-label="Add image"
+          className="min-w-[32px] shrink-0"
         >
-          <Icon icon="lucide:image" className="text-lg" />
+          {isUploading ? (
+            <Spinner size="sm" />
+          ) : (
+            <Icon icon="lucide:image" className="text-base sm:text-lg" />
+          )}
         </Button>
+        <Button
+          isIconOnly
+          size="sm"
+          variant={drawingMode ? 'solid' : 'light'}
+          color={drawingMode ? 'primary' : 'default'}
+          onPress={toggleDrawing}
+          aria-label="Drawing mode"
+          className="min-w-[32px] shrink-0"
+        >
+          <Icon icon="lucide:pencil" className="text-base sm:text-lg" />
+        </Button>
+
+        <div className="w-px h-6 bg-divider shrink-0" />
+
+        {/* Colors */}
+        <input
+          type="color"
+          onInput={(e) => setColor(e.target.value)}
+          value={editor.getAttributes('textStyle').color || '#000000'}
+          className="w-7 h-7 sm:w-8 sm:h-8 p-0 border border-divider rounded cursor-pointer shrink-0"
+          aria-label="Text color"
+        />
+        <input
+          type="color"
+          onInput={(e) => setHighlight(e.target.value)}
+          value={editor.getAttributes('highlight').color || '#ffff00'}
+          className="w-7 h-7 sm:w-8 sm:h-8 p-0 border border-divider rounded cursor-pointer shrink-0"
+          aria-label="Highlight color"
+        />
       </div>
 
+      {/* Drawing Canvas Modal */}
+      {drawingMode && (
+        <Modal isOpen={drawingMode} onClose={() => setDrawingMode(false)} size="2xl">
+          <ModalContent>
+            <ModalHeader>Draw</ModalHeader>
+            <ModalBody>
+              <div className="border border-divider rounded-lg p-4 bg-white">
+                <canvas
+                  ref={drawingCanvasRef}
+                  className="w-full h-96 border border-divider rounded cursor-crosshair touch-none"
+                  onMouseDown={handleDrawingMouseDown}
+                  onMouseMove={handleDrawingMouseMove}
+                  onMouseUp={handleDrawingMouseUp}
+                  onMouseLeave={handleDrawingMouseUp}
+                  onTouchStart={handleDrawingMouseDown}
+                  onTouchMove={handleDrawingMouseMove}
+                  onTouchEnd={handleDrawingMouseUp}
+                />
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="light" onPress={() => setDrawingMode(false)}>
+                Cancel
+              </Button>
+              <Button color="primary" onPress={insertDrawing}>
+                Insert Drawing
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      )}
+
+      {/* Image Source Modal (Mobile) */}
+      <Modal isOpen={isImageModalOpen} onClose={onImageModalClose} placement="center">
+        <ModalContent>
+          <ModalHeader>Add Image</ModalHeader>
+          <ModalBody>
+            <div className="flex flex-col gap-3">
+              <Button
+                color="primary"
+                variant="flat"
+                size="lg"
+                startContent={<Icon icon="lucide:camera" className="text-xl" />}
+                onPress={handleCameraCapture}
+                className="w-full"
+              >
+                Take Photo
+              </Button>
+              <Button
+                color="primary"
+                variant="flat"
+                size="lg"
+                startContent={<Icon icon="lucide:image" className="text-xl" />}
+                onPress={handleGallerySelect}
+                className="w-full"
+              >
+                Choose from Gallery
+              </Button>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onImageModalClose}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Link Modal */}
+      <Modal isOpen={isLinkModalOpen} onClose={onLinkModalClose}>
+        <ModalContent>
+          <ModalHeader>Add Link</ModalHeader>
+          <ModalBody>
+            <Input
+              placeholder="Enter URL"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  applyLink();
+                }
+              }}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={unsetLink}>
+              Remove Link
+            </Button>
+            <Button color="primary" onPress={applyLink}>
+              Apply
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Editor Content */}
-      <EditorContent editor={editor} className="min-h-[400px]" />
+      <div className="relative">
+        <EditorContent 
+          editor={editor} 
+          className="min-h-[400px] prose max-w-none"
+        />
+        {/* Drop zone overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none border-2 border-dashed border-transparent transition-colors"
+          style={{
+            borderColor: isUploading ? 'var(--heroui-primary)' : 'transparent',
+          }}
+        />
+      </div>
     </div>
   );
 }
-

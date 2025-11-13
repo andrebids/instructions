@@ -10,6 +10,7 @@ export function NavigationFooter({
   onSubmit,
   isValid,
   loading,
+  isNavigating,
 }) {
   return (
     <div className="w-full bg-content1 border-t border-divider px-4 py-4 sm:px-6 sm:py-6 sticky bottom-0">
@@ -29,10 +30,11 @@ export function NavigationFooter({
             <Button
               color="primary"
               onPress={onNext}
-              isDisabled={!isValid || loading}
+              isLoading={isNavigating}
+              isDisabled={!isValid || loading || isNavigating}
               endContent={<Icon icon="lucide:arrow-right" />}
             >
-              Continue
+              {isNavigating ? "Creating..." : "Continue"}
             </Button>
           ) : (
             <Button
