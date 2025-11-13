@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { SidebarNavigation } from "./components/sidebar-navigation";
 import { Header } from "./components/header";
 import Dashboard from "./pages/Dashboard";
-import Statistics from "./pages/Statistics";
+// import Statistics from "./pages/Statistics";
 import Shop from "./pages/Shop";
 import Projects from "./pages/Projects";
 import Favorites from "./pages/Favorites";
@@ -37,10 +37,10 @@ function AppLayout() {
         <Header />
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/statistics" element={<Statistics />} />
+          {/* <Route path="/statistics" element={<Statistics />} /> */}
           <Route path="/shop" element={<Shop />} />
           <Route path="/favorites" element={<Favorites />} />
-          <Route path="/projects" element={<Projects />} />
+          {/* <Route path="/projects" element={<Projects />} /> */}
           <Route path="/projects/:id/notes" element={<ProjectNotes />} />
           <Route path="/orders" element={<Projects />} />
           <Route path="/admin/products" element={<AdminProducts />} />
