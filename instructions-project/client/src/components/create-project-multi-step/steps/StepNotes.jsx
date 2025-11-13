@@ -41,19 +41,6 @@ export function StepNotes({ formData, onInputChange }) {
           <SimpleEditor projectId={projectId} />
         </CardBody>
       </Card>
-
-      <div className="mt-4 p-3 sm:p-4 bg-content1 rounded-lg border border-divider">
-        <div className="flex items-start gap-2 sm:gap-3">
-          <Icon icon="lucide:info" className="text-primary text-lg sm:text-xl mt-0.5 shrink-0" />
-          <div className="text-xs sm:text-sm text-default-600">
-            <p className="font-medium mb-1">Tip:</p>
-            <p>
-              You can proceed to the next step at any time. Notes are saved automatically 
-              and can be edited later on the project page.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
