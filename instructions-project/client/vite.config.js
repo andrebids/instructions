@@ -74,6 +74,12 @@ export default defineConfig({
     },
     hmr: {
       port: 3004, // Porta separada para HMR
+      overlay: false, // Desativar overlay de erros do HMR (são temporários)
+    },
+    watch: {
+      // Melhorar performance do watch
+      usePolling: false,
+      interval: 100,
     },
   },
 })

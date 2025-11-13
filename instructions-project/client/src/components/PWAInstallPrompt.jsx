@@ -2,16 +2,24 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@heroui/react'
 import { Icon } from '@iconify/react'
 
+// Flag de debug (pode ser ativada via localStorage: 'pwa-install-debug' = 'true')
+const DEBUG = typeof window !== 'undefined' && 
+  (import.meta.env.DEV || localStorage.getItem('pwa-install-debug') === 'true')
+
+const log = (...args) => {
+  if (DEBUG) console.log('[PWA Install]', ...args)
+}
+
 // Funções globais para controlo manual (disponíveis imediatamente)
 if (typeof window !== 'undefined') {
   window.showPWAInstall = () => {
-    console.log('[PWA Install] Manual trigger via window.showPWAInstall()')
+    log('Manual trigger via window.showPWAInstall()')
     localStorage.removeItem('pwa-install-dismissed')
     // Disparar evento customizado para o componente ouvir
     window.dispatchEvent(new CustomEvent('pwa-install-show'))
   }
   window.clearPWAInstallDismiss = () => {
-    console.log('[PWA Install] Clearing dismissed preference')
+    log('Clearing dismissed preference')
     localStorage.removeItem('pwa-install-dismissed')
     console.log('[PWA Install] Cleared! Reload the page to see the prompt again.')
   }
@@ -26,8 +34,7 @@ export default function PWAInstallPrompt() {
   const [safariType, setSafariType] = useState(null) // 'ios' | 'macos' | null
 
   useEffect(() => {
-    // Debug logging
-    console.log('[PWA Install] Component mounted')
+    log('Component mounted')
     
     // Detetar se é mobile
     const checkMobile = () => {
@@ -36,7 +43,6 @@ export default function PWAInstallPrompt() {
     }
     const mobile = checkMobile()
     setIsMobile(mobile)
-    console.log('[PWA Install] Is mobile:', mobile)
 
     // Função melhorada para verificar se já está instalado
     const checkIfInstalled = async () => {
@@ -54,11 +60,11 @@ export default function PWAInstallPrompt() {
       if ('getInstalledRelatedApps' in navigator) {
         try {
           const relatedApps = await navigator.getInstalledRelatedApps()
-          console.log('[PWA Install] Installed related apps:', relatedApps)
+          log('Installed related apps:', relatedApps)
           // Se encontrar apps relacionados, provavelmente está instalado
           isInstalledViaAPI = relatedApps && relatedApps.length > 0
         } catch (error) {
-          console.log('[PWA Install] Error checking installed apps:', error)
+          log('Error checking installed apps:', error)
         }
       }
       
@@ -70,14 +76,16 @@ export default function PWAInstallPrompt() {
       
       const installed = isStandalone || isIOSStandalone || isFullscreen || isInstalledViaAPI || wasInstalledBefore
       
-      console.log('[PWA Install] Installation check:', {
-        isStandalone,
-        isIOSStandalone,
-        isFullscreen,
-        isInstalledViaAPI,
-        wasInstalledBefore,
-        finalInstalled: installed
-      })
+      if (DEBUG && installed) {
+        log('Installation check:', {
+          isStandalone,
+          isIOSStandalone,
+          isFullscreen,
+          isInstalledViaAPI,
+          wasInstalledBefore,
+          finalInstalled: installed
+        })
+      }
       
       return installed
     }
@@ -87,7 +95,7 @@ export default function PWAInstallPrompt() {
     checkIfInstalled().then(installed => {
       wasInstalledInitially = installed
       if (installed) {
-        console.log('[PWA Install] PWA already installed - hiding prompt')
+        log('PWA already installed - hiding prompt')
         setIsInstalled(true)
         return
       }
@@ -96,7 +104,7 @@ export default function PWAInstallPrompt() {
     // Verificar se foi dispensado recentemente
     const dismissedTime = localStorage.getItem('pwa-install-dismissed')
     if (dismissedTime && Date.now() - parseInt(dismissedTime) < 7 * 24 * 60 * 60 * 1000) {
-      console.log('[PWA Install] Was dismissed recently, not showing')
+      log('Was dismissed recently, not showing')
       return
     }
 
@@ -105,7 +113,7 @@ export default function PWAInstallPrompt() {
 
     // Detetar evento beforeinstallprompt (principalmente mobile/Android e Chrome desktop)
     const handleBeforeInstallPrompt = (e) => {
-      console.log('[PWA Install] beforeinstallprompt event received')
+      log('beforeinstallprompt event received')
       e.preventDefault()
       promptEvent = e
       setDeferredPrompt(e)
@@ -127,7 +135,7 @@ export default function PWAInstallPrompt() {
         // Verificar novamente se está instalado (pode ter mudado)
         checkIfInstalled().then(installed => {
           if (installed) {
-            console.log('[PWA Install] Detected as installed after timeout check')
+            log('Detected as installed after timeout check')
             setIsInstalled(true)
           }
         })
@@ -155,17 +163,19 @@ export default function PWAInstallPrompt() {
       setSafariType(safariTypeDetected)
     }
     
-    console.log('[PWA Install] Browser detection:', { isChrome, isEdge, isOpera, isFirefox, isSafari, safariType: safariTypeDetected, userAgent })
+    log('Browser detection:', { isChrome, isEdge, isOpera, isFirefox, isSafari, safariType: safariTypeDetected })
     
     // Verificar HTTPS (apenas para debug/aviso)
     const isHTTPS = window.location.protocol === 'https:' || window.location.hostname === 'localhost'
     if (isSafari && !isHTTPS && window.location.hostname !== 'localhost') {
-      console.warn('[PWA Install] Safari requires HTTPS for PWA installation. Current protocol:', window.location.protocol)
+      if (DEBUG) {
+        console.warn('[PWA Install] Safari requires HTTPS for PWA installation. Current protocol:', window.location.protocol)
+      }
     }
 
     // Listener para quando o PWA é instalado (dispara após instalação bem-sucedida)
     const handleAppInstalled = () => {
-      console.log('[PWA Install] PWA was installed successfully!')
+      console.log('[PWA Install] ✅ PWA was installed successfully!')
       localStorage.setItem('pwa-installed', 'true')
       setIsInstalled(true)
       setIsOpen(false)
@@ -176,7 +186,7 @@ export default function PWAInstallPrompt() {
     
     // Listener para mudanças no display-mode (útil quando o usuário abre o PWA instalado)
     const handleDisplayModeChange = (e) => {
-      console.log('[PWA Install] Display mode changed:', e.matches)
+      log('Display mode changed:', e.matches)
       if (e.matches) {
         // Modo standalone detectado - PWA está instalado e rodando
         localStorage.setItem('pwa-installed', 'true')
@@ -201,23 +211,23 @@ export default function PWAInstallPrompt() {
 
     // Se após 3 segundos não apareceu o evento, mostrar instruções manuais
     const timer = setTimeout(() => {
-      console.log('[PWA Install] Timer fired, promptEvent:', !!promptEvent)
+      log('Timer fired, promptEvent:', !!promptEvent)
       if (!promptEvent && !wasInstalledInitially) {
         // Verificar novamente se está instalado antes de mostrar instruções
         checkIfInstalled().then(installed => {
           if (installed) {
-            console.log('[PWA Install] Detected as installed - not showing manual instructions')
+            log('Detected as installed - not showing manual instructions')
             setIsInstalled(true)
             return
           }
           
           // Verificar se o browser suporta instalação manual
           if (isChrome || isEdge || isOpera || isFirefox || isSafari) {
-            console.log('[PWA Install] Showing manual instructions for:', { isChrome, isEdge, isOpera, isFirefox, isSafari, safariType: safariTypeDetected })
+            log('Showing manual instructions for:', { isChrome, isEdge, isOpera, isFirefox, isSafari, safariType: safariTypeDetected })
             setShowManualInstructions(true)
             setIsOpen(true)
           } else {
-            console.log('[PWA Install] Browser not supported for PWA installation')
+            log('Browser not supported for PWA installation')
           }
         })
       }
@@ -225,14 +235,12 @@ export default function PWAInstallPrompt() {
 
     // Ouvir evento customizado para mostrar manualmente
     const handleShowEvent = () => {
-      console.log('[PWA Install] Received show event - opening modal')
+      log('Received show event - opening modal')
       setShowManualInstructions(true)
       setIsOpen(true)
-      console.log('[PWA Install] State updated, isOpen should be true')
     }
     
     window.addEventListener('pwa-install-show', handleShowEvent)
-    console.log('[PWA Install] Event listener registered for pwa-install-show')
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
@@ -261,13 +269,13 @@ export default function PWAInstallPrompt() {
     const { outcome } = await deferredPrompt.userChoice
 
     if (outcome === 'accepted') {
-      console.log('[PWA Install] User accepted the install prompt')
+      log('User accepted the install prompt')
       // Marcar como instalado no localStorage
       // O evento 'appinstalled' também será disparado, mas marcamos aqui também para garantir
       localStorage.setItem('pwa-installed', 'true')
       setIsInstalled(true)
     } else {
-      console.log('[PWA Install] User dismissed the install prompt')
+      log('User dismissed the install prompt')
     }
 
     setDeferredPrompt(null)
@@ -279,16 +287,12 @@ export default function PWAInstallPrompt() {
     // Guardar preferência para não mostrar novamente por algum tempo (7 dias)
     const dismissedTime = Date.now().toString()
     localStorage.setItem('pwa-install-dismissed', dismissedTime)
-    console.log('[PWA Install] Preference saved - will not show again for 7 days')
-    console.log('[PWA Install] To clear: window.clearPWAInstallDismiss()')
+    log('Preference saved - will not show again for 7 days')
+    log('To clear: window.clearPWAInstallDismiss()')
   }
-
-  // Debug: verificar estado antes de renderizar
-  console.log('[PWA Install] Render check:', { isInstalled, isOpen, showManualInstructions })
 
   // Não mostrar se já estiver instalado
   if (isInstalled) {
-    console.log('[PWA Install] Not rendering - already installed')
     return null
   }
 

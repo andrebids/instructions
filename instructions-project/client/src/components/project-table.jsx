@@ -52,6 +52,10 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
   
   // Transform API data to table format
   const projects = React.useMemo(() => {
+    if (!apiProjects || !Array.isArray(apiProjects) || apiProjects.length === 0) {
+      return [];
+    }
+    
     return apiProjects.map(project => ({
       id: project.id,
       name: project.name,
@@ -201,7 +205,6 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
 
     switch (columnKey) {
       case "favorite":
-        console.log(`DEBUG: Project ${project.name} - isFavorite: ${project.isFavorite}`);
         return (
           <Button
             isIconOnly
