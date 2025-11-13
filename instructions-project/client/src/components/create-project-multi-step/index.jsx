@@ -13,6 +13,7 @@ import { useSaveStatus } from "./hooks/useSaveStatus";
 import { StepIndicator } from "./components/StepIndicator";
 import { NavigationFooter } from "./components/NavigationFooter";
 import { AddClientModal } from "./components/AddClientModal";
+import { SaveStatus } from "./components/SaveStatus";
 
 // Steps
 import { StepProjectDetails } from "./steps/StepProjectDetails";
@@ -141,21 +142,28 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
         <div className="flex flex-col h-full min-h-0">
           {/* Top bar + horizontal stepper */}
           <div className="w-full bg-content1 px-4 py-2 sm:px-6 sm:py-3 border-b border-divider">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="light"
-                className="text-default-600 shrink-0"
-                startContent={<Icon icon="lucide:arrow-left" />}
-                as="a"
-                href="/"
-              >
-                Back to dashboard
-              </Button>
+            <div className="flex items-center gap-4 justify-between">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <Button
+                  variant="light"
+                  className="text-default-600 shrink-0"
+                  startContent={<Icon icon="lucide:arrow-left" />}
+                  as="a"
+                  href="/"
+                >
+                  Back to dashboard
+                </Button>
 
-              <StepIndicator 
-                steps={visibleSteps}
-                currentStep={navigation.currentStep} 
-              />
+                <StepIndicator 
+                  steps={visibleSteps}
+                  currentStep={navigation.currentStep} 
+                />
+              </div>
+              
+              {/* Status de salvamento à direita */}
+              <div className="shrink-0">
+                <SaveStatus status={saveStatus.status} />
+              </div>
             </div>
           </div>
           
@@ -180,7 +188,6 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
             isValid={navigation.canProceed()}
             loading={formState.loading}
             isNavigating={navigation.isNavigating}
-            saveStatus={saveStatus.status}
           />
         </div>
       </Card>

@@ -899,22 +899,6 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
           aria-label="Highlight color"
         />
 
-        {/* Saving indicator */}
-        {projectId && (
-          <div className="flex items-center gap-2 text-xs text-default-500 ml-auto shrink-0">
-            {isSaving ? (
-              <>
-                <Spinner size="sm" />
-                <span className="hidden sm:inline">Saving...</span>
-              </>
-            ) : (
-              <span className="flex items-center gap-1">
-                <Icon icon="lucide:check-circle" className="text-success text-sm" />
-                <span className="hidden sm:inline">Saved</span>
-              </span>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Drawing Canvas Modal */}

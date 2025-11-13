@@ -1,7 +1,6 @@
 import React from "react";
 import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { SaveStatus } from "./SaveStatus";
 
 export function NavigationFooter({
   currentStep,
@@ -12,7 +11,6 @@ export function NavigationFooter({
   isValid,
   loading,
   isNavigating,
-  saveStatus, // Novo prop para status de salvamento
 }) {
   return (
     <div className="w-full bg-content1 border-t border-divider px-4 py-4 sm:px-6 sm:py-6 sticky bottom-0">
@@ -26,11 +24,6 @@ export function NavigationFooter({
         >
           Back
         </Button>
-        
-        {/* Status de salvamento no centro */}
-        <div className="flex-1 flex items-center justify-center min-h-[32px]">
-          <SaveStatus status={saveStatus} />
-        </div>
         
         <div className="flex gap-2">
           {currentStep < totalSteps ? (
