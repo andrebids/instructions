@@ -10,6 +10,7 @@ import './index.css'
 import { ClerkProvider } from '@clerk/clerk-react'
 import { registerSW } from 'virtual:pwa-register'
 import { setupNotificationClickListener } from './services/pushNotifications'
+import { isBackgroundSyncAvailable } from './services/backgroundSync'
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 if (!PUBLISHABLE_KEY) {
@@ -30,11 +31,8 @@ if ('serviceWorker' in navigator) {
     onRegistered(registration) {
       console.log('✅ [Main] Service Worker registered');
       
-      // Check if Background Sync is available
-      const hasSync = 'sync' in registration;
-      if (!hasSync) {
-        console.warn('⚠️ [Main] Background Sync not available (Chrome/Edge only)');
-      }
+      // Verificar Background Sync (a função já faz o log apropriado se necessário)
+      isBackgroundSyncAvailable();
       
       // Configurar listener para notificações push quando SW estiver pronto
       setupNotificationClickListener()

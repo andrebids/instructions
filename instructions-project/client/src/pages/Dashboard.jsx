@@ -49,20 +49,16 @@ export default function Dashboard() {
     },
   ];
   
-  // Carregar dados ao iniciar
-  React.useEffect(() => {
-    loadData();
-  }, []);
-  
-  const loadData = async () => {
+  const loadData = React.useCallback(async (signal = null) => {
     try {
       setLoading(true);
       setError(null);
       
       // Carregar projetos e stats em paralelo
+      const options = signal ? { signal } : {};
       const [projectsData, statsData] = await Promise.all([
-        projectsAPI.getAll(),
-        projectsAPI.getStats(),
+        projectsAPI.getAll(options),
+        projectsAPI.getStats(options),
       ]);
       
       setProjects(projectsData);
@@ -77,12 +73,39 @@ export default function Dashboard() {
       
       console.log('✅ Dados carregados:', { projects: projectsData.length, stats: statsData });
     } catch (err) {
+      // Ignorar erros de requisições abortadas/canceladas
+      if (
+        err.name === 'AbortError' || 
+        err.name === 'CanceledError' ||
+        err.code === 'ECONNABORTED' || 
+        err.code === 'ERR_CANCELED' ||
+        err.message === 'Request aborted' || 
+        err.message === 'canceled' ||
+        err.message?.includes('aborted') ||
+        err.message?.includes('canceled')
+      ) {
+        return;
+      }
+      
       console.error('❌ Erro ao carregar dados:', err);
       setError('Failed to load data. Please check if the server is running.');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+  
+  // Carregar dados ao iniciar
+  React.useEffect(() => {
+    const abortController = new AbortController();
+    
+    // Chamar loadData diretamente
+    loadData(abortController.signal);
+    
+    // Cleanup: cancelar requisições quando o componente desmontar
+    return () => {
+      abortController.abort();
+    };
+  }, []); // Executar apenas uma vez na montagem
   
   const handleCreateProject = () => {
     setShowCreateProject(true);

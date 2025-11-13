@@ -38,7 +38,20 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error(`❌ ${error.config?.method?.toUpperCase()} ${error.config?.url}:`, error.message);
+    // Ignorar logs de requisições abortadas/canceladas (não são erros reais)
+    const isCanceled = 
+      error.code === 'ECONNABORTED' || 
+      error.code === 'ERR_CANCELED' ||
+      error.name === 'AbortError' ||
+      error.name === 'CanceledError' ||
+      error.message === 'Request aborted' || 
+      error.message === 'canceled' ||
+      error.message?.includes('aborted') ||
+      error.message?.includes('canceled');
+    
+    if (!isCanceled) {
+      console.error(`❌ ${error.config?.method?.toUpperCase()} ${error.config?.url}:`, error.message);
+    }
     return Promise.reject(error);
   }
 );
@@ -46,14 +59,21 @@ api.interceptors.response.use(
 // ===== PROJECTS API =====
 export const projectsAPI = {
   // GET /api/projects
-  getAll: async (params = {}) => {
-    const response = await api.get('/projects', { params });
+  getAll: async (options = {}) => {
+    const { signal, ...params } = options;
+    const config = { params };
+    if (signal) {
+      config.signal = signal;
+    }
+    const response = await api.get('/projects', config);
     return response.data;
   },
 
   // GET /api/projects/stats
-  getStats: async () => {
-    const response = await api.get('/projects/stats');
+  getStats: async (options = {}) => {
+    const { signal } = options;
+    const config = signal ? { signal } : {};
+    const response = await api.get('/projects/stats', config);
     return response.data;
   },
 
