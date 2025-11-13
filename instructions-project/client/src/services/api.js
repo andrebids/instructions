@@ -303,6 +303,21 @@ export const productsAPI = {
   },
 };
 
+// ===== EDITOR API =====
+export const editorAPI = {
+  // POST /api/upload/editor-image - Upload image for editor
+  uploadImage: async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await api.post('/upload/editor-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+};
+
 // Health check
 export const healthCheck = async () => {
   try {

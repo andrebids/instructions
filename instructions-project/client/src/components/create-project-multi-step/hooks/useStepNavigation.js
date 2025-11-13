@@ -6,8 +6,9 @@ import { logger } from "../utils/logger";
 export const TEST_BREAKPOINT_3 = false;
 
 // ✅ CORRIGIDO: Agora recebe visibleSteps para navegação correta
-export const useStepNavigation = (formData, visibleSteps) => {
+export const useStepNavigation = (formData, visibleSteps, onCreateTempProject) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [isNavigating, setIsNavigating] = useState(false);
   
   // Log de navegação
   useEffect(() => {
@@ -26,13 +27,30 @@ export const useStepNavigation = (formData, visibleSteps) => {
   }, [currentStep, visibleSteps]);
 
   // Avançar para próximo step
-  const nextStep = () => {
+  const nextStep = async () => {
     const currentStepId = visibleSteps[currentStep - 1]?.id;
+    const nextStepId = visibleSteps[currentStep]?.id;
     
     if (currentStep < visibleSteps.length && isStepValid(currentStepId, formData)) {
-      setCurrentStep(currentStep + 1);
-      window.scrollTo(0, 0);
-      logger.userAction('Next Step', currentStepId, currentStep + 1);
+      setIsNavigating(true);
+      
+      try {
+        // Se estamos a sair de "project-details" e vamos para "notes", criar projeto primeiro
+        if (currentStepId === 'project-details' && nextStepId === 'notes' && onCreateTempProject) {
+          try {
+            await onCreateTempProject();
+          } catch (error) {
+            logger.error('useStepNavigation', 'Failed to create temp project', error);
+            // Continuar mesmo assim - o step Notes vai mostrar mensagem
+          }
+        }
+        
+        setCurrentStep(currentStep + 1);
+        window.scrollTo(0, 0);
+        logger.userAction('Next Step', currentStepId, currentStep + 1);
+      } finally {
+        setIsNavigating(false);
+      }
     } else {
       logger.warn('useStepNavigation', `Cannot proceed from step ${currentStepId}`);
     }
@@ -60,6 +78,7 @@ export const useStepNavigation = (formData, visibleSteps) => {
     nextStep,
     prevStep,
     canProceed,
+    isNavigating,
   };
 };
 

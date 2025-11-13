@@ -1,6 +1,6 @@
-import { Server } from '@hocuspocus/server';
+import { Hocuspocus } from '@hocuspocus/server';
 import { Database } from '@hocuspocus/extension-database';
-import ProjectNote from '../models/ProjectNote.js';
+import ProjectNote from './models/ProjectNote.js';
 
 /**
  * Servidor Hocuspocus para sincronização colaborativa de documentos
@@ -9,7 +9,7 @@ import ProjectNote from '../models/ProjectNote.js';
 export function createHocuspocusServer() {
   const port = parseInt(process.env.HOCUSPOCUS_PORT || '1234', 10);
   
-  const server = new Server({
+  const server = new Hocuspocus({
     port,
     name: 'hocuspocus-server',
     

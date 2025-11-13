@@ -34,9 +34,6 @@ export default function ProjectNotes() {
     }
   };
 
-  // URL do servidor Hocuspocus (pode ser configurado via env)
-  const hocuspocusUrl = import.meta.env.VITE_HOCUSPOCUS_URL || 'ws://localhost:1234';
-  const documentName = `project-${id}`;
 
   if (loading) {
     return (
@@ -130,17 +127,10 @@ export default function ProjectNotes() {
         <CardHeader>
           <div className="flex items-center justify-between w-full">
             <h3 className="text-lg font-semibold">Notas do Projeto</h3>
-            <div className="flex items-center gap-2 text-sm text-default-500">
-              <Icon icon="lucide:users" className="text-lg" />
-              <span>Colaborativo em tempo real</span>
-            </div>
           </div>
         </CardHeader>
         <CardBody>
-          <SimpleEditor 
-            documentName={documentName}
-            hocuspocusUrl={hocuspocusUrl}
-          />
+          <SimpleEditor />
         </CardBody>
       </Card>
     </div>

@@ -28,6 +28,7 @@ export const useProjectForm = (onClose) => {
     budget: "",
     location: "",
     description: "",
+    tempProjectId: null, // ID temporário do projeto criado após Project Details
     // 🆕 Novos campos para Canvas Konva (apenas projectos Simu)
     canvasDecorations: [],    // Array de decorações geradas pelo AI Designer
     canvasImages: [],          // Array de imagens adicionadas ao canvas
@@ -97,19 +98,28 @@ export const useProjectForm = (onClose) => {
       
       // Logs de teste removidos
       
-      const newProject = await projectsAPI.create(projectData);
+      // Se já existe tempProjectId, atualizar projeto existente em vez de criar novo
+      let finalProject;
+      if (formData.tempProjectId) {
+        // Atualizar projeto existente
+        finalProject = await projectsAPI.update(formData.tempProjectId, projectData);
+        logger.lifecycle('useProjectForm', 'Project updated', finalProject);
+      } else {
+        // Criar novo projeto
+        finalProject = await projectsAPI.create(projectData);
+        logger.lifecycle('useProjectForm', 'Project created', finalProject);
+      }
       
-      logger.lifecycle('useProjectForm', 'Project created', newProject);
-      
-      // Atualizar formData com o ID do projeto criado para permitir auto-save futuro
+      // Atualizar formData com o ID do projeto
       setFormData(prev => ({
         ...prev,
-        id: newProject.id
+        id: finalProject.id,
+        tempProjectId: finalProject.id
       }));
       
       // Redirecionar para página de notas do projeto
-      if (newProject?.id) {
-        navigate(`/projects/${newProject.id}/notes`);
+      if (finalProject?.id) {
+        navigate(`/projects/${finalProject.id}/notes`);
       } else {
         onClose?.();  // Fallback: fecha modal e recarrega dados
       }
@@ -124,11 +134,49 @@ export const useProjectForm = (onClose) => {
     }
   };
 
+  // Criar projeto temporariamente após Project Details
+  const createTempProject = async () => {
+    // Se já existe tempProjectId, não criar novamente
+    if (formData.tempProjectId) {
+      return formData.tempProjectId;
+    }
+
+    try {
+      const projectData = {
+        name: formData.name,
+        clientName: formData.clientName,
+        projectType: formData.projectType || 'decor',
+        status: 'created',
+        location: formData.location,
+        description: formData.description,
+        budget: formData.budget ? parseFloat(formData.budget) : null,
+        startDate: null,
+        endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
+      };
+      
+      const newProject = await projectsAPI.create(projectData);
+      
+      // Guardar ID temporário no formData
+      setFormData(prev => ({
+        ...prev,
+        tempProjectId: newProject.id,
+        id: newProject.id
+      }));
+      
+      logger.lifecycle('useProjectForm', 'Temporary project created', newProject);
+      return newProject.id;
+    } catch (err) {
+      logger.error('useProjectForm.createTempProject', err);
+      throw err;
+    }
+  };
+
   return {
     formData,
     setFormData,
     handleInputChange,
     handleSubmit,
+    createTempProject,
     loading,
     error,
     setError,
