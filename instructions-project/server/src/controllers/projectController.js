@@ -24,31 +24,32 @@ export async function getAll(req, res) {
       console.error('❌ [PROJECTS API] Erro ao verificar tabela:', tableCheckError.message);
     }
     
-    const { status, projectType, favorite } = req.query;
+    const { status, projectType, favorite, includeElements } = req.query;
     const where = {};
     
     if (status) where.status = status;
     if (projectType) where.projectType = projectType;
     if (favorite) where.isFavorite = favorite === 'true';
     
-    console.log('📋 [PROJECTS API] Where clause:', JSON.stringify(where));
+    // Só carregar elementos se explicitamente solicitado (para melhor performance)
+    const includeOptions = includeElements === 'true' ? [
+      {
+        model: ProjectElement,
+        as: 'elements',
+        required: false,
+        include: [
+          {
+            model: Decoration,
+            as: 'decoration',
+            required: false,
+          },
+        ],
+      },
+    ] : [];
     
     const projects = await Project.findAll({
       where,
-      include: [
-        {
-          model: ProjectElement,
-          as: 'elements',
-          required: false,
-          include: [
-            {
-              model: Decoration,
-              as: 'decoration',
-              required: false,
-            },
-          ],
-        },
-      ],
+      include: includeOptions,
       order: [['createdAt', 'DESC']],
     });
     
@@ -109,6 +110,14 @@ export async function getById(req, res) {
 export async function create(req, res) {
   try {
     console.log('💾 [SERVER] ===== CRIANDO NOVO PROJETO =====');
+    console.log('💾 [SERVER] Dados recebidos:', {
+      name: req.body.name,
+      clientName: req.body.clientName,
+      projectType: req.body.projectType,
+      location: req.body.location,
+      description: req.body.description ? `[${req.body.description.length} caracteres]` : '[vazio]',
+      hasSnapZones: !!(req.body.snapZonesByImage && Object.keys(req.body.snapZonesByImage).length > 0),
+    });
     
     // Log das zonas se existirem
     if (req.body.snapZonesByImage && Object.keys(req.body.snapZonesByImage).length > 0) {
@@ -126,6 +135,7 @@ export async function create(req, res) {
       console.log('💾 [SERVER] Projeto criado SEM zonas');
     }
     
+    console.log('💾 [SERVER] Salvando projeto na base de dados...');
     const project = await Project.create(req.body);
     
     // Verificar o que foi realmente guardado
@@ -143,6 +153,8 @@ export async function create(req, res) {
     }
     
     console.log('✅ [SERVER] Projeto criado com ID:', project.id);
+    console.log('✅ [SERVER] Description guardada na BD:', project.description ? `[${project.description.length} caracteres]` : '[vazio]');
+    console.log('✅ [SERVER] ===== PROJETO CRIADO COM SUCESSO =====');
     res.status(201).json(project);
   } catch (error) {
     console.error('❌ [SERVER] ===== ERRO AO CRIAR PROJETO =====');
@@ -155,16 +167,46 @@ export async function create(req, res) {
 // PUT /api/projects/:id - Atualizar projeto
 export async function update(req, res) {
   try {
+    console.log('💾 [SERVER] ===== ATUALIZANDO PROJETO =====');
+    console.log('💾 [SERVER] Project ID:', req.params.id);
+    console.log('💾 [SERVER] Campos a atualizar:', Object.keys(req.body));
+    
+    // Log específico para description (notas)
+    if (req.body.description !== undefined) {
+      console.log('💾 [SERVER] Atualizando description (notas):', req.body.description ? `[${req.body.description.length} caracteres]` : '[vazio]');
+    }
+    
     const project = await Project.findByPk(req.params.id);
     
     if (!project) {
+      console.error('❌ [SERVER] Projeto não encontrado:', req.params.id);
       return res.status(404).json({ error: 'Project not found' });
     }
     
+    console.log('💾 [SERVER] Projeto encontrado:', {
+      id: project.id,
+      name: project.name,
+      currentDescription: project.description ? `[${project.description.length} caracteres]` : '[vazio]'
+    });
+    
+    console.log('💾 [SERVER] Salvando atualizações na base de dados...');
     await project.update(req.body);
+    
+    // Recarregar para verificar o que foi guardado
+    await project.reload();
+    
+    console.log('✅ [SERVER] Projeto atualizado com sucesso!');
+    if (req.body.description !== undefined) {
+      console.log('✅ [SERVER] Description guardada na BD:', project.description ? `[${project.description.length} caracteres]` : '[vazio]');
+    }
+    console.log('✅ [SERVER] ===== ATUALIZAÇÃO CONCLUÍDA =====');
+    
     res.json(project);
   } catch (error) {
-    console.error('Erro ao atualizar projeto:', error);
+    console.error('❌ [SERVER] ===== ERRO AO ATUALIZAR PROJETO =====');
+    console.error('❌ [SERVER] Project ID:', req.params.id);
+    console.error('❌ [SERVER] Erro:', error.message);
+    console.error('❌ [SERVER] Stack:', error.stack);
     res.status(400).json({ error: error.message });
   }
 }
