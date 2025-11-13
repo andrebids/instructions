@@ -21,14 +21,21 @@ if ('serviceWorker' in navigator) {
   registerSW({
     immediate: true,
     onOfflineReady() {
-      console.log('App ready to work offline')
+      console.log('✅ [Main] App ready to work offline');
     },
     onNeedRefresh() {
       // Com autoUpdate, o reload acontece automaticamente
-      console.log('New content available, reloading...')
+      console.log('🔄 [Main] New content available, reloading...');
     },
     onRegistered(registration) {
-      console.log('Service Worker registered:', registration)
+      console.log('✅ [Main] Service Worker registered');
+      
+      // Check if Background Sync is available
+      const hasSync = 'sync' in registration;
+      if (!hasSync) {
+        console.warn('⚠️ [Main] Background Sync not available (Chrome/Edge only)');
+      }
+      
       // Configurar listener para notificações push quando SW estiver pronto
       setupNotificationClickListener()
       
@@ -38,20 +45,19 @@ if ('serviceWorker' in navigator) {
           if (event.data && event.data.type === 'SYNC_PROJECT') {
             const { projectId } = event.data;
             try {
-              // Importar dinamicamente para evitar dependência circular
               const { syncProject } = await import('./services/backgroundSync.js');
               await syncProject(projectId);
             } catch (error) {
-              console.error(`Erro ao sincronizar projeto ${projectId}:`, error);
+              console.error(`❌ [Main] Erro ao sincronizar projeto ${projectId}:`, error);
             }
           }
         });
       }
     },
     onRegisterError(error) {
-      console.error('Service Worker registration error:', error)
+      console.error('❌ [Main] Service Worker registration error:', error);
     }
-  })
+  });
 }
 
 const rootElement = document.getElementById('root')

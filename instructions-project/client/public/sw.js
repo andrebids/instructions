@@ -1,35 +1,115 @@
-// Service Worker customizado para Background Sync
-// Este arquivo será usado com injectManifest do VitePWA
+// Custom Service Worker for Background Sync
+// This file is used with injectManifest from VitePWA
 
-import { precacheAndRoute } from 'workbox-precaching';
+import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import { clientsClaim } from 'workbox-core';
 import { registerRoute } from 'workbox-routing';
 import { NetworkFirst, CacheFirst } from 'workbox-strategies';
 
-// Precaching de assets
+// Service Worker installation
+self.addEventListener('install', (event) => {
+  console.log('📦 [SW] Installing service worker...');
+  self.skipWaiting();
+});
+
+// Service Worker activation
+self.addEventListener('activate', (event) => {
+  console.log('✅ [SW] Service Worker activating...');
+  cleanupOutdatedCaches();
+  event.waitUntil(
+    self.clients.claim().then(() => {
+      console.log('✅ [SW] Service Worker ready');
+    })
+  );
+});
+
+// Precaching assets - manifest is injected by VitePWA during build
 precacheAndRoute(self.__WB_MANIFEST || []);
 
-// Cache de API com NetworkFirst
+// Auto-update behavior: claim clients immediately and skip waiting
+clientsClaim();
+
+// API cache with NetworkFirst strategy
 registerRoute(
   ({ url }) => url.pathname.startsWith('/api/'),
   new NetworkFirst({
     cacheName: 'api-cache',
     networkTimeoutSeconds: 10,
+    plugins: [
+      {
+        cacheableResponse: {
+          statuses: [0, 200]
+        },
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 60 * 5 // 5 minutes
+        }
+      }
+    ]
   })
 );
 
-// Cache de imagens com CacheFirst
+// Google Fonts cache with CacheFirst strategy
+registerRoute(
+  ({ url }) => url.origin === 'https://fonts.googleapis.com',
+  new CacheFirst({
+    cacheName: 'google-fonts-cache',
+    plugins: [
+      {
+        cacheableResponse: {
+          statuses: [0, 200]
+        },
+        expiration: {
+          maxEntries: 10,
+          maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+        }
+      }
+    ]
+  })
+);
+
+registerRoute(
+  ({ url }) => url.origin === 'https://fonts.gstatic.com',
+  new CacheFirst({
+    cacheName: 'gstatic-fonts-cache',
+    plugins: [
+      {
+        cacheableResponse: {
+          statuses: [0, 200]
+        },
+        expiration: {
+          maxEntries: 10,
+          maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+        }
+      }
+    ]
+  })
+);
+
+// Images cache with CacheFirst strategy
 registerRoute(
   ({ request }) => request.destination === 'image',
   new CacheFirst({
     cacheName: 'images-cache',
+    plugins: [
+      {
+        cacheableResponse: {
+          statuses: [0, 200]
+        },
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+        }
+      }
+    ]
   })
 );
 
-// Handler para Background Sync
+// Background Sync handler
 self.addEventListener('sync', (event) => {
   if (event.tag.startsWith('sync-project-')) {
     const projectId = event.tag.replace('sync-project-', '');
-    console.log(`🔄 [SW] Background Sync iniciado para projeto ${projectId}`);
+    console.log(`🔄 [SW] Background Sync started for project ${projectId}`);
     
     event.waitUntil(
       syncProjectData(projectId)
@@ -37,31 +117,73 @@ self.addEventListener('sync', (event) => {
   }
 });
 
-// Função para sincronizar dados do projeto
+// Function to sync project data
 async function syncProjectData(projectId) {
   try {
-    // Ler dados do IndexedDB (via mensagem para a página)
-    const clients = await self.clients.matchAll();
+    // Get all clients (open tabs/windows)
+    const clients = await self.clients.matchAll({ includeUncontrolled: true });
     
     if (clients.length > 0) {
-      // Enviar mensagem para a página para sincronizar
+      // Send message to the first client to trigger sync
       clients[0].postMessage({
         type: 'SYNC_PROJECT',
         projectId: projectId
       });
+      
+      // Notify all clients about sync status
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'SYNC_STATUS',
+          projectId: projectId,
+          status: 'syncing'
+        });
+      });
+    }
+  } catch (error) {
+    console.error(`❌ [SW] Error processing sync for project ${projectId}:`, error);
+    
+    // Notify clients about sync failure
+    try {
+      const clients = await self.clients.matchAll({ includeUncontrolled: true });
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'SYNC_STATUS',
+          projectId: projectId,
+          status: 'error',
+          error: error.message
+        });
+      });
+    } catch (notifyError) {
+      console.error(`❌ [SW] Failed to notify clients about error:`, notifyError);
     }
     
-    console.log(`✅ [SW] Sync tag processada para projeto ${projectId}`);
-  } catch (error) {
-    console.error(`❌ [SW] Erro ao processar sync para projeto ${projectId}:`, error);
-    throw error; // Re-throw para que o browser tente novamente
+    throw error; // Re-throw so browser will retry
   }
 }
 
-// Listener para mensagens da página
+// Message listener from the page
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+  
+  // Handle sync completion notification
+  if (event.data && event.data.type === 'SYNC_COMPLETE') {
+    const { projectId, success } = event.data;
+    console.log(`✅ [SW] Sync ${success ? 'completed' : 'failed'} for project ${projectId}`);
+    
+    // Notify all clients about sync completion
+    self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'SYNC_STATUS',
+          projectId: projectId,
+          status: success ? 'completed' : 'failed'
+        });
+      });
+    }).catch(error => {
+      console.error(`❌ [SW] Error notifying clients about completion:`, error);
+    });
   }
 });
 
