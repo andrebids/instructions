@@ -379,9 +379,15 @@ echo Este processo irá:
 echo 1. Fazer build do cliente localmente
 echo 2. Enviar ficheiros compilados para o servidor
 echo 3. Atualizar o servidor com o novo build
+echo 4. Executar migrations na base de dados
+echo 5. Reiniciar o servidor PM2
 echo.
 echo ⚠️  NOTA: O servidor remoto deve estar acessível via SSH
 echo    Certifique-se de que a chave SSH está configurada
+echo.
+echo 💡 O script irá executar automaticamente:
+echo    - npm run setup (migrations)
+echo    - pm2 restart instructions-server
 echo.
 set /p confirm="Continuar? (S/N): "
 if /i not "%confirm%"=="S" (
@@ -391,7 +397,7 @@ if /i not "%confirm%"=="S" (
 )
 echo.
 echo ========================================
-echo    EXECUTANDO BUILD E DEPLOY
+echo    EXECUTANDO BUILD E DEPLOY COMPLETO
 echo ========================================
 echo.
 
@@ -415,8 +421,16 @@ if %DEPLOY_SUCCESS% equ 0 (
     echo    ✅ BUILD E DEPLOY CONCLUÍDO!
     echo ========================================
     echo.
-    echo O build foi enviado com sucesso para o servidor.
-    echo O servidor remoto foi atualizado.
+    echo ✅ Build enviado para o servidor
+    echo ✅ Migrations executadas
+    echo ✅ Servidor reiniciado
+    echo.
+    echo O servidor remoto foi atualizado completamente.
+    echo.
+    echo 💡 Se houver problemas, verifique:
+    echo    - Logs do PM2: ssh servidor 'pm2 logs instructions-server'
+    echo    - Status do PM2: ssh servidor 'pm2 status'
+    echo    - Health check: curl http://servidor:5000/health
     echo.
 ) else (
     echo ========================================
@@ -427,7 +441,13 @@ if %DEPLOY_SUCCESS% equ 0 (
     echo 1. Servidor está acessível via SSH
     echo 2. Chave SSH está configurada corretamente
     echo 3. Build local foi concluído com sucesso
-    echo 4. Verifique os erros acima para mais detalhes
+    echo 4. Migrations executaram sem erros críticos
+    echo 5. PM2 está instalado e configurado no servidor
+    echo 6. Verifique os erros acima para mais detalhes
+    echo.
+    echo 💡 Para verificar o status do servidor:
+    echo    ssh servidor 'pm2 status'
+    echo    ssh servidor 'pm2 logs instructions-server --lines 50'
     echo.
 )
 
