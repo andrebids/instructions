@@ -7,6 +7,7 @@ import { Icon } from "@iconify/react";
 import { useProjectForm } from "./hooks/useProjectForm";
 import { useClientManagement } from "./hooks/useClientManagement";
 import { useStepNavigation } from "./hooks/useStepNavigation";
+import { useSaveStatus } from "./hooks/useSaveStatus";
 
 // Components
 import { StepIndicator } from "./components/StepIndicator";
@@ -30,7 +31,8 @@ const TEST_BREAKPOINT_5 = false;
 
 export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
   // Initialize hooks
-  const formState = useProjectForm(onClose, projectId);
+  const saveStatus = useSaveStatus();
+  const formState = useProjectForm(onClose, projectId, saveStatus);
   const clientState = useClientManagement(formState.setFormData);
   
   // Get visible steps based on project type
@@ -99,6 +101,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
           <StepNotes
             formData={formState.formData}
             onInputChange={formState.handleInputChange}
+            saveStatus={saveStatus}
           />
         );
       
@@ -177,6 +180,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
             isValid={navigation.canProceed()}
             loading={formState.loading}
             isNavigating={navigation.isNavigating}
+            saveStatus={saveStatus.status}
           />
         </div>
       </Card>

@@ -164,16 +164,63 @@ export async function create(req, res) {
   }
 }
 
+// Constantes de validação
+const MAX_DESCRIPTION_SIZE = 500000; // 500KB (~500.000 caracteres)
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+// Função auxiliar para validar description
+function validateDescription(description) {
+  if (description === null || description === undefined) {
+    return { valid: true }; // null/undefined é permitido (limpar campo)
+  }
+  
+  if (typeof description !== 'string') {
+    return { valid: false, error: 'Description deve ser uma string' };
+  }
+  
+  // Validar tamanho máximo
+  if (description.length > MAX_DESCRIPTION_SIZE) {
+    return { 
+      valid: false, 
+      error: `Description muito grande (${description.length} caracteres). Máximo permitido: ${MAX_DESCRIPTION_SIZE.toLocaleString()} caracteres.` 
+    };
+  }
+  
+  // Validar estrutura HTML básica (prevenir HTML malformado)
+  if (description.trim() && description.includes('<')) {
+    const openTags = (description.match(/<[^/][^>]*>/g) || []).length;
+    const closeTags = (description.match(/<\/[^>]+>/g) || []).length;
+    const selfClosingTags = (description.match(/<[^>]+\/>/g) || []).length;
+    
+    // Permitir diferença razoável (algumas tags podem ser self-closing)
+    if (Math.abs(openTags - closeTags - selfClosingTags) > 10) {
+      return { valid: false, error: 'HTML malformado detectado na description' };
+    }
+  }
+  
+  return { valid: true };
+}
+
 // PUT /api/projects/:id - Atualizar projeto
 export async function update(req, res) {
   try {
-    console.log('💾 [SERVER] ===== ATUALIZANDO PROJETO =====');
-    console.log('💾 [SERVER] Project ID:', req.params.id);
-    console.log('💾 [SERVER] Campos a atualizar:', Object.keys(req.body));
+    if (isDevelopment) {
+      console.log('💾 [SERVER] ===== ATUALIZANDO PROJETO =====');
+      console.log('💾 [SERVER] Project ID:', req.params.id);
+      console.log('💾 [SERVER] Campos a atualizar:', Object.keys(req.body));
+    }
     
-    // Log específico para description (notas)
+    // Validar description se estiver presente
     if (req.body.description !== undefined) {
-      console.log('💾 [SERVER] Atualizando description (notas):', req.body.description ? `[${req.body.description.length} caracteres]` : '[vazio]');
+      const validation = validateDescription(req.body.description);
+      if (!validation.valid) {
+        console.error('❌ [SERVER] Validação de description falhou:', validation.error);
+        return res.status(400).json({ error: validation.error });
+      }
+      
+      if (isDevelopment) {
+        console.log('💾 [SERVER] Atualizando description (notas):', req.body.description ? `[${req.body.description.length} caracteres]` : '[vazio]');
+      }
     }
     
     const project = await Project.findByPk(req.params.id);
@@ -183,30 +230,36 @@ export async function update(req, res) {
       return res.status(404).json({ error: 'Project not found' });
     }
     
-    console.log('💾 [SERVER] Projeto encontrado:', {
-      id: project.id,
-      name: project.name,
-      currentDescription: project.description ? `[${project.description.length} caracteres]` : '[vazio]'
-    });
+    if (isDevelopment) {
+      console.log('💾 [SERVER] Projeto encontrado:', {
+        id: project.id,
+        name: project.name,
+        currentDescription: project.description ? `[${project.description.length} caracteres]` : '[vazio]'
+      });
+      console.log('💾 [SERVER] Salvando atualizações na base de dados...');
+    }
     
-    console.log('💾 [SERVER] Salvando atualizações na base de dados...');
     await project.update(req.body);
     
     // Recarregar para verificar o que foi guardado
     await project.reload();
     
-    console.log('✅ [SERVER] Projeto atualizado com sucesso!');
-    if (req.body.description !== undefined) {
-      console.log('✅ [SERVER] Description guardada na BD:', project.description ? `[${project.description.length} caracteres]` : '[vazio]');
+    if (isDevelopment) {
+      console.log('✅ [SERVER] Projeto atualizado com sucesso!');
+      if (req.body.description !== undefined) {
+        console.log('✅ [SERVER] Description guardada na BD:', project.description ? `[${project.description.length} caracteres]` : '[vazio]');
+      }
+      console.log('✅ [SERVER] ===== ATUALIZAÇÃO CONCLUÍDA =====');
     }
-    console.log('✅ [SERVER] ===== ATUALIZAÇÃO CONCLUÍDA =====');
     
     res.json(project);
   } catch (error) {
     console.error('❌ [SERVER] ===== ERRO AO ATUALIZAR PROJETO =====');
     console.error('❌ [SERVER] Project ID:', req.params.id);
     console.error('❌ [SERVER] Erro:', error.message);
-    console.error('❌ [SERVER] Stack:', error.stack);
+    if (isDevelopment) {
+      console.error('❌ [SERVER] Stack:', error.stack);
+    }
     res.status(400).json({ error: error.message });
   }
 }
