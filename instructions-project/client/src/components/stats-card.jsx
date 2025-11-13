@@ -28,12 +28,12 @@ export function StatsCard({ title, value, change, isPositive, icon, timePeriod =
     <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm">
       <CardBody>
         <div className="flex items-center justify-between">
-          <div className="flex items-start gap-3">
-            <span className="text-3xl font-semibold text-gray-800 dark:text-foreground -mt-0.5">{value}</span>
-            <div>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-semibold text-gray-800 dark:text-foreground -mt-0.5">{value}</span>
               <p className="text-sm font-semibold leading-tight text-gray-800 dark:text-foreground">{title}</p>
-              <p className="text-sm text-default-500 mt-0">{timePeriod}</p>
             </div>
+            <p className="text-sm text-default-500">{timePeriod}</p>
           </div>
           <div className={`flex items-center justify-center w-12 h-12 rounded-lg ${bg}`}>
             <Icon icon={icon} className={`text-2xl ${iconColor}`} />
