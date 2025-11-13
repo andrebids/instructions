@@ -14,6 +14,9 @@ export const useStepNavigation = (formData, visibleSteps, onCreateTempProject) =
   const [isNavigating, setIsNavigating] = useState(false);
   const debounceTimerRef = useRef(null);
   const projectIdRef = useRef(formData.id || formData.tempProjectId);
+  const isRestoringRef = useRef(false); // Flag para evitar salvar durante restauração
+  const hasRestoredRef = useRef(false); // Flag para evitar múltiplas restaurações
+  const lastProjectIdRef = useRef(null); // Rastrear último projectId restaurado
   
   // Atualizar projectId ref quando mudar
   useEffect(() => {
@@ -23,10 +26,27 @@ export const useStepNavigation = (formData, visibleSteps, onCreateTempProject) =
   // Restaurar step salvo ao carregar projeto existente
   useEffect(() => {
     const projectId = formData.id || formData.tempProjectId;
-    if (!projectId) return;
+    
+    // Se não há projectId ou já foi restaurado para este projectId, não fazer nada
+    if (!projectId || (hasRestoredRef.current && lastProjectIdRef.current === projectId)) {
+      return;
+    }
+
+    // Se o projectId mudou, resetar a flag de restauração
+    if (lastProjectIdRef.current !== projectId) {
+      hasRestoredRef.current = false;
+      lastProjectIdRef.current = projectId;
+    }
+
+    // Se já foi restaurado para este projectId, não restaurar novamente
+    if (hasRestoredRef.current) {
+      return;
+    }
 
     const restoreStep = async () => {
       try {
+        isRestoringRef.current = true; // Marcar que estamos restaurando
+        
         // Tentar carregar do IndexedDB primeiro (mais rápido)
         const editorState = await getEditorState(projectId);
         let stepToRestore = editorState?.lastEditedStep;
@@ -55,20 +75,35 @@ export const useStepNavigation = (formData, visibleSteps, onCreateTempProject) =
           if (stepIndex >= 0) {
             setCurrentStep(stepIndex + 1);
             logger.lifecycle('useStepNavigation', 'Step restaurado', { stepId: stepToRestore, stepIndex: stepIndex + 1 });
+            hasRestoredRef.current = true; // Marcar como restaurado
           }
+        } else {
+          // Se não encontrou step salvo, marcar como restaurado mesmo assim para evitar tentativas futuras
+          hasRestoredRef.current = true;
         }
       } catch (error) {
         console.error('Erro ao restaurar step:', error);
+        hasRestoredRef.current = true; // Marcar como restaurado mesmo em caso de erro
+      } finally {
+        // Aguardar um pouco antes de permitir salvamento novamente
+        setTimeout(() => {
+          isRestoringRef.current = false;
+        }, 100);
       }
     };
 
     restoreStep();
-  }, [formData.id, formData.tempProjectId, visibleSteps]);
+  }, [formData.id, formData.tempProjectId]); // Removido visibleSteps das dependências
 
-  // Persistir step atual quando mudar
+  // Persistir step atual quando mudar (mas não durante restauração)
   useEffect(() => {
     const projectId = projectIdRef.current;
     if (!projectId) return;
+    
+    // Não salvar se estiver restaurando
+    if (isRestoringRef.current) {
+      return;
+    }
 
     const currentStepData = visibleSteps[currentStep - 1];
     const stepId = currentStepData?.id;

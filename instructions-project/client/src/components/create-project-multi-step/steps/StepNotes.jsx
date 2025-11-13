@@ -23,11 +23,11 @@ export function StepNotes({ formData, onInputChange }) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6">
+    <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 pb-32">
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">Project Notes</h1>
         <p className="text-default-500 text-sm sm:text-base">
-          Add notes and observations about this project. Changes are saved automatically.
+          Add notes and observations about this project. Changes are saved automatically every 2 seconds.
         </p>
       </div>
 
@@ -38,7 +38,7 @@ export function StepNotes({ formData, onInputChange }) {
           </div>
         </CardHeader>
         <CardBody className="p-2 sm:p-6">
-          <SimpleEditor />
+          <SimpleEditor projectId={projectId} />
         </CardBody>
       </Card>
 

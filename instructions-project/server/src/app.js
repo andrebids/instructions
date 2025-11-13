@@ -30,6 +30,16 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Configurar mime types para PWA
+app.use((req, res, next) => {
+  // Servir manifest com mime type correto para PWA
+  if (req.path.endsWith('.webmanifest') || req.path.endsWith('/manifest.json')) {
+    res.type('application/manifest+json');
+  }
+  next();
+});
+
 app.use(express.static('public'));
 
 // Servir uploads também via /api para funcionar por trás do proxy do Vite

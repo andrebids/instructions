@@ -130,7 +130,7 @@ export default function ProjectNotes() {
           </div>
         </CardHeader>
         <CardBody>
-          <SimpleEditor />
+          <SimpleEditor projectId={id} />
         </CardBody>
       </Card>
     </div>

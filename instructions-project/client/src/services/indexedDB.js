@@ -120,6 +120,12 @@ export async function getEditorState(projectId) {
 export async function saveLastStep(projectId, stepId) {
   try {
     const existingState = await getEditorState(projectId);
+    
+    // Se o step já é o mesmo, não salvar novamente (evita logs duplicados)
+    if (existingState?.lastEditedStep === stepId) {
+      return;
+    }
+    
     await saveEditorState(projectId, {
       ...existingState,
       lastEditedStep: stepId,
