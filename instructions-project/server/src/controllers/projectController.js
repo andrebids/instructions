@@ -299,6 +299,10 @@ export async function updateCanvas(req, res) {
       updateData.decorationsByImage = req.body.decorationsByImage;
       console.log('💾 [SERVER] DecorationsByImage recebidas:', Object.keys(req.body.decorationsByImage || {}).length, 'imagens');
     }
+    if (req.body.lastEditedStep !== undefined) {
+      updateData.lastEditedStep = req.body.lastEditedStep;
+      console.log('💾 [SERVER] lastEditedStep recebido:', req.body.lastEditedStep);
+    }
     
     console.log('💾 [SERVER] Dados a atualizar:', Object.keys(updateData));
     console.log('💾 [SERVER] Salvando na base de dados...');

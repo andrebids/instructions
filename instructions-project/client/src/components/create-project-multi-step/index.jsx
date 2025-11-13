@@ -28,9 +28,9 @@ import { logger } from "./utils/logger";
 // 🧪 Breakpoint de Teste 5 (Componente Principal)
 const TEST_BREAKPOINT_5 = false;
 
-export function CreateProjectMultiStep({ onClose, selectedImage }) {
+export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
   // Initialize hooks
-  const formState = useProjectForm(onClose);
+  const formState = useProjectForm(onClose, projectId);
   const clientState = useClientManagement(formState.setFormData);
   
   // Get visible steps based on project type

@@ -31,6 +31,22 @@ if ('serviceWorker' in navigator) {
       console.log('Service Worker registered:', registration)
       // Configurar listener para notificações push quando SW estiver pronto
       setupNotificationClickListener()
+      
+      // Listener para mensagens do service worker (Background Sync)
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', async (event) => {
+          if (event.data && event.data.type === 'SYNC_PROJECT') {
+            const { projectId } = event.data;
+            try {
+              // Importar dinamicamente para evitar dependência circular
+              const { syncProject } = await import('./services/backgroundSync.js');
+              await syncProject(projectId);
+            } catch (error) {
+              console.error(`Erro ao sincronizar projeto ${projectId}:`, error);
+            }
+          }
+        });
+      }
     },
     onRegisterError(error) {
       console.error('Service Worker registration error:', error)

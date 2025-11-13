@@ -1,5 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { projectsAPI } from '../../../services/api';
+import { saveEditorState } from '../../../services/indexedDB';
+import { registerSyncTag, isBackgroundSyncAvailable } from '../../../services/backgroundSync';
 
 /**
  * Hook para gerenciar salvamento automático do canvas
@@ -68,12 +70,13 @@ export const useCanvasPersistence = ({
     
     if (temProjectId && temZonas) {
       console.log('💾 [DEBUG] Preparando para salvar na base de dados (debounce 500ms)...');
-      var timeoutId = setTimeout(function() {
+      var timeoutId = setTimeout(async function() {
         var dadosParaSalvar = {
           snapZonesByImage: snapZonesByImage,
           canvasDecorations: decorations,
           canvasImages: canvasImages,
-          decorationsByImage: decorationsByImage
+          decorationsByImage: decorationsByImage,
+          lastEditedStep: 'ai-designer' // Canvas só é usado no step ai-designer
         };
         
         console.log('💾 [DEBUG] ===== ENVIANDO PARA BASE DE DADOS =====');
@@ -82,8 +85,31 @@ export const useCanvasPersistence = ({
           snapZonesByImage: JSON.stringify(snapZonesByImage, null, 2),
           totalCanvasDecorations: decorations.length,
           totalCanvasImages: canvasImages.length,
-          totalDecorationsByImage: Object.keys(decorationsByImage).length
+          totalDecorationsByImage: Object.keys(decorationsByImage).length,
+          lastEditedStep: 'ai-designer'
         });
+        
+        // Salvar no IndexedDB também (robusto para mobile)
+        try {
+          await saveEditorState(formData.id, {
+            lastEditedStep: 'ai-designer',
+            canvasDecorations: decorations,
+            canvasImages: canvasImages,
+            snapZonesByImage: snapZonesByImage,
+            decorationsByImage: decorationsByImage,
+            pendingSync: !navigator.onLine
+          });
+        } catch (idxError) {
+          console.warn('⚠️ [DEBUG] Erro ao salvar no IndexedDB:', idxError);
+        }
+        
+        // Salvar no localStorage também
+        try {
+          localStorage.setItem(`project_${formData.id}_lastStep`, 'ai-designer');
+          localStorage.setItem(`project_${formData.id}_lastStepTime`, new Date().toISOString());
+        } catch (lsError) {
+          console.warn('⚠️ [DEBUG] Erro ao salvar no localStorage:', lsError);
+        }
         
         projectsAPI.updateCanvas(formData.id, dadosParaSalvar)
           .then(function(response) {
@@ -99,6 +125,11 @@ export const useCanvasPersistence = ({
             console.error('❌ [DEBUG] Mensagem de erro:', err.message);
             console.error('❌ [DEBUG] Resposta do servidor:', err.response?.data);
             console.error('❌ [DEBUG] Status HTTP:', err.response?.status);
+            
+            // Se offline, registar para sync quando voltar online
+            if (!navigator.onLine && isBackgroundSyncAvailable()) {
+              registerSyncTag(formData.id);
+            }
           });
       }, 500); // Debounce de 500ms para evitar muitas chamadas
       

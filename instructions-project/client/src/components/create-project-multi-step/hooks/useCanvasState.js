@@ -49,13 +49,30 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
     },
   ];
 
-  // Carregar dados salvos do formData ao inicializar E quando formData mudar
+  // Carregar dados salvos do formData ao inicializar E quando formData mudar (modo edição)
   useEffect(function() {
+    const projectId = formData?.id || formData?.tempProjectId;
+    if (!projectId) return; // Só restaurar se houver um projeto (modo edição)
+    
+    // Restaurar decorações
     if (formData?.canvasDecorations && Array.isArray(formData.canvasDecorations) && formData.canvasDecorations.length > 0) {
       console.log('📦 Carregando decorações salvas do formData:', formData.canvasDecorations.length, 'decorações');
       setDecorations(formData.canvasDecorations);
     }
-  }, [formData?.id]); // Executar quando formData.id mudar
+    
+    // Restaurar imagens do canvas
+    if (formData?.canvasImages && Array.isArray(formData.canvasImages) && formData.canvasImages.length > 0) {
+      console.log('📦 Carregando imagens salvas do formData:', formData.canvasImages.length, 'imagens');
+      setCanvasImages(formData.canvasImages);
+      // Se houver imagens, selecionar a primeira
+      if (formData.canvasImages.length > 0) {
+        const firstImage = formData.canvasImages.find(img => img.isSourceImage);
+        if (firstImage) {
+          setSelectedImage(firstImage);
+        }
+      }
+    }
+  }, [formData?.id, formData?.tempProjectId]); // Executar quando formData.id ou tempProjectId mudar
 
   /**
    * Adicionar imagem source ao canvas (substitui a anterior)
