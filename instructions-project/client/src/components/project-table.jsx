@@ -26,6 +26,7 @@ import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
 import { projectsAPI } from "../services/api.js";
 import ConfirmModal from "./common/ConfirmModal.jsx";
+import { SyncStatus } from "./SyncStatus";
 
 // Status mapping from API to UI
 const statusColorMap = {
@@ -227,6 +228,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
             {project.projectType === 'logo' && (
               <Chip size="sm" color="secondary" variant="dot">Logo</Chip>
             )}
+            <SyncStatus projectId={project.id} />
           </div>
         );
       case "status":

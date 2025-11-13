@@ -7,7 +7,16 @@
  * Verificar se Background Sync está disponível
  */
 export function isBackgroundSyncAvailable() {
-  return 'serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype;
+  const hasServiceWorker = 'serviceWorker' in navigator;
+  const hasSync = 'sync' in ServiceWorkerRegistration.prototype;
+  const available = hasServiceWorker && hasSync;
+  
+  // Only log warning if not available (one-time check)
+  if (!hasSync && hasServiceWorker) {
+    console.warn(`⚠️ [BackgroundSync] Background Sync API not available (Chrome/Edge only)`);
+  }
+  
+  return available;
 }
 
 /**
@@ -21,11 +30,14 @@ export async function registerSyncTag(projectId) {
 
   try {
     const registration = await navigator.serviceWorker.ready;
-    await registration.sync.register(`sync-project-${projectId}`);
+    const syncTag = `sync-project-${projectId}`;
+    await registration.sync.register(syncTag);
+    
     console.log(`✅ [BackgroundSync] Sync tag registada para projeto ${projectId}`);
+    
     return true;
   } catch (error) {
-    console.error(`❌ [BackgroundSync] Erro ao registar sync tag:`, error);
+    console.error(`❌ [BackgroundSync] Erro ao registar sync tag para projeto ${projectId}:`, error);
     return false;
   }
 }
@@ -42,35 +54,57 @@ export async function getSyncStatus(projectId) {
     const registration = await navigator.serviceWorker.ready;
     const tags = await registration.sync.getTags();
     const syncTag = `sync-project-${projectId}`;
+    const pending = tags.includes(syncTag);
+    
     return {
       available: true,
-      pending: tags.includes(syncTag),
+      pending,
     };
   } catch (error) {
-    console.error('❌ [BackgroundSync] Erro ao verificar status:', error);
+    console.error(`❌ [BackgroundSync] Erro ao verificar status do projeto ${projectId}:`, error);
     return { available: false, pending: false };
   }
 }
 
 /**
- * Sincronizar projeto específico (chamado pelo service worker)
+ * Notify service worker about sync completion
+ */
+async function notifySyncComplete(projectId, success) {
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      if (registration.active) {
+        registration.active.postMessage({
+          type: 'SYNC_COMPLETE',
+          projectId,
+          success
+        });
+      }
+    } catch (error) {
+      console.error(`❌ [BackgroundSync] Error notifying service worker:`, error);
+    }
+  }
+}
+
+/**
+ * Sync specific project (called by service worker)
  */
 export async function syncProject(projectId) {
   try {
-    // Importar dinamicamente para evitar dependência circular
+    // Import dynamically to avoid circular dependency
     const { getEditorState, markAsSynced } = await import('./indexedDB.js');
     const { projectsAPI } = await import('./api.js');
 
     const editorState = await getEditorState(projectId);
     
     if (!editorState || !editorState.pendingSync) {
-      console.log(`ℹ️ [BackgroundSync] Nenhuma sincronização pendente para projeto ${projectId}`);
+      await notifySyncComplete(projectId, true);
       return;
     }
 
-    console.log(`🔄 [BackgroundSync] Sincronizando projeto ${projectId}...`);
+    console.log(`🔄 [BackgroundSync] Syncing project ${projectId}...`);
 
-    // Preparar dados para enviar
+    // Prepare data to send
     const updateData = {
       lastEditedStep: editorState.lastEditedStep,
       canvasDecorations: editorState.canvasDecorations,
@@ -79,15 +113,22 @@ export async function syncProject(projectId) {
       decorationsByImage: editorState.decorationsByImage,
     };
 
-    // Tentar sincronizar com backend
+    // Try to sync with backend
     await projectsAPI.update(projectId, updateData);
 
-    // Marcar como sincronizado
+    // Mark as synced
     await markAsSynced(projectId);
-    console.log(`✅ [BackgroundSync] Projeto ${projectId} sincronizado com sucesso`);
+    console.log(`✅ [BackgroundSync] Project ${projectId} synced successfully`);
+    
+    // Notify service worker about success
+    await notifySyncComplete(projectId, true);
   } catch (error) {
-    console.error(`❌ [BackgroundSync] Erro ao sincronizar projeto ${projectId}:`, error);
-    // Não marcar como sincronizado se falhou - tentará novamente na próxima vez
+    console.error(`❌ [BackgroundSync] Error syncing project ${projectId}:`, error);
+    
+    // Notify service worker about failure
+    await notifySyncComplete(projectId, false);
+    
+    // Don't mark as synced if failed - will retry next time
     throw error;
   }
 }

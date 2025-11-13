@@ -5,6 +5,7 @@ import {useTheme} from "@heroui/use-theme";
 import { useUser } from "../context/UserContext";
 import { useClerk, useUser as useClerkUser, UserProfile } from "@clerk/clerk-react";
 import { dark } from "@clerk/themes";
+import { GlobalSyncStatus } from "./SyncStatus";
 
 export function Header() {
   const {theme, setTheme} = useTheme();
@@ -26,6 +27,8 @@ export function Header() {
         {/* Left side empty (previous search icon removed per request) */}
       </div>
       <div className="flex items-center gap-3">
+        <GlobalSyncStatus />
+        
         <Button 
           isIconOnly 
           variant="light" 
