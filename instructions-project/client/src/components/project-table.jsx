@@ -255,7 +255,14 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate }) {
             <Button isIconOnly size="sm" variant="light" title="View project" aria-label="View project">
               <Icon icon="lucide:eye" className="text-lg" />
             </Button>
-            <Button isIconOnly size="sm" variant="light" title="Edit project" aria-label="Edit project">
+            <Button 
+              isIconOnly 
+              size="sm" 
+              variant="light" 
+              title="Edit project" 
+              aria-label="Edit project"
+              onPress={() => navigate(`/projects/${project.id}/edit`)}
+            >
               <Icon icon="lucide:edit-2" className="text-lg" />
             </Button>
             <Button 

@@ -66,6 +66,12 @@ const Project = sequelize.define('Project', {
     type: DataTypes.JSON,
     defaultValue: {},
   },
+  // Campo para guardar o último step onde o usuário estava editando
+  lastEditedStep: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'Último step do editor onde o usuário estava (ex: "ai-designer", "project-details")',
+  },
 }, {
   tableName: 'projects',
   timestamps: true,
