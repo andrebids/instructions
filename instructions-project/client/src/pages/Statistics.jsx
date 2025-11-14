@@ -4,11 +4,11 @@ import { Icon } from "@iconify/react";
 import { useTheme } from "@heroui/use-theme";
 import { Gauge } from "@mui/x-charts/Gauge";
 import { ProjectsYearComparison } from "../components/charts/ProjectsYearComparison";
-import ScrollVelocity from "../components/ScrollVelocity";
-import CountUp from "../components/CountUp";
-import { AIAssistantChat } from "../components/ai-assistant-chat";
+import ScrollVelocity from "../components/ui/ScrollVelocity";
+import CountUp from "../components/ui/CountUp";
+import { AIAssistantChat } from "../components/features/ai-assistant-chat";
 import { motion, AnimatePresence } from "framer-motion";
-import { PageTitle } from "../components/page-title";
+import { PageTitle } from "../components/layout/page-title";
 import { useUser } from "../context/UserContext";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 

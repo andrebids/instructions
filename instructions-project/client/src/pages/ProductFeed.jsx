@@ -8,7 +8,7 @@ import { Icon } from '@iconify/react';
 import { useShop } from '../context/ShopContext';
 import { compareProductsByTagHierarchy } from '../utils/tagHierarchy';
 import { navigationItems } from '../constants/navigation';
-import { MobileBottomNav } from '../components/mobile-bottom-nav';
+import { MobileBottomNav } from '../components/layout/mobile-bottom-nav';
 import { useResponsiveProfile } from '../hooks/useResponsiveProfile';
 
 /**

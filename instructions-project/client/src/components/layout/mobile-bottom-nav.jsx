@@ -1,8 +1,8 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { Icon } from "@iconify/react";
-import { navigationItems } from "../constants/navigation";
-import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
+import { navigationItems } from "../../constants/navigation";
+import { useResponsiveProfile } from "../../hooks/useResponsiveProfile";
 
 export function MobileBottomNav({
   items = navigationItems,

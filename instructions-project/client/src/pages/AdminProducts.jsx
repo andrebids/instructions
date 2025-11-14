@@ -21,7 +21,7 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { productsAPI } from "../services/api";
-import { PageTitle } from "../components/page-title";
+import { PageTitle } from "../components/layout/page-title";
 import { useUser } from "../context/UserContext";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 import {

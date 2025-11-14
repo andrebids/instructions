@@ -24,8 +24,8 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
-import { projectsAPI } from "../services/api.js";
-import ConfirmModal from "./common/ConfirmModal.jsx";
+import { projectsAPI } from "../../services/api.js";
+import ConfirmModal from "../common/ConfirmModal.jsx";
 import { SyncStatus } from "./SyncStatus";
 
 // Status mapping from API to UI

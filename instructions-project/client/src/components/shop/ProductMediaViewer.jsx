@@ -1,6 +1,6 @@
 import React from "react";
 import { Icon } from "@iconify/react";
-import DayNightToggle from "../DayNightToggle";
+import DayNightToggle from "../ui/DayNightToggle";
 
 export default function ProductMediaViewer({ product, initialMode = "night", className = "" }) {
   const [mode, setMode] = React.useState(initialMode);

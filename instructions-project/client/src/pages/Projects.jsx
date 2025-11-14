@@ -1,10 +1,10 @@
 import React from "react";
 import { Card, CardBody, Chip, Progress, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Tooltip } from "@heroui/react";
 import { useShop } from "../context/ShopContext";
-import { PageTitle } from "../components/page-title";
+import { PageTitle } from "../components/layout/page-title";
 import { useUser } from "../context/UserContext";
-import ProjectOrderModal from "../components/projects/ProjectOrderModal";
-import ProjectAddPieceModal from "../components/projects/ProjectAddPieceModal";
+import ProjectOrderModal from "../components/orders/ProjectOrderModal";
+import ProjectAddPieceModal from "../components/orders/ProjectAddPieceModal";
 import { Icon } from "@iconify/react";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 

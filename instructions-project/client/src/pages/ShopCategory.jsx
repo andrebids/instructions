@@ -6,7 +6,7 @@ import { useShop } from "../context/ShopContext";
 import TrendingFiltersSidebar from "../components/shop/TrendingFiltersSidebar";
 import ProductGrid from "../components/shop/ProductGrid";
 import OrderAssignModal from "../components/shop/OrderAssignModal";
-import { PageTitle } from "../components/page-title";
+import { PageTitle } from "../components/layout/page-title";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { getProductsByCategory } from "../utils/productUtils";
