@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import { Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useTheme } from "@heroui/use-theme";
-import { navigationItems } from "../constants/navigation";
+import { navigationItems } from "../../constants/navigation";
 
 export function SidebarNavigation() {
   // Mantemos o hook (pode ser útil para outras reações ao tema)

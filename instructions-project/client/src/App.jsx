@@ -1,7 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { SidebarNavigation } from "./components/sidebar-navigation";
-import { Header } from "./components/header";
+import { SidebarNavigation } from "./components/layout/sidebar-navigation";
+import { Header } from "./components/layout/header";
 import Dashboard from "./pages/Dashboard";
 // import Statistics from "./pages/Statistics";
 import Shop from "./pages/Shop";
@@ -13,9 +13,9 @@ import ProductFeed from "./pages/ProductFeed";
 import ProjectNotes from "./pages/ProjectNotes";
 import EditProject from "./pages/EditProject";
 import { SignedIn, SignedOut, SignIn, SignUp } from "@clerk/clerk-react";
-import { MobileBottomNav } from "./components/mobile-bottom-nav";
+import { MobileBottomNav } from "./components/layout/mobile-bottom-nav";
 import { useResponsiveProfile } from "./hooks/useResponsiveProfile";
-import PWAInstallPrompt from "./components/PWAInstallPrompt";
+import PWAInstallPrompt from "./components/features/PWAInstallPrompt";
 
 function AppLayout() {
   const location = useLocation();

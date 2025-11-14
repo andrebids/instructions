@@ -4,7 +4,7 @@ import { Card, CardBody, CardHeader, Button, Spinner } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { SimpleEditor } from '../components/project-notes/SimpleEditor';
 import { projectsAPI } from '../services/api';
-import { PageTitle } from '../components/page-title';
+import { PageTitle } from '../components/layout/page-title';
 import { useUser } from '../context/UserContext';
 
 export default function ProjectNotes() {

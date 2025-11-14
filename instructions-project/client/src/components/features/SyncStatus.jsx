@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Chip, Spinner, Tooltip } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getSyncStatus, isBackgroundSyncAvailable } from '../services/backgroundSync';
+import { getSyncStatus, isBackgroundSyncAvailable } from '../../services/backgroundSync';
 
 /**
  * SyncStatus Component

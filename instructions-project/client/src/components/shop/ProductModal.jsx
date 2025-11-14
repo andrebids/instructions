@@ -1,7 +1,7 @@
 import React from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Image, RadioGroup, Radio, Switch, Chip, Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import DayNightToggle from "../DayNightToggle";
+import DayNightToggle from "../ui/DayNightToggle";
 import RequestInfoModal from "./RequestInfoModal";
 import CompareSuggestModal from "./CompareSuggestModal";
 import FavoriteFolderModal from "./FavoriteFolderModal";

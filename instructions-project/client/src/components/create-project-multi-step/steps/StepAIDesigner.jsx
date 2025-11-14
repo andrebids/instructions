@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardFooter, Button, Spinner, Progress, Image, Tooltip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { DecorationLibrary } from "../../decoration-library";
-import { NightThumb } from '../../NightThumb';
+import { NightThumb } from '../../ui/NightThumb';
 import { YOLO12ThumbnailOverlay } from './YOLO12ThumbnailOverlay';
 import { UnifiedSnapZonesPanel } from './UnifiedSnapZonesPanel';
 import { UploadModal } from '../components/UploadModal';

@@ -2,10 +2,10 @@ import {Avatar, Button, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, I
 import {Icon} from "@iconify/react";
 import React from "react";
 import {useTheme} from "@heroui/use-theme";
-import { useUser } from "../context/UserContext";
+import { useUser } from "../../context/UserContext";
 import { useClerk, useUser as useClerkUser, UserProfile } from "@clerk/clerk-react";
 import { dark } from "@clerk/themes";
-import { GlobalSyncStatus } from "./SyncStatus";
+import { GlobalSyncStatus } from "../features/SyncStatus";
 
 export function Header() {
   const {theme, setTheme} = useTheme();

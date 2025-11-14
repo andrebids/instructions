@@ -4,7 +4,7 @@ import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 import ProductGrid from "../components/shop/ProductGrid";
-import { PageTitle } from "../components/page-title";
+import { PageTitle } from "../components/layout/page-title";
 import ConfirmModal from "../components/common/ConfirmModal";
 import EditNameModal from "../components/common/EditNameModal";
 import { useUser } from "../context/UserContext";

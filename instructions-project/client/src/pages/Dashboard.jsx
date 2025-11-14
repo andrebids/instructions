@@ -1,13 +1,13 @@
 import React from "react";
-import {Header} from "../components/header";
-import {StatsCard} from "../components/stats-card";
+import {Header} from "../components/layout/header";
+import {StatsCard} from "../components/features/stats-card";
 import {Button, Spinner} from "@heroui/react";
 import {Icon} from "@iconify/react";
-import {ProjectTable} from "../components/project-table";
+import {ProjectTable} from "../components/features/project-table";
 import {CreateProjectMultiStep} from "../components/create-project-multi-step";
 import {projectsAPI} from "../services/api";
-import {PageTitle} from "../components/page-title";
-import {AIAssistantChat} from "../components/ai-assistant-chat";
+import {PageTitle} from "../components/layout/page-title";
+import {AIAssistantChat} from "../components/features/ai-assistant-chat";
 import {motion, AnimatePresence} from "framer-motion";
 import { useUser } from "../context/UserContext";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";

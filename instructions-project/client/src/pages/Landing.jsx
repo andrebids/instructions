@@ -1,12 +1,12 @@
 import React from 'react'
 import { SignInButton, SignUpButton } from '@clerk/clerk-react'
 import { ArrowRightOnRectangleIcon, UserPlusIcon } from '@heroicons/react/24/outline'
-import LiquidEther from '../components/LiquidEther'
-import GlassSurface from '../components/GlassSurface'
-import ShinyText from '../components/ShinyText'
-import TextType from '../components/TextType'
-import SplitText from '../components/SplitText'
-import FadeContent from '../components/FadeContent'
+import LiquidEther from '../components/ui/LiquidEther'
+import GlassSurface from '../components/ui/GlassSurface'
+import ShinyText from '../components/ui/ShinyText'
+import TextType from '../components/ui/TextType'
+import SplitText from '../components/ui/SplitText'
+import FadeContent from '../components/ui/FadeContent'
 
 export default function Landing() {
   const sectionRef = React.useRef(null)
