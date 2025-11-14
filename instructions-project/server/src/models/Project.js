@@ -79,6 +79,25 @@ const Project = sequelize.define('Project', {
     allowNull: true,
     comment: 'Último step do editor onde o usuário estava (ex: "ai-designer", "project-details")',
   },
+  // Lista de imagens uploadadas para o projeto (metadados)
+  uploadedImages: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [],
+    comment: 'Array com metadados das imagens uploadadas: [{ id, name, thumbnail, dayVersion, nightVersion, originalUrl, conversionStatus, cartouche }]',
+  },
+  // Estado da simulação (step de upload, imagem selecionada, modo dia/noite, conversões)
+  simulationState: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: {
+      uploadStep: 'uploading',
+      selectedImageId: null,
+      isDayMode: true,
+      conversionComplete: {}
+    },
+    comment: 'Estado da simulação: { uploadStep, selectedImageId, isDayMode, conversionComplete }',
+  },
 }, {
   tableName: 'projects',
   timestamps: true,

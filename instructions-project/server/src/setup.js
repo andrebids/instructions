@@ -108,6 +108,17 @@ async function setup() {
     }
     console.log('');
     
+    // Migration 7: Campos de estado das simulações
+    console.log('   📋 Migration: Campos de estado das simulações (uploadedImages, simulationState)...');
+    try {
+      await execAsync('npm run migrate:simulationState');
+      console.log('   ✅ Campos de estado das simulações verificados');
+    } catch (error) {
+      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+      console.log('   💡 Continuando...');
+    }
+    console.log('');
+    
     console.log('✅ Setup concluído com sucesso!');
     console.log('');
     console.log('📝 Próximos passos:');
