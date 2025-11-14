@@ -389,12 +389,8 @@ echo 💡 O script irá executar automaticamente:
 echo    - npm run setup (migrations)
 echo    - pm2 restart instructions-server
 echo.
-set /p confirm="Continuar? (S/N): "
-if /i not "%confirm%"=="S" (
-    echo Operação cancelada.
-    timeout /t 2 /nobreak >nul
-    goto menu
-)
+echo Iniciando deploy automaticamente...
+timeout /t 2 /nobreak >nul
 echo.
 echo ========================================
 echo    EXECUTANDO BUILD E DEPLOY COMPLETO
