@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useSourceImages from './useSourceImages';
 import { calculateImageDimensions, getCenterPosition } from '../utils/canvasCalculations';
 
@@ -22,47 +22,66 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
   const [canvasImages, setCanvasImages] = useState([]); // Imagens adicionadas ao canvas
   const [isDayMode, setIsDayMode] = useState(true); // Controla se mostra imagem de dia ou noite
   const [uploadedImages, setUploadedImages] = useState([]); // Imagens disponíveis após upload completo
-  const [showSnapZones, setShowSnapZones] = useState(true); // Mostrar/ocultar visualização das snap zones
   
   // Carregar Source Images da API usando hook
   const { sourceImages, loading: sourceImagesLoading, error: sourceImagesError } = useSourceImages();
   
-  // Fallback para imagens hardcoded caso API não retorne dados
-  const loadedImages = sourceImages && sourceImages.length > 0 ? sourceImages : [
-    { 
-      id: 'source-img-1', 
-      name: 'source 1.jpeg', 
-      thumbnail: '/demo-images/sourceday/SOURCE1.jpg',
-      nightVersion: '/demo-images/sourcenight/SOURCE1.png'
-    },
-    { 
-      id: 'source-img-2', 
-      name: 'source 2.jpeg', 
-      thumbnail: '/demo-images/sourceday/SOURCE2.jpg',
-      nightVersion: '/demo-images/sourcenight/SOURCE2.png'
-    },
-    { 
-      id: 'source-img-3', 
-      name: 'source 3.jpeg', 
-      thumbnail: '/demo-images/sourceday/SOURCE3.png',
-      nightVersion: '/demo-images/sourcenight/SOURCE3.png'
-    },
-  ];
+  // Fallback para imagens demo (apenas para desenvolvimento/testes quando não há imagens reais)
+  // Em produção, este fallback só será usado se não houver imagens uploadadas
+  const loadedImages = sourceImages && sourceImages.length > 0 ? sourceImages : (
+    // Apenas usar imagens demo se não houver imagens reais do upload
+    // Este fallback será removido quando não for mais necessário para testes
+    process.env.NODE_ENV === 'development' ? [
+      { 
+        id: 'source-img-1', 
+        name: 'source 1.jpeg', 
+        thumbnail: '/demo-images/sourceday/SOURCE1.jpg',
+        nightVersion: '/demo-images/sourcenight/SOURCE1.png',
+        originalUrl: '/demo-images/sourceday/SOURCE1.jpg',
+        dayVersion: '/demo-images/sourceday/SOURCE1.jpg'
+      },
+      { 
+        id: 'source-img-2', 
+        name: 'source 2.jpeg', 
+        thumbnail: '/demo-images/sourceday/SOURCE2.jpg',
+        nightVersion: '/demo-images/sourcenight/SOURCE2.png',
+        originalUrl: '/demo-images/sourceday/SOURCE2.jpg',
+        dayVersion: '/demo-images/sourceday/SOURCE2.jpg'
+      },
+      { 
+        id: 'source-img-3', 
+        name: 'source 3.jpeg', 
+        thumbnail: '/demo-images/sourceday/SOURCE3.png',
+        nightVersion: '/demo-images/sourcenight/SOURCE3.png',
+        originalUrl: '/demo-images/sourceday/SOURCE3.png',
+        dayVersion: '/demo-images/sourceday/SOURCE3.png'
+      },
+    ] : []
+  );
 
+  // Ref para rastrear se já carregamos os dados deste projeto
+  const loadedProjectIdRef = useRef(null);
+  
   // Carregar dados salvos do formData ao inicializar E quando formData mudar (modo edição)
   useEffect(function() {
     const projectId = formData?.id || formData?.tempProjectId;
     if (!projectId) return; // Só restaurar se houver um projeto (modo edição)
     
+    // Se já carregamos os dados deste projeto, não carregar novamente
+    if (loadedProjectIdRef.current === projectId) {
+      return;
+    }
+    
+    // Marcar que estamos carregando este projeto
+    loadedProjectIdRef.current = projectId;
+    
     // Restaurar decorações
     if (formData?.canvasDecorations && Array.isArray(formData.canvasDecorations) && formData.canvasDecorations.length > 0) {
-      console.log('📦 Carregando decorações salvas do formData:', formData.canvasDecorations.length, 'decorações');
       setDecorations(formData.canvasDecorations);
     }
     
     // Restaurar imagens do canvas
     if (formData?.canvasImages && Array.isArray(formData.canvasImages) && formData.canvasImages.length > 0) {
-      console.log('📦 Carregando imagens salvas do formData:', formData.canvasImages.length, 'imagens');
       setCanvasImages(formData.canvasImages);
       // Se houver imagens, selecionar a primeira
       if (formData.canvasImages.length > 0) {
@@ -140,7 +159,19 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
       y: centerY,
       width: imageWidth,
       height: imageHeight,
-      isSourceImage: true
+      isSourceImage: true,
+      // Incluir metadados do cartouche na imagem (IMPORTANTE: ficam ligados à imagem)
+      cartouche: cartoucheData ? {
+        projectName: cartoucheData.projectName || null,
+        streetOrZone: cartoucheData.streetOrZone || null,
+        option: cartoucheData.option || 'base',
+        hasCartouche: cartoucheData.hasCartouche || false
+      } : null,
+      // Incluir também referência à imagem original
+      imageId: image.id,
+      originalUrl: image.originalUrl || image.thumbnail,
+      dayVersion: image.dayVersion || image.thumbnail,
+      nightVersion: image.nightVersion || null
     };
     
     console.log('✅ Imagem adicionada ao canvas:', newImageLayer);
@@ -236,21 +267,29 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
 
   // Trocar as imagens das decorações quando alternar dia/noite
   useEffect(function() {
-    console.log('[CANVAS] mode', isDayMode ? 'day' : 'night');
+    // Usar função de atualização para evitar dependência de decorations
     setDecorations(function(prev) {
+      // Verificar se realmente precisa atualizar (evitar loops)
+      var needsUpdate = false;
       var next = [];
       for (var i = 0; i < prev.length; i++) {
         var d = prev[i];
         if (d.dayUrl || d.nightUrl) {
           var nextSrc = isDayMode ? (d.dayUrl || d.src) : (d.nightUrl || d.dayUrl || d.src);
-          next.push(Object.assign({}, d, { src: nextSrc }));
+          if (d.src !== nextSrc) {
+            needsUpdate = true;
+            next.push(Object.assign({}, d, { src: nextSrc }));
+          } else {
+            next.push(d);
+          }
         } else {
           next.push(d);
         }
       }
-      return next;
+      // Só retornar novo array se houver mudanças (evita re-renders desnecessários)
+      return needsUpdate ? next : prev;
     });
-  }, [isDayMode]);
+  }, [isDayMode]); // Removido decorations das dependências para evitar loop infinito
 
   return {
     decorations,
@@ -265,8 +304,6 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
     setUploadStep,
     uploadedImages,
     setUploadedImages,
-    showSnapZones,
-    setShowSnapZones,
     noBgWarning,
     setNoBgWarning,
     isGenerating,

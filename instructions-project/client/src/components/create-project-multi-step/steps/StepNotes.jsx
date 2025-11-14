@@ -23,7 +23,7 @@ export function StepNotes({ formData, onInputChange, saveStatus }) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 pb-32">
+    <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6">
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">Project Notes</h1>
         <p className="text-default-500 text-sm sm:text-base">

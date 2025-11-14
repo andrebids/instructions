@@ -4,9 +4,9 @@ import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { URLImage } from './URLImage';
 import { DecorationItem } from './DecorationItem';
-import { SnapZoneMarkers } from './SnapZoneMarkers';
+// import { SnapZoneMarkers } from './SnapZoneMarkers'; // Zonas removidas
 import { CartoucheText } from './CartoucheText';
-import { checkSnapToZone } from '../../utils/snapZoneUtils';
+// import { checkSnapToZone } from '../../utils/snapZoneUtils'; // Zonas removidas
 import { getDecorationColor } from '../../utils/decorationUtils';
 
 /**
@@ -29,15 +29,15 @@ export const KonvaCanvas = ({
   isEditingZones = false,
   onZoneCreate = null,
   analysisComplete = {}, // Nova prop para verificar se análise YOLO completou
-  showSnapZones = true,
+  showSnapZones = false, // Zonas removidas
   cartoucheInfo = null // Informações do cartouche: { projectName, streetOrZone, option }
 }) => {
   const stageRef = useRef(null);
   const containerRef = useRef(null);
   const [selectedId, setSelectedId] = useState(null);
   const [dragOver, setDragOver] = useState(false);
-  const [isDrawingZone, setIsDrawingZone] = useState(false);
-  const [currentZone, setCurrentZone] = useState(null);
+  // const [isDrawingZone, setIsDrawingZone] = useState(false); // Zonas removidas
+  // const [currentZone, setCurrentZone] = useState(null); // Zonas removidas
   
   // Define tamanho virtual/base da cena (dimensões de referência)
   const sceneWidth = 1200;
@@ -91,87 +91,25 @@ export const KonvaCanvas = ({
     return () => resizeObserver.disconnect();
   }, []); // Sem dependências - só executa uma vez
 
-  // Handlers para modo de edição de zonas
+  // Handlers para modo de edição de zonas - REMOVIDOS (zonas não são mais usadas)
+  // Funções comentadas para manter compatibilidade, mas não são mais chamadas
+  /*
   const handleMouseDownZone = function(e) {
-    if (!isEditingZones || !onZoneCreate) return;
-    
-    var stage = e.target.getStage();
-    var pointerPos = stage.getPointerPosition();
-    var containerRect = containerRef.current.getBoundingClientRect();
-    
-    // Converter para coordenadas do canvas virtual
-    var x = pointerPos.x / stageSize.scale;
-    var y = pointerPos.y / stageSize.scale;
-    
-    setIsDrawingZone(true);
-    setCurrentZone({
-      startX: x,
-      startY: y,
-      x: x,
-      y: y,
-      width: 0,
-      height: 0
-    });
+    // Zonas removidas
   };
 
   const handleMouseMoveZone = function(e) {
-    if (!isEditingZones || !isDrawingZone || !currentZone) return;
-    
-    var stage = e.target.getStage();
-    var pointerPos = stage.getPointerPosition();
-    var containerRect = containerRef.current.getBoundingClientRect();
-    
-    // Converter para coordenadas do canvas virtual
-    var x = pointerPos.x / stageSize.scale;
-    var y = pointerPos.y / stageSize.scale;
-    
-    // Calcular dimensões do retângulo
-    var newX = Math.min(currentZone.startX, x);
-    var newY = Math.min(currentZone.startY, y);
-    var newWidth = Math.abs(x - currentZone.startX);
-    var newHeight = Math.abs(y - currentZone.startY);
-    
-    setCurrentZone({
-      startX: currentZone.startX,
-      startY: currentZone.startY,
-      x: newX,
-      y: newY,
-      width: newWidth,
-      height: newHeight
-    });
+    // Zonas removidas
   };
 
   const handleMouseUpZone = function(e) {
-    if (!isEditingZones || !isDrawingZone || !currentZone) return;
-    
-    // Só criar zona se tiver tamanho mínimo
-    if (currentZone.width > 10 && currentZone.height > 10) {
-      var newZone = {
-        id: 'temp-zone-' + Date.now(),
-        x: currentZone.x,
-        y: currentZone.y,
-        width: currentZone.width,
-        height: currentZone.height,
-        label: 'Zone ' + (snapZones.length + 1)
-      };
-      
-      if (onZoneCreate) {
-        console.log('🎨 [DEBUG] Criando zona temporária:', newZone);
-        onZoneCreate(newZone);
-      }
-    }
-    
-    setIsDrawingZone(false);
-    setCurrentZone(null);
+    // Zonas removidas
   };
+  */
 
-  // Click/Touch no Stage para desselecionar decoração ou iniciar criação de zona
+  // Click/Touch no Stage para desselecionar decoração
   const checkDeselect = (e) => {
-    if (isEditingZones) {
-      // No modo edição, não desselecionar decorações
-      return;
-    }
-    
+    // Zonas removidas - sempre permitir desseleção
     // Desselecionar apenas quando clica diretamente no stage (área vazia)
     const target = e.target;
     const stage = e.target.getStage();
@@ -200,7 +138,7 @@ export const KonvaCanvas = ({
     try {
       // Verificar se há imagem de fundo
       if (canvasImages.length === 0) {
-        console.warn('⚠️ Não é possível adicionar decoração sem imagem de fundo!');
+        console.warn('⚠️ Cannot add decoration without a background image!');
         if (onRequireBackground) {
           onRequireBackground();
         }
@@ -218,15 +156,7 @@ export const KonvaCanvas = ({
       var x = (e.clientX - containerRect.left) / stageSize.scale;
       var y = (e.clientY - containerRect.top) / stageSize.scale;
       
-      // Aplicar snap se houver zonas definidas para o modo atual
-      if (snapZones && snapZones.length > 0) {
-        var snapped = checkSnapToZone(x, y, snapZones);
-        x = snapped.x;
-        y = snapped.y;
-        if (snapped.snapped) {
-          console.log('🎯 Snap aplicado para zona mais próxima');
-        }
-      }
+      // Snap zones removidas - não aplicar snap
       
       const newDecoration = {
         id: Date.now(),
@@ -299,9 +229,8 @@ export const KonvaCanvas = ({
         height={stageSize.height}
         scaleX={stageSize.scale}
         scaleY={stageSize.scale}
-        onMouseDown={isEditingZones ? handleMouseDownZone : checkDeselect}
-        onMouseMove={isEditingZones ? handleMouseMoveZone : undefined}
-        onMouseUp={isEditingZones ? handleMouseUpZone : undefined}
+        onMouseDown={checkDeselect}
+        // onMouseMove e onMouseUp removidos (zonas removidas)
         onTouchStart={(e) => {
           // Não fazer nada aqui - deixar o evento propagar para o KonvaImage
           // O checkDeselect será chamado apenas se clicar no stage vazio
@@ -329,7 +258,7 @@ export const KonvaCanvas = ({
           canvasImages.length > 0 || dragOver
             ? (dragOver 
                 ? 'ring-2 ring-primary bg-primary/10' 
-                : isEditingZones
+                : false // Zonas removidas
                   ? 'ring-2 ring-warning bg-warning/5 cursor-crosshair'
                   : 'bg-default-100')
             : 'border-2 border-dashed border-default-300 bg-default-50'
@@ -350,39 +279,8 @@ export const KonvaCanvas = ({
         </Layer>
 
 
-        {/* Layer 1.5: Snap Zone Markers (mostrar por padrão, ocultar apenas se showSnapZones for false) */}
-        <Layer>
-          {/* Zonas salvas (mostrar sempre que houver zonas E showSnapZones for true OU em modo edição) */}
-          <SnapZoneMarkers 
-            zones={snapZones} 
-            isVisible={
-              snapZones.length > 0 && (isEditingZones || showSnapZones)
-            }
-          />
-          
-          {/* Zonas temporárias sendo criadas (modo edição) */}
-          {isEditingZones && currentZone && currentZone.width > 0 && currentZone.height > 0 && (
-            <Rect
-              x={currentZone.x}
-              y={currentZone.y}
-              width={currentZone.width}
-              height={currentZone.height}
-              stroke="rgba(255, 193, 7, 0.9)"
-              strokeWidth={2}
-              fill="rgba(255, 193, 7, 0.2)"
-              listening={false}
-              dash={[5, 5]}
-            />
-          )}
-          
-          {/* Mostrar todas as zonas no modo edição */}
-          {isEditingZones && (
-            <SnapZoneMarkers 
-              zones={snapZones} 
-              isVisible={true}
-            />
-          )}
-        </Layer>
+        {/* Layer 1.5: Snap Zone Markers - REMOVIDO (zonas não são mais usadas) */}
+        {/* Zonas foram removidas da funcionalidade */}
 
         {/* Layer 2: Decorações (arrastáveis com Transformer) */}
         <Layer>
@@ -391,7 +289,7 @@ export const KonvaCanvas = ({
               key={decoration.id}
               decoration={decoration}
               isSelected={decoration.id === selectedId}
-              snapZones={snapZones}
+              snapZones={[]} // Zonas removidas
               isDayMode={isDayMode}
               onSelect={() => {
                 console.log('✅ Decoração selecionada:', decoration.id);

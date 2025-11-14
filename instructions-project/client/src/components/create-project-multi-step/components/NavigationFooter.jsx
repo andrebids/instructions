@@ -13,7 +13,7 @@ export function NavigationFooter({
   isNavigating,
 }) {
   return (
-    <div className="w-full bg-content1 border-t border-divider px-4 py-4 sm:px-6 sm:py-6 sticky bottom-0">
+    <div className="w-full bg-content1 border-t border-divider px-4 py-4 sm:px-6 sm:py-6 flex-shrink-0">
       <div className="max-w-6xl mx-auto flex justify-between items-center gap-4">
         <Button
           variant="flat"

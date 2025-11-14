@@ -66,6 +66,13 @@ const Project = sequelize.define('Project', {
     type: DataTypes.JSON,
     defaultValue: {},
   },
+  // Metadados do cartouche por imagem (nome da rua, projeto, opção)
+  cartoucheByImage: {
+    type: DataTypes.JSON,
+    allowNull: true, // Permitir null para compatibilidade com projetos antigos
+    defaultValue: {},
+    comment: 'Mapeamento de metadados do cartouche por imageId: { imageId: { projectName, streetOrZone, option, hasCartouche } }',
+  },
   // Campo para guardar o último step onde o usuário estava editando
   lastEditedStep: {
     type: DataTypes.STRING,
