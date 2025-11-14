@@ -139,7 +139,17 @@ ENVEOF
     echo '✅ Ficheiro .env criado'
 fi
 
+# Instalar dependências se necessário
+echo '📦 Verificando dependências...'
+if [ ! -d node_modules ] || [ package.json -nt node_modules/.package-lock.json 2>/dev/null ]; then
+    echo '📥 Instalando dependências...'
+    npm install --omit=dev 2>&1 || npm install 2>&1 || echo '⚠️  Aviso: Instalação de dependências pode ter falhado'
+else
+    echo '✅ Dependências já instaladas'
+fi
+
 # Verificar conexão com BD antes de executar migrations
+echo ''
 echo '🔍 Verificando conexão com base de dados...'
 npm run check-connection 2>&1 || echo '⚠️  Aviso: Verificação de conexão falhou, mas continuando...'
 
