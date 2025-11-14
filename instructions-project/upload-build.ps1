@@ -101,16 +101,68 @@ Write-Host ""
 Write-Host "=== 4. Executar Migrations ===" -ForegroundColor Cyan
 Write-Host "Executando migrations no servidor remoto..." -ForegroundColor Gray
 $migrationCommands = @"
-cd $serverRootPath/server
-echo '🔄 Executando migrations...'
-npm run setup 2>&1
-MIGRATION_EXIT=`$?
-if [ `$MIGRATION_EXIT -eq 0 ]; then
-    echo '✅ Migrations executadas com sucesso!'
-else
-    echo '⚠️  Aviso: Algumas migrations podem ter falhado, mas continuando...'
-    echo '💡 Verifique os logs acima para detalhes'
+cd $serverRootPath
+
+# Atualizar código do servidor (se for git repo)
+if [ -d .git ]; then
+    echo '📥 Atualizando código do servidor...'
+    git fetch origin 2>/dev/null || true
+    CURRENT_BRANCH=`$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'main')
+    git reset --hard origin/`${CURRENT_BRANCH} 2>/dev/null || git reset --hard origin/main 2>/dev/null || true
+    echo '✅ Código atualizado'
 fi
+
+# Verificar se PostgreSQL está rodando
+echo '🔍 Verificando PostgreSQL...'
+if docker ps | grep -q postgres || docker compose ps | grep -q postgres; then
+    echo '✅ PostgreSQL está rodando'
+else
+    echo '⚠️  PostgreSQL não encontrado via Docker'
+    echo '💡 Tentando iniciar PostgreSQL...'
+    docker compose -f docker-compose.prod.yml up -d 2>/dev/null || docker compose -f docker-compose.dev.yml up -d 2>/dev/null || true
+    sleep 3
+fi
+
+# Verificar se .env existe
+cd server
+if [ ! -f .env ]; then
+    echo '⚠️  Ficheiro .env não encontrado, criando...'
+    cat > .env << 'ENVEOF'
+DB_HOST=localhost
+DB_PORT=5433
+DB_NAME=instructions_demo
+DB_USER=demo_user
+DB_PASSWORD=demo_password
+PORT=5000
+NODE_ENV=production
+ENVEOF
+    echo '✅ Ficheiro .env criado'
+fi
+
+# Verificar conexão com BD antes de executar migrations
+echo '🔍 Verificando conexão com base de dados...'
+npm run check-connection 2>&1 || echo '⚠️  Aviso: Verificação de conexão falhou, mas continuando...'
+
+# Executar setup
+echo ''
+echo '🔄 Executando npm run setup...'
+npm run setup 2>&1
+SETUP_EXIT=`$?
+
+if [ `$SETUP_EXIT -eq 0 ]; then
+    echo ''
+    echo '✅ Setup executado com sucesso!'
+else
+    echo ''
+    echo '⚠️  Setup encontrou problemas!'
+    echo '💡 Tentando executar migrations manualmente...'
+    npm run migrate:all 2>&1 || echo '⚠️  Migrations também falharam'
+fi
+
+# Verificar se tabelas foram criadas
+echo ''
+echo '🔍 Verificando se tabelas existem...'
+psql -h localhost -p 5433 -U demo_user -d instructions_demo -c "\dt" 2>/dev/null | grep -q projects && echo '✅ Tabela projects existe' || echo '⚠️  Tabela projects não encontrada'
 "@
 ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" $migrationCommands.Replace("`r`n", "`n")
 Write-Host "✅ Migrations processadas!" -ForegroundColor Green
