@@ -375,7 +375,9 @@ export async function updateCanvas(req, res) {
       temSnapZonesByImage: req.body.snapZonesByImage !== undefined,
       temCanvasDecorations: req.body.canvasDecorations !== undefined,
       temCanvasImages: req.body.canvasImages !== undefined,
-      temDecorationsByImage: req.body.decorationsByImage !== undefined
+      temDecorationsByImage: req.body.decorationsByImage !== undefined,
+      temUploadedImages: req.body.uploadedImages !== undefined,
+      temSimulationState: req.body.simulationState !== undefined
     });
     
     const project = await Project.findByPk(req.params.id);
@@ -417,6 +419,14 @@ export async function updateCanvas(req, res) {
     if (req.body.lastEditedStep !== undefined) {
       updateData.lastEditedStep = req.body.lastEditedStep;
       console.log('💾 [SERVER] lastEditedStep recebido:', req.body.lastEditedStep);
+    }
+    if (req.body.uploadedImages !== undefined) {
+      updateData.uploadedImages = req.body.uploadedImages;
+      console.log('💾 [SERVER] UploadedImages recebidas:', Array.isArray(req.body.uploadedImages) ? req.body.uploadedImages.length : 'N/A');
+    }
+    if (req.body.simulationState !== undefined) {
+      updateData.simulationState = req.body.simulationState;
+      console.log('💾 [SERVER] SimulationState recebido:', req.body.simulationState);
     }
     
     console.log('💾 [SERVER] Dados a atualizar:', Object.keys(updateData));

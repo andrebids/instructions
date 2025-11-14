@@ -36,6 +36,13 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
     snapZonesByImage: {},      // Zonas de snap por imagem (mantido vazio após remoção de zonas)
     decorationsByImage: {},   // Decorações por imagem: { 'image-id': [...] }
     cartoucheByImage: {},     // Metadados do cartouche por imagem: { 'image-id': { projectName, streetOrZone, option, hasCartouche } }
+    uploadedImages: [],        // Lista de imagens uploadadas para o projeto
+    simulationState: {        // Estado da simulação
+      uploadStep: 'uploading', // 'uploading' | 'loading' | 'done'
+      selectedImageId: null,
+      isDayMode: true,
+      conversionComplete: {}
+    },
   });
 
   // 🧪 Logging inicial - removido para evitar logs infinitos
@@ -82,6 +89,13 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
             snapZonesByImage: project.snapZonesByImage || {},
             decorationsByImage: project.decorationsByImage || {},
             cartoucheByImage: project.cartoucheByImage || {},
+            uploadedImages: project.uploadedImages || [],
+            simulationState: project.simulationState || {
+              uploadStep: project.uploadedImages && project.uploadedImages.length > 0 ? 'done' : 'uploading',
+              selectedImageId: null,
+              isDayMode: true,
+              conversionComplete: {}
+            },
           });
           
           logger.lifecycle('useProjectForm', 'Project loaded successfully', { 
@@ -138,6 +152,14 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
         decorationsByImage: formData.decorationsByImage || {},
         // Metadados do cartouche (nome da rua, projeto, opção) - IMPORTANTE: ficam associados às imagens
         cartoucheByImage: formData.cartoucheByImage || {},
+        // Estado das simulações
+        uploadedImages: formData.uploadedImages || [],
+        simulationState: formData.simulationState || {
+          uploadStep: 'uploading',
+          selectedImageId: null,
+          isDayMode: true,
+          conversionComplete: {}
+        },
       };
       
       // Log detalhado das zonas incluídas na criação

@@ -67,8 +67,27 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
       canvasState.setUploadedImages(imagesToUse);
       canvasState.setUploadStep('done');
       
-      // Iniciar conversão automática sequencial após upload usando imageConversion
-      imageConversion.handleUploadComplete();
+      // Salvar uploadedImages e simulationState no formData
+      onInputChange?.('uploadedImages', imagesToUse);
+      const currentSimulationState = formData?.simulationState || {
+        uploadStep: 'done',
+        selectedImageId: null,
+        isDayMode: canvasState.isDayMode,
+        conversionComplete: {}
+      };
+      onInputChange?.('simulationState', { ...currentSimulationState, uploadStep: 'done' });
+      
+      // Verificar se já há conversões completas salvas (modo restauração)
+      const savedConversionComplete = formData?.simulationState?.conversionComplete || {};
+      const hasSavedConversions = Object.keys(savedConversionComplete).length > 0;
+      
+      // Se já há conversões salvas, restaurá-las em vez de iniciar novas
+      if (hasSavedConversions) {
+        imageConversion.setConversionComplete(savedConversionComplete);
+      } else {
+        // Iniciar conversão automática sequencial após upload usando imageConversion
+        imageConversion.handleUploadComplete();
+      }
     }, 300);
   };
 
@@ -93,7 +112,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
           hasCartouche: hasCartouche
         }
       };
-      onInputChange?.({ target: { name: 'cartoucheByImage', value: currentCartoucheByImage } });
+      onInputChange?.('cartoucheByImage', currentCartoucheByImage);
     }
     
     // Carregar decorações da nova imagem do mapeamento
@@ -119,7 +138,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
         ...currentCartoucheByImage,
         [image.id]: cartoucheDataForImage
       };
-      onInputChange?.({ target: { name: 'cartoucheByImage', value: currentCartoucheByImage } });
+      onInputChange?.('cartoucheByImage', currentCartoucheByImage);
     }
     
     console.log('📂 Dados do cartouche para imagem:', image.id, cartoucheDataForImage);
@@ -133,6 +152,15 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
       imageConversion.analysisComplete,
       cartoucheDataForImage // Passar dados do cartouche para carregar
     );
+    
+    // Salvar selectedImageId no simulationState
+    const currentSimulationState = formData?.simulationState || {
+      uploadStep: canvasState.uploadStep,
+      selectedImageId: null,
+      isDayMode: canvasState.isDayMode,
+      conversionComplete: imageConversion.conversionComplete || {}
+    };
+      onInputChange?.('simulationState', { ...currentSimulationState, selectedImageId: image.id });
   };
 
   // Handlers de decoração que também atualizam o mapeamento
@@ -165,6 +193,15 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   const toggleDayNightMode = () => {
     const newMode = !canvasState.isDayMode;
     canvasState.setIsDayMode(newMode);
+    
+    // Salvar isDayMode no simulationState
+    const currentSimulationState = formData?.simulationState || {
+      uploadStep: canvasState.uploadStep,
+      selectedImageId: canvasState.selectedImage?.id || null,
+      isDayMode: newMode,
+      conversionComplete: imageConversion.conversionComplete || {}
+    };
+    onInputChange?.('simulationState', { ...currentSimulationState, isDayMode: newMode });
     
     // Se há uma imagem selecionada, atualizar a imagem no canvas
     if (canvasState.selectedImage && canvasState.canvasImages.length > 0) {
@@ -256,7 +293,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
 
       // Atualizar apenas se houver mudanças
       if (needsUpdate) {
-        onInputChange?.({ target: { name: 'cartoucheByImage', value: updatedCartoucheByImage } });
+        onInputChange?.('cartoucheByImage', updatedCartoucheByImage);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -271,7 +308,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
       [imageId]: { ...current, ...updates }
     };
     
-    onInputChange?.({ target: { name: 'cartoucheByImage', value: updatedCartoucheByImage } });
+    onInputChange?.('cartoucheByImage', updatedCartoucheByImage);
   };
 
   const getDefaultProjectName = () => {
@@ -282,7 +319,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
     const currentProjectName = getDefaultProjectName();
     
     // Atualizar o projectName
-    onInputChange?.({ target: { name: 'projectName', value } });
+    onInputChange?.('projectName', value);
     
     // Se está alterando para um valor diferente do default, 
     // o projectName já é global, então não precisa duplicar
@@ -333,7 +370,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
         hasCartouche: true // Flag para indicar que o cartouche foi aplicado
       }
     };
-    onInputChange?.({ target: { name: 'cartoucheByImage', value: updatedCartoucheByImage } });
+    onInputChange?.('cartoucheByImage', updatedCartoucheByImage);
     
     console.log('✅ Cartouche aplicado ao canvas e salvo para imagem:', canvasState.selectedImage.id, {
       width: backgroundImage.width,
@@ -346,12 +383,37 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
     setIsLocationModalOpen(false);
   };
 
+  // Atualizar simulationState com conversionComplete quando mudar
+  useEffect(() => {
+    if (imageConversion.conversionComplete && Object.keys(imageConversion.conversionComplete).length > 0) {
+      const currentSimulationState = formData?.simulationState || {
+        uploadStep: canvasState.uploadStep,
+        selectedImageId: canvasState.selectedImage?.id || null,
+        isDayMode: canvasState.isDayMode,
+        conversionComplete: {}
+      };
+      // Só atualizar se realmente mudou
+      const currentCompleteStr = JSON.stringify(currentSimulationState.conversionComplete || {});
+      const newCompleteStr = JSON.stringify(imageConversion.conversionComplete);
+      if (currentCompleteStr !== newCompleteStr) {
+        onInputChange?.('simulationState', { ...currentSimulationState, conversionComplete: imageConversion.conversionComplete });
+      }
+    }
+  }, [JSON.stringify(imageConversion.conversionComplete)]);
+
   // Salvamento automático
   useCanvasPersistence({
     decorations: canvasState.decorations,
     canvasImages: canvasState.canvasImages,
     snapZonesByImage: {}, // Zonas removidas - manter vazio para compatibilidade
     decorationsByImage: decorationManagement.decorationsByImage,
+    uploadedImages: canvasState.uploadedImages,
+    simulationState: formData?.simulationState || {
+      uploadStep: canvasState.uploadStep,
+      selectedImageId: canvasState.selectedImage?.id || null,
+      isDayMode: canvasState.isDayMode,
+      conversionComplete: imageConversion.conversionComplete || {}
+    },
     formData,
     onInputChange
   });
@@ -362,6 +424,14 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
       decorationManagement.setDecorationsByImage(formData.decorationsByImage);
     }
   }, [formData?.id]);
+
+  // Restaurar conversionComplete do simulationState quando projeto for carregado
+  useEffect(() => {
+    if (formData?.simulationState?.conversionComplete && Object.keys(formData.simulationState.conversionComplete).length > 0) {
+      // Restaurar conversionComplete no imageConversion
+      imageConversion.setConversionComplete(formData.simulationState.conversionComplete);
+    }
+  }, [formData?.id]); // Executar apenas quando projeto mudar
 
   // Obter projectId do formData (pode ser id ou tempProjectId)
   const projectId = formData?.id || formData?.tempProjectId;

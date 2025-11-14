@@ -22,7 +22,8 @@
     "migrate:notes": "node src/migrations/create-project-notes-table.js",
     "migrate:lastEditedStep": "node src/migrations/add-last-edited-step-field.js",
     "migrate:cartouche": "node src/migrations/add-cartouche-by-image-field.js",
-    "migrate:all": "npm run migrate && npm run migrate:products && npm run migrate:dimensions && npm run migrate:animationSimulation && npm run migrate:notes && npm run migrate:lastEditedStep && npm run migrate:cartouche"
+    "migrate:simulationState": "node src/migrations/add-simulation-state-fields.js",
+    "migrate:all": "npm run migrate && npm run migrate:products && npm run migrate:dimensions && npm run migrate:animationSimulation && npm run migrate:notes && npm run migrate:lastEditedStep && npm run migrate:cartouche && npm run migrate:simulationState"
   },
   "dependencies": {
     "@clerk/express": "^1.7.42",

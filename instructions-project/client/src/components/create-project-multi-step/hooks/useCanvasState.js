@@ -75,6 +75,24 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
     // Marcar que estamos carregando este projeto
     loadedProjectIdRef.current = projectId;
     
+    // Restaurar imagens uploadadas
+    if (formData?.uploadedImages && Array.isArray(formData.uploadedImages) && formData.uploadedImages.length > 0) {
+      setUploadedImages(formData.uploadedImages);
+      
+      // Restaurar uploadStep baseado no estado salvo ou nas imagens disponíveis
+      const savedSimulationState = formData?.simulationState || {};
+      const savedUploadStep = savedSimulationState.uploadStep || (formData.uploadedImages.length > 0 ? 'done' : 'uploading');
+      setUploadStep(savedUploadStep);
+    } else {
+      // Se não houver imagens salvas, manter estado de upload
+      setUploadStep('uploading');
+    }
+    
+    // Restaurar modo dia/noite
+    if (formData?.simulationState?.isDayMode !== undefined) {
+      setIsDayMode(formData.simulationState.isDayMode);
+    }
+    
     // Restaurar decorações
     if (formData?.canvasDecorations && Array.isArray(formData.canvasDecorations) && formData.canvasDecorations.length > 0) {
       setDecorations(formData.canvasDecorations);
@@ -83,8 +101,23 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
     // Restaurar imagens do canvas
     if (formData?.canvasImages && Array.isArray(formData.canvasImages) && formData.canvasImages.length > 0) {
       setCanvasImages(formData.canvasImages);
-      // Se houver imagens, selecionar a primeira
-      if (formData.canvasImages.length > 0) {
+      
+      // Restaurar imagem selecionada baseada no simulationState ou na primeira imagem do canvas
+      const savedSimulationState = formData?.simulationState || {};
+      if (savedSimulationState.selectedImageId && formData.uploadedImages) {
+        // Tentar encontrar a imagem salva na lista de uploadedImages
+        const savedImage = formData.uploadedImages.find(img => img.id === savedSimulationState.selectedImageId);
+        if (savedImage) {
+          setSelectedImage(savedImage);
+        } else {
+          // Se não encontrar, usar a primeira imagem do canvas
+          const firstImage = formData.canvasImages.find(img => img.isSourceImage);
+          if (firstImage) {
+            setSelectedImage(firstImage);
+          }
+        }
+      } else {
+        // Se não houver selectedImageId salvo, selecionar a primeira imagem do canvas
         const firstImage = formData.canvasImages.find(img => img.isSourceImage);
         if (firstImage) {
           setSelectedImage(firstImage);

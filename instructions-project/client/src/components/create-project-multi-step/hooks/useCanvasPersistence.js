@@ -12,6 +12,8 @@ import { registerSyncTag, isBackgroundSyncAvailable } from '../../../services/ba
  * @param {Array} params.canvasImages - Imagens do canvas
  * @param {Object} params.snapZonesByImage - Zonas de snap por imagem
  * @param {Object} params.decorationsByImage - Decorações por imagem
+ * @param {Array} params.uploadedImages - Imagens uploadadas para o projeto
+ * @param {Object} params.simulationState - Estado da simulação (uploadStep, selectedImageId, isDayMode, conversionComplete)
  * @param {Object} params.formData - Dados do formulário
  * @param {Function} params.onInputChange - Callback para atualizar formData
  */
@@ -20,6 +22,8 @@ export const useCanvasPersistence = ({
   canvasImages,
   snapZonesByImage,
   decorationsByImage,
+  uploadedImages = [],
+  simulationState = null,
   formData,
   onInputChange
 }) => {
@@ -28,7 +32,9 @@ export const useCanvasPersistence = ({
     decorations: null,
     canvasImages: null,
     snapZonesByImage: null,
-    decorationsByImage: null
+    decorationsByImage: null,
+    uploadedImages: null,
+    simulationState: null
   });
   
   useEffect(() => {
@@ -37,12 +43,16 @@ export const useCanvasPersistence = ({
     const canvasImagesStr = JSON.stringify(canvasImages);
     const snapZonesStr = JSON.stringify(snapZonesByImage);
     const decorationsByImageStr = JSON.stringify(decorationsByImage);
+    const uploadedImagesStr = JSON.stringify(uploadedImages);
+    const simulationStateStr = JSON.stringify(simulationState);
     
     const hasChanges = 
       prevValuesRef.current.decorations !== decorationsStr ||
       prevValuesRef.current.canvasImages !== canvasImagesStr ||
       prevValuesRef.current.snapZonesByImage !== snapZonesStr ||
-      prevValuesRef.current.decorationsByImage !== decorationsByImageStr;
+      prevValuesRef.current.decorationsByImage !== decorationsByImageStr ||
+      prevValuesRef.current.uploadedImages !== uploadedImagesStr ||
+      prevValuesRef.current.simulationState !== simulationStateStr;
     
     if (!hasChanges) {
       return; // Não há mudanças, não atualizar
@@ -53,7 +63,9 @@ export const useCanvasPersistence = ({
       decorations: decorationsStr,
       canvasImages: canvasImagesStr,
       snapZonesByImage: snapZonesStr,
-      decorationsByImage: decorationsByImageStr
+      decorationsByImage: decorationsByImageStr,
+      uploadedImages: uploadedImagesStr,
+      simulationState: simulationStateStr
     };
     
     // Salvar no formData (sem logs excessivos)
@@ -81,6 +93,14 @@ export const useCanvasPersistence = ({
       onInputChange("cartoucheByImage", cartoucheByImage);
     }
     
+    // Salvar uploadedImages e simulationState se fornecidos
+    if (uploadedImages !== undefined) {
+      onInputChange("uploadedImages", uploadedImages);
+    }
+    if (simulationState !== undefined && simulationState !== null) {
+      onInputChange("simulationState", simulationState);
+    }
+    
     // Salvar também no localStorage como backup
     try {
       var projectId = formData?.id || 'temp';
@@ -101,7 +121,14 @@ export const useCanvasPersistence = ({
           canvasImages: canvasImages,
           decorationsByImage: decorationsByImage,
           cartoucheByImage: cartoucheByImage, // Incluir cartoucheByImage no salvamento
-          lastEditedStep: 'ai-designer' // Canvas só é usado no step ai-designer
+          lastEditedStep: 'ai-designer', // Canvas só é usado no step ai-designer
+          uploadedImages: uploadedImages || [],
+          simulationState: simulationState || formData?.simulationState || {
+            uploadStep: uploadedImages && uploadedImages.length > 0 ? 'done' : 'uploading',
+            selectedImageId: null,
+            isDayMode: true,
+            conversionComplete: {}
+          }
         };
         
         // Salvar no IndexedDB também (robusto para mobile)
@@ -142,6 +169,6 @@ export const useCanvasPersistence = ({
         clearTimeout(timeoutId);
       };
     }
-  }, [decorations, canvasImages, snapZonesByImage, decorationsByImage, formData?.id]); // Removido onInputChange das dependências para evitar loop infinito
+  }, [decorations, canvasImages, snapZonesByImage, decorationsByImage, uploadedImages, simulationState, formData?.id]); // Removido onInputChange das dependências para evitar loop infinito
 };
 
