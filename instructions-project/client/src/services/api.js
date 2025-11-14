@@ -13,6 +13,14 @@ const api = axios.create({
   timeout: 10000, // 10 segundos
 });
 
+// Função auxiliar para validar AbortSignal
+const isValidAbortSignal = (signal) => {
+  return signal && 
+         typeof signal === 'object' && 
+         typeof signal.addEventListener === 'function' &&
+         typeof signal.abort === 'function';
+};
+
 // Attach Clerk session token to requests when available
 api.interceptors.request.use(async (config) => {
   try {
@@ -28,6 +36,13 @@ api.interceptors.request.use(async (config) => {
   } catch (e) {
     // silent
   }
+  
+  // Validar signal antes de fazer a requisição
+  if (config.signal && !isValidAbortSignal(config.signal)) {
+    console.warn('⚠️ Invalid AbortSignal detected, removing from config:', config.signal);
+    delete config.signal;
+  }
+  
   return config;
 });
 
@@ -62,7 +77,7 @@ export const projectsAPI = {
   getAll: async (options = {}) => {
     const { signal, ...params } = options;
     const config = { params };
-    if (signal) {
+    if (signal && isValidAbortSignal(signal)) {
       config.signal = signal;
     }
     const response = await api.get('/projects', config);
@@ -72,7 +87,10 @@ export const projectsAPI = {
   // GET /api/projects/stats
   getStats: async (options = {}) => {
     const { signal } = options;
-    const config = signal ? { signal } : {};
+    const config = {};
+    if (signal && isValidAbortSignal(signal)) {
+      config.signal = signal;
+    }
     const response = await api.get('/projects/stats', config);
     return response.data;
   },
