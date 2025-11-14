@@ -3,14 +3,12 @@ import { Card, CardFooter, Button, Spinner, Progress, Image, Tooltip, Modal, Mod
 import { Icon } from "@iconify/react";
 import { DecorationLibrary } from "../../decoration-library";
 import { NightThumb } from '../../ui/NightThumb';
-import { YOLO12ThumbnailOverlay } from './YOLO12ThumbnailOverlay';
-import { UnifiedSnapZonesPanel } from './UnifiedSnapZonesPanel';
+// YOLO12ThumbnailOverlay removido - análise não é mais necessária após remoção de zonas
 import { UploadModal } from '../components/UploadModal';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { KonvaCanvas } from '../components/konva/KonvaCanvas';
 import { StreetNameInput } from '../components/StreetNameInput';
 import { useCanvasState } from '../hooks/useCanvasState';
-import { useSnapZones } from '../hooks/useSnapZones';
 import { useImageConversion } from '../hooks/useImageConversion';
 import { useDecorationManagement } from '../hooks/useDecorationManagement';
 import { useCanvasPersistence } from '../hooks/useCanvasPersistence';
@@ -20,18 +18,13 @@ import { getCenterPosition } from '../utils/canvasCalculations';
 
 export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externalSelectedImage }) => {
   // Estados locais adicionais (não extraídos para hooks)
-  const [showUnifiedPanel, setShowUnifiedPanel] = useState(false); // Painel unificado oculto por padrão
-  const [zonesWarning, setZonesWarning] = useState(false); // Estado para mostrar aviso sobre zonas
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false); // Modal de informações de localização
   const [isDecorationDrawerOpen, setIsDecorationDrawerOpen] = useState(false); // Drawer de decorações
   
   // Hook para detectar responsividade
   const { shouldUseDrawer, isMobile, isTablet, width } = useResponsiveLayout();
   
-  // Debug: log para verificar detecção
-  useEffect(() => {
-    console.log('📱 [ResponsiveLayout]', { shouldUseDrawer, isMobile, isTablet, width });
-  }, [shouldUseDrawer, isMobile, isTablet, width]);
+  // Debug removido - estava causando logs infinitos durante interações
 
   // Usar hooks customizados - ordem importa para dependências
   const canvasState = useCanvasState({ 
@@ -41,14 +34,9 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
     analysisComplete: {} // Será atualizado depois
   });
   
-  const imageConversion = useImageConversion({ uploadedImages: canvasState.uploadedImages });
-  
-  const snapZones = useSnapZones({ 
-    selectedImage: canvasState.selectedImage, 
-    isDayMode: canvasState.isDayMode, 
-    formData, 
-    onInputChange,
-    analysisComplete: imageConversion.analysisComplete
+  const imageConversion = useImageConversion({ 
+    uploadedImages: canvasState.uploadedImages,
+    projectId: formData?.id || formData?.tempProjectId 
   });
   
   const decorationManagement = useDecorationManagement({ 
@@ -56,13 +44,27 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   });
 
   // Handler para upload completo - atualizar uploadedImages e iniciar conversão
-  const handleUploadComplete = () => {
+  const handleUploadComplete = (uploadedImages = null) => {
     // Mudar para 'loading' antes de mostrar imagens
     canvasState.setUploadStep('loading');
     
+    // Se recebeu imagens do upload real, usar essas; senão usar fallback demo
+    const imagesToUse = uploadedImages && uploadedImages.length > 0 
+      ? uploadedImages.map(img => ({
+          id: img.id,
+          name: img.name,
+          thumbnail: img.thumbnail || img.dayVersion || img.originalUrl,
+          nightVersion: img.nightVersion || null,
+          originalUrl: img.originalUrl,
+          dayVersion: img.dayVersion || img.originalUrl,
+          conversionStatus: img.conversionStatus || 'pending',
+          cartouche: img.cartouche || null
+        }))
+      : canvasState.loadedImages; // Fallback para imagens demo
+    
     // Após um breve delay, popular uploadedImages e mostrar interface
     setTimeout(() => {
-      canvasState.setUploadedImages(canvasState.loadedImages);
+      canvasState.setUploadedImages(imagesToUse);
       canvasState.setUploadStep('done');
       
       // Iniciar conversão automática sequencial após upload usando imageConversion
@@ -77,36 +79,50 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
     
     // Guardar decorações da imagem anterior antes de trocar
     if (canvasState.selectedImage && canvasState.selectedImage.id !== image.id) {
-      console.log('💾 Guardando decorações da imagem anterior:', canvasState.selectedImage.id, canvasState.decorations.length, 'decorações');
       decorationManagement.saveDecorationsForImage(canvasState.selectedImage.id, canvasState.decorations);
       
       // Guardar estado do cartouche da imagem anterior (sempre salvar, mesmo se não houver)
       const hasCartouche = canvasState.canvasImages.some(img => img.isCartouche);
+      const previousCartouche = getCartoucheForImage(canvasState.selectedImage.id);
       currentCartoucheByImage = {
         ...currentCartoucheByImage,
         [canvasState.selectedImage.id]: {
-          ...getCartoucheForImage(canvasState.selectedImage.id),
-          hasCartouche: hasCartouche // Salvar se tem ou não tem cartouche
+          projectName: getDefaultProjectName(),
+          streetOrZone: previousCartouche.streetOrZone,
+          option: previousCartouche.option,
+          hasCartouche: hasCartouche
         }
       };
       onInputChange?.({ target: { name: 'cartoucheByImage', value: currentCartoucheByImage } });
-      console.log('💾 Guardando estado do cartouche para imagem:', canvasState.selectedImage.id, {
-        hasCartouche,
-        cartoucheData: currentCartoucheByImage[canvasState.selectedImage.id]
-      });
     }
     
     // Carregar decorações da nova imagem do mapeamento
     const newImageDecorations = decorationManagement.loadDecorationsForImage(image.id);
-    console.log('📂 Carregando decorações da imagem:', image.id, newImageDecorations.length, 'decorações');
     canvasState.setDecorations(newImageDecorations);
     
-    // Obter dados do cartouche para a nova imagem (usar objeto atualizado, não formData que pode estar desatualizado)
-    const cartoucheDataForImage = currentCartoucheByImage[image.id];
-    console.log('📂 Dados do cartouche para imagem:', image.id, cartoucheDataForImage, {
-      hasCartouche: cartoucheDataForImage?.hasCartouche,
-      allCartoucheData: currentCartoucheByImage
-    });
+    // Obter dados do cartouche para a nova imagem
+    // Priorizar cartouche da imagem (se veio do upload), depois cartoucheByImage, depois padrão
+    let cartoucheDataForImage = image.cartouche || currentCartoucheByImage[image.id];
+    
+    if (!cartoucheDataForImage) {
+      // Criar dados padrão do cartouche para esta imagem
+      const imageIndex = canvasState.uploadedImages.findIndex(img => img.id === image.id);
+      const defaultStreetName = imageIndex >= 0 ? getDefaultStreetName(imageIndex) : "";
+      cartoucheDataForImage = {
+        projectName: getDefaultProjectName(),
+        streetOrZone: defaultStreetName,
+        option: "base",
+        hasCartouche: false
+      };
+      // Salvar no cartoucheByImage
+      currentCartoucheByImage = {
+        ...currentCartoucheByImage,
+        [image.id]: cartoucheDataForImage
+      };
+      onInputChange?.({ target: { name: 'cartoucheByImage', value: currentCartoucheByImage } });
+    }
+    
+    console.log('📂 Dados do cartouche para imagem:', image.id, cartoucheDataForImage);
     
     // Adicionar imagem ao canvas (passar conversionComplete e analysisComplete)
     // O cartouche será carregado dentro de handleImageAddToCanvas no useCanvasState
@@ -150,12 +166,6 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
     const newMode = !canvasState.isDayMode;
     canvasState.setIsDayMode(newMode);
     
-    // Cancelar modo de edição ao alternar modo para evitar confusão
-    if (snapZones.isEditingZones) {
-      snapZones.setIsEditingZones(false);
-      snapZones.setTempZones([]);
-    }
-    
     // Se há uma imagem selecionada, atualizar a imagem no canvas
     if (canvasState.selectedImage && canvasState.canvasImages.length > 0) {
       console.log('🌓 Alternando modo:', newMode ? 'Day' : 'Night');
@@ -169,25 +179,8 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
         formData?.cartoucheByImage?.[canvasState.selectedImage.id] // Passar dados do cartouche
       );
       
-      // Se alternando para modo noite e análise ainda não foi feita, disparar análise YOLO12
-      if (newMode === false && canvasState.selectedImage && !imageConversion.analysisComplete[canvasState.selectedImage.id]) {
-        setTimeout(function() {
-          imageConversion.setAnalyzingImageId(canvasState.selectedImage.id);
-          setTimeout(function() {
-            imageConversion.setAnalyzingImageId(null);
-            // Marcar como completa (simulado)
-            // Na prática, isso deveria vir da análise real
-            imageConversion.setAnalysisComplete(function(prev) {
-              var updated = {};
-              for (var key in prev) {
-                updated[key] = prev[key];
-              }
-              updated[canvasState.selectedImage.id] = true;
-              return updated;
-            });
-          }, 2500);
-        }, 500);
-      }
+            // Análise YOLO12 removida - não é mais necessária após remoção de zonas
+            // Quando a API de conversão dia/noite estiver disponível, a conversão será automática
     }
   };
 
@@ -357,7 +350,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   useCanvasPersistence({
     decorations: canvasState.decorations,
     canvasImages: canvasState.canvasImages,
-    snapZonesByImage: snapZones.snapZonesByImage,
+    snapZonesByImage: {}, // Zonas removidas - manter vazio para compatibilidade
     decorationsByImage: decorationManagement.decorationsByImage,
     formData,
     onInputChange
@@ -366,67 +359,22 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   // Carregar decorações do formData no decorationManagement
   useEffect(() => {
     if (formData?.decorationsByImage && Object.keys(formData.decorationsByImage).length > 0) {
-      console.log('📦 Carregando decorações por imagem do formData');
       decorationManagement.setDecorationsByImage(formData.decorationsByImage);
     }
   }, [formData?.id]);
 
+  // Obter projectId do formData (pode ser id ou tempProjectId)
+  const projectId = formData?.id || formData?.tempProjectId;
+
   return (
     <div className="h-full flex flex-col">
-      {canvasState.uploadStep === 'uploading' && <UploadModal onUploadComplete={handleUploadComplete} />}
-      {canvasState.uploadStep === 'loading' && <LoadingIndicator />}
-      
-      {/* Painel unificado de snap zones */}
-      {canvasState.uploadStep === 'done' && (
-        <>
-          <UnifiedSnapZonesPanel
-            selectedImage={canvasState.selectedImage}
-            zones={snapZones.currentSnapZones}
-            tempZones={snapZones.tempZones}
-            isEditingZones={snapZones.isEditingZones}
-            isDayMode={canvasState.isDayMode}
-            isAnalyzed={canvasState.selectedImage ? (imageConversion.analysisComplete[canvasState.selectedImage.id] || false) : false}
-            onToggleEditMode={() => {
-              if (snapZones.isEditingZones) {
-                snapZones.handleCancelEditZones();
-              } else {
-                snapZones.setIsEditingZones(true);
-                snapZones.setTempZones([]);
-                console.log('✏️ Modo edição de zonas ativado');
-              }
-            }}
-            onSaveZones={snapZones.handleSaveZones}
-            onCancelEdit={snapZones.handleCancelEditZones}
-            onAddZone={snapZones.handleAddSnapZone}
-            onRemoveZone={snapZones.handleRemoveSnapZone}
-            isVisible={showUnifiedPanel}
-            onToggle={() => {
-              const next = !showUnifiedPanel;
-              setShowUnifiedPanel(next);
-              canvasState.setShowSnapZones(next); // sincronizar visualização de zonas com o botão
-            }}
-          />
-          {/* Botão para mostrar/ocultar painel */}
-          <Button
-            size="sm"
-            variant="solid"
-            color="primary"
-            radius="full"
-            className="fixed bottom-4 left-4 z-[100] shadow-md hover:shadow-lg transition-all opacity-60 hover:opacity-100 px-3"
-            onPress={() => {
-              console.log('🔧 Toggle Unified Panel:', !showUnifiedPanel);
-              const next = !showUnifiedPanel;
-              setShowUnifiedPanel(next);
-              canvasState.setShowSnapZones(next); // sincronizar visualização de zonas com o botão
-            }}
-            title="Set Zones"
-            aria-label="Set Zones"
-            startContent={<Icon icon="lucide:crosshair" className="text-lg" />}
-          >
-            Set Zones
-          </Button>
-        </>
+      {canvasState.uploadStep === 'uploading' && (
+        <UploadModal 
+          onUploadComplete={handleUploadComplete} 
+          projectId={projectId}
+        />
       )}
+      {canvasState.uploadStep === 'loading' && <LoadingIndicator />}
       
       {/* Main Content Area - 3 Column Layout */}
       {canvasState.uploadStep === 'done' && (
@@ -447,7 +395,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                 return (
                   <div key={image.id} className="relative">
                     <Tooltip
-                      content={isDisabled ? "Aguardando conversão para noite..." : ""}
+                      content={isDisabled ? "Waiting for night conversion..." : ""}
                       isDisabled={!isDisabled}
                       placement="right"
                     >
@@ -516,38 +464,33 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                       </Card>
                     </Tooltip>
                   
-                    {/* Overlay de análise YOLO12 no thumbnail específico - FORA do Card para garantir z-index */}
-                    {imageConversion.analyzingImageId === image.id && (
-                      <YOLO12ThumbnailOverlay duration={2500} />
-                    )}
+                          {/* Análise YOLO12 removida - não é mais necessária após remoção de zonas */}
                   </div>
                 );
               })}
 
-              {/* Fake add image card (placed after sources) */}
+              {/* Botão para adicionar mais imagens */}
               <Card
                 isFooterBlurred
-                isPressable={false}
-                className="w-full cursor-not-allowed border-none transition-all duration-200 opacity-80 hover:opacity-70"
+                isPressable={true}
+                className="w-full cursor-pointer border-none transition-all duration-200 hover:ring-1 hover:ring-primary/50"
                 radius="lg"
                 onPress={() => {
-                  console.log('➕ [Source Images] Fake add image clicked');
+                  // Voltar para o estado de upload para permitir adicionar mais imagens
+                  canvasState.setUploadStep('uploading');
                 }}
-                aria-label="Add image or take picture (coming soon)"
+                aria-label="Add more images"
               >
                 <div className="w-full h-[120px] flex items-center justify-center bg-gradient-to-br from-default-100 to-default-200 rounded-lg relative overflow-hidden">
-                  {/* Overlay pattern sutil para indicar disabled */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-white/2"></div>
-                  
                   <div className="flex flex-col items-center gap-2 text-default-500 relative z-10">
-                    <Icon icon="lucide:upload-cloud" className="text-3xl opacity-80" />
-                    <span className="text-sm font-medium text-center leading-tight">Add image or take picture</span>
+                    <Icon icon="lucide:plus-circle" className="text-3xl opacity-80" />
+                    <span className="text-sm font-medium text-center leading-tight">Add more images</span>
                   </div>
                 </div>
                 <CardFooter className="absolute bg-black/40 bottom-0 z-10 py-1 pointer-events-none">
                   <div className="flex grow gap-2 items-center">
-                    <Icon icon="lucide:clock" className="text-tiny text-warning-400" />
-                    <p className="text-tiny text-white/80 truncate">Upload (coming soon)</p>
+                    <Icon icon="lucide:upload" className="text-tiny text-primary-400" />
+                    <p className="text-tiny text-white/80 truncate">Upload or camera</p>
                   </div>
                 </CardFooter>
               </Card>
@@ -577,7 +520,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                     }
                     title={
                       canvasState.selectedImage && !imageConversion.conversionComplete[canvasState.selectedImage.id]
-                        ? "Aguardando conversão para noite..."
+                        ? "Waiting for night conversion..."
                         : undefined
                     }
                     aria-label={canvasState.isDayMode ? "Switch to night mode" : "Switch to day mode"}
@@ -595,25 +538,6 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                     aria-label="Open cartouche information"
                   >
                     Cartouche
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="light"
-                    title="Show/Hide Zones"
-                    aria-label="Show or hide snap zones"
-                    startContent={<Icon icon={"lucide:eye"} />}
-                    onPress={() => {
-                      // Verificar se análise foi completada antes de alternar zonas
-                      if (canvasState.selectedImage && !imageConversion.analysisComplete[canvasState.selectedImage.id]) {
-                        setZonesWarning(true);
-                        setTimeout(() => setZonesWarning(false), 3000); // Esconder após 3 segundos
-                        return;
-                      }
-                      canvasState.setShowSnapZones(!canvasState.showSnapZones);
-                    }}
-                    isDisabled={canvasState.canvasImages.length === 0}
-                  >
-                    Zones
                   </Button>
                   <Button
                     size="sm"
@@ -653,12 +577,6 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                     ⚠️ Select a background image to add PNGs
                   </div>
                 )}
-                {zonesWarning && (
-                  <div className="mb-2 p-3 rounded-md bg-warning-50 border border-warning-200 text-warning-700 text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <Icon icon="lucide:alert-circle" className="text-warning-600 flex-shrink-0" />
-                    <span>Zones are not available yet. Please wait for the analysis to complete.</span>
-                  </div>
-                )}
                 <KonvaCanvas
                   width="100%"
                   height="100%"
@@ -669,17 +587,11 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                   decorations={canvasState.decorations}
                   canvasImages={canvasState.canvasImages}
                   selectedImage={canvasState.selectedImage}
-                  snapZones={
-                    canvasState.showSnapZones && 
-                    canvasState.selectedImage && 
-                    imageConversion.analysisComplete[canvasState.selectedImage.id] 
-                      ? snapZones.allZonesForDisplay 
-                      : []
-                  }
+                  snapZones={[]} // Zonas removidas
                   isDayMode={canvasState.isDayMode}
-                  isEditingZones={snapZones.isEditingZones}
+                  isEditingZones={false} // Zonas removidas
                   analysisComplete={imageConversion.analysisComplete}
-                  showSnapZones={canvasState.showSnapZones}
+                  showSnapZones={false} // Zonas removidas
                   cartoucheInfo={
                     canvasState.selectedImage && canvasState.canvasImages.some(img => img.isCartouche)
                       ? {
@@ -689,14 +601,6 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                         }
                       : null
                   }
-                  onZoneCreate={(zone) => {
-                    console.log('🎨 [DEBUG] Zona criada no canvas, adicionando a tempZones:', zone);
-                    snapZones.setTempZones(function(prev) {
-                      var updated = [...prev, zone];
-                      console.log('🎨 [DEBUG] tempZones atualizado:', updated.length, 'zonas temporárias');
-                      return updated;
-                    });
-                  }}
                   onRequireBackground={() => {
                     canvasState.setNoBgWarning(true);
                     setTimeout(() => canvasState.setNoBgWarning(false), 2000);
@@ -787,7 +691,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                       onDecorationSelect={(decoration) => {
                         // ⚠️ VERIFICAR SE HÁ IMAGEM DE FUNDO antes de adicionar decoração
                         if (canvasState.canvasImages.length === 0) {
-                          console.warn('⚠️ Adicione primeiro uma imagem de fundo!');
+                          console.warn('⚠️ Please add a background image first!');
                           canvasState.setNoBgWarning(true);
                           setTimeout(() => canvasState.setNoBgWarning(false), 2000);
                           return;

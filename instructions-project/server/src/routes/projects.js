@@ -1,6 +1,7 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import * as projectController from '../controllers/projectController.js';
+import { projectImageUploadMiddleware } from '../middleware/projectUpload.js';
 
 const router = express.Router();
 
@@ -42,6 +43,7 @@ router.delete('/:id', projectController.deleteProject);
 router.patch('/:id/status', projectController.updateStatus);
 router.patch('/:id/favorite', projectController.toggleFavorite);
 router.patch('/:id/canvas', projectController.updateCanvas); // Nova rota para atualizar canvas
+router.post('/:id/images/upload', projectImageUploadMiddleware, projectController.uploadImages); // Upload de imagens para projeto
 
 export default router;
 

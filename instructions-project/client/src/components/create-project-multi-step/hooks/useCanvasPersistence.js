@@ -23,71 +23,86 @@ export const useCanvasPersistence = ({
   formData,
   onInputChange
 }) => {
+  // Ref para rastrear valores anteriores e evitar atualizações desnecessárias
+  const prevValuesRef = useRef({
+    decorations: null,
+    canvasImages: null,
+    snapZonesByImage: null,
+    decorationsByImage: null
+  });
+  
   useEffect(() => {
-    var zonasPorImagem = Object.keys(snapZonesByImage).map(key => ({
-      imagem: key,
-      zonasDay: snapZonesByImage[key]?.day?.length || 0,
-      zonasNight: snapZonesByImage[key]?.night?.length || 0,
-      total: (snapZonesByImage[key]?.day?.length || 0) + (snapZonesByImage[key]?.night?.length || 0)
-    }));
+    // Verificar se realmente há mudanças antes de atualizar (evitar loops infinitos)
+    const decorationsStr = JSON.stringify(decorations);
+    const canvasImagesStr = JSON.stringify(canvasImages);
+    const snapZonesStr = JSON.stringify(snapZonesByImage);
+    const decorationsByImageStr = JSON.stringify(decorationsByImage);
     
-    console.log('💾 [DEBUG] ===== INÍCIO SALVAMENTO ZONAS =====');
-    console.log('💾 [DEBUG] snapZonesByImage completo:', JSON.stringify(snapZonesByImage, null, 2));
-    console.log('💾 [DEBUG] Resumo zonas:', {
-      totalImagens: Object.keys(snapZonesByImage).length,
-      zonasPorImagem: zonasPorImagem,
-      projectId: formData?.id,
-      temProjectId: !!formData?.id
-    });
+    const hasChanges = 
+      prevValuesRef.current.decorations !== decorationsStr ||
+      prevValuesRef.current.canvasImages !== canvasImagesStr ||
+      prevValuesRef.current.snapZonesByImage !== snapZonesStr ||
+      prevValuesRef.current.decorationsByImage !== decorationsByImageStr;
     
-    // Salvar no formData
-    console.log('💾 [DEBUG] Salvando no formData...');
+    if (!hasChanges) {
+      return; // Não há mudanças, não atualizar
+    }
+    
+    // Atualizar valores anteriores
+    prevValuesRef.current = {
+      decorations: decorationsStr,
+      canvasImages: canvasImagesStr,
+      snapZonesByImage: snapZonesStr,
+      decorationsByImage: decorationsByImageStr
+    };
+    
+    // Salvar no formData (sem logs excessivos)
     onInputChange("canvasDecorations", decorations);
     onInputChange("canvasImages", canvasImages);
     onInputChange("snapZonesByImage", snapZonesByImage);
     onInputChange("decorationsByImage", decorationsByImage);
-    console.log('💾 [DEBUG] FormData atualizado');
+    
+    // Extrair e salvar metadados do cartouche das imagens do canvas
+    // Garantir que cartoucheByImage esteja sincronizado com os metadados das imagens
+    const cartoucheByImage = {};
+    canvasImages.forEach(img => {
+      if (img.isSourceImage && img.imageId && img.cartouche) {
+        cartoucheByImage[img.imageId] = {
+          projectName: img.cartouche.projectName,
+          streetOrZone: img.cartouche.streetOrZone,
+          option: img.cartouche.option,
+          hasCartouche: img.cartouche.hasCartouche
+        };
+      }
+    });
+    
+    // Atualizar cartoucheByImage apenas se houver mudanças
+    if (Object.keys(cartoucheByImage).length > 0) {
+      onInputChange("cartoucheByImage", cartoucheByImage);
+    }
     
     // Salvar também no localStorage como backup
     try {
       var projectId = formData?.id || 'temp';
       localStorage.setItem('snapZonesByImage_' + projectId, JSON.stringify(snapZonesByImage));
-      console.log('💾 [DEBUG] Zonas salvas no localStorage (chave: snapZonesByImage_' + projectId + ')');
     } catch (e) {
-      console.error('⚠️ [DEBUG] Erro ao salvar no localStorage:', e);
+      console.error('⚠️ Erro ao salvar no localStorage:', e);
     }
     
     // Se projeto já existe (tem ID), salvar automaticamente na base de dados
     var temProjectId = !!formData?.id;
     var temZonas = Object.keys(snapZonesByImage).length > 0;
     
-    console.log('💾 [DEBUG] Verificando condições para salvar na BD:', {
-      temProjectId: temProjectId,
-      temZonas: temZonas,
-      projectId: formData?.id,
-      vaiSalvar: temProjectId && temZonas
-    });
-    
-    if (temProjectId && temZonas) {
-      console.log('💾 [DEBUG] Preparando para salvar na base de dados (debounce 500ms)...');
+    if (temProjectId) {
       var timeoutId = setTimeout(async function() {
         var dadosParaSalvar = {
           snapZonesByImage: snapZonesByImage,
           canvasDecorations: decorations,
           canvasImages: canvasImages,
           decorationsByImage: decorationsByImage,
+          cartoucheByImage: cartoucheByImage, // Incluir cartoucheByImage no salvamento
           lastEditedStep: 'ai-designer' // Canvas só é usado no step ai-designer
         };
-        
-        console.log('💾 [DEBUG] ===== ENVIANDO PARA BASE DE DADOS =====');
-        console.log('💾 [DEBUG] Projeto ID:', formData.id);
-        console.log('💾 [DEBUG] Dados a enviar:', {
-          snapZonesByImage: JSON.stringify(snapZonesByImage, null, 2),
-          totalCanvasDecorations: decorations.length,
-          totalCanvasImages: canvasImages.length,
-          totalDecorationsByImage: Object.keys(decorationsByImage).length,
-          lastEditedStep: 'ai-designer'
-        });
         
         // Salvar no IndexedDB também (robusto para mobile)
         try {
@@ -97,10 +112,11 @@ export const useCanvasPersistence = ({
             canvasImages: canvasImages,
             snapZonesByImage: snapZonesByImage,
             decorationsByImage: decorationsByImage,
+            cartoucheByImage: cartoucheByImage,
             pendingSync: !navigator.onLine
           });
         } catch (idxError) {
-          console.warn('⚠️ [DEBUG] Erro ao salvar no IndexedDB:', idxError);
+          console.warn('⚠️ Erro ao salvar no IndexedDB:', idxError);
         }
         
         // Salvar no localStorage também
@@ -108,23 +124,12 @@ export const useCanvasPersistence = ({
           localStorage.setItem(`project_${formData.id}_lastStep`, 'ai-designer');
           localStorage.setItem(`project_${formData.id}_lastStepTime`, new Date().toISOString());
         } catch (lsError) {
-          console.warn('⚠️ [DEBUG] Erro ao salvar no localStorage:', lsError);
+          console.warn('⚠️ Erro ao salvar no localStorage:', lsError);
         }
         
         projectsAPI.updateCanvas(formData.id, dadosParaSalvar)
-          .then(function(response) {
-            console.log('✅ [DEBUG] ===== SUCESSO AO SALVAR NA BASE DE DADOS =====');
-            console.log('✅ [DEBUG] Projeto ID:', formData.id);
-            console.log('✅ [DEBUG] Resposta do servidor:', response);
-            console.log('✅ [DEBUG] Zonas confirmadas na BD:', response.snapZonesByImage ? JSON.stringify(response.snapZonesByImage, null, 2) : 'N/A');
-          })
           .catch(function(err) {
-            console.error('❌ [DEBUG] ===== ERRO AO SALVAR NA BASE DE DADOS =====');
-            console.error('❌ [DEBUG] Projeto ID:', formData.id);
-            console.error('❌ [DEBUG] Erro completo:', err);
-            console.error('❌ [DEBUG] Mensagem de erro:', err.message);
-            console.error('❌ [DEBUG] Resposta do servidor:', err.response?.data);
-            console.error('❌ [DEBUG] Status HTTP:', err.response?.status);
+            console.error('❌ Erro ao salvar canvas na API:', err.message);
             
             // Se offline, registar para sync quando voltar online
             if (!navigator.onLine && isBackgroundSyncAvailable()) {
@@ -134,19 +139,9 @@ export const useCanvasPersistence = ({
       }, 500); // Debounce de 500ms para evitar muitas chamadas
       
       return function() {
-        console.log('💾 [DEBUG] Limpando timeout de salvamento');
         clearTimeout(timeoutId);
       };
-    } else {
-      if (!temProjectId) {
-        console.log('⚠️ [DEBUG] Projeto ainda não tem ID - zonas ficam apenas no formData/localStorage');
-      }
-      if (!temZonas) {
-        console.log('⚠️ [DEBUG] Nenhuma zona definida - não há nada para salvar');
-      }
     }
-    
-    console.log('💾 [DEBUG] ===== FIM SALVAMENTO ZONAS =====');
   }, [decorations, canvasImages, snapZonesByImage, decorationsByImage, formData?.id]); // Removido onInputChange das dependências para evitar loop infinito
 };
 

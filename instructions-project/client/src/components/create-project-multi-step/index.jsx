@@ -137,11 +137,11 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
   };
 
   return (
-    <div className="w-full h-full">
-      <Card className="shadow-lg overflow-hidden h-full rounded-none bg-default-100">
+    <div className="w-full h-full flex flex-col min-h-0">
+      <Card className="shadow-lg overflow-hidden flex-1 min-h-0 rounded-none bg-default-100" classNames={{ base: "flex flex-col" }}>
         <div className="flex flex-col h-full min-h-0">
           {/* Top bar + horizontal stepper */}
-          <div className="w-full bg-content1 px-4 py-2 sm:px-6 sm:py-3 border-b border-divider">
+          <div className="w-full bg-content1 px-4 py-2 sm:px-6 sm:py-3 border-b border-divider flex-shrink-0">
             <div className="flex items-center gap-4 justify-between">
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <Button
@@ -173,22 +173,24 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
               ? 'overflow-hidden' 
               : 'px-4 py-6 sm:px-6 sm:py-8 lg:px-8 overflow-y-auto'
           }`}>
-            <div className={isAIDesignerStep() ? 'h-full' : 'max-w-6xl mx-auto pb-24'}>
+            <div className={isAIDesignerStep() ? 'h-full' : 'max-w-6xl mx-auto'}>
               {renderStepContent()}
             </div>
           </div>
           
           {/* Navigation Footer */}
-          <NavigationFooter
-            currentStep={navigation.currentStep}
-            totalSteps={visibleSteps.length}
-            onNext={navigation.nextStep}
-            onPrev={navigation.prevStep}
-            onSubmit={formState.handleSubmit}
-            isValid={navigation.canProceed()}
-            loading={formState.loading}
-            isNavigating={navigation.isNavigating}
-          />
+          <div className="flex-shrink-0">
+            <NavigationFooter
+              currentStep={navigation.currentStep}
+              totalSteps={visibleSteps.length}
+              onNext={navigation.nextStep}
+              onPrev={navigation.prevStep}
+              onSubmit={formState.handleSubmit}
+              isValid={navigation.canProceed()}
+              loading={formState.loading}
+              isNavigating={navigation.isNavigating}
+            />
+          </div>
         </div>
       </Card>
       

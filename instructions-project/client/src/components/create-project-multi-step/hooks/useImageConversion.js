@@ -1,14 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
+import { convertToNight } from '../../../services/dayNightAPI';
 
 /**
  * Hook para gerenciar conversão dia/noite e análise YOLO12
  * Controla sequência de animação GIF e disparo de análises
+ * Preparado para usar API real quando disponível
  * 
  * @param {Object} params
  * @param {Array} params.uploadedImages - Imagens disponíveis após upload
+ * @param {string} params.projectId - ID do projeto (opcional, para API futura)
  * @returns {Object} - Estados e funções de conversão e análise
  */
-export const useImageConversion = ({ uploadedImages }) => {
+export const useImageConversion = ({ uploadedImages, projectId = null }) => {
   const [activeGifIndex, setActiveGifIndex] = useState(-1); // Controla qual thumbnail mostra GIF
   const [conversionComplete, setConversionComplete] = useState({}); // Mapeia quais imagens completaram conversão
   const [analysisComplete, setAnalysisComplete] = useState({}); // Mapeia quais imagens completaram análise
@@ -102,6 +105,7 @@ export const useImageConversion = ({ uploadedImages }) => {
     
     if (activeGifIndex >= 0 && activeGifIndex < uploadedImages.length) {
       var imageId = uploadedImages[activeGifIndex].id;
+      var image = uploadedImages[activeGifIndex];
       
       // Se mudou para uma nova imagem, marcar a anterior como convertida imediatamente
       if (prevIndex >= 0 && prevIndex < uploadedImages.length && prevIndex !== activeGifIndex) {
@@ -120,8 +124,40 @@ export const useImageConversion = ({ uploadedImages }) => {
         });
       }
       
-      // Marcar conversão como completa após 4000ms (duração da animação)
-      var timeoutId = setTimeout(function() {
+      // Tentar conversão via API se imagem ainda não tem nightVersion
+      // STATUS: API de conversão dia/noite ainda não está disponível
+      // Por enquanto, usar fallback (filtros CSS) até API estar disponível
+      // Quando a API estiver pronta, descomentar e usar:
+      // const conversionResult = await convertToNight(imageId, image.originalUrl, projectId);
+      // if (conversionResult.nightVersion) {
+      //   // Atualizar imagem com nightVersion real
+      // }
+      
+      if (!image.nightVersion && image.originalUrl) {
+        // Fallback: marcar como completa após animação (usa filtros CSS)
+        // A conversão real será feita quando a API estiver disponível
+        var timeoutId = setTimeout(function() {
+          setConversionComplete(function(prev) {
+            if (!prev[imageId]) {
+              var updated = {};
+              for (var key in prev) {
+                updated[key] = prev[key];
+              }
+              updated[imageId] = true;
+              return updated;
+            }
+            return prev;
+          });
+        }, 4000); // Duração da animação do NightThumb
+        
+        // Atualizar ref do índice anterior
+        prevActiveGifIndexRef.current = activeGifIndex;
+        
+        return function() {
+          clearTimeout(timeoutId);
+        };
+      } else {
+        // Se já tem nightVersion, marcar como completa imediatamente
         setConversionComplete(function(prev) {
           if (!prev[imageId]) {
             var updated = {};
@@ -129,19 +165,13 @@ export const useImageConversion = ({ uploadedImages }) => {
               updated[key] = prev[key];
             }
             updated[imageId] = true;
-            console.log('✅ Conversão completa para imagem:', imageId);
+            console.log('✅ Conversão já existe para imagem:', imageId);
             return updated;
           }
           return prev;
         });
-      }, 4000); // Duração da animação do NightThumb
-      
-      // Atualizar ref do índice anterior
-      prevActiveGifIndexRef.current = activeGifIndex;
-      
-      return function() {
-        clearTimeout(timeoutId);
-      };
+        prevActiveGifIndexRef.current = activeGifIndex;
+      }
     } else if (activeGifIndex === -1 && uploadedImages.length > 0) {
       // Quando activeGifIndex volta para -1, todas as imagens foram convertidas
       // Marcar a última imagem (índice 2) como convertida imediatamente se ainda não foi marcada
@@ -188,25 +218,9 @@ export const useImageConversion = ({ uploadedImages }) => {
     }
   }, [activeGifIndex, uploadedImages]);
 
-  // Detectar quando conversão para noite completa e disparar análise YOLO12 sequencialmente
-  useEffect(function() {
-    if (activeGifIndex >= 0 && activeGifIndex < uploadedImages.length) {
-      var imageId = uploadedImages[activeGifIndex].id;
-      
-      // Verificar se análise ainda não foi iniciada para esta imagem
-      setAnalysisComplete(function(prev) {
-        if (!prev[imageId]) {
-          // Disparar após conversão completar (4 segundos)
-          var timeoutId = setTimeout(function() {
-            triggerYOLOAnalysis(imageId);
-          }, 4000); // Aguardar conversão completar (duração do NightThumb)
-          
-          return prev;
-        }
-        return prev;
-      });
-    }
-  }, [activeGifIndex, uploadedImages]);
+  // Análise YOLO12 removida - não é mais necessária após remoção de zonas
+  // Quando a API de conversão dia/noite estiver disponível, a conversão será automática
+  // e não será necessário disparar análises separadas
 
   return {
     activeGifIndex,

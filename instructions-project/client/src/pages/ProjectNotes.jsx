@@ -66,7 +66,7 @@ export default function ProjectNotes() {
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
-      <div className="flex-1 min-h-0 overflow-auto p-6 pb-32">
+      <div className="flex-1 min-h-0 overflow-auto p-6">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -137,7 +137,7 @@ export default function ProjectNotes() {
       </div>
 
       {/* Navigation Footer */}
-      <div className="w-full bg-content1 border-t border-divider px-4 py-4 sm:px-6 sm:py-6 sticky bottom-0">
+      <div className="w-full bg-content1 border-t border-divider px-4 py-4 sm:px-6 sm:py-6 flex-shrink-0">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <Button
             variant="flat"

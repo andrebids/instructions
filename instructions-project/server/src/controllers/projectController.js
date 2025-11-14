@@ -53,8 +53,16 @@ export async function getAll(req, res) {
       order: [['createdAt', 'DESC']],
     });
     
-    console.log('📋 [PROJECTS API] Projetos encontrados:', projects.length);
-    res.json(projects);
+    // Garantir que cartoucheByImage sempre tem valor padrão para projetos antigos
+    const projectsWithDefaults = projects.map(project => {
+      if (!project.cartoucheByImage) {
+        project.cartoucheByImage = {};
+      }
+      return project;
+    });
+    
+    console.log('📋 [PROJECTS API] Projetos encontrados:', projectsWithDefaults.length);
+    res.json(projectsWithDefaults);
   } catch (error) {
     console.error('❌ [PROJECTS API] Erro ao buscar projetos:', error);
     console.error('❌ [PROJECTS API] Nome do erro:', error.name);
@@ -99,6 +107,11 @@ export async function getById(req, res) {
       return res.status(404).json({ error: 'Project not found' });
     }
     
+    // Garantir que cartoucheByImage sempre tem valor padrão para projetos antigos
+    if (!project.cartoucheByImage) {
+      project.cartoucheByImage = {};
+    }
+    
     res.json(project);
   } catch (error) {
     console.error('Erro ao buscar projeto:', error);
@@ -136,7 +149,14 @@ export async function create(req, res) {
     }
     
     console.log('💾 [SERVER] Salvando projeto na base de dados...');
-    const project = await Project.create(req.body);
+    
+    // Garantir que cartoucheByImage existe e tem valor padrão se não fornecido
+    const projectData = {
+      ...req.body,
+      cartoucheByImage: req.body.cartoucheByImage || {}
+    };
+    
+    const project = await Project.create(projectData);
     
     // Verificar o que foi realmente guardado
     if (project.snapZonesByImage) {
@@ -429,6 +449,71 @@ export async function updateCanvas(req, res) {
     console.error('❌ [SERVER] Erro:', error.message);
     console.error('❌ [SERVER] Stack:', error.stack);
     res.status(400).json({ error: error.message });
+  }
+}
+
+// POST /api/projects/:id/images/upload - Upload de imagens para projeto
+export async function uploadImages(req, res) {
+  try {
+    const projectId = req.params.id;
+    
+    if (!projectId) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Project ID é obrigatório' 
+      });
+    }
+
+    // Verificar se projeto existe
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Projeto não encontrado' 
+      });
+    }
+
+    // Verificar se há arquivos
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Nenhuma imagem fornecida' 
+      });
+    }
+
+    // Processar arquivos e retornar URLs
+    const uploadedImages = req.files.map((file, index) => {
+      const imageId = `img-${Date.now()}-${index}`;
+      const imageUrl = `/uploads/projects/${projectId}/day/${file.filename}`;
+      
+      return {
+        id: imageId,
+        name: file.originalname,
+        originalUrl: imageUrl,
+        thumbnail: imageUrl, // Por enquanto usar a mesma URL, pode gerar thumbnail depois
+        dayVersion: imageUrl,
+        nightVersion: null, // Será preenchido após conversão via API
+        conversionStatus: 'pending',
+        uploadedAt: new Date().toISOString(),
+        // Metadados do cartouche (se fornecidos no body)
+        cartouche: req.body.cartouche ? JSON.parse(req.body.cartouche) : null
+      };
+    });
+
+    console.log('✅ [PROJECT UPLOAD] Imagens uploadadas:', uploadedImages.length, 'para projeto:', projectId);
+
+    res.json({
+      success: true,
+      images: uploadedImages,
+      projectId: projectId,
+      message: `${uploadedImages.length} imagem(ns) enviada(s) com sucesso`
+    });
+  } catch (error) {
+    console.error('❌ [PROJECT UPLOAD] Erro ao fazer upload:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message || 'Erro ao fazer upload das imagens' 
+    });
   }
 }
 

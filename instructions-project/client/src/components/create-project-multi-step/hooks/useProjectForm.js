@@ -33,8 +33,9 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
     // 🆕 Novos campos para Canvas Konva (apenas projectos Simu)
     canvasDecorations: [],    // Array de decorações geradas pelo AI Designer
     canvasImages: [],          // Array de imagens adicionadas ao canvas
-    snapZonesByImage: {},      // Zonas de snap por imagem: { 'image-id': { day: [], night: [] } }
+    snapZonesByImage: {},      // Zonas de snap por imagem (mantido vazio após remoção de zonas)
     decorationsByImage: {},   // Decorações por imagem: { 'image-id': [...] }
+    cartoucheByImage: {},     // Metadados do cartouche por imagem: { 'image-id': { projectName, streetOrZone, option, hasCartouche } }
   });
 
   // 🧪 Logging inicial - removido para evitar logs infinitos
@@ -80,6 +81,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
             canvasImages: project.canvasImages || [],
             snapZonesByImage: project.snapZonesByImage || {},
             decorationsByImage: project.decorationsByImage || {},
+            cartoucheByImage: project.cartoucheByImage || {},
           });
           
           logger.lifecycle('useProjectForm', 'Project loaded successfully', { 
@@ -127,13 +129,15 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
         location: formData.location,
         description: formData.description,
         budget: formData.budget ? parseFloat(formData.budget) : null,
-        startDate: null,
+        startDate: new Date().toISOString(), // Data de criação do projeto
         endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
         // Dados do canvas (AI Designer)
         canvasDecorations: formData.canvasDecorations || [],
         canvasImages: formData.canvasImages || [],
-        snapZonesByImage: formData.snapZonesByImage || {},
+        snapZonesByImage: formData.snapZonesByImage || {}, // Mantido vazio após remoção de zonas
         decorationsByImage: formData.decorationsByImage || {},
+        // Metadados do cartouche (nome da rua, projeto, opção) - IMPORTANTE: ficam associados às imagens
+        cartoucheByImage: formData.cartoucheByImage || {},
       };
       
       // Log detalhado das zonas incluídas na criação
@@ -162,11 +166,31 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
       const projectIdToUpdate = projectId || formData.tempProjectId;
       if (projectIdToUpdate) {
         // Atualizar projeto existente
+        // Se é um projeto temporário (tempProjectId) e não tem startDate, definir como data atual
+        // Se é edição de projeto existente (projectId), não alterar startDate
+        if (formData.tempProjectId && !projectId) {
+          // É atualização de projeto temporário - verificar se já tem startDate
+          try {
+            const existingProject = await projectsAPI.getById(projectIdToUpdate);
+            if (!existingProject.startDate) {
+              // Se não tem startDate, definir como data atual (finalização da criação)
+              projectData.startDate = new Date().toISOString();
+            }
+          } catch (err) {
+            // Se não conseguir buscar, definir startDate como data atual
+            projectData.startDate = new Date().toISOString();
+          }
+        }
+        // Se projectId existe, é edição de projeto existente - não alterar startDate
         finalProject = await projectsAPI.update(projectIdToUpdate, projectData);
         logger.lifecycle('useProjectForm', 'Project updated', finalProject);
       } else {
-        // Criar novo projeto
-        finalProject = await projectsAPI.create(projectData);
+        // Criar novo projeto - definir startDate como data atual (finalização da criação)
+        const createData = {
+          ...projectData,
+          startDate: new Date().toISOString(), // Data de criação do projeto
+        };
+        finalProject = await projectsAPI.create(createData);
         logger.lifecycle('useProjectForm', 'Project created', finalProject);
       }
       
@@ -224,7 +248,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
         location: formData.location,
         description: formData.description,
         budget: formData.budget ? parseFloat(formData.budget) : null,
-        startDate: null,
+        startDate: null, // Será definido apenas quando o projeto for finalizado
         endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
       };
       

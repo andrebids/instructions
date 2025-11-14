@@ -101,6 +101,32 @@ export const projectsAPI = {
     return response.data;
   },
 
+  // POST /api/projects/:id/images/upload - Upload de imagens para projeto
+  uploadImages: async (projectId, files, cartoucheData = null) => {
+    const formData = new FormData();
+    
+    // Adicionar arquivos
+    if (Array.isArray(files)) {
+      files.forEach((file) => {
+        formData.append('images', file);
+      });
+    } else {
+      formData.append('images', files);
+    }
+    
+    // Adicionar metadados do cartouche se fornecidos
+    if (cartoucheData) {
+      formData.append('cartouche', JSON.stringify(cartoucheData));
+    }
+    
+    const response = await api.post(`/projects/${projectId}/images/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
   // PATCH /api/projects/:id/status
   updateStatus: async (id, status) => {
     const response = await api.patch(`/projects/${id}/status`, { status });

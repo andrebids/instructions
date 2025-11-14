@@ -11,7 +11,7 @@ export default function EditProject() {
   };
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full flex flex-col min-h-0">
       <CreateProjectMultiStep 
         projectId={id}
         onClose={handleClose}
