@@ -1,6 +1,8 @@
 import { Project, ProjectElement, Decoration } from '../models/index.js';
 import sequelize from '../config/database.js';
 import { QueryTypes } from 'sequelize';
+import fs from 'fs';
+import path from 'path';
 
 // GET /api/projects - Listar todos os projetos
 export async function getAll(req, res) {
@@ -495,6 +497,23 @@ export async function uploadImages(req, res) {
     const uploadedImages = req.files.map((file, index) => {
       const imageId = `img-${Date.now()}-${index}`;
       const imageUrl = `/uploads/projects/${projectId}/day/${file.filename}`;
+      
+      // Verificar se arquivo foi realmente salvo
+      const filePath = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day/${file.filename}`);
+      const fileExists = fs.existsSync(filePath);
+      
+      console.log('📁 [PROJECT UPLOAD] Arquivo:', {
+        filename: file.filename,
+        originalname: file.originalname,
+        path: filePath,
+        exists: fileExists,
+        size: file.size,
+        url: imageUrl
+      });
+      
+      if (!fileExists) {
+        console.error('❌ [PROJECT UPLOAD] Arquivo não encontrado após upload:', filePath);
+      }
       
       return {
         id: imageId,
