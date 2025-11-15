@@ -117,43 +117,84 @@ export const KonvaCanvas = ({
     // Aguardar que CSS esteja carregado antes de medir dimensões
     // Isso evita o erro "Layout was forced before the page was fully loaded"
     const initStage = () => {
-      if (document.readyState === 'complete') {
-        // Se já está carregado, usar requestAnimationFrame para garantir layout pronto
-        requestAnimationFrame(() => {
-          fitStageIntoParentContainer();
+      // Função para verificar se CSS está carregado
+      const isCSSLoaded = () => {
+        // Verificar se há stylesheets carregando
+        const stylesheets = Array.from(document.styleSheets);
+        const loadingStylesheets = stylesheets.filter(sheet => {
+          try {
+            return sheet.href && !sheet.cssRules;
+          } catch (e) {
+            return false;
+          }
         });
-      } else {
-        // Aguardar evento load se ainda não carregou
-        window.addEventListener('load', () => {
+        return loadingStylesheets.length === 0;
+      };
+
+      const tryInit = () => {
+        // Verificar se documento está pronto E CSS está carregado
+        if (document.readyState === 'complete' && isCSSLoaded()) {
+          // Aguardar múltiplos frames para garantir que layout está estável
           requestAnimationFrame(() => {
-            fitStageIntoParentContainer();
+            requestAnimationFrame(() => {
+              fitStageIntoParentContainer();
+            });
           });
+        } else {
+          // Aguardar um pouco mais e tentar novamente
+          setTimeout(tryInit, 100);
+        }
+      };
+
+      if (document.readyState === 'complete') {
+        // Se já está carregado, verificar CSS e aguardar frames
+        tryInit();
+      } else {
+        // Aguardar evento load primeiro
+        window.addEventListener('load', () => {
+          // Depois do load, aguardar CSS e frames
+          tryInit();
         }, { once: true });
       }
     };
 
     initStage();
     
-    const resizeObserver = new ResizeObserver(() => {
-      // Usar requestAnimationFrame no ResizeObserver também
-      requestAnimationFrame(() => {
-        fitStageIntoParentContainer();
-      });
-    });
-    
-    // Aguardar container estar disponível antes de observar
-    const observeContainer = () => {
-      if (containerRef.current) {
+    // Criar ResizeObserver apenas após inicialização completa
+    let resizeObserver = null;
+    const setupResizeObserver = () => {
+      if (!resizeObserver && containerRef.current) {
+        resizeObserver = new ResizeObserver(() => {
+          // Usar múltiplos requestAnimationFrame para garantir que layout está estável
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              fitStageIntoParentContainer();
+            });
+          });
+        });
+        
         resizeObserver.observe(containerRef.current);
-      } else {
-        // Se ainda não existe, tentar novamente após pequeno delay
-        setTimeout(observeContainer, 50);
       }
     };
     
-    observeContainer();
+    // Aguardar container estar disponível e CSS carregado antes de observar
+    const observeContainer = () => {
+      if (containerRef.current && document.readyState === 'complete') {
+        setupResizeObserver();
+      } else {
+        // Se ainda não está pronto, tentar novamente após delay
+        setTimeout(observeContainer, 100);
+      }
+    };
     
-    return () => resizeObserver.disconnect();
+    // Aguardar um pouco antes de tentar observar (dar tempo para CSS carregar)
+    setTimeout(observeContainer, 200);
+    
+    return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
   }, []); // Sem dependências - só executa uma vez
 
   // Handlers para modo de edição de zonas - REMOVIDOS (zonas não são mais usadas)
