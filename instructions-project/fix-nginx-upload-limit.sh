@@ -197,10 +197,10 @@ if [ "$CLIENT_MAX_COUNT" -gt 0 ]; then
             BACKUP_FILE=""
         fi
         
-        # Remover todas as ocorrências de client_max_body_size
+        # Remover TODAS as ocorrências de client_max_body_size (linha 1 e dentro dos blocos)
         # Remover qualquer linha que contenha client_max_body_size (com ou sem espaços no início)
-        sudo sed -i '/client_max_body_size/d' "$CONFIG_FILE" 2>/dev/null || sed -i '/client_max_body_size/d' "$CONFIG_FILE" 2>/dev/null || true
-        echo -e "${GREEN}✅ Duplicações removidas${NC}"
+        sudo sed -i '/[[:space:]]*client_max_body_size[[:space:]]/d' "$CONFIG_FILE" 2>/dev/null || sed -i '/[[:space:]]*client_max_body_size[[:space:]]/d' "$CONFIG_FILE" 2>/dev/null || true
+        echo -e "${GREEN}✅ Todas as ocorrências removidas${NC}"
         
         # Limpar linhas em branco duplicadas no início do arquivo
         sudo sed -i '/./,$!d' "$CONFIG_FILE" 2>/dev/null || true
@@ -242,36 +242,69 @@ if [ "$CLIENT_MAX_COUNT" -gt 0 ]; then
             fi
         fi
     else
-        # Apenas uma ocorrência, verificar se está adequada
+        # Apenas uma ocorrência, verificar se está adequada e se está no lugar correto
         CURRENT_LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk '{print $2}' | tr -d ';')
         echo -e "${YELLOW}⚠️  Limite atual encontrado: $CURRENT_LIMIT${NC}"
         
-        # Verificar se o limite é muito baixo (menor que 15MB)
-        CURRENT_MB=$(echo "$CURRENT_LIMIT" | sed 's/[^0-9]//g')
-        if [ -z "$CURRENT_MB" ] || [ "$CURRENT_MB" -lt 15 ]; then
-            echo -e "${YELLOW}⚠️  Limite muito baixo! Ajustando para 15MB...${NC}"
+        # Verificar se está fora do bloco server (linha 1) - isso causa erro no nginx
+        FIRST_LINE=$(head -n 1 "$CONFIG_FILE" | grep -c "client_max_body_size" || echo "0")
+        if [ "$FIRST_LINE" = "1" ]; then
+            echo -e "${YELLOW}⚠️  client_max_body_size encontrado na linha 1 (fora do bloco server)${NC}"
+            echo -e "${YELLOW}⚠️  Removendo e adicionando no lugar correto...${NC}"
             
-            # Fazer backup (tentar com sudo se necessário)
+            # Fazer backup
             BACKUP_FILE="${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
             if sudo cp "$CONFIG_FILE" "$BACKUP_FILE" 2>/dev/null || cp "$CONFIG_FILE" "$BACKUP_FILE" 2>/dev/null; then
                 echo -e "${GREEN}✅ Backup criado${NC}"
             else
-                echo -e "${YELLOW}⚠️  Não foi possível criar backup (pode precisar de sudo)${NC}"
+                echo -e "${YELLOW}⚠️  Não foi possível criar backup${NC}"
                 BACKUP_FILE=""
             fi
             
-            # Substituir o limite existente (tentar com sudo se necessário)
-            if sudo sed -i 's/client_max_body_size.*/client_max_body_size 15M;/' "$CONFIG_FILE" 2>/dev/null || sed -i 's/client_max_body_size.*/client_max_body_size 15M;/' "$CONFIG_FILE" 2>/dev/null; then
-                echo -e "${GREEN}✅ Limite atualizado para 15MB${NC}"
-            else
-                echo -e "${RED}❌ Não foi possível atualizar (pode precisar de sudo)${NC}"
-                if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
-                    sudo cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || true
+            # Remover da linha 1
+            sudo sed -i '1{/client_max_body_size/d;}' "$CONFIG_FILE" 2>/dev/null || sed -i '1{/client_max_body_size/d;}' "$CONFIG_FILE" 2>/dev/null || true
+            sudo sed -i '/./,$!d' "$CONFIG_FILE" 2>/dev/null || true
+            
+            # Adicionar no bloco server
+            if grep -q "^[[:space:]]*server {" "$CONFIG_FILE"; then
+                if sudo sed -i '/^[[:space:]]*server {/a\    client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null || sed -i '/^[[:space:]]*server {/a\    client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null; then
+                    echo -e "${GREEN}✅ client_max_body_size movido para o bloco server${NC}"
+                else
+                    echo -e "${RED}❌ Não foi possível mover${NC}"
+                    if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
+                        sudo cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || true
+                    fi
+                    exit 1
                 fi
-                exit 1
             fi
         else
-            echo -e "${GREEN}✅ Limite já está adequado ($CURRENT_LIMIT)${NC}"
+            # Verificar se o limite é muito baixo (menor que 15MB)
+            CURRENT_MB=$(echo "$CURRENT_LIMIT" | sed 's/[^0-9]//g')
+            if [ -z "$CURRENT_MB" ] || [ "$CURRENT_MB" -lt 15 ]; then
+                echo -e "${YELLOW}⚠️  Limite muito baixo! Ajustando para 15MB...${NC}"
+                
+                # Fazer backup (tentar com sudo se necessário)
+                BACKUP_FILE="${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+                if sudo cp "$CONFIG_FILE" "$BACKUP_FILE" 2>/dev/null || cp "$CONFIG_FILE" "$BACKUP_FILE" 2>/dev/null; then
+                    echo -e "${GREEN}✅ Backup criado${NC}"
+                else
+                    echo -e "${YELLOW}⚠️  Não foi possível criar backup (pode precisar de sudo)${NC}"
+                    BACKUP_FILE=""
+                fi
+                
+                # Substituir o limite existente (tentar com sudo se necessário)
+                if sudo sed -i 's/client_max_body_size.*/client_max_body_size 15M;/' "$CONFIG_FILE" 2>/dev/null || sed -i 's/client_max_body_size.*/client_max_body_size 15M;/' "$CONFIG_FILE" 2>/dev/null; then
+                    echo -e "${GREEN}✅ Limite atualizado para 15MB${NC}"
+                else
+                    echo -e "${RED}❌ Não foi possível atualizar (pode precisar de sudo)${NC}"
+                    if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
+                        sudo cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || true
+                    fi
+                    exit 1
+                fi
+            else
+                echo -e "${GREEN}✅ Limite já está adequado ($CURRENT_LIMIT)${NC}"
+            fi
         fi
     fi
 else
