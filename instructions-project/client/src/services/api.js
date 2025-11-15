@@ -141,6 +141,9 @@ export const projectsAPI = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      maxContentLength: 20 * 1024 * 1024, // 20MB (maior que 15MB para evitar erro 413)
+      maxBodyLength: 20 * 1024 * 1024, // 20MB
+      timeout: 60000, // 60 segundos para uploads grandes
     });
     return response.data;
   },
@@ -377,6 +380,9 @@ export const editorAPI = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      maxContentLength: 20 * 1024 * 1024, // 20MB (maior que 15MB para evitar erro 413)
+      maxBodyLength: 20 * 1024 * 1024, // 20MB
+      timeout: 60000, // 60 segundos para uploads grandes
     });
     return response.data;
   },
