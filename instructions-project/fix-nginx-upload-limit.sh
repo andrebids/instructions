@@ -34,10 +34,56 @@ fi
 
 # Verificar processos na porta 80/443 (pode indicar proxy reverso)
 echo -e "${BLUE}🔍 Verificando processos nas portas 80 e 443...${NC}"
+PROCESS_ON_80=""
+PROCESS_ON_443=""
 if command -v netstat &> /dev/null; then
-    netstat -tlnp 2>/dev/null | grep -E ':(80|443)' || echo "   Nenhum processo encontrado nas portas 80/443"
+    PROCESS_ON_80=$(sudo netstat -tlnp 2>/dev/null | grep ':80 ' | head -1 || netstat -tlnp 2>/dev/null | grep ':80 ' | head -1)
+    PROCESS_ON_443=$(sudo netstat -tlnp 2>/dev/null | grep ':443 ' | head -1 || netstat -tlnp 2>/dev/null | grep ':443 ' | head -1)
 elif command -v ss &> /dev/null; then
-    ss -tlnp 2>/dev/null | grep -E ':(80|443)' || echo "   Nenhum processo encontrado nas portas 80/443"
+    PROCESS_ON_80=$(sudo ss -tlnp 2>/dev/null | grep ':80 ' | head -1 || ss -tlnp 2>/dev/null | grep ':80 ' | head -1)
+    PROCESS_ON_443=$(sudo ss -tlnp 2>/dev/null | grep ':443 ' | head -1 || ss -tlnp 2>/dev/null | grep ':443 ' | head -1)
+fi
+
+if [ -n "$PROCESS_ON_80" ] || [ -n "$PROCESS_ON_443" ]; then
+    echo -e "${YELLOW}⚠️  Processos encontrados nas portas 80/443:${NC}"
+    [ -n "$PROCESS_ON_80" ] && echo "   Porta 80: $PROCESS_ON_80"
+    [ -n "$PROCESS_ON_443" ] && echo "   Porta 443: $PROCESS_ON_443"
+    
+    # Tentar identificar o processo usando lsof ou fuser
+    PROCESS_NAME=""
+    if command -v lsof &> /dev/null; then
+        PROCESS_NAME=$(sudo lsof -i :80 -i :443 2>/dev/null | grep LISTEN | head -1 | awk '{print $1}' || lsof -i :80 -i :443 2>/dev/null | grep LISTEN | head -1 | awk '{print $1}')
+    elif command -v fuser &> /dev/null; then
+        PROCESS_NAME=$(sudo fuser 80/tcp 443/tcp 2>/dev/null | head -1 || fuser 80/tcp 443/tcp 2>/dev/null | head -1)
+    fi
+    
+    if [ -n "$PROCESS_NAME" ]; then
+        echo -e "${BLUE}   Processo identificado: $PROCESS_NAME${NC}"
+        
+        if echo "$PROCESS_NAME" | grep -qi nginx; then
+            echo -e "${GREEN}✅ Nginx detectado nas portas 80/443!${NC}"
+            NGINX_FOUND=true
+        elif echo "$PROCESS_NAME" | grep -qi apache; then
+            echo -e "${YELLOW}⚠️  Apache detectado nas portas 80/443${NC}"
+            echo -e "${YELLOW}💡 Para Apache, ajuste LimitRequestBody no httpd.conf${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Processo '$PROCESS_NAME' encontrado nas portas 80/443${NC}"
+            # Tentar encontrar arquivos de configuração comuns mesmo sem nginx no PATH
+            if [ -f "/etc/nginx/nginx.conf" ] || [ -d "/etc/nginx/sites-enabled" ]; then
+                echo -e "${GREEN}✅ Arquivos de configuração do nginx encontrados!${NC}"
+                NGINX_FOUND=true
+            fi
+        fi
+    else
+        echo -e "${YELLOW}⚠️  Não foi possível identificar o processo (pode precisar de sudo)${NC}"
+        # Tentar encontrar arquivos de configuração mesmo assim
+        if [ -f "/etc/nginx/nginx.conf" ] || [ -d "/etc/nginx/sites-enabled" ]; then
+            echo -e "${GREEN}✅ Arquivos de configuração do nginx encontrados! Tentando ajustar...${NC}"
+            NGINX_FOUND=true
+        fi
+    fi
+else
+    echo "   Nenhum processo encontrado nas portas 80/443"
 fi
 
 # Verificar se há Apache

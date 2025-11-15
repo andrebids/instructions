@@ -305,16 +305,26 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {fileObj.status === 'done' && <Icon icon="lucide:check-circle" className="text-2xl text-success" />}
                     {fileObj.status === 'uploading' && <Spinner size="sm" />}
-                    {fileObj.status === 'error' && <Icon icon="lucide:x-circle" className="text-2xl text-danger" />}
-                    {/* Botão X para remover imagem */}
+                    {fileObj.status === 'error' && (
+                      <Icon 
+                        icon="lucide:x-circle" 
+                        className="text-2xl text-danger" 
+                        title="Erro no upload"
+                      />
+                    )}
+                    {/* Botão X para remover imagem - sempre visível quando não está fazendo upload */}
                     {!uploading && (
                       <button
-                        onClick={() => handleRemoveFile(index)}
-                        className="p-1 rounded-full hover:bg-danger-100 text-danger-500 hover:text-danger-700 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveFile(index);
+                        }}
+                        className="p-1.5 rounded-full hover:bg-danger-100 active:bg-danger-200 text-danger-500 hover:text-danger-700 transition-colors focus:outline-none focus:ring-2 focus:ring-danger-300"
                         aria-label="Remover imagem"
                         type="button"
+                        title="Remover imagem"
                       >
-                        <Icon icon="lucide:x" className="text-xl" />
+                        <Icon icon="lucide:x" className="text-lg" />
                       </button>
                     )}
                   </div>
