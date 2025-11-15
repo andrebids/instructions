@@ -3,7 +3,6 @@ import { Button } from '@heroui/react';
 import { Icon } from '@iconify/react';
 
 export const CategoryMenu = ({ categories, onCategorySelect }) => {
-  console.log('📋 [CategoryMenu] Rendering', categories.length, 'categories');
   const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || '';
   const resolveSrc = function(path){
     if (!path) return '';
@@ -19,7 +18,6 @@ export const CategoryMenu = ({ categories, onCategorySelect }) => {
           <div
             key={category.id}
             onClick={() => {
-              console.log('📂 [CategoryMenu] Selecting category:', category.name);
               onCategorySelect(category.id);
             }}
             className="p-4 border border-divider rounded-lg cursor-pointer hover:border-primary/50 transition-all duration-200 bg-background hover:bg-default-50 active:scale-95"

@@ -27,7 +27,6 @@ export async function openDB() {
 
     request.onsuccess = () => {
       dbInstance = request.result;
-      console.log('✅ [IndexedDB] Database aberta com sucesso');
       resolve(dbInstance);
     };
 
@@ -39,7 +38,6 @@ export async function openDB() {
         const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'projectId' });
         objectStore.createIndex('projectId', 'projectId', { unique: true });
         objectStore.createIndex('lastModified', 'lastModified', { unique: false });
-        console.log('✅ [IndexedDB] Object store criado:', STORE_NAME);
       }
     };
   });
@@ -68,7 +66,6 @@ export async function saveEditorState(projectId, state) {
     await new Promise((resolve, reject) => {
       const request = store.put(editorState);
       request.onsuccess = () => {
-        console.log(`✅ [IndexedDB] Estado salvo para projeto ${projectId}`);
         resolve();
       };
       request.onerror = () => {
@@ -95,13 +92,7 @@ export async function getEditorState(projectId) {
       const request = store.get(projectId);
       request.onsuccess = () => {
         const result = request.result;
-        if (result) {
-          console.log(`✅ [IndexedDB] Estado carregado para projeto ${projectId}`);
-          resolve(result);
-        } else {
-          console.log(`ℹ️ [IndexedDB] Nenhum estado encontrado para projeto ${projectId}`);
-          resolve(null);
-        }
+        resolve(result || null);
       };
       request.onerror = () => {
         console.error(`❌ [IndexedDB] Erro ao ler estado:`, request.error);

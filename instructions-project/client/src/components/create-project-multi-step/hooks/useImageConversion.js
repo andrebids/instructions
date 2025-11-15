@@ -160,7 +160,6 @@ export const useImageConversion = ({ uploadedImages, projectId = null }) => {
               updated[key] = prev[key];
             }
             updated[prevImageId] = true;
-            console.log('✅ Conversão completa para imagem anterior:', prevImageId);
             return updated;
           }
           return prev;
@@ -246,7 +245,6 @@ export const useImageConversion = ({ uploadedImages, projectId = null }) => {
               updated[key] = prev[key];
             }
             updated[lastImageId] = true;
-            console.log('✅ Conversão completa para última imagem (índice', lastIndex + '):', lastImageId);
             return updated;
           }
           return prev;
@@ -265,7 +263,6 @@ export const useImageConversion = ({ uploadedImages, projectId = null }) => {
             var imgId = uploadedImages[i].id;
             if (!updated[imgId]) {
               updated[imgId] = true;
-              console.log('✅ Conversão completa para imagem final (backup):', imgId);
             }
           }
           return updated;
