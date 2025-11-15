@@ -16,6 +16,19 @@ import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { getDecorationColor } from '../utils/decorationUtils';
 import { getCenterPosition } from '../utils/canvasCalculations';
 
+// Função utilitária para mapear caminhos de upload para /api/uploads/
+const mapImagePath = (path) => {
+  if (!path) return path;
+  // Se já é URL completa (http/https), usar diretamente
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || '';
+  // Se tem baseApi configurado, usar ele
+  if (baseApi && path.indexOf('/uploads/') === 0) return baseApi + path;
+  // Sem baseApi: converter /uploads/ para /api/uploads/ para passar pelo proxy
+  if (path.indexOf('/uploads/') === 0) return '/api' + path;
+  return path;
+};
+
 export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externalSelectedImage }) => {
   // Estados locais adicionais (não extraídos para hooks)
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false); // Modal de informações de localização
@@ -510,7 +523,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                           alt={image.name}
                           className="object-cover"
                           height={120}
-                          src={image.thumbnail}
+                          src={mapImagePath(image.thumbnail)}
                           width="100%"
                           onError={(e) => {
                             e.target.style.display = 'none';
