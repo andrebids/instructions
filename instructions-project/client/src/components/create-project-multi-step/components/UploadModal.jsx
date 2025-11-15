@@ -80,6 +80,7 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
   };
 
   // Função para lidar com seleção de arquivos
+  // Agora acumula novas imagens em vez de substituir as já selecionadas
   const handleFilesSelected = (selectedFiles) => {
     const fileArray = Array.from(selectedFiles);
     const fileObjects = fileArray.map(file => {
@@ -94,8 +95,8 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
         previewUrl // Criar URL de preview para thumbnail
       };
     });
-    
-    setFiles(fileObjects);
+
+    setFiles(prev => [...prev, ...fileObjects]);
     setIsPreparing(false);
     setError(null);
   };
@@ -278,6 +279,23 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
       onDrop={handleDrop}
     >
       <Card className="p-8 text-center max-w-lg w-full m-4 transition-all duration-300">
+        {/* Inputs de ficheiro/câmara sempre montados para permitir adicionar mais imagens a qualquer momento */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleFileInputChange}
+          className="hidden"
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleCameraInputChange}
+          className="hidden"
+        />
         {isPreparing ? (
           <>
             <h2 className="text-xl font-semibold mb-4">Upload Background Image</h2>
@@ -298,22 +316,6 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
               </p>
               <p className="text-default-500 text-sm mb-4">or</p>
               <div className="flex flex-col gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileInputChange}
-                  className="hidden"
-                />
-                <input
-                  ref={cameraInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleCameraInputChange}
-                  className="hidden"
-                />
                 <Button 
                   color="primary" 
                   variant="ghost"
@@ -340,6 +342,47 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
             <h2 className="text-xl font-semibold mb-4">
               {uploading ? 'Uploading Images...' : 'Selected Images'}
             </h2>
+
+            {/* Zona para adicionar mais imagens mesmo depois de já ter selecionado algumas */}
+            {!uploading && (
+              <div 
+                className={`border-2 border-dashed rounded-lg p-6 mb-4 bg-default-50 transition-all duration-200 ${
+                  dragOver 
+                    ? 'border-primary bg-primary/5 ring-2 ring-primary ring-offset-2' 
+                    : 'border-default-300'
+                }`}
+              >
+                <Icon icon="lucide:upload-cloud" className={`text-3xl mx-auto mb-2 transition-colors ${
+                  dragOver ? 'text-primary' : 'text-default-500'
+                }`} />
+                <p className={`mb-1 text-sm transition-colors ${
+                  dragOver ? 'text-primary font-medium' : 'text-default-600'
+                }`}>
+                  {dragOver ? 'Drop more images here' : 'Drag and drop more images here to add'}
+                </p>
+                <p className="text-default-500 text-xs mb-3">or</p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+                  <Button 
+                    color="primary" 
+                    variant="ghost"
+                    onPress={() => fileInputRef.current?.click()}
+                    aria-label="Select More Files"
+                    startContent={<Icon icon="lucide:folder" />}
+                  >
+                    Select More Files
+                  </Button>
+                  <Button 
+                    color="secondary" 
+                    variant="ghost"
+                    onPress={() => cameraInputRef.current?.click()}
+                    aria-label="Take Photo"
+                    startContent={<Icon icon="lucide:camera" />}
+                  >
+                    Take Photo
+                  </Button>
+                </div>
+              </div>
+            )}
             
             {error && (
               <div className="mb-4 p-3 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm">
