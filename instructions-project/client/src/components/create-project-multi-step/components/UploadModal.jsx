@@ -138,36 +138,67 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
       const fileList = files.map(f => f.file);
       const response = await projectsAPI.uploadImages(projectId, fileList);
       
-      // Log informações de debug do servidor (se disponíveis)
+      // Log informações de debug do servidor (sempre mostrar)
+      console.log('📁 [UPLOAD DEBUG] ===== INFORMAÇÕES DO SERVIDOR =====');
+      console.log('📁 [UPLOAD DEBUG] Resposta completa:', response);
+      
       if (response.debug) {
-        console.log('📁 [UPLOAD DEBUG] Informações do servidor:', response.debug);
-        response.debug.uploadDebug?.forEach((fileDebug, index) => {
-          console.log(`📄 [UPLOAD DEBUG] Arquivo ${index + 1}:`, {
-            filename: fileDebug.filename,
-            originalname: fileDebug.originalname,
-            multerPath: fileDebug.multerPath,
-            multerPathExists: fileDebug.multerPathExists,
-            expectedPath: fileDebug.expectedPath,
-            expectedPathExists: fileDebug.expectedPathExists,
-            size: fileDebug.size,
-            url: fileDebug.url,
-            cwd: fileDebug.cwd
+        console.log('📁 [UPLOAD DEBUG] Informações de debug:', response.debug);
+        
+        // Log de cada arquivo
+        if (response.debug.uploadDebug && response.debug.uploadDebug.length > 0) {
+          response.debug.uploadDebug.forEach((fileDebug, index) => {
+            console.log(`\n📄 [UPLOAD DEBUG] Arquivo ${index + 1}:`, {
+              filename: fileDebug.filename,
+              originalname: fileDebug.originalname,
+              multerPath: fileDebug.multerPath,
+              multerPathExists: fileDebug.multerPathExists,
+              expectedPath: fileDebug.expectedPath,
+              expectedPathExists: fileDebug.expectedPathExists,
+              size: fileDebug.size,
+              url: fileDebug.url,
+              cwd: fileDebug.cwd
+            });
+            
+            if (!fileDebug.multerPathExists && !fileDebug.expectedPathExists) {
+              console.error('❌ [UPLOAD DEBUG] Arquivo NÃO encontrado após upload!');
+              console.error('   Multer path:', fileDebug.multerPath);
+              console.error('   Expected path:', fileDebug.expectedPath);
+            } else if (fileDebug.multerPathExists && !fileDebug.expectedPathExists) {
+              console.warn('⚠️ [UPLOAD DEBUG] Arquivo salvo em local diferente do esperado');
+              console.warn('   Multer path (existe):', fileDebug.multerPath);
+              console.warn('   Expected path (não existe):', fileDebug.expectedPath);
+            } else {
+              console.log('✅ [UPLOAD DEBUG] Arquivo salvo corretamente');
+            }
           });
-          
-          if (!fileDebug.multerPathExists && !fileDebug.expectedPathExists) {
-            console.error('❌ [UPLOAD DEBUG] Arquivo não encontrado após upload!');
-          } else if (fileDebug.multerPathExists && !fileDebug.expectedPathExists) {
-            console.warn('⚠️ [UPLOAD DEBUG] Arquivo salvo em local diferente do esperado');
-          } else {
-            console.log('✅ [UPLOAD DEBUG] Arquivo salvo corretamente');
-          }
-        });
-        console.log('📂 [UPLOAD DEBUG] Diretórios:', {
+        } else {
+          console.warn('⚠️ [UPLOAD DEBUG] Nenhuma informação de debug de arquivo disponível');
+        }
+        
+        // Log de diretórios
+        console.log('\n📂 [UPLOAD DEBUG] Diretórios:', {
           cwd: response.debug.cwd,
           publicDir: response.debug.publicDir,
-          publicDirExists: response.debug.publicDirExists
+          publicDirExists: response.debug.publicDirExists,
+          uploadsDir: response.debug.uploadsDir,
+          uploadsDirExists: response.debug.uploadsDirExists,
+          projectDayDir: response.debug.projectDayDir,
+          projectDayDirExists: response.debug.projectDayDirExists,
+          filesInDayDir: response.debug.filesInDayDir
         });
+        
+        // Verificar se arquivos estão no diretório
+        if (response.debug.filesInDayDir && response.debug.filesInDayDir.length > 0) {
+          console.log('✅ [UPLOAD DEBUG] Arquivos encontrados no diretório day:', response.debug.filesInDayDir);
+        } else {
+          console.error('❌ [UPLOAD DEBUG] Nenhum arquivo encontrado no diretório day!');
+        }
+      } else {
+        console.warn('⚠️ [UPLOAD DEBUG] Nenhuma informação de debug disponível na resposta');
       }
+      
+      console.log('📁 [UPLOAD DEBUG] ===== FIM DAS INFORMAÇÕES =====\n');
       
       if (response.success && response.images) {
         console.log('✅ [UPLOAD] Upload concluído:', {

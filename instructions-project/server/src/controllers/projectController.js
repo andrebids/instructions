@@ -592,21 +592,27 @@ export async function uploadImages(req, res) {
 
     console.log('✅ [PROJECT UPLOAD] Imagens uploadadas:', uploadedImages.length, 'para projeto:', projectId);
 
-    // Incluir informações de debug na resposta (apenas em desenvolvimento ou se solicitado)
-    const includeDebug = process.env.NODE_ENV !== 'production' || req.query.debug === 'true';
-    const debugInfo = includeDebug ? {
+    // Incluir informações de debug na resposta (sempre incluir para diagnóstico)
+    const debugInfo = {
       uploadDebug: req.files.map(f => f._uploadDebug).filter(Boolean),
       cwd: process.cwd(),
       publicDir: path.resolve(process.cwd(), 'public'),
-      publicDirExists: fs.existsSync(path.resolve(process.cwd(), 'public'))
-    } : undefined;
+      publicDirExists: fs.existsSync(path.resolve(process.cwd(), 'public')),
+      uploadsDir: path.resolve(process.cwd(), 'public/uploads'),
+      uploadsDirExists: fs.existsSync(path.resolve(process.cwd(), 'public/uploads')),
+      projectDayDir: path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`),
+      projectDayDirExists: fs.existsSync(path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`)),
+      filesInDayDir: fs.existsSync(path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`)) 
+        ? fs.readdirSync(path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`))
+        : []
+    };
 
     res.json({
       success: true,
       images: uploadedImages,
       projectId: projectId,
       message: `${uploadedImages.length} imagem(ns) enviada(s) com sucesso`,
-      ...(debugInfo && { debug: debugInfo })
+      debug: debugInfo
     });
   } catch (error) {
     console.error('❌ [PROJECT UPLOAD] Erro ao fazer upload:', error);
