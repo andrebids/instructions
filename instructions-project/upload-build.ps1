@@ -469,7 +469,32 @@ fi
 # Verificar se tabelas foram criadas (usando Node.js em vez de psql)
 echo ''
 echo 'Verificando se tabelas existem...'
-node -e "const { Sequelize } = require('sequelize'); const sequelize = new Sequelize('instructions_demo', 'demo_user', 'demo_password', { host: 'localhost', port: 5432, dialect: 'postgres', logging: false }); sequelize.getQueryInterface().showAllTables().then(tables => { if (tables.includes('projects')) { console.log('Tabela projects existe'); process.exit(0); } else { console.log('Tabela projects nao encontrada. Tabelas existentes:', tables.join(', ')); process.exit(0); } }).catch(err => { console.log('Nao foi possivel verificar tabelas:', err.message); process.exit(0); });" 2>&1 || echo 'Verificacao de tabelas nao disponivel (Node.js pode nao estar no PATH)'
+cd $serverRootPath/server
+cat > check-tables.cjs << 'EOF'
+const { Sequelize } = require('sequelize');
+const sequelize = new Sequelize('instructions_demo', 'demo_user', 'demo_password', {
+  host: 'localhost',
+  port: 5432,
+  dialect: 'postgres',
+  logging: false
+});
+sequelize.getQueryInterface().showAllTables()
+  .then(tables => {
+    if (tables.includes('projects')) {
+      console.log('Tabela projects existe');
+      process.exit(0);
+    } else {
+      console.log('Tabela projects nao encontrada. Tabelas existentes:', tables.join(', '));
+      process.exit(0);
+    }
+  })
+  .catch(err => {
+    console.log('Nao foi possivel verificar tabelas:', err.message);
+    process.exit(0);
+  });
+EOF
+node check-tables.cjs 2>&1 || echo 'Verificacao de tabelas nao disponivel (Node.js pode nao estar no PATH)'
+rm -f check-tables.cjs 2>/dev/null || true
 "@
 ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" $migrationCommands.Replace("`r`n", "`n")
 Write-Host "✅ Migrations processadas!" -ForegroundColor Green
