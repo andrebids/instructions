@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardFooter, Button, Spinner, Progress, Image, Tooltip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { DecorationLibrary } from "../../decoration-library";
 import { NightThumb } from '../../ui/NightThumb';
 // YOLO12ThumbnailOverlay removido - análise não é mais necessária após remoção de zonas
@@ -33,6 +34,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   // Estados locais adicionais (não extraídos para hooks)
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false); // Modal de informações de localização
   const [isDecorationDrawerOpen, setIsDecorationDrawerOpen] = useState(false); // Drawer de decorações
+  const [showNightUnavailableToast, setShowNightUnavailableToast] = useState(false); // Toast para avisar que night não está disponível
   
   // Hook para detectar responsividade
   const { shouldUseDrawer, isMobile, isTablet, width } = useResponsiveLayout();
@@ -99,7 +101,8 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
         imageConversion.setConversionComplete(savedConversionComplete);
       } else {
         // Iniciar conversão automática sequencial após upload usando imageConversion
-        imageConversion.handleUploadComplete();
+        // Passar imagesToUse para garantir que usa as imagens corretas
+        imageConversion.handleUploadComplete(imagesToUse);
       }
     }, 300);
   };
@@ -205,6 +208,22 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   // Toggle day/night mode com lógica adicional
   const toggleDayNightMode = () => {
     const newMode = !canvasState.isDayMode;
+    
+    // Se tentando alternar para modo Night, verificar se há versão night disponível
+    if (!newMode && canvasState.selectedImage) {
+      const hasNightVersion = canvasState.selectedImage.nightVersion;
+      const conversionFailed = canvasState.selectedImage.conversionStatus === 'failed' || 
+                                canvasState.selectedImage.conversionStatus === 'unavailable';
+      
+      // Verificar se não há versão night disponível
+      if (!hasNightVersion && conversionFailed) {
+        // Mostrar aviso que night não está disponível
+        setShowNightUnavailableToast(true);
+        setTimeout(() => setShowNightUnavailableToast(false), 4000);
+        return; // Não alternar o modo
+      }
+    }
+    
     canvasState.setIsDayMode(newMode);
     
     // Salvar isDayMode no simulationState
@@ -502,14 +521,18 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                         }}
                         aria-label={'Select source image ' + image.name}
                       >
-                        {/* NightThumb com animação de dia para noite */}
-                        <NightThumb
-                          dayImage={image.thumbnail}
-                          nightImage={image.nightVersion}
-                          filename={image.name}
-                          isActive={index === imageConversion.activeGifIndex}
-                          duration={4000}
-                        />
+                        {/* NightThumb com animação de dia para noite - só mostra se API disponível */}
+                        {image.nightVersion && (
+                          <NightThumb
+                            dayImage={image.thumbnail}
+                            nightImage={image.nightVersion}
+                            filename={image.name}
+                            isActive={index === imageConversion.activeGifIndex && 
+                                     image.conversionStatus !== 'failed' && 
+                                     image.conversionStatus !== 'unavailable'}
+                            duration={4000}
+                          />
+                        )}
                         
                         {/* Overlay de loading/bloqueio durante conversão - apenas quando não está sendo convertida agora */}
                         {showOverlay && (
@@ -601,10 +624,9 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                     onPress={toggleDayNightMode}
                     isDisabled={
                       canvasState.canvasImages.length === 0 || 
-                      (canvasState.selectedImage && !imageConversion.conversionComplete[canvasState.selectedImage.id]) ||
-                      (canvasState.selectedImage && 
-                       !canvasState.selectedImage.nightVersion && 
-                       (canvasState.selectedImage.conversionStatus === 'failed' || canvasState.selectedImage.conversionStatus === 'unavailable'))
+                      (canvasState.selectedImage && !imageConversion.conversionComplete[canvasState.selectedImage.id] && 
+                       canvasState.selectedImage.conversionStatus !== 'failed' && 
+                       canvasState.selectedImage.conversionStatus !== 'unavailable')
                     }
                     title={
                       canvasState.selectedImage && !imageConversion.conversionComplete[canvasState.selectedImage.id]
@@ -869,6 +891,33 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Toast para avisar que night não está disponível */}
+      <AnimatePresence>
+        {showNightUnavailableToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-4 right-4 z-50 max-w-sm"
+          >
+            <div className="p-4 rounded-lg shadow-lg border bg-warning-50 border-warning-200 text-warning-800">
+              <div className="flex items-center gap-2">
+                <Icon icon="lucide:alert-circle" className="text-lg flex-shrink-0" />
+                <span className="text-sm font-medium">Night version is not available</span>
+                <button
+                  onClick={() => setShowNightUnavailableToast(false)}
+                  className="ml-auto text-current opacity-60 hover:opacity-100 flex-shrink-0"
+                  aria-label="Close notification"
+                >
+                  <Icon icon="lucide:x" className="text-sm" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

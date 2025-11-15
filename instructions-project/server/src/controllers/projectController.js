@@ -1,4 +1,4 @@
-import { Project, ProjectElement, Decoration } from '../models/index.js';
+import { Project, ProjectElement, Decoration, ProjectNote } from '../models/index.js';
 import sequelize from '../config/database.js';
 import { QueryTypes } from 'sequelize';
 import fs from 'fs';
@@ -298,16 +298,64 @@ export async function deleteProject(req, res) {
       return res.status(400).json({ error: 'Project ID is required' });
     }
     
+    console.log(`🗑️  [PROJECTS API] Iniciando deleção do projeto ${projectId}`);
+    
     // Buscar projeto com suas relações para garantir que existe
-    const project = await Project.findByPk(projectId, { transaction });
+    const project = await Project.findByPk(projectId, { 
+      transaction,
+      include: [
+        {
+          model: ProjectElement,
+          as: 'elements',
+          required: false,
+        },
+        {
+          model: ProjectNote,
+          as: 'note',
+          required: false,
+        },
+      ],
+    });
     
     if (!project) {
       await transaction.rollback();
       return res.status(404).json({ error: 'Project not found' });
     }
     
-    // Deletar projeto (as relações serão deletadas automaticamente devido ao CASCADE)
-    // ProjectElement e ProjectNote têm onDelete: 'CASCADE' configurado
+    console.log(`📋 [PROJECTS API] Projeto encontrado: ${project.name}`);
+    
+    // Deletar ProjectElements manualmente (garantir que funciona mesmo sem CASCADE no BD)
+    const elementsCount = await ProjectElement.count({ 
+      where: { projectId }, 
+      transaction 
+    });
+    
+    if (elementsCount > 0) {
+      console.log(`🗑️  [PROJECTS API] Deletando ${elementsCount} elemento(s) do projeto...`);
+      await ProjectElement.destroy({ 
+        where: { projectId }, 
+        transaction 
+      });
+      console.log(`✅ [PROJECTS API] ${elementsCount} elemento(s) deletado(s)`);
+    }
+    
+    // Deletar ProjectNote manualmente
+    const noteCount = await ProjectNote.count({ 
+      where: { projectId }, 
+      transaction 
+    });
+    
+    if (noteCount > 0) {
+      console.log(`🗑️  [PROJECTS API] Deletando nota(s) do projeto...`);
+      await ProjectNote.destroy({ 
+        where: { projectId }, 
+        transaction 
+      });
+      console.log(`✅ [PROJECTS API] Nota(s) deletada(s)`);
+    }
+    
+    // Agora deletar o projeto
+    console.log(`🗑️  [PROJECTS API] Deletando projeto...`);
     await project.destroy({ transaction });
     
     // Commit da transação
@@ -319,17 +367,26 @@ export async function deleteProject(req, res) {
     // Rollback em caso de erro
     await transaction.rollback();
     console.error('❌ [PROJECTS API] Erro ao deletar projeto:', error);
+    console.error('❌ [PROJECTS API] Nome do erro:', error.name);
+    console.error('❌ [PROJECTS API] Mensagem:', error.message);
     console.error('❌ [PROJECTS API] Stack:', error.stack);
     
     // Verificar se é erro de constraint de foreign key
-    if (error.name === 'SequelizeForeignKeyConstraintError') {
+    if (error.name === 'SequelizeForeignKeyConstraintError' || 
+        error.name === 'SequelizeDatabaseError' && 
+        (error.message?.includes('foreign key') || error.message?.includes('constraint'))) {
       return res.status(409).json({ 
         error: 'Cannot delete project: it has associated records that prevent deletion',
         details: error.message 
       });
     }
     
-    res.status(500).json({ error: error.message });
+    // Retornar mensagem de erro mais detalhada
+    const errorMessage = error.message || 'Unknown error occurred while deleting project';
+    res.status(500).json({ 
+      error: errorMessage,
+      details: error.stack 
+    });
   }
 }
 
@@ -841,6 +898,8 @@ export async function getStats(req, res) {
     }
     
     const total = await Project.count();
+    const draft = await Project.count({ where: { status: 'draft' } });
+    const created = await Project.count({ where: { status: 'created' } });
     const inProgress = await Project.count({ where: { status: 'in_progress' } });
     const finished = await Project.count({ where: { status: 'finished' } });
     const approved = await Project.count({ where: { status: 'approved' } });
@@ -849,6 +908,8 @@ export async function getStats(req, res) {
     
     const stats = {
       total,
+      draft,
+      created,
       inProgress,
       finished,
       approved,

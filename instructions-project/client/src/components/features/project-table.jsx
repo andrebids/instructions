@@ -30,6 +30,7 @@ import { SyncStatus } from "./SyncStatus";
 
 // Status mapping from API to UI
 const statusColorMap = {
+  "draft": "default",
   "created": "default",
   "in_progress": "primary",
   "finished": "success",
@@ -39,6 +40,7 @@ const statusColorMap = {
 };
 
 const statusLabelMap = {
+  "draft": "Draft",
   "created": "Created",
   "in_progress": "In Progress",
   "finished": "Finished",
@@ -328,7 +330,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
               className="bg-[#e4e3e8] dark:bg-content1 shadow-sm"
               endContent={<Icon icon="lucide:chevron-down" />}
             >
-              Status: {statusFilter === "all" ? "All" : statusFilter}
+              Status: {statusFilter === "all" ? "All" : statusLabelMap[statusFilter] || statusFilter}
             </Button>
           </DropdownTrigger>
           <DropdownMenu 
@@ -338,6 +340,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
             selectionMode="single"
           >
             <DropdownItem key="all">All</DropdownItem>
+            <DropdownItem key="draft">Draft</DropdownItem>
             <DropdownItem key="created">Created</DropdownItem>
             <DropdownItem key="in_progress">In Progress</DropdownItem>
             <DropdownItem key="finished">Finished</DropdownItem>

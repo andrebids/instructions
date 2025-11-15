@@ -21,29 +21,72 @@ export const useImageConversion = ({ uploadedImages, projectId = null }) => {
   /**
    * Callback quando upload completo
    * Inicia sequência de conversão automática sequencial
+   * Só inicia animação se a API estiver disponível (há nightVersion ou conversionStatus não é 'failed'/'unavailable')
+   * @param {Array} imagesToUse - Array opcional de imagens a usar (se não fornecido, usa uploadedImages do hook)
    */
-  const handleUploadComplete = () => {
+  const handleUploadComplete = (imagesToUse = null) => {
+    // Usar imagens fornecidas ou as do hook
+    const images = imagesToUse || uploadedImages;
+    
     // Mudar para 'loading' antes de mostrar imagens
     // Após um breve delay, popular uploadedImages e mostrar interface
     setTimeout(() => {
+      // Verificar se há pelo menos uma imagem com nightVersion disponível (API funcionou)
+      const hasAvailableAPI = images.some(img => {
+        const hasNightVersion = !!img.nightVersion;
+        const conversionNotFailed = img.conversionStatus !== 'failed' && img.conversionStatus !== 'unavailable';
+        // Só considerar API disponível se realmente tem nightVersion E não falhou
+        return hasNightVersion && conversionNotFailed;
+      });
+      
+      // Se não há API disponível, não iniciar animação
+      if (!hasAvailableAPI) {
+        console.log('⚠️ API de conversão não disponível - animação desativada');
+        return;
+      }
+      
       // Iniciar conversão automática sequencial após upload
-      // Começar com primeira imagem após 500ms
-      setTimeout(() => {
-        setActiveGifIndex(0); // Source 1
-      }, 500);
+      // Verificar cada imagem antes de ativar animação
+      let currentDelay = 500;
+      let currentIndex = 0;
       
-      // Sequência de animação do GIF: Source 1 -> Source 2 -> Source 3 -> desaparece
-      setTimeout(() => {
-        setActiveGifIndex(1); // Source 2
-      }, 4500); // 500ms delay inicial + 4000ms conversão da primeira
+      // Função para processar próxima imagem com API disponível
+      const processNextImage = () => {
+        // Encontrar próxima imagem com API disponível (tem nightVersion e não falhou)
+        while (currentIndex < images.length) {
+          const image = images[currentIndex];
+          const hasNightVersion = !!image.nightVersion;
+          const conversionNotFailed = image.conversionStatus !== 'failed' && image.conversionStatus !== 'unavailable';
+          
+          // Só ativar animação se realmente tem nightVersion disponível
+          if (hasNightVersion && conversionNotFailed) {
+            // API disponível - ativar animação
+            setActiveGifIndex(currentIndex);
+            
+            // Agendar próxima imagem
+            currentIndex++;
+            if (currentIndex < images.length) {
+              setTimeout(processNextImage, 4000); // 4000ms = duração da animação
+            } else {
+              // Todas as imagens processadas - desativar animação
+              setTimeout(() => {
+                setActiveGifIndex(-1);
+              }, 4000);
+            }
+            return;
+          } else {
+            // API não disponível para esta imagem - pular
+            console.log(`⚠️ API não disponível para imagem ${currentIndex} (nightVersion: ${hasNightVersion}, status: ${image.conversionStatus}) - pulando animação`);
+            currentIndex++;
+          }
+        }
+        
+        // Todas as imagens processadas - desativar animação
+        setActiveGifIndex(-1);
+      };
       
-      setTimeout(() => {
-        setActiveGifIndex(2); // Source 3
-      }, 8500); // 500ms + 4000ms + 4000ms
-      
-      setTimeout(() => {
-        setActiveGifIndex(-1); // Desaparece após todas convertidas (dar tempo extra para a 3ª imagem completar)
-      }, 13000); // 500ms + 4000ms * 3 + 500ms extra para garantir que a 3ª imagem completa
+      // Começar processamento após delay inicial
+      setTimeout(processNextImage, currentDelay);
     }, 300);
   };
 

@@ -19,6 +19,8 @@ export default function Dashboard() {
   const [projects, setProjects] = React.useState([]);
   const [stats, setStats] = React.useState({
     total: 0,
+    draft: 0,
+    created: 0,
     inProgress: 0,
     finished: 0,
     approved: 0,
@@ -64,6 +66,8 @@ export default function Dashboard() {
       setProjects(projectsData);
       setStats({
         total: statsData.total,
+        draft: statsData.draft || 0,
+        created: statsData.created || 0,
         inProgress: statsData.inProgress,
         finished: statsData.finished,
         approved: statsData.approved,
@@ -152,7 +156,11 @@ export default function Dashboard() {
       
       // Decrementar contador baseado no status do projeto
       const status = project.status;
-      if (status === 'in_progress' && prev.inProgress > 0) {
+      if (status === 'draft' && prev.draft > 0) {
+        newStats.draft = prev.draft - 1;
+      } else if (status === 'created' && prev.created > 0) {
+        newStats.created = prev.created - 1;
+      } else if (status === 'in_progress' && prev.inProgress > 0) {
         newStats.inProgress = prev.inProgress - 1;
       } else if (status === 'finished' && prev.finished > 0) {
         newStats.finished = prev.finished - 1;
@@ -179,6 +187,8 @@ export default function Dashboard() {
     projectsAPI.getStats().then(statsData => {
       setStats({
         total: statsData.total,
+        draft: statsData.draft || 0,
+        created: statsData.created || 0,
         inProgress: statsData.inProgress,
         finished: statsData.finished,
         approved: statsData.approved,
@@ -243,7 +253,7 @@ export default function Dashboard() {
             ) : (
               <>
                 {/* Stats Grid */}
-                <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8">
                   <StatsCard
                     title="Total Projects"
                     value={stats.total.toString()}
@@ -251,6 +261,22 @@ export default function Dashboard() {
                     isPositive={true}
                     icon="lucide:folder"
                     timePeriod="All time"
+                  />
+                  <StatsCard
+                    title="Draft"
+                    value={stats.draft.toString()}
+                    change={`${stats.draft} drafts`}
+                    isPositive={false}
+                    icon="lucide:file-edit"
+                    timePeriod="Pending"
+                  />
+                  <StatsCard
+                    title="Created"
+                    value={stats.created.toString()}
+                    change={`${stats.created} created`}
+                    isPositive={true}
+                    icon="lucide:file-plus"
+                    timePeriod="New"
                   />
                   <StatsCard
                     title="In Progress"
