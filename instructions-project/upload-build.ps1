@@ -333,6 +333,63 @@ if [ ! -d server ]; then
     exit 1
 fi
 
+# Verificar se server/package.json existe, se não, procurar em instructions-project/server/
+if [ ! -f server/package.json ]; then
+    echo 'AVISO: package.json nao encontrado em server/'
+    if [ -f instructions-project/server/package.json ]; then
+        echo 'Encontrado em instructions-project/server/, copiando arquivos do servidor...'
+        
+        # Preservar .env se existir no diretório destino (copiar para backup primeiro)
+        if [ -f server/.env ]; then
+            cp server/.env server/.env.backup.preserve 2>/dev/null || true
+            echo 'Preservando .env existente'
+        fi
+        
+        # Copiar todos os arquivos do diretório correto
+        # Usar rsync se disponível, senão usar cp
+        if command -v rsync >/dev/null 2>&1; then
+            rsync -av --exclude='node_modules' --exclude='.env' instructions-project/server/ server/ 2>/dev/null || cp -r instructions-project/server/* server/ 2>/dev/null || true
+        else
+            # Copiar arquivos manualmente, excluindo node_modules e .env
+            find instructions-project/server -mindepth 1 -maxdepth 1 ! -name 'node_modules' ! -name '.env' -exec cp -r {} server/ \; 2>/dev/null || cp -r instructions-project/server/* server/ 2>/dev/null || true
+            # Remover .env se foi copiado
+            rm -f server/.env 2>/dev/null || true
+        fi
+        
+        # Restaurar .env preservado se foi feito backup
+        if [ -f server/.env.backup.preserve ]; then
+            if [ ! -f server/.env ] || [ ! -s server/.env ]; then
+                mv server/.env.backup.preserve server/.env 2>/dev/null || true
+                echo '.env preservado restaurado'
+            else
+                # Novo .env tem conteúdo, manter o novo mas salvar o antigo como backup
+                mv server/.env.backup.preserve server/.env.old.backup 2>/dev/null || true
+                echo '.env do servidor mantido (novo arquivo tem conteudo)'
+            fi
+        fi
+        
+        echo 'Arquivos copiados de instructions-project/server/ para server/'
+        
+        # Verificar se package.json foi copiado
+        if [ -f server/package.json ]; then
+            echo 'package.json encontrado apos copia'
+        else
+            echo 'ERRO: Falha ao copiar package.json do server'
+            exit 1
+        fi
+        
+        # Verificar se src/ foi copiado
+        if [ ! -d server/src ]; then
+            echo 'AVISO: Diretorio src/ nao encontrado apos copia'
+        fi
+    else
+        echo 'ERRO: package.json nao encontrado nem em server/ nem em instructions-project/server/'
+        echo 'Estrutura do diretorio:'
+        ls -la | head -20
+        exit 1
+    fi
+fi
+
 # Verificar se PostgreSQL está rodando
 echo 'Verificando PostgreSQL...'
 if docker ps | grep -q postgres || docker compose ps | grep -q postgres; then
@@ -346,10 +403,23 @@ fi
 
 # Verificar se .env existe
 cd server
+# Já verificamos package.json acima, mas verificamos novamente por segurança
 if [ ! -f package.json ]; then
     echo 'ERRO: package.json nao encontrado em $serverRootPath/server'
     echo 'Verifique se o diretorio server esta correto'
-    exit 1
+    echo 'Tentando copiar novamente de instructions-project/server/...'
+    cd ..
+    if [ -d instructions-project/server ]; then
+        cp -r instructions-project/server/* server/ 2>/dev/null || true
+        cd server
+        if [ -f package.json ]; then
+            echo 'package.json copiado com sucesso'
+        else
+            exit 1
+        fi
+    else
+        exit 1
+    fi
 fi
 
 if [ ! -f .env ]; then
@@ -399,7 +469,7 @@ fi
 # Verificar se tabelas foram criadas (usando Node.js em vez de psql)
 echo ''
 echo 'Verificando se tabelas existem...'
-node -e "const { Sequelize } = require('sequelize'); const sequelize = new Sequelize('instructions_demo', 'demo_user', 'demo_password', { host: 'localhost', port: 5432, dialect: 'postgres', logging: false }); sequelize.getQueryInterface().showAllTables().then(tables => { if (tables.includes('projects')) { console.log('Tabela projects existe'); process.exit(0); } else { console.log('Tabela projects nao encontrada. Tabelas existentes:', tables.join(', ')); process.exit(0); } }).catch(err => { console.log('Nao foi possivel verificar tabelas:', err.message); process.exit(0); });" 2>&1 || echo 'Verificacao de tabelas nao disponivel (Node.js pode nao estar no PATH)'
+node -e 'const { Sequelize } = require("sequelize"); const sequelize = new Sequelize("instructions_demo", "demo_user", "demo_password", { host: "localhost", port: 5432, dialect: "postgres", logging: false }); sequelize.getQueryInterface().showAllTables().then(tables => { if (tables.includes("projects")) { console.log("Tabela projects existe"); process.exit(0); } else { console.log("Tabela projects nao encontrada. Tabelas existentes:", tables.join(", ")); process.exit(0); } }).catch(err => { console.log("Nao foi possivel verificar tabelas:", err.message); process.exit(0); });' 2>&1 || echo 'Verificacao de tabelas nao disponivel (Node.js pode nao estar no PATH)'
 "@
 ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" $migrationCommands.Replace("`r`n", "`n")
 Write-Host "✅ Migrations processadas!" -ForegroundColor Green
@@ -496,8 +566,10 @@ if [ `$RESTART_EXIT -eq 0 ]; then
         echo 'ERRO: Servidor nao esta respondendo (curl falhou)'
         echo 'Verificando logs de erro...'
         pm2 logs $pm2AppName --err --lines 20 --nostream 2>&1 | tail -20
-    else
+    elif [ -n "`$HTTP_CODE" ]; then
         echo "AVISO: Servidor respondeu com codigo HTTP `$HTTP_CODE"
+    else
+        echo 'AVISO: Nao foi possivel verificar status do servidor'
     fi
 else
     echo 'ERRO ao reiniciar servidor PM2'
@@ -512,8 +584,8 @@ else
 fi
 
 # Mostrar logs de erro se houver muitos restarts
-RESTART_COUNT=`$(pm2 jlist | grep -A 10 "\"name\":\"$pm2AppName\"" | grep -o '\"pm2_env\":{[^}]*"restart_time":[0-9]*' | grep -o '"restart_time":[0-9]*' | cut -d: -f2 | head -1)
-if [ -n "`$RESTART_COUNT" ] && [ "`$RESTART_COUNT" -gt 10 ]; then
+RESTART_COUNT=`$(pm2 jlist | grep -A 10 "\"name\":\"$pm2AppName\"" | grep -o '"restart_time":[0-9]*' | cut -d: -f2 | head -1)
+if [ -n "`$RESTART_COUNT" ] && [ "`$RESTART_COUNT" != "null" ] && [ "`$RESTART_COUNT" -gt 10 ] 2>/dev/null; then
     echo ''
     echo "AVISO: Servidor reiniciou `$RESTART_COUNT vezes (possivel crash loop)"
     echo 'Ultimos logs de erro:'
