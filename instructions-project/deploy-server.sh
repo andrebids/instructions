@@ -113,8 +113,23 @@ npm run build
 echo -e "${GREEN}✅ Cliente compilado${NC}"
 echo ""
 
-# 6. Reiniciar PM2
-echo -e "${YELLOW}🔄 [6/6] Reiniciando servidor com PM2...${NC}"
+# 6. Verificar/Ajustar configuração nginx (se necessário)
+echo -e "${YELLOW}🔧 [6/7] Verificando configuração nginx para uploads...${NC}"
+if command -v nginx &> /dev/null; then
+  if [ -f "${PROJECT_ROOT}/fix-nginx-upload-limit.sh" ]; then
+    echo -e "${YELLOW}💡 Execute manualmente se necessário:${NC}"
+    echo "   bash ${PROJECT_ROOT}/fix-nginx-upload-limit.sh"
+    echo "   sudo systemctl reload nginx"
+  else
+    echo -e "${YELLOW}⚠️  Script fix-nginx-upload-limit.sh não encontrado${NC}"
+  fi
+else
+  echo -e "${GREEN}✅ Nginx não encontrado (pode estar usando PM2 diretamente)${NC}"
+fi
+echo ""
+
+# 7. Reiniciar PM2
+echo -e "${YELLOW}🔄 [7/7] Reiniciando servidor com PM2...${NC}"
 PM2_NAME_FINAL="${PM2_NAME:-instructions-server}"
 pm2 delete ${PM2_NAME_FINAL} 2>/dev/null || true
 cd "${SERVER_DIR}"
