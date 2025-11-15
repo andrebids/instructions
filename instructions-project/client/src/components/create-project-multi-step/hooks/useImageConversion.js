@@ -133,9 +133,27 @@ export const useImageConversion = ({ uploadedImages, projectId = null }) => {
       //   // Atualizar imagem com nightVersion real
       // }
       
-      if (!image.nightVersion && image.originalUrl) {
+      // Verificar se conversão falhou
+      if (image.conversionStatus === 'failed' || image.conversionStatus === 'unavailable') {
+        // Se já está marcado como falhado, marcar como completa mas sem nightVersion
+        // Isso permite que o botão funcione mas mostra mensagem de erro
+        setConversionComplete(function(prev) {
+          if (!prev[imageId]) {
+            var updated = {};
+            for (var key in prev) {
+              updated[key] = prev[key];
+            }
+            updated[imageId] = true;
+            console.log('⚠️ Conversão falhada para imagem:', imageId);
+            return updated;
+          }
+          return prev;
+        });
+        prevActiveGifIndexRef.current = activeGifIndex;
+      } else if (!image.nightVersion && image.originalUrl) {
         // Fallback: marcar como completa após animação (usa filtros CSS)
         // A conversão real será feita quando a API estiver disponível
+        // Por enquanto, permite usar modo Day normalmente
         var timeoutId = setTimeout(function() {
           setConversionComplete(function(prev) {
             if (!prev[imageId]) {

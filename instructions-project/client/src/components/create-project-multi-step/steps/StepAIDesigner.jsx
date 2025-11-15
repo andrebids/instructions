@@ -588,11 +588,18 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                     onPress={toggleDayNightMode}
                     isDisabled={
                       canvasState.canvasImages.length === 0 || 
-                      (canvasState.selectedImage && !imageConversion.conversionComplete[canvasState.selectedImage.id])
+                      (canvasState.selectedImage && !imageConversion.conversionComplete[canvasState.selectedImage.id]) ||
+                      (canvasState.selectedImage && 
+                       !canvasState.selectedImage.nightVersion && 
+                       (canvasState.selectedImage.conversionStatus === 'failed' || canvasState.selectedImage.conversionStatus === 'unavailable'))
                     }
                     title={
                       canvasState.selectedImage && !imageConversion.conversionComplete[canvasState.selectedImage.id]
                         ? "Waiting for night conversion..."
+                        : canvasState.selectedImage && 
+                          !canvasState.selectedImage.nightVersion && 
+                          (canvasState.selectedImage.conversionStatus === 'failed' || canvasState.selectedImage.conversionStatus === 'unavailable')
+                        ? "Conversão dia/noite não disponível"
                         : undefined
                     }
                     aria-label={canvasState.isDayMode ? "Switch to night mode" : "Switch to day mode"}

@@ -167,7 +167,10 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
     console.log('📸 Modo:', finalDayMode ? 'Day' : 'Night');
     
     // Escolher a imagem correta baseada no modo
-    const imageSrc = finalDayMode ? image.thumbnail : image.nightVersion;
+    // Se nightVersion não existir, usar thumbnail como fallback
+    const imageSrc = finalDayMode 
+      ? (image.thumbnail || image.dayVersion || image.originalUrl)
+      : (image.nightVersion || image.thumbnail || image.dayVersion || image.originalUrl);
     console.log('📸 URL:', imageSrc);
     
     // Usar dimensões virtuais do canvas (sempre 1200x600)

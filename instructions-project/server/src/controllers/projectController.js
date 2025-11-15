@@ -527,6 +527,135 @@ export async function uploadImages(req, res) {
   }
 }
 
+/**
+ * Função helper para atualizar nightVersion de uma imagem no array uploadedImages
+ * @param {string} projectId - ID do projeto
+ * @param {string} imageId - ID da imagem
+ * @param {string} nightImageUrl - URL da imagem de noite
+ * @param {string} status - Status da conversão ('completed' ou 'failed')
+ */
+async function updateImageNightVersion(projectId, imageId, nightImageUrl, status = 'completed') {
+  const project = await Project.findByPk(projectId);
+  if (!project) {
+    throw new Error('Projeto não encontrado');
+  }
+
+  const uploadedImages = project.uploadedImages || [];
+  const imageIndex = uploadedImages.findIndex(img => img.id === imageId);
+  
+  if (imageIndex === -1) {
+    throw new Error('Imagem não encontrada no projeto');
+  }
+
+  // Atualizar imagem no array
+  uploadedImages[imageIndex] = {
+    ...uploadedImages[imageIndex],
+    nightVersion: nightImageUrl || uploadedImages[imageIndex].nightVersion,
+    conversionStatus: status
+  };
+
+  // Atualizar projeto
+  project.uploadedImages = uploadedImages;
+  await project.save();
+
+  console.log(`✅ [NIGHT VERSION] Atualizado para imagem ${imageId}: status=${status}`);
+  return uploadedImages[imageIndex];
+}
+
+// POST /api/projects/:id/images/:imageId/night - Receber imagem de noite convertida
+export async function receiveNightImage(req, res) {
+  try {
+    const projectId = req.params.id;
+    const imageId = req.params.imageId;
+    
+    if (!projectId || !imageId) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Project ID e Image ID são obrigatórios' 
+      });
+    }
+
+    // Verificar se projeto existe
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Projeto não encontrado' 
+      });
+    }
+
+    // Verificar se há arquivo ou URL fornecida
+    const nightImageUrl = req.body.nightImageUrl || (req.file ? `/uploads/projects/${projectId}/night/${req.file.filename}` : null);
+    
+    if (!nightImageUrl && !req.file) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Imagem de noite ou URL deve ser fornecida' 
+      });
+    }
+
+    // Se há arquivo, já foi salvo pelo multer na pasta night
+    // Atualizar nightVersion no projeto
+    const updatedImage = await updateImageNightVersion(projectId, imageId, nightImageUrl, 'completed');
+
+    res.json({
+      success: true,
+      nightVersion: updatedImage.nightVersion,
+      conversionStatus: updatedImage.conversionStatus,
+      message: 'Imagem de noite recebida com sucesso'
+    });
+  } catch (error) {
+    console.error('❌ [NIGHT IMAGE] Erro ao receber imagem de noite:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message || 'Erro ao receber imagem de noite' 
+    });
+  }
+}
+
+// POST /api/projects/:id/images/:imageId/night/failed - Marcar conversão como falhada
+export async function markConversionFailed(req, res) {
+  try {
+    const projectId = req.params.id;
+    const imageId = req.params.imageId;
+    const { error: errorMessage } = req.body;
+    
+    if (!projectId || !imageId) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Project ID e Image ID são obrigatórios' 
+      });
+    }
+
+    // Verificar se projeto existe
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Projeto não encontrado' 
+      });
+    }
+
+    // Atualizar status para 'failed'
+    const updatedImage = await updateImageNightVersion(projectId, imageId, null, 'failed');
+
+    console.log('⚠️ [NIGHT CONVERSION] Conversão falhada para imagem:', imageId, errorMessage || '');
+
+    res.json({
+      success: true,
+      conversionStatus: updatedImage.conversionStatus,
+      message: 'Conversão marcada como falhada',
+      error: errorMessage || 'Conversão dia/noite não disponível no momento'
+    });
+  } catch (error) {
+    console.error('❌ [NIGHT CONVERSION] Erro ao marcar conversão como falhada:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message || 'Erro ao marcar conversão como falhada' 
+    });
+  }
+}
+
 // GET /api/projects/stats - Estatísticas dos projetos
 export async function getStats(req, res) {
   try {
