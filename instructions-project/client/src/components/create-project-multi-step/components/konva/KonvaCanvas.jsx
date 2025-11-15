@@ -59,12 +59,43 @@ export const KonvaCanvas = ({
   const fitStageIntoParentContainer = () => {
     if (!containerRef.current) return;
     
+    // Aguardar CSS estar carregado antes de medir dimensões
+    // Verificar se o documento está pronto e aguardar próximo frame de renderização
+    if (document.readyState !== 'complete') {
+      // Se ainda não está pronto, aguardar evento load
+      const handleLoad = () => {
+        requestAnimationFrame(() => {
+          measureAndFit();
+        });
+      };
+      if (document.readyState === 'loading') {
+        window.addEventListener('load', handleLoad, { once: true });
+        return;
+      }
+    }
+    
+    // Usar requestAnimationFrame para garantir que layout está pronto
+    requestAnimationFrame(() => {
+      measureAndFit();
+    });
+  };
+
+  // Função auxiliar para medir e ajustar dimensões
+  const measureAndFit = () => {
+    if (!containerRef.current) return;
+    
     // Obter largura do container
     const containerWidth = containerRef.current.offsetWidth;
     const containerHeight = containerRef.current.offsetHeight;
     
     // Evitar valores inválidos
-    if (containerWidth === 0 || containerHeight === 0) return;
+    if (containerWidth === 0 || containerHeight === 0) {
+      // Se ainda não tem dimensões, tentar novamente após pequeno delay
+      setTimeout(() => {
+        measureAndFit();
+      }, 100);
+      return;
+    }
     
     // Calcular escala baseada na largura e altura
     const scaleX = containerWidth / sceneWidth;
@@ -83,15 +114,44 @@ export const KonvaCanvas = ({
 
   // Atualizar no mount e quando a janela redimensiona
   useEffect(() => {
-    fitStageIntoParentContainer();
+    // Aguardar que CSS esteja carregado antes de medir dimensões
+    // Isso evita o erro "Layout was forced before the page was fully loaded"
+    const initStage = () => {
+      if (document.readyState === 'complete') {
+        // Se já está carregado, usar requestAnimationFrame para garantir layout pronto
+        requestAnimationFrame(() => {
+          fitStageIntoParentContainer();
+        });
+      } else {
+        // Aguardar evento load se ainda não carregou
+        window.addEventListener('load', () => {
+          requestAnimationFrame(() => {
+            fitStageIntoParentContainer();
+          });
+        }, { once: true });
+      }
+    };
+
+    initStage();
     
     const resizeObserver = new ResizeObserver(() => {
-      fitStageIntoParentContainer();
+      // Usar requestAnimationFrame no ResizeObserver também
+      requestAnimationFrame(() => {
+        fitStageIntoParentContainer();
+      });
     });
     
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
+    // Aguardar container estar disponível antes de observar
+    const observeContainer = () => {
+      if (containerRef.current) {
+        resizeObserver.observe(containerRef.current);
+      } else {
+        // Se ainda não existe, tentar novamente após pequeno delay
+        setTimeout(observeContainer, 50);
+      }
+    };
+    
+    observeContainer();
     
     return () => resizeObserver.disconnect();
   }, []); // Sem dependências - só executa uma vez

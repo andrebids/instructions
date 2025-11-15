@@ -11,10 +11,17 @@ const __dirname = path.dirname(__filename);
  * Salva imagens em /public/uploads/projects/{projectId}/day/
  */
 export function createProjectImageUpload(projectId) {
-  // Criar diretório específico do projeto
+  // Criar diretório específico do projeto para imagens de dia
   const projectUploadDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`);
   if (!fs.existsSync(projectUploadDir)) {
     fs.mkdirSync(projectUploadDir, { recursive: true });
+  }
+
+  // Criar também a pasta night para preparar estrutura futura
+  const projectNightDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/night`);
+  if (!fs.existsSync(projectNightDir)) {
+    fs.mkdirSync(projectNightDir, { recursive: true });
+    console.log('📁 [PROJECT UPLOAD] Pasta night criada:', projectNightDir);
   }
 
   // Configuração de storage específica para projetos
@@ -60,6 +67,96 @@ export function createProjectImageUpload(projectId) {
       fileSize: 15 * 1024 * 1024, // 15MB max por imagem
     },
   }).array('images', 10); // Aceita até 10 imagens por vez
+}
+
+/**
+ * Middleware de upload para imagens de noite
+ * Salva imagens em /public/uploads/projects/{projectId}/night/
+ */
+export function createProjectNightImageUpload(projectId) {
+  // Criar diretório específico do projeto para imagens de noite
+  const projectNightDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/night`);
+  if (!fs.existsSync(projectNightDir)) {
+    fs.mkdirSync(projectNightDir, { recursive: true });
+  }
+
+  // Configuração de storage específica para imagens de noite
+  const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      try {
+        if (!fs.existsSync(projectNightDir)) {
+          fs.mkdirSync(projectNightDir, { recursive: true });
+        }
+        console.log('📁 [NIGHT UPLOAD] Destino:', projectNightDir);
+      } catch (e) {
+        console.error('❌ [NIGHT UPLOAD] Falha ao criar diretório:', e?.message);
+      }
+      cb(null, projectNightDir);
+    },
+    filename: function (req, file, cb) {
+      // Usar o mesmo nome da imagem de dia se fornecido, senão gerar novo nome
+      const originalFilename = req.body.dayImageFilename || file.originalname;
+      const timestamp = Date.now();
+      const ext = path.extname(originalFilename);
+      const baseName = path.basename(originalFilename, ext).replace(/[^a-zA-Z0-9]/g, '_');
+      const fileName = `img_${timestamp}_${baseName}${ext}`;
+      console.log('📝 [NIGHT UPLOAD] Salvando arquivo:', fileName);
+      cb(null, fileName);
+    }
+  });
+
+  // Filtro de tipos de arquivo permitidos
+  const fileFilter = (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|webp/;
+    const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+    
+    if (allowedTypes.test(ext) && file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas ficheiros de imagem (jpg, jpeg, png, webp) são permitidos'));
+    }
+  };
+
+  // Configurar multer para um único arquivo
+  return multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+      fileSize: 15 * 1024 * 1024, // 15MB max
+    },
+  }).single('nightImage');
+}
+
+/**
+ * Middleware dinâmico que cria upload de imagem de noite baseado no projectId da rota
+ */
+export function projectNightImageUploadMiddleware(req, res, next) {
+  const projectId = req.params.id || req.body.projectId || 'temp';
+  
+  // Criar middleware de upload específico para este projeto
+  const upload = createProjectNightImageUpload(projectId);
+  
+  upload(req, res, function(err) {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ 
+            success: false,
+            error: 'Ficheiro muito grande. Máximo: 15MB por imagem' 
+          });
+        }
+        return res.status(400).json({ 
+          success: false,
+          error: err.message 
+        });
+      }
+      return res.status(400).json({ 
+        success: false,
+        error: err.message 
+      });
+    }
+    next();
+  });
 }
 
 /**
