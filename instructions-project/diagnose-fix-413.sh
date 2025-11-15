@@ -78,8 +78,8 @@ if [ "$HAS_NGINX" = true ]; then
             echo -e "${YELLOW}📊 Limite atual: $CURRENT_LIMIT${NC}"
             
             CURRENT_MB=$(echo "$CURRENT_LIMIT" | sed 's/[^0-9]//g')
-            if [ -z "$CURRENT_MB" ] || [ "$CURRENT_MB" -lt 50 ]; then
-                echo -e "${YELLOW}⚠️  Limite muito baixo! Ajustando para 100MB...${NC}"
+            if [ -z "$CURRENT_MB" ] || [ "$CURRENT_MB" -lt 15 ]; then
+                echo -e "${YELLOW}⚠️  Limite muito baixo! Ajustando para 15MB...${NC}"
                 
                 # Backup
                 BACKUP_FILE="${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
@@ -87,8 +87,8 @@ if [ "$HAS_NGINX" = true ]; then
                 echo -e "${GREEN}✅ Backup criado: $BACKUP_FILE${NC}"
                 
                 # Atualizar limite
-                sed -i 's/client_max_body_size.*/client_max_body_size 100M;/' "$CONFIG_FILE"
-                echo -e "${GREEN}✅ Limite atualizado para 100M${NC}"
+                sed -i 's/client_max_body_size.*/client_max_body_size 15M;/' "$CONFIG_FILE"
+                echo -e "${GREEN}✅ Limite atualizado para 15M${NC}"
                 
                 # Verificar sintaxe
                 if nginx -t 2>&1 | grep -q "syntax is ok"; then
@@ -119,12 +119,12 @@ if [ "$HAS_NGINX" = true ]; then
             
             # Adicionar limite
             if grep -q "^http {" "$CONFIG_FILE"; then
-                sed -i '/^http {/a\    client_max_body_size 100M;' "$CONFIG_FILE"
+                sed -i '/^http {/a\    client_max_body_size 15M;' "$CONFIG_FILE"
             else
-                sed -i '1i client_max_body_size 100M;' "$CONFIG_FILE"
+                sed -i '1i client_max_body_size 15M;' "$CONFIG_FILE"
             fi
             
-            echo -e "${GREEN}✅ client_max_body_size 100M adicionado${NC}"
+            echo -e "${GREEN}✅ client_max_body_size 15M adicionado${NC}"
             
             # Verificar sintaxe
             if nginx -t 2>&1 | grep -q "syntax is ok"; then
@@ -164,11 +164,11 @@ if [ "$HAS_APACHE" = true ]; then
             CURRENT_LIMIT=$(grep "LimitRequestBody" "$APACHE_CONF" | head -1 | awk '{print $2}')
             echo -e "${YELLOW}📊 Limite atual: $CURRENT_LIMIT${NC}"
             
-            if [ -z "$CURRENT_LIMIT" ] || [ "$CURRENT_LIMIT" -lt 52428800 ]; then
-                echo -e "${YELLOW}⚠️  Ajustando para 100MB (104857600 bytes)...${NC}"
+            if [ -z "$CURRENT_LIMIT" ] || [ "$CURRENT_LIMIT" -lt 15728640 ]; then
+                echo -e "${YELLOW}⚠️  Ajustando para 15MB (15728640 bytes)...${NC}"
                 BACKUP_FILE="${APACHE_CONF}.backup.$(date +%Y%m%d_%H%M%S)"
                 cp "$APACHE_CONF" "$BACKUP_FILE"
-                sed -i 's/^LimitRequestBody.*/LimitRequestBody 104857600/' "$APACHE_CONF"
+                sed -i 's/^LimitRequestBody.*/LimitRequestBody 15728640/' "$APACHE_CONF"
                 echo -e "${GREEN}✅ Limite atualizado${NC}"
                 echo -e "${YELLOW}💡 Execute: sudo systemctl reload apache2${NC}"
             else
@@ -178,7 +178,7 @@ if [ "$HAS_APACHE" = true ]; then
             echo -e "${YELLOW}⚠️  Adicionando LimitRequestBody...${NC}"
             BACKUP_FILE="${APACHE_CONF}.backup.$(date +%Y%m%d_%H%M%S)"
             cp "$APACHE_CONF" "$BACKUP_FILE"
-            echo "LimitRequestBody 104857600" >> "$APACHE_CONF"
+            echo "LimitRequestBody 15728640" >> "$APACHE_CONF"
             echo -e "${GREEN}✅ LimitRequestBody adicionado${NC}"
             echo -e "${YELLOW}💡 Execute: sudo systemctl reload apache2${NC}"
         fi

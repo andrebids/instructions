@@ -57,7 +57,7 @@ export function createProjectImageUpload(projectId) {
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-      fileSize: 10 * 1024 * 1024, // 10MB max
+      fileSize: 15 * 1024 * 1024, // 15MB max por imagem
     },
   }).array('images', 10); // Aceita até 10 imagens por vez
 }
@@ -77,7 +77,7 @@ export function projectImageUploadMiddleware(req, res, next) {
         if (err.code === 'LIMIT_FILE_SIZE') {
           return res.status(400).json({ 
             success: false,
-            error: 'Ficheiro muito grande. Máximo: 10MB por imagem' 
+            error: 'Ficheiro muito grande. Máximo: 15MB por imagem' 
           });
         }
         return res.status(400).json({ 

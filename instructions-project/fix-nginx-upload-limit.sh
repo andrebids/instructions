@@ -76,18 +76,18 @@ if grep -q "client_max_body_size" "$CONFIG_FILE"; then
     CURRENT_LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk '{print $2}' | tr -d ';')
     echo -e "${YELLOW}⚠️  Limite atual encontrado: $CURRENT_LIMIT${NC}"
     
-    # Verificar se o limite é muito baixo (menor que 50MB)
+    # Verificar se o limite é muito baixo (menor que 15MB)
     CURRENT_MB=$(echo "$CURRENT_LIMIT" | sed 's/[^0-9]//g')
-    if [ -z "$CURRENT_MB" ] || [ "$CURRENT_MB" -lt 50 ]; then
-        echo -e "${YELLOW}⚠️  Limite muito baixo! Ajustando para 100MB...${NC}"
+    if [ -z "$CURRENT_MB" ] || [ "$CURRENT_MB" -lt 15 ]; then
+        echo -e "${YELLOW}⚠️  Limite muito baixo! Ajustando para 15MB...${NC}"
         
         # Fazer backup
         cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
         echo -e "${GREEN}✅ Backup criado${NC}"
         
         # Substituir o limite existente
-        sed -i 's/client_max_body_size.*/client_max_body_size 100M;/' "$CONFIG_FILE"
-        echo -e "${GREEN}✅ Limite atualizado para 100MB${NC}"
+        sed -i 's/client_max_body_size.*/client_max_body_size 15M;/' "$CONFIG_FILE"
+        echo -e "${GREEN}✅ Limite atualizado para 15MB${NC}"
     else
         echo -e "${GREEN}✅ Limite já está adequado ($CURRENT_LIMIT)${NC}"
     fi
@@ -101,13 +101,13 @@ else
     # Adicionar no bloco http (se existir) ou no início do arquivo
     if grep -q "^http {" "$CONFIG_FILE"; then
         # Adicionar após a linha "http {"
-        sed -i '/^http {/a\    client_max_body_size 100M;' "$CONFIG_FILE"
+        sed -i '/^http {/a\    client_max_body_size 15M;' "$CONFIG_FILE"
     else
         # Adicionar no início do arquivo
-        sed -i '1i client_max_body_size 100M;' "$CONFIG_FILE"
+        sed -i '1i client_max_body_size 15M;' "$CONFIG_FILE"
     fi
     
-    echo -e "${GREEN}✅ client_max_body_size 100M adicionado${NC}"
+    echo -e "${GREEN}✅ client_max_body_size 15M adicionado${NC}"
 fi
 
 # Verificar sintaxe do nginx
