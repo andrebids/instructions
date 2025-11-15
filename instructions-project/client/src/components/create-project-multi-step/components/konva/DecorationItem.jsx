@@ -15,6 +15,7 @@ import { checkSnapToZone } from '../../utils/snapZoneUtils';
  * @param {Function} props.onChange - Callback quando alterada
  * @param {Array} props.snapZones - Array de zonas de snap
  * @param {boolean} props.isDayMode - Se está em modo dia
+ * @param {boolean} props.isTouchDevice - Se está em dispositivo touch
  */
 export const DecorationItem = ({ 
   decoration, 
@@ -22,11 +23,14 @@ export const DecorationItem = ({
   onSelect, 
   onChange,
   snapZones = [],
-  isDayMode = true
+  isDayMode = true,
+  isTouchDevice = false
 }) => {
   const [image] = useImage(decoration.src, 'anonymous');
   const shapeRef = useRef();
   const trRef = useRef();
+  const touchStartPos = useRef({ x: 0, y: 0 });
+  const isDragging = useRef(false);
 
   // ✅ CORREÇÃO DO LOOP INFINITO: Usar hook customizado
   useImageAspectRatio({
@@ -123,6 +127,62 @@ export const DecorationItem = ({
     });
   };
 
+  // Handlers melhorados para touch
+  const handleTouchStart = (e) => {
+    if (!isTouchDevice) return;
+    
+    // Prevenir scroll durante interação
+    e.evt.preventDefault();
+    
+    // Guardar posição inicial do toque
+    const touch = e.evt.touches[0] || e.evt.changedTouches[0];
+    if (touch) {
+      const stage = e.target.getStage();
+      const point = stage.getPointerPosition();
+      touchStartPos.current = { x: point.x, y: point.y };
+      isDragging.current = false;
+    }
+    
+    // Selecionar a decoração
+    onSelect();
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isTouchDevice) return;
+    
+    // Prevenir scroll durante drag
+    e.evt.preventDefault();
+    
+    // Verificar se está arrastando (movimento > 5px)
+    const touch = e.evt.touches[0];
+    if (touch && touchStartPos.current) {
+      const stage = e.target.getStage();
+      const point = stage.getPointerPosition();
+      const dx = Math.abs(point.x - touchStartPos.current.x);
+      const dy = Math.abs(point.y - touchStartPos.current.y);
+      
+      if (dx > 5 || dy > 5) {
+        isDragging.current = true;
+      }
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!isTouchDevice) return;
+    
+    // Prevenir comportamentos padrão
+    e.evt.preventDefault();
+    
+    // Se não estava arrastando, foi apenas um tap (seleção)
+    if (!isDragging.current) {
+      onSelect();
+    }
+    
+    // Resetar estado
+    isDragging.current = false;
+    touchStartPos.current = { x: 0, y: 0 };
+  };
+
   // Renderizar apenas decorações tipo imagem (PNG)
   if (decoration.type === 'image' && decoration.src) {
     return (
@@ -140,17 +200,31 @@ export const DecorationItem = ({
           draggable
           onClick={onSelect}
           onTap={onSelect}
-          onTouchStart={(e) => {
-            // Selecionar a decoração quando tocar nela
-            // Não prevenir comportamento padrão para permitir drag
-            onSelect();
-          }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           onDragStart={(e) => {
+            // Prevenir scroll em touch durante drag
+            if (isTouchDevice && e.evt) {
+              e.evt.preventDefault();
+            }
             // Garantir seleção quando inicia drag
             onSelect();
           }}
-          onDragMove={handleDragMove}
-          onDragEnd={handleDragEnd}
+          onDragMove={(e) => {
+            // Prevenir scroll durante drag em touch
+            if (isTouchDevice && e.evt) {
+              e.evt.preventDefault();
+            }
+            handleDragMove(e);
+          }}
+          onDragEnd={(e) => {
+            // Prevenir comportamentos padrão em touch
+            if (isTouchDevice && e.evt) {
+              e.evt.preventDefault();
+            }
+            handleDragEnd(e);
+          }}
           onTransformEnd={handleTransformEnd}
         />
         {isSelected && (
@@ -158,6 +232,13 @@ export const DecorationItem = ({
             ref={trRef}
             keepRatio={true}
             flipEnabled={false}
+            // Configurações otimizadas para touch
+            anchorSize={isTouchDevice ? 12 : 8}
+            anchorStrokeWidth={isTouchDevice ? 2 : 1}
+            borderEnabled={true}
+            borderStrokeWidth={isTouchDevice ? 2 : 1}
+            rotateEnabled={true}
+            resizeEnabled={true}
             boundBoxFunc={(oldBox, newBox) => {
               // Limitar resize mínimo
               if (Math.abs(newBox.width) < 20 || Math.abs(newBox.height) < 20) {
