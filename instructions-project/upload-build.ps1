@@ -469,7 +469,7 @@ fi
 # Verificar se tabelas foram criadas (usando Node.js em vez de psql)
 echo ''
 echo 'Verificando se tabelas existem...'
-node -e 'const { Sequelize } = require("sequelize"); const sequelize = new Sequelize("instructions_demo", "demo_user", "demo_password", { host: "localhost", port: 5432, dialect: "postgres", logging: false }); sequelize.getQueryInterface().showAllTables().then(tables => { if (tables.includes("projects")) { console.log("Tabela projects existe"); process.exit(0); } else { console.log("Tabela projects nao encontrada. Tabelas existentes:", tables.join(", ")); process.exit(0); } }).catch(err => { console.log("Nao foi possivel verificar tabelas:", err.message); process.exit(0); });' 2>&1 || echo 'Verificacao de tabelas nao disponivel (Node.js pode nao estar no PATH)'
+node -e "const { Sequelize } = require('sequelize'); const sequelize = new Sequelize('instructions_demo', 'demo_user', 'demo_password', { host: 'localhost', port: 5432, dialect: 'postgres', logging: false }); sequelize.getQueryInterface().showAllTables().then(tables => { if (tables.includes('projects')) { console.log('Tabela projects existe'); process.exit(0); } else { console.log('Tabela projects nao encontrada. Tabelas existentes:', tables.join(', ')); process.exit(0); } }).catch(err => { console.log('Nao foi possivel verificar tabelas:', err.message); process.exit(0); });" 2>&1 || echo 'Verificacao de tabelas nao disponivel (Node.js pode nao estar no PATH)'
 "@
 ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" $migrationCommands.Replace("`r`n", "`n")
 Write-Host "✅ Migrations processadas!" -ForegroundColor Green
@@ -560,16 +560,18 @@ if [ `$RESTART_EXIT -eq 0 ]; then
     echo 'Verificando se servidor responde...'
     HTTP_CODE=`$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5000/health 2>/dev/null || echo '000')
     
+    if [ -z "`$HTTP_CODE" ]; then
+        HTTP_CODE='000'
+    fi
+    
     if [ "`$HTTP_CODE" = "200" ]; then
         echo 'Servidor esta online e respondendo!'
     elif [ "`$HTTP_CODE" = "000" ]; then
         echo 'ERRO: Servidor nao esta respondendo (curl falhou)'
         echo 'Verificando logs de erro...'
         pm2 logs $pm2AppName --err --lines 20 --nostream 2>&1 | tail -20
-    elif [ -n "`$HTTP_CODE" ]; then
-        echo "AVISO: Servidor respondeu com codigo HTTP `$HTTP_CODE"
     else
-        echo 'AVISO: Nao foi possivel verificar status do servidor'
+        echo "AVISO: Servidor respondeu com codigo HTTP `$HTTP_CODE"
     fi
 else
     echo 'ERRO ao reiniciar servidor PM2'
@@ -587,7 +589,7 @@ fi
 RESTART_COUNT=`$(pm2 jlist | grep -A 10 "\"name\":\"$pm2AppName\"" | grep -o '"restart_time":[0-9]*' | cut -d: -f2 | head -1)
 if [ -n "`$RESTART_COUNT" ] && [ "`$RESTART_COUNT" != "null" ] && [ "`$RESTART_COUNT" -gt 10 ] 2>/dev/null; then
     echo ''
-    echo "AVISO: Servidor reiniciou `$RESTART_COUNT vezes (possivel crash loop)"
+    echo "AVISO: Servidor reiniciou `$RESTART_COUNT vezes - possivel crash loop"
     echo 'Ultimos logs de erro:'
     pm2 logs $pm2AppName --err --lines 30 --nostream 2>&1 | tail -30
 fi
