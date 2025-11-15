@@ -175,8 +175,17 @@ while ($retryCount -lt $maxRetries -and -not $uploadSuccess) {
     }
     
     # Usar scp com compressão e timeout aumentado
+    # IMPORTANTE: Enviar conteúdo de dist/* para tempPath diretamente (não dist inteiro)
+    # O destino deve terminar com / para que scp coloque os arquivos diretamente no diretório
     Write-Host "Enviando arquivos (pode demorar para arquivos grandes)..." -ForegroundColor Gray
-    $scpOutput = scp -i $sshKey -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -C -r ".\dist" "${sshUser}@${sshHost}:$tempPath" 2>&1
+    # Estamos no diretório client após o build, então dist está aqui
+    if (-not (Test-Path ".\dist")) {
+        Write-Host "❌ Diretório dist não encontrado!" -ForegroundColor Red
+        exit 1
+    }
+    # Usar scp com wildcard - PowerShell pode não expandir, mas o script no servidor corrige se necessário
+    # Tentar enviar conteúdo diretamente usando caminho relativo
+    $scpOutput = scp -i $sshKey -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -C -r ".\dist\*" "${sshUser}@${sshHost}:$tempPath/" 2>&1
     
     if ($LASTEXITCODE -eq 0) {
         $uploadSuccess = $true
@@ -218,27 +227,59 @@ ls -dt dist-old-* 2>/dev/null | tail -n +3 | xargs rm -rf 2>/dev/null || true
 BACKUP_COUNT=`$(ls -d dist-old-* 2>/dev/null | wc -l)
 echo "Mantidos `$BACKUP_COUNT backups recentes"
 
-# Fazer backup do dist atual se existir (apenas 1 backup)
-if [ -d dist ]; then
-    # Remover backup anterior se existir (manter apenas 1 backup)
-    rm -rf dist-old-previous 2>/dev/null || true
-    mv dist dist-old-previous 2>/dev/null || true
-    echo '✅ Backup do dist anterior criado (substituindo backup anterior)'
-fi
-
 # Mover novo build para dist
 if [ -d $tempPath ]; then
+    # PASSO 1: Verificar e corrigir estrutura ANTES de mover
+    # Se scp criou tempPath/dist (porque wildcard não expandiu), corrigir
+    if [ -d $tempPath/dist ]; then
+        echo '⚠️  Detectado estrutura incorreta (tempPath/dist), corrigindo...'
+        # Mover conteúdo de tempPath/dist para tempPath (não criar duplicação)
+        mv $tempPath/dist/* $tempPath/ 2>/dev/null || true
+        # Tentar mover ficheiros ocultos (pode falhar se não houver, ignorar erro)
+        find $tempPath/dist -maxdepth 1 -name '.*' -type f -exec mv {} $tempPath/ \; 2>/dev/null || true
+        # Remover diretório dist vazio para evitar duplicação
+        rmdir $tempPath/dist 2>/dev/null || true
+        echo '✅ Estrutura corrigida (sem duplicação)'
+    fi
+    
+    # PASSO 2: Verificar se index.html está no local correto (tempPath diretamente)
+    if [ ! -f $tempPath/index.html ] && [ -d $tempPath ]; then
+        echo '⚠️  index.html não encontrado diretamente em tempPath, procurando...'
+        find $tempPath -name 'index.html' -type f | head -1
+    fi
+    
+    # PASSO 3: Fazer backup do dist atual ANTES de substituir (apenas 1 backup)
+    if [ -d dist ]; then
+        rm -rf dist-old-previous 2>/dev/null || true
+        mv dist dist-old-previous 2>/dev/null || true
+        echo '✅ Backup do dist anterior criado'
+    fi
+    
+    # Mover tempPath para dist (agora garantidamente sem subdiretório dist)
     mv $tempPath dist
     chmod -R 755 dist
+    
+    # Verificação final: garantir que não há dist/dist
+    if [ -d dist/dist ]; then
+        echo '❌ ERRO CRÍTICO: dist/dist ainda existe após correção!'
+        echo 'Corrigindo manualmente...'
+        mv dist/dist/* dist/ 2>/dev/null || true
+        rmdir dist/dist 2>/dev/null || true
+    fi
+    
     echo '✅ Build atualizado no servidor!'
     if [ -f dist/index.html ]; then
         ls -lh dist/index.html
         echo ''
         # Mostrar espaço usado
         du -sh dist
+        echo ''
+        echo '✅ Verificação: index.html está no local correto (dist/index.html)'
     else
-        echo '⚠️  Aviso: dist/index.html não encontrado após atualização'
+        echo '❌ ERRO: dist/index.html não encontrado após atualização'
+        echo 'Conteúdo de dist:'
         ls -la dist/ | head -10
+        exit 1
     fi
 else
     echo '❌ Erro: Diretório temporário não encontrado: $tempPath'
@@ -330,33 +371,49 @@ fi
 # Verificar se tabelas foram criadas (usando Node.js em vez de psql)
 echo ''
 echo '🔍 Verificando se tabelas existem...'
-node -e "
-const { Sequelize } = require('sequelize');
-const sequelize = new Sequelize('instructions_demo', 'demo_user', 'demo_password', {
-  host: 'localhost',
-  port: 5433,
-  dialect: 'postgres',
-  logging: false
-});
-sequelize.getQueryInterface().showAllTables().then(tables => {
-  if (tables.includes('projects')) {
-    console.log('✅ Tabela projects existe');
-    process.exit(0);
-  } else {
-    console.log('⚠️  Tabela projects não encontrada. Tabelas existentes:', tables.join(', '));
-    process.exit(0);
-  }
-}).catch(err => {
-  console.log('⚠️  Não foi possível verificar tabelas:', err.message);
-  process.exit(0);
-});
-" 2>&1 || echo '⚠️  Verificação de tabelas não disponível (Node.js pode não estar no PATH)'
+node -e "const { Sequelize } = require('sequelize'); const sequelize = new Sequelize('instructions_demo', 'demo_user', 'demo_password', { host: 'localhost', port: 5432, dialect: 'postgres', logging: false }); sequelize.getQueryInterface().showAllTables().then(tables => { if (tables.includes('projects')) { console.log('✅ Tabela projects existe'); process.exit(0); } else { console.log('⚠️  Tabela projects não encontrada. Tabelas existentes:', tables.join(', ')); process.exit(0); } }).catch(err => { console.log('⚠️  Não foi possível verificar tabelas:', err.message); process.exit(0); });" 2>&1 || echo '⚠️  Verificação de tabelas não disponível (Node.js pode não estar no PATH)'
 "@
 ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" $migrationCommands.Replace("`r`n", "`n")
 Write-Host "✅ Migrations processadas!" -ForegroundColor Green
 Write-Host ""
 
-Write-Host "=== 5. Reiniciar Servidor ===" -ForegroundColor Cyan
+Write-Host "=== 5. Verificar e Corrigir Limite de Upload (Nginx) ===" -ForegroundColor Cyan
+Write-Host "Verificando configuração do nginx para uploads..." -ForegroundColor Gray
+
+# Copiar script de correção para o servidor e executá-lo
+$fixScriptPath = Join-Path $PSScriptRoot "fix-nginx-upload-limit.sh"
+if (Test-Path $fixScriptPath) {
+    Write-Host "Enviando script de correção para o servidor..." -ForegroundColor Gray
+    $remoteScriptPath = "/tmp/fix-nginx-upload-limit.sh"
+    scp -i $sshKey -o StrictHostKeyChecking=no $fixScriptPath "${sshUser}@${sshHost}:$remoteScriptPath" 2>&1 | Out-Null
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Executando script de correção no servidor..." -ForegroundColor Gray
+        $nginxFixOutput = ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" "chmod +x $remoteScriptPath && bash $remoteScriptPath" 2>&1
+        Write-Host $nginxFixOutput -ForegroundColor Gray
+        
+        # Limpar script temporário
+        ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" "rm -f $remoteScriptPath" 2>&1 | Out-Null
+    } else {
+        Write-Host "⚠️  Não foi possível enviar script, tentando método alternativo..." -ForegroundColor Yellow
+        # Método alternativo: comando simples inline
+        $nginxFixOutput = ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" 'if command -v nginx >/dev/null 2>&1; then NGINX_CONF="/etc/nginx/nginx.conf"; NGINX_SITES="/etc/nginx/sites-enabled"; CONFIG_FILE=""; if [ -d "$NGINX_SITES" ]; then for f in "$NGINX_SITES"/*; do [ -f "$f" ] && grep -q "proxy_pass\|upstream" "$f" 2>/dev/null && CONFIG_FILE="$f" && break; done; fi; [ -z "$CONFIG_FILE" ] && CONFIG_FILE="$NGINX_CONF"; if [ -f "$CONFIG_FILE" ]; then if grep -q "client_max_body_size" "$CONFIG_FILE"; then LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk "{print \$2}" | tr -d ";"); NUM=$(echo "$LIMIT" | sed "s/[^0-9]//g"); if [ -z "$NUM" ] || [ "$NUM" -lt 10 ]; then echo "⚠️  Ajustando limite de 50MB..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; sed -i "s/client_max_body_size.*/client_max_body_size 50M;/" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); else echo "✅ Limite adequado: $LIMIT"; fi; else echo "⚠️  Adicionando client_max_body_size 50M..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; grep -q "^http {" "$CONFIG_FILE" && sed -i "/^http {/a\    client_max_body_size 50M;" "$CONFIG_FILE" || sed -i "1i client_max_body_size 50M;" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); fi; else echo "⚠️  Arquivo de configuração não encontrado"; fi; else echo "ℹ️  Nginx não encontrado (servidor pode estar rodando diretamente via PM2)"; echo "✅ Limites do Express já foram ajustados no código"; fi' 2>&1
+        Write-Host $nginxFixOutput -ForegroundColor Gray
+    }
+} else {
+    Write-Host "⚠️  Script fix-nginx-upload-limit.sh não encontrado, usando método alternativo..." -ForegroundColor Yellow
+    $nginxFixOutput = ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" 'if command -v nginx >/dev/null 2>&1; then NGINX_CONF="/etc/nginx/nginx.conf"; NGINX_SITES="/etc/nginx/sites-enabled"; CONFIG_FILE=""; if [ -d "$NGINX_SITES" ]; then for f in "$NGINX_SITES"/*; do [ -f "$f" ] && grep -q "proxy_pass\|upstream" "$f" 2>/dev/null && CONFIG_FILE="$f" && break; done; fi; [ -z "$CONFIG_FILE" ] && CONFIG_FILE="$NGINX_CONF"; if [ -f "$CONFIG_FILE" ]; then if grep -q "client_max_body_size" "$CONFIG_FILE"; then LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk "{print \$2}" | tr -d ";"); NUM=$(echo "$LIMIT" | sed "s/[^0-9]//g"); if [ -z "$NUM" ] || [ "$NUM" -lt 10 ]; then echo "⚠️  Ajustando limite para 50MB..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; sed -i "s/client_max_body_size.*/client_max_body_size 50M;/" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); else echo "✅ Limite adequado: $LIMIT"; fi; else echo "⚠️  Adicionando client_max_body_size 50M..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; grep -q "^http {" "$CONFIG_FILE" && sed -i "/^http {/a\    client_max_body_size 50M;" "$CONFIG_FILE" || sed -i "1i client_max_body_size 50M;" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); fi; else echo "⚠️  Arquivo de configuração não encontrado"; fi; else echo "ℹ️  Nginx não encontrado (servidor pode estar rodando diretamente via PM2)"; echo "✅ Limites do Express já foram ajustados no código"; fi' 2>&1
+    Write-Host $nginxFixOutput -ForegroundColor Gray
+}
+
+# Verificar se houve aviso sobre sudo
+if ($nginxFixOutput -match "precisa de sudo|sudo") {
+    Write-Host "⚠️  AVISO: Pode ser necessário executar manualmente com sudo:" -ForegroundColor Yellow
+    Write-Host "   ssh $sshUser@$sshHost 'sudo systemctl reload nginx'" -ForegroundColor Yellow
+}
+Write-Host ""
+
+Write-Host "=== 6. Reiniciar Servidor ===" -ForegroundColor Cyan
 Write-Host "Reiniciando servidor PM2..." -ForegroundColor Gray
 $restartCommands = @"
 pm2 restart $pm2AppName 2>&1

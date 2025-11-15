@@ -29,7 +29,10 @@ app.use(cors({
   ],
   credentials: true
 }));
-app.use(express.json());
+// Aumentar limite de body parser para suportar uploads maiores
+// Nota: Para multipart/form-data (uploads), o multer gerencia os limites
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Configurar mime types para PWA
 app.use((req, res, next) => {
