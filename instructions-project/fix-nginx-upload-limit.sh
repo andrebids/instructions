@@ -153,6 +153,9 @@ fi
 
 echo -e "${GREEN}📄 Arquivo de configuração: $CONFIG_FILE${NC}"
 
+# Variável para guardar nome do backup (usada no tratamento de erros)
+BACKUP_FILE=""
+
 # Se nginx está em Docker, precisamos ajustar dentro do container
 if [ "$NGINX_IN_DOCKER" = true ]; then
     echo -e "${BLUE}🐳 Nginx está em Docker. Verificando containers...${NC}"
@@ -175,54 +178,142 @@ if [ "$NGINX_IN_DOCKER" = true ]; then
     fi
 fi
 
+# Contar quantas vezes client_max_body_size aparece
+CLIENT_MAX_COUNT=$(grep -c "client_max_body_size" "$CONFIG_FILE" 2>/dev/null || echo "0")
+
 # Verificar se já tem client_max_body_size configurado
-if grep -q "client_max_body_size" "$CONFIG_FILE"; then
-    CURRENT_LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk '{print $2}' | tr -d ';')
-    echo -e "${YELLOW}⚠️  Limite atual encontrado: $CURRENT_LIMIT${NC}"
-    
-    # Verificar se o limite é muito baixo (menor que 15MB)
-    CURRENT_MB=$(echo "$CURRENT_LIMIT" | sed 's/[^0-9]//g')
-    if [ -z "$CURRENT_MB" ] || [ "$CURRENT_MB" -lt 15 ]; then
-        echo -e "${YELLOW}⚠️  Limite muito baixo! Ajustando para 15MB...${NC}"
+if [ "$CLIENT_MAX_COUNT" -gt 0 ]; then
+    # Se há duplicação, remover todas e adicionar apenas uma
+    if [ "$CLIENT_MAX_COUNT" -gt 1 ]; then
+        echo -e "${YELLOW}⚠️  Detectada duplicação de client_max_body_size ($CLIENT_MAX_COUNT ocorrências)${NC}"
+        echo -e "${YELLOW}⚠️  Removendo duplicações e mantendo apenas uma configuração...${NC}"
         
-        # Fazer backup
-        cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
-        echo -e "${GREEN}✅ Backup criado${NC}"
+        # Fazer backup (tentar com sudo se necessário)
+        BACKUP_FILE="${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+        if sudo cp "$CONFIG_FILE" "$BACKUP_FILE" 2>/dev/null || cp "$CONFIG_FILE" "$BACKUP_FILE" 2>/dev/null; then
+            echo -e "${GREEN}✅ Backup criado${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Não foi possível criar backup (pode precisar de sudo)${NC}"
+            BACKUP_FILE=""
+        fi
         
-        # Substituir o limite existente
-        sed -i 's/client_max_body_size.*/client_max_body_size 15M;/' "$CONFIG_FILE"
-        echo -e "${GREEN}✅ Limite atualizado para 15MB${NC}"
+        # Remover todas as ocorrências de client_max_body_size
+        if sudo sed -i '/client_max_body_size/d' "$CONFIG_FILE" 2>/dev/null || sed -i '/client_max_body_size/d' "$CONFIG_FILE" 2>/dev/null; then
+            echo -e "${GREEN}✅ Duplicações removidas${NC}"
+        else
+            echo -e "${RED}❌ Não foi possível remover duplicações${NC}"
+            if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
+                sudo cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || true
+            fi
+            exit 1
+        fi
+        
+        # Adicionar uma única ocorrência no bloco http
+        if grep -q "^http {" "$CONFIG_FILE"; then
+            if sudo sed -i '/^http {/a\    client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null || sed -i '/^http {/a\    client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null; then
+                echo -e "${GREEN}✅ client_max_body_size 15M adicionado${NC}"
+            else
+                echo -e "${RED}❌ Não foi possível adicionar${NC}"
+                if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
+                    sudo cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || true
+                fi
+                exit 1
+            fi
+        else
+            # Se não há bloco http, adicionar no início
+            if sudo sed -i '1i client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null || sed -i '1i client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null; then
+                echo -e "${GREEN}✅ client_max_body_size 15M adicionado${NC}"
+            else
+                echo -e "${RED}❌ Não foi possível adicionar${NC}"
+                if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
+                    sudo cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || true
+                fi
+                exit 1
+            fi
+        fi
     else
-        echo -e "${GREEN}✅ Limite já está adequado ($CURRENT_LIMIT)${NC}"
+        # Apenas uma ocorrência, verificar se está adequada
+        CURRENT_LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk '{print $2}' | tr -d ';')
+        echo -e "${YELLOW}⚠️  Limite atual encontrado: $CURRENT_LIMIT${NC}"
+        
+        # Verificar se o limite é muito baixo (menor que 15MB)
+        CURRENT_MB=$(echo "$CURRENT_LIMIT" | sed 's/[^0-9]//g')
+        if [ -z "$CURRENT_MB" ] || [ "$CURRENT_MB" -lt 15 ]; then
+            echo -e "${YELLOW}⚠️  Limite muito baixo! Ajustando para 15MB...${NC}"
+            
+            # Fazer backup (tentar com sudo se necessário)
+            BACKUP_FILE="${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+            if sudo cp "$CONFIG_FILE" "$BACKUP_FILE" 2>/dev/null || cp "$CONFIG_FILE" "$BACKUP_FILE" 2>/dev/null; then
+                echo -e "${GREEN}✅ Backup criado${NC}"
+            else
+                echo -e "${YELLOW}⚠️  Não foi possível criar backup (pode precisar de sudo)${NC}"
+                BACKUP_FILE=""
+            fi
+            
+            # Substituir o limite existente (tentar com sudo se necessário)
+            if sudo sed -i 's/client_max_body_size.*/client_max_body_size 15M;/' "$CONFIG_FILE" 2>/dev/null || sed -i 's/client_max_body_size.*/client_max_body_size 15M;/' "$CONFIG_FILE" 2>/dev/null; then
+                echo -e "${GREEN}✅ Limite atualizado para 15MB${NC}"
+            else
+                echo -e "${RED}❌ Não foi possível atualizar (pode precisar de sudo)${NC}"
+                if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
+                    sudo cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || true
+                fi
+                exit 1
+            fi
+        else
+            echo -e "${GREEN}✅ Limite já está adequado ($CURRENT_LIMIT)${NC}"
+        fi
     fi
 else
     echo -e "${YELLOW}⚠️  client_max_body_size não encontrado. Adicionando 15MB...${NC}"
     
-    # Fazer backup
-    cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
-    echo -e "${GREEN}✅ Backup criado${NC}"
+    # Fazer backup (tentar com sudo se necessário)
+    BACKUP_FILE="${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+    if sudo cp "$CONFIG_FILE" "$BACKUP_FILE" 2>/dev/null || cp "$CONFIG_FILE" "$BACKUP_FILE" 2>/dev/null; then
+        echo -e "${GREEN}✅ Backup criado${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Não foi possível criar backup (pode precisar de sudo)${NC}"
+        BACKUP_FILE=""
+    fi
     
     # Adicionar no bloco http (se existir) ou no início do arquivo
     if grep -q "^http {" "$CONFIG_FILE"; then
         # Adicionar após a linha "http {"
-        sed -i '/^http {/a\    client_max_body_size 15M;' "$CONFIG_FILE"
+        if sudo sed -i '/^http {/a\    client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null || sed -i '/^http {/a\    client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null; then
+            echo -e "${GREEN}✅ client_max_body_size 15M adicionado${NC}"
+        else
+            echo -e "${RED}❌ Não foi possível adicionar (pode precisar de sudo)${NC}"
+            if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
+                sudo cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || true
+            fi
+            exit 1
+        fi
     else
         # Adicionar no início do arquivo
-        sed -i '1i client_max_body_size 15M;' "$CONFIG_FILE"
+        if sudo sed -i '1i client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null || sed -i '1i client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null; then
+            echo -e "${GREEN}✅ client_max_body_size 15M adicionado${NC}"
+        else
+            echo -e "${RED}❌ Não foi possível adicionar (pode precisar de sudo)${NC}"
+            if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
+                sudo cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || true
+            fi
+            exit 1
+        fi
     fi
-    
-    echo -e "${GREEN}✅ client_max_body_size 15M adicionado${NC}"
 fi
 
 # Verificar sintaxe do nginx
 echo -e "${YELLOW}🔍 Verificando sintaxe do nginx...${NC}"
-if nginx -t 2>&1 | grep -q "syntax is ok"; then
+NGINX_TEST_OUTPUT=""
+if sudo nginx -t 2>&1 | tee /tmp/nginx-test-output.txt | grep -q "syntax is ok"; then
+    NGINX_TEST_OUTPUT=$(cat /tmp/nginx-test-output.txt)
+    rm -f /tmp/nginx-test-output.txt
     echo -e "${GREEN}✅ Sintaxe OK${NC}"
     
     # Tentar recarregar nginx automaticamente
     echo ""
     echo -e "${YELLOW}🔄 Tentando recarregar nginx...${NC}"
-    if systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || sudo systemctl reload nginx 2>/dev/null || sudo nginx -s reload 2>/dev/null; then
+    if sudo systemctl reload nginx 2>/dev/null || sudo nginx -s reload 2>/dev/null || systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null; then
         echo -e "${GREEN}✅ Nginx recarregado com sucesso!${NC}"
     else
         echo -e "${YELLOW}⚠️  Não foi possível recarregar automaticamente${NC}"
@@ -234,11 +325,17 @@ if nginx -t 2>&1 | grep -q "syntax is ok"; then
     echo ""
     echo -e "${GREEN}✅ Configuração atualizada com sucesso!${NC}"
 else
+    NGINX_TEST_OUTPUT=$(cat /tmp/nginx-test-output.txt 2>/dev/null || sudo nginx -t 2>&1 || nginx -t 2>&1)
+    rm -f /tmp/nginx-test-output.txt
     echo -e "${RED}❌ Erro na sintaxe do nginx!${NC}"
-    nginx -t
+    echo "$NGINX_TEST_OUTPUT"
     echo ""
     echo -e "${YELLOW}💡 Restaurar backup se necessário:${NC}"
-    echo "   cp ${CONFIG_FILE}.backup.* $CONFIG_FILE"
+    if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
+        echo "   sudo cp $BACKUP_FILE $CONFIG_FILE"
+    else
+        echo "   sudo cp ${CONFIG_FILE}.backup.* $CONFIG_FILE"
+    fi
     exit 1
 fi
 
