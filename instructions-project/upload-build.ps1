@@ -304,28 +304,56 @@ cd $serverRootPath
 
 # Atualizar código do servidor (se for git repo)
 if [ -d .git ]; then
-    echo '📥 Atualizando código do servidor...'
+    echo 'Atualizando código do servidor...'
     git fetch origin 2>/dev/null || true
     CURRENT_BRANCH=`$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'main')
     git reset --hard origin/`${CURRENT_BRANCH} 2>/dev/null || git reset --hard origin/main 2>/dev/null || true
-    echo '✅ Código atualizado'
+    echo 'Codigo atualizado'
+    
+    # Verificar se server existe após git pull
+    if [ ! -d server ]; then
+        echo 'AVISO: Diretorio server nao encontrado após git pull'
+        echo 'Tentando verificar se precisa fazer checkout...'
+        git checkout HEAD -- server 2>/dev/null || true
+        if [ ! -d server ]; then
+            echo 'ERRO: Diretorio server ainda nao encontrado'
+            echo 'Listando conteudo do diretorio raiz:'
+            ls -la
+            exit 1
+        fi
+    fi
+fi
+
+# Verificar se diretório server existe
+if [ ! -d server ]; then
+    echo 'ERRO: Diretorio server nao encontrado em $serverRootPath'
+    echo 'Verifique se o projeto foi clonado corretamente'
+    echo 'Listando conteudo:'
+    ls -la
+    exit 1
 fi
 
 # Verificar se PostgreSQL está rodando
-echo '🔍 Verificando PostgreSQL...'
+echo 'Verificando PostgreSQL...'
 if docker ps | grep -q postgres || docker compose ps | grep -q postgres; then
-    echo '✅ PostgreSQL está rodando'
+    echo 'PostgreSQL esta rodando'
 else
-    echo '⚠️  PostgreSQL não encontrado via Docker'
-    echo '💡 Tentando iniciar PostgreSQL...'
+    echo 'PostgreSQL nao encontrado via Docker'
+    echo 'Tentando iniciar PostgreSQL...'
     docker compose -f docker-compose.prod.yml up -d 2>/dev/null || docker compose -f docker-compose.dev.yml up -d 2>/dev/null || true
     sleep 3
 fi
 
 # Verificar se .env existe
 cd server
+if [ ! -f package.json ]; then
+    echo 'ERRO: package.json nao encontrado em $serverRootPath/server'
+    echo 'Verifique se o diretorio server esta correto'
+    exit 1
+fi
+
 if [ ! -f .env ]; then
-    echo '⚠️  Ficheiro .env não encontrado, criando...'
+    echo 'Ficheiro .env nao encontrado, criando...'
     cat > .env << 'ENVEOF'
 DB_HOST=localhost
 DB_PORT=5433
@@ -335,43 +363,43 @@ DB_PASSWORD=demo_password
 PORT=5000
 NODE_ENV=production
 ENVEOF
-    echo '✅ Ficheiro .env criado'
+    echo 'Ficheiro .env criado'
 fi
 
 # Instalar dependências se necessário
-echo '📦 Verificando dependências...'
-if [ ! -d node_modules ] || [ package.json -nt node_modules/.package-lock.json 2>/dev/null ]; then
-    echo '📥 Instalando dependências...'
-    npm install --omit=dev 2>&1 || npm install 2>&1 || echo '⚠️  Aviso: Instalação de dependências pode ter falhado'
+echo 'Verificando dependencias...'
+if [ ! -d node_modules ] || [ ! -f node_modules/.package-lock.json ] || [ package.json -nt node_modules/.package-lock.json 2>/dev/null ]; then
+    echo 'Instalando dependencias...'
+    npm install --omit=dev 2>&1 || npm install 2>&1 || echo 'Aviso: Instalacao de dependencias pode ter falhado'
 else
-    echo '✅ Dependências já instaladas'
+    echo 'Dependencias ja instaladas'
 fi
 
 # Verificar conexão com BD antes de executar migrations
 echo ''
-echo '🔍 Verificando conexão com base de dados...'
-npm run check-connection 2>&1 || echo '⚠️  Aviso: Verificação de conexão falhou, mas continuando...'
+echo 'Verificando conexao com base de dados...'
+npm run check-connection 2>&1 || echo 'Aviso: Verificacao de conexao falhou, mas continuando...'
 
 # Executar setup
 echo ''
-echo '🔄 Executando npm run setup...'
+echo 'Executando npm run setup...'
 npm run setup 2>&1
 SETUP_EXIT=`$?
 
 if [ `$SETUP_EXIT -eq 0 ]; then
     echo ''
-    echo '✅ Setup executado com sucesso!'
+    echo 'Setup executado com sucesso!'
 else
     echo ''
-    echo '⚠️  Setup encontrou problemas!'
-    echo '💡 Tentando executar migrations manualmente...'
-    npm run migrate:all 2>&1 || echo '⚠️  Migrations também falharam'
+    echo 'Setup encontrou problemas!'
+    echo 'Tentando executar migrations manualmente...'
+    npm run migrate:all 2>&1 || echo 'Migrations tambem falharam'
 fi
 
 # Verificar se tabelas foram criadas (usando Node.js em vez de psql)
 echo ''
-echo '🔍 Verificando se tabelas existem...'
-node -e "const { Sequelize } = require('sequelize'); const sequelize = new Sequelize('instructions_demo', 'demo_user', 'demo_password', { host: 'localhost', port: 5432, dialect: 'postgres', logging: false }); sequelize.getQueryInterface().showAllTables().then(tables => { if (tables.includes('projects')) { console.log('✅ Tabela projects existe'); process.exit(0); } else { console.log('⚠️  Tabela projects não encontrada. Tabelas existentes:', tables.join(', ')); process.exit(0); } }).catch(err => { console.log('⚠️  Não foi possível verificar tabelas:', err.message); process.exit(0); });" 2>&1 || echo '⚠️  Verificação de tabelas não disponível (Node.js pode não estar no PATH)'
+echo 'Verificando se tabelas existem...'
+node -e "const { Sequelize } = require('sequelize'); const sequelize = new Sequelize('instructions_demo', 'demo_user', 'demo_password', { host: 'localhost', port: 5432, dialect: 'postgres', logging: false }); sequelize.getQueryInterface().showAllTables().then(tables => { if (tables.includes('projects')) { console.log('Tabela projects existe'); process.exit(0); } else { console.log('Tabela projects nao encontrada. Tabelas existentes:', tables.join(', ')); process.exit(0); } }).catch(err => { console.log('Nao foi possivel verificar tabelas:', err.message); process.exit(0); });" 2>&1 || echo 'Verificacao de tabelas nao disponivel (Node.js pode nao estar no PATH)'
 "@
 ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" $migrationCommands.Replace("`r`n", "`n")
 Write-Host "✅ Migrations processadas!" -ForegroundColor Green
@@ -389,7 +417,8 @@ if (Test-Path $fixScriptPath) {
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Executando script de correção no servidor..." -ForegroundColor Gray
-        $nginxFixOutput = ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" "chmod +x $remoteScriptPath && bash $remoteScriptPath" 2>&1
+        # Tentar executar com sudo primeiro, se falhar, executar sem sudo
+        $nginxFixOutput = ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" "chmod +x $remoteScriptPath && sudo bash $remoteScriptPath 2>&1 || bash $remoteScriptPath 2>&1" 2>&1
         Write-Host $nginxFixOutput -ForegroundColor Gray
         
         # Limpar script temporário
@@ -416,31 +445,86 @@ Write-Host ""
 Write-Host "=== 6. Reiniciar Servidor ===" -ForegroundColor Cyan
 Write-Host "Reiniciando servidor PM2..." -ForegroundColor Gray
 $restartCommands = @"
+# Verificar status atual antes de reiniciar
+echo 'Status atual do PM2:'
+pm2 status $pm2AppName || echo 'App nao encontrado no PM2'
+
+# Verificar logs recentes para identificar problemas
+echo ''
+echo 'Ultimas linhas dos logs (se houver erros):'
+pm2 logs $pm2AppName --lines 10 --nostream 2>&1 | tail -20 || echo 'Nao foi possivel ler logs'
+
+echo ''
+echo 'Reiniciando servidor...'
 pm2 restart $pm2AppName 2>&1
 RESTART_EXIT=`$?
+
 if [ `$RESTART_EXIT -eq 0 ]; then
-    echo '✅ Servidor reiniciado com sucesso!'
-    sleep 2
-    pm2 status $pm2AppName
-    echo ''
-    echo '🔍 Verificando saúde do servidor...'
+    echo 'Servidor reiniciado com sucesso!'
     sleep 3
-    curl -s http://localhost:5000/health > /dev/null 2>&1
-    if [ `$? -eq 0 ]; then
-        echo '✅ Servidor está online e respondendo!'
+    echo ''
+    echo 'Status do PM2:'
+    pm2 status $pm2AppName
+    
+    # Verificar se o servidor está realmente rodando
+    echo ''
+    echo 'Verificando processo...'
+    PM2_PID=`$(pm2 jlist | grep -A 5 "\"name\":\"$pm2AppName\"" | grep -o '\"pid\":[0-9]*' | cut -d: -f2 | head -1)
+    if [ -n "`$PM2_PID" ] && [ "`$PM2_PID" != "null" ]; then
+        echo "PID do servidor: `$PM2_PID"
+        
+        # Verificar se o processo está rodando
+        if ps -p `$PM2_PID > /dev/null 2>&1; then
+            echo 'Processo esta rodando'
+        else
+            echo 'AVISO: Processo nao esta mais rodando!'
+        fi
     else
-        echo '⚠️  Aviso: Servidor pode não estar totalmente pronto ainda'
+        echo 'AVISO: Nao foi possivel obter PID do servidor'
+    fi
+    
+    echo ''
+    echo 'Aguardando servidor iniciar...'
+    sleep 3
+    
+    echo 'Verificando se servidor responde...'
+    HTTP_CODE=`$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5000/health 2>/dev/null || echo '000')
+    
+    if [ "`$HTTP_CODE" = "200" ]; then
+        echo 'Servidor esta online e respondendo!'
+    elif [ "`$HTTP_CODE" = "000" ]; then
+        echo 'ERRO: Servidor nao esta respondendo (curl falhou)'
+        echo 'Verificando logs de erro...'
+        pm2 logs $pm2AppName --err --lines 20 --nostream 2>&1 | tail -20
+    else
+        echo "AVISO: Servidor respondeu com codigo HTTP `$HTTP_CODE"
     fi
 else
-    echo '❌ Erro ao reiniciar servidor PM2'
-    echo '💡 Verifique: pm2 status'
-    echo '⚠️  Continuando mesmo assim...'
+    echo 'ERRO ao reiniciar servidor PM2'
+    echo ''
+    echo 'Tentando iniciar o servidor...'
+    cd $serverRootPath/server
+    pm2 start npm --name $pm2AppName -- start 2>&1 || echo 'Falha ao iniciar servidor'
+    pm2 save 2>&1 || true
+    echo ''
+    echo 'Status final:'
+    pm2 status
+fi
+
+# Mostrar logs de erro se houver muitos restarts
+RESTART_COUNT=`$(pm2 jlist | grep -A 10 "\"name\":\"$pm2AppName\"" | grep -o '\"pm2_env\":{[^}]*"restart_time":[0-9]*' | grep -o '"restart_time":[0-9]*' | cut -d: -f2 | head -1)
+if [ -n "`$RESTART_COUNT" ] && [ "`$RESTART_COUNT" -gt 10 ]; then
+    echo ''
+    echo "AVISO: Servidor reiniciou `$RESTART_COUNT vezes (possivel crash loop)"
+    echo 'Ultimos logs de erro:'
+    pm2 logs $pm2AppName --err --lines 30 --nostream 2>&1 | tail -30
 fi
 "@
 ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" $restartCommands.Replace("`r`n", "`n")
 if ($LASTEXITCODE -ne 0) {
     Write-Host "⚠️  Aviso: Pode ter havido problemas ao reiniciar o servidor" -ForegroundColor Yellow
     Write-Host "   Verifique manualmente: ssh $sshUser@$sshHost 'pm2 status'" -ForegroundColor Yellow
+    Write-Host "   Ver logs: ssh $sshUser@$sshHost 'pm2 logs instructions-server --lines 50'" -ForegroundColor Yellow
 } else {
     Write-Host "✅ Servidor reiniciado com sucesso!" -ForegroundColor Green
 }
