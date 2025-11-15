@@ -8,20 +8,56 @@ import { useState, useEffect } from 'react';
  */
 export const useResponsiveLayout = () => {
   const [windowSize, setWindowSize] = useState({
-    width: typeof window !== 'undefined' ? window.innerWidth : 1024,
-    height: typeof window !== 'undefined' ? window.innerHeight : 768,
+    width: 1024, // Valores padrão seguros
+    height: 768,
   });
 
   useEffect(() => {
+    // Função segura para obter dimensões sem forçar layout
+    const safeGetSize = () => {
+      if (typeof window === 'undefined') return { width: 1024, height: 768 };
+      
+      // Aguardar que o documento esteja pronto antes de medir
+      if (document.readyState !== 'complete') {
+        return { width: 1024, height: 768 };
+      }
+      
+      try {
+        return {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        };
+      } catch (e) {
+        return { width: 1024, height: 768 };
+      }
+    };
+
     const handleResize = () => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
+      // Usar requestAnimationFrame para evitar forçar layout
+      requestAnimationFrame(() => {
+        const size = safeGetSize();
+        setWindowSize(size);
       });
     };
 
-    // Atualizar no mount
-    handleResize();
+    // Aguardar que o documento esteja pronto antes de medir
+    const initSize = () => {
+      if (document.readyState === 'complete') {
+        requestAnimationFrame(() => {
+          const size = safeGetSize();
+          setWindowSize(size);
+        });
+      } else {
+        window.addEventListener('load', () => {
+          requestAnimationFrame(() => {
+            const size = safeGetSize();
+            setWindowSize(size);
+          });
+        }, { once: true });
+      }
+    };
+
+    initSize();
 
     // Adicionar listener
     window.addEventListener('resize', handleResize);

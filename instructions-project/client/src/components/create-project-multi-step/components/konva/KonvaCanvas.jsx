@@ -287,9 +287,17 @@ export const KonvaCanvas = ({
       
       // Calcular posição relativa ao Stage
       const stage = stageRef.current;
-      if (!stage) return;
+      if (!stage || !containerRef.current) return;
       
-      const containerRect = containerRef.current.getBoundingClientRect();
+      // Proteger getBoundingClientRect para evitar erros de layout
+      let containerRect;
+      try {
+        containerRect = containerRef.current.getBoundingClientRect();
+      } catch (e) {
+        console.warn('[KonvaCanvas] Erro ao obter bounding rect:', e.message);
+        return;
+      }
+      
       var x = (e.clientX - containerRect.left) / stageSize.scale;
       var y = (e.clientY - containerRect.top) / stageSize.scale;
       
