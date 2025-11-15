@@ -68,7 +68,7 @@ function fileFilter(req, file, cb) {
 
 // Configuração de limites
 var limits = {
-  fileSize: 10 * 1024 * 1024, // 10MB para imagens por padrão
+  fileSize: 15 * 1024 * 1024, // 15MB para imagens por padrão
 };
 
 // Middleware para upload de imagens de produto
@@ -86,7 +86,7 @@ var uploadProductImages = multer({
 
 // Middleware customizado para aplicar limites diferentes por tipo
 function uploadProductImagesWithLimits(req, res, next) {
-  var imageLimit = 10 * 1024 * 1024; // 10MB para imagens
+  var imageLimit = 15 * 1024 * 1024; // 15MB para imagens
   var videoLimit = 50 * 1024 * 1024; // 50MB para vídeos
   
   var multerInstance = multer({
@@ -127,7 +127,7 @@ function uploadProductImagesWithLimits(req, res, next) {
     if (err) {
       if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(400).json({ error: 'Ficheiro muito grande. Máximo: 10MB para imagens, 50MB para vídeos' });
+          return res.status(400).json({ error: 'Ficheiro muito grande. Máximo: 15MB para imagens, 50MB para vídeos' });
         }
         return res.status(400).json({ error: err.message });
       }

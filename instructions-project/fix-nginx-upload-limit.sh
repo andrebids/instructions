@@ -10,29 +10,65 @@ set -e
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${YELLOW}🔍 Verificando configuração do nginx...${NC}"
+echo -e "${YELLOW}🔍 Verificando configuração do nginx e proxies reversos...${NC}"
 
-# Verificar se nginx está instalado
-if ! command -v nginx &> /dev/null; then
-    echo -e "${YELLOW}⚠️  Nginx não encontrado. Verificando se há outro proxy reverso...${NC}"
-    
-    # Verificar se há Apache
-    if command -v apache2 &> /dev/null || command -v httpd &> /dev/null; then
-        echo -e "${YELLOW}⚠️  Apache encontrado. Para Apache, ajuste: LimitRequestBody no httpd.conf${NC}"
-        echo "   Adicione: LimitRequestBody 52428800  # 50MB"
-    fi
+NGINX_FOUND=false
+NGINX_IN_DOCKER=false
+
+# Verificar se nginx está instalado diretamente
+if command -v nginx &> /dev/null; then
+    NGINX_FOUND=true
+    echo -e "${GREEN}✅ Nginx encontrado no sistema${NC}"
+fi
+
+# Verificar se há nginx rodando em Docker
+if docker ps 2>/dev/null | grep -q nginx; then
+    NGINX_IN_DOCKER=true
+    NGINX_FOUND=true
+    echo -e "${BLUE}🐳 Nginx encontrado rodando em Docker${NC}"
+    docker ps | grep nginx
+fi
+
+# Verificar processos na porta 80/443 (pode indicar proxy reverso)
+echo -e "${BLUE}🔍 Verificando processos nas portas 80 e 443...${NC}"
+if command -v netstat &> /dev/null; then
+    netstat -tlnp 2>/dev/null | grep -E ':(80|443)' || echo "   Nenhum processo encontrado nas portas 80/443"
+elif command -v ss &> /dev/null; then
+    ss -tlnp 2>/dev/null | grep -E ':(80|443)' || echo "   Nenhum processo encontrado nas portas 80/443"
+fi
+
+# Verificar se há Apache
+if command -v apache2 &> /dev/null || command -v httpd &> /dev/null; then
+    echo -e "${YELLOW}⚠️  Apache encontrado. Para Apache, ajuste: LimitRequestBody no httpd.conf${NC}"
+    echo "   Adicione: LimitRequestBody 52428800  # 50MB"
+fi
+
+# Se não encontrou nginx, verificar outras possibilidades
+if [ "$NGINX_FOUND" = false ]; then
+    echo -e "${YELLOW}⚠️  Nginx não encontrado diretamente. Verificando outras possibilidades...${NC}"
     
     # Verificar se está usando PM2 diretamente (sem proxy)
     if command -v pm2 &> /dev/null; then
         echo -e "${GREEN}✅ PM2 encontrado. O servidor pode estar rodando diretamente sem proxy reverso.${NC}"
-        echo -e "${GREEN}✅ Os limites do Express já foram ajustados no código.${NC}"
+        echo -e "${GREEN}✅ Os limites do Express já foram ajustados no código (15MB).${NC}"
         echo ""
         echo -e "${YELLOW}💡 Se ainda tiver erro 413, verifique:${NC}"
-        echo "   1. Se há um proxy reverso em outro servidor"
-        echo "   2. Se há um load balancer na frente"
+        echo "   1. Se há um proxy reverso em outro servidor (load balancer)"
+        echo "   2. Se há um nginx rodando em Docker (verifique: docker ps | grep nginx)"
         echo "   3. Se há configurações de firewall/proxy no servidor"
+        echo "   4. Se o servidor está acessível via HTTPS (geralmente requer proxy reverso)"
+        echo ""
+        echo -e "${BLUE}💡 Para verificar nginx em Docker:${NC}"
+        echo "   docker ps | grep nginx"
+        echo "   docker exec -it <container> nginx -t"
+        echo ""
+        echo -e "${BLUE}💡 Para verificar processos nas portas:${NC}"
+        echo "   sudo netstat -tlnp | grep -E ':(80|443)'"
+        echo "   ou"
+        echo "   sudo ss -tlnp | grep -E ':(80|443)'"
     fi
     
     exit 0
@@ -71,6 +107,28 @@ fi
 
 echo -e "${GREEN}📄 Arquivo de configuração: $CONFIG_FILE${NC}"
 
+# Se nginx está em Docker, precisamos ajustar dentro do container
+if [ "$NGINX_IN_DOCKER" = true ]; then
+    echo -e "${BLUE}🐳 Nginx está em Docker. Verificando containers...${NC}"
+    NGINX_CONTAINER=$(docker ps --format "{{.Names}}" | grep -i nginx | head -1)
+    if [ -n "$NGINX_CONTAINER" ]; then
+        echo -e "${GREEN}✅ Container encontrado: $NGINX_CONTAINER${NC}"
+        echo -e "${YELLOW}⚠️  Para ajustar nginx em Docker, execute manualmente:${NC}"
+        echo "   docker exec -it $NGINX_CONTAINER bash"
+        echo "   # Dentro do container, edite o arquivo de configuração"
+        echo "   # Adicione: client_max_body_size 15M; no bloco http {"
+        echo "   # Depois: nginx -s reload"
+        echo ""
+        echo -e "${BLUE}💡 Ou copie o arquivo de configuração:${NC}"
+        echo "   docker cp $NGINX_CONTAINER:/etc/nginx/nginx.conf ./nginx.conf"
+        echo "   # Edite o arquivo localmente"
+        echo "   # Adicione: client_max_body_size 15M; no bloco http {"
+        echo "   docker cp ./nginx.conf $NGINX_CONTAINER:/etc/nginx/nginx.conf"
+        echo "   docker exec $NGINX_CONTAINER nginx -s reload"
+        exit 0
+    fi
+fi
+
 # Verificar se já tem client_max_body_size configurado
 if grep -q "client_max_body_size" "$CONFIG_FILE"; then
     CURRENT_LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk '{print $2}' | tr -d ';')
@@ -92,7 +150,7 @@ if grep -q "client_max_body_size" "$CONFIG_FILE"; then
         echo -e "${GREEN}✅ Limite já está adequado ($CURRENT_LIMIT)${NC}"
     fi
 else
-    echo -e "${YELLOW}⚠️  client_max_body_size não encontrado. Adicionando...${NC}"
+    echo -e "${YELLOW}⚠️  client_max_body_size não encontrado. Adicionando 15MB...${NC}"
     
     # Fazer backup
     cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"

@@ -21,13 +21,18 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
   const cameraInputRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const previewUrlsRef = useRef([]);
 
-  // Limpar stream de câmera ao desmontar
+  // Limpar stream de câmera e URLs de preview ao desmontar
   useEffect(() => {
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
+      // Limpar todas as URLs de preview
+      previewUrlsRef.current.forEach(url => {
+        URL.revokeObjectURL(url);
+      });
     };
   }, []);
 
@@ -77,17 +82,41 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
   // Função para lidar com seleção de arquivos
   const handleFilesSelected = (selectedFiles) => {
     const fileArray = Array.from(selectedFiles);
-    const fileObjects = fileArray.map(file => ({
-      file,
-      name: file.name,
-      size: file.size,
-      progress: 0,
-      status: 'pending'
-    }));
+    const fileObjects = fileArray.map(file => {
+      const previewUrl = URL.createObjectURL(file);
+      previewUrlsRef.current.push(previewUrl); // Rastrear URL para limpeza
+      return {
+        file,
+        name: file.name,
+        size: file.size,
+        progress: 0,
+        status: 'pending',
+        previewUrl // Criar URL de preview para thumbnail
+      };
+    });
     
     setFiles(fileObjects);
     setIsPreparing(false);
     setError(null);
+  };
+
+  // Função para remover uma imagem específica
+  const handleRemoveFile = (index) => {
+    setFiles(prev => {
+      const newFiles = [...prev];
+      // Limpar URL de preview para evitar memory leak
+      if (newFiles[index].previewUrl) {
+        URL.revokeObjectURL(newFiles[index].previewUrl);
+        // Remover da ref também
+        previewUrlsRef.current = previewUrlsRef.current.filter(url => url !== newFiles[index].previewUrl);
+      }
+      newFiles.splice(index, 1);
+      // Se não houver mais arquivos, voltar para o estado inicial
+      if (newFiles.length === 0) {
+        setIsPreparing(true);
+      }
+      return newFiles;
+    });
   };
 
   // Função para fazer upload real
@@ -248,8 +277,19 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
             
             <div className="p-4 bg-default-50 rounded-lg space-y-3 max-h-96 overflow-y-auto">
               {files.map((fileObj, index) => (
-                <div key={index} className="flex items-center gap-3 p-2 rounded-lg bg-default-100">
-                  <Icon icon="lucide:image" className="text-3xl text-primary flex-shrink-0" />
+                <div key={index} className="flex items-center gap-3 p-2 rounded-lg bg-default-100 relative">
+                  {/* Thumbnail da imagem */}
+                  <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-default-200 border border-default-300">
+                    {fileObj.previewUrl ? (
+                      <img 
+                        src={fileObj.previewUrl} 
+                        alt={fileObj.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Icon icon="lucide:image" className="text-2xl text-default-400 w-full h-full flex items-center justify-center" />
+                    )}
+                  </div>
                   <div className="text-left flex-1 overflow-hidden">
                     <p className="font-medium truncate text-sm">{fileObj.name}</p>
                     <p className="text-xs text-default-500">
@@ -262,9 +302,22 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
                       </div>
                     )}
                   </div>
-                  {fileObj.status === 'done' && <Icon icon="lucide:check-circle" className="text-2xl text-success flex-shrink-0" />}
-                  {fileObj.status === 'uploading' && <Spinner size="sm" />}
-                  {fileObj.status === 'error' && <Icon icon="lucide:x-circle" className="text-2xl text-danger flex-shrink-0" />}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {fileObj.status === 'done' && <Icon icon="lucide:check-circle" className="text-2xl text-success" />}
+                    {fileObj.status === 'uploading' && <Spinner size="sm" />}
+                    {fileObj.status === 'error' && <Icon icon="lucide:x-circle" className="text-2xl text-danger" />}
+                    {/* Botão X para remover imagem */}
+                    {!uploading && (
+                      <button
+                        onClick={() => handleRemoveFile(index)}
+                        className="p-1 rounded-full hover:bg-danger-100 text-danger-500 hover:text-danger-700 transition-colors"
+                        aria-label="Remover imagem"
+                        type="button"
+                      >
+                        <Icon icon="lucide:x" className="text-xl" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -274,6 +327,13 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
                 <Button
                   variant="light"
                   onPress={() => {
+                    // Limpar todas as URLs de preview
+                    files.forEach(fileObj => {
+                      if (fileObj.previewUrl) {
+                        URL.revokeObjectURL(fileObj.previewUrl);
+                      }
+                    });
+                    previewUrlsRef.current = [];
                     setFiles([]);
                     setIsPreparing(true);
                     setError(null);
