@@ -198,20 +198,30 @@ if [ "$CLIENT_MAX_COUNT" -gt 0 ]; then
         fi
         
         # Remover todas as ocorrências de client_max_body_size
-        if sudo sed -i '/client_max_body_size/d' "$CONFIG_FILE" 2>/dev/null || sed -i '/client_max_body_size/d' "$CONFIG_FILE" 2>/dev/null; then
-            echo -e "${GREEN}✅ Duplicações removidas${NC}"
-        else
-            echo -e "${RED}❌ Não foi possível remover duplicações${NC}"
-            if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
-                sudo cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || true
-            fi
-            exit 1
-        fi
+        # Remover qualquer linha que contenha client_max_body_size (com ou sem espaços no início)
+        sudo sed -i '/client_max_body_size/d' "$CONFIG_FILE" 2>/dev/null || sed -i '/client_max_body_size/d' "$CONFIG_FILE" 2>/dev/null || true
+        echo -e "${GREEN}✅ Duplicações removidas${NC}"
         
-        # Adicionar uma única ocorrência no bloco http
-        if grep -q "^http {" "$CONFIG_FILE"; then
+        # Limpar linhas em branco duplicadas no início do arquivo
+        sudo sed -i '/./,$!d' "$CONFIG_FILE" 2>/dev/null || true
+        
+        # Adicionar uma única ocorrência no bloco server (para arquivos de site)
+        # Ou no bloco http (para nginx.conf principal)
+        if grep -q "^[[:space:]]*server {" "$CONFIG_FILE"; then
+            # Arquivo de configuração de site - adicionar no bloco server
+            if sudo sed -i '/^[[:space:]]*server {/a\    client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null || sed -i '/^[[:space:]]*server {/a\    client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null; then
+                echo -e "${GREEN}✅ client_max_body_size 15M adicionado no bloco server${NC}"
+            else
+                echo -e "${RED}❌ Não foi possível adicionar${NC}"
+                if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
+                    sudo cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || true
+                fi
+                exit 1
+            fi
+        elif grep -q "^http {" "$CONFIG_FILE"; then
+            # Arquivo nginx.conf principal - adicionar no bloco http
             if sudo sed -i '/^http {/a\    client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null || sed -i '/^http {/a\    client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null; then
-                echo -e "${GREEN}✅ client_max_body_size 15M adicionado${NC}"
+                echo -e "${GREEN}✅ client_max_body_size 15M adicionado no bloco http${NC}"
             else
                 echo -e "${RED}❌ Não foi possível adicionar${NC}"
                 if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
@@ -220,7 +230,7 @@ if [ "$CLIENT_MAX_COUNT" -gt 0 ]; then
                 exit 1
             fi
         else
-            # Se não há bloco http, adicionar no início
+            # Se não há bloco server nem http, adicionar no início (caso especial)
             if sudo sed -i '1i client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null || sed -i '1i client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null; then
                 echo -e "${GREEN}✅ client_max_body_size 15M adicionado${NC}"
             else
@@ -276,11 +286,22 @@ else
         BACKUP_FILE=""
     fi
     
-    # Adicionar no bloco http (se existir) ou no início do arquivo
-    if grep -q "^http {" "$CONFIG_FILE"; then
-        # Adicionar após a linha "http {"
+    # Adicionar no bloco server (para arquivos de site) ou http (para nginx.conf) ou no início
+    if grep -q "^[[:space:]]*server {" "$CONFIG_FILE"; then
+        # Arquivo de configuração de site - adicionar no bloco server
+        if sudo sed -i '/^[[:space:]]*server {/a\    client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null || sed -i '/^[[:space:]]*server {/a\    client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null; then
+            echo -e "${GREEN}✅ client_max_body_size 15M adicionado no bloco server${NC}"
+        else
+            echo -e "${RED}❌ Não foi possível adicionar (pode precisar de sudo)${NC}"
+            if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
+                sudo cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || cp "$BACKUP_FILE" "$CONFIG_FILE" 2>/dev/null || true
+            fi
+            exit 1
+        fi
+    elif grep -q "^http {" "$CONFIG_FILE"; then
+        # Arquivo nginx.conf principal - adicionar no bloco http
         if sudo sed -i '/^http {/a\    client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null || sed -i '/^http {/a\    client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null; then
-            echo -e "${GREEN}✅ client_max_body_size 15M adicionado${NC}"
+            echo -e "${GREEN}✅ client_max_body_size 15M adicionado no bloco http${NC}"
         else
             echo -e "${RED}❌ Não foi possível adicionar (pode precisar de sudo)${NC}"
             if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
@@ -289,7 +310,7 @@ else
             exit 1
         fi
     else
-        # Adicionar no início do arquivo
+        # Adicionar no início do arquivo (caso especial)
         if sudo sed -i '1i client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null || sed -i '1i client_max_body_size 15M;' "$CONFIG_FILE" 2>/dev/null; then
             echo -e "${GREEN}✅ client_max_body_size 15M adicionado${NC}"
         else
