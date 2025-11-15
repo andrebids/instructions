@@ -33,11 +33,9 @@ export const useClientManagement = (setFormData) => {
 
   // Seleção de cliente
   const handleClientSelection = (key) => {
-    console.log('Selected key:', key, 'Type:', typeof key);
     if (key) {
       const clientId = typeof key === 'string' ? parseInt(key) : key;
       const client = clients.find(c => c.id === clientId);
-      console.log('Found client:', client);
       if (client) {
         setFormData(prev => ({
           ...prev,

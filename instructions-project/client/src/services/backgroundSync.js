@@ -45,7 +45,7 @@ export function isBackgroundSyncAvailable() {
     const browser = navigator.userAgent.includes('Firefox') ? 'Firefox' : 
                    navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome') ? 'Safari' : 
                    'este navegador';
-    console.info(`ℹ️ [BackgroundSync] Background Sync API nativa não disponível em ${browser}. Usando sincronização automática quando voltar online.`);
+    // Log removido
   }
   
   return available;
@@ -60,9 +60,7 @@ function initializeFallbackSync() {
   
   // Listener para quando volta online - sincronizar projetos pendentes
   const handleOnline = async () => {
-    if (DEBUG) {
-      console.log('🌐 [BackgroundSync] Conexão restaurada - verificando sincronizações pendentes...');
-    }
+    // Log removido
     
     try {
       // Importar dinamicamente para evitar dependência circular
@@ -70,9 +68,7 @@ function initializeFallbackSync() {
       const pendingProjects = await getPendingSyncProjects();
       
       if (pendingProjects.length > 0) {
-        if (DEBUG) {
-          console.log(`🔄 [BackgroundSync] Encontrados ${pendingProjects.length} projeto(s) para sincronizar`);
-        }
+        // Log removido
         
         // Sincronizar cada projeto pendente usando a função syncProject definida abaixo
         // (será resolvida em tempo de execução)
@@ -159,9 +155,7 @@ export async function registerSyncTag(projectId) {
       const syncTag = `sync-project-${projectId}`;
       await registration.sync.register(syncTag);
       
-      if (DEBUG) {
-        console.log(`✅ [BackgroundSync] Sync tag registada para projeto ${projectId}`);
-      }
+      // Log removido
       
       return true;
     } catch (error) {
@@ -183,9 +177,7 @@ export async function registerSyncTag(projectId) {
         pendingSync: true
       });
       
-      if (DEBUG) {
-        console.log(`📝 [BackgroundSync] Projeto ${projectId} marcado para sincronização quando voltar online`);
-      }
+      // Log removido
     }
     
     return true;
@@ -263,7 +255,7 @@ export async function syncProject(projectId) {
       return;
     }
 
-    console.log(`🔄 [BackgroundSync] Syncing project ${projectId}...`);
+    // Log removido
 
     // Prepare data to send
     const updateData = {
@@ -279,7 +271,7 @@ export async function syncProject(projectId) {
 
     // Mark as synced
     await markAsSynced(projectId);
-    console.log(`✅ [BackgroundSync] Project ${projectId} synced successfully`);
+    // Log removido
     
     // Notify service worker about success
     await notifySyncComplete(projectId, true);

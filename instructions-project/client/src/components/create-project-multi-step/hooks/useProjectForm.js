@@ -173,9 +173,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
             total: (zones?.day?.length || 0) + (zones?.night?.length || 0)
           };
         }
-        console.log('💾 [CREATE PROJECT] Criando projeto COM zonas:', JSON.stringify(zonasResumo, null, 2));
-      } else {
-        console.log('💾 [CREATE PROJECT] Criando projeto SEM zonas');
+        // Log removido
       }
       
       logger.api('projects', 'POST', projectData);
@@ -244,23 +242,12 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
   const createTempProject = async () => {
     // Se já existe tempProjectId, não criar novamente
     if (formData.tempProjectId) {
-      console.log('💾 [CREATE TEMP PROJECT] Projeto temporário já existe, usando ID:', formData.tempProjectId);
       return formData.tempProjectId;
     }
 
     try {
       // Indicar início do salvamento
       if (saveStatus) saveStatus.setSaving();
-      
-      console.log('💾 [CREATE TEMP PROJECT] ===== CRIANDO PROJETO TEMPORÁRIO =====');
-      console.log('💾 [CREATE TEMP PROJECT] Dados do formulário:', {
-        name: formData.name,
-        clientName: formData.clientName,
-        projectType: formData.projectType || 'decor',
-        location: formData.location,
-        description: formData.description ? `[${formData.description.length} caracteres]` : '[vazio]',
-        budget: formData.budget,
-      });
       
       const projectData = {
         name: formData.name,
@@ -274,13 +261,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
         endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
       };
       
-      console.log('💾 [CREATE TEMP PROJECT] Enviando dados para API...');
       const newProject = await projectsAPI.create(projectData);
-      
-      console.log('✅ [CREATE TEMP PROJECT] Projeto criado com sucesso!');
-      console.log('✅ [CREATE TEMP PROJECT] ID do projeto:', newProject.id);
-      console.log('✅ [CREATE TEMP PROJECT] Nome:', newProject.name);
-      console.log('✅ [CREATE TEMP PROJECT] Description guardada:', newProject.description ? `[${newProject.description.length} caracteres]` : '[vazio]');
       
       // Guardar ID temporário no formData
       setFormData(prev => ({
@@ -293,7 +274,6 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
       if (saveStatus) saveStatus.setSaved();
       
       logger.lifecycle('useProjectForm', 'Temporary project created', newProject);
-      console.log('✅ [CREATE TEMP PROJECT] ===== PROJETO TEMPORÁRIO CRIADO COM SUCESSO =====');
       return newProject.id;
     } catch (err) {
       console.error('❌ [CREATE TEMP PROJECT] ===== ERRO AO CRIAR PROJETO TEMPORÁRIO =====');

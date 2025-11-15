@@ -25,10 +25,6 @@ export function transformApiProduct(apiProduct) {
         if (apiProduct.specs) {
           // Criar cópia profunda do specs para evitar referências
           var specsCopy = JSON.parse(JSON.stringify(apiProduct.specs));
-          // Debug para produto específico
-          if (apiProduct.id === 'IPL317R' || apiProduct.name === 'IPL317R') {
-            console.log('🔍 [transformApiProduct] IPL317R specs do banco:', JSON.stringify(specsCopy, null, 2));
-          }
           return specsCopy;
         }
         return {};
@@ -48,12 +44,6 @@ export function transformApiProduct(apiProduct) {
     depth: apiProduct.depth || null,
     diameter: apiProduct.diameter || null,
   };
-  
-  // Debug: verificar animationSimulationUrl para IPL337W
-  if (apiProduct.id === 'IPL337W' || apiProduct.name === 'IPL337W') {
-    console.log('🔍 [transformApiProduct] IPL337W - animationSimulationUrl do API:', apiProduct.animationSimulationUrl);
-    console.log('🔍 [transformApiProduct] IPL337W - animationSimulationUrl transformado:', transformed.animationSimulationUrl);
-  }
   
   return transformed;
 }
@@ -179,18 +169,7 @@ export function getProductsByCategory(products, categoryId) {
         matches = hasSummerTag || hasSummerSeason;
       }
       
-      // Debug: log TODOS os produtos avaliados para summer
-      console.log((matches ? '✅' : '❌') + ' [getProductsByCategory] Produto avaliado para SUMMER:', {
-        id: p.id,
-        name: p.name,
-        matches: matches,
-        hasSummerTag: hasSummerTag,
-        hasSummerSeason: hasSummerSeason,
-        hasNonSummerSeason: hasNonSummerSeason,
-        seasonDefined: seasonDefined,
-        season: p.season || '(vazio/null)',
-        tags: Array.isArray(p.tags) ? p.tags.join(', ') : '(nenhuma)'
-      });
+      // Debug removido
     } else {
       // Fallback: verificar se tem a tag correspondente
       if (Array.isArray(p.tags)) {

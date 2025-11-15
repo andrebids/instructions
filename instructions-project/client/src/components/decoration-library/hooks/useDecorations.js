@@ -156,15 +156,16 @@ export const useDecorations = (initialFilters) => {
           });
         }
 
-        console.log('[LIB] results', mapped.length);
+        // Debug removido
         
-        // Debug: verificar produtos Transversal antes do processamento
+        // Verificar produtos Transversal antes do processamento
         var transversalProducts = list.filter(function(p) {
           var mount = p.mount || p.category || p.type || '';
           return String(mount).toLowerCase() === 'transversal';
         });
         if (transversalProducts.length > 0) {
-          console.log('[LIB] 🔍 [DEBUG TRANSVERSAL] Produtos encontrados antes do mapeamento:', transversalProducts.map(function(p) {
+          // Debug removido
+          transversalProducts.map(function(p) {
             return {
               id: p.id,
               name: p.name,
