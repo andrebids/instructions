@@ -3,20 +3,36 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// Generate version based on timestamp and git commit (if available)
+const generateVersion = () => {
+  const timestamp = Date.now();
+  // Try to get git commit hash, fallback to timestamp
+  try {
+    const { execSync } = require('child_process');
+    const gitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
+    return `${timestamp}-${gitHash}`;
+  } catch {
+    return timestamp.toString();
+  }
+};
+
+const APP_VERSION = generateVersion();
+
 export default defineConfig({
   build: {
     sourcemap: false // Desativar source maps para evitar erros em dev
   },
   define: {
     // Suprimir avisos de source maps do React DevTools
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    '__APP_VERSION__': JSON.stringify(APP_VERSION)
   },
   plugins: [
     react(), 
     tailwindcss(),
     VitePWA({
       strategies: 'injectManifest',
-      registerType: 'autoUpdate',
+      registerType: 'prompt', // Changed from 'autoUpdate' to 'prompt' for manual control
       srcDir: 'public',
       filename: 'sw.js',
       includeAssets: ['favicon.ico', 'logo.webp', 'icons/*.png'],
@@ -29,6 +45,7 @@ export default defineConfig({
         display: 'standalone',
         start_url: '/',
         scope: '/',
+        version: APP_VERSION, // Add version to manifest for update detection
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },

@@ -16,6 +16,7 @@ import { SignedIn, SignedOut, SignIn, SignUp } from "@clerk/clerk-react";
 import { MobileBottomNav } from "./components/layout/mobile-bottom-nav";
 import { useResponsiveProfile } from "./hooks/useResponsiveProfile";
 import PWAInstallPrompt from "./components/features/PWAInstallPrompt";
+import UpdateNotification from "./components/features/UpdateNotification";
 
 function AppLayout() {
   const location = useLocation();
@@ -57,6 +58,7 @@ export default function App() {
   return (
     <>
       <PWAInstallPrompt />
+      <UpdateNotification />
       <SignedOut>
         <div className="bg-background text-foreground flex h-screen">
           <main className="flex flex-1 flex-col overflow-hidden">
