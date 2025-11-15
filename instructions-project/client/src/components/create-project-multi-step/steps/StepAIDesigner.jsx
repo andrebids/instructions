@@ -514,7 +514,9 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                           width="100%"
                           onError={(e) => {
                             e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
+                            if (e.target.nextSibling && e.target.nextSibling.style) {
+                              e.target.nextSibling.style.display = 'flex';
+                            }
                           }}
                         />
                         <div className="w-full h-full hidden items-center justify-center bg-default-100">
