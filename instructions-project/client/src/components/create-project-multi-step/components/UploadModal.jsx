@@ -138,7 +138,48 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
       const fileList = files.map(f => f.file);
       const response = await projectsAPI.uploadImages(projectId, fileList);
       
+      // Log informações de debug do servidor (se disponíveis)
+      if (response.debug) {
+        console.log('📁 [UPLOAD DEBUG] Informações do servidor:', response.debug);
+        response.debug.uploadDebug?.forEach((fileDebug, index) => {
+          console.log(`📄 [UPLOAD DEBUG] Arquivo ${index + 1}:`, {
+            filename: fileDebug.filename,
+            originalname: fileDebug.originalname,
+            multerPath: fileDebug.multerPath,
+            multerPathExists: fileDebug.multerPathExists,
+            expectedPath: fileDebug.expectedPath,
+            expectedPathExists: fileDebug.expectedPathExists,
+            size: fileDebug.size,
+            url: fileDebug.url,
+            cwd: fileDebug.cwd
+          });
+          
+          if (!fileDebug.multerPathExists && !fileDebug.expectedPathExists) {
+            console.error('❌ [UPLOAD DEBUG] Arquivo não encontrado após upload!');
+          } else if (fileDebug.multerPathExists && !fileDebug.expectedPathExists) {
+            console.warn('⚠️ [UPLOAD DEBUG] Arquivo salvo em local diferente do esperado');
+          } else {
+            console.log('✅ [UPLOAD DEBUG] Arquivo salvo corretamente');
+          }
+        });
+        console.log('📂 [UPLOAD DEBUG] Diretórios:', {
+          cwd: response.debug.cwd,
+          publicDir: response.debug.publicDir,
+          publicDirExists: response.debug.publicDirExists
+        });
+      }
+      
       if (response.success && response.images) {
+        console.log('✅ [UPLOAD] Upload concluído:', {
+          imagesCount: response.images.length,
+          projectId: response.projectId,
+          images: response.images.map(img => ({
+            id: img.id,
+            name: img.name,
+            url: img.originalUrl || img.dayVersion || img.thumbnail
+          }))
+        });
+        
         // Atualizar progresso para 100%
         setFiles(prev => prev.map(f => ({ ...f, progress: 100, status: 'done' })));
         
@@ -153,7 +194,7 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
         throw new Error(response.error || 'Upload error');
       }
     } catch (err) {
-      console.error('Upload error:', err);
+      console.error('❌ [UPLOAD] Erro no upload:', err);
       setError(err.message || 'Error uploading images');
       setFiles(prev => prev.map(f => ({ ...f, status: 'error' })));
     } finally {
