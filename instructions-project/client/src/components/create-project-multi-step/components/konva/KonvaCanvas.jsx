@@ -8,6 +8,7 @@ import { DecorationItem } from './DecorationItem';
 import { CartoucheText } from './CartoucheText';
 // import { checkSnapToZone } from '../../utils/snapZoneUtils'; // Zonas removidas
 import { getDecorationColor } from '../../utils/decorationUtils';
+import { useResponsiveProfile } from '../../../../hooks/useResponsiveProfile';
 
 /**
  * Componente KonvaCanvas - Canvas principal com layers organizados
@@ -38,6 +39,10 @@ export const KonvaCanvas = ({
   const [dragOver, setDragOver] = useState(false);
   // const [isDrawingZone, setIsDrawingZone] = useState(false); // Zonas removidas
   // const [currentZone, setCurrentZone] = useState(null); // Zonas removidas
+  
+  // Detectar dispositivo touch
+  const { hasTouch } = useResponsiveProfile();
+  const isTouchDevice = hasTouch || (typeof window !== 'undefined' && 'ontouchstart' in window);
   
   // Define tamanho virtual/base da cena (dimensões de referência)
   const sceneWidth = 1200;
@@ -117,6 +122,36 @@ export const KonvaCanvas = ({
     if (target === stage) {
       console.log('❌ Desselecionado');
       setSelectedId(null);
+    }
+  };
+
+  // Handler melhorado para touch no Stage
+  const handleTouchStart = (e) => {
+    const target = e.target;
+    const stage = e.target.getStage();
+    
+    // Se clicou no stage vazio, prevenir scroll e desselecionar
+    if (target === stage && isTouchDevice) {
+      // Prevenir scroll apenas quando toca no stage vazio
+      if (e.evt && e.evt.preventDefault) {
+        e.evt.preventDefault();
+      }
+      checkDeselect(e);
+    }
+    // Se clicou numa decoração, deixar o evento propagar para o DecorationItem
+  };
+
+  const handleTouchEnd = (e) => {
+    const target = e.target;
+    const stage = e.target.getStage();
+    
+    // Desselecionar apenas se clicar no stage vazio
+    if (target === stage) {
+      // Prevenir comportamentos padrão apenas no stage vazio
+      if (isTouchDevice && e.evt && e.evt.preventDefault) {
+        e.evt.preventDefault();
+      }
+      checkDeselect(e);
     }
   };
 
@@ -230,26 +265,9 @@ export const KonvaCanvas = ({
         scaleX={stageSize.scale}
         scaleY={stageSize.scale}
         onMouseDown={checkDeselect}
-        // onMouseMove e onMouseUp removidos (zonas removidas)
-        onTouchStart={(e) => {
-          // Não fazer nada aqui - deixar o evento propagar para o KonvaImage
-          // O checkDeselect será chamado apenas se clicar no stage vazio
-          const target = e.target;
-          const stage = e.target.getStage();
-          // Se clicou no stage vazio, desselecionar
-          if (target === stage) {
-            checkDeselect(e);
-          }
-          // Se clicou numa decoração, deixar o evento propagar para o onTouchStart do KonvaImage
-        }}
-        onTouchEnd={(e) => {
-          // Similar ao onTouchStart - apenas desselecionar se clicar no stage vazio
-          const target = e.target;
-          const stage = e.target.getStage();
-          if (target === stage) {
-            checkDeselect(e);
-          }
-        }}
+        // Handlers melhorados para touch
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         clipX={0}
         clipY={0}
         clipWidth={stageSize.width}
@@ -291,6 +309,7 @@ export const KonvaCanvas = ({
               isSelected={decoration.id === selectedId}
               snapZones={[]} // Zonas removidas
               isDayMode={isDayMode}
+              isTouchDevice={isTouchDevice}
               onSelect={() => {
                 console.log('✅ Decoração selecionada:', decoration.id);
                 setSelectedId(decoration.id);
