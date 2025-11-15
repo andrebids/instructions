@@ -17,27 +17,27 @@ if (!PUBLISHABLE_KEY) {
   throw new Error('Missing Clerk Publishable Key')
 }
 
-// Registar service worker com auto-update
+// Register service worker with prompt mode (no auto-update)
 if ('serviceWorker' in navigator) {
   registerSW({
-    immediate: true,
+    immediate: false, // Don't update immediately - wait for user confirmation
     onOfflineReady() {
       console.log('✅ [Main] App ready to work offline');
     },
     onNeedRefresh() {
-      // Com autoUpdate, o reload acontece automaticamente
-      console.log('🔄 [Main] New content available, reloading...');
+      // Update notification will be shown by UpdateNotification component
+      console.log('🔄 [Main] New content available - notification will be shown');
     },
     onRegistered(registration) {
       console.log('✅ [Main] Service Worker registered');
       
-      // Verificar Background Sync (a função já faz o log apropriado se necessário)
+      // Check Background Sync availability
       isBackgroundSyncAvailable();
       
-      // Configurar listener para notificações push quando SW estiver pronto
+      // Setup push notification click listener when SW is ready
       setupNotificationClickListener()
       
-      // Listener para mensagens do service worker (Background Sync)
+      // Listener for messages from service worker (Background Sync and Updates)
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener('message', async (event) => {
           if (event.data && event.data.type === 'SYNC_PROJECT') {
@@ -46,7 +46,7 @@ if ('serviceWorker' in navigator) {
               const { syncProject } = await import('./services/backgroundSync.js');
               await syncProject(projectId);
             } catch (error) {
-              console.error(`❌ [Main] Erro ao sincronizar projeto ${projectId}:`, error);
+              console.error(`❌ [Main] Error syncing project ${projectId}:`, error);
             }
           }
         });

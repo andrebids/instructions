@@ -9,7 +9,8 @@ import { NetworkFirst, CacheFirst } from 'workbox-strategies';
 // Service Worker installation
 self.addEventListener('install', (event) => {
   console.log('📦 [SW] Installing service worker...');
-  self.skipWaiting();
+  // Don't skip waiting automatically - wait for user confirmation
+  // self.skipWaiting(); // Removed for manual update control
 });
 
 // Service Worker activation
@@ -17,7 +18,9 @@ self.addEventListener('activate', (event) => {
   console.log('✅ [SW] Service Worker activating...');
   cleanupOutdatedCaches();
   event.waitUntil(
-    self.clients.claim().then(() => {
+    self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+      // Only claim clients after user confirms update
+      // clientsClaim() will be called after user clicks "Update Now"
       console.log('✅ [SW] Service Worker ready');
     })
   );
@@ -26,8 +29,8 @@ self.addEventListener('activate', (event) => {
 // Precaching assets - manifest is injected by VitePWA during build
 precacheAndRoute(self.__WB_MANIFEST || []);
 
-// Auto-update behavior: claim clients immediately and skip waiting
-clientsClaim();
+// Don't claim clients immediately - wait for user confirmation
+// clientsClaim(); // Removed for manual update control
 
 // API cache with NetworkFirst strategy
 registerRoute(
@@ -163,8 +166,41 @@ async function syncProjectData(projectId) {
 
 // Message listener from the page
 self.addEventListener('message', (event) => {
+  // Handle update confirmation from client
   if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
+    console.log('🔄 [SW] User confirmed update, activating new service worker...');
+    self.skipWaiting().then(() => {
+      // After skipping waiting, claim all clients
+      return clientsClaim();
+    }).then(() => {
+      // Notify all clients that update is complete
+      return self.clients.matchAll({ includeUncontrolled: true });
+    }).then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'UPDATE_ACTIVATED'
+        });
+      });
+    });
+  }
+  
+  // Handle update check request
+  if (event.data && event.data.type === 'CHECK_UPDATE') {
+    // Check if there's a waiting service worker
+    self.registration.update().then(() => {
+      return self.registration.getUpdate();
+    }).then(() => {
+      // Notify client if update is available
+      return self.clients.matchAll({ includeUncontrolled: true });
+    }).then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'UPDATE_AVAILABLE'
+        });
+      });
+    }).catch(error => {
+      console.error('❌ [SW] Error checking for updates:', error);
+    });
   }
   
   // Handle sync completion notification
@@ -185,5 +221,17 @@ self.addEventListener('message', (event) => {
       console.error(`❌ [SW] Error notifying clients about completion:`, error);
     });
   }
+});
+
+// Listen for service worker updates
+self.addEventListener('updatefound', () => {
+  console.log('🔄 [SW] New service worker found, notifying clients...');
+  self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'UPDATE_AVAILABLE'
+      });
+    });
+  });
 });
 
