@@ -18,6 +18,7 @@ export default function Projects() {
   const [budgetInput, setBudgetInput] = React.useState(0);
 
   const statusColorMap = {
+    draft: "default",
     created: "default",
     in_progress: "primary",
     finished: "success",
@@ -28,6 +29,7 @@ export default function Projects() {
     ordered: "primary",
   };
   const statusLabelMap = {
+    draft: "Draft",
     created: "Created",
     in_progress: "In Progress",
     finished: "Finished",
@@ -53,7 +55,7 @@ export default function Projects() {
           const piecesCount = (cart.items || []).reduce((sum, it) => sum + (Number(it.qty) || 0), 0);
           const percent = budgetValue > 0 ? Math.min(100, Math.round((total / budgetValue) * 100)) : 0;
           const barColor = overBudget ? "danger" : (percent >= 85 ? "warning" : "success");
-          const status = projectStatusById?.[proj.id] || "created";
+          const status = projectStatusById?.[proj.id] || "draft";
           return (
             <div key={proj.id} onClick={() => setOpenProject(proj)} className="cursor-pointer">
               <Card className="bg-content1 border border-divider">

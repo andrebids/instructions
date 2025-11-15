@@ -74,7 +74,7 @@ export function ShopProvider({ children }) {
     const persisted = loadPersistedState();
     if (persisted?.projectStatusById) return persisted.projectStatusById;
     const map = {};
-    (mockProjects || []).forEach((p) => { map[p.id] = p.status || "created"; });
+    (mockProjects || []).forEach((p) => { map[p.id] = p.status || "draft"; });
     return map;
   });
   const [projectBudgetById, setProjectBudgetById] = React.useState(() => {

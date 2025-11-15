@@ -6,6 +6,7 @@ import { useShop } from "../../context/ShopContext";
 export default function ProjectOrderModal({ isOpen, onOpenChange, project, items = [], total = 0, onAddPiece }) {
   const { updateProjectItemQty, removeProjectItem, products, getAvailableStock, projectStatusById, setProjectStatus, projectBudgetById, setProjectBudget } = useShop();
   const statusColorMap = {
+    draft: "default",
     created: "default",
     in_progress: "primary",
     finished: "success",
@@ -16,6 +17,7 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
     ordered: "primary",
   };
   const statusLabelMap = {
+    draft: "Draft",
     created: "Created",
     in_progress: "In Progress",
     finished: "Finished",
@@ -56,8 +58,8 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
                 {project ? (
                   <Dropdown>
                     <DropdownTrigger>
-                      <Chip as="button" size="sm" color={statusColorMap[projectStatusById?.[project.id] || 'created']} variant="flat">
-                        {statusLabelMap[projectStatusById?.[project.id] || 'created']}
+                      <Chip as="button" size="sm" color={statusColorMap[projectStatusById?.[project.id] || 'draft']} variant="flat">
+                        {statusLabelMap[projectStatusById?.[project.id] || 'draft']}
                       </Chip>
                     </DropdownTrigger>
                     <DropdownMenu aria-label="Change project status" onAction={(key)=> setProjectStatus(project.id, String(key))}>
