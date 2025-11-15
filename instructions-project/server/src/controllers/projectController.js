@@ -592,20 +592,44 @@ export async function uploadImages(req, res) {
 
     console.log('✅ [PROJECT UPLOAD] Imagens uploadadas:', uploadedImages.length, 'para projeto:', projectId);
 
+    // Coletar informações de debug de cada arquivo
+    const uploadDebugInfo = req.files.map((f, index) => {
+      const fileDebug = f._uploadDebug || {
+        filename: f.filename,
+        originalname: f.originalname,
+        multerPath: f.path,
+        multerPathExists: f.path ? fs.existsSync(f.path) : false,
+        expectedPath: path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day/${f.filename}`),
+        expectedPathExists: fs.existsSync(path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day/${f.filename}`)),
+        size: f.size,
+        url: `/uploads/projects/${projectId}/day/${f.filename}`,
+        cwd: process.cwd()
+      };
+      return fileDebug;
+    });
+
     // Incluir informações de debug na resposta (sempre incluir para diagnóstico)
+    const projectDayDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`);
     const debugInfo = {
-      uploadDebug: req.files.map(f => f._uploadDebug).filter(Boolean),
+      uploadDebug: uploadDebugInfo,
       cwd: process.cwd(),
       publicDir: path.resolve(process.cwd(), 'public'),
       publicDirExists: fs.existsSync(path.resolve(process.cwd(), 'public')),
       uploadsDir: path.resolve(process.cwd(), 'public/uploads'),
       uploadsDirExists: fs.existsSync(path.resolve(process.cwd(), 'public/uploads')),
-      projectDayDir: path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`),
-      projectDayDirExists: fs.existsSync(path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`)),
-      filesInDayDir: fs.existsSync(path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`)) 
-        ? fs.readdirSync(path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`))
-        : []
+      projectDayDir: projectDayDir,
+      projectDayDirExists: fs.existsSync(projectDayDir),
+      filesInDayDir: fs.existsSync(projectDayDir) 
+        ? fs.readdirSync(projectDayDir)
+        : [],
+      filesCount: req.files ? req.files.length : 0
     };
+
+    console.log('🔍 [PROJECT UPLOAD] Debug info preparado:', {
+      uploadDebugCount: debugInfo.uploadDebug.length,
+      filesInDayDir: debugInfo.filesInDayDir.length,
+      projectDayDirExists: debugInfo.projectDayDirExists
+    });
 
     res.json({
       success: true,
