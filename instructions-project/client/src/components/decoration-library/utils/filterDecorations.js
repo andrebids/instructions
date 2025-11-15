@@ -16,9 +16,6 @@ export function filterDecorations(items, filters, categoryId, searchTerm) {
   if (!Array.isArray(items)) return [];
   var list = [];
   var q = String(searchTerm || '').toLowerCase();
-  if (filters && Array.isArray(filters.color)) {
-    try { console.log('[FILTER] Incoming filters', { colors: filters.color, heightMin: filters.heightMin, heightMax: filters.heightMax }); } catch(_) {}
-  }
 
   // Normalização de chaves de cor (sinónimos vindos do backend)
   var normalizeColorKey = function(key) {
@@ -111,7 +108,6 @@ export function filterDecorations(items, filters, categoryId, searchTerm) {
         if (colorSet[norm]) { matched = true; break; }
       }
       if (debugLogged < 5) {
-        try { console.log('[FILTER] Color check for item', (items && items[0] && items[0].id) ? d.id : '(id?)', { colorSet: colorSet, filters: filters.color }); } catch(_) {}
         debugLogged++;
       }
       if (!matched) include = false;

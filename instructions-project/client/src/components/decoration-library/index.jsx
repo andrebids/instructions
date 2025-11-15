@@ -36,20 +36,15 @@ export const DecorationLibrary = ({
   
   // Filtragem client-side igual ao /shop/trending
   const finalDecorations = useMemo(() => {
-    console.log('[LIB] Aplicando filtros', { filters, activeCategory, searchTerm, totalDecorations: decorations.length });
-    var result = filterDecorations(decorations, filters, activeCategory, searchTerm);
-    console.log('[LIB] Resultado filtrado', { count: result.length, colors: filters && filters.color });
-    return result;
+    return filterDecorations(decorations, filters, activeCategory, searchTerm);
   }, [decorations, filters, activeCategory, searchTerm]);
   
   const handleCategorySelect = (categoryId) => {
-    console.log('📂 [DecorationLibrary] Selecting category:', categoryId);
     setActiveCategory(categoryId);
     setViewMode('decorations');
   };
 
   const handleBackToCategories = () => {
-    console.log('🔙 [DecorationLibrary] Going back to categories');
     setViewMode('categories');
     setActiveCategory(null);
     setSearchTerm(''); // Clear search when going back
@@ -112,7 +107,6 @@ export const DecorationLibrary = ({
             value={filters}
             decorations={decorations}
             onChange={function(f){
-              console.log('[LIB] onChange filters from UI', f);
               setFilters(f);
             }}
             disabled={disabled}

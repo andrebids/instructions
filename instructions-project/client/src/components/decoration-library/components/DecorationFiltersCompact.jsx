@@ -91,7 +91,6 @@ export const DecorationFiltersCompact = ({
       max = min + 0.1;
     }
     
-    console.log('[FILTER] Height limits calculados:', { min: min, max: max, totalHeights: heights.length, heights: heights });
     
     return { min: min, max: max };
   }, [decorations]);

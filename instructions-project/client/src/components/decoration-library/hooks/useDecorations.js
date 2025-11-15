@@ -12,7 +12,6 @@ export const useDecorations = (initialFilters) => {
   useEffect(() => {
     async function loadInitial() {
       try {
-        console.log('[LIB] fetch categories from shop');
         var serverCategories = [];
         // Mapa de exibição EN para mounts conhecidos
         var mountNameMap = { 'Poste': 'Pole', 'Chão': 'Floor', 'Transversal': 'Transversal' };
@@ -20,7 +19,6 @@ export const useDecorations = (initialFilters) => {
         // Buscar categorias diretamente da loja (produtos)
         try {
           serverCategories = await productsAPI.getCategories();
-          console.log('[LIB] categories from shop:', serverCategories);
         } catch (eCat) {
           console.warn('[LIB] categories via products failed, trying decorations API as fallback');
           try {
@@ -69,13 +67,11 @@ export const useDecorations = (initialFilters) => {
     async function loadDecorations() {
       try {
         setIsLoading(true);
-        console.log('[LIB] fetch products from shop', { page });
         var list = [];
         
         // Buscar produtos diretamente da loja
         try {
           var products = await productsAPI.getAll({ isActive: true });
-          console.log('[LIB] products from shop:', products.length);
           list = Array.isArray(products) ? products : [];
         } catch (e1) {
           console.warn('[LIB] productsAPI.getAll failed, trying decorationsAPI as fallback');
@@ -83,7 +79,6 @@ export const useDecorations = (initialFilters) => {
             // Fallback: tentar decorations API
             var data = await decorationsAPI.getAll({ page: page, limit: 24 });
             list = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-            console.log('[LIB] decorations from API:', list.length);
           } catch (e2) {
             console.error('[LIB] decorationsAPI.getAll also failed:', e2 && e2.message);
             list = [];
@@ -107,7 +102,6 @@ export const useDecorations = (initialFilters) => {
             if (catMap.hasOwnProperty(key)) derived.push(catMap[key]);
           }
           if (derived.length > 0) {
-            console.log('[LIB] derived categories from products:', derived.length);
             setCategories(derived);
           }
         }
@@ -205,33 +199,12 @@ export const useDecorations = (initialFilters) => {
             // Se ainda não temos thumbnail day e este item tem uma, usar
             if (!catStats[catId].thumbDay && itemThumbDay) {
               catStats[catId].thumbDay = itemThumbDay;
-              console.log('[LIB] Thumbnail day encontrada para categoria', catId, ':', itemThumbDay);
             }
             
             // Se ainda não temos thumbnail night e este item tem uma, usar (preferir night, exceto para summer)
             // Para summer, sempre usar day, então não precisamos da night
             if (!catStats[catId].hasSummerProducts && !catStats[catId].thumbNight && itemThumbNight) {
               catStats[catId].thumbNight = itemThumbNight;
-              console.log('[LIB] Thumbnail night encontrada para categoria', catId, ':', itemThumbNight);
-            }
-            
-            // Log de debug detalhado para categoria Transversal
-            if (catId === 'Transversal') {
-              console.log('[LIB] 🔍 [DEBUG TRANSVERSAL] Item processado:', {
-                id: item.id,
-                name: item.name,
-                mount: item.category,
-                imageUrlDay: item.imageUrlDay,
-                imageUrlNight: item.imageUrlNight,
-                thumbnailUrl: item.thumbnailUrl,
-                hasThumbDay: !!itemThumbDay,
-                hasThumbNight: !!itemThumbNight,
-                itemThumbDay: itemThumbDay,
-                itemThumbNight: itemThumbNight,
-                catStatsThumbDay: catStats[catId].thumbDay,
-                catStatsThumbNight: catStats[catId].thumbNight,
-                count: catStats[catId].count
-              });
             }
           }
 
@@ -274,19 +247,6 @@ export const useDecorations = (initialFilters) => {
                 chosenThumbnail = catStat.thumbDay || null; // Versão dia (fallback)
               }
               
-              // Log de debug para Transversal
-              if (catKey === 'Transversal') {
-                console.log('[LIB] 🔍 [DEBUG TRANSVERSAL] Thumbnails escolhidas:', {
-                  catKey: catKey,
-                  isSummer: isSummerCategory,
-                  thumbDay: catStat.thumbDay,
-                  thumbNight: catStat.thumbNight,
-                  chosenThumbnail: chosenThumbnail,
-                  chosenThumbnailNight: chosenThumbnailNight,
-                  count: catStat.count
-                });
-              }
-              
               // Se categoria já existe, atualizar com thumbnails e count
               if (categoriesMap[catKey]) {
                 categoriesMap[catKey].count = catStat.count;
@@ -322,13 +282,10 @@ export const useDecorations = (initialFilters) => {
             }
             
             // Ordenar por nome para consistência
+            var finalCategories = Object.values(categoriesMap);
             finalCategories.sort(function(a, b) {
               return a.name.localeCompare(b.name);
             });
-            
-            console.log('[LIB] Final categories with thumbnails:', finalCategories.map(function(c) { 
-              return { id: c.id, name: c.name, hasThumbnail: !!(c.thumbnail || c.thumbnailNight), count: c.count }; 
-            }));
             
             return finalCategories;
           });
