@@ -24,8 +24,8 @@ const Project = sequelize.define('Project', {
     defaultValue: 'decor',
   },
   status: {
-    type: DataTypes.ENUM('created', 'in_progress', 'finished', 'approved', 'cancelled', 'in_queue'),
-    defaultValue: 'created',
+    type: DataTypes.ENUM('draft', 'created', 'in_progress', 'finished', 'approved', 'cancelled', 'in_queue'),
+    defaultValue: 'draft',
   },
   baseImageUrl: {
     type: DataTypes.STRING,

@@ -108,11 +108,33 @@ async function setup() {
     }
     console.log('');
     
-    // Migration 7: Campos de estado das simulações
+    // Migration 7: Campos de cartouche por imagem
+    console.log('   📋 Migration: Campos de cartouche por imagem...');
+    try {
+      await execAsync('npm run migrate:cartouche');
+      console.log('   ✅ Campos de cartouche verificados');
+    } catch (error) {
+      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+      console.log('   💡 Continuando...');
+    }
+    console.log('');
+    
+    // Migration 8: Campos de estado das simulações
     console.log('   📋 Migration: Campos de estado das simulações (uploadedImages, simulationState)...');
     try {
       await execAsync('npm run migrate:simulationState');
       console.log('   ✅ Campos de estado das simulações verificados');
+    } catch (error) {
+      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+      console.log('   💡 Continuando...');
+    }
+    console.log('');
+    
+    // Migration 9: Status draft para projetos
+    console.log('   📋 Migration: Adicionar status "draft" aos projetos...');
+    try {
+      await execAsync('npm run migrate:draft');
+      console.log('   ✅ Status "draft" verificado');
     } catch (error) {
       console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
       console.log('   💡 Continuando...');
