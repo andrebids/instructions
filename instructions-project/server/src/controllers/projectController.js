@@ -502,17 +502,41 @@ export async function uploadImages(req, res) {
       const filePath = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day/${file.filename}`);
       const fileExists = fs.existsSync(filePath);
       
+      // Verificar também o caminho completo do multer (file.path)
+      const multerPath = file.path;
+      const multerPathExists = multerPath ? fs.existsSync(multerPath) : false;
+      
       console.log('📁 [PROJECT UPLOAD] Arquivo:', {
         filename: file.filename,
         originalname: file.originalname,
-        path: filePath,
-        exists: fileExists,
+        multerPath: multerPath,
+        multerPathExists: multerPathExists,
+        expectedPath: filePath,
+        expectedPathExists: fileExists,
         size: file.size,
-        url: imageUrl
+        url: imageUrl,
+        cwd: process.cwd()
       });
       
-      if (!fileExists) {
-        console.error('❌ [PROJECT UPLOAD] Arquivo não encontrado após upload:', filePath);
+      if (!fileExists && !multerPathExists) {
+        console.error('❌ [PROJECT UPLOAD] Arquivo não encontrado após upload!');
+        console.error('   Multer path:', multerPath);
+        console.error('   Expected path:', filePath);
+        
+        // Tentar listar o diretório para debug
+        const dirPath = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`);
+        if (fs.existsSync(dirPath)) {
+          const files = fs.readdirSync(dirPath);
+          console.log('   Arquivos no diretório:', files);
+        } else {
+          console.error('   Diretório não existe:', dirPath);
+        }
+      } else if (multerPathExists && !fileExists) {
+        // Arquivo está em local diferente do esperado
+        console.warn('⚠️ [PROJECT UPLOAD] Arquivo salvo em local diferente:', {
+          multerPath: multerPath,
+          expectedPath: filePath
+        });
       }
       
       return {
@@ -672,6 +696,33 @@ export async function markConversionFailed(req, res) {
       success: false,
       error: error.message || 'Erro ao marcar conversão como falhada' 
     });
+  }
+}
+
+// GET /api/projects/:id/images/debug - Debug: verificar arquivos de imagens (apenas dev)
+export async function debugProjectImages(req, res) {
+  try {
+    const projectId = req.params.id;
+    const dayDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`);
+    const nightDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/night`);
+    
+    const dayFiles = fs.existsSync(dayDir) ? fs.readdirSync(dayDir) : [];
+    const nightFiles = fs.existsSync(nightDir) ? fs.readdirSync(nightDir) : [];
+    
+    res.json({
+      projectId,
+      cwd: process.cwd(),
+      dayDir,
+      dayDirExists: fs.existsSync(dayDir),
+      dayFiles,
+      nightDir,
+      nightDirExists: fs.existsSync(nightDir),
+      nightFiles,
+      staticPublic: path.resolve(process.cwd(), 'public'),
+      staticPublicExists: fs.existsSync(path.resolve(process.cwd(), 'public'))
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 }
 
