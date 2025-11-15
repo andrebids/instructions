@@ -506,7 +506,7 @@ export async function uploadImages(req, res) {
       const multerPath = file.path;
       const multerPathExists = multerPath ? fs.existsSync(multerPath) : false;
       
-      console.log('📁 [PROJECT UPLOAD] Arquivo:', {
+      const fileInfo = {
         filename: file.filename,
         originalname: file.originalname,
         multerPath: multerPath,
@@ -516,7 +516,12 @@ export async function uploadImages(req, res) {
         size: file.size,
         url: imageUrl,
         cwd: process.cwd()
-      });
+      };
+      
+      console.log('📁 [PROJECT UPLOAD] Arquivo:', fileInfo);
+      
+      // Armazenar informações para retornar na resposta (para debug no cliente)
+      file._uploadDebug = fileInfo;
       
       if (!fileExists && !multerPathExists) {
         console.error('❌ [PROJECT UPLOAD] Arquivo não encontrado após upload!');
@@ -587,11 +592,21 @@ export async function uploadImages(req, res) {
 
     console.log('✅ [PROJECT UPLOAD] Imagens uploadadas:', uploadedImages.length, 'para projeto:', projectId);
 
+    // Incluir informações de debug na resposta (apenas em desenvolvimento ou se solicitado)
+    const includeDebug = process.env.NODE_ENV !== 'production' || req.query.debug === 'true';
+    const debugInfo = includeDebug ? {
+      uploadDebug: req.files.map(f => f._uploadDebug).filter(Boolean),
+      cwd: process.cwd(),
+      publicDir: path.resolve(process.cwd(), 'public'),
+      publicDirExists: fs.existsSync(path.resolve(process.cwd(), 'public'))
+    } : undefined;
+
     res.json({
       success: true,
       images: uploadedImages,
       projectId: projectId,
-      message: `${uploadedImages.length} imagem(ns) enviada(s) com sucesso`
+      message: `${uploadedImages.length} imagem(ns) enviada(s) com sucesso`,
+      ...(debugInfo && { debug: debugInfo })
     });
   } catch (error) {
     console.error('❌ [PROJECT UPLOAD] Erro ao fazer upload:', error);
