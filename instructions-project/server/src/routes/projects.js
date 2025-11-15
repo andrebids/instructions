@@ -33,7 +33,9 @@ const notesUpdateRateLimiter = (req, res, next) => {
 };
 
 // Rotas de projetos
+// IMPORTANTE: Rotas específicas devem vir ANTES das rotas genéricas com parâmetros
 router.get('/stats', projectController.getStats); // Deve vir antes de /:id
+router.post('/:id/images/upload', projectImageUploadMiddleware, projectController.uploadImages); // Upload de imagens - DEVE VIR ANTES de /:id
 router.get('/', projectController.getAll);
 router.get('/:id', projectController.getById);
 router.post('/', projectController.create);
@@ -43,7 +45,6 @@ router.delete('/:id', projectController.deleteProject);
 router.patch('/:id/status', projectController.updateStatus);
 router.patch('/:id/favorite', projectController.toggleFavorite);
 router.patch('/:id/canvas', projectController.updateCanvas); // Nova rota para atualizar canvas
-router.post('/:id/images/upload', projectImageUploadMiddleware, projectController.uploadImages); // Upload de imagens para projeto
 
 export default router;
 
