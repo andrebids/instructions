@@ -14,7 +14,15 @@ import useImage from 'use-image';
  * @param {number} props.y - Posição Y
  */
 export const URLImage = ({ src, width, height, x, y }) => {
-  const [image] = useImage(src, 'anonymous');
+  // useImage retorna [image, status] onde status pode ter propriedades loading/error
+  const [image, status] = useImage(src, 'anonymous');
+
+  // Não renderizar se não houver imagem válida ou se houver erro
+  // Verificar se status existe e tem propriedade error, ou se image é null/undefined
+  if (!image || (status && status.error)) {
+    return null;
+  }
+
   return (
     <KonvaImage
       image={image}
