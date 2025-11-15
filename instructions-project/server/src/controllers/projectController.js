@@ -522,6 +522,15 @@ export async function uploadImages(req, res) {
         console.error('❌ [PROJECT UPLOAD] Arquivo não encontrado após upload!');
         console.error('   Multer path:', multerPath);
         console.error('   Expected path:', filePath);
+        console.error('   CWD:', process.cwd());
+        console.error('   File object:', JSON.stringify({
+          filename: file.filename,
+          originalname: file.originalname,
+          size: file.size,
+          mimetype: file.mimetype,
+          path: file.path,
+          destination: file.destination
+        }, null, 2));
         
         // Tentar listar o diretório para debug
         const dirPath = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`);
@@ -530,13 +539,36 @@ export async function uploadImages(req, res) {
           console.log('   Arquivos no diretório:', files);
         } else {
           console.error('   Diretório não existe:', dirPath);
+          // Tentar criar o diretório
+          try {
+            fs.mkdirSync(dirPath, { recursive: true });
+            console.log('   ✅ Diretório criado:', dirPath);
+          } catch (e) {
+            console.error('   ❌ Erro ao criar diretório:', e.message);
+          }
         }
       } else if (multerPathExists && !fileExists) {
-        // Arquivo está em local diferente do esperado
-        console.warn('⚠️ [PROJECT UPLOAD] Arquivo salvo em local diferente:', {
-          multerPath: multerPath,
-          expectedPath: filePath
-        });
+        // Arquivo está em local diferente do esperado - usar o caminho do multer
+        console.warn('⚠️ [PROJECT UPLOAD] Arquivo salvo em local diferente do esperado');
+        console.warn('   Multer path (existe):', multerPath);
+        console.warn('   Expected path (não existe):', filePath);
+        console.warn('   Usando caminho do multer para URL');
+        
+        // Ajustar URL para usar o caminho relativo do multer
+        const relativePath = multerPath.replace(path.resolve(process.cwd(), 'public'), '');
+        const adjustedUrl = relativePath.replace(/\\/g, '/'); // Normalizar separadores
+        return {
+          id: imageId,
+          name: file.originalname,
+          originalUrl: adjustedUrl,
+          thumbnail: adjustedUrl,
+          dayVersion: adjustedUrl,
+          nightVersion: null,
+          conversionStatus: 'pending',
+          uploadedAt: new Date().toISOString(),
+          cartouche: req.body.cartouche ? JSON.parse(req.body.cartouche) : null,
+          _debug: { multerPath, expectedPath: filePath }
+        };
       }
       
       return {
@@ -699,14 +731,26 @@ export async function markConversionFailed(req, res) {
   }
 }
 
-// GET /api/projects/:id/images/debug - Debug: verificar arquivos de imagens (apenas dev)
+// GET /api/projects/:id/images/debug - Debug: verificar arquivos de imagens
 export async function debugProjectImages(req, res) {
   try {
     const projectId = req.params.id;
     const dayDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`);
     const nightDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/night`);
+    const publicDir = path.resolve(process.cwd(), 'public');
+    const uploadsDir = path.resolve(process.cwd(), 'public/uploads');
     
-    const dayFiles = fs.existsSync(dayDir) ? fs.readdirSync(dayDir) : [];
+    const dayFiles = fs.existsSync(dayDir) ? fs.readdirSync(dayDir).map(f => {
+      const filePath = path.join(dayDir, f);
+      const stats = fs.statSync(filePath);
+      return {
+        name: f,
+        size: stats.size,
+        modified: stats.mtime,
+        url: `/uploads/projects/${projectId}/day/${f}`,
+        apiUrl: `/api/uploads/projects/${projectId}/day/${f}`
+      };
+    }) : [];
     const nightFiles = fs.existsSync(nightDir) ? fs.readdirSync(nightDir) : [];
     
     res.json({
@@ -718,11 +762,14 @@ export async function debugProjectImages(req, res) {
       nightDir,
       nightDirExists: fs.existsSync(nightDir),
       nightFiles,
-      staticPublic: path.resolve(process.cwd(), 'public'),
-      staticPublicExists: fs.existsSync(path.resolve(process.cwd(), 'public'))
+      staticPublic: publicDir,
+      staticPublicExists: fs.existsSync(publicDir),
+      uploadsDir,
+      uploadsDirExists: fs.existsSync(uploadsDir),
+      env: process.env.NODE_ENV || 'development'
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 }
 

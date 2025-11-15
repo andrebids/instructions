@@ -39,10 +39,8 @@ router.post('/:id/images/upload', projectImageUploadMiddleware, projectControlle
 router.post('/:id/images/:imageId/night', projectNightImageUploadMiddleware, projectController.receiveNightImage); // Receber imagem de noite convertida
 router.post('/:id/images/:imageId/night/failed', projectController.markConversionFailed); // Marcar conversão como falhada
 
-// Rota de debug para verificar arquivos (apenas em desenvolvimento)
-if (process.env.NODE_ENV !== 'production') {
-  router.get('/:id/images/debug', projectController.debugProjectImages);
-}
+// Rota de debug para verificar arquivos (sempre disponível para diagnóstico)
+router.get('/:id/images/debug', projectController.debugProjectImages);
 router.get('/', projectController.getAll);
 router.get('/:id', projectController.getById);
 router.post('/', projectController.create);

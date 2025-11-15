@@ -116,83 +116,84 @@ export const KonvaCanvas = ({
   useEffect(() => {
     // Aguardar que CSS esteja carregado antes de medir dimensões
     // Isso evita o erro "Layout was forced before the page was fully loaded"
-    const initStage = () => {
-      // Função para verificar se CSS está carregado
-      const isCSSLoaded = () => {
-        // Verificar se há stylesheets carregando
-        const stylesheets = Array.from(document.styleSheets);
-        const loadingStylesheets = stylesheets.filter(sheet => {
-          try {
-            return sheet.href && !sheet.cssRules;
-          } catch (e) {
-            return false;
-          }
-        });
-        return loadingStylesheets.length === 0;
-      };
+    let resizeObserver = null;
+    let initTimeout = null;
+    let resizeTimeout = null;
 
-      const tryInit = () => {
-        // Verificar se documento está pronto E CSS está carregado
-        if (document.readyState === 'complete' && isCSSLoaded()) {
+    const safeMeasure = () => {
+      // Usar try-catch para evitar erros de layout
+      try {
+        if (containerRef.current) {
+          fitStageIntoParentContainer();
+        }
+      } catch (e) {
+        // Ignorar erros de layout - tentar novamente depois
+        console.warn('[KonvaCanvas] Erro ao medir dimensões, tentando novamente...', e.message);
+        setTimeout(safeMeasure, 100);
+      }
+    };
+
+    const initStage = () => {
+      // Aguardar que tudo esteja pronto antes de medir
+      const waitForReady = () => {
+        if (document.readyState === 'complete' && containerRef.current) {
           // Aguardar múltiplos frames para garantir que layout está estável
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              fitStageIntoParentContainer();
+              safeMeasure();
             });
           });
         } else {
-          // Aguardar um pouco mais e tentar novamente
-          setTimeout(tryInit, 100);
+          // Se ainda não está pronto, tentar novamente
+          initTimeout = setTimeout(waitForReady, 50);
         }
       };
 
       if (document.readyState === 'complete') {
-        // Se já está carregado, verificar CSS e aguardar frames
-        tryInit();
+        waitForReady();
       } else {
-        // Aguardar evento load primeiro
-        window.addEventListener('load', () => {
-          // Depois do load, aguardar CSS e frames
-          tryInit();
-        }, { once: true });
+        window.addEventListener('load', waitForReady, { once: true });
       }
     };
 
     initStage();
     
     // Criar ResizeObserver apenas após inicialização completa
-    let resizeObserver = null;
     const setupResizeObserver = () => {
-      if (!resizeObserver && containerRef.current) {
+      if (!resizeObserver && containerRef.current && document.readyState === 'complete') {
         resizeObserver = new ResizeObserver(() => {
-          // Usar múltiplos requestAnimationFrame para garantir que layout está estável
-          requestAnimationFrame(() => {
+          // Cancelar timeout anterior se existir
+          if (resizeTimeout) {
+            clearTimeout(resizeTimeout);
+          }
+          
+          // Usar debounce para evitar muitas chamadas
+          resizeTimeout = setTimeout(() => {
             requestAnimationFrame(() => {
-              fitStageIntoParentContainer();
+              safeMeasure();
             });
-          });
+          }, 16); // ~60fps
         });
         
         resizeObserver.observe(containerRef.current);
-      }
-    };
-    
-    // Aguardar container estar disponível e CSS carregado antes de observar
-    const observeContainer = () => {
-      if (containerRef.current && document.readyState === 'complete') {
-        setupResizeObserver();
-      } else {
-        // Se ainda não está pronto, tentar novamente após delay
-        setTimeout(observeContainer, 100);
+      } else if (!containerRef.current || document.readyState !== 'complete') {
+        // Tentar novamente se ainda não está pronto
+        setTimeout(setupResizeObserver, 100);
       }
     };
     
     // Aguardar um pouco antes de tentar observar (dar tempo para CSS carregar)
-    setTimeout(observeContainer, 200);
+    setTimeout(setupResizeObserver, 300);
     
     return () => {
       if (resizeObserver) {
         resizeObserver.disconnect();
+      }
+      if (initTimeout) {
+        clearTimeout(initTimeout);
+      }
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
       }
     };
   }, []); // Sem dependências - só executa uma vez
