@@ -75,7 +75,7 @@ export const ImageThumbnailList = ({
                   radius="lg"
                   onPress={() => {
                     if (!isDisabled) {
-                      console.log('🖱️ CARD CLICADO - Imagem:', image.name);
+                      // Log removido
                       onImageSelect(image);
                     }
                   }}

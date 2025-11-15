@@ -46,7 +46,7 @@ export function ShopProvider({ children }) {
                 transformed.push(transformedProduct);
               }
             }
-            console.log('✅ [ShopContext] Produtos carregados da API:', transformed.length);
+            // Log removido
             setProducts(transformed);
             setProductsLoading(false);
           } else {

@@ -46,7 +46,7 @@ function useSourceImages() {
               });
             }
           }
-          console.log('[SRC] loaded', { count: allowed.length });
+          // Log removido
           setSourceImages(allowed);
           setLoading(false);
         })

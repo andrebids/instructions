@@ -7,7 +7,7 @@ const DEBUG = typeof window !== 'undefined' &&
   (import.meta.env.DEV || localStorage.getItem('pwa-install-debug') === 'true')
 
 const log = (...args) => {
-  if (DEBUG) console.log('[PWA Install]', ...args)
+  // Logs removidos - apenas erros são logados
 }
 
 // Funções globais para controlo manual (disponíveis imediatamente)
@@ -19,9 +19,7 @@ if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('pwa-install-show'))
   }
   window.clearPWAInstallDismiss = () => {
-    log('Clearing dismissed preference')
     localStorage.removeItem('pwa-install-dismissed')
-    console.log('[PWA Install] Cleared! Reload the page to see the prompt again.')
   }
 }
 
@@ -175,7 +173,6 @@ export default function PWAInstallPrompt() {
 
     // Listener para quando o PWA é instalado (dispara após instalação bem-sucedida)
     const handleAppInstalled = () => {
-      console.log('[PWA Install] ✅ PWA was installed successfully!')
       localStorage.setItem('pwa-installed', 'true')
       setIsInstalled(true)
       setIsOpen(false)

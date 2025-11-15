@@ -41,7 +41,6 @@ export const useImageConversion = ({ uploadedImages, projectId = null }) => {
       
       // Se não há API disponível, não iniciar animação
       if (!hasAvailableAPI) {
-        console.log('⚠️ API de conversão não disponível - animação desativada');
         return;
       }
       
@@ -76,7 +75,6 @@ export const useImageConversion = ({ uploadedImages, projectId = null }) => {
             return;
           } else {
             // API não disponível para esta imagem - pular
-            console.log(`⚠️ API não disponível para imagem ${currentIndex} (nightVersion: ${hasNightVersion}, status: ${image.conversionStatus}) - pulando animação`);
             currentIndex++;
           }
         }
@@ -103,12 +101,10 @@ export const useImageConversion = ({ uploadedImages, projectId = null }) => {
         return prev; // Já analisada, não fazer nada
       }
       
-      console.log('🔍 Disparando análise YOLO12 para imagem:', imageId);
       setAnalyzingImageId(imageId);
       
       // Após análise completar
       setTimeout(function() {
-        console.log('✅ Análise YOLO12 completa para imagem:', imageId);
         setAnalyzingImageId(null);
         
         // Marcar como completa
@@ -186,7 +182,6 @@ export const useImageConversion = ({ uploadedImages, projectId = null }) => {
               updated[key] = prev[key];
             }
             updated[imageId] = true;
-            console.log('⚠️ Conversão falhada para imagem:', imageId);
             return updated;
           }
           return prev;
@@ -225,7 +220,6 @@ export const useImageConversion = ({ uploadedImages, projectId = null }) => {
               updated[key] = prev[key];
             }
             updated[imageId] = true;
-            console.log('✅ Conversão já existe para imagem:', imageId);
             return updated;
           }
           return prev;

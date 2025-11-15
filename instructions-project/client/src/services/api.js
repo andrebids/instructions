@@ -46,10 +46,10 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Interceptor para logging (desenvolvimento)
+// Interceptor para logging (apenas erros)
 api.interceptors.response.use(
   (response) => {
-    console.log(`✅ ${response.config.method.toUpperCase()} ${response.config.url}:`, response.data);
+    // Logs removidos - apenas erros são logados
     return response;
   },
   (error) => {
@@ -198,23 +198,11 @@ export const decorationsAPI = {
 export const productsAPI = {
   // GET /api/products
   getAll: async (params = {}) => {
-    console.log('🌐 [API Client] productsAPI.getAll chamado com params:', params);
     try {
       const response = await api.get('/products', { params });
-      console.log('🌐 [API Client] Response recebida:', {
-        status: response.status,
-        dataLength: Array.isArray(response.data) ? response.data.length : 'not array',
-        firstItem: Array.isArray(response.data) && response.data.length > 0 ? response.data[0] : null
-      });
       return response.data;
     } catch (error) {
       console.error('❌ [API Client] Erro ao chamar productsAPI.getAll:', error);
-      console.error('❌ [API Client] Erro detalhado:', {
-        message: error.message,
-        response: error.response,
-        status: error.response?.status,
-        data: error.response?.data
-      });
       throw error;
     }
   },
