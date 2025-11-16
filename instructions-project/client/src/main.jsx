@@ -11,6 +11,7 @@ import { ClerkProvider } from '@clerk/clerk-react'
 import { registerSW } from 'virtual:pwa-register'
 import { setupNotificationClickListener } from './services/pushNotifications'
 import { isBackgroundSyncAvailable } from './services/backgroundSync'
+import './i18n' // Inicializar i18next
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 if (!PUBLISHABLE_KEY) {

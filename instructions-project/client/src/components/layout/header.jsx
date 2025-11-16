@@ -6,6 +6,7 @@ import { useUser } from "../../context/UserContext";
 import { useClerk, useUser as useClerkUser, UserProfile } from "@clerk/clerk-react";
 import { dark } from "@clerk/themes";
 import { GlobalSyncStatus } from "../features/SyncStatus";
+import { LocaleSelector } from "./LocaleSelector";
 
 export function Header() {
   const {theme, setTheme} = useTheme();
@@ -28,6 +29,8 @@ export function Header() {
       </div>
       <div className="flex items-center gap-3">
         <GlobalSyncStatus />
+        
+        <LocaleSelector />
         
         <Button 
           isIconOnly 
