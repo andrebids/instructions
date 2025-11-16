@@ -156,27 +156,6 @@ export const useDecorations = (initialFilters) => {
           });
         }
 
-        // Debug removido
-        
-        // Verificar produtos Transversal antes do processamento
-        var transversalProducts = list.filter(function(p) {
-          var mount = p.mount || p.category || p.type || '';
-          return String(mount).toLowerCase() === 'transversal';
-        });
-        if (transversalProducts.length > 0) {
-          // Debug removido
-          transversalProducts.map(function(p) {
-            return {
-              id: p.id,
-              name: p.name,
-              mount: p.mount,
-              thumbnailUrl: p.thumbnailUrl,
-              imagesDayUrl: p.imagesDayUrl,
-              imagesNightUrl: p.imagesNightUrl
-            };
-          }));
-        }
-
         if (!cancelled) {
           // Construir estatísticas por categoria + escolher thumbnail
           var catStats = {};
