@@ -12,16 +12,18 @@ echo 1. 🚀 INICIAR PROJETO
 echo 2. 📊 VERIFICAR STATUS
 echo 3. 🔄 REINICIAR PROJETO
 echo 4. 📤 FAZER BUILD E ENVIAR PARA SERVIDOR
-echo 5. ❌ SAIR
+echo 5. 🗄️  VERIFICAR CONEXÃO BASE DE DADOS
+echo 6. ❌ SAIR
 echo.
 echo ========================================
-set /p choice="Escolha uma opção (1-5): "
+set /p choice="Escolha uma opção (1-6): "
 
 if "%choice%"=="1" goto start
 if "%choice%"=="2" goto status
 if "%choice%"=="3" goto restart
 if "%choice%"=="4" goto deploy_build
-if "%choice%"=="5" goto exit
+if "%choice%"=="5" goto check_db
+if "%choice%"=="6" goto exit
 goto menu
 
 :start
@@ -86,21 +88,42 @@ if "%DOCKER_AVAILABLE%"=="1" (
 echo.
 
 echo ========================================
-echo    [2/5] AGUARDANDO POSTGRESQL
+echo    [2/5] VERIFICANDO CONEXÃO BASE DE DADOS
 echo ========================================
 echo.
-echo Aguardando PostgreSQL estar pronto...
-echo    Aguardando 5 segundos para garantir que o PostgreSQL está completamente iniciado...
-timeout /t 5 /nobreak >nul
-echo    Verificando conectividade com PostgreSQL...
-call :wait_for_postgres
-if %errorlevel% neq 0 (
-    echo ⚠️  Aviso: PostgreSQL pode não estar totalmente pronto
-    echo    Continuando mesmo assim... (as migrations podem falhar se a BD não estiver pronta)
-) else (
-    echo ✅ PostgreSQL pronto e acessível!
-)
+echo Verificando conexão com a base de dados...
+cd /d "%~dp0server"
+call :check_database_connection
+set "DB_CONNECTION_OK=%errorlevel%"
+cd /d "%~dp0"
 echo.
+
+if "%DB_CONNECTION_OK%"=="0" (
+    echo ✅ Conexão com base de dados verificada com sucesso!
+    echo.
+) else (
+    echo ⚠️  AVISO: Não foi possível verificar a conexão com a base de dados
+    echo.
+    echo    Possíveis causas:
+    echo    1. Arquivo .env não existe ou está incompleto
+    echo    2. Credenciais incorretas no .env
+    echo    3. Base de dados não está acessível (PostgreSQL local não está a correr ou Supabase offline)
+    echo    4. Sem ligação à internet (se usar Supabase)
+    echo.
+    echo    Verifique o arquivo server\.env e tente novamente.
+    echo    Para verificar manualmente: cd server ^&^& npm run check-connection
+    echo.
+    set /p continue_anyway="Deseja continuar mesmo assim? (S/N): "
+    if /i not "%continue_anyway%"=="S" (
+        echo.
+        echo Operação cancelada pelo utilizador.
+        pause
+        goto menu
+    )
+    echo.
+    echo ⚠️  Continuando mesmo assim... (o setup pode falhar)
+    echo.
+)
 
 echo ========================================
 echo    [3/5] EXECUTANDO SETUP DA BD
@@ -666,6 +689,28 @@ if %TRY_COUNT% lss %MAX_TRIES% (
 rem Se chegou aqui, não conseguiu verificar a porta
 rem Mas continua mesmo assim (pode ser que PostgreSQL esteja em outra porta ou sem netstat)
 exit /b 1
+
+:check_database_connection
+rem Verificar se .env existe
+if not exist ".env" (
+    echo ❌ Arquivo .env não encontrado
+    echo    Crie o arquivo .env com as credenciais da base de dados
+    exit /b 1
+)
+
+rem Verificar se node_modules existe
+if not exist "node_modules" (
+    echo ⚠️  node_modules não encontrado. Execute: npm install
+    exit /b 1
+)
+
+rem Executar verificação de conexão
+call npm run check-connection >nul 2>&1
+if %errorlevel% equ 0 (
+    exit /b 0
+) else (
+    exit /b 1
+)
 
 :detect_docker
 set "DOCKER_AVAILABLE=0"

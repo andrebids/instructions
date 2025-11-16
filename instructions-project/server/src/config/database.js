@@ -1,6 +1,9 @@
 import { Sequelize } from 'sequelize';
 import 'dotenv/config';
 
+// Detectar se está usando Supabase (host contém 'supabase.co')
+const isSupabase = process.env.DB_HOST?.includes('supabase.co') || process.env.SUPABASE_URL;
+
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'instructions_demo',
   process.env.DB_USER || 'demo_user',
@@ -10,6 +13,13 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT || 5433,
     dialect: 'postgres',
     logging: false, // Desabilitar logs SQL (pode ativar para debug)
+    // Supabase requer SSL
+    dialectOptions: isSupabase ? {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    } : {},
     pool: {
       max: 5,
       min: 0,

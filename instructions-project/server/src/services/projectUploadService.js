@@ -8,11 +8,13 @@ import { logUpload, logDebug, logError } from '../utils/projectLogger.js';
 
 /**
  * Processa arquivos uploadados e retorna informações das imagens
+ * Suporta tanto URLs locais quanto Supabase Storage
  */
 export function processUploadedFiles(files, projectId, cartouche = null) {
   return files.map((file, index) => {
     const imageId = `img-${Date.now()}-${index}`;
-    const imageUrl = `/uploads/projects/${projectId}/day/${file.filename}`;
+    // Se o arquivo tem URL do Supabase, usar ela; senão usar URL local
+    const imageUrl = file.url || `/uploads/projects/${projectId}/day/${file.filename}`;
     
     // Verificar se arquivo foi realmente salvo
     const filePath = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day/${file.filename}`);
@@ -102,7 +104,9 @@ export function processUploadedFiles(files, projectId, cartouche = null) {
       conversionStatus: 'pending',
       uploadedAt: new Date().toISOString(),
       // Metadados do cartouche (se fornecidos no body)
-      cartouche: cartouche ? JSON.parse(cartouche) : null
+      cartouche: cartouche ? JSON.parse(cartouche) : null,
+      // Informações do Supabase se disponível
+      supabasePath: file.supabasePath || null
     };
   });
 }
