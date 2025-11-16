@@ -8,7 +8,59 @@
 #   DEPLOY_SERVER_PATH  - Caminho no servidor (padrão: /home/andre/apps/instructions/instructions-project/client)
 #   DEPLOY_SITE_URL     - URL do site (padrão: https://136.116.79.244)
 
+# Configurar tratamento de erros
 $ErrorActionPreference = "Stop"
+$script:ExitCode = 0
+
+# Função para sair com código de erro
+function Exit-Script {
+    param([int]$ExitCode = 0)
+    $script:ExitCode = $ExitCode
+    exit $ExitCode
+}
+
+# Função para executar comandos com tratamento de erro
+function Invoke-SafeCommand {
+    param(
+        [scriptblock]$Command,
+        [string]$ErrorMessage = "Comando falhou",
+        [bool]$ContinueOnError = $false
+    )
+    
+    try {
+        & $Command
+        if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne $null) {
+            if (-not $ContinueOnError) {
+                Write-Host "❌ $ErrorMessage (código: $LASTEXITCODE)" -ForegroundColor Red
+                throw "$ErrorMessage"
+            } else {
+                Write-Host "⚠️  $ErrorMessage (código: $LASTEXITCODE) - Continuando..." -ForegroundColor Yellow
+            }
+        }
+    } catch {
+        if (-not $ContinueOnError) {
+            Write-Host "❌ $ErrorMessage" -ForegroundColor Red
+            Write-Host "   Erro: $_" -ForegroundColor Red
+            throw
+        } else {
+            Write-Host "⚠️  $ErrorMessage - Continuando..." -ForegroundColor Yellow
+            Write-Host "   Erro: $_" -ForegroundColor Yellow
+        }
+    }
+}
+
+# Garantir que o script termina com código de erro apropriado
+trap {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Red
+    Write-Host "ERRO CRÍTICO NO SCRIPT" -ForegroundColor Red
+    Write-Host "========================================" -ForegroundColor Red
+    Write-Host "Erro: $_" -ForegroundColor Red
+    Write-Host "Linha: $($_.InvocationInfo.ScriptLineNumber)" -ForegroundColor Red
+    Write-Host "Comando: $($_.InvocationInfo.Line)" -ForegroundColor Red
+    Write-Host ""
+    Exit-Script -ExitCode 1
+}
 
 # Carregar configuração do ficheiro .env.deploy se existir
 $envFile = Join-Path $PSScriptRoot ".env.deploy"
@@ -45,7 +97,7 @@ if (-not (Test-Path $sshKey)) {
     Write-Host "DEPLOY_SSH_KEY=C:\caminho\para\sua\chave"
     Write-Host "DEPLOY_SSH_USER=seu_usuario"
     Write-Host "DEPLOY_SSH_HOST=seu_servidor.com"
-    exit 1
+    Exit-Script -ExitCode 1
 }
 
 Write-Host "=== Configuração ===" -ForegroundColor Cyan
@@ -56,108 +108,267 @@ Write-Host "PM2 App: $pm2AppName" -ForegroundColor Gray
 Write-Host ""
 
 Write-Host "=== 1. Build Local ===" -ForegroundColor Cyan
-cd "$PSScriptRoot\client"
+try {
+    Set-Location "$PSScriptRoot\client"
+    if (-not (Test-Path "$PSScriptRoot\client")) {
+        Write-Host "❌ Diretório client não encontrado: $PSScriptRoot\client" -ForegroundColor Red
+        Exit-Script -ExitCode 1
+    }
+    
+    Write-Host "Executando npm run build..." -ForegroundColor Gray
 npm run build
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Build falhou!" -ForegroundColor Red
-    exit 1
+        Write-Host "❌ Build falhou com código: $LASTEXITCODE" -ForegroundColor Red
+        Exit-Script -ExitCode 1
 }
 Write-Host "✅ Build concluído!" -ForegroundColor Green
 Write-Host ""
+} catch {
+    Write-Host "❌ Erro ao executar build: $_" -ForegroundColor Red
+    Exit-Script -ExitCode 1
+}
+
+# Função para limpar espaço no servidor de forma agressiva
+function Invoke-ServerCleanup {
+    param(
+        [string]$SshKey,
+        [string]$SshUser,
+        [string]$SshHost,
+        [string]$ServerPath,
+        [int]$RequiredSpaceMB = 500
+    )
+    
+    Write-Host "Iniciando limpeza automática do servidor..." -ForegroundColor Cyan
+    
+    $cleanupCommands = @"
+set -e
+echo '=== Limpeza Automática do Servidor ==='
+echo ''
+
+# 1. Limpar TODOS os diretórios temporários client-dist
+echo '1. Limpando diretórios temporários /tmp/client-dist-*...'
+FREED_TMP=0
+if [ -d /tmp ]; then
+    for dir in /tmp/client-dist-*; do
+        if [ -d "`$dir" ]; then
+            SIZE=`$(du -sm "`$dir" 2>/dev/null | cut -f1 || echo 0)
+            rm -rf "`$dir" 2>/dev/null || true
+            FREED_TMP=`$((FREED_TMP + SIZE))
+        fi
+    done
+    echo "   Liberados ~`$FREED_TMP MB de /tmp"
+fi
+
+# 2. Limpar TODOS os backups dist-old-* (manter apenas o mais recente)
+echo ''
+echo '2. Limpando backups antigos de dist-old-*...'
+FREED_DIST=0
+if [ -d "$serverPath" ]; then
+    cd "$serverPath" 2>/dev/null || true
+    BACKUP_COUNT=`$(ls -d dist-old-* 2>/dev/null | wc -l || echo 0)
+    if [ "`$BACKUP_COUNT" -gt 1 ]; then
+        # Manter apenas o mais recente, remover todos os outros
+        ls -dt dist-old-* 2>/dev/null | tail -n +2 | while read backup; do
+            if [ -d "`$backup" ]; then
+                SIZE=`$(du -sm "`$backup" 2>/dev/null | cut -f1 || echo 0)
+                rm -rf "`$backup" 2>/dev/null || true
+                FREED_DIST=`$((FREED_DIST + SIZE))
+            fi
+        done
+        echo "   Liberados ~`$FREED_DIST MB de backups antigos"
+    else
+        echo "   Nenhum backup antigo encontrado"
+    fi
+fi
+
+# 3. Limpar logs do PM2
+echo ''
+echo '3. Limpando logs do PM2...'
+if command -v pm2 >/dev/null 2>&1; then
+    pm2 flush 2>/dev/null || true
+    echo "   Logs do PM2 limpos"
+else
+    echo "   PM2 não encontrado, ignorando"
+fi
+
+# 4. Limpar cache do npm (se existir)
+echo ''
+echo '4. Limpando cache do npm...'
+if command -v npm >/dev/null 2>&1; then
+    npm cache clean --force 2>/dev/null || true
+    echo "   Cache do npm limpo"
+fi
+
+# 5. Limpar logs antigos do sistema (últimos 7 dias)
+echo ''
+echo '5. Limpando logs antigos do sistema...'
+if [ -d /var/log ]; then
+    find /var/log -name "*.log" -type f -mtime +7 -delete 2>/dev/null || true
+    find /var/log -name "*.gz" -type f -mtime +7 -delete 2>/dev/null || true
+    echo "   Logs antigos removidos"
+fi
+
+# 6. Limpar pacotes .deb antigos (se existirem)
+echo ''
+echo '6. Limpando pacotes .deb antigos...'
+if command -v apt-get >/dev/null 2>&1; then
+    apt-get clean 2>/dev/null || true
+    apt-get autoclean 2>/dev/null || true
+    echo "   Cache de pacotes limpo"
+fi
+
+# 7. Mostrar espaço atual
+echo ''
+echo '=== Espaço Disponível Após Limpeza ==='
+df -h /tmp | tail -1
+df -h / | tail -1
+echo ''
+
+# Calcular espaço total liberado
+TOTAL_FREED=`$((FREED_TMP + FREED_DIST))
+echo "Espaço total liberado: ~`$TOTAL_FREED MB"
+"@
+    
+    try {
+        $cleanupOutput = ssh -i $SshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${SshUser}@${SshHost}" $cleanupCommands 2>&1
+        Write-Host $cleanupOutput -ForegroundColor Gray
+        
+        # Verificar espaço após limpeza
+        $diskLine = ssh -i $SshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${SshUser}@${SshHost}" "df -BM /tmp 2>/dev/null | tail -1 || df -BM / | tail -1" 2>&1
+        $availableSpaceMB = "0"
+        if ($diskLine -match '\s+(\d+)M\s+') {
+            $availableSpaceMB = $matches[1]
+        } elseif ($diskLine -match '\s+(\d+)G\s+') {
+            $availableSpaceMB = [string]([int]$matches[1] * 1024)
+        }
+        
+        return [int]$availableSpaceMB
+    } catch {
+        Write-Host "Erro ao executar limpeza: $_" -ForegroundColor Yellow
+        return 0
+    }
+}
+
+# Função para verificar espaço disponível
+function Get-AvailableSpace {
+    param(
+        [string]$SshKey,
+        [string]$SshUser,
+        [string]$SshHost
+    )
+    
+    try {
+        $diskLine = ssh -i $SshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${SshUser}@${SshHost}" "df -BM /tmp 2>/dev/null | tail -1 || df -BM / | tail -1" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            return 0
+        }
+        
+        $availableSpaceMB = "0"
+        if ($diskLine -match '\s+(\d+)M\s+') {
+            $availableSpaceMB = $matches[1]
+        } elseif ($diskLine -match '\s+(\d+)G\s+') {
+            $availableSpaceMB = [string]([int]$matches[1] * 1024)
+        }
+        
+        return [int]$availableSpaceMB
+    } catch {
+        return 0
+    }
+}
 
 Write-Host "=== 2. Enviar para servidor ===" -ForegroundColor Cyan
 $tempPath = "/tmp/client-dist-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 
 # Verificar espaço em disco antes de fazer upload
 Write-Host "Verificando espaço em disco no servidor..." -ForegroundColor Gray
-$diskInfo = ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" "df -h /tmp | tail -1"
-Write-Host "Espaço em /tmp: $diskInfo" -ForegroundColor Gray
-
-# Extrair espaço disponível (em MB) - método mais simples
-$diskLine = ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" "df -BM /tmp | tail -1"
-$availableSpaceMB = "0"
-if ($diskLine -match '\s+(\d+)M\s+') {
-    $availableSpaceMB = $matches[1]
-} elseif ($diskLine -match '\s+(\d+)G\s+') {
-    # Se estiver em GB, converter para MB
-    $availableSpaceMB = [string]([int]$matches[1] * 1024)
-}
-
-# Limpar diretórios temporários antigos para liberar espaço
-Write-Host "Limpando diretórios temporários antigos..." -ForegroundColor Gray
-$cleanupOutput = ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" @"
-# Limpar TODOS os diretórios client-dist antigos (não apenas +1 dia)
-find /tmp -maxdepth 1 -type d -name 'client-dist-*' -exec rm -rf {} \; 2>/dev/null || true
-# Limpar builds antigos do cliente (manter apenas os 2 mais recentes)
-cd $serverPath 2>/dev/null || true
-ls -dt dist-old-* 2>/dev/null | tail -n +3 | xargs rm -rf 2>/dev/null || true
-# Mostrar espaço após limpeza
-df -h /tmp | tail -1
-"@
-Write-Host $cleanupOutput -ForegroundColor Gray
-
-# Verificar se há espaço suficiente (pelo menos 500MB)
 try {
-    $spaceMB = [int]$availableSpaceMB
-    if ($spaceMB -lt 500) {
-        Write-Host "⚠️  AVISO: Pouco espaço em disco ($spaceMB MB disponível)" -ForegroundColor Yellow
-        Write-Host "Tentando limpar mais espaço..." -ForegroundColor Yellow
-        
-        # Limpar mais agressivamente
-        ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" @"
-# Limpar TODOS os diretórios client-dist antigos
-find /tmp -maxdepth 1 -type d -name 'client-dist-*' -exec rm -rf {} \; 2>/dev/null || true
-# Limpar TODOS os backups antigos de dist (manter apenas 1)
-cd $serverPath 2>/dev/null || true
-ls -dt dist-old-* 2>/dev/null | tail -n +2 | xargs rm -rf 2>/dev/null || true
-# Limpar logs antigos do PM2
-pm2 flush 2>/dev/null || true
-# Mostrar espaço após limpeza agressiva
-df -h /tmp | tail -1
-"@ | Out-Null
-        
-        # Verificar novamente
-        $newDiskLine = ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" "df -BM /tmp | tail -1"
-        $newSpaceMB = "0"
-        if ($newDiskLine -match '\s+(\d+)M\s+') {
-            $newSpaceMB = $matches[1]
-        } elseif ($newDiskLine -match '\s+(\d+)G\s+') {
-            $newSpaceMB = [string]([int]$matches[1] * 1024)
-        }
-        $newSpaceMBInt = [int]$newSpaceMB
-        
-        if ($newSpaceMBInt -lt 500) {
-            Write-Host "❌ ERRO: Espaço insuficiente no servidor ($newSpaceMBInt MB disponível)" -ForegroundColor Red
-            Write-Host ""
-            Write-Host "Soluções:" -ForegroundColor Yellow
-            Write-Host "  1. Limpar espaço manualmente no servidor:"
-            Write-Host "     ssh $sshUser@$sshHost 'du -sh /tmp/* | sort -h | tail -10'"
-            Write-Host "  2. Limpar builds antigos:"
-            Write-Host "     ssh $sshUser@$sshHost 'rm -rf $serverPath/dist-old-*'"
-            Write-Host "  3. Limpar logs do PM2:"
-            Write-Host "     ssh $sshUser@$sshHost 'pm2 flush'"
-            Write-Host ""
-            exit 1
-        } else {
-            Write-Host "✅ Espaço liberado! Agora há $newSpaceMBInt MB disponível" -ForegroundColor Green
-        }
+    $diskInfo = ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" "df -h /tmp 2>/dev/null | tail -1 || df -h / | tail -1" 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Espaço disponível: $diskInfo" -ForegroundColor Gray
+    } else {
+        Write-Host "Aviso: Não foi possível verificar espaço (timeout ou erro de conexão)" -ForegroundColor Yellow
+        Write-Host "Tentando continuar mesmo assim..." -ForegroundColor Yellow
     }
 } catch {
-    Write-Host "⚠️  Não foi possível verificar espaço exato, continuando..." -ForegroundColor Yellow
+    Write-Host "Aviso: Erro ao verificar espaço: $_" -ForegroundColor Yellow
+}
+
+# Verificar espaço disponível
+$availableSpaceMB = Get-AvailableSpace -SshKey $sshKey -SshUser $sshUser -SshHost $sshHost
+Write-Host "Espaço disponível: $availableSpaceMB MB" -ForegroundColor Gray
+
+# Se houver pouco espaço, fazer limpeza automática
+$requiredSpaceMB = 500
+if ($availableSpaceMB -lt $requiredSpaceMB) {
+    Write-Host ""
+    Write-Host "AVISO: Pouco espaço em disco ($availableSpaceMB MB disponível, necessário: $requiredSpaceMB MB)" -ForegroundColor Yellow
+    Write-Host "Executando limpeza automática do servidor..." -ForegroundColor Cyan
+    
+    $newSpaceMB = Invoke-ServerCleanup -SshKey $sshKey -SshUser $sshUser -SshHost $sshHost -ServerPath $serverPath -RequiredSpaceMB $requiredSpaceMB
+    
+    if ($newSpaceMB -lt $requiredSpaceMB) {
+        Write-Host ""
+        Write-Host "ERRO: Espaço ainda insuficiente após limpeza ($newSpaceMB MB disponível)" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Soluções manuais:" -ForegroundColor Yellow
+        Write-Host "  1. Verificar o que está ocupando espaço:"
+        Write-Host "     ssh $sshUser@$sshHost 'du -sh /tmp/* /home/andre/* 2>/dev/null | sort -h | tail -20'"
+        Write-Host "  2. Limpar manualmente builds antigos:"
+        Write-Host "     ssh $sshUser@$sshHost 'rm -rf $serverPath/dist-old-*'"
+        Write-Host "  3. Limpar node_modules antigos (se houver):"
+        Write-Host "     ssh $sshUser@$sshHost 'find /home/andre -name node_modules -type d -exec du -sh {} \; | sort -h | tail -10'"
+        Write-Host ""
+        Exit-Script -ExitCode 1
+    } else {
+        Write-Host ""
+        Write-Host "SUCCESS: Espaço liberado! Agora há $newSpaceMB MB disponível" -ForegroundColor Green
+    }
+} else {
+    Write-Host "Espaço suficiente disponível ($availableSpaceMB MB)" -ForegroundColor Green
 }
 
 # Criar diretório temporário no servidor
 Write-Host "Criando diretório temporário no servidor..." -ForegroundColor Gray
-$createDirCmd = "mkdir -p $tempPath && chmod 755 $tempPath"
-$createOutput = ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" $createDirCmd 2>&1
-if ($LASTEXITCODE -ne 0 -or $createOutput -match "No space|cannot create") {
-    Write-Host "❌ ERRO: Não foi possível criar diretório temporário" -ForegroundColor Red
-    Write-Host "Erro: $createOutput" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "O servidor está sem espaço em disco!" -ForegroundColor Yellow
-    Write-Host "Execute manualmente para limpar espaço:" -ForegroundColor Cyan
-    Write-Host "  ssh $sshUser@$sshHost 'df -h && du -sh /tmp/* | sort -h | tail -10'" -ForegroundColor Cyan
-    exit 1
+try {
+    $createDirCmd = "mkdir -p $tempPath && chmod 755 $tempPath"
+    $createOutput = ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=60 "${sshUser}@${sshHost}" $createDirCmd 2>&1
+    
+    if ($LASTEXITCODE -ne 0) {
+        if ($createOutput -match "Connection timed out|Connection refused|Network is unreachable") {
+            Write-Host "ERRO: Não foi possível conectar ao servidor via SSH" -ForegroundColor Red
+            Write-Host "Erro: $createOutput" -ForegroundColor Red
+            Write-Host ""
+            Write-Host "Verifique:" -ForegroundColor Yellow
+            Write-Host "  1. Servidor está online e acessível"
+            Write-Host "  2. Firewall permite conexões SSH (porta 22)"
+            Write-Host "  3. Chave SSH está correta e tem permissões adequadas"
+            Write-Host ""
+            Exit-Script -ExitCode 1
+        } elseif ($createOutput -match "No space|cannot create") {
+            Write-Host "ERRO: Não foi possível criar diretório temporário - sem espaço" -ForegroundColor Red
+            Write-Host "Erro: $createOutput" -ForegroundColor Red
+            Write-Host ""
+            Write-Host "Tentando limpeza automática novamente..." -ForegroundColor Yellow
+            $finalSpaceMB = Invoke-ServerCleanup -SshKey $sshKey -SshUser $sshUser -SshHost $sshHost -ServerPath $serverPath -RequiredSpaceMB 1000
+            if ($finalSpaceMB -lt 500) {
+                Write-Host "ERRO: Espaço ainda insuficiente após limpeza" -ForegroundColor Red
+                Exit-Script -ExitCode 1
+            }
+            # Tentar criar novamente após limpeza
+            $createOutput = ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" $createDirCmd 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "ERRO: Ainda não foi possível criar diretório após limpeza" -ForegroundColor Red
+                Exit-Script -ExitCode 1
+            }
+        } else {
+            Write-Host "ERRO: Não foi possível criar diretório temporário" -ForegroundColor Red
+            Write-Host "Erro: $createOutput" -ForegroundColor Red
+            Exit-Script -ExitCode 1
+        }
+    }
+} catch {
+    Write-Host "ERRO: Exceção ao criar diretório: $_" -ForegroundColor Red
+    Exit-Script -ExitCode 1
 }
 
 # Enviar para pasta temporária com retry e melhor tratamento de erros
@@ -171,7 +382,7 @@ while ($retryCount -lt $maxRetries -and -not $uploadSuccess) {
         Write-Host "Tentativa $($retryCount + 1) de $maxRetries..." -ForegroundColor Yellow
         Start-Sleep -Seconds 3
         # Limpar diretório parcialmente criado antes de tentar novamente
-        ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" "rm -rf $tempPath 2>/dev/null; mkdir -p $tempPath && chmod 755 $tempPath" | Out-Null
+        ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" "rm -rf $tempPath 2>/dev/null; mkdir -p $tempPath && chmod 755 $tempPath" | Out-Null
     }
     
     # Usar scp com compressão e timeout aumentado
@@ -181,11 +392,11 @@ while ($retryCount -lt $maxRetries -and -not $uploadSuccess) {
     # Estamos no diretório client após o build, então dist está aqui
     if (-not (Test-Path ".\dist")) {
         Write-Host "❌ Diretório dist não encontrado!" -ForegroundColor Red
-        exit 1
+        Exit-Script -ExitCode 1
     }
     # Usar scp com wildcard - PowerShell pode não expandir, mas o script no servidor corrige se necessário
     # Tentar enviar conteúdo diretamente usando caminho relativo
-    $scpOutput = scp -i $sshKey -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -C -r ".\dist\*" "${sshUser}@${sshHost}:$tempPath/" 2>&1
+    $scpOutput = scp -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=60 -C -r ".\dist\*" "${sshUser}@${sshHost}:$tempPath/" 2>&1
     
     if ($LASTEXITCODE -eq 0) {
         $uploadSuccess = $true
@@ -213,7 +424,7 @@ if (-not $uploadSuccess) {
     Write-Host "  - Limpar espaço: ssh $sshUser@$sshHost 'du -sh /tmp/client-dist-*'"
     Write-Host "  - Verificar permissões: ssh $sshUser@$sshHost 'ls -ld /tmp'"
     Write-Host ""
-    exit 1
+    Exit-Script -ExitCode 1
 }
 Write-Host ""
 
@@ -286,13 +497,13 @@ else
     exit 1
 fi
 "@
-$updateOutput = ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" $sshCommands.Replace("`r`n", "`n")
+$updateOutput = ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" $sshCommands.Replace("`r`n", "`n")
 Write-Host $updateOutput -ForegroundColor Gray
 if ($LASTEXITCODE -ne 0 -or $updateOutput -match "Erro|error|cannot access") {
     Write-Host "❌ Erro ao atualizar build no servidor!" -ForegroundColor Red
     Write-Host "Verificando estado do servidor..." -ForegroundColor Yellow
-    ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" "ls -la $serverPath/ | grep dist" | Out-Host
-    exit 1
+    ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" "ls -la $serverPath/ | grep dist" | Out-Host
+    Exit-Script -ExitCode 1
 }
 Write-Host "✅ Build atualizado no servidor!" -ForegroundColor Green
 Write-Host ""
@@ -496,7 +707,7 @@ EOF
 node check-tables.cjs 2>&1 || echo 'Verificacao de tabelas nao disponivel (Node.js pode nao estar no PATH)'
 rm -f check-tables.cjs 2>/dev/null || true
 "@
-ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" $migrationCommands.Replace("`r`n", "`n")
+ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" $migrationCommands.Replace("`r`n", "`n")
 Write-Host "✅ Migrations processadas!" -ForegroundColor Green
 Write-Host ""
 
@@ -513,20 +724,20 @@ if (Test-Path $fixScriptPath) {
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Executando script de correção no servidor..." -ForegroundColor Gray
         # Tentar executar com sudo primeiro, se falhar, executar sem sudo
-        $nginxFixOutput = ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" "chmod +x $remoteScriptPath && sudo bash $remoteScriptPath 2>&1 || bash $remoteScriptPath 2>&1" 2>&1
+        $nginxFixOutput = ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" "chmod +x $remoteScriptPath && sudo bash $remoteScriptPath 2>&1 || bash $remoteScriptPath 2>&1" 2>&1
         Write-Host $nginxFixOutput -ForegroundColor Gray
         
         # Limpar script temporário
-        ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" "rm -f $remoteScriptPath" 2>&1 | Out-Null
+        ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" "rm -f $remoteScriptPath" 2>&1 | Out-Null
     } else {
         Write-Host "⚠️  Não foi possível enviar script, tentando método alternativo..." -ForegroundColor Yellow
         # Método alternativo: comando simples inline
-        $nginxFixOutput = ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" 'if command -v nginx >/dev/null 2>&1; then NGINX_CONF="/etc/nginx/nginx.conf"; NGINX_SITES="/etc/nginx/sites-enabled"; CONFIG_FILE=""; if [ -d "$NGINX_SITES" ]; then for f in "$NGINX_SITES"/*; do [ -f "$f" ] && grep -q "proxy_pass\|upstream" "$f" 2>/dev/null && CONFIG_FILE="$f" && break; done; fi; [ -z "$CONFIG_FILE" ] && CONFIG_FILE="$NGINX_CONF"; if [ -f "$CONFIG_FILE" ]; then if grep -q "client_max_body_size" "$CONFIG_FILE"; then LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk "{print \$2}" | tr -d ";"); NUM=$(echo "$LIMIT" | sed "s/[^0-9]//g"); if [ -z "$NUM" ] || [ "$NUM" -lt 15 ]; then echo "⚠️  Ajustando limite para 15MB..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; sed -i "s/client_max_body_size.*/client_max_body_size 15M;/" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); else echo "✅ Limite adequado: $LIMIT"; fi; else echo "⚠️  Adicionando client_max_body_size 15M..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; grep -q "^http {" "$CONFIG_FILE" && sed -i "/^http {/a\    client_max_body_size 15M;" "$CONFIG_FILE" || sed -i "1i client_max_body_size 15M;" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); fi; else echo "⚠️  Arquivo de configuração não encontrado"; fi; else echo "ℹ️  Nginx não encontrado (servidor pode estar rodando diretamente via PM2)"; echo "✅ Limites do Express já foram ajustados no código (15MB)"; fi' 2>&1
+        $nginxFixOutput = ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" 'if command -v nginx >/dev/null 2>&1; then NGINX_CONF="/etc/nginx/nginx.conf"; NGINX_SITES="/etc/nginx/sites-enabled"; CONFIG_FILE=""; if [ -d "$NGINX_SITES" ]; then for f in "$NGINX_SITES"/*; do [ -f "$f" ] && grep -q "proxy_pass\|upstream" "$f" 2>/dev/null && CONFIG_FILE="$f" && break; done; fi; [ -z "$CONFIG_FILE" ] && CONFIG_FILE="$NGINX_CONF"; if [ -f "$CONFIG_FILE" ]; then if grep -q "client_max_body_size" "$CONFIG_FILE"; then LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk "{print \$2}" | tr -d ";"); NUM=$(echo "$LIMIT" | sed "s/[^0-9]//g"); if [ -z "$NUM" ] || [ "$NUM" -lt 15 ]; then echo "⚠️  Ajustando limite para 15MB..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; sed -i "s/client_max_body_size.*/client_max_body_size 15M;/" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); else echo "✅ Limite adequado: $LIMIT"; fi; else echo "⚠️  Adicionando client_max_body_size 15M..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; grep -q "^http {" "$CONFIG_FILE" && sed -i "/^http {/a\    client_max_body_size 15M;" "$CONFIG_FILE" || sed -i "1i client_max_body_size 15M;" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); fi; else echo "⚠️  Arquivo de configuração não encontrado"; fi; else echo "ℹ️  Nginx não encontrado (servidor pode estar rodando diretamente via PM2)"; echo "✅ Limites do Express já foram ajustados no código (15MB)"; fi' 2>&1
         Write-Host $nginxFixOutput -ForegroundColor Gray
     }
 } else {
     Write-Host "⚠️  Script fix-nginx-upload-limit.sh não encontrado, usando método alternativo..." -ForegroundColor Yellow
-    $nginxFixOutput = ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" 'if command -v nginx >/dev/null 2>&1; then NGINX_CONF="/etc/nginx/nginx.conf"; NGINX_SITES="/etc/nginx/sites-enabled"; CONFIG_FILE=""; if [ -d "$NGINX_SITES" ]; then for f in "$NGINX_SITES"/*; do [ -f "$f" ] && grep -q "proxy_pass\|upstream" "$f" 2>/dev/null && CONFIG_FILE="$f" && break; done; fi; [ -z "$CONFIG_FILE" ] && CONFIG_FILE="$NGINX_CONF"; if [ -f "$CONFIG_FILE" ]; then if grep -q "client_max_body_size" "$CONFIG_FILE"; then LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk "{print \$2}" | tr -d ";"); NUM=$(echo "$LIMIT" | sed "s/[^0-9]//g"); if [ -z "$NUM" ] || [ "$NUM" -lt 15 ]; then echo "⚠️  Ajustando limite para 15MB..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; sed -i "s/client_max_body_size.*/client_max_body_size 15M;/" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); else echo "✅ Limite adequado: $LIMIT"; fi; else echo "⚠️  Adicionando client_max_body_size 15M..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; grep -q "^http {" "$CONFIG_FILE" && sed -i "/^http {/a\    client_max_body_size 15M;" "$CONFIG_FILE" || sed -i "1i client_max_body_size 15M;" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); fi; else echo "⚠️  Arquivo de configuração não encontrado"; fi; else echo "ℹ️  Nginx não encontrado (servidor pode estar rodando diretamente via PM2)"; echo "✅ Limites do Express já foram ajustados no código (15MB)"; fi' 2>&1
+    $nginxFixOutput = ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" 'if command -v nginx >/dev/null 2>&1; then NGINX_CONF="/etc/nginx/nginx.conf"; NGINX_SITES="/etc/nginx/sites-enabled"; CONFIG_FILE=""; if [ -d "$NGINX_SITES" ]; then for f in "$NGINX_SITES"/*; do [ -f "$f" ] && grep -q "proxy_pass\|upstream" "$f" 2>/dev/null && CONFIG_FILE="$f" && break; done; fi; [ -z "$CONFIG_FILE" ] && CONFIG_FILE="$NGINX_CONF"; if [ -f "$CONFIG_FILE" ]; then if grep -q "client_max_body_size" "$CONFIG_FILE"; then LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk "{print \$2}" | tr -d ";"); NUM=$(echo "$LIMIT" | sed "s/[^0-9]//g"); if [ -z "$NUM" ] || [ "$NUM" -lt 15 ]; then echo "⚠️  Ajustando limite para 15MB..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; sed -i "s/client_max_body_size.*/client_max_body_size 15M;/" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); else echo "✅ Limite adequado: $LIMIT"; fi; else echo "⚠️  Adicionando client_max_body_size 15M..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; grep -q "^http {" "$CONFIG_FILE" && sed -i "/^http {/a\    client_max_body_size 15M;" "$CONFIG_FILE" || sed -i "1i client_max_body_size 15M;" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); fi; else echo "⚠️  Arquivo de configuração não encontrado"; fi; else echo "ℹ️  Nginx não encontrado (servidor pode estar rodando diretamente via PM2)"; echo "✅ Limites do Express já foram ajustados no código (15MB)"; fi' 2>&1
     Write-Host $nginxFixOutput -ForegroundColor Gray
 }
 
@@ -619,7 +830,7 @@ if [ -n "`$RESTART_COUNT" ] && [ "`$RESTART_COUNT" != "null" ] && [ "`$RESTART_C
     pm2 logs $pm2AppName --err --lines 30 --nostream 2>&1 | tail -30
 fi
 "@
-ssh -i $sshKey -o StrictHostKeyChecking=no "${sshUser}@${sshHost}" $restartCommands.Replace("`r`n", "`n")
+ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" $restartCommands.Replace("`r`n", "`n")
 if ($LASTEXITCODE -ne 0) {
     Write-Host "⚠️  Aviso: Pode ter havido problemas ao reiniciar o servidor" -ForegroundColor Yellow
     Write-Host "   Verifique manualmente: ssh $sshUser@$sshHost 'pm2 status'" -ForegroundColor Yellow
@@ -639,4 +850,7 @@ Write-Host "Servidor reiniciado" -ForegroundColor Green
 Write-Host ""
 Write-Host "Site disponivel em: $siteUrl" -ForegroundColor Yellow
 Write-Host ""
+
+# Garantir que o script retorna código de sucesso
+Exit-Script -ExitCode 0
 

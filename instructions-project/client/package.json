@@ -6,7 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --port 3000"
+    "preview": "vite preview --port 3000",
+    "i18next:extract": "i18next-cli extract",
+    "i18next:extract:watch": "i18next-cli extract --watch",
+    "i18next:types": "i18next-cli types",
+    "i18next:sync": "i18next-cli sync",
+    "i18next:status": "i18next-cli status",
+    "i18next:lint": "i18next-cli lint"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.53.3",
@@ -44,11 +50,13 @@
     "date-fns": "^3.6.0",
     "framer-motion": "^12.23.22",
     "gsap": "^3.13.0",
+    "i18next": "^25.6.2",
     "konva": "^10.0.2",
     "lottie-web": "^5.13.0",
     "motion": "^12.23.24",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-i18next": "^16.3.3",
     "react-konva": "^19.0.10",
     "react-router-dom": "^6.26.2",
     "recharts": "^3.2.1",
@@ -61,6 +69,7 @@
     "@vite-pwa/assets-generator": "^0.2.6",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.21",
+    "i18next-cli": "^1.24.10",
     "sharp": "^0.34.5",
     "sharp-cli": "^5.2.0",
     "vite": "^5.4.1",
