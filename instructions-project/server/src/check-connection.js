@@ -39,19 +39,36 @@ async function checkConnection() {
     var isRemote = config.host !== 'localhost' && config.host !== '127.0.0.1';
     
     if (isRemote) {
-      console.log('✅ ESTÁ A USAR A BASE DE DADOS ONLINE (VM Google Cloud)');
-      console.log('   IP:', config.host);
-      console.log('');
-      console.log('💡 Isto significa que:');
-      console.log('   - Todos os desenvolvedores veem os mesmos dados');
-      console.log('   - Alterações são sincronizadas em tempo real');
-      console.log('   - Requer ligação à internet');
+      // Verificar se é Supabase
+      if (config.host.includes('supabase.co')) {
+        console.log('✅ ESTÁ A USAR SUPABASE');
+        console.log('   Host:', config.host);
+        console.log('');
+        console.log('💡 Isto significa que:');
+        console.log('   - Base de dados gerenciada pelo Supabase');
+        console.log('   - Storage de arquivos integrado');
+        console.log('   - Requer ligação à internet');
+        if (process.env.SUPABASE_URL) {
+          console.log('   - Supabase Storage configurado');
+        } else {
+          console.log('   - ⚠️  Supabase Storage não configurado (SUPABASE_URL não definida)');
+        }
+      } else {
+        console.log('✅ ESTÁ A USAR A BASE DE DADOS ONLINE (Remoto)');
+        console.log('   IP:', config.host);
+        console.log('');
+        console.log('💡 Isto significa que:');
+        console.log('   - Todos os desenvolvedores veem os mesmos dados');
+        console.log('   - Alterações são sincronizadas em tempo real');
+        console.log('   - Requer ligação à internet');
+      }
     } else {
       console.log('📌 ESTÁ A USAR A BASE DE DADOS LOCAL');
       console.log('   Host:', config.host);
       console.log('');
-      console.log('💡 Para usar a base de dados online:');
-      console.log('   - Altere DB_HOST no .env para: 35.239.46.72');
+      console.log('💡 Para usar Supabase:');
+      console.log('   - Configure DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD');
+      console.log('   - Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY (opcional)');
     }
     console.log('');
     

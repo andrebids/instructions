@@ -95,6 +95,7 @@ echo Verificando conexão com a base de dados...
 cd /d "%~dp0server"
 call :check_database_connection
 set "DB_CONNECTION_OK=%errorlevel%"
+if "%DB_CONNECTION_OK%"=="" set "DB_CONNECTION_OK=1"
 cd /d "%~dp0"
 echo.
 
@@ -473,6 +474,136 @@ if %DEPLOY_SUCCESS% equ 0 (
 pause
 goto menu
 
+:check_db
+cls
+echo ========================================
+echo    VERIFICAÇÃO DE CONEXÃO BASE DE DADOS
+echo ========================================
+echo.
+cd /d "%~dp0server"
+
+rem Verificar se .env existe
+if not exist ".env" (
+    echo ❌ Arquivo .env não encontrado em server\.env
+    echo.
+    echo    Crie o arquivo .env com as seguintes variáveis:
+    echo.
+    echo    Para PostgreSQL local:
+    echo    DB_HOST=localhost
+    echo    DB_PORT=5433
+    echo    DB_NAME=instructions_demo
+    echo    DB_USER=demo_user
+    echo    DB_PASSWORD=demo_password
+    echo.
+    echo    Para Supabase:
+    echo    DB_HOST=db.[PROJECT_REF].supabase.co
+    echo    DB_PORT=5432
+    echo    DB_NAME=postgres
+    echo    DB_USER=postgres
+    echo    DB_PASSWORD=[SUA_SENHA]
+    echo    SUPABASE_URL=https://[PROJECT_REF].supabase.co
+    echo    SUPABASE_SERVICE_ROLE_KEY=[SERVICE_ROLE_KEY]
+    echo.
+    pause
+    cd /d "%~dp0"
+    goto menu
+)
+
+echo [1/3] Verificando arquivo .env...
+echo ✅ Arquivo .env encontrado
+echo.
+
+echo [2/3] Verificando variáveis de ambiente...
+set "MISSING_VARS=0"
+findstr /B /C:"DB_HOST=" ".env" >nul 2>&1
+if errorlevel 1 (
+    echo ⚠️  DB_HOST não definida
+    set "MISSING_VARS=1"
+)
+findstr /B /C:"DB_PORT=" ".env" >nul 2>&1
+if errorlevel 1 (
+    echo ⚠️  DB_PORT não definida
+    set "MISSING_VARS=1"
+)
+findstr /B /C:"DB_NAME=" ".env" >nul 2>&1
+if errorlevel 1 (
+    echo ⚠️  DB_NAME não definida
+    set "MISSING_VARS=1"
+)
+findstr /B /C:"DB_USER=" ".env" >nul 2>&1
+if errorlevel 1 (
+    echo ⚠️  DB_USER não definida
+    set "MISSING_VARS=1"
+)
+findstr /B /C:"DB_PASSWORD=" ".env" >nul 2>&1
+if errorlevel 1 (
+    echo ⚠️  DB_PASSWORD não definida
+    set "MISSING_VARS=1"
+)
+
+if "%MISSING_VARS%"=="1" (
+    echo.
+    echo ❌ Algumas variáveis obrigatórias estão em falta no .env
+    echo    Configure todas as variáveis DB_* antes de continuar
+    echo.
+    pause
+    cd /d "%~dp0"
+    goto menu
+) else (
+    echo ✅ Todas as variáveis obrigatórias estão definidas
+)
+echo.
+
+rem Verificar se é Supabase
+findstr /B /C:"SUPABASE_URL=" ".env" >nul 2>&1
+if errorlevel 1 (
+    echo 📌 Modo: PostgreSQL Local/Remoto
+) else (
+    echo 📌 Modo: Supabase
+    findstr /B /C:"SUPABASE_SERVICE_ROLE_KEY=" ".env" >nul 2>&1
+    if errorlevel 1 (
+        echo ⚠️  SUPABASE_SERVICE_ROLE_KEY não definida (opcional para storage)
+    ) else (
+        echo ✅ SUPABASE_SERVICE_ROLE_KEY definida
+    )
+)
+echo.
+
+echo [3/3] Testando conexão com a base de dados...
+echo.
+call npm run check-connection
+set "CONNECTION_RESULT=%errorlevel%"
+echo.
+
+if %CONNECTION_RESULT% equ 0 (
+    echo ========================================
+    echo    ✅ CONEXÃO VERIFICADA COM SUCESSO!
+    echo ========================================
+    echo.
+    echo A base de dados está acessível e funcionando corretamente.
+    echo.
+) else (
+    echo ========================================
+    echo    ❌ ERRO NA CONEXÃO
+    echo ========================================
+    echo.
+    echo Não foi possível conectar à base de dados.
+    echo.
+    echo 💡 Verifique:
+    echo    1. Credenciais no .env estão corretas
+    echo    2. PostgreSQL está a correr (se usar localhost)
+    echo    3. Ligação à internet (se usar Supabase)
+    echo    4. Firewall não está a bloquear a conexão
+    echo.
+    echo Para mais detalhes, execute:
+    echo    cd server ^&^& npm run check-connection
+    echo.
+)
+
+cd /d "%~dp0"
+pause
+goto menu
+
 :exit
 cls
 echo ========================================
@@ -704,9 +835,10 @@ if not exist "node_modules" (
     exit /b 1
 )
 
-rem Executar verificação de conexão
-call npm run check-connection >nul 2>&1
-if %errorlevel% equ 0 (
+rem Executar verificação de conexão (mostrar output)
+call npm run check-connection
+set "CONNECTION_EXIT_CODE=%errorlevel%"
+if %CONNECTION_EXIT_CODE% equ 0 (
     exit /b 0
 ) else (
     exit /b 1
