@@ -20,6 +20,12 @@ export function ThemeProvider({ children }) {
     } else {
       root.classList.add('light');
     }
+    
+    // Force a reflow to ensure classes are applied immediately
+    void root.offsetHeight;
+    
+    // Dispatch a custom event to notify components of theme change
+    window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
   }, [theme]);
 
   return children;

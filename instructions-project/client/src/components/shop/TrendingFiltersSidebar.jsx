@@ -21,27 +21,65 @@ export default function TrendingFiltersSidebar({
 }) {
   const handle = (key, value) => onChange?.({ ...filters, [key]: value });
   const { theme } = useTheme();
-  const isDark = theme === "dark";
+  
+  // Force component to re-render when theme changes by checking both hook and DOM
+  const [isDark, setIsDark] = React.useState(() => {
+    // Initialize from DOM to catch initial state
+    return document.documentElement.classList.contains('dark');
+  });
+  
+  React.useEffect(() => {
+    // Update from theme hook
+    const darkFromTheme = theme === 'dark';
+    setIsDark(darkFromTheme);
+    
+    // Also listen for DOM class changes as backup
+    const checkDarkClass = () => {
+      const hasDark = document.documentElement.classList.contains('dark');
+      setIsDark(hasDark);
+    };
+    
+    // Listen for theme change events
+    const handleThemeChange = (event) => {
+      if (event.detail?.theme) {
+        setIsDark(event.detail.theme === 'dark');
+      }
+    };
+    
+    // Use MutationObserver to watch for class changes on html element
+    const observer = new MutationObserver(checkDarkClass);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+    
+    window.addEventListener('themechange', handleThemeChange);
+    
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('themechange', handleThemeChange);
+    };
+  }, [theme]);
 
-  const containerClass = isDark
-    ? "relative space-y-6 rounded-3xl border border-white/10 bg-[#0b1224]/90 p-6 text-sm text-default-400 shadow-[0_25px_80px_rgba(8,15,36,0.55)] backdrop-blur-xl"
-    : "relative space-y-6 rounded-3xl border border-black/5 bg-gradient-to-b from-white via-white to-slate-100 p-6 text-sm text-default-600 shadow-[0_25px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl";
+  const containerClass = React.useMemo(() => isDark
+    ? "relative space-y-6 rounded-lg border border-white/10 bg-[#0b1224]/90 pt-[14px] pb-6 px-6 text-sm text-default-400 shadow-[0_25px_80px_rgba(8,15,36,0.55)] backdrop-blur-xl"
+    : "relative space-y-6 rounded-lg border border-black/5 bg-gradient-to-b from-white via-white to-slate-100 pt-[14px] pb-6 px-6 text-sm text-default-600 shadow-[0_25px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl", [isDark]);
 
-  const heroCardClass = isDark
+  const heroCardClass = React.useMemo(() => isDark
     ? "relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
-    : "relative overflow-hidden rounded-2xl border border-black/5 bg-white px-5 py-6 shadow-[0_12px_40px_rgba(15,23,42,0.08)]";
+    : "relative overflow-hidden rounded-2xl border border-black/5 bg-white px-5 py-6 shadow-[0_12px_40px_rgba(15,23,42,0.08)]", [isDark]);
 
-  const sectionCardClass = isDark
+  const sectionCardClass = React.useMemo(() => isDark
     ? "rounded-2xl border border-white/10 bg-content1/60 p-5 shadow-[0_18px_60px_rgba(8,15,36,0.45)]"
-    : "rounded-2xl border border-black/5 bg-white/80 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.1)]";
+    : "rounded-2xl border border-black/5 bg-white/80 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.1)]", [isDark]);
 
-  const statPillClass = isDark
+  const statPillClass = React.useMemo(() => isDark
     ? "rounded-xl border border-white/10 bg-black/40 px-3 py-2"
-    : "rounded-xl border border-black/5 bg-white px-3 py-2";
+    : "rounded-xl border border-black/5 bg-white px-3 py-2", [isDark]);
 
-  const collapsibleCardClass = isDark
+  const collapsibleCardClass = React.useMemo(() => isDark
     ? "rounded-2xl border border-white/10 bg-content1/60 shadow-[0_18px_60px_rgba(8,15,36,0.45)] backdrop-blur"
-    : "rounded-2xl border border-black/5 bg-white/80 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur";
+    : "rounded-2xl border border-black/5 bg-white/80 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur", [isDark]);
 
   const isEcoProduct = (p) => {
     try {
@@ -111,6 +149,9 @@ export default function TrendingFiltersSidebar({
 
   const min = priceLimits?.min ?? 0;
   const max = priceLimits?.max ?? 0;
+  // Ensure min and max are different to avoid Hero UI warning
+  const effectiveMin = min === max ? Math.max(0, min - 1) : min;
+  const effectiveMax = min === max ? min + 1 : max;
 
   const handlePriceChange = (value) => {
     if (Array.isArray(value)) {
@@ -295,7 +336,7 @@ export default function TrendingFiltersSidebar({
     },
   ];
 
-  const renderSectionContent = (sectionKey) => {
+  const renderSectionContent = React.useCallback((sectionKey) => {
     switch (sectionKey) {
       case "category":
         return (
@@ -316,7 +357,7 @@ export default function TrendingFiltersSidebar({
                     onClick={() => handle("mount", isSelected ? "" : opt.value)}
                     className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors ${isSelected ? selectedClass : idleClass}`}
                   >
-                    <span className={`text-sm font-medium ${isDark ? "text-white" : "text-foreground"}`}>{opt.label}</span>
+                    <span className={`text-sm font-medium ${isDark ? "text-white" : isSelected ? "text-primary-700" : "text-default-700"}`}>{opt.label}</span>
                     <span className={`text-xs ${isDark ? "text-default-300" : "text-default-600"}`}>({itemsCount[opt.countKey]})</span>
                   </button>
                 </li>
@@ -358,15 +399,14 @@ export default function TrendingFiltersSidebar({
       case "price":
         return (
           <div className="space-y-3">
-            {typeof Slider !== "undefined" ? (
+            {typeof Slider !== "undefined" && min !== max ? (
               <Slider
                 aria-label="Price range"
-                minValue={min}
-                maxValue={max}
+                minValue={effectiveMin}
+                maxValue={effectiveMax}
                 step={1}
                 value={priceRange}
                 onChange={handlePriceChange}
-                isDisabled={min === max}
                 showTooltip
                 formatOptions={{ style: "currency", currency: "EUR" }}
                 className="max-w-full"
@@ -377,31 +417,33 @@ export default function TrendingFiltersSidebar({
                   <div
                     className="absolute top-0 h-2 rounded-full bg-primary"
                     style={{
-                      left: `${((priceRange[0] - min) / (max - min || 1)) * 100}%`,
-                      width: `${((priceRange[1] - priceRange[0]) / (max - min || 1)) * 100}%`,
+                      left: `${((priceRange[0] - effectiveMin) / (effectiveMax - effectiveMin || 1)) * 100}%`,
+                      width: `${((priceRange[1] - priceRange[0]) / (effectiveMax - effectiveMin || 1)) * 100}%`,
                     }}
                   />
                 </div>
                 <div className="flex items-center gap-2">
                   <input
                     type="range"
-                    min={min}
-                    max={max}
+                    min={effectiveMin}
+                    max={effectiveMax}
                     value={priceRange[0]}
                     onChange={(e) =>
                       onPriceChange?.([Math.min(Number(e.target.value), priceRange[1] - 1), priceRange[1]])
                     }
                     className="w-full"
+                    disabled={min === max}
                   />
                   <input
                     type="range"
-                    min={min}
-                    max={max}
+                    min={effectiveMin}
+                    max={effectiveMax}
                     value={priceRange[1]}
                     onChange={(e) =>
                       onPriceChange?.([priceRange[0], Math.max(Number(e.target.value), priceRange[0] + 1)])
                     }
                     className="w-full"
+                    disabled={min === max}
                   />
                 </div>
               </div>
@@ -494,7 +536,7 @@ export default function TrendingFiltersSidebar({
                     }}
                     className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-colors ${isSelected ? selectedClass : idleClass}`}
                   >
-                    <span className={isDark ? "text-white" : "text-foreground"}>{year}</span>
+                    <span className={isDark ? "text-white" : isSelected ? "text-primary-700" : "text-default-700"}>{year}</span>
                     <div className="flex items-center gap-2 text-xs">
                       {count > 0 && <span className={isDark ? "text-default-300" : "text-default-600"}>({count})</span>}
                       {isSelected && <Icon icon="lucide:check" className={`text-sm ${isDark ? "text-white" : "text-primary-400"}`} />}
@@ -515,7 +557,7 @@ export default function TrendingFiltersSidebar({
                 : "border-primary bg-primary/5 text-primary-700";
               const idleClass = isDark
                 ? "border-white/10 bg-white/[0.03] text-default-400 hover:border-white/20 hover:bg-white/[0.05]"
-                : "border-black/10 bg-white text-default-600 hover:border-black/20 hover:bg-default-50";
+                : "border-black/10 bg-white text-default-700 hover:border-black/20 hover:bg-default-50";
 
               return (
                 <button
@@ -574,7 +616,7 @@ export default function TrendingFiltersSidebar({
 
             {dimKey ? (
               <div className="space-y-2">
-                {typeof Slider !== "undefined" ? (
+                {typeof Slider !== "undefined" && dimValues.min !== dimValues.max ? (
                   <Slider
                     aria-label={`${dimLabels[dimKey]} range`}
                     minValue={dimValues.min}
@@ -587,7 +629,6 @@ export default function TrendingFiltersSidebar({
                       }
                     }}
                     showTooltip
-                    isDisabled={dimValues.min === dimValues.max}
                     formatOptions={{ style: "unit", unit: "meter", maximumFractionDigits: 2 }}
                     className="max-w-full"
                   />
@@ -642,21 +683,21 @@ export default function TrendingFiltersSidebar({
               isSelected={filters.usage === "Shopping"}
               onValueChange={(value) => handle("usage", value ? "Shopping" : "")}
               classNames={{
-                label: "flex items-center gap-1 text-sm text-default-600 dark:text-default-300",
+                label: `flex items-center gap-1 text-sm ${isDark ? "text-white" : "text-default-600"}`,
               }}
               size="sm"
             >
-              Shopping Malls <span className="text-default-500">({itemsCount.usageShopping})</span>
+              Shopping Malls <span className={isDark ? "text-white" : "text-default-500"}>({itemsCount.usageShopping})</span>
             </Checkbox>
             <Checkbox
               isSelected={Boolean(filters.eco)}
               onValueChange={(value) => handle("eco", value)}
               classNames={{
-                label: "flex items-center gap-1 text-sm text-default-600 dark:text-default-300",
+                label: `flex items-center gap-1 text-sm ${isDark ? "text-white" : "text-default-600"}`,
               }}
               size="sm"
             >
-              Eco <span className="text-default-500">({itemsCount.eco})</span>
+              Eco <span className={isDark ? "text-white" : "text-default-500"}>({itemsCount.eco})</span>
             </Checkbox>
           </div>
         );
@@ -683,7 +724,7 @@ export default function TrendingFiltersSidebar({
                     onClick={() => handle("location", opt.value)}
                     className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-colors ${isSelected ? selectedClass : idleClass}`}
                   >
-                    <span className={isDark ? "text-white" : "text-foreground"}>{opt.label}</span>
+                    <span className={isDark ? "text-white" : isSelected ? "text-primary-700" : "text-default-700"}>{opt.label}</span>
                     <div className="flex items-center gap-2 text-xs">
                       <span className={isDark ? "text-default-300" : "text-default-600"}>({opt.count})</span>
                       {isSelected && <Icon icon="lucide:check" className={`text-sm ${isDark ? "text-white" : "text-primary-400"}`} />}
@@ -697,7 +738,7 @@ export default function TrendingFiltersSidebar({
       default:
         return null;
     }
-  };
+  }, [isDark, filters, itemsCount, mountOptions, minStock, maxStock, dimKey, dimValues, effectiveDimRange, products, handle, formatCurrency, formatDimensionValue, availableYears, priceRange, effectiveMin, effectiveMax, handlePriceChange, onPriceChange, colorOptions, typeOptions]);
 
   const CollapsibleCard = ({ section }) => {
     const isOpen = openSections.includes(section.key);
@@ -752,19 +793,19 @@ export default function TrendingFiltersSidebar({
     );
   };
 
-  const dynamicContainerClass = filtersVisible
+  const dynamicContainerClass = React.useMemo(() => filtersVisible
     ? containerClass
     : isDark
-    ? "relative rounded-3xl border border-white/10 bg-[#0b1224]/90 p-[10px] text-sm text-default-400 shadow-[0_25px_80px_rgba(8,15,36,0.55)] backdrop-blur-xl w-fit"
-    : "relative rounded-3xl border border-black/5 bg-gradient-to-b from-white via-white to-slate-100 p-[10px] text-sm text-default-600 shadow-[0_25px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl w-fit";
+    ? "relative rounded-lg border border-white/10 bg-[#0b1224]/90 p-[10px] text-sm text-default-400 shadow-[0_25px_80px_rgba(8,15,36,0.55)] backdrop-blur-xl w-fit"
+    : "relative rounded-lg border border-black/5 bg-gradient-to-b from-white via-white to-slate-100 p-[10px] text-sm text-default-600 shadow-[0_25px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl w-fit", [filtersVisible, containerClass, isDark]);
 
   return (
-    <aside className={className}>
+    <aside className={className} key={`filters-${isDark ? 'dark' : 'light'}`}>
       <div className={dynamicContainerClass}>
         {filtersVisible ? (
           <>
             <div className="flex items-center justify-between mb-4">
-              <div className={`text-xs uppercase tracking-[0.3em] ${isDark ? "text-white" : "text-foreground"}`}>{isDark ? "FILTERS" : "Filters"}</div>
+              <div className={`text-xs uppercase tracking-[0.3em] ${isDark ? "text-white" : "text-default-900"}`}>{isDark ? "FILTERS" : "Filters"}</div>
               {onToggleVisibility && (
                 <Button
                   isIconOnly
@@ -775,7 +816,7 @@ export default function TrendingFiltersSidebar({
                   aria-label="Hide filters"
                   className={`md:flex hidden items-center justify-center ${isDark ? 'bg-white/10 hover:bg-white/20 border border-primary' : 'bg-default-100 hover:bg-default-200 border border-primary'} transition-colors`}
                 >
-                  <Icon icon="lucide:chevron-down" className="text-sm transition-transform duration-300 rotate-180" />
+                  <Icon icon="lucide:chevron-down" className={`text-sm transition-transform duration-300 rotate-180 ${isDark ? "text-white" : "text-default-700"}`} />
                 </Button>
               )}
             </div>
@@ -879,7 +920,7 @@ export default function TrendingFiltersSidebar({
           </>
         ) : (
           <div className="flex items-center gap-[10px]">
-            <div className={`text-xs uppercase tracking-[0.3em] ${isDark ? "text-white" : "text-foreground"}`}>{isDark ? "FILTERS" : "Filters"}</div>
+            <div className={`text-xs uppercase tracking-[0.3em] ${isDark ? "text-white" : "text-default-900"}`}>{isDark ? "FILTERS" : "Filters"}</div>
             {onToggleVisibility && (
               <Button
                 isIconOnly
@@ -890,7 +931,7 @@ export default function TrendingFiltersSidebar({
                 aria-label="Show filters"
                 className={`md:flex hidden items-center justify-center ${isDark ? 'bg-white/10 hover:bg-white/20 border border-primary' : 'bg-default-100 hover:bg-default-200 border border-primary'} transition-colors`}
               >
-                <Icon icon="lucide:chevron-down" className="text-sm transition-transform duration-300" />
+                <Icon icon="lucide:chevron-down" className={`text-sm transition-transform duration-300 ${isDark ? "text-white" : "text-default-700"}`} />
               </Button>
             )}
           </div>

@@ -1,6 +1,7 @@
 import React from "react";
 import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useTheme } from "@heroui/use-theme";
 import { useShop } from "../context/ShopContext";
 import TrendingFiltersSidebar from "../components/shop/TrendingFiltersSidebar";
 import ProductGrid from "../components/shop/ProductGrid";
@@ -20,6 +21,7 @@ export default function Shop() {
   const navigate = useNavigate();
   const { userName } = useUser();
   const { isHandheld } = useResponsiveProfile();
+  const { theme } = useTheme();
   const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false, dimKey: "", dimRange: null, releaseYear: "" });
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [selected, setSelected] = React.useState({ product: null, variant: null });
@@ -232,6 +234,7 @@ export default function Shop() {
             </div>
             <div className="flex-1 overflow-auto">
               <TrendingFiltersSidebar
+                key={theme}
                 products={products || []}
                 filters={filters}
                 onChange={setFilters}
@@ -249,7 +252,7 @@ export default function Shop() {
           </div>
         </div>
 
-        <div className="flex-1 w-full">
+        <div className="flex-1 w-full md:pt-[15px]">
           <div className="mb-4 flex items-center justify-between">
             <div className="hidden md:flex items-center gap-2">
               {[2,3,4].map((n)=> (
