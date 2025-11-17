@@ -33,6 +33,7 @@ export default defineConfig({
     VitePWA({
       strategies: 'injectManifest',
       registerType: 'prompt', // Changed from 'autoUpdate' to 'prompt' for manual control
+      injectRegister: null, // Manual registration via virtual:pwa-register (registerSW)
       srcDir: 'public',
       filename: 'sw.js',
       includeAssets: ['favicon.ico', 'logo.webp', 'icons/*.png'],
@@ -65,9 +66,9 @@ export default defineConfig({
         // rollupFormat removido - usar padrão do VitePWA (ES modules)
         // O injectionPoint padrão é 'self.__WB_MANIFEST' que será substituído pelo manifest
         // Novas opções do injectManifest (v0.18.0+)
-        minify: true, // Minificar o service worker em produção
+        minify: false, // Desabilitar minificação temporariamente para debug (habilitar após resolver erro)
         sourcemap: false, // Source maps desabilitados por padrão (usar workbox.sourcemap para habilitar)
-        enableWorkboxModulesLogs: false // Desabilitar logs detalhados do Workbox em produção
+        enableWorkboxModulesLogs: true // Habilitar logs detalhados do Workbox para debug
       },
       workbox: {
         // Cleanup outdated caches - remove assets antigos quando nova versão é publicada
