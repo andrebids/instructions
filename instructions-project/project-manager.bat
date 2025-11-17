@@ -639,19 +639,19 @@ echo ========================================
 echo    BUILD E DEPLOY PARA SERVIDOR
 echo ========================================
 echo.
-echo Este processo irá:
-echo 1. Fazer build do cliente localmente
-echo 2. Enviar ficheiros compilados para o servidor
-echo 3. Atualizar o servidor com o novo build
-echo 4. Executar migrations na base de dados
-echo 5. Reiniciar o servidor PM2
+       echo Este processo irá:
+       echo 1. Fazer build do cliente localmente
+       echo 2. Enviar ficheiros compilados para o servidor
+       echo 3. Atualizar o servidor com o novo build
+       echo 4. Reiniciar o servidor PM2
 echo.
 echo ⚠️  NOTA: O servidor remoto deve estar acessível via SSH
 echo    Certifique-se de que a chave SSH está configurada
 echo.
-echo 💡 O script irá executar automaticamente:
-echo    - npm run setup (migrations)
-echo    - pm2 restart instructions-server
+       echo 💡 O script irá executar automaticamente:
+       echo    - pm2 restart instructions-server
+       echo.
+       echo ℹ️  Migrations não são necessárias (usando Supabase)
 echo.
 echo Iniciando deploy automaticamente...
 timeout /t 2 /nobreak >nul
@@ -682,7 +682,6 @@ if %DEPLOY_SUCCESS% equ 0 (
     echo ========================================
     echo.
     echo ✅ Build enviado para o servidor
-    echo ✅ Migrations executadas
     echo ✅ Servidor reiniciado
     echo.
     echo O servidor remoto foi atualizado completamente.
@@ -698,11 +697,10 @@ if %DEPLOY_SUCCESS% equ 0 (
     echo ========================================
     echo.
     echo O deploy falhou. Verifique:
-    echo 1. Servidor está acessível via SSH
-    echo 2. Chave SSH está configurada corretamente
-    echo 3. Build local foi concluído com sucesso
-    echo 4. Migrations executaram sem erros críticos
-    echo 5. PM2 está instalado e configurado no servidor
+       echo 1. Servidor está acessível via SSH
+       echo 2. Chave SSH está configurada corretamente
+       echo 3. Build local foi concluído com sucesso
+       echo 4. PM2 está instalado e configurado no servidor
     echo 6. Verifique os erros acima para mais detalhes
     echo.
     echo 💡 Para verificar o status do servidor:
