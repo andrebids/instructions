@@ -62,7 +62,8 @@ export default defineConfig({
           '**/simuvideo.webp' // Excluir vídeo grande
         ],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB para permitir ficheiros maiores
-        rollupFormat: 'iife'
+        rollupFormat: 'iife',
+        // O injectionPoint padrão é 'self.__WB_MANIFEST' que será substituído pelo manifest
       },
       devOptions: {
         enabled: false, // Desabilitar Service Worker em desenvolvimento para evitar erros

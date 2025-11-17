@@ -27,6 +27,7 @@ self.addEventListener('activate', (event) => {
 });
 
 // Precaching assets - manifest is injected by VitePWA during build
+// injectionPoint: self.__WB_MANIFEST
 precacheAndRoute(self.__WB_MANIFEST || []);
 
 // Don't claim clients immediately - wait for user confirmation
