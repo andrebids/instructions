@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 export function PageTitle({
   title,
@@ -9,6 +10,8 @@ export function PageTitle({
   showWelcome = false,
   lead,
 }) {
+  const { t } = useTranslation();
+  
   return (
     <div className={className}>
       {title ? (
@@ -16,7 +19,7 @@ export function PageTitle({
       ) : null}
       {showWelcome ? (
         <h1 className="text-xl md:text-2xl text-foreground">
-          <span className="font-normal text-default-500">Welcome back, </span>
+          <span className="font-normal text-default-500">{t('pages.dashboard.welcomeBack')} </span>
           <span className="font-semibold">{userName}</span>
         </h1>
       ) : lead ? (

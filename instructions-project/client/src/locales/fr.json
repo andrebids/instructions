@@ -19,6 +19,7 @@
     "dashboard": {
       "title": "Tableau de bord",
       "subtitle": "Voici un aperçu de vos projets.",
+      "welcomeBack": "Bon retour,",
       "createNewProject": "Créer un nouveau projet",
       "loadingData": "Chargement des données...",
       "stats": {
