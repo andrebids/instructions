@@ -114,46 +114,25 @@ registerRoute(
   })
 );
 
-// Google Fonts cache with CacheFirst strategy
-registerRoute(
-  ({ url }) => url.origin === 'https://fonts.googleapis.com',
-  new CacheFirst({
-    cacheName: 'google-fonts-cache',
-    plugins: [
-      {
-        cacheableResponse: {
-          statuses: [0, 200]
-        },
-        expiration: {
-          maxEntries: 10,
-          maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-        }
-      }
-    ]
-  })
-);
+// Google Fonts - não interceptar, deixar passar direto pela rede
+// Isso evita problemas de CORS e erros de fetch
+// O navegador já faz cache automático de fontes
 
+// Images cache - apenas imagens do próprio domínio
+// Excluir recursos externos (Unsplash, etc.) para evitar erros de CORS/rede
 registerRoute(
-  ({ url }) => url.origin === 'https://fonts.gstatic.com',
-  new CacheFirst({
-    cacheName: 'gstatic-fonts-cache',
-    plugins: [
-      {
-        cacheableResponse: {
-          statuses: [0, 200]
-        },
-        expiration: {
-          maxEntries: 10,
-          maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-        }
-      }
-    ]
-  })
-);
-
-// Images cache with CacheFirst strategy
-registerRoute(
-  ({ request }) => request.destination === 'image',
+  ({ request, url }) => {
+    // Apenas cachear imagens do próprio domínio
+    const isImage = request.destination === 'image';
+    const isSameOrigin = url.origin === self.location.origin;
+    // Excluir domínios externos conhecidos
+    const isExternalImage = url.origin.includes('unsplash.com') || 
+                           url.origin.includes('images.unsplash.com') ||
+                           url.origin.includes('fonts.googleapis.com') ||
+                           url.origin.includes('fonts.gstatic.com');
+    
+    return isImage && isSameOrigin && !isExternalImage;
+  },
   new CacheFirst({
     cacheName: 'images-cache',
     plugins: [
@@ -329,19 +308,36 @@ self.addEventListener('error', (event) => {
 
 // Unhandled promise rejection handler
 self.addEventListener('unhandledrejection', (event) => {
+  const reason = event.reason?.toString() || '';
+  const reasonStr = String(reason);
+  
+  // Filtrar erros conhecidos de recursos externos que não devem ser reportados
+  const isExternalResourceError = 
+    reasonStr.includes('unsplash.com') ||
+    reasonStr.includes('fonts.googleapis.com') ||
+    reasonStr.includes('fonts.gstatic.com') ||
+    (reasonStr.includes('NetworkError') && reasonStr.includes('FetchEvent.respondWith'));
+  
+  if (isExternalResourceError) {
+    // Silenciosamente ignorar erros de recursos externos
+    // Esses recursos não são interceptados pelo Service Worker
+    event.preventDefault(); // Previne que o erro seja logado no console
+    return;
+  }
+  
   console.error('❌ [SW] Unhandled promise rejection:', {
     reason: event.reason,
     promise: event.promise
   });
   
-  // Try to notify clients about the rejection
+  // Try to notify clients about the rejection (apenas para erros reais)
   self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
     clients.forEach(client => {
       client.postMessage({
         type: 'SW_ERROR',
         error: {
           message: 'Unhandled promise rejection',
-          reason: event.reason?.toString() || 'Unknown'
+          reason: reasonStr
         }
       });
     });
