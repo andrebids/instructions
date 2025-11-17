@@ -369,11 +369,21 @@ try {
                         
                         # Fazer git pull para obter versão mais recente
                         Write-Host "Atualizando código local (git pull origin $currentBranch)..." -ForegroundColor Gray
-                        $pullOutput = git pull origin $currentBranch 2>&1
-                        $pullExitCode = $LASTEXITCODE
+                        # Capturar output e exit code separadamente
+                        $pullOutput = @()
+                        try {
+                            $pullOutput = git pull origin $currentBranch 2>&1
+                            $pullExitCode = $LASTEXITCODE
+                        } catch {
+                            # Se houver exceção, tentar obter exit code de outra forma
+                            $pullExitCode = $LASTEXITCODE
+                            if ($null -eq $pullExitCode) {
+                                $pullExitCode = 1
+                            }
+                        }
                         
                         # Converter output para string se for array
-                        $pullOutputString = if ($pullOutput -is [System.Array]) { $pullOutput -join "`n" } else { $pullOutput.ToString() }
+                        $pullOutputString = if ($pullOutput -is [System.Array]) { $pullOutput -join "`n" } else { if ($null -eq $pullOutput) { "" } else { $pullOutput.ToString() } }
                         
                         if ($pullExitCode -ne 0) {
                             Write-Host "[ERRO] git pull falhou (código: $pullExitCode)" -ForegroundColor Red
@@ -392,14 +402,19 @@ try {
                             Write-Host ""
                         } else {
                             # Verificar se houve atualizações
-                            if ($pullOutputString -match 'Already up to date' -or $pullOutputString -match 'já está atualizado') {
+                            # Git pull bem-sucedido (exit code 0)
+                            if ($pullOutputString -match 'Already up to date' -or $pullOutputString -match 'já está atualizado' -or $pullOutputString -match 'Already up to date') {
                                 Write-Host "[OK] Código já estava atualizado com a versão mais recente do GitHub" -ForegroundColor Green
                                 $gitUpdateSuccess = $true
-                            } else {
+                            } elseif ($pullOutputString -match 'Updating|Fast-forward|Merge made|files? changed') {
                                 Write-Host "[OK] Código atualizado com sucesso do GitHub!" -ForegroundColor Green
                                 if ($pullOutputString) {
-                                    Write-Host "   Detalhes: $pullOutputString" -ForegroundColor Gray
+                                    Write-Host "   Detalhes: $($pullOutputString -split "`n" | Select-Object -First 3 -join '; ')" -ForegroundColor Gray
                                 }
+                                $gitUpdateSuccess = $true
+                            } else {
+                                # Git pull retornou exit code 0 mas output não reconhecido - assumir sucesso
+                                Write-Host "[OK] Código atualizado (git pull concluído com sucesso)" -ForegroundColor Green
                                 $gitUpdateSuccess = $true
                             }
                             
@@ -434,9 +449,12 @@ try {
                     }
                 }
             } catch {
-                Write-Host "[AVISO] Erro ao verificar remote: $_" -ForegroundColor Yellow
-                Write-Host "   Continuando com código local existente..." -ForegroundColor Yellow
-                Write-Host ""
+                # Ignorar erros do git pull se já foi processado
+                if (-not $gitUpdateSuccess) {
+                    Write-Host "[AVISO] Erro ao verificar remote: $_" -ForegroundColor Yellow
+                    Write-Host "   Continuando com código local existente..." -ForegroundColor Yellow
+                    Write-Host ""
+                }
             }
         }
     }
