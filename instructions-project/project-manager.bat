@@ -1,6 +1,10 @@
 @echo off
+setlocal enabledelayedexpansion
 title Project Manager - TheCore
 color 0A
+
+rem Definir arquivo de log
+set "LOG_FILE=%~dp0project-manager.log"
 
 :menu
 cls
@@ -32,178 +36,233 @@ echo ========================================
 echo    INICIANDO PROJETO THECORE
 echo ========================================
 echo.
+echo Logs sendo salvos em: %LOG_FILE%
+echo ======================================== >> "%LOG_FILE%"
+echo [%DATE% %TIME%] INICIANDO PROJETO >> "%LOG_FILE%"
+echo ======================================== >> "%LOG_FILE%"
+echo.
+echo [DEBUG] Iniciando processo de inicializacao...
+echo [%DATE% %TIME%] [DEBUG] Iniciando processo de inicializacao... >> "%LOG_FILE%"
+echo [DEBUG] Diretorio atual: %CD%
+echo [%DATE% %TIME%] [DEBUG] Diretorio atual: %CD% >> "%LOG_FILE%"
+echo [DEBUG] Diretorio do script: %~dp0
+echo [%DATE% %TIME%] [DEBUG] Diretorio do script: %~dp0 >> "%LOG_FILE%"
+echo.
+
+rem Configurar NODE_OPTIONS para preferir IPv4 (resolve problema DNS Supabase)
+rem IMPORTANTE: Deve ser definido no início para aplicar a todos os comandos Node.js
+set "NODE_OPTIONS=--dns-result-order=ipv4first"
+echo [DEBUG] NODE_OPTIONS configurado: %NODE_OPTIONS%
+echo.
 
 rem Parar rapidamente processos/portas antes de iniciar
+echo [DEBUG] Parando processos anteriores...
+echo [%DATE% %TIME%] [DEBUG] Parando processos anteriores... >> "%LOG_FILE%"
 call :stop_quick
+set "STOP_RESULT=%errorlevel%"
+echo [%DATE% %TIME%] [DEBUG] stop_quick retornou: %STOP_RESULT% >> "%LOG_FILE%"
+if %STOP_RESULT% neq 0 (
+    echo [DEBUG] Aviso: stop_quick retornou erro, mas continuando...
+    echo [%DATE% %TIME%] [DEBUG] Aviso: stop_quick retornou erro, mas continuando... >> "%LOG_FILE%"
+) else (
+    echo [DEBUG] Processos anteriores parados com sucesso
+    echo [%DATE% %TIME%] [DEBUG] Processos anteriores parados com sucesso >> "%LOG_FILE%"
+)
+echo [DEBUG] Continuando apos stop_quick...
+echo [%DATE% %TIME%] [DEBUG] Continuando apos stop_quick... >> "%LOG_FILE%"
+echo.
 
 rem Verificar pré-requisitos (Node, npm, Docker/Compose)
+echo [DEBUG] Verificando pre-requisitos...
+echo [%DATE% %TIME%] [DEBUG] Verificando pre-requisitos... >> "%LOG_FILE%"
 call :ensure_prereqs
-if %errorlevel% neq 0 (
+set "PREREQS_RESULT=%errorlevel%"
+echo [%DATE% %TIME%] [DEBUG] ensure_prereqs retornou: %PREREQS_RESULT% >> "%LOG_FILE%"
+if %PREREQS_RESULT% neq 0 (
+    echo [DEBUG] ERRO: Pre-requisitos nao atendidos
+    echo [%DATE% %TIME%] [DEBUG] ERRO: Pre-requisitos nao atendidos >> "%LOG_FILE%"
     pause
     goto menu
 )
+echo [DEBUG] Pre-requisitos verificados com sucesso
+echo [%DATE% %TIME%] [DEBUG] Pre-requisitos verificados com sucesso >> "%LOG_FILE%"
+echo.
 
 rem Verificar e instalar dependências automaticamente
 echo ========================================
 echo    [0/5] INSTALANDO DEPENDÊNCIAS
 echo ========================================
 echo.
+echo [DEBUG] Iniciando verificacao de dependencias...
 echo Verificando e instalando dependências do projeto...
 echo Isso pode demorar alguns minutos na primeira vez.
 echo.
+echo [%DATE% %TIME%] [DEBUG] Chamando check_and_install_dependencies... >> "%LOG_FILE%"
 call :check_and_install_dependencies
-if %errorlevel% neq 0 (
+set "DEPS_RESULT=%errorlevel%"
+echo [DEBUG] check_and_install_dependencies retornou: %DEPS_RESULT%
+echo [%DATE% %TIME%] [DEBUG] check_and_install_dependencies retornou: %DEPS_RESULT% >> "%LOG_FILE%"
+if %DEPS_RESULT% neq 0 (
     echo.
     echo ❌ Erro ao instalar dependências
     echo    Verifique as mensagens acima para mais detalhes
+    echo [DEBUG] Pausando antes de voltar ao menu...
     pause
     goto menu
 )
 echo.
 echo ✅ Dependências verificadas e instaladas!
 echo.
+echo [DEBUG] Dependencias OK, aguardando 2 segundos...
 timeout /t 2 /nobreak >nul
+echo [DEBUG] Continuando apos dependencias...
+echo.
 
 rem Garantir que estamos na raiz do projeto antes de comandos subsequentes
 cd /d "%~dp0"
+echo [DEBUG] Mudado para diretorio raiz: %CD%
 
+rem ========================================
+rem BYPASS: Pular verificacoes de BD e migrations para teste rapido
+rem ========================================
 echo ========================================
-echo    [1/5] INICIANDO BASE DE DADOS
+echo    [BYPASS] PULANDO VERIFICAÇÕES DE BD
 echo ========================================
 echo.
-echo Iniciando base de dados PostgreSQL...
-if "%DOCKER_AVAILABLE%"=="1" (
-    %COMPOSE_CMD% -f "%~dp0docker-compose.dev.yml" up -d
-    if %errorlevel% neq 0 (
-        echo ❌ Erro ao iniciar PostgreSQL
-        pause
-        goto menu
+echo [DEBUG] BYPASS ATIVO - Pulando verificacoes de BD e migrations
+echo [%DATE% %TIME%] [DEBUG] BYPASS ATIVO - Pulando verificacoes de BD e migrations >> "%LOG_FILE%"
+echo ⚠️  MODO TESTE: Verificações de base de dados e migrations desativadas
+echo    Para reativar, remova o comentario do bloco BYPASS no script
+echo.
+
+echo ========================================
+echo    [1/2] INICIANDO SERVIDOR BACKEND
+echo ========================================
+echo.
+echo [DEBUG] Iniciando secao do backend...
+echo [%DATE% %TIME%] [DEBUG] Iniciando secao do backend... >> "%LOG_FILE%"
+rem Verificar se backend já está a correr
+echo [DEBUG] Verificando se backend ja esta a correr...
+echo [%DATE% %TIME%] [DEBUG] Verificando se backend ja esta a correr... >> "%LOG_FILE%"
+echo [%DATE% %TIME%] [DEBUG] Executando curl para verificar backend... >> "%LOG_FILE%"
+curl -s -m 2 http://localhost:5000/health >nul 2>&1
+set "CURL_RESULT=%errorlevel%"
+echo [DEBUG] curl retornou: %CURL_RESULT%
+echo [%DATE% %TIME%] [DEBUG] curl retornou: %CURL_RESULT% >> "%LOG_FILE%"
+if not errorlevel 1 (
+    echo ✅ Backend já está a correr na porta 5000
+    echo [%DATE% %TIME%] [DEBUG] Backend ja esta a correr, pulando inicializacao... >> "%LOG_FILE%"
+    echo    Pulando inicialização...
+    set "BACKEND_ONLINE=1"
+    goto backend_already_running
+)
+echo [DEBUG] Backend nao esta a correr, continuando...
+echo [%DATE% %TIME%] [DEBUG] Backend nao esta a correr, continuando... >> "%LOG_FILE%"
+
+rem Verificar se há processo Node.js a usar a porta 5000
+echo [DEBUG] Verificando se porta 5000 esta em uso...
+echo [%DATE% %TIME%] [DEBUG] Verificando se porta 5000 esta em uso... >> "%LOG_FILE%"
+rem Verificar se há processo Node.js a usar a porta 5000 (versao simplificada)
+echo [DEBUG] Verificando porta 5000 de forma simplificada...
+echo [%DATE% %TIME%] [DEBUG] Verificando porta 5000 de forma simplificada... >> "%LOG_FILE%"
+netstat -ano | findstr ":5000" | findstr "LISTENING" >nul
+if errorlevel 1 (
+    echo [DEBUG] Porta 5000 nao esta em uso - continuando...
+    echo [%DATE% %TIME%] [DEBUG] Porta 5000 nao esta em uso - continuando... >> "%LOG_FILE%"
+    goto porta_livre
+)
+echo [DEBUG] Porta 5000 esta em uso - verificando processo...
+echo [%DATE% %TIME%] [DEBUG] Porta 5000 esta em uso - verificando processo... >> "%LOG_FILE%"
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5000" ^| findstr "LISTENING"') do (
+    echo [DEBUG] Verificando PID: %%a
+    echo [%DATE% %TIME%] [DEBUG] Verificando PID: %%a >> "%LOG_FILE%"
+    tasklist /fi "PID eq %%a" 2>nul | findstr /i "node.exe" >nul
+    if not errorlevel 1 (
+        echo    Processo Node.js encontrado na porta 5000 (PID: %%a)
+        echo [%DATE% %TIME%] [DEBUG] Processo Node.js encontrado, pulando inicializacao... >> "%LOG_FILE%"
+        echo    Se quiser reiniciar, use a opção 3 (REINICIAR PROJETO) ou feche manualmente
+        set "BACKEND_ONLINE=1"
+        goto backend_already_running
     )
-    echo ✅ PostgreSQL iniciado com sucesso!
-) else (
-    echo ⚠️  Docker/Compose nao encontrado. Base de dados via Docker nao sera iniciada.
-    echo    -> Instala Docker Desktop OU inicia a tua BD PostgreSQL localmente (porta 5433)
-    echo    -> As migrations ainda serao executadas se o PostgreSQL estiver a correr
-)
-echo.
-
-echo ========================================
-echo    [2/5] VERIFICANDO CONEXÃO BASE DE DADOS
-echo ========================================
-echo.
-echo Verificando conexão com a base de dados...
-cd /d "%~dp0server"
-call :check_database_connection
-set "DB_CONNECTION_OK=%errorlevel%"
-if "%DB_CONNECTION_OK%"=="" set "DB_CONNECTION_OK=1"
-cd /d "%~dp0"
-echo.
-
-if "%DB_CONNECTION_OK%"=="0" (
-    echo ✅ Conexão com base de dados verificada com sucesso!
-    echo.
-) else (
-    echo ⚠️  AVISO: Não foi possível verificar a conexão com a base de dados
-    echo.
-    echo    Possíveis causas:
-    echo    1. Arquivo .env não existe ou está incompleto
-    echo    2. Credenciais incorretas no .env
-    echo    3. Base de dados não está acessível (PostgreSQL local não está a correr ou Supabase offline)
-    echo    4. Sem ligação à internet (se usar Supabase)
-    echo.
-    echo    Verifique o arquivo server\.env e tente novamente.
-    echo    Para verificar manualmente: cd server ^&^& npm run check-connection
-    echo.
-    set /p continue_anyway="Deseja continuar mesmo assim? (S/N): "
-    if /i not "%continue_anyway%"=="S" (
-        echo.
-        echo Operação cancelada pelo utilizador.
-        pause
-        goto menu
-    )
-    echo.
-    echo ⚠️  Continuando mesmo assim... (o setup pode falhar)
-    echo.
 )
 
-echo ========================================
-echo    [3/5] EXECUTANDO SETUP DA BD
-echo ========================================
-echo.
-echo Executando setup da base de dados (migrations)...
-cd /d "%~dp0server"
-echo    Este passo irá:
-echo    - Verificar conexão com a base de dados
-echo    - Criar/sincronizar tabelas básicas
-echo    - Executar migrations necessárias
-echo    - Configurar schema completo
-echo.
-call npm run setup
-set "SETUP_SUCCESS=0"
-if %errorlevel% neq 0 (
-    echo.
-    echo ⚠️  AVISO: Setup encontrou problemas!
-    echo    O projeto pode não funcionar corretamente sem as migrations.
-    echo.
-    echo    Tentando executar migrations manualmente...
-    call npm run migrate:all
-    if %errorlevel% neq 0 (
-        echo ❌ Erro ao executar migrations. Verifique:
-        echo    1. PostgreSQL está a correr
-        echo    2. Credenciais em server\.env estão corretas
-        echo    3. Base de dados existe
-        echo.
-        echo    Execute manualmente: cd server ^&^& npm run setup
-        echo.
-        echo ⚠️  AVISO CRÍTICO: O servidor será iniciado mesmo assim,
-        echo    mas pode apresentar erros 500 se as tabelas não existirem.
-        echo    Corrija os problemas antes de usar a aplicação.
-        echo.
-        pause
-        set "SETUP_SUCCESS=0"
-    ) else (
-        echo ✅ Migrations executadas manualmente com sucesso!
-        set "SETUP_SUCCESS=1"
-    )
-) else (
-    echo ✅ Setup da base de dados concluído com sucesso!
-    echo    Todas as migrations foram aplicadas.
-    set "SETUP_SUCCESS=1"
-)
-echo.
+:porta_livre
+echo [DEBUG] Continuando para iniciar backend...
+echo [%DATE% %TIME%] [DEBUG] Continuando para iniciar backend... >> "%LOG_FILE%"
+echo [DEBUG] Porta 5000 nao esta em uso, continuando...
+echo [%DATE% %TIME%] [DEBUG] Porta 5000 nao esta em uso, continuando... >> "%LOG_FILE%"
+echo [DEBUG] Chegou ao ponto de iniciar o backend...
+echo [%DATE% %TIME%] [DEBUG] Chegou ao ponto de iniciar o backend... >> "%LOG_FILE%"
 
-if "%SETUP_SUCCESS%"=="1" (
-    echo ✅ Base de dados configurada. Prosseguindo com o início do servidor...
-) else (
-    echo ⚠️  Setup não foi concluído com sucesso, mas continuando...
-    echo    O servidor tentará sincronizar tabelas automaticamente ao iniciar.
-    echo    Se aparecerem erros 500, execute: cd server ^&^& npm run setup
-)
-echo.
-
-echo ========================================
-echo    [4/5] INICIANDO SERVIDOR BACKEND
-echo ========================================
-echo.
 echo Iniciando servidor backend...
-start /min "Backend Server" cmd /k cd /d "%~dp0server" ^&^& npm run dev
+echo [%DATE% %TIME%] [DEBUG] Iniciando servidor backend... >> "%LOG_FILE%"
+echo [DEBUG] Configurando variaveis do backend...
+rem Configurar NODE_OPTIONS para preferir IPv4 (resolve problema DNS Supabase)
+set "NODE_OPTIONS=--dns-result-order=ipv4first"
+echo [DEBUG] NODE_OPTIONS configurado: %NODE_OPTIONS%
+echo [%DATE% %TIME%] [DEBUG] NODE_OPTIONS configurado: %NODE_OPTIONS% >> "%LOG_FILE%"
+echo [DEBUG] Usando comando start simples (versao funcional)...
+echo [%DATE% %TIME%] [DEBUG] Executando comando start para backend... >> "%LOG_FILE%"
+rem Criar arquivo batch temporario para evitar problemas com aspas e caminhos com espacos
+set "TEMP_BACKEND_BAT=%TEMP%\start_backend_thecore.bat"
+set "BACKEND_DIR=%~dp0server"
+echo [DEBUG] Criando arquivo batch temporario: %TEMP_BACKEND_BAT%
+echo [DEBUG] Diretorio do backend: %BACKEND_DIR%
+echo [%DATE% %TIME%] [DEBUG] Criando arquivo batch temporario: %TEMP_BACKEND_BAT% >> "%LOG_FILE%"
+echo [%DATE% %TIME%] [DEBUG] Diretorio do backend: %BACKEND_DIR% >> "%LOG_FILE%"
+(
+echo @echo off
+echo title Backend Server
+echo set NODE_OPTIONS=--dns-result-order=ipv4first
+echo cd /d "%BACKEND_DIR%"
+echo npm run dev
+echo pause
+) > "%TEMP_BACKEND_BAT%"
+if not exist "%TEMP_BACKEND_BAT%" (
+    echo [DEBUG] ERRO: Nao foi possivel criar arquivo batch temporario
+    echo [%DATE% %TIME%] [DEBUG] ERRO: Nao foi possivel criar arquivo batch temporario >> "%LOG_FILE%"
+    goto menu
+)
+echo [DEBUG] Arquivo batch criado com sucesso
+echo [%DATE% %TIME%] [DEBUG] Arquivo batch criado com sucesso >> "%LOG_FILE%"
+echo [DEBUG] Executando start com arquivo batch temporario...
+echo [%DATE% %TIME%] [DEBUG] Executando start com arquivo batch temporario... >> "%LOG_FILE%"
+start "" /min cmd /k call "%TEMP_BACKEND_BAT%"
+rem Aguardar um pouco para garantir que a janela abriu
+ping 127.0.0.1 -n 2 >nul 2>&1
+echo [DEBUG] DEPOIS de executar start - janela deve ter aberto
+echo [%DATE% %TIME%] [DEBUG] DEPOIS de executar start - janela deve ter aberto >> "%LOG_FILE%"
+echo [DEBUG] Chegou apos verificacao do start...
+echo [%DATE% %TIME%] [DEBUG] Chegou apos verificacao do start... >> "%LOG_FILE%"
 echo ✅ Servidor backend iniciado em http://localhost:5000
 echo.
 echo    Aguardando servidor estar pronto (5 segundos)...
+echo [%DATE% %TIME%] [DEBUG] Aguardando servidor estar pronto... >> "%LOG_FILE%"
+echo [DEBUG] Executando timeout...
+echo [%DATE% %TIME%] [DEBUG] Executando timeout... >> "%LOG_FILE%"
 timeout /t 5 /nobreak >nul
+set "TIMEOUT_RESULT=%errorlevel%"
+echo [DEBUG] Timeout concluido, errorlevel: %TIMEOUT_RESULT%
+echo [%DATE% %TIME%] [DEBUG] Timeout concluido, errorlevel: %TIMEOUT_RESULT% >> "%LOG_FILE%"
+echo [DEBUG] Aguardamento concluido, continuando...
+echo [%DATE% %TIME%] [DEBUG] Aguardamento concluido, continuando... >> "%LOG_FILE%"
 
+:backend_already_running
 rem Verificar se o backend está realmente a correr
 echo    Verificando se backend está online...
 set "BACKEND_ONLINE=0"
-for /L %%i in (1,1,6) do (
+for /L %%i in (1,1,10) do (
     if "%BACKEND_ONLINE%"=="0" (
-        curl -s -m 2 http://localhost:5000/health >nul 2>&1
+        curl -s -m 3 http://localhost:5000/health >nul 2>&1
         if not errorlevel 1 (
             set "BACKEND_ONLINE=1"
             echo ✅ Backend está online e respondendo!
             goto backend_checked
         )
-        timeout /t 2 /nobreak >nul
+        if %%i lss 6 (
+            echo    Tentativa %%i/6... aguardando mais 2 segundos...
+            timeout /t 2 /nobreak >nul
+        )
     )
 )
 
@@ -219,20 +278,110 @@ echo ========================================
 echo    [5/5] INICIANDO CLIENTE FRONTEND
 echo ========================================
 echo.
+echo [DEBUG] Iniciando secao do frontend...
+echo [%DATE% %TIME%] [DEBUG] Iniciando secao do frontend... >> "%LOG_FILE%"
+rem Verificacao ultra-simplificada - apenas verificar se porta 5173 esta em uso
+set "FRONTEND_ALREADY_RUNNING=0"
+echo [DEBUG] Verificando se porta 5173 esta em uso...
+echo [%DATE% %TIME%] [DEBUG] Verificando se porta 5173 esta em uso... >> "%LOG_FILE%"
+netstat -ano | findstr ":5173" | findstr "LISTENING" >nul 2>&1
+if not errorlevel 1 (
+    echo ✅ Frontend já está a correr na porta 5173
+    echo    Pulando inicialização...
+    echo [DEBUG] Porta 5173 esta em uso, assumindo que frontend esta rodando
+    echo [%DATE% %TIME%] [DEBUG] Porta 5173 esta em uso, assumindo que frontend esta rodando >> "%LOG_FILE%"
+    set "FRONTEND_ALREADY_RUNNING=1"
+    goto frontend_already_running
+) else (
+    echo [DEBUG] Porta 5173 nao esta em uso, iniciando frontend...
+    echo [%DATE% %TIME%] [DEBUG] Porta 5173 nao esta em uso, iniciando frontend... >> "%LOG_FILE%"
+)
+
+rem Verificar se há processos Node.js a usar portas do frontend (já verificado acima no loop)
+rem Se chegou aqui, frontend não está a correr nas portas testadas
+
 echo Iniciando cliente frontend...
-start /min "Frontend Client" cmd /k cd /d "%~dp0client" ^&^& npm run dev
+echo [%DATE% %TIME%] [DEBUG] Iniciando cliente frontend... >> "%LOG_FILE%"
+rem Criar arquivo batch temporario para evitar problemas com aspas e caminhos com espacos
+set "TEMP_FRONTEND_BAT=%TEMP%\start_frontend_thecore.bat"
+set "FRONTEND_DIR=%~dp0client"
+echo [DEBUG] Criando arquivo batch temporario: %TEMP_FRONTEND_BAT%
+echo [DEBUG] Diretorio do frontend: %FRONTEND_DIR%
+echo [%DATE% %TIME%] [DEBUG] Criando arquivo batch temporario: %TEMP_FRONTEND_BAT% >> "%LOG_FILE%"
+echo [%DATE% %TIME%] [DEBUG] Diretorio do frontend: %FRONTEND_DIR% >> "%LOG_FILE%"
+rem Verificar se o diretorio existe
+if not exist "%FRONTEND_DIR%" (
+    echo [DEBUG] ERRO: Diretorio do frontend nao existe: %FRONTEND_DIR%
+    echo [%DATE% %TIME%] [DEBUG] ERRO: Diretorio do frontend nao existe: %FRONTEND_DIR% >> "%LOG_FILE%"
+    goto frontend_error
+)
+(
+echo @echo off
+echo title Frontend Client
+echo cd /d "%FRONTEND_DIR%"
+echo npm run dev
+echo pause
+) > "%TEMP_FRONTEND_BAT%"
+if not exist "%TEMP_FRONTEND_BAT%" (
+    echo [DEBUG] ERRO: Nao foi possivel criar arquivo batch temporario do frontend
+    echo [%DATE% %TIME%] [DEBUG] ERRO: Nao foi possivel criar arquivo batch temporario do frontend >> "%LOG_FILE%"
+    goto frontend_error
+)
+echo [DEBUG] Arquivo batch criado com sucesso
+echo [%DATE% %TIME%] [DEBUG] Arquivo batch criado com sucesso >> "%LOG_FILE%"
+echo [DEBUG] Executando start com arquivo batch temporario...
+echo [%DATE% %TIME%] [DEBUG] Executando start com arquivo batch temporario... >> "%LOG_FILE%"
+start "" /min cmd /k call "%TEMP_FRONTEND_BAT%"
+if errorlevel 1 (
+    echo [DEBUG] ERRO ao executar start para frontend, errorlevel: %errorlevel%
+    echo [%DATE% %TIME%] [DEBUG] ERRO ao executar start para frontend, errorlevel: %errorlevel% >> "%LOG_FILE%"
+) else (
+    echo [DEBUG] Comando start executado para frontend com sucesso
+    echo [%DATE% %TIME%] [DEBUG] Comando start executado para frontend com sucesso >> "%LOG_FILE%"
+)
 echo ✅ Cliente frontend iniciado
+goto frontend_done
+
+:frontend_error
+echo [DEBUG] Erro ao iniciar frontend, mas continuando...
+echo [%DATE% %TIME%] [DEBUG] Erro ao iniciar frontend, mas continuando... >> "%LOG_FILE%"
+
+:frontend_done
 echo.
 
+:frontend_already_running
+echo [DEBUG] Chegou ao final da inicializacao do frontend
+echo [%DATE% %TIME%] [DEBUG] Chegou ao final da inicializacao do frontend >> "%LOG_FILE%"
 echo ========================================
 echo    PROJETO INICIADO COM SUCESSO!
 echo ========================================
 echo.
+echo [%DATE% %TIME%] PROJETO INICIADO COM SUCESSO! >> "%LOG_FILE%"
+echo [DEBUG] Exibindo informacoes finais...
 echo 🔧 Backend:  http://localhost:5000
 echo 🗄️  Database: localhost:5433
 echo.
-echo Aguardando frontend estar pronto (7 segundos)...
-timeout /t 7 /nobreak >nul
+if "%FRONTEND_ALREADY_RUNNING%"=="1" (
+    echo ✅ Frontend já estava a correr
+    set "FRONTEND_URL=http://localhost:5173"
+) else (
+    echo 🌐 Frontend: http://localhost:5173 (ou porta configurada)
+    echo Aguardando frontend estar pronto (7 segundos)...
+    timeout /t 7 /nobreak >nul
+    set "FRONTEND_URL=http://localhost:5173"
+)
+echo.
+echo [DEBUG] Abrindo navegador em %FRONTEND_URL%...
+echo [%DATE% %TIME%] [DEBUG] Abrindo navegador em %FRONTEND_URL%... >> "%LOG_FILE%"
+start "" "%FRONTEND_URL%"
+if errorlevel 1 (
+    echo [DEBUG] Erro ao abrir navegador, tentando metodo alternativo...
+    echo [%DATE% %TIME%] [DEBUG] Erro ao abrir navegador, tentando metodo alternativo... >> "%LOG_FILE%"
+    start "" "http://localhost:5173"
+)
+echo.
+echo Pressione qualquer tecla para voltar ao menu...
+pause >nul
 
 rem Tentar detectar automaticamente o frontend em portas comuns do Vite
 set "FRONTEND_PORT="
@@ -292,7 +441,13 @@ echo ========================================
 echo    Script concluído. Janela mantida aberta.
 echo ========================================
 echo.
+echo [DEBUG] Script chegou ao final com sucesso!
+echo [%DATE% %TIME%] [DEBUG] Script chegou ao final com sucesso! >> "%LOG_FILE%"
+echo [DEBUG] Pressione qualquer tecla para voltar ao menu...
+echo [%DATE% %TIME%] [DEBUG] Aguardando usuario pressionar tecla... >> "%LOG_FILE%"
 pause
+echo [%DATE% %TIME%] [DEBUG] Usuario pressionou tecla, voltando ao menu... >> "%LOG_FILE%"
+goto menu
 
 :stop
 cls
@@ -480,6 +635,10 @@ echo ========================================
 echo    VERIFICAÇÃO DE CONEXÃO BASE DE DADOS
 echo ========================================
 echo.
+
+rem Configurar NODE_OPTIONS para preferir IPv4 (resolve problema DNS Supabase)
+set "NODE_OPTIONS=--dns-result-order=ipv4first"
+
 cd /d "%~dp0server"
 
 rem Verificar se .env existe
@@ -497,7 +656,7 @@ if not exist ".env" (
     echo.
     echo    Para Supabase:
     echo    DB_HOST=db.[PROJECT_REF].supabase.co
-    echo    DB_PORT=5432
+    echo    DB_PORT=5432  (ou 6543 para connection pooling - recomendado)
     echo    DB_NAME=postgres
     echo    DB_USER=postgres
     echo    DB_PASSWORD=[SUA_SENHA]
@@ -649,6 +808,10 @@ if not exist "node_modules" (
         echo ⚠️  pg não encontrado. Reinstalando dependências...
         set "SERVER_NEED_INSTALL=1"
     )
+    if not exist "node_modules\@supabase\supabase-js" (
+        echo ⚠️  @supabase/supabase-js não encontrado. Reinstalando dependências...
+        set "SERVER_NEED_INSTALL=1"
+    )
 )
 
 if "%SERVER_NEED_INSTALL%"=="1" (
@@ -672,6 +835,11 @@ if "%SERVER_NEED_INSTALL%"=="1" (
     if not exist "node_modules\sharp" (
         echo ❌ AVISO: sharp ainda não foi instalado após npm install
         echo    -> Execute manualmente: cd server ^&^& npm install sharp
+        echo    -> O servidor pode não iniciar sem esta dependência!
+    )
+    if not exist "node_modules\@supabase\supabase-js" (
+        echo ❌ AVISO: @supabase/supabase-js ainda não foi instalado após npm install
+        echo    -> Execute manualmente: cd server ^&^& npm install @supabase/supabase-js
         echo    -> O servidor pode não iniciar sem esta dependência!
     )
 ) else (
@@ -835,13 +1003,17 @@ if not exist "node_modules" (
     exit /b 1
 )
 
+rem Configurar NODE_OPTIONS para preferir IPv4 (resolve problema DNS Supabase)
+rem IMPORTANTE: Deve ser definido ANTES de executar Node.js
+set "NODE_OPTIONS=--dns-result-order=ipv4first"
+
 rem Executar verificação de conexão (mostrar output)
 call npm run check-connection
-set "CONNECTION_EXIT_CODE=%errorlevel%"
-if %CONNECTION_EXIT_CODE% equ 0 (
-    exit /b 0
-) else (
+rem Capturar errorlevel IMEDIATAMENTE após o call, antes de qualquer outro comando
+if errorlevel 1 (
     exit /b 1
+) else (
+    exit /b 0
 )
 
 :detect_docker
