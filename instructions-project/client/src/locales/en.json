@@ -19,6 +19,7 @@
     "dashboard": {
       "title": "Dashboard",
       "subtitle": "Here's your project overview.",
+      "welcomeBack": "Welcome back,",
       "createNewProject": "Create New Project",
       "loadingData": "Loading data...",
       "stats": {
