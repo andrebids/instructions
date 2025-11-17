@@ -19,45 +19,55 @@ if (!PUBLISHABLE_KEY) {
 }
 
 // Register service worker with prompt mode (no auto-update)
-// Desativar Service Worker em desenvolvimento para evitar interferência com Vite HMR
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  registerSW({
-    immediate: false, // Don't update immediately - wait for user confirmation
-    onOfflineReady() {
-      console.log('✅ [Main] App ready to work offline');
-    },
-    onNeedRefresh() {
-      // Update notification will be shown by UpdateNotification component
-      console.log('🔄 [Main] New content available - notification will be shown');
-    },
-    onRegistered(registration) {
-      console.log('✅ [Main] Service Worker registered');
-      
-      // Check Background Sync availability
-      isBackgroundSyncAvailable();
-      
-      // Setup push notification click listener when SW is ready
-      setupNotificationClickListener()
-      
-      // Listener for messages from service worker (Background Sync and Updates)
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('message', async (event) => {
-          if (event.data && event.data.type === 'SYNC_PROJECT') {
-            const { projectId } = event.data;
-            try {
-              const { syncProject } = await import('./services/backgroundSync.js');
-              await syncProject(projectId);
-            } catch (error) {
-              console.error(`❌ [Main] Error syncing project ${projectId}:`, error);
+// Service Worker API está disponível e será registrado em produção
+if ('serviceWorker' in navigator) {
+  if (import.meta.env.PROD) {
+    console.log('🔧 [Main] Registering Service Worker in production mode...');
+    registerSW({
+      immediate: false, // Don't update immediately - wait for user confirmation
+      onOfflineReady() {
+        console.log('✅ [Main] App ready to work offline');
+      },
+      onNeedRefresh() {
+        // Update notification will be shown by UpdateNotification component
+        console.log('🔄 [Main] New content available - notification will be shown');
+      },
+      onRegistered(registration) {
+        console.log('✅ [Main] Service Worker registered successfully:', registration);
+        console.log('📋 [Main] Service Worker scope:', registration.scope);
+        console.log('📋 [Main] Service Worker active:', registration.active?.scriptURL);
+        
+        // Check Background Sync availability
+        isBackgroundSyncAvailable();
+        
+        // Setup push notification click listener when SW is ready
+        setupNotificationClickListener()
+        
+        // Listener for messages from service worker (Background Sync and Updates)
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.addEventListener('message', async (event) => {
+            if (event.data && event.data.type === 'SYNC_PROJECT') {
+              const { projectId } = event.data;
+              try {
+                const { syncProject } = await import('./services/backgroundSync.js');
+                await syncProject(projectId);
+              } catch (error) {
+                console.error(`❌ [Main] Error syncing project ${projectId}:`, error);
+              }
             }
-          }
-        });
+          });
+        }
+      },
+      onRegisterError(error) {
+        console.error('❌ [Main] Service Worker registration error:', error);
       }
-    },
-    onRegisterError(error) {
-      console.error('❌ [Main] Service Worker registration error:', error);
-    }
-  });
+    });
+  } else {
+    console.log('⚠️ [Main] Service Worker disabled in development mode (to avoid HMR conflicts)');
+    console.log('💡 [Main] Service Worker will be registered automatically in production build');
+  }
+} else {
+  console.warn('⚠️ [Main] Service Worker API not available in this browser');
 }
 
 const rootElement = document.getElementById('root')
@@ -78,5 +88,3 @@ createRoot(rootElement).render(
     </ClerkProvider>
   </React.StrictMode>
 )
-
-
