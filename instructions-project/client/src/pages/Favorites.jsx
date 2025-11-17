@@ -9,6 +9,7 @@ import ConfirmModal from "../components/common/ConfirmModal";
 import EditNameModal from "../components/common/EditNameModal";
 import { useUser } from "../context/UserContext";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
+import { Scroller } from "../components/ui/scroller";
 
 export default function Favorites() {
   const navigate = useNavigate();
@@ -83,7 +84,7 @@ export default function Favorites() {
 
   return (
     <>
-    <div className={`flex-1 min-h-0 overflow-auto p-6 ${isHandheld ? "pb-24" : "pb-6"}`}>
+    <Scroller className={`flex-1 min-h-0 p-6 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>
       <PageTitle title="Favorites" userName={userName} lead={`Your saved products, ${userName}`} />
       <div className="mb-4">
         <Button
@@ -181,7 +182,7 @@ export default function Favorites() {
           <ProductGrid products={filteredItems} onOrder={()=>{}} cols={4} glass={false} cardProps={{ removable: true }} />
         </div>
       </div>
-    </div>
+    </Scroller>
 
     <EditNameModal
       isOpen={renameModal.open}

@@ -14,6 +14,9 @@ export default function TrendingFiltersSidebar({
   priceRange,
   priceLimits,
   onPriceChange,
+  stockRange,
+  stockLimits,
+  onStockChange,
   className = "",
   onClearAll,
   onToggleVisibility,
@@ -147,11 +150,18 @@ export default function TrendingFiltersSidebar({
     { value: "Chão", label: "Ground", countKey: "mountGround" },
   ];
 
+
   const min = priceLimits?.min ?? 0;
   const max = priceLimits?.max ?? 0;
   // Ensure min and max are different to avoid Hero UI warning
   const effectiveMin = min === max ? Math.max(0, min - 1) : min;
   const effectiveMax = min === max ? min + 1 : max;
+
+  const stockMin = stockLimits?.min ?? 0;
+  const stockMax = stockLimits?.max ?? 0;
+  // Ensure min and max are different to avoid Hero UI warning
+  const effectiveStockMin = stockMin === stockMax ? Math.max(0, stockMin - 1) : stockMin;
+  const effectiveStockMax = stockMin === stockMax ? stockMin + 1 : stockMax;
 
   const handlePriceChange = (value) => {
     if (Array.isArray(value)) {
@@ -163,25 +173,27 @@ export default function TrendingFiltersSidebar({
     }
   };
 
-  const resetPrice = () => onPriceChange?.([min, max]);
+  const resetPrice = React.useCallback(() => {
+    if (onPriceChange) {
+      onPriceChange([min, max]);
+    }
+  }, [onPriceChange, min, max]);
 
-  const computeStock = (id) => {
-    try {
-      let s = 0;
-      for (const ch of String(id || "")) s += ch.charCodeAt(0);
-      return 5 + (s % 60);
-    } catch (_) {
-      return 20;
+  const handleStockChange = (value) => {
+    if (Array.isArray(value)) {
+      onStockChange?.([Math.round(Math.min(...value)), Math.round(Math.max(...value))]);
+    } else if (typeof value === "object" && value !== null && "start" in value && "end" in value) {
+      onStockChange?.([Math.round(value.start), Math.round(value.end)]);
+    } else if (typeof value === "number") {
+      onStockChange?.([stockMin, Math.round(value)]);
     }
   };
 
-  const maxStock = React.useMemo(() => {
-    const values = products.map((p) => (typeof p.stock === "number" ? p.stock : computeStock(p.id)));
-    return values.length ? Math.max(...values) : 0;
-  }, [products]);
-
-  const minStock = typeof filters.minStock === "number" ? filters.minStock : 0;
-  const resetStock = () => handle("minStock", 0);
+  const resetStock = React.useCallback(() => {
+    if (onStockChange) {
+      onStockChange([stockMin, stockMax]);
+    }
+  }, [onStockChange, stockMin, stockMax]);
 
   const dimKey = filters.dimKey || "";
   const dimLabels = {
@@ -235,7 +247,6 @@ export default function TrendingFiltersSidebar({
   const selectedYear = getSelectedYear();
   const selectedColorsCount = Array.isArray(filters.color) ? filters.color.length : 0;
   const priceSummary = `${formatCurrency(priceRange[0])} — ${formatCurrency(priceRange[1])}`;
-  const stockSummary = minStock > 0 ? `${minStock}+ minimum` : "All stock levels";
   const colorSummary = selectedColorsCount ? `${selectedColorsCount} selected` : "All colors";
   const dimensionSummary = dimKey
     ? `${dimLabels[dimKey]} • ${formatDimensionValue(effectiveDimRange?.[0])}–${formatDimensionValue(effectiveDimRange?.[1])} m`
@@ -245,6 +256,16 @@ export default function TrendingFiltersSidebar({
   if (filters.eco) usageSummaryParts.push("Eco");
   const usageSummary = usageSummaryParts.length ? usageSummaryParts.join(" • ") : "All";
   const locationSummary = getSelectedLocationLabel();
+  
+  const getStockSummary = () => {
+    if (Array.isArray(stockRange) && stockRange.length === 2) {
+      if (stockRange[0] === stockMin && stockRange[1] === stockMax) {
+        return "All stock levels";
+      }
+      return `${stockRange[0]} — ${stockRange[1]}`;
+    }
+    return "All stock levels";
+  };
 
   const clearColors = () => onChange?.({ ...filters, color: [] });
   const clearYear = () => onChange?.({ ...filters, releaseYear: "" });
@@ -263,7 +284,6 @@ export default function TrendingFiltersSidebar({
     "usage",
     "location",
     "collectionYear",
-    "stock",
     "dimensions",
   ]);
 
@@ -323,12 +343,6 @@ export default function TrendingFiltersSidebar({
       onClear: selectedYear ? clearYear : null,
     },
     {
-      key: "stock",
-      title: "Stock Level",
-      summary: stockSummary,
-      onClear: minStock > 0 ? resetStock : null,
-    },
-    {
       key: "dimensions",
       title: "Dimensions",
       summary: dimensionSummary,
@@ -358,43 +372,12 @@ export default function TrendingFiltersSidebar({
                     className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors ${isSelected ? selectedClass : idleClass}`}
                   >
                     <span className={`text-sm font-medium ${isDark ? "text-white" : isSelected ? "text-primary-700" : "text-default-700"}`}>{opt.label}</span>
-                    <span className={`text-xs ${isDark ? "text-default-300" : "text-default-600"}`}>({itemsCount[opt.countKey]})</span>
+                    <span className={`text-xs font-medium ${isDark ? "text-white" : "text-default-600"}`}>({itemsCount[opt.countKey]})</span>
                   </button>
                 </li>
               );
             })}
           </ul>
-        );
-      case "stock":
-        return (
-          <div className="space-y-3">
-            {typeof Slider !== "undefined" ? (
-              <Slider
-                aria-label="Minimum stock"
-                minValue={0}
-                maxValue={maxStock}
-                step={1}
-                value={minStock}
-                onChange={(value) => handle("minStock", Array.isArray(value) ? value[0] : Number(value))}
-                showTooltip
-                isDisabled={maxStock <= 0}
-                className="max-w-full"
-              />
-            ) : (
-              <input
-                type="range"
-                min={0}
-                max={maxStock}
-                value={minStock}
-                onChange={(e) => handle("minStock", Number(e.target.value))}
-                className="w-full"
-              />
-            )}
-            <div className="text-xs text-default-500">
-              Showing products with{" "}
-              <span className="font-semibold text-foreground dark:text-white">{minStock}+</span> items in stock
-            </div>
-          </div>
         );
       case "price":
         return (
@@ -538,7 +521,7 @@ export default function TrendingFiltersSidebar({
                   >
                     <span className={isDark ? "text-white" : isSelected ? "text-primary-700" : "text-default-700"}>{year}</span>
                     <div className="flex items-center gap-2 text-xs">
-                      {count > 0 && <span className={isDark ? "text-default-300" : "text-default-600"}>({count})</span>}
+                      {count > 0 && <span className={`font-medium ${isDark ? "text-white" : "text-default-600"}`}>({count})</span>}
                       {isSelected && <Icon icon="lucide:check" className={`text-sm ${isDark ? "text-white" : "text-primary-400"}`} />}
                     </div>
                   </button>
@@ -687,7 +670,7 @@ export default function TrendingFiltersSidebar({
               }}
               size="sm"
             >
-              Shopping Malls <span className={isDark ? "text-white" : "text-default-500"}>({itemsCount.usageShopping})</span>
+              Shopping Malls <span className={`font-medium ${isDark ? "text-white" : "text-default-500"}`}>({itemsCount.usageShopping})</span>
             </Checkbox>
             <Checkbox
               isSelected={Boolean(filters.eco)}
@@ -697,7 +680,7 @@ export default function TrendingFiltersSidebar({
               }}
               size="sm"
             >
-              Eco <span className={isDark ? "text-white" : "text-default-500"}>({itemsCount.eco})</span>
+              Eco <span className={`font-medium ${isDark ? "text-white" : "text-default-500"}`}>({itemsCount.eco})</span>
             </Checkbox>
           </div>
         );
@@ -726,7 +709,7 @@ export default function TrendingFiltersSidebar({
                   >
                     <span className={isDark ? "text-white" : isSelected ? "text-primary-700" : "text-default-700"}>{opt.label}</span>
                     <div className="flex items-center gap-2 text-xs">
-                      <span className={isDark ? "text-default-300" : "text-default-600"}>({opt.count})</span>
+                      <span className={`font-medium ${isDark ? "text-white" : "text-default-600"}`}>({opt.count})</span>
                       {isSelected && <Icon icon="lucide:check" className={`text-sm ${isDark ? "text-white" : "text-primary-400"}`} />}
                     </div>
                   </button>
@@ -735,16 +718,77 @@ export default function TrendingFiltersSidebar({
             })}
           </ul>
         );
+      case "stock":
+        return (
+          <div className="space-y-3">
+            {typeof Slider !== "undefined" && stockMin !== stockMax ? (
+              <Slider
+                aria-label="Stock range"
+                minValue={effectiveStockMin}
+                maxValue={effectiveStockMax}
+                step={0.01}
+                value={stockRange}
+                onChange={handleStockChange}
+                showTooltip
+                formatOptions={{ maximumFractionDigits: 0 }}
+                tooltipValueFormatOptions={{ maximumFractionDigits: 0 }}
+                className="max-w-full"
+              />
+            ) : (
+              <div className="space-y-2">
+                <div className="relative h-2 rounded-full bg-default-200">
+                  <div
+                    className="absolute top-0 h-2 rounded-full bg-primary"
+                    style={{
+                      left: `${((stockRange[0] - effectiveStockMin) / (effectiveStockMax - effectiveStockMin || 1)) * 100}%`,
+                      width: `${((stockRange[1] - stockRange[0]) / (effectiveStockMax - effectiveStockMin || 1)) * 100}%`,
+                    }}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min={effectiveStockMin}
+                    max={effectiveStockMax}
+                    value={stockRange[0]}
+                    onChange={(e) =>
+                      onStockChange?.([Math.min(Number(e.target.value), stockRange[1] - 1), stockRange[1]])
+                    }
+                    className="w-full"
+                    disabled={stockMin === stockMax}
+                  />
+                  <input
+                    type="range"
+                    min={effectiveStockMin}
+                    max={effectiveStockMax}
+                    value={stockRange[1]}
+                    onChange={(e) =>
+                      onStockChange?.([stockRange[0], Math.max(Number(e.target.value), stockRange[0] + 1)])
+                    }
+                    className="w-full"
+                    disabled={stockMin === stockMax}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        );
       default:
         return null;
     }
-  }, [isDark, filters, itemsCount, mountOptions, minStock, maxStock, dimKey, dimValues, effectiveDimRange, products, handle, formatCurrency, formatDimensionValue, availableYears, priceRange, effectiveMin, effectiveMax, handlePriceChange, onPriceChange, colorOptions, typeOptions]);
+  }, [isDark, filters, itemsCount, mountOptions, dimKey, dimValues, effectiveDimRange, products, handle, formatCurrency, formatDimensionValue, availableYears, priceRange, effectiveMin, effectiveMax, handlePriceChange, onPriceChange, colorOptions, typeOptions, stockRange, stockMin, stockMax, effectiveStockMin, effectiveStockMax, handleStockChange, resetStock, onStockChange]);
 
   const CollapsibleCard = ({ section }) => {
     const isOpen = openSections.includes(section.key);
 
     const handleClear = (event) => {
-      event.stopPropagation();
+      // HeroUI onPress pode não passar um evento DOM padrão
+      if (event && typeof event.preventDefault === 'function') {
+        event.preventDefault();
+      }
+      if (event && typeof event.stopPropagation === 'function') {
+        event.stopPropagation();
+      }
       section.onClear?.();
     };
 
@@ -756,34 +800,41 @@ export default function TrendingFiltersSidebar({
 
     return (
       <div className={collapsibleCardClass}>
-        <button
-          type="button"
-          onClick={handleToggle}
-          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-        >
-          <div className="flex flex-col gap-1">
-            <span className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>{section.title}</span>
-            {section.summary ? (
-              <span className="text-xs text-default-500">{section.summary}</span>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-2">
-            {section.onClear ? (
-              <Button
-                size="sm"
-                variant="light"
-                className={`h-7 px-2 text-xs ${isDark ? "text-default-400" : "text-default-400"}`}
-                onPress={handleClear}
-              >
-                Clear
-              </Button>
-            ) : null}
+        <div className="flex w-full items-center justify-between gap-3 px-4 py-3">
+          <button
+            type="button"
+            onClick={handleToggle}
+            className="flex flex-1 items-center justify-between gap-3 text-left"
+          >
+            <div className="flex flex-col gap-1">
+              <span className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>{section.title}</span>
+            </div>
             <Icon
               icon="lucide:chevron-down"
               className={`text-default-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
             />
-          </div>
-        </button>
+          </button>
+          {section.onClear ? (
+            <Button
+              size="sm"
+              variant="light"
+              className={`h-7 px-2 text-xs font-medium ${isDark ? "text-white hover:text-white/80" : "text-default-600 hover:text-default-700"}`}
+              onPress={() => {
+                handleClear(null);
+              }}
+              onClick={(e) => {
+                if (e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+                handleClear(e);
+              }}
+              isDisabled={section.isResetDisabled}
+            >
+              {section.clearButtonText || "Clear"}
+            </Button>
+          ) : null}
+        </div>
         {isOpen ? (
           <div className="px-4 pb-4">
             <div className="space-y-3">{renderSectionContent(section.key)}</div>
@@ -826,13 +877,15 @@ export default function TrendingFiltersSidebar({
               <div className="flex items-center justify-between">
                 <div>
                   <div className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>Price Range</div>
-                  <div className="text-xs text-default-500">{priceSummary}</div>
                 </div>
                 <Button
                   size="sm"
                   variant="light"
-                  className="h-7 px-2 text-xs text-default-400"
-                  onPress={resetPrice}
+                  className={`h-7 px-2 text-xs font-medium ${isDark ? "text-white hover:text-white/80" : "text-default-600 hover:text-default-700"}`}
+                  onPress={(e) => {
+                    e?.stopPropagation?.();
+                    resetPrice();
+                  }}
                   isDisabled={priceRange[0] === min && priceRange[1] === max}
                 >
                   Reset
@@ -854,18 +907,48 @@ export default function TrendingFiltersSidebar({
             </div>
 
             <div className={sectionCardClass}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>Stock Level</div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="light"
+                  className={`h-7 px-2 text-xs font-medium ${isDark ? "text-white hover:text-white/80" : "text-default-600 hover:text-default-700"}`}
+                  onPress={(e) => {
+                    e?.stopPropagation?.();
+                    resetStock();
+                  }}
+                  isDisabled={Array.isArray(stockRange) && stockRange.length === 2 && stockRange[0] === stockMin && stockRange[1] === stockMax}
+                >
+                  Reset
+                </Button>
+              </div>
+              <div className="mt-5 space-y-4">
+                {renderSectionContent("stock")}
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className={statPillClass}>
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-default-400">Min</span>
+                    <div className={`mt-1 text-sm font-semibold ${isDark ? "text-white" : "text-foreground"}`}>{stockRange[0]}</div>
+                  </div>
+                  <div className={statPillClass}>
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-default-400">Max</span>
+                    <div className={`mt-1 text-sm font-semibold ${isDark ? "text-white" : "text-foreground"}`}>{stockRange[1]}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className={sectionCardClass}>
           <div className="flex items-center justify-between">
             <div>
               <div className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>Type</div>
-              <div className="text-xs text-default-500">
-                {filters.type ? `${filters.type} selected` : "All lighting types"}
-              </div>
             </div>
             {filters.type ? (
               <Button
                 size="sm"
                 variant="light"
-                className="h-7 px-2 text-xs text-default-400"
+                className={`h-7 px-2 text-xs font-medium ${isDark ? "text-white hover:text-white/80" : "text-default-600 hover:text-default-700"}`}
                 onPress={() => handle("type", "")}
               >
                 Clear
@@ -879,13 +962,12 @@ export default function TrendingFiltersSidebar({
           <div className="flex items-center justify-between">
             <div>
               <div className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>Color</div>
-              <div className="text-xs text-default-500">{colorSummary}</div>
             </div>
             {selectedColorsCount ? (
               <Button
                 size="sm"
                 variant="light"
-                className="h-7 px-2 text-xs text-default-400"
+                className={`h-7 px-2 text-xs font-medium ${isDark ? "text-white hover:text-white/80" : "text-default-600 hover:text-default-700"}`}
                 onPress={clearColors}
               >
                 Clear

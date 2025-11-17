@@ -10,13 +10,14 @@ import { PageTitle } from "../components/layout/page-title";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { getProductsByCategory } from "../utils/productUtils";
+import { Scroller } from "../components/ui/scroller";
 
 export default function ShopCategory() {
   const { category } = useParams();
   const { products } = useShop();
   const navigate = useNavigate();
   const { userName } = useUser();
-  const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false, dimKey: "", dimRange: null, releaseYear: "" });
+  const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", eco: false, dimKey: "", dimRange: null, releaseYear: "", minStock: 0 });
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [selected, setSelected] = React.useState({ product: null, variant: null });
   const [filtersOpen, setFiltersOpen] = React.useState(false);
@@ -80,6 +81,28 @@ export default function ShopCategory() {
     setPriceRange([priceLimits.min, priceLimits.max]);
   }, [priceLimits.min, priceLimits.max]);
 
+  // Stock limits and range
+  const stockLimits = React.useMemo(() => {
+    if (productsInCategory.length === 0) return { min: 0, max: 0 };
+    const computeStock = (id) => {
+      try {
+        let s = 0;
+        for (const ch of String(id || "")) s += ch.charCodeAt(0);
+        return 5 + (s % 60);
+      } catch (_) {
+        return 20;
+      }
+    };
+    const stocks = productsInCategory.map((p) => (typeof p.stock === "number" ? p.stock : computeStock(p.id)));
+    if (stocks.length === 0) return { min: 0, max: 0 };
+    return { min: Math.min(...stocks), max: Math.max(...stocks) };
+  }, [productsInCategory]);
+
+  const [stockRange, setStockRange] = React.useState([stockLimits.min, stockLimits.max]);
+  React.useEffect(() => {
+    setStockRange([stockLimits.min, stockLimits.max]);
+  }, [stockLimits.min, stockLimits.max]);
+
   const filtered = React.useMemo(function() {
     // Primeiro filtrar por categoria usando getProductsByCategory
     var categoryProducts = getProductsByCategory(products, category);
@@ -139,23 +162,6 @@ export default function ShopCategory() {
           include = false;
         }
       }
-      if (include && typeof filters.minStock === 'number') {
-        var computeStock = function(id) { 
-          try { 
-            var s = 0; 
-            for (var ch_idx = 0; ch_idx < String(id||'').length; ch_idx++) {
-              s += String(id||'').charCodeAt(ch_idx);
-            }
-            return 5 + (s % 60); 
-          } catch(_) { 
-            return 20; 
-          } 
-        };
-        var stock = typeof p.stock === 'number' ? p.stock : computeStock(p.id);
-        if (stock < filters.minStock) {
-          include = false;
-        }
-      }
       if (include && filters.releaseYear && filters.releaseYear !== "") {
         var productYear = p.releaseYear;
         var yearValue = typeof productYear === 'number' ? productYear : parseInt(productYear, 10);
@@ -169,6 +175,23 @@ export default function ShopCategory() {
           if (p.price < priceRange[0] || p.price > priceRange[1]) {
             include = false;
           }
+        }
+      }
+      if (include && Array.isArray(stockRange) && stockRange.length === 2) {
+        var computeStock = function(id) { 
+          try { 
+            var s = 0; 
+            for (var ch_idx = 0; ch_idx < String(id||'').length; ch_idx++) {
+              s += String(id||'').charCodeAt(ch_idx);
+            }
+            return 5 + (s % 60); 
+          } catch(_) { 
+            return 20; 
+          } 
+        };
+        var stock = typeof p.stock === 'number' ? p.stock : computeStock(p.id);
+        if (stock < stockRange[0] || stock > stockRange[1]) {
+          include = false;
         }
       }
       
@@ -189,10 +212,10 @@ export default function ShopCategory() {
     }
     
     return list;
-  }, [products, category, filters, query, sort, priceRange]);
+  }, [products, category, filters, query, sort, priceRange, stockRange]);
 
   return (
-    <div className="flex-1 min-h-0 overflow-auto p-6">
+    <Scroller className="flex-1 min-h-0 p-6" hideScrollbar>
       <PageTitle title="Shop" userName={userName} lead={`Here's your catalog, ${userName}`} subtitle={categoryDescription} />
       <div className="mb-4">
         <h1 className="text-4xl md:text-6xl font-extrabold uppercase tracking-wider text-foreground mt-6 text-center">
@@ -221,6 +244,9 @@ export default function ShopCategory() {
             priceRange={priceRange}
             priceLimits={priceLimits}
             onPriceChange={setPriceRange}
+            stockRange={stockRange}
+            stockLimits={stockLimits}
+            onStockChange={setStockRange}
           />
           <div className="mt-2 flex gap-2 justify-end">
             <Button
@@ -229,7 +255,7 @@ export default function ShopCategory() {
               radius="full"
               className="bg-[#e4e3e8] text-foreground/80 hover:text-foreground dark:bg-content1 shadow-sm"
               startContent={<Icon icon="lucide:rotate-ccw" className="text-sm" />}
-          onPress={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false, dimKey: "", dimRange: null, releaseYear: "" }); setPriceRange([priceLimits.min, priceLimits.max]); setQuery(""); }}
+          onPress={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", eco: false, dimKey: "", dimRange: null, releaseYear: "" }); setPriceRange([priceLimits.min, priceLimits.max]); setStockRange([stockLimits.min, stockLimits.max]); setQuery(""); }}
             >
               Clear filters
             </Button>
@@ -320,7 +346,7 @@ export default function ShopCategory() {
         product={selected.product}
         variant={selected.variant}
       />
-    </div>
+    </Scroller>
   );
 }
 
