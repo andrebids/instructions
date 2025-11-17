@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PageTitle } from "../components/layout/page-title";
 import { useUser } from "../context/UserContext";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
+import { Scroller } from "../components/ui/scroller";
 
 export default function Statistics() {
   const { userName } = useUser();
@@ -435,7 +436,7 @@ export default function Statistics() {
   ];
 
     return (
-      <div className={`flex-1 min-h-0 overflow-auto p-6 ${isHandheld ? "pb-24" : "pb-6"}`}>
+      <Scroller className={`flex-1 min-h-0 p-6 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>
       {/* Header with greeting and year filter */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -908,6 +909,6 @@ export default function Statistics() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </Scroller>
   );
 }
