@@ -941,6 +941,69 @@ if ($nginxFixOutput -match "precisa de sudo|sudo") {
 }
 Write-Host ""
 
+Write-Host "=== 4.5. Atualizar código do servidor no servidor remoto ===" -ForegroundColor Cyan
+Write-Host "Atualizando código do servidor (server/) no servidor remoto via git pull..." -ForegroundColor Gray
+$serverUpdateCommands = @"
+cd $serverRootPath
+echo '=== Atualizando código do servidor no servidor remoto ==='
+echo ''
+
+# Verificar se é repositório Git
+if [ -d .git ]; then
+    echo 'Repositório Git encontrado'
+    echo 'Fazendo git fetch...'
+    git fetch origin 2>&1
+    FETCH_EXIT=`$?
+    
+    if [ `$FETCH_EXIT -eq 0 ]; then
+        echo 'Fazendo git pull origin main...'
+        CURRENT_BRANCH=`$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'main')
+        if [ -z "`$CURRENT_BRANCH" ]; then
+            CURRENT_BRANCH='main'
+        fi
+        echo "Branch atual: `$CURRENT_BRANCH"
+        
+        git pull origin `$CURRENT_BRANCH 2>&1
+        PULL_EXIT=`$?
+        
+        if [ `$PULL_EXIT -eq 0 ]; then
+            echo '[OK] Código do servidor atualizado com sucesso!'
+            echo ''
+            # Mostrar commit atual
+            CURRENT_COMMIT=`$(git rev-parse --short HEAD 2>/dev/null || echo '')
+            COMMIT_MSG=`$(git log -1 --pretty=format:"%s" 2>/dev/null || echo '')
+            if [ -n "`$CURRENT_COMMIT" ]; then
+                echo "Commit atual: `$CURRENT_COMMIT - `$COMMIT_MSG"
+            fi
+            echo ''
+            echo '[OK] Código do servidor está atualizado'
+        else
+            echo '[AVISO] git pull falhou (código: '$PULL_EXIT')'
+            echo 'Continuando com código existente no servidor...'
+            echo ''
+        fi
+    else
+        echo '[AVISO] git fetch falhou (código: '$FETCH_EXIT')'
+        echo 'Continuando com código existente no servidor...'
+        echo ''
+    fi
+else
+    echo '[AVISO] Diretório .git não encontrado em '$serverRootPath
+    echo 'Continuando sem atualizar código do servidor...'
+    echo ''
+fi
+"@
+
+$serverUpdateOutput = Invoke-SshCommand -User $sshUser -SshHost $sshHost -Key $sshKey -BashCommand $serverUpdateCommands
+Write-Host $serverUpdateOutput -ForegroundColor Gray
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[AVISO] Pode ter havido problemas ao atualizar código do servidor" -ForegroundColor Yellow
+    Write-Host "   Continuando mesmo assim..." -ForegroundColor Yellow
+} else {
+    Write-Host "[OK] Código do servidor atualizado no servidor remoto!" -ForegroundColor Green
+}
+Write-Host ""
+
 Write-Host "=== 5. Reiniciar Servidor ===" -ForegroundColor Cyan
 Write-Host "Reiniciando servidor PM2..." -ForegroundColor Gray
 # Criar comando bash usando here-string com aspas simples para evitar interpretação do PowerShell
