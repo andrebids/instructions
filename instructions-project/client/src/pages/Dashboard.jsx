@@ -216,7 +216,7 @@ export default function Dashboard() {
         <Scroller className={`flex-1 min-h-0 p-6 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>
           {/* Title section + Create button */}
             <div className="flex justify-between items-center mb-6">
-              <PageTitle title="Dashboard-test" userName={userName} subtitle="Here's your project overview." showWelcome />
+              <PageTitle title="Dashboard" userName={userName} subtitle="Here's your project overview." showWelcome />
               <Button 
                 color="primary" 
                 startContent={<Icon icon="lucide:plus" />}
