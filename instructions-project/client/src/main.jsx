@@ -19,14 +19,17 @@ if (!PUBLISHABLE_KEY) {
 }
 
 // Register service worker with prompt mode (no auto-update)
-// Service Worker está habilitado tanto em produção quanto em desenvolvimento
-// Em dev, funciona com HMR do Vite através de configuração especial
+// Service Worker está habilitado APENAS em produção
+// Em desenvolvimento, desabilitamos para evitar erros com dev-sw.js
+// O HMR do Vite funciona independentemente do Service Worker
 // Seguindo a documentação do vite-plugin-pwa: https://vite-pwa-org.netlify.app/frameworks/react.html
 let updateSW = null;
 
-if ('serviceWorker' in navigator) {
-  const isDev = import.meta.env.DEV;
-  console.log(`🔧 [Main] Registering Service Worker in ${isDev ? 'development' : 'production'} mode...`);
+const isDev = import.meta.env.DEV;
+
+// Só registrar Service Worker em produção
+if ('serviceWorker' in navigator && !isDev) {
+  console.log(`🔧 [Main] Registering Service Worker in production mode...`);
   
   // Store updateSW function globally so UpdateNotification can use it
   updateSW = registerSW({
@@ -75,6 +78,8 @@ if ('serviceWorker' in navigator) {
   
   // Make updateSW available globally for UpdateNotification component
   window.updateSW = updateSW;
+} else if (isDev) {
+  console.log('ℹ️ [Main] Service Worker desabilitado em desenvolvimento (HMR funciona sem ele)');
 } else {
   console.warn('⚠️ [Main] Service Worker API not available in this browser');
 }
