@@ -64,6 +64,19 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB para permitir ficheiros maiores
         // rollupFormat removido - usar padrão do VitePWA (ES modules)
         // O injectionPoint padrão é 'self.__WB_MANIFEST' que será substituído pelo manifest
+        // Novas opções do injectManifest (v0.18.0+)
+        minify: true, // Minificar o service worker em produção
+        sourcemap: false, // Source maps desabilitados por padrão (usar workbox.sourcemap para habilitar)
+        enableWorkboxModulesLogs: false // Desabilitar logs detalhados do Workbox em produção
+      },
+      workbox: {
+        // Cleanup outdated caches - remove assets antigos quando nova versão é publicada
+        // Já é padrão para generateSW, mas documentamos explicitamente aqui
+        // Para injectManifest, o cleanup é feito manualmente no sw.js via cleanupOutdatedCaches()
+        cleanupOutdatedCaches: true,
+        // Gerar source maps do service worker
+        // Se configurado, sobrescreve a opção injectManifest.sourcemap
+        sourcemap: false // Desabilitado por padrão (habilitar apenas para debug)
       },
       devOptions: {
         enabled: false, // Desabilitar Service Worker em desenvolvimento para evitar erros

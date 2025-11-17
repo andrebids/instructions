@@ -36,11 +36,14 @@ if ('serviceWorker' in navigator && !isDev) {
     immediate: false, // Don't update immediately - wait for user confirmation
     onOfflineReady() {
       console.log('✅ [Main] App ready to work offline');
-      // You can show a notification here if needed
+      // Dispatch custom event to notify OfflineReadyNotification component
+      // The component will show a prompt with "OK" button
+      window.dispatchEvent(new CustomEvent('sw-offline-ready'));
     },
     onNeedRefresh() {
       // This is called when a new service worker is available
       // The UpdateNotification component will detect this and show the prompt
+      // with "Refresh" and "Cancel" buttons
       console.log('🔄 [Main] New content available - UpdateNotification will show prompt');
       // Dispatch custom event to notify UpdateNotification component
       window.dispatchEvent(new CustomEvent('sw-update-available'));

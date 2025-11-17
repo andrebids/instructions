@@ -17,6 +17,7 @@ import { MobileBottomNav } from "./components/layout/mobile-bottom-nav";
 import { useResponsiveProfile } from "./hooks/useResponsiveProfile";
 import PWAInstallPrompt from "./components/features/PWAInstallPrompt";
 import UpdateNotification from "./components/features/UpdateNotification";
+import OfflineReadyNotification from "./components/features/OfflineReadyNotification";
 
 function AppLayout() {
   const location = useLocation();
@@ -59,6 +60,7 @@ export default function App() {
     <>
       <PWAInstallPrompt />
       <UpdateNotification />
+      <OfflineReadyNotification />
       <SignedOut>
         <div className="bg-background text-foreground flex h-screen">
           <main className="flex flex-1 flex-col overflow-hidden">
