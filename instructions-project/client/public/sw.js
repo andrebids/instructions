@@ -1,34 +1,71 @@
 // Custom Service Worker for Background Sync
 // This file is used with injectManifest from VitePWA
 
+// Import Workbox modules (must be at top level - hoisted)
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
 import { registerRoute } from 'workbox-routing';
 import { NetworkFirst, CacheFirst } from 'workbox-strategies';
 
+// Log after imports are processed
+console.log('🔧 [SW] Service Worker script starting to load...');
+console.log('✅ [SW] Workbox modules imported successfully');
+
 // Service Worker installation
 self.addEventListener('install', (event) => {
   console.log('📦 [SW] Installing service worker...');
+  console.log('📋 [SW] Install event details:', {
+    type: event.type,
+    timeStamp: event.timeStamp
+  });
   // Don't skip waiting automatically - wait for user confirmation
   // self.skipWaiting(); // Removed for manual update control
 });
 
 // Cleanup outdated caches - deve ser chamado antes de precacheAndRoute
 // Conforme documentação VitePWA: https://vite-pwa-org.netlify.app/guide/inject-manifest.html
-cleanupOutdatedCaches();
+try {
+  console.log('🧹 [SW] Cleaning up outdated caches...');
+  cleanupOutdatedCaches();
+  console.log('✅ [SW] Outdated caches cleanup completed');
+} catch (error) {
+  console.error('❌ [SW] Error during cleanupOutdatedCaches:', error);
+  throw error;
+}
 
 // Precaching assets - manifest is injected by VitePWA during build
 // O VitePWA substitui 'self.__WB_MANIFEST' pelo manifest real durante o build
-precacheAndRoute(self.__WB_MANIFEST || []);
+try {
+  console.log('📋 [SW] Checking manifest...');
+  const manifest = self.__WB_MANIFEST || [];
+  console.log('📋 [SW] Manifest entries count:', manifest.length);
+  if (manifest.length > 0) {
+    console.log('📋 [SW] First 3 manifest entries:', manifest.slice(0, 3));
+  }
+  console.log('📦 [SW] Starting precache and route...');
+  precacheAndRoute(manifest);
+  console.log('✅ [SW] Precaching completed successfully');
+} catch (error) {
+  console.error('❌ [SW] Error during precacheAndRoute:', error);
+  console.error('❌ [SW] Error stack:', error.stack);
+  throw error;
+}
 
 // Service Worker activation
 self.addEventListener('activate', (event) => {
   console.log('✅ [SW] Service Worker activating...');
+  console.log('📋 [SW] Activate event details:', {
+    type: event.type,
+    timeStamp: event.timeStamp
+  });
   event.waitUntil(
     self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
       // Only claim clients after user confirms update
       // clientsClaim() will be called after user clicks "Update Now"
       console.log('✅ [SW] Service Worker ready');
+      console.log('📋 [SW] Active clients count:', clients.length);
+    }).catch(error => {
+      console.error('❌ [SW] Error during activation:', error);
     })
   );
 });
@@ -236,6 +273,61 @@ self.addEventListener('updatefound', () => {
         type: 'UPDATE_AVAILABLE'
       });
     });
+  }).catch(error => {
+    console.error('❌ [SW] Error notifying clients about update:', error);
   });
 });
+
+// Global error handler for unhandled errors
+self.addEventListener('error', (event) => {
+  console.error('❌ [SW] Global error event:', {
+    message: event.message,
+    filename: event.filename,
+    lineno: event.lineno,
+    colno: event.colno,
+    error: event.error
+  });
+  
+  // Try to notify clients about the error
+  self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'SW_ERROR',
+        error: {
+          message: event.message,
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno
+        }
+      });
+    });
+  }).catch(err => {
+    console.error('❌ [SW] Failed to notify clients about error:', err);
+  });
+});
+
+// Unhandled promise rejection handler
+self.addEventListener('unhandledrejection', (event) => {
+  console.error('❌ [SW] Unhandled promise rejection:', {
+    reason: event.reason,
+    promise: event.promise
+  });
+  
+  // Try to notify clients about the rejection
+  self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'SW_ERROR',
+        error: {
+          message: 'Unhandled promise rejection',
+          reason: event.reason?.toString() || 'Unknown'
+        }
+      });
+    });
+  }).catch(err => {
+    console.error('❌ [SW] Failed to notify clients about rejection:', err);
+  });
+});
+
+console.log('✅ [SW] Service Worker script loaded successfully');
 

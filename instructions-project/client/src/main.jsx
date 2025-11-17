@@ -30,9 +30,13 @@ const isDev = import.meta.env.DEV;
 // Só registrar Service Worker em produção
 if ('serviceWorker' in navigator && !isDev) {
   console.log(`🔧 [Main] Registering Service Worker in production mode...`);
+  console.log(`📋 [Main] Environment: ${import.meta.env.MODE}`);
+  console.log(`📋 [Main] Service Worker URL: ${window.location.origin}/sw.js`);
+  console.log(`📋 [Main] Navigator serviceWorker available:`, 'serviceWorker' in navigator);
   
   // Store updateSW function globally so UpdateNotification can use it
-  updateSW = registerSW({
+  try {
+    updateSW = registerSW({
     immediate: false, // Don't update immediately - wait for user confirmation
     onOfflineReady() {
       console.log('✅ [Main] App ready to work offline');
@@ -49,19 +53,62 @@ if ('serviceWorker' in navigator && !isDev) {
       window.dispatchEvent(new CustomEvent('sw-update-available'));
     },
     onRegistered(registration) {
-      console.log('✅ [Main] Service Worker registered successfully:', registration);
-      console.log('📋 [Main] Service Worker scope:', registration.scope);
-      console.log('📋 [Main] Service Worker active:', registration.active?.scriptURL);
+      console.log('✅ [Main] Service Worker registered successfully');
+      console.log('📋 [Main] Registration object:', {
+        scope: registration.scope,
+        active: registration.active?.scriptURL || 'none',
+        installing: registration.installing?.scriptURL || 'none',
+        waiting: registration.waiting?.scriptURL || 'none',
+        updateViaCache: registration.updateViaCache
+      });
+      
+      // Monitor service worker state changes
+      if (registration.installing) {
+        console.log('📦 [Main] Service Worker installing...');
+        registration.installing.addEventListener('statechange', (event) => {
+          console.log(`📦 [Main] SW state changed to: ${event.target.state}`);
+          if (event.target.state === 'installed') {
+            console.log('✅ [Main] Service Worker installed successfully');
+          }
+        });
+      }
+      
+      if (registration.waiting) {
+        console.log('⏳ [Main] Service Worker waiting for activation');
+      }
+      
+      if (registration.active) {
+        console.log('✅ [Main] Service Worker is active');
+      }
       
       // Check Background Sync availability
-      isBackgroundSyncAvailable();
+      try {
+        isBackgroundSyncAvailable();
+        console.log('✅ [Main] Background Sync availability checked');
+      } catch (error) {
+        console.error('❌ [Main] Error checking Background Sync:', error);
+      }
       
       // Setup push notification click listener when SW is ready
-      setupNotificationClickListener()
+      try {
+        setupNotificationClickListener();
+        console.log('✅ [Main] Push notification click listener setup');
+      } catch (error) {
+        console.error('❌ [Main] Error setting up push notification listener:', error);
+      }
       
       // Listener for messages from service worker (Background Sync and Updates)
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener('message', async (event) => {
+          console.log('📨 [Main] Message received from Service Worker:', event.data);
+          
+          // Handle Service Worker errors
+          if (event.data && event.data.type === 'SW_ERROR') {
+            console.error('❌ [Main] Service Worker reported an error:', event.data.error);
+            return;
+          }
+          
+          // Handle Background Sync
           if (event.data && event.data.type === 'SYNC_PROJECT') {
             const { projectId } = event.data;
             try {
@@ -72,15 +119,39 @@ if ('serviceWorker' in navigator && !isDev) {
             }
           }
         });
+        console.log('✅ [Main] Message listener from Service Worker registered');
       }
     },
     onRegisterError(error) {
       console.error('❌ [Main] Service Worker registration error:', error);
+      console.error('❌ [Main] Error type:', error?.constructor?.name);
+      console.error('❌ [Main] Error message:', error?.message);
+      console.error('❌ [Main] Error stack:', error?.stack);
+      console.error('❌ [Main] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      
+      // Tentar obter mais informações sobre o erro
+      if (error?.message?.includes('threw an exception')) {
+        console.error('❌ [Main] Service Worker script evaluation failed');
+        console.error('❌ [Main] This usually means there is a syntax error or import issue in sw.js');
+        console.error('❌ [Main] Check the Service Worker script at:', window.location.origin + '/sw.js');
+      }
     }
-  });
-  
-  // Make updateSW available globally for UpdateNotification component
-  window.updateSW = updateSW;
+    });
+    
+    console.log('✅ [Main] registerSW called successfully');
+    console.log('📋 [Main] updateSW function:', typeof updateSW);
+    
+    // Make updateSW available globally for UpdateNotification component
+    window.updateSW = updateSW;
+    console.log('✅ [Main] updateSW made available globally');
+  } catch (error) {
+    console.error('❌ [Main] Error calling registerSW:', error);
+    console.error('❌ [Main] Error details:', {
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack
+    });
+  }
 } else if (isDev) {
   console.log('ℹ️ [Main] Service Worker desabilitado em desenvolvimento (HMR funciona sem ele)');
 } else {
