@@ -26,6 +26,8 @@ app.use(cors({
     'http://192.168.2.16:3005',
     'http://192.168.2.28:3003',
     'http://192.168.2.28:3005',
+    'http://192.168.2.108:3003',
+    'http://192.168.2.108:3005',
   ],
   credentials: true
 }));
@@ -69,6 +71,25 @@ if (hasClerk && enableAuth) {
   if (!hasClerk) console.warn('Clerk disabled (missing CLERK_SECRET_KEY). /api routes are unsecured.');
   if (hasClerk && !enableAuth) console.warn('Clerk present but ENABLE_AUTH!=true. Skipping auth protection for /api in dev.');
 }
+
+// Rota raiz - informações do servidor
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Instructions Project API Server',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      api: '/api',
+      projects: '/api/projects',
+      products: '/api/products',
+      decorations: '/api/decorations'
+    },
+    access: {
+      local: `http://localhost:${process.env.PORT || 5000}`,
+      network: `http://192.168.2.16:${process.env.PORT || 5000}`
+    }
+  });
+});
 
 // Health check
 app.get('/health', async (req, res) => {

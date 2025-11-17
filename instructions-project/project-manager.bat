@@ -3,6 +3,11 @@ setlocal enabledelayedexpansion
 title Project Manager - TheCore
 color 0A
 
+rem Prevenir fechamento inesperado - adicionar tratamento de erro
+if not defined LOG_FILE (
+    set "LOG_FILE=%~dp0project-manager.log"
+)
+
 rem Definir arquivo de log
 set "LOG_FILE=%~dp0project-manager.log"
 
@@ -15,19 +20,21 @@ echo.
 echo 1. 🚀 INICIAR PROJETO
 echo 2. 📊 VERIFICAR STATUS
 echo 3. 🔄 REINICIAR PROJETO
-echo 4. 📤 FAZER BUILD E ENVIAR PARA SERVIDOR
-echo 5. 🗄️  VERIFICAR CONEXÃO BASE DE DADOS
-echo 6. ❌ SAIR
+echo 4. 📦 INSTALAR DEPENDÊNCIAS
+echo 5. 📤 FAZER BUILD E ENVIAR PARA SERVIDOR
+echo 6. 🗄️  VERIFICAR CONEXÃO BASE DE DADOS
+echo 7. ❌ SAIR
 echo.
 echo ========================================
-set /p choice="Escolha uma opção (1-6): "
+set /p choice="Escolha uma opção (1-7): "
 
 if "%choice%"=="1" goto start
 if "%choice%"=="2" goto status
 if "%choice%"=="3" goto restart
-if "%choice%"=="4" goto deploy_build
-if "%choice%"=="5" goto check_db
-if "%choice%"=="6" goto exit
+if "%choice%"=="4" goto install_deps
+if "%choice%"=="5" goto deploy_build
+if "%choice%"=="6" goto check_db
+if "%choice%"=="7" goto exit
 goto menu
 
 :start
@@ -97,25 +104,29 @@ echo [DEBUG] Iniciando verificacao de dependencias...
 echo Verificando e instalando dependências do projeto...
 echo Isso pode demorar alguns minutos na primeira vez.
 echo.
-echo [%DATE% %TIME%] [DEBUG] Chamando check_and_install_dependencies... >> "%LOG_FILE%"
+echo [%DATE% %TIME%] [DEBUG] Chamando check_and_install_dependencies... >> "%LOG_FILE%" 2>&1
 call :check_and_install_dependencies
 set "DEPS_RESULT=%errorlevel%"
 echo [DEBUG] check_and_install_dependencies retornou: %DEPS_RESULT%
-echo [%DATE% %TIME%] [DEBUG] check_and_install_dependencies retornou: %DEPS_RESULT% >> "%LOG_FILE%"
+echo [%DATE% %TIME%] [DEBUG] check_and_install_dependencies retornou: %DEPS_RESULT% >> "%LOG_FILE%" 2>&1
 if %DEPS_RESULT% neq 0 (
     echo.
     echo ❌ Erro ao instalar dependências
     echo    Verifique as mensagens acima para mais detalhes
     echo [DEBUG] Pausando antes de voltar ao menu...
+    echo [%DATE% %TIME%] [DEBUG] Pausando antes de voltar ao menu... >> "%LOG_FILE%" 2>&1
     pause
     goto menu
 )
 echo.
 echo ✅ Dependências verificadas e instaladas!
+echo [%DATE% %TIME%] Dependencias verificadas e instaladas! >> "%LOG_FILE%" 2>&1
 echo.
 echo [DEBUG] Dependencias OK, aguardando 2 segundos...
+echo [%DATE% %TIME%] [DEBUG] Dependencias OK, aguardando 2 segundos... >> "%LOG_FILE%" 2>&1
 timeout /t 2 /nobreak >nul
 echo [DEBUG] Continuando apos dependencias...
+echo [%DATE% %TIME%] [DEBUG] Continuando apos dependencias... >> "%LOG_FILE%" 2>&1
 echo.
 
 rem Garantir que estamos na raiz do projeto antes de comandos subsequentes
@@ -280,26 +291,42 @@ echo ========================================
 echo.
 echo [DEBUG] Iniciando secao do frontend...
 echo [%DATE% %TIME%] [DEBUG] Iniciando secao do frontend... >> "%LOG_FILE%"
-rem Verificacao ultra-simplificada - apenas verificar se porta 5173 esta em uso
+rem Verificacao - verificar se porta 3003 esta em uso (porta padrão do projeto)
 set "FRONTEND_ALREADY_RUNNING=0"
-echo [DEBUG] Verificando se porta 5173 esta em uso...
-echo [%DATE% %TIME%] [DEBUG] Verificando se porta 5173 esta em uso... >> "%LOG_FILE%"
-netstat -ano | findstr ":5173" | findstr "LISTENING" >nul 2>&1
+echo [DEBUG] Verificando se porta 3003 esta em uso...
+echo [%DATE% %TIME%] [DEBUG] Verificando se porta 3003 esta em uso... >> "%LOG_FILE%" 2>&1
+netstat -ano | findstr ":3003" | findstr "LISTENING" >nul 2>&1
 if not errorlevel 1 (
-    echo ✅ Frontend já está a correr na porta 5173
+    echo ✅ Frontend já está a correr na porta 3003
     echo    Pulando inicialização...
-    echo [DEBUG] Porta 5173 esta em uso, assumindo que frontend esta rodando
-    echo [%DATE% %TIME%] [DEBUG] Porta 5173 esta em uso, assumindo que frontend esta rodando >> "%LOG_FILE%"
+    echo [DEBUG] Porta 3003 esta em uso, assumindo que frontend esta rodando
+    echo [%DATE% %TIME%] [DEBUG] Porta 3003 esta em uso, assumindo que frontend esta rodando >> "%LOG_FILE%" 2>&1
     set "FRONTEND_ALREADY_RUNNING=1"
     goto frontend_already_running
 ) else (
-    echo [DEBUG] Porta 5173 nao esta em uso, iniciando frontend...
-    echo [%DATE% %TIME%] [DEBUG] Porta 5173 nao esta em uso, iniciando frontend... >> "%LOG_FILE%"
+    echo [DEBUG] Porta 3003 nao esta em uso, iniciando frontend...
+    echo [%DATE% %TIME%] [DEBUG] Porta 3003 nao esta em uso, iniciando frontend... >> "%LOG_FILE%" 2>&1
 )
 
-rem Verificar se há processos Node.js a usar portas do frontend (já verificado acima no loop)
-rem Se chegou aqui, frontend não está a correr nas portas testadas
+rem Verificar também outras portas comuns do Vite antes de iniciar
+for %%P in (5173 4173 3000 3001 3002 3005) do (
+    netstat -ano | findstr ":%%P" | findstr "LISTENING" >nul 2>&1
+    if not errorlevel 1 (
+        echo [DEBUG] Porta %%P esta em uso, verificando se e Node.js...
+        for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%%P" ^| findstr "LISTENING"') do (
+            tasklist /fi "PID eq %%a" 2>nul | findstr /i "node.exe" >nul
+            if not errorlevel 1 (
+                echo ✅ Frontend já está a correr na porta %%P
+                echo [DEBUG] Frontend detectado na porta %%P, pulando inicializacao
+                echo [%DATE% %TIME%] [DEBUG] Frontend detectado na porta %%P, pulando inicializacao >> "%LOG_FILE%" 2>&1
+                set "FRONTEND_ALREADY_RUNNING=1"
+                goto frontend_already_running
+            )
+        )
+    )
+)
 
+rem Se chegou aqui, frontend não está a correr - iniciar
 echo Iniciando cliente frontend...
 echo [%DATE% %TIME%] [DEBUG] Iniciando cliente frontend... >> "%LOG_FILE%"
 rem Criar arquivo batch temporario para evitar problemas com aspas e caminhos com espacos
@@ -361,71 +388,105 @@ echo [DEBUG] Exibindo informacoes finais...
 echo 🔧 Backend:  http://localhost:5000
 echo 🗄️  Database: localhost:5433
 echo.
-if "%FRONTEND_ALREADY_RUNNING%"=="1" (
-    echo ✅ Frontend já estava a correr
-    set "FRONTEND_URL=http://localhost:5173"
-) else (
-    echo 🌐 Frontend: http://localhost:5173 (ou porta configurada)
-    echo Aguardando frontend estar pronto (7 segundos)...
-    timeout /t 7 /nobreak >nul
-    set "FRONTEND_URL=http://localhost:5173"
-)
-echo.
-echo [DEBUG] Abrindo navegador em %FRONTEND_URL%...
-echo [%DATE% %TIME%] [DEBUG] Abrindo navegador em %FRONTEND_URL%... >> "%LOG_FILE%"
-start "" "%FRONTEND_URL%"
-if errorlevel 1 (
-    echo [DEBUG] Erro ao abrir navegador, tentando metodo alternativo...
-    echo [%DATE% %TIME%] [DEBUG] Erro ao abrir navegador, tentando metodo alternativo... >> "%LOG_FILE%"
-    start "" "http://localhost:5173"
-)
-echo.
-echo Pressione qualquer tecla para voltar ao menu...
-pause >nul
-
-rem Tentar detectar automaticamente o frontend em portas comuns do Vite
+rem Detectar porta do frontend antes de abrir browser
 set "FRONTEND_PORT="
 set "FRONTEND_FOUND=0"
+echo [DEBUG] Detectando porta do frontend...
+echo [%DATE% %TIME%] [DEBUG] Detectando porta do frontend... >> "%LOG_FILE%" 2>&1
 
-echo Verificando portas do frontend...
-for %%P in (3003 5173 4173 3000 3001 3002 3005) do (
+rem Verificar porta 3003 primeiro (porta padrão)
+echo [DEBUG] Testando porta 3003...
+curl -s -m 2 http://localhost:3003 >nul 2>&1
+if not errorlevel 1 (
+    set "FRONTEND_PORT=3003"
+    set "FRONTEND_FOUND=1"
+    echo ✅ Frontend detectado na porta 3003
+    echo [%DATE% %TIME%] [DEBUG] Frontend detectado na porta 3003 >> "%LOG_FILE%" 2>&1
+    goto frontend_port_detected
+)
+
+rem Verificar outras portas comuns do Vite
+for %%P in (5173 4173 3000 3001 3002 3005) do (
     if "%FRONTEND_FOUND%"=="0" (
-        echo    Testando porta %%P...
+        echo [DEBUG] Testando porta %%P...
         curl -s -m 2 http://localhost:%%P >nul 2>&1
         if not errorlevel 1 (
             set "FRONTEND_PORT=%%P"
             set "FRONTEND_FOUND=1"
             echo ✅ Frontend detectado na porta %%P
-            goto frontend_found
+            echo [%DATE% %TIME%] [DEBUG] Frontend detectado na porta %%P >> "%LOG_FILE%" 2>&1
+            goto frontend_port_detected
         )
     )
 )
 
+rem Se não encontrou nenhuma porta, usar padrão
 if "%FRONTEND_FOUND%"=="0" (
-    echo ⚠️  Frontend nao detectado automaticamente.
-    echo.
-    echo Portas comuns do Vite: 3003, 5173, 4173, 3000, 3001, 3002, 3005
-    echo Usando porta padrão: 3003
-    echo.
-    echo 💡 Dica: Verifique a janela "Frontend Client" para ver a porta correta
+    echo [DEBUG] Frontend nao detectado automaticamente, usando porta padrao 3003
+    echo [%DATE% %TIME%] [DEBUG] Frontend nao detectado automaticamente, usando porta padrao 3003 >> "%LOG_FILE%" 2>&1
     set "FRONTEND_PORT=3003"
-    goto frontend_set
 )
 
-:frontend_found
-rem Frontend já foi detectado acima
-
-:frontend_set
+:frontend_port_detected
+echo [DEBUG] Chegou ao label frontend_port_detected
+echo [%DATE% %TIME%] [DEBUG] Chegou ao label frontend_port_detected >> "%LOG_FILE%" 2>&1
 set "FRONTEND_URL=http://localhost:%FRONTEND_PORT%"
+echo [DEBUG] FRONTEND_URL definido como: %FRONTEND_URL%
+echo [%DATE% %TIME%] [DEBUG] FRONTEND_URL definido como: %FRONTEND_URL% >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Verificando FRONTEND_ALREADY_RUNNING: [%FRONTEND_ALREADY_RUNNING%]
+echo [%DATE% %TIME%] [DEBUG] Verificando FRONTEND_ALREADY_RUNNING: [%FRONTEND_ALREADY_RUNNING%] >> "%LOG_FILE%" 2>&1
 
-echo.
+rem Usar goto para evitar problemas com if/else em batch
+echo [DEBUG] Antes do IF statement...
+echo [%DATE% %TIME%] [DEBUG] Antes do IF statement... >> "%LOG_FILE%" 2>&1
+if "%FRONTEND_ALREADY_RUNNING%"=="1" (
+    echo [DEBUG] Dentro do IF - FRONTEND_ALREADY_RUNNING=1
+    echo [%DATE% %TIME%] [DEBUG] Dentro do IF - FRONTEND_ALREADY_RUNNING=1 >> "%LOG_FILE%" 2>&1
+    echo ✅ Frontend já estava a correr na porta %FRONTEND_PORT%
+    echo [%DATE% %TIME%] [DEBUG] Frontend ja estava a correr na porta %FRONTEND_PORT% >> "%LOG_FILE%" 2>&1
+    goto after_frontend_wait
+)
+echo [DEBUG] Apos o IF - FRONTEND_ALREADY_RUNNING nao e 1, continuando...
+echo [%DATE% %TIME%] [DEBUG] Apos o IF - FRONTEND_ALREADY_RUNNING nao e 1, continuando... >> "%LOG_FILE%" 2>&1
+
+rem Se chegou aqui, frontend foi iniciado agora
+echo [DEBUG] Entrando no bloco de aguardar frontend...
+echo [%DATE% %TIME%] [DEBUG] Entrando no bloco de aguardar frontend... >> "%LOG_FILE%" 2>&1
 echo 🌐 Frontend: %FRONTEND_URL%
+echo [%DATE% %TIME%] [DEBUG] Frontend iniciado, aguardando estar pronto... >> "%LOG_FILE%" 2>&1
+echo Aguardando frontend estar pronto (7 segundos)...
+echo [DEBUG] Executando timeout...
+echo [%DATE% %TIME%] [DEBUG] Executando timeout... >> "%LOG_FILE%" 2>&1
+timeout /t 7 /nobreak >nul
+set "TIMEOUT_RESULT=%errorlevel%"
+echo [DEBUG] Timeout concluido, errorlevel: %TIMEOUT_RESULT%
+echo [%DATE% %TIME%] [DEBUG] Timeout concluido, errorlevel: %TIMEOUT_RESULT% >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Aguardamento concluido
+echo [%DATE% %TIME%] [DEBUG] Aguardamento concluido >> "%LOG_FILE%" 2>&1
+
+:after_frontend_wait
 echo.
-echo Abrindo frontend no browser...
-start %FRONTEND_URL%
-echo ✅ Frontend aberto no browser!
+echo [DEBUG] Preparando para abrir navegador...
+echo [%DATE% %TIME%] [DEBUG] Preparando para abrir navegador... >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Abrindo navegador em %FRONTEND_URL%...
+echo [%DATE% %TIME%] [DEBUG] Abrindo navegador em %FRONTEND_URL%... >> "%LOG_FILE%" 2>&1
+start "" "%FRONTEND_URL%"
+set "BROWSER_START_RESULT=%errorlevel%"
+echo [DEBUG] Comando start retornou errorlevel: %BROWSER_START_RESULT%
+echo [%DATE% %TIME%] [DEBUG] Comando start retornou errorlevel: %BROWSER_START_RESULT% >> "%LOG_FILE%" 2>&1
+if %BROWSER_START_RESULT% neq 0 (
+    echo [DEBUG] Erro ao abrir navegador, tentando metodo alternativo...
+    echo [%DATE% %TIME%] [DEBUG] Erro ao abrir navegador, tentando metodo alternativo... >> "%LOG_FILE%" 2>&1
+    start "" "%FRONTEND_URL%"
+)
+echo.
+echo ✅ Frontend aberto no browser na porta %FRONTEND_PORT%!
+echo [%DATE% %TIME%] Frontend aberto no browser na porta %FRONTEND_PORT%! >> "%LOG_FILE%" 2>&1
 echo.
 echo ✅ Projeto iniciado com sucesso!
+echo [%DATE% %TIME%] Projeto iniciado com sucesso! >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Script chegou ao final com sucesso
+echo [%DATE% %TIME%] [DEBUG] Script chegou ao final com sucesso >> "%LOG_FILE%" 2>&1
 echo.
 echo 📝 NOTA: Se aparecerem erros 500 (Internal Server Error) no frontend,
 echo    verifique:
@@ -466,13 +527,37 @@ if "%DOCKER_AVAILABLE%"=="1" (
 )
 echo.
 
-echo [2/3] Parando processos Node.js...
-taskkill /f /im node.exe 2>nul
-echo ✅ Processos Node.js parados
+echo [2/3] Parando processos Node.js nas portas do projeto...
+rem Fechar apenas processos nas portas específicas do projeto
+rem Porta 5000 - Backend
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5000" ^| findstr "LISTENING"') do (
+    tasklist /fi "PID eq %%a" 2>nul | findstr /i "node.exe nodemon.exe" >nul
+    if not errorlevel 1 (
+        echo    Fechando processo na porta 5000 (PID: %%a)
+        taskkill /f /pid %%a 2>nul
+    )
+)
+rem Porta 3003 - Frontend
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":3003" ^| findstr "LISTENING"') do (
+    tasklist /fi "PID eq %%a" 2>nul | findstr /i "node.exe nodemon.exe" >nul
+    if not errorlevel 1 (
+        echo    Fechando processo na porta 3003 (PID: %%a)
+        taskkill /f /pid %%a 2>nul
+    )
+)
+rem Porta 5173 - Frontend alternativo
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5173" ^| findstr "LISTENING"') do (
+    tasklist /fi "PID eq %%a" 2>nul | findstr /i "node.exe nodemon.exe" >nul
+    if not errorlevel 1 (
+        echo    Fechando processo na porta 5173 (PID: %%a)
+        taskkill /f /pid %%a 2>nul
+    )
+)
+echo ✅ Processos Node.js nas portas do projeto parados
 echo.
 
 echo [3/3] Limpando processos restantes...
-taskkill /f /im nodemon.exe 2>nul
+rem Não fechar todos os nodemon, apenas os relacionados ao projeto
 echo ✅ Processos de desenvolvimento parados
 echo.
 
@@ -626,6 +711,55 @@ if %DEPLOY_SUCCESS% equ 0 (
     echo.
 )
 
+pause
+goto menu
+
+:install_deps
+cls
+echo ========================================
+echo    INSTALAR DEPENDÊNCIAS
+echo ========================================
+echo.
+echo Logs sendo salvos em: %LOG_FILE%
+echo ======================================== >> "%LOG_FILE%"
+echo [%DATE% %TIME%] INSTALANDO DEPENDÊNCIAS >> "%LOG_FILE%"
+echo ======================================== >> "%LOG_FILE%"
+echo.
+echo Este processo irá instalar todas as dependências necessárias:
+echo - Dependências do servidor (server/)
+echo - Dependências do cliente (client/)
+echo.
+echo Isso pode demorar alguns minutos...
+echo.
+pause
+echo.
+echo ========================================
+echo    INSTALANDO DEPENDÊNCIAS
+echo ========================================
+echo.
+call :check_and_install_dependencies
+set "INSTALL_RESULT=%errorlevel%"
+echo.
+if %INSTALL_RESULT% equ 0 (
+    echo ========================================
+    echo    ✅ DEPENDÊNCIAS INSTALADAS COM SUCESSO!
+    echo ========================================
+    echo.
+    echo Todas as dependências foram instaladas corretamente.
+    echo.
+) else (
+    echo ========================================
+    echo    ❌ ERRO AO INSTALAR DEPENDÊNCIAS
+    echo ========================================
+    echo.
+    echo Houve um erro ao instalar as dependências.
+    echo Verifique as mensagens acima para mais detalhes.
+    echo.
+    echo 💡 Tente executar manualmente:
+    echo    cd server ^&^& npm install
+    echo    cd client ^&^& npm install
+    echo.
+)
 pause
 goto menu
 
@@ -783,77 +917,203 @@ echo ========================================
 echo    VERIFICANDO DEPENDÊNCIAS
 echo ========================================
 echo.
+echo [DEBUG] Iniciando verificacao de dependencias...
+echo [%DATE% %TIME%] [DEBUG] Iniciando verificacao de dependencias... >> "%LOG_FILE%" 2>&1
+
+rem Verificar se npm está disponível
+where npm >nul 2>&1
+if errorlevel 1 (
+    echo ❌ ERRO: npm não encontrado no PATH!
+    echo [%DATE% %TIME%] ERRO: npm nao encontrado no PATH >> "%LOG_FILE%" 2>&1
+    echo    -> Certifique-se de que Node.js está instalado e npm está no PATH
+    pause
+    exit /b 1
+)
+echo [DEBUG] npm encontrado e disponivel
+echo [%DATE% %TIME%] [DEBUG] npm encontrado e disponivel >> "%LOG_FILE%" 2>&1
+
+rem Verificar se diretórios existem
+if not exist "%~dp0server" (
+    echo ❌ ERRO: Diretório server não encontrado!
+    echo [%DATE% %TIME%] ERRO: Diretorio server nao encontrado >> "%LOG_FILE%" 2>&1
+    pause
+    exit /b 1
+)
+if not exist "%~dp0client" (
+    echo ❌ ERRO: Diretório client não encontrado!
+    echo [%DATE% %TIME%] ERRO: Diretorio client nao encontrado >> "%LOG_FILE%" 2>&1
+    pause
+    exit /b 1
+)
+echo [DEBUG] Diretorios server e client encontrados
+echo [%DATE% %TIME%] [DEBUG] Diretorios server e client encontrados >> "%LOG_FILE%" 2>&1
 
 echo [1/3] Verificando dependências do servidor...
+echo [%DATE% %TIME%] [1/3] Verificando dependencias do servidor... >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Tentando acessar diretorio server...
+echo [%DATE% %TIME%] [DEBUG] Tentando acessar diretorio server... >> "%LOG_FILE%" 2>&1
 cd /d "%~dp0server"
+set "CD_SERVER_RESULT=%errorlevel%"
+echo [DEBUG] cd para server retornou: %CD_SERVER_RESULT%
+echo [%DATE% %TIME%] [DEBUG] cd para server retornou: %CD_SERVER_RESULT% >> "%LOG_FILE%" 2>&1
+if %CD_SERVER_RESULT% neq 0 (
+    echo ❌ ERRO: Não foi possível acessar o diretório server
+    echo [%DATE% %TIME%] ERRO: Nao foi possivel acessar diretorio server >> "%LOG_FILE%" 2>&1
+    echo [DEBUG] Pausando antes de sair...
+    pause
+    exit /b 1
+)
+echo [DEBUG] Diretorio server acessado com sucesso. Diretorio atual: %CD%
+echo [%DATE% %TIME%] [DEBUG] Diretorio server acessado com sucesso: %CD% >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Verificando se node_modules existe...
+echo [%DATE% %TIME%] [DEBUG] Verificando se node_modules existe... >> "%LOG_FILE%" 2>&1
 set "SERVER_NEED_INSTALL=0"
 if not exist "node_modules" (
     echo ⚠️  node_modules não encontrado no servidor. Instalando dependências...
+    echo [%DATE% %TIME%] node_modules nao encontrado no servidor >> "%LOG_FILE%" 2>&1
     set "SERVER_NEED_INSTALL=1"
+    echo [DEBUG] SERVER_NEED_INSTALL definido como 1
 ) else (
+    echo [DEBUG] node_modules encontrado, verificando dependencias criticas...
+    echo [%DATE% %TIME%] [DEBUG] node_modules encontrado, verificando dependencias criticas... >> "%LOG_FILE%" 2>&1
     rem Verificar se dependências críticas estão instaladas
     if not exist "node_modules\sharp" (
         echo ⚠️  sharp não encontrado. Reinstalando dependências...
+        echo [%DATE% %TIME%] sharp nao encontrado >> "%LOG_FILE%" 2>&1
         set "SERVER_NEED_INSTALL=1"
     )
     if not exist "node_modules\sequelize" (
         echo ⚠️  sequelize não encontrado. Reinstalando dependências...
+        echo [%DATE% %TIME%] sequelize nao encontrado >> "%LOG_FILE%" 2>&1
         set "SERVER_NEED_INSTALL=1"
     )
     if not exist "node_modules\express" (
         echo ⚠️  express não encontrado. Reinstalando dependências...
+        echo [%DATE% %TIME%] express nao encontrado >> "%LOG_FILE%" 2>&1
         set "SERVER_NEED_INSTALL=1"
     )
     if not exist "node_modules\pg" (
         echo ⚠️  pg não encontrado. Reinstalando dependências...
-        set "SERVER_NEED_INSTALL=1"
-    )
-    if not exist "node_modules\@supabase\supabase-js" (
-        echo ⚠️  @supabase/supabase-js não encontrado. Reinstalando dependências...
+        echo [%DATE% %TIME%] pg nao encontrado >> "%LOG_FILE%" 2>&1
         set "SERVER_NEED_INSTALL=1"
     )
 )
+echo [DEBUG] Verificacao concluida. SERVER_NEED_INSTALL=%SERVER_NEED_INSTALL%
+echo [%DATE% %TIME%] [DEBUG] Verificacao concluida. SERVER_NEED_INSTALL=%SERVER_NEED_INSTALL% >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Verificando se precisa instalar servidor...
+echo [%DATE% %TIME%] [DEBUG] Verificando se precisa instalar servidor... >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Valor de SERVER_NEED_INSTALL: [%SERVER_NEED_INSTALL%]
+echo [%DATE% %TIME%] [DEBUG] Valor de SERVER_NEED_INSTALL: [%SERVER_NEED_INSTALL%] >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Testando comparacao antes do IF...
+echo [%DATE% %TIME%] [DEBUG] Testando comparacao antes do IF... >> "%LOG_FILE%" 2>&1
 
-if "%SERVER_NEED_INSTALL%"=="1" (
-    echo 🔄 Instalando dependências do servidor...
-    if exist "package-lock.json" (
-        npm ci
-        if %errorlevel% neq 0 (
-            echo ⚠️  npm ci falhou, tentando npm install...
-            npm install
-        )
-    ) else (
+rem Usar goto condicional em vez de if/else para evitar problemas
+if "%SERVER_NEED_INSTALL%"=="1" goto install_server
+goto skip_server_install
+
+:install_server
+echo [DEBUG] Comparacao string: SERVER_NEED_INSTALL == 1 - VERDADEIRO
+echo [%DATE% %TIME%] [DEBUG] Comparacao string: SERVER_NEED_INSTALL == 1 - VERDADEIRO >> "%LOG_FILE%" 2>&1
+echo [DEBUG] SERVER_NEED_INSTALL=1, entrando no bloco de instalacao...
+echo [%DATE% %TIME%] [DEBUG] SERVER_NEED_INSTALL=1, entrando no bloco de instalacao... >> "%LOG_FILE%" 2>&1
+echo 🔄 Instalando dependências do servidor...
+echo [%DATE% %TIME%] Instalando dependencias do servidor... >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Diretorio atual antes de instalar: %CD%
+echo [%DATE% %TIME%] [DEBUG] Diretorio atual antes de instalar: %CD% >> "%LOG_FILE%" 2>&1
+set "INSTALL_ERROR=0"
+if exist "package-lock.json" (
+    echo    Usando npm ci (instalação limpa baseada em package-lock.json)...
+    echo [%DATE% %TIME%] Executando npm ci no servidor... >> "%LOG_FILE%" 2>&1
+    echo [DEBUG] Executando: npm ci
+    npm ci
+    set "INSTALL_ERROR=%errorlevel%"
+    echo [DEBUG] npm ci retornou errorlevel: %INSTALL_ERROR%
+    echo [%DATE% %TIME%] [DEBUG] npm ci retornou errorlevel: %INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
+    if %INSTALL_ERROR% neq 0 (
+        echo ⚠️  npm ci falhou, tentando npm install...
+        echo [%DATE% %TIME%] npm ci falhou (errorlevel: %INSTALL_ERROR%), tentando npm install... >> "%LOG_FILE%" 2>&1
+        echo [DEBUG] Executando: npm install
         npm install
-    )
-    if %errorlevel% neq 0 (
-        echo ❌ Erro ao instalar dependências do servidor
-        echo    -> Tente executar manualmente: cd server ^&^& npm install
-        exit /b 1
-    )
-    echo ✅ Dependências do servidor instaladas com sucesso!
-    rem Verificar novamente após instalação
-    if not exist "node_modules\sharp" (
-        echo ❌ AVISO: sharp ainda não foi instalado após npm install
-        echo    -> Execute manualmente: cd server ^&^& npm install sharp
-        echo    -> O servidor pode não iniciar sem esta dependência!
-    )
-    if not exist "node_modules\@supabase\supabase-js" (
-        echo ❌ AVISO: @supabase/supabase-js ainda não foi instalado após npm install
-        echo    -> Execute manualmente: cd server ^&^& npm install @supabase/supabase-js
-        echo    -> O servidor pode não iniciar sem esta dependência!
+        set "INSTALL_ERROR=%errorlevel%"
+        echo [DEBUG] npm install retornou errorlevel: %INSTALL_ERROR%
+        echo [%DATE% %TIME%] [DEBUG] npm install retornou errorlevel: %INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
     )
 ) else (
-    echo ✅ Dependências do servidor já instaladas
+    echo    Usando npm install...
+    echo [%DATE% %TIME%] Executando npm install no servidor... >> "%LOG_FILE%" 2>&1
+    echo [DEBUG] Executando: npm install
+    npm install
+    set "INSTALL_ERROR=%errorlevel%"
+    echo [DEBUG] npm install retornou errorlevel: %INSTALL_ERROR%
+    echo [%DATE% %TIME%] [DEBUG] npm install retornou errorlevel: %INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
 )
+if %INSTALL_ERROR% neq 0 (
+    echo ❌ Erro ao instalar dependências do servidor (errorlevel: %INSTALL_ERROR%)
+    echo [%DATE% %TIME%] ERRO ao instalar dependencias do servidor (errorlevel: %INSTALL_ERROR%) >> "%LOG_FILE%" 2>&1
+    echo    -> Tente executar manualmente: cd server ^&^& npm install
+    echo [DEBUG] Pausando antes de sair...
+    pause
+    cd /d "%~dp0"
+    exit /b 1
+)
+echo [%DATE% %TIME%] Dependencias do servidor instaladas com sucesso >> "%LOG_FILE%" 2>&1
+echo ✅ Dependências do servidor instaladas com sucesso!
+rem Verificar novamente após instalação
+if not exist "node_modules\sharp" (
+    echo ❌ AVISO: sharp ainda não foi instalado após npm install
+    echo    -> Execute manualmente: cd server ^&^& npm install sharp
+    echo    -> O servidor pode não iniciar sem esta dependência!
+)
+goto after_server_check
+
+:skip_server_install
+echo [DEBUG] Comparacao string: SERVER_NEED_INSTALL != 1 - FALSO, pulando instalacao
+echo [%DATE% %TIME%] [DEBUG] Comparacao string: SERVER_NEED_INSTALL != 1 - FALSO, pulando instalacao >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Servidor nao precisa instalar
+echo [%DATE% %TIME%] [DEBUG] Servidor nao precisa instalar >> "%LOG_FILE%" 2>&1
+echo ✅ Dependências do servidor já instaladas
+echo [%DATE% %TIME%] Dependencias do servidor ja instaladas >> "%LOG_FILE%" 2>&1
+echo [DEBUG] SERVER_NEED_INSTALL=0, pulando instalacao do servidor...
+echo [%DATE% %TIME%] [DEBUG] SERVER_NEED_INSTALL=0, pulando instalacao do servidor... >> "%LOG_FILE%" 2>&1
+
+:after_server_check
+echo [DEBUG] Apos o IF/ELSE do servidor...
+echo [%DATE% %TIME%] [DEBUG] Apos o IF/ELSE do servidor... >> "%LOG_FILE%" 2>&1
 echo.
+echo [DEBUG] Continuando para verificacao do cliente...
+echo [%DATE% %TIME%] [DEBUG] Continuando para verificacao do cliente... >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Linha de continuacao executada com sucesso
+echo [%DATE% %TIME%] [DEBUG] Linha de continuacao executada com sucesso >> "%LOG_FILE%" 2>&1
 
 echo [2/3] Verificando dependências do cliente...
+echo [%DATE% %TIME%] [2/3] Verificando dependencias do cliente... >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Tentando acessar diretorio client...
+echo [%DATE% %TIME%] [DEBUG] Tentando acessar diretorio client... >> "%LOG_FILE%" 2>&1
 cd /d "%~dp0client"
+set "CD_CLIENT_RESULT=%errorlevel%"
+echo [DEBUG] cd para client retornou: %CD_CLIENT_RESULT%
+echo [%DATE% %TIME%] [DEBUG] cd para client retornou: %CD_CLIENT_RESULT% >> "%LOG_FILE%" 2>&1
+if %CD_CLIENT_RESULT% neq 0 (
+    echo ❌ ERRO: Não foi possível acessar o diretório client
+    echo [%DATE% %TIME%] ERRO: Nao foi possivel acessar diretorio client >> "%LOG_FILE%" 2>&1
+    echo [DEBUG] Pausando antes de sair...
+    pause
+    cd /d "%~dp0"
+    exit /b 1
+)
+echo [DEBUG] Diretorio client acessado com sucesso. Diretorio atual: %CD%
+echo [%DATE% %TIME%] [DEBUG] Diretorio client acessado com sucesso: %CD% >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Verificando se node_modules existe no cliente...
+echo [%DATE% %TIME%] [DEBUG] Verificando se node_modules existe no cliente... >> "%LOG_FILE%" 2>&1
 set "NEED_INSTALL=0"
 if not exist "node_modules" (
     echo ⚠️  node_modules não encontrado no cliente. Instalando dependências...
+    echo [%DATE% %TIME%] node_modules nao encontrado no cliente >> "%LOG_FILE%" 2>&1
     set "NEED_INSTALL=1"
+    echo [DEBUG] NEED_INSTALL definido como 1
 ) else (
+    echo [DEBUG] node_modules encontrado no cliente, verificando dependencias criticas...
+    echo [%DATE% %TIME%] [DEBUG] node_modules encontrado no cliente, verificando dependencias criticas... >> "%LOG_FILE%" 2>&1
     rem Verificar se dependências críticas estão instaladas
     if not exist "node_modules\@clerk\clerk-react" (
         echo ⚠️  @clerk/clerk-react não encontrado. Reinstalando dependências...
@@ -881,24 +1141,55 @@ if not exist "node_modules" (
         set "NEED_INSTALL=1"
     )
 )
+echo [DEBUG] Verificacao do cliente concluida. NEED_INSTALL=%NEED_INSTALL%
+echo [%DATE% %TIME%] [DEBUG] Verificacao do cliente concluida. NEED_INSTALL=%NEED_INSTALL% >> "%LOG_FILE%" 2>&1
 
-if "%NEED_INSTALL%"=="1" (
-    if exist "package-lock.json" (
+rem Usar goto condicional em vez de if/else para evitar problemas
+if "%NEED_INSTALL%"=="1" goto install_client
+goto skip_client_install
+
+:install_client
+echo [DEBUG] NEED_INSTALL=1, entrando no bloco de instalacao do cliente...
+echo [%DATE% %TIME%] [DEBUG] NEED_INSTALL=1, entrando no bloco de instalacao do cliente... >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Diretorio atual antes de instalar cliente: %CD%
+echo [%DATE% %TIME%] [DEBUG] Diretorio atual antes de instalar cliente: %CD% >> "%LOG_FILE%" 2>&1
+set "CLIENT_INSTALL_ERROR=0"
+if exist "package-lock.json" (
         echo 🔄 Instalando dependências do cliente com npm ci...
+        echo [%DATE% %TIME%] Instalando dependencias do cliente com npm ci... >> "%LOG_FILE%" 2>&1
+        echo [DEBUG] Executando: npm ci
         npm ci
-        if %errorlevel% neq 0 (
+        set "CLIENT_INSTALL_ERROR=%errorlevel%"
+        echo [DEBUG] npm ci retornou errorlevel: %CLIENT_INSTALL_ERROR%
+        echo [%DATE% %TIME%] [DEBUG] npm ci retornou errorlevel: %CLIENT_INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
+        if %CLIENT_INSTALL_ERROR% neq 0 (
             echo ⚠️  npm ci falhou, tentando npm install...
+            echo [%DATE% %TIME%] npm ci falhou (errorlevel: %CLIENT_INSTALL_ERROR%), tentando npm install... >> "%LOG_FILE%" 2>&1
+            echo [DEBUG] Executando: npm install
             npm install
+            set "CLIENT_INSTALL_ERROR=%errorlevel%"
+            echo [DEBUG] npm install retornou errorlevel: %CLIENT_INSTALL_ERROR%
+            echo [%DATE% %TIME%] [DEBUG] npm install retornou errorlevel: %CLIENT_INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
         )
     ) else (
         echo 🔄 Instalando dependências do cliente com npm install...
+        echo [%DATE% %TIME%] Instalando dependencias do cliente com npm install... >> "%LOG_FILE%" 2>&1
+        echo [DEBUG] Executando: npm install
         npm install
+        set "CLIENT_INSTALL_ERROR=%errorlevel%"
+        echo [DEBUG] npm install retornou errorlevel: %CLIENT_INSTALL_ERROR%
+        echo [%DATE% %TIME%] [DEBUG] npm install retornou errorlevel: %CLIENT_INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
     )
-    if %errorlevel% neq 0 (
-        echo ❌ Erro ao instalar dependências do cliente
+    if %CLIENT_INSTALL_ERROR% neq 0 (
+        echo ❌ Erro ao instalar dependências do cliente (errorlevel: %CLIENT_INSTALL_ERROR%)
+        echo [%DATE% %TIME%] ERRO ao instalar dependencias do cliente (errorlevel: %CLIENT_INSTALL_ERROR%) >> "%LOG_FILE%" 2>&1
         echo    -> Tente executar manualmente: cd client ^&^& npm install
+        echo [DEBUG] Pausando antes de sair...
+        pause
+        cd /d "%~dp0"
         exit /b 1
     )
+    echo [%DATE% %TIME%] Dependencias do cliente instaladas com sucesso >> "%LOG_FILE%" 2>&1
     echo ✅ Dependências do cliente instaladas com sucesso!
     rem Verificar novamente após instalação
     if not exist "node_modules\@clerk\clerk-react" (
@@ -909,26 +1200,39 @@ if "%NEED_INSTALL%"=="1" (
         echo ❌ AVISO: three ainda não foi instalado após npm install
         echo    -> Execute manualmente: cd client ^&^& npm install three
     )
-) else (
-    echo ✅ Dependências do cliente já instaladas
-)
+goto after_client_check
+
+:skip_client_install
+echo [DEBUG] NEED_INSTALL != 1 - FALSO, pulando instalacao do cliente
+echo [%DATE% %TIME%] [DEBUG] NEED_INSTALL != 1 - FALSO, pulando instalacao do cliente >> "%LOG_FILE%" 2>&1
+echo ✅ Dependências do cliente já instaladas
+echo [%DATE% %TIME%] Dependencias do cliente ja instaladas >> "%LOG_FILE%" 2>&1
+
+:after_client_check
 echo.
 
- rem Aviso de variável Vite Clerk
- if not exist ".env" (
-     echo ⚠️  Arquivo .env nao encontrado em client. Defina VITE_CLERK_PUBLISHABLE_KEY
- ) else (
-     findstr /B /C:"VITE_CLERK_PUBLISHABLE_KEY=" ".env" >nul
-     if errorlevel 1 (
-         echo ⚠️  VITE_CLERK_PUBLISHABLE_KEY nao definida em client\.env
-     ) else (
-         echo ✅ VITE_CLERK_PUBLISHABLE_KEY detectada
-     )
- )
+rem Aviso de variável Vite Clerk
+if not exist ".env" (
+    echo ⚠️  Arquivo .env nao encontrado em client. Defina VITE_CLERK_PUBLISHABLE_KEY
+) else (
+    findstr /B /C:"VITE_CLERK_PUBLISHABLE_KEY=" ".env" >nul
+    if errorlevel 1 (
+        echo ⚠️  VITE_CLERK_PUBLISHABLE_KEY nao definida em client\.env
+    ) else (
+        echo ✅ VITE_CLERK_PUBLISHABLE_KEY detectada
+    )
+)
 
 echo [3/3] Verificação de dependências concluída!
 echo ✅ Todas as dependências estão prontas
-echo.
+echo [%DATE% %TIME%] Verificacao de dependencias concluida com sucesso >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Retornando ao diretorio raiz...
+cd /d "%~dp0"
+set "CD_ROOT_RESULT=%errorlevel%"
+echo [DEBUG] cd para raiz retornou: %CD_ROOT_RESULT%
+echo [%DATE% %TIME%] [DEBUG] cd para raiz retornou: %CD_ROOT_RESULT% >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Funcao check_and_install_dependencies concluida com sucesso
+echo [%DATE% %TIME%] [DEBUG] Funcao check_and_install_dependencies concluida com sucesso >> "%LOG_FILE%" 2>&1
 exit /b 0
 
 rem =====================
@@ -940,8 +1244,41 @@ call :detect_docker >nul 2>&1
 if "%DOCKER_AVAILABLE%"=="1" (
     %COMPOSE_CMD% -f "%~dp0docker-compose.dev.yml" down >nul 2>&1
 )
-taskkill /f /im node.exe >nul 2>&1
-taskkill /f /im nodemon.exe >nul 2>&1
+
+rem Fechar apenas processos nas portas específicas do projeto
+rem Porta 5000 - Backend
+echo [DEBUG] Verificando processos na porta 5000 (backend)...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5000" ^| findstr "LISTENING"') do (
+    echo [DEBUG] Encontrado processo na porta 5000: PID %%a
+    tasklist /fi "PID eq %%a" 2>nul | findstr /i "node.exe nodemon.exe" >nul
+    if not errorlevel 1 (
+        echo [DEBUG] Fechando processo Node.js na porta 5000 (PID: %%a)
+        taskkill /f /pid %%a >nul 2>&1
+    )
+)
+
+rem Porta 3003 - Frontend
+echo [DEBUG] Verificando processos na porta 3003 (frontend)...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":3003" ^| findstr "LISTENING"') do (
+    echo [DEBUG] Encontrado processo na porta 3003: PID %%a
+    tasklist /fi "PID eq %%a" 2>nul | findstr /i "node.exe nodemon.exe" >nul
+    if not errorlevel 1 (
+        echo [DEBUG] Fechando processo Node.js na porta 3003 (PID: %%a)
+        taskkill /f /pid %%a >nul 2>&1
+    )
+)
+
+rem Também verificar porta 5173 caso esteja em uso (fallback do Vite)
+echo [DEBUG] Verificando processos na porta 5173 (frontend alternativo)...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5173" ^| findstr "LISTENING"') do (
+    echo [DEBUG] Encontrado processo na porta 5173: PID %%a
+    tasklist /fi "PID eq %%a" 2>nul | findstr /i "node.exe nodemon.exe" >nul
+    if not errorlevel 1 (
+        echo [DEBUG] Fechando processo Node.js na porta 5173 (PID: %%a)
+        taskkill /f /pid %%a >nul 2>&1
+    )
+)
+
 exit /b 0
 
 rem =====================
