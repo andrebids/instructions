@@ -248,39 +248,52 @@ export default function Shop() {
       {filtersOpen && (
         <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setFiltersOpen(false)} />
       )}
-      <div className="md:flex md:items-start md:gap-4 xl:gap-6 2xl:gap-8">
-        <div className={`fixed left-0 top-0 bottom-0 z-50 transition-all duration-300 ease-in-out transform ${filtersOpen ? 'translate-x-0' : '-translate-x-full'} md:static md:translate-x-0 md:z-auto ${filtersVisible ? 'md:w-[22rem] xl:w-[26rem] 2xl:w-[32rem]' : 'md:w-fit'}`}>
-          <div className="w-80 md:w-full h-full bg-background border-r border-divider p-4 md:bg-transparent md:border-0 md:rounded-none flex flex-col">
-            <div className="flex items-center justify-between mb-3 md:hidden">
-              <div className="font-semibold">Filters</div>
-              <Button isIconOnly size="sm" variant="light" onPress={() => setFiltersOpen(false)} aria-label="Close filters">✕</Button>
-            </div>
-            <div className="flex-1 overflow-auto">
-              <TrendingFiltersSidebar
-                key={theme}
-                products={products || []}
-                filters={filters}
-                onChange={setFilters}
-                priceRange={priceRange}
-                priceLimits={priceLimits}
-                onPriceChange={setPriceRange}
-                stockRange={stockRange}
-                stockLimits={stockLimits}
-                onStockChange={setStockRange}
-                onClearAll={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", eco: false, dimKey: "", dimRange: null, releaseYear: "" }); setPriceRange([priceLimits.min, priceLimits.max]); setStockRange([stockLimits.min, stockLimits.max]); setQuery(""); }}
-                onToggleVisibility={() => setFiltersVisible(!filtersVisible)}
-                filtersVisible={filtersVisible}
-              />
-            </div>
-            <div className="mt-2 flex gap-2 justify-end md:hidden">
-              <Button size="sm" color="primary" onPress={() => setFiltersOpen(false)}>Apply</Button>
+      <div className={`md:flex md:items-start ${filtersVisible ? 'md:gap-4 xl:gap-6 2xl:gap-8' : ''}`}>
+        {filtersVisible && (
+          <div className={`fixed left-0 top-0 bottom-0 z-50 transition-all duration-300 ease-in-out transform ${filtersOpen ? 'translate-x-0' : '-translate-x-full'} md:static md:translate-x-0 md:z-auto md:w-[22rem] xl:w-[26rem] 2xl:w-[32rem] ${cols === 1 ? 'md:flex-shrink-0' : ''}`}>
+            <div className={`w-80 md:w-full h-full bg-background border-r border-divider p-4 md:bg-transparent md:border-0 md:rounded-none flex flex-col ${cols === 1 ? 'md:min-w-[22rem] xl:min-w-[26rem] 2xl:min-w-[32rem]' : ''}`}>
+              <div className="flex items-center justify-between mb-3 md:hidden">
+                <div className="font-semibold">Filters</div>
+                <Button isIconOnly size="sm" variant="light" onPress={() => setFiltersOpen(false)} aria-label="Close filters">✕</Button>
+              </div>
+              <div className="flex-1 overflow-auto">
+                <TrendingFiltersSidebar
+                  key={theme}
+                  products={products || []}
+                  filters={filters}
+                  onChange={setFilters}
+                  priceRange={priceRange}
+                  priceLimits={priceLimits}
+                  onPriceChange={setPriceRange}
+                  stockRange={stockRange}
+                  stockLimits={stockLimits}
+                  onStockChange={setStockRange}
+                  onClearAll={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", eco: false, dimKey: "", dimRange: null, releaseYear: "" }); setPriceRange([priceLimits.min, priceLimits.max]); setStockRange([stockLimits.min, stockLimits.max]); setQuery(""); }}
+                  onToggleVisibility={() => setFiltersVisible(!filtersVisible)}
+                  filtersVisible={filtersVisible}
+                />
+              </div>
+              <div className="mt-2 flex gap-2 justify-end md:hidden">
+                <Button size="sm" color="primary" onPress={() => setFiltersOpen(false)}>Apply</Button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        <div className="flex-1 w-full md:pt-[15px]">
+        <div className={`flex-1 w-full md:pt-[15px] ${!filtersVisible ? 'md:w-full' : ''}`}>
           <div className="mb-4 flex items-center justify-between">
             <div className="hidden md:flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="flat"
+                radius="full"
+                onPress={() => setFiltersVisible(!filtersVisible)}
+                aria-label="Toggle filters"
+                className="mr-2"
+              >
+                <Icon icon="lucide:filter" className="text-sm mr-1" />
+                Filters
+              </Button>
               {[1,2,3,4].map((n)=> (
                 <Button
                   key={n}

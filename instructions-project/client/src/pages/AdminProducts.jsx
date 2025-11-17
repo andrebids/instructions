@@ -57,6 +57,8 @@ export default function AdminProducts() {
   var { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
   var [editingProduct, setEditingProduct] = React.useState(null);
   const { isHandheld } = useResponsiveProfile();
+  var [selectedProducts, setSelectedProducts] = React.useState(new Set());
+  var [isSelectionMode, setIsSelectionMode] = React.useState(false);
   
   // Função helper para filtrar valores válidos de printColor
   var getValidPrintColors = function(printColor) {
@@ -339,6 +341,66 @@ export default function AdminProducts() {
     loadProducts();
   }, [loadProducts]);
   
+  // Limpar seleção de produtos que não estão mais na lista filtrada
+  // Só limpa se o modo de seleção estiver ativo
+  React.useEffect(function() {
+    if (!isSelectionMode) {
+      return;
+    }
+    
+    setSelectedProducts(function(prevSelected) {
+      if (prevSelected.size === 0 || products.length === 0) {
+        return prevSelected;
+      }
+      
+      // Recalcular produtos filtrados
+      var filtered = Array.isArray(products) ? products.slice() : [];
+      
+      if (searchQuery) {
+        filtered = filtered.filter(function(p) {
+          return p.name.toLowerCase().indexOf(searchQuery.toLowerCase()) >= 0;
+        });
+      }
+      
+      if (filters.type) {
+        filtered = filtered.filter(function(p) {
+          return p.type === filters.type;
+        });
+      }
+      
+      if (filters.location) {
+        filtered = filtered.filter(function(p) {
+          return p.location === filters.location;
+        });
+      }
+      
+      if (filters.tag) {
+        var rawTagFilter = String(filters.tag).trim().toLowerCase();
+        var normalizedFilter = normalizeTag(filters.tag);
+        filtered = filtered.filter(function(p) {
+          var normalizedTags = getNormalizedProductTags(p);
+          if (normalizedFilter && normalizedTags.includes(normalizedFilter)) {
+            return true;
+          }
+          if (!rawTagFilter) return false;
+          return normalizedTags.some(function(tag) {
+            return tag.indexOf(rawTagFilter) >= 0;
+          });
+        });
+      }
+      
+      var filteredIds = new Set(filtered.map(function(p) { return p.id; }));
+      var validSelected = new Set();
+      prevSelected.forEach(function(id) {
+        if (filteredIds.has(id)) {
+          validSelected.add(id);
+        }
+      });
+      
+      return validSelected.size !== prevSelected.size ? validSelected : prevSelected;
+    });
+  }, [products, searchQuery, filters, showArchived, isSelectionMode]);
+
   React.useEffect(function() {
     console.log('🔄 [AdminProducts] Estado atualizado:', {
       loading: loading,
@@ -773,6 +835,140 @@ export default function AdminProducts() {
       });
   };
 
+  // Funções para seleção múltipla
+  var toggleProductSelection = function(productId) {
+    setSelectedProducts(function(prev) {
+      var newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  };
+
+  var toggleSelectAll = function(filteredProductsList) {
+    if (selectedProducts.size === filteredProductsList.length && filteredProductsList.length > 0) {
+      setSelectedProducts(new Set());
+    } else {
+      var allIds = new Set(filteredProductsList.map(function(p) { return p.id; }));
+      setSelectedProducts(allIds);
+    }
+  };
+
+  var clearSelection = function() {
+    setSelectedProducts(new Set());
+    setIsSelectionMode(false);
+  };
+
+  var toggleSelectionMode = function() {
+    if (isSelectionMode) {
+      // Desativar modo de seleção e limpar seleção
+      setIsSelectionMode(false);
+      setSelectedProducts(new Set());
+    } else {
+      // Ativar modo de seleção
+      setIsSelectionMode(true);
+    }
+  };
+
+  // Arquivar múltiplos produtos
+  var handleBulkArchive = function() {
+    var selectedIds = Array.from(selectedProducts);
+    if (selectedIds.length === 0) {
+      alert("Please select at least one product to archive.");
+      return;
+    }
+    
+    var message = selectedIds.length === 1 
+      ? "Are you sure you want to archive this product? It will not be visible."
+      : "Are you sure you want to archive " + selectedIds.length + " products? They will not be visible.";
+    
+    if (!window.confirm(message)) {
+      return;
+    }
+    
+    var promises = selectedIds.map(function(id) {
+      return productsAPI.archive(id);
+    });
+    
+    Promise.all(promises)
+      .then(function() {
+        setSelectedProducts(new Set());
+        setIsSelectionMode(false);
+        loadProducts();
+      })
+      .catch(function(err) {
+        console.error("Error archiving products:", err);
+        alert("Error archiving products: " + (err.message || "Unknown error"));
+      });
+  };
+
+  // Desarquivar múltiplos produtos
+  var handleBulkUnarchive = function() {
+    var selectedIds = Array.from(selectedProducts);
+    if (selectedIds.length === 0) {
+      alert("Please select at least one product to unarchive.");
+      return;
+    }
+    
+    var message = selectedIds.length === 1 
+      ? "Are you sure you want to unarchive this product?"
+      : "Are you sure you want to unarchive " + selectedIds.length + " products?";
+    
+    if (!window.confirm(message)) {
+      return;
+    }
+    
+    var promises = selectedIds.map(function(id) {
+      return productsAPI.unarchive(id);
+    });
+    
+    Promise.all(promises)
+      .then(function() {
+        setSelectedProducts(new Set());
+        setIsSelectionMode(false);
+        loadProducts();
+      })
+      .catch(function(err) {
+        console.error("Error unarchiving products:", err);
+        alert("Error unarchiving products: " + (err.message || "Unknown error"));
+      });
+  };
+
+  // Deletar múltiplos produtos
+  var handleBulkDelete = function() {
+    var selectedIds = Array.from(selectedProducts);
+    if (selectedIds.length === 0) {
+      alert("Please select at least one product to delete.");
+      return;
+    }
+    
+    var message = selectedIds.length === 1 
+      ? "⚠️ WARNING: This action is PERMANENT and cannot be undone!\n\nAre you sure you want to PERMANENTLY DELETE this product from the database?"
+      : "⚠️ WARNING: This action is PERMANENT and cannot be undone!\n\nAre you sure you want to PERMANENTLY DELETE " + selectedIds.length + " products from the database?";
+    
+    if (!window.confirm(message)) {
+      return;
+    }
+    
+    var promises = selectedIds.map(function(id) {
+      return productsAPI.delete(id);
+    });
+    
+    Promise.all(promises)
+      .then(function() {
+        setSelectedProducts(new Set());
+        setIsSelectionMode(false);
+        loadProducts();
+      })
+      .catch(function(err) {
+        console.error("Error deleting products:", err);
+        alert("Error deleting products: " + (err.message || "Unknown error"));
+      });
+  };
+
   // Handler para upload de imagens
   var handleImageChange = function(field, file) {
     if (!file) {
@@ -1151,7 +1347,7 @@ export default function AdminProducts() {
       
       {/* Barra de ações e filtros */}
       <div className="mb-5 flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex-1 flex items-center gap-2">
             <Input
               placeholder="Search products..."
@@ -1242,6 +1438,86 @@ export default function AdminProducts() {
             Show Archived
           </Checkbox>
         </div>
+        
+        {/* Bulk Actions */}
+        {filteredProducts.length > 0 && (
+          <div className="flex items-center gap-4 mt-4 p-4 bg-content2 rounded-lg border border-default-200 w-fit self-start">
+            {!isSelectionMode ? (
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={toggleSelectionMode}
+                startContent={<Icon icon="lucide:check-square" />}
+              >
+                Select Products
+              </Button>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="primary"
+                  onPress={function() { toggleSelectAll(filteredProducts); }}
+                  startContent={<Icon icon={selectedProducts.size === filteredProducts.length ? "lucide:square" : "lucide:check-square"} />}
+                >
+                  {selectedProducts.size === filteredProducts.length ? "Deselect All" : "Select All"}
+                </Button>
+                <span className="text-sm text-default-500">
+                  ({selectedProducts.size} selected)
+                </span>
+                
+                {selectedProducts.size > 0 && (
+                  <>
+                    <div className="flex-1" />
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="warning"
+                      onPress={handleBulkArchive}
+                      startContent={<Icon icon="lucide:archive" />}
+                      isDisabled={Array.from(selectedProducts).every(function(id) {
+                        var product = filteredProducts.find(function(p) { return p.id === id; });
+                        return product && !product.isActive;
+                      })}
+                    >
+                      Archive ({selectedProducts.size})
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="success"
+                      onPress={handleBulkUnarchive}
+                      startContent={<Icon icon="lucide:archive-restore" />}
+                      isDisabled={Array.from(selectedProducts).every(function(id) {
+                        var product = filteredProducts.find(function(p) { return p.id === id; });
+                        return product && product.isActive;
+                      })}
+                    >
+                      Unarchive ({selectedProducts.size})
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="danger"
+                      onPress={handleBulkDelete}
+                      startContent={<Icon icon="lucide:trash-2" />}
+                    >
+                      Delete ({selectedProducts.size})
+                    </Button>
+                  </>
+                )}
+                <Button
+                  size="sm"
+                  variant="light"
+                  onPress={clearSelection}
+                  startContent={<Icon icon="lucide:x" />}
+                >
+                  Cancel
+                </Button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Lista de produtos */}
@@ -1278,6 +1554,18 @@ export default function AdminProducts() {
                 <Card key={product.id} className="h-full">
                   <CardBody className="p-0">
                     <div className="relative h-48 bg-content2">
+                      {/* Checkbox de seleção - só aparece quando o modo de seleção está ativo */}
+                      {isSelectionMode && (
+                        <div className="absolute top-2 left-2 z-10">
+                          <Checkbox
+                            isSelected={selectedProducts.has(product.id)}
+                            onValueChange={function() { toggleProductSelection(product.id); }}
+                            classNames={{
+                              base: "bg-white/90 dark:bg-black/90 rounded-md p-1"
+                            }}
+                          />
+                        </div>
+                      )}
                       {function(){
                         var baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
                         // Preferir imagem da noite, depois dia, depois thumbnail
