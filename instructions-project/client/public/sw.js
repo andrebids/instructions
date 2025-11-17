@@ -1,15 +1,41 @@
 // Custom Service Worker for Background Sync
 // This file is used with injectManifest from VitePWA
 
+// Wrapper para capturar erros durante o carregamento
+(function() {
+  'use strict';
+  
+  try {
+    console.log('🔧 [SW] Service Worker script starting to load...');
+    
+    // Import Workbox modules (must be at top level - hoisted)
+    // Nota: imports são processados antes deste código executar
+    // Se houver erro nos imports, este try-catch não vai capturar
+    // Mas vamos adicionar verificações depois
+    
+  } catch (error) {
+    console.error('❌ [SW] Error during initial script load:', error);
+    throw error;
+  }
+})();
+
 // Import Workbox modules (must be at top level - hoisted)
+// Se estes imports falharem, o Service Worker não será registrado
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
 import { registerRoute } from 'workbox-routing';
 import { NetworkFirst, CacheFirst } from 'workbox-strategies';
 
-// Log after imports are processed
-console.log('🔧 [SW] Service Worker script starting to load...');
+// Verificar se os módulos foram importados corretamente
 console.log('✅ [SW] Workbox modules imported successfully');
+console.log('📋 [SW] Module checks:', {
+  cleanupOutdatedCaches: typeof cleanupOutdatedCaches,
+  precacheAndRoute: typeof precacheAndRoute,
+  clientsClaim: typeof clientsClaim,
+  registerRoute: typeof registerRoute,
+  NetworkFirst: typeof NetworkFirst,
+  CacheFirst: typeof CacheFirst
+});
 
 // Service Worker installation
 self.addEventListener('install', (event) => {

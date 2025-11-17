@@ -34,6 +34,38 @@ if ('serviceWorker' in navigator && !isDev) {
   console.log(`📋 [Main] Service Worker URL: ${window.location.origin}/sw.js`);
   console.log(`📋 [Main] Navigator serviceWorker available:`, 'serviceWorker' in navigator);
   
+  // Diagnostic: Tentar buscar o Service Worker para verificar se está acessível
+  fetch(`${window.location.origin}/sw.js`)
+    .then(response => {
+      if (response.ok) {
+        return response.text();
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    })
+    .then(text => {
+      console.log('✅ [Main] Service Worker file is accessible');
+      console.log('📋 [Main] SW file size:', text.length, 'bytes');
+      console.log('📋 [Main] SW file starts with:', text.substring(0, 200));
+      // Verificar se contém imports do Workbox
+      if (text.includes('workbox-precaching') || text.includes('cleanupOutdatedCaches')) {
+        console.log('✅ [Main] SW file contains Workbox imports');
+      } else {
+        console.warn('⚠️ [Main] SW file does NOT contain Workbox imports - this may be the problem!');
+      }
+      // Verificar se contém o manifest
+      if (text.includes('__WB_MANIFEST')) {
+        console.log('✅ [Main] SW file contains __WB_MANIFEST placeholder');
+      } else if (text.includes('self.__WB_MANIFEST')) {
+        console.log('✅ [Main] SW file contains self.__WB_MANIFEST');
+      } else {
+        console.warn('⚠️ [Main] SW file does NOT contain manifest - may not be processed by VitePWA');
+      }
+    })
+    .catch(error => {
+      console.error('❌ [Main] Failed to fetch Service Worker file:', error);
+      console.error('❌ [Main] This may indicate the SW file is not being served correctly');
+    });
+  
   // Store updateSW function globally so UpdateNotification can use it
   try {
     updateSW = registerSW({
