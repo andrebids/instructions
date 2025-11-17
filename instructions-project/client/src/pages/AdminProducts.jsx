@@ -1455,6 +1455,9 @@ export default function AdminProducts() {
                           });
                         }}
                         isRequired
+                        classNames={{
+                          label: "text-primary-700 dark:text-primary-400"
+                        }}
                       />
                       <div></div>
                       <Input
@@ -1467,6 +1470,9 @@ export default function AdminProducts() {
                             return Object.assign({}, prev, { stock: val });
                           });
                         }}
+                        classNames={{
+                          label: "text-primary-700 dark:text-primary-400"
+                        }}
                       />
                       <Input
                         label="Used Stock"
@@ -1477,6 +1483,9 @@ export default function AdminProducts() {
                           setFormData(function(prev) {
                             return Object.assign({}, prev, { usedStock: val });
                           });
+                        }}
+                        classNames={{
+                          label: "text-primary-700 dark:text-primary-400"
                         }}
                       />
                     </div>
@@ -1501,6 +1510,9 @@ export default function AdminProducts() {
                                     return Object.assign({}, prev, { prices: newPrices });
                                   });
                                 }}
+                                classNames={{
+                                  label: "text-primary-700 dark:text-primary-400"
+                                }}
                               />
                               <Input
                                 label="Old Price (€)"
@@ -1514,6 +1526,9 @@ export default function AdminProducts() {
                                     return Object.assign({}, prev, { prices: newPrices });
                                   });
                                 }}
+                                classNames={{
+                                  label: "text-primary-700 dark:text-primary-400"
+                                }}
                               />
                               <Input
                                 label="Rental Price (€)"
@@ -1526,6 +1541,9 @@ export default function AdminProducts() {
                                     newPrices.new = Object.assign({}, newPrices.new, { rentalPrice: val });
                                     return Object.assign({}, prev, { prices: newPrices });
                                   });
+                                }}
+                                classNames={{
+                                  label: "text-primary-700 dark:text-primary-400"
                                 }}
                               />
                             </div>
@@ -1547,6 +1565,9 @@ export default function AdminProducts() {
                                     return Object.assign({}, prev, { prices: newPrices });
                                   });
                                 }}
+                                classNames={{
+                                  label: "text-primary-700 dark:text-primary-400"
+                                }}
                               />
                               <Input
                                 label="Used Rental Price (€)"
@@ -1559,6 +1580,9 @@ export default function AdminProducts() {
                                     newPrices.used = Object.assign({}, newPrices.used, { rentalPrice: val });
                                     return Object.assign({}, prev, { prices: newPrices });
                                   });
+                                }}
+                                classNames={{
+                                  label: "text-primary-700 dark:text-primary-400"
                                 }}
                               />
                             </div>
@@ -1579,6 +1603,9 @@ export default function AdminProducts() {
                             return Object.assign({}, prev, { type: selected });
                           });
                         }}
+                        classNames={{
+                          label: "text-primary-700 dark:text-primary-400"
+                        }}
                       >
                         <SelectItem key="2D" textValue="2D">2D</SelectItem>
                         <SelectItem key="3D" textValue="3D">3D</SelectItem>
@@ -1594,6 +1621,9 @@ export default function AdminProducts() {
                             return Object.assign({}, prev, { location: selected });
                           });
                         }}
+                        classNames={{
+                          label: "text-primary-700 dark:text-primary-400"
+                        }}
                       >
                         <SelectItem key="Exterior" textValue="Exterior">Exterior</SelectItem>
                         <SelectItem key="Interior" textValue="Interior">Interior</SelectItem>
@@ -1608,6 +1638,9 @@ export default function AdminProducts() {
                           setFormData(function(prev) {
                             return Object.assign({}, prev, { mount: selected });
                           });
+                        }}
+                        classNames={{
+                          label: "text-primary-700 dark:text-primary-400"
                         }}
                       >
                         <SelectItem key="Poste" textValue="Pole">Pole</SelectItem>
@@ -1625,6 +1658,9 @@ export default function AdminProducts() {
                           setFormData(function(prev) {
                             return Object.assign({}, prev, { releaseYear: selected });
                           });
+                        }}
+                        classNames={{
+                          label: "text-primary-700 dark:text-primary-400"
                         }}
                       >
                         {function() {
@@ -1652,6 +1688,9 @@ export default function AdminProducts() {
                             return Object.assign({}, prev, { season: selected });
                           });
                         }}
+                        classNames={{
+                          label: "text-primary-700 dark:text-primary-400"
+                        }}
                       >
                         <SelectItem key="xmas" textValue="Xmas">Xmas</SelectItem>
                         <SelectItem key="summer" textValue="Summer">Summer</SelectItem>
@@ -1662,7 +1701,7 @@ export default function AdminProducts() {
                     <div className="grid grid-cols-2 gap-4">
                       {/* Imagem Dia */}
                       <div>
-                        <label className="block text-sm font-medium mb-2">Day Image</label>
+                        <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">Day Image</label>
                         <input
                           ref={dayImageInputRef}
                           type="file"
@@ -1700,7 +1739,7 @@ export default function AdminProducts() {
                       
                       {/* Imagem Noite */}
                       <div>
-                        <label className="block text-sm font-medium mb-2">Night Image</label>
+                        <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">Night Image</label>
                         <input
                           ref={nightImageInputRef}
                           type="file"
@@ -1737,7 +1776,7 @@ export default function AdminProducts() {
                       
                       {/* Animação/Vídeo */}
                       <div>
-                        <label className="block text-sm font-medium mb-2">Animation/Video</label>
+                        <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">Animation/Video</label>
                         <input
                           ref={animationInputRef}
                           type="file"
@@ -1765,7 +1804,7 @@ export default function AdminProducts() {
                       
                       {/* Vídeo Simulação Animada */}
                       <div>
-                        <label className="block text-sm font-medium mb-2">Animation Simulation Video</label>
+                        <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">Animation Simulation Video</label>
                         <input
                           ref={animationSimulationInputRef}
                           type="file"
@@ -1803,7 +1842,7 @@ export default function AdminProducts() {
 
                     {/* LED Colors */}
                     <div>
-                      <label className="block text-sm font-medium mb-2">LED Colors:</label>
+                      <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">LED Colors:</label>
                       <div className="flex flex-wrap gap-3 p-4 border border-default-200 rounded-lg bg-default-50">
                         {Object.keys(availableColorsList).length === 0 ? (
                           <p className="text-sm text-default-500">No colors available in database</p>
@@ -1852,6 +1891,9 @@ export default function AdminProducts() {
                           setFormData(function(prev) {
                             return Object.assign({}, prev, { tags: selectedTags });
                           });
+                        }}
+                        classNames={{
+                          label: "text-primary-700 dark:text-primary-400"
                         }}
                         renderValue={function(items) {
                           if (items.length === 0) {
@@ -1963,6 +2005,9 @@ export default function AdminProducts() {
                           });
                         }}
                         minRows={2}
+                        classNames={{
+                          label: "text-primary-700 dark:text-primary-400"
+                        }}
                       />
                       <div className="grid grid-cols-2 gap-2">
                         <Input
@@ -1975,6 +2020,9 @@ export default function AdminProducts() {
                               return Object.assign({}, prev, { specs: newSpecs });
                             });
                           }}
+                          classNames={{
+                            label: "text-primary-700 dark:text-primary-400"
+                          }}
                         />
                         <Input
                           label="Weight (kg)"
@@ -1985,6 +2033,9 @@ export default function AdminProducts() {
                               var newSpecs = Object.assign({}, prev.specs, { weight: val });
                               return Object.assign({}, prev, { specs: newSpecs });
                             });
+                          }}
+                          classNames={{
+                            label: "text-primary-700 dark:text-primary-400"
                           }}
                         />
                       </div>
@@ -2003,6 +2054,9 @@ export default function AdminProducts() {
                               return Object.assign({}, prev, { height: val });
                             });
                           }}
+                          classNames={{
+                            label: "text-primary-700 dark:text-primary-400"
+                          }}
                         />
                         <Input
                           label="Width (W)"
@@ -2014,6 +2068,9 @@ export default function AdminProducts() {
                             setFormData(function(prev) {
                               return Object.assign({}, prev, { width: val });
                             });
+                          }}
+                          classNames={{
+                            label: "text-primary-700 dark:text-primary-400"
                           }}
                         />
                         <Input
@@ -2027,6 +2084,9 @@ export default function AdminProducts() {
                               return Object.assign({}, prev, { depth: val });
                             });
                           }}
+                          classNames={{
+                            label: "text-primary-700 dark:text-primary-400"
+                          }}
                         />
                         <Input
                           label="Diameter"
@@ -2038,6 +2098,9 @@ export default function AdminProducts() {
                             setFormData(function(prev) {
                               return Object.assign({}, prev, { diameter: val });
                             });
+                          }}
+                          classNames={{
+                            label: "text-primary-700 dark:text-primary-400"
                           }}
                         />
                       </div>
@@ -2057,6 +2120,9 @@ export default function AdminProducts() {
                                       var newSpecs = Object.assign({}, prev.specs, { printType: selected, printColor: "" });
                                       return Object.assign({}, prev, { specs: newSpecs });
                                     });
+                                  }}
+                                  classNames={{
+                                    label: "text-primary-700 dark:text-primary-400"
                                   }}
                                 >
                                   <SelectItem key="BIOPRINT" textValue="BIOPRINT">BIOPRINT</SelectItem>
@@ -2084,6 +2150,9 @@ export default function AdminProducts() {
                                       var newSpecs = Object.assign({}, prev.specs, { printColor: selected });
                                       return Object.assign({}, prev, { specs: newSpecs });
                                     });
+                                  }}
+                                  classNames={{
+                                    label: "text-primary-700 dark:text-primary-400"
                                   }}
                                 >
                                   {function() {
@@ -2156,6 +2225,9 @@ export default function AdminProducts() {
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
                                 }}
+                                classNames={{
+                                  label: "text-primary-700 dark:text-primary-400"
+                                }}
                               >
                                 <SelectItem key="LED AMBER" textValue="LED AMBER">LED AMBER</SelectItem>
                                 <SelectItem key="LED WARM WHITE" textValue="LED WARM WHITE">LED WARM WHITE</SelectItem>
@@ -2215,6 +2287,9 @@ export default function AdminProducts() {
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
                                 }}
+                                classNames={{
+                                  label: "text-primary-700 dark:text-primary-400"
+                                }}
                               >
                                 <SelectItem key="COMET STRING LED PURE WHITE" textValue="COMET STRING LED PURE WHITE">COMET STRING LED PURE WHITE</SelectItem>
                               </Select>
@@ -2267,6 +2342,9 @@ export default function AdminProducts() {
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
                                 }}
+                                classNames={{
+                                  label: "text-primary-700 dark:text-primary-400"
+                                }}
                               >
                                 <SelectItem key="WARM WHITE" textValue="WARM WHITE">WARM WHITE</SelectItem>
                                 <SelectItem key="PURE WHITE" textValue="PURE WHITE">PURE WHITE</SelectItem>
@@ -2295,6 +2373,9 @@ export default function AdminProducts() {
                                     var newSpecs = Object.assign({}, prev.specs, { aluminium: selected.length > 0 ? (selected.length === 1 ? selected[0] : selected) : null });
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
+                                }}
+                                classNames={{
+                                  label: "text-primary-700 dark:text-primary-400"
                                 }}
                               >
                                 {function() {
@@ -2333,6 +2414,9 @@ export default function AdminProducts() {
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
                                 }}
+                                classNames={{
+                                  label: "text-primary-700 dark:text-primary-400"
+                                }}
                               >
                                 <SelectItem key="PURE WHITE" textValue="PURE WHITE">PURE WHITE</SelectItem>
                               </Select>
@@ -2346,6 +2430,9 @@ export default function AdminProducts() {
                                     var newSpecs = Object.assign({}, prev.specs, { sparkle: selected });
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
+                                }}
+                                classNames={{
+                                  label: "text-primary-700 dark:text-primary-400"
                                 }}
                               >
                                 <SelectItem key="WARM WHITE/PURE WHITE" textValue="WARM WHITE/PURE WHITE">WARM WHITE/PURE WHITE</SelectItem>
@@ -2403,6 +2490,9 @@ export default function AdminProducts() {
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
                                 }}
+                                classNames={{
+                                  label: "text-primary-700 dark:text-primary-400"
+                                }}
                               >
                                 <SelectItem key="WARM WHITE" textValue="WARM WHITE">WARM WHITE</SelectItem>
                                 <SelectItem key="WARM WHITE/PURE WHITE" textValue="WARM WHITE/PURE WHITE">WARM WHITE/PURE WHITE</SelectItem>
@@ -2421,6 +2511,9 @@ export default function AdminProducts() {
                               var newSpecs = Object.assign({}, prev.specs, { stockPolicy: val });
                               return Object.assign({}, prev, { specs: newSpecs });
                             });
+                          }}
+                          classNames={{
+                            label: "text-primary-700 dark:text-primary-400"
                           }}
                         />
                       </div>
