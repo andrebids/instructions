@@ -65,12 +65,12 @@ export default defineConfig({
         rollupFormat: 'iife'
       },
       devOptions: {
-        enabled: true, // Habilitar Service Worker em desenvolvimento (funciona com HMR)
+        enabled: false, // Desabilitar Service Worker em desenvolvimento para evitar erros
+        // O HMR funciona perfeitamente sem o Service Worker
+        // O Service Worker será usado apenas em produção (build)
         type: 'module',
         navigateFallback: 'index.html',
         suppressWarnings: true,
-        // Para injectManifest, o plugin gera um dev-sw.js automaticamente
-        // Não precisa especificar filename aqui, o plugin usa o mesmo do injectManifest
       }
     })
   ],
