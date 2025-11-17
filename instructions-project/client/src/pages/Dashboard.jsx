@@ -11,6 +11,7 @@ import {AIAssistantChat} from "../components/features/ai-assistant-chat";
 import {motion, AnimatePresence} from "framer-motion";
 import { useUser } from "../context/UserContext";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
+import { Scroller } from "../components/ui/scroller";
 
 export default function Dashboard() {
   const { userName } = useUser();
@@ -204,15 +205,16 @@ export default function Dashboard() {
   return (
     <>
       {/* Dashboard Content */}
-      <div className={`flex-1 min-h-0 ${showCreateProject ? 'overflow-hidden' : `overflow-auto p-6 ${isHandheld ? "pb-24" : "pb-6"}`}`}>
-        {showCreateProject ? (
+      {showCreateProject ? (
+        <div className="flex-1 min-h-0 overflow-hidden">
           <CreateProjectMultiStep 
             onClose={handleCloseCreateProject} 
             selectedImage={selectedImage}
           />
-        ) : (
-          <>
-            {/* Title section + Create button */}
+        </div>
+      ) : (
+        <Scroller className={`flex-1 min-h-0 p-6 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>
+          {/* Title section + Create button */}
             <div className="flex justify-between items-center mb-6">
               <PageTitle title="Dashboard" userName={userName} subtitle="Here’s your project overview." showWelcome />
               <Button 
@@ -330,9 +332,8 @@ export default function Dashboard() {
                 </div>
               </>
             )}
-          </>
-        )}
-      </div>
+        </Scroller>
+      )}
 
       {/* Floating AI Assistant Button */}
       <Button 

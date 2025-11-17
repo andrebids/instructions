@@ -6,6 +6,7 @@ import { SimpleEditor } from '../components/project-notes/SimpleEditor';
 import { projectsAPI } from '../services/api';
 import { PageTitle } from '../components/layout/page-title';
 import { useUser } from '../context/UserContext';
+import { Scroller } from '../components/ui/scroller';
 
 export default function ProjectNotes() {
   const { id } = useParams();
@@ -37,17 +38,17 @@ export default function ProjectNotes() {
 
   if (loading) {
     return (
-      <div className="flex-1 min-h-0 overflow-auto p-6">
+      <Scroller className="flex-1 min-h-0 p-6" hideScrollbar>
         <div className="flex justify-center items-center h-64">
           <Spinner size="lg" label="A carregar projeto..." />
         </div>
-      </div>
+      </Scroller>
     );
   }
 
   if (error || !project) {
     return (
-      <div className="flex-1 min-h-0 overflow-auto p-6">
+      <Scroller className="flex-1 min-h-0 p-6" hideScrollbar>
         <Card className="max-w-2xl mx-auto">
           <CardBody>
             <div className="text-center py-8">
@@ -60,13 +61,13 @@ export default function ProjectNotes() {
             </div>
           </CardBody>
         </Card>
-      </div>
+      </Scroller>
     );
   }
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
-      <div className="flex-1 min-h-0 overflow-auto p-6">
+      <Scroller className="flex-1 min-h-0 p-6" hideScrollbar>
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -134,7 +135,7 @@ export default function ProjectNotes() {
             <SimpleEditor projectId={id} />
           </CardBody>
         </Card>
-      </div>
+      </Scroller>
 
       {/* Navigation Footer */}
       <div className="w-full bg-content1 border-t border-divider px-4 py-4 sm:px-6 sm:py-6 flex-shrink-0">
