@@ -17,7 +17,62 @@ import { clerkMiddleware, requireAuth, getAuth } from '@clerk/express';
 const app = express();
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'", // Necessário para scripts inline do Vite
+        "'unsafe-eval'", // Necessário para alguns scripts do Vite em dev
+        "https://nice-oriole-77.clerk.accounts.dev", // Clerk scripts
+        "https://*.clerk.accounts.dev", // Clerk scripts (qualquer subdomínio)
+        "https://*.clerk.com", // Clerk scripts alternativos
+      ],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'", // Necessário para estilos inline
+        "https://fonts.googleapis.com", // Google Fonts
+      ],
+      fontSrc: [
+        "'self'",
+        "https://fonts.gstatic.com", // Google Fonts
+        "data:", // Fontes em base64
+      ],
+      imgSrc: [
+        "'self'",
+        "data:",
+        "blob:",
+        "https:", // Permitir imagens de qualquer origem HTTPS
+      ],
+      connectSrc: [
+        "'self'",
+        "https://nice-oriole-77.clerk.accounts.dev", // Clerk API
+        "https://*.clerk.accounts.dev", // Clerk API (qualquer subdomínio)
+        "https://*.clerk.com", // Clerk API alternativos
+        "https://api.iconify.design", // Iconify API
+        "https://api.simplesvg.com", // SimpleSVG API
+        "https://api.unisvg.com", // UniSVG API
+        "wss://nice-oriole-77.clerk.accounts.dev", // Clerk WebSocket
+        "wss://*.clerk.accounts.dev", // Clerk WebSocket
+      ],
+      frameSrc: [
+        "'self'",
+        "https://nice-oriole-77.clerk.accounts.dev", // Clerk iframes
+        "https://*.clerk.accounts.dev", // Clerk iframes
+      ],
+      workerSrc: [
+        "'self'",
+        "blob:", // Service Worker
+      ],
+      scriptSrcAttr: ["'unsafe-inline'"], // Permitir atributos inline em scripts
+      baseUri: ["'self'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Desabilitar para permitir recursos externos
+}));
 app.use(cors({
   origin: [
     'http://localhost:3003',
