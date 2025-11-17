@@ -68,7 +68,9 @@ export default defineConfig({
         enabled: true, // Habilitar Service Worker em desenvolvimento (funciona com HMR)
         type: 'module',
         navigateFallback: 'index.html',
-        suppressWarnings: true
+        suppressWarnings: true,
+        // Para injectManifest, o plugin gera um dev-sw.js automaticamente
+        // Não precisa especificar filename aqui, o plugin usa o mesmo do injectManifest
       }
     })
   ],
@@ -95,7 +97,11 @@ export default defineConfig({
       },
     },
     hmr: {
-      port: 3004, // Porta separada para HMR
+      port: 3004, // Porta separada para HMR no servidor
+      // Em produção (atrás do Caddy), o WebSocket passa pela porta 443 (HTTPS)
+      // O Caddy faz upgrade automático de HTTP para WebSocket
+      clientPort: 443, // Quando atrás do Caddy, usar porta 443 (HTTPS)
+      protocol: 'wss', // Usar WebSocket seguro quando atrás do Caddy
       overlay: false, // Desativar overlay de erros do HMR (são temporários)
     },
     watch: {
