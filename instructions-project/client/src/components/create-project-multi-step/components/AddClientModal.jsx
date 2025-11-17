@@ -51,6 +51,9 @@ export function AddClientModal({
                   variant="bordered"
                   startContent={<Icon icon="lucide:building-2" className="text-default-400" />}
                   className="mb-8"
+                  classNames={{
+                    label: "text-primary-700 dark:text-primary-400"
+                  }}
                 />
                 <Input
                   label="Email"
@@ -62,6 +65,9 @@ export function AddClientModal({
                   variant="bordered"
                   startContent={<Icon icon="lucide:mail" className="text-default-400" />}
                   className="mb-8"
+                  classNames={{
+                    label: "text-primary-700 dark:text-primary-400"
+                  }}
                 />
                 <Input
                   label="Phone"
@@ -71,6 +77,9 @@ export function AddClientModal({
                   onChange={(e) => setClientData(prev => ({ ...prev, phone: e.target.value }))}
                   variant="bordered"
                   startContent={<Icon icon="lucide:phone" className="text-default-400" />}
+                  classNames={{
+                    label: "text-primary-700 dark:text-primary-400"
+                  }}
                 />
               </div>
             </ModalBody>
