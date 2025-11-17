@@ -45,20 +45,41 @@ if ('serviceWorker' in navigator && !isDev) {
     .then(text => {
       console.log('✅ [Main] Service Worker file is accessible');
       console.log('📋 [Main] SW file size:', text.length, 'bytes');
-      console.log('📋 [Main] SW file starts with:', text.substring(0, 200));
+      console.log('📋 [Main] SW file starts with:', text.substring(0, 300));
+      
       // Verificar se contém imports do Workbox
       if (text.includes('workbox-precaching') || text.includes('cleanupOutdatedCaches')) {
         console.log('✅ [Main] SW file contains Workbox imports');
       } else {
         console.warn('⚠️ [Main] SW file does NOT contain Workbox imports - this may be the problem!');
       }
-      // Verificar se contém o manifest
-      if (text.includes('__WB_MANIFEST')) {
-        console.log('✅ [Main] SW file contains __WB_MANIFEST placeholder');
+      
+      // Verificar se contém o manifest (importante: se contém __WB_MANIFEST, não foi processado)
+      if (text.includes('__WB_MANIFEST') && !text.includes('self.__WB_MANIFEST = [')) {
+        console.warn('⚠️ [Main] SW file contains __WB_MANIFEST PLACEHOLDER - manifest was NOT injected by VitePWA!');
+        console.warn('⚠️ [Main] This means the build did not process the Service Worker correctly');
+        console.warn('⚠️ [Main] The SW file should contain: self.__WB_MANIFEST = [array of entries]');
+      } else if (text.includes('self.__WB_MANIFEST = [')) {
+        console.log('✅ [Main] SW file contains injected manifest (self.__WB_MANIFEST = [...])');
+        // Tentar extrair uma amostra do manifest
+        const manifestMatch = text.match(/self\.__WB_MANIFEST\s*=\s*\[(.*?)\]/s);
+        if (manifestMatch) {
+          console.log('📋 [Main] Manifest found in SW file');
+        }
       } else if (text.includes('self.__WB_MANIFEST')) {
-        console.log('✅ [Main] SW file contains self.__WB_MANIFEST');
+        console.log('✅ [Main] SW file contains self.__WB_MANIFEST reference');
       } else {
         console.warn('⚠️ [Main] SW file does NOT contain manifest - may not be processed by VitePWA');
+      }
+      
+      // Verificar se há erros de sintaxe óbvios
+      if (text.includes('import(') && !text.includes('import ')) {
+        console.warn('⚠️ [Main] SW file may have dynamic imports which might cause issues');
+      }
+      
+      // Verificar se há IIFE ou outros wrappers que possam causar problemas
+      if (text.trim().startsWith('(function')) {
+        console.warn('⚠️ [Main] SW file starts with IIFE - this might cause issues with ES modules');
       }
     })
     .catch(error => {
