@@ -9,6 +9,7 @@
 #   DEPLOY_SITE_URL     - URL do site (opcional)
 
 # Configurar tratamento de erros
+# Usar "Stop" mas com tratamento cuidadoso de erros nas funções críticas
 $ErrorActionPreference = "Stop"
 $script:ExitCode = 0
 
@@ -50,15 +51,31 @@ function Invoke-SafeCommand {
 }
 
 # Garantir que o script termina com código de erro apropriado
+# Trap melhorado para não fechar o script imediatamente em todos os casos
 trap {
+    $errorType = $_.Exception.GetType().FullName
+    $errorMessage = $_.Exception.Message
+    
+    # Se for um erro de terminação esperado (Exit-Script), não mostrar trap
+    if ($errorMessage -match "Exit-Script" -or $_.CategoryInfo.Reason -eq "ExitException") {
+        break
+    }
+    
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Red
     Write-Host "ERRO CRÍTICO NO SCRIPT" -ForegroundColor Red
     Write-Host "========================================" -ForegroundColor Red
-    Write-Host "Erro: $_" -ForegroundColor Red
+    Write-Host "Tipo: $errorType" -ForegroundColor Red
+    Write-Host "Erro: $errorMessage" -ForegroundColor Red
     Write-Host "Linha: $($_.InvocationInfo.ScriptLineNumber)" -ForegroundColor Red
     Write-Host "Comando: $($_.InvocationInfo.Line)" -ForegroundColor Red
     Write-Host ""
+    Write-Host "Pressione qualquer tecla para continuar ou Ctrl+C para sair..." -ForegroundColor Yellow
+    try {
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    } catch {
+        # Se não conseguir ler tecla, continuar
+    }
     Exit-Script -ExitCode 1
 }
 
@@ -206,6 +223,7 @@ function Invoke-ScpCommand {
         [string]$Key = $null,
         [string[]]$AdditionalOptions = @()
     )
+    
     $scpOptions = @("-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=30", "-o", "ServerAliveInterval=60")
     $scpTarget = "${User}@${SshHost}:${Destination}"
     
@@ -222,8 +240,28 @@ function Invoke-ScpCommand {
     $scpArgs += $Source
     $scpArgs += $scpTarget
     
-    # Executar SCP diretamente
-    & scp $scpArgs 2>&1
+    # Executar SCP com tratamento de erro melhorado
+    # Usar try-catch para capturar exceções sem fazer o script fechar
+    # Temporariamente desabilitar ErrorActionPreference para esta função
+    $oldErrorAction = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    
+    try {
+        $output = & scp $scpArgs 2>&1
+        $ErrorActionPreference = $oldErrorAction
+        
+        # Garantir que sempre retornamos algo, mesmo que seja string vazia
+        if ($null -eq $output) {
+            return ""
+        }
+        return $output
+    } catch {
+        $ErrorActionPreference = $oldErrorAction
+        # Capturar exceção e retornar como output para análise
+        $errorMsg = if ($null -eq $_) { "Unknown error" } else { $_.ToString() }
+        Write-Host "[AVISO] Exceção capturada no SCP: $errorMsg" -ForegroundColor Yellow
+        return "SCP_ERROR: $errorMsg"
+    }
 }
 
 Write-Host "=== Configuração ===" -ForegroundColor Cyan
@@ -522,16 +560,53 @@ while ($retryCount -lt $maxRetries -and -not $uploadSuccess) {
     }
     # Usar scp com wildcard - PowerShell pode não expandir, mas o script no servidor corrige se necessário
     # Tentar enviar conteúdo diretamente usando caminho relativo
-    $scpOutput = Invoke-ScpCommand -Source ".\dist\*" -Destination "$tempPath/" -User $sshUser -SshHost $sshHost -Key $sshKey -AdditionalOptions @("-C", "-r")
-    
-    if ($LASTEXITCODE -eq 0) {
-        $uploadSuccess = $true
-        Write-Host "[OK] Upload concluído!" -ForegroundColor Green
-    } else {
-        Write-Host "[AVISO] Upload falhou (tentativa $($retryCount + 1))" -ForegroundColor Yellow
-        if ($scpOutput -match "Failure|failed|No space") {
-            Write-Host "Erro detectado: $($scpOutput -split "`n" | Select-Object -First 3)" -ForegroundColor Yellow
+    try {
+        Write-Host "Executando SCP..." -ForegroundColor Gray
+        Write-Host "   Origem: .\dist\*" -ForegroundColor Gray
+        $destinoInfo = "${sshUser}@${sshHost}:${tempPath}/"
+        Write-Host "   Destino: $destinoInfo" -ForegroundColor Gray
+        
+        $scpOutput = Invoke-ScpCommand -Source ".\dist\*" -Destination "$tempPath/" -User $sshUser -SshHost $sshHost -Key $sshKey -AdditionalOptions @("-C", "-r")
+        
+        # Verificar se houve erro na execução
+        $scpSuccess = $true
+        $exitCode = $LASTEXITCODE
+        Write-Host "   Exit Code: $exitCode" -ForegroundColor Gray
+        
+        if ($null -ne $exitCode -and $exitCode -ne 0) {
+            $scpSuccess = $false
+            Write-Host "   [AVISO] SCP retornou código de erro: $exitCode" -ForegroundColor Yellow
         }
+        
+        # Verificar se o output contém erros
+        $scpOutputString = ""
+        if ($null -eq $scpOutput) {
+            $scpOutputString = ""
+        } elseif ($scpOutput -is [System.Array]) {
+            $scpOutputString = $scpOutput -join "`n"
+        } else {
+            $scpOutputString = $scpOutput.ToString()
+        }
+        
+        if ($scpOutputString -match "SCP_ERROR|Permission denied|Connection refused|Connection timed out|No space|failed") {
+            $scpSuccess = $false
+            Write-Host "[AVISO] Erro detectado no output do SCP" -ForegroundColor Yellow
+            Write-Host "   Output: $($scpOutputString -split "`n" | Select-Object -First 3 -join ', ')" -ForegroundColor Yellow
+        }
+        
+        if ($scpSuccess) {
+            $uploadSuccess = $true
+            Write-Host "[OK] Upload concluído!" -ForegroundColor Green
+        } else {
+            Write-Host "[AVISO] Upload falhou (tentativa $($retryCount + 1))" -ForegroundColor Yellow
+            if ($scpOutputString -match "Failure|failed|No space|Permission") {
+                Write-Host "   Erro: $($scpOutputString -split "`n" | Select-Object -First 3 -join '; ')" -ForegroundColor Yellow
+            }
+        }
+    } catch {
+        Write-Host "[ERRO] Exceção durante upload: $_" -ForegroundColor Red
+        Write-Host "   Linha: $($_.InvocationInfo.ScriptLineNumber)" -ForegroundColor Red
+        $uploadSuccess = $false
     }
     
     $retryCount++
@@ -681,19 +756,55 @@ if [ $RESTART_EXIT -eq 0 ]; then
     echo ''
     echo 'Aguardando servidor iniciar...'
     sleep 3
-    echo 'Verificando se servidor responde...'
+    echo 'Verificando se servidor backend responde...'
     HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5000/health 2>/dev/null || echo '000')
     if [ -z "$HTTP_CODE" ]; then
         HTTP_CODE='000'
     fi
     if [ "$HTTP_CODE" = "200" ]; then
-        echo 'Servidor esta online e respondendo!'
+        echo '✅ Backend esta online e respondendo na porta 5000!'
     elif [ "$HTTP_CODE" = "000" ]; then
-        echo 'ERRO: Servidor nao esta respondendo (curl falhou)'
+        echo 'ERRO: Backend nao esta respondendo (curl falhou)'
         echo 'Verificando logs de erro...'
         pm2 logs $pm2AppName --err --lines 20 --nostream 2>&1 | tail -20
     else
-        echo "AVISO: Servidor respondeu com codigo HTTP $HTTP_CODE"
+        echo "AVISO: Backend respondeu com codigo HTTP $HTTP_CODE"
+    fi
+    echo ''
+    echo 'Parando dev server (instructions-client) se estiver rodando...'
+    CLIENT_STATUS=$(pm2 jlist | grep -A 5 "\"name\":\"instructions-client\"" | grep -o '"pm_id":[0-9]*' | cut -d: -f2 | head -1)
+    if [ -n "$CLIENT_STATUS" ] && [ "$CLIENT_STATUS" != "null" ]; then
+        echo 'Parando instructions-client (dev server)...'
+        pm2 stop instructions-client 2>&1 || true
+        pm2 delete instructions-client 2>&1 || true
+        echo '✅ Dev server parado (produção usa build estático servido pelo Express)'
+    else
+        echo 'ℹ️  Dev server (instructions-client) nao estava rodando'
+    fi
+    echo ''
+    echo 'Verificando se Express esta servindo build de produção (dist/)...'
+    # Verificar se dist/ existe no servidor
+    if [ -d "$serverPath/dist" ] && [ -f "$serverPath/dist/index.html" ]; then
+        echo '✅ Build de produção encontrado em dist/'
+        # Verificar se Express está servindo o frontend corretamente
+        FRONTEND_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5000/ 2>/dev/null || echo '000')
+        if [ "$FRONTEND_CODE" = "200" ] || [ "$FRONTEND_CODE" = "304" ]; then
+            echo '✅ Express esta servindo o frontend corretamente na porta 5000!'
+            # Verificar se é HTML (não JSON da API)
+            CONTENT_TYPE=$(curl -s -I http://localhost:5000/ 2>/dev/null | grep -i 'content-type' | cut -d: -f2 | tr -d ' \r\n' || echo '')
+            if echo "$CONTENT_TYPE" | grep -qi 'text/html'; then
+                echo '✅ Frontend HTML sendo servido corretamente!'
+            else
+                echo "⚠️  Resposta nao e HTML (Content-Type: $CONTENT_TYPE) - pode estar servindo API info em vez de index.html"
+            fi
+        else
+            echo "⚠️  Express respondeu com codigo HTTP $FRONTEND_CODE na porta 5000"
+            echo '💡 Verifique se o Express detectou o dist/ e esta servindo arquivos estaticos'
+        fi
+    else
+        echo '⚠️  Build de producao nao encontrado em dist/'
+        echo "   Caminho esperado: $serverPath/dist"
+        echo '💡 Certifique-se de que o build foi enviado corretamente'
     fi
 else
     echo 'ERRO ao reiniciar servidor PM2'

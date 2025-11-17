@@ -63,6 +63,8 @@ if (fs.existsSync(clientPublicPath)) {
   console.log('📁 Servindo arquivos estáticos do client/public');
 }
 
+// Frontend é servido via build estático (client/dist) quando disponível, ou via Vite dev server em desenvolvimento
+
 // Initialize Clerk middleware (only if configured)
 const hasClerk = !!process.env.CLERK_SECRET_KEY;
 const enableAuth = process.env.ENABLE_AUTH === 'true';
@@ -76,24 +78,30 @@ if (hasClerk && enableAuth) {
   if (hasClerk && !enableAuth) console.warn('Clerk present but ENABLE_AUTH!=true. Skipping auth protection for /api in dev.');
 }
 
-// Rota raiz - informações do servidor
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Instructions Project API Server',
-    version: '1.0.0',
-    endpoints: {
-      health: '/health',
-      api: '/api',
-      projects: '/api/projects',
-      products: '/api/products',
-      decorations: '/api/decorations'
-    },
-    access: {
-      local: `http://localhost:${process.env.PORT || 5000}`,
-      network: `http://192.168.2.16:${process.env.PORT || 5000}`
-    }
+// Rota raiz - informações do servidor (apenas quando não há build de produção)
+// Quando há dist/, o catch-all serve index.html para /
+var distPathCheck = path.resolve(__dirname, '../../client/dist');
+var distExistsCheck = fs.existsSync(distPathCheck) && fs.statSync(distPathCheck).isDirectory();
+
+if (!distExistsCheck) {
+  app.get('/', (req, res) => {
+    res.json({ 
+      message: 'Instructions Project API Server',
+      version: '1.0.0',
+      endpoints: {
+        health: '/health',
+        api: '/api',
+        projects: '/api/projects',
+        products: '/api/products',
+        decorations: '/api/decorations'
+      },
+      access: {
+        local: `http://localhost:${process.env.PORT || 5000}`,
+        network: `http://192.168.2.16:${process.env.PORT || 5000}`
+      }
+    });
   });
-});
+}
 
 // Health check
 app.get('/health', async (req, res) => {
@@ -117,6 +125,76 @@ app.get('/api/me', (req, res) => {
   const auth = getAuth(req);
   res.json({ userId: auth?.userId || null, sessionId: auth?.sessionId || null });
 });
+
+// Servir arquivos estáticos do build de produção (client/dist) se existir
+// (__filename e __dirname já declarados acima)
+var distPath = path.resolve(__dirname, '../../client/dist');
+var distExists = fs.existsSync(distPath) && fs.statSync(distPath).isDirectory();
+
+if (distExists) {
+  console.log('📦 [APP] Build de produção detectado - servindo arquivos estáticos de client/dist');
+  
+  // Middleware para Cache-Control restritivo em arquivos críticos do PWA
+  // Conforme documentação Vite PWA: /, /sw.js, /index.html, /manifest.webmanifest
+  // devem ter cache muito restritivo (sem immutable)
+  app.use((req, res, next) => {
+    const reqPath = req.path.toLowerCase();
+    // Arquivos críticos do PWA: sem cache ou cache muito curto
+    if (reqPath === '/' || 
+        reqPath === '/sw.js' || 
+        reqPath === '/index.html' || 
+        reqPath.endsWith('/manifest.webmanifest') ||
+        reqPath.endsWith('/manifest.json')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    } else if (reqPath.match(/\.(js|css)$/) && reqPath.match(/[a-f0-9]{8,}/)) {
+      // Arquivos com hash no nome (ex: index-abc123.js) podem ter cache longo
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else if (reqPath.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot)$/)) {
+      // Outros assets estáticos: cache longo mas não immutable
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+    }
+    next();
+  });
+  
+  // Servir arquivos estáticos do dist
+  app.use(express.static(distPath, {
+    maxAge: '1y', // Cache agressivo para assets estáticos (será sobrescrito pelo middleware acima para arquivos críticos)
+    etag: true,
+    lastModified: true
+  }));
+  
+  // Rota catch-all para SPA routing (deve vir depois de todas as rotas de API)
+  // Retorna index.html para qualquer rota que não seja API e não seja um arquivo estático
+  app.get('*', (req, res, next) => {
+    // Ignorar rotas de API
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    
+    // Se for um arquivo estático (com extensão), deixar o express.static lidar
+    // Se não tiver extensão ou for uma rota SPA, servir index.html
+    const hasExtension = /\.\w+$/.test(req.path);
+    if (!hasExtension) {
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        // Aplicar Cache-Control restritivo para index.html
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.sendFile(indexPath);
+        return;
+      }
+    }
+    
+    // Se chegou aqui, deixar o 404 handler lidar
+    next();
+  });
+} else {
+  console.log('ℹ️  [APP] Build de produção não encontrado - servindo apenas API');
+  console.log('   Para servir frontend em produção, execute: cd client && npm run build');
+}
 
 // Simple media streaming with Range support (serves client/public videos during dev)
 app.get('/api/media/:name', async (req, res) => {
@@ -225,6 +303,8 @@ app.get('/api/media/:name', async (req, res) => {
     res.status(500).json({ error: 'Media stream error' });
   }
 });
+
+// Frontend é servido via build estático (client/dist) quando disponível
 
 // 404 handler
 app.use((req, res) => {

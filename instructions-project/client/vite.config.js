@@ -65,10 +65,12 @@ export default defineConfig({
         rollupFormat: 'iife'
       },
       devOptions: {
-        enabled: false, // Desativar Service Worker em desenvolvimento para evitar interferência com Vite HMR
+        enabled: false, // Desabilitar Service Worker em desenvolvimento para evitar erros
+        // O HMR funciona perfeitamente sem o Service Worker
+        // O Service Worker será usado apenas em produção (build)
         type: 'module',
         navigateFallback: 'index.html',
-        suppressWarnings: true
+        suppressWarnings: true,
       }
     })
   ],
@@ -95,7 +97,11 @@ export default defineConfig({
       },
     },
     hmr: {
-      port: 3004, // Porta separada para HMR
+      port: 3004, // Porta separada para HMR no servidor
+      // Em produção (atrás do Caddy), o WebSocket passa pela porta 443 (HTTPS)
+      // O Caddy faz upgrade automático de HTTP para WebSocket
+      clientPort: 443, // Quando atrás do Caddy, usar porta 443 (HTTPS)
+      protocol: 'wss', // Usar WebSocket seguro quando atrás do Caddy
       overlay: false, // Desativar overlay de erros do HMR (são temporários)
     },
     watch: {
