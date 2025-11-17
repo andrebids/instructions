@@ -101,6 +101,10 @@ app.use((req, res, next) => {
   if (req.path.endsWith('.webmanifest') || req.path.endsWith('/manifest.json')) {
     res.type('application/manifest+json');
   }
+  // Garantir que Service Worker seja servido com tipo MIME correto
+  if (req.path === '/sw.js' || req.path.endsWith('/sw.js')) {
+    res.type('application/javascript');
+  }
   next();
 });
 
