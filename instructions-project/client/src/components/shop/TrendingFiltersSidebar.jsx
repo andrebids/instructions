@@ -65,8 +65,8 @@ export default function TrendingFiltersSidebar({
   }, [theme]);
 
   const containerClass = React.useMemo(() => isDark
-    ? "relative space-y-6 rounded-lg border border-white/10 bg-[#0b1224]/90 pt-[14px] pb-6 px-6 text-sm text-default-400 shadow-[0_25px_80px_rgba(8,15,36,0.55)] backdrop-blur-xl"
-    : "relative space-y-6 rounded-lg border border-black/5 bg-gradient-to-b from-white via-white to-slate-100 pt-[14px] pb-6 px-6 text-sm text-default-600 shadow-[0_25px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl", [isDark]);
+    ? "relative space-y-6 rounded-lg border border-white/10 bg-[#0b1224]/90 pt-[14px] pb-6 px-6 text-sm text-default-400 shadow-[0_25px_80px_rgba(8,15,36,0.55)] backdrop-blur-xl w-full"
+    : "relative space-y-6 rounded-lg border border-black/5 bg-gradient-to-b from-white via-white to-slate-100 pt-[14px] pb-6 px-6 text-sm text-default-600 shadow-[0_25px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl w-full", [isDark]);
 
   const heroCardClass = React.useMemo(() => isDark
     ? "relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
@@ -867,7 +867,7 @@ export default function TrendingFiltersSidebar({
                   aria-label="Hide filters"
                   className={`md:flex hidden items-center justify-center ${isDark ? 'bg-white/10 hover:bg-white/20 border border-primary' : 'bg-default-100 hover:bg-default-200 border border-primary'} transition-colors`}
                 >
-                  <Icon icon="lucide:chevron-down" className={`text-sm transition-transform duration-300 rotate-180 ${isDark ? "text-white" : "text-default-700"}`} />
+                  <Icon icon="lucide:x" className={`text-sm ${isDark ? "text-white" : "text-default-700"}`} />
                 </Button>
               )}
             </div>
@@ -1000,24 +1000,7 @@ export default function TrendingFiltersSidebar({
               )}
             </div>
           </>
-        ) : (
-          <div className="flex items-center gap-[10px]">
-            <div className={`text-xs uppercase tracking-[0.3em] ${isDark ? "text-white" : "text-default-900"}`}>{isDark ? "FILTERS" : "Filters"}</div>
-            {onToggleVisibility && (
-              <Button
-                isIconOnly
-                size="sm"
-                variant="flat"
-                radius="full"
-                onPress={onToggleVisibility}
-                aria-label="Show filters"
-                className={`md:flex hidden items-center justify-center ${isDark ? 'bg-white/10 hover:bg-white/20 border border-primary' : 'bg-default-100 hover:bg-default-200 border border-primary'} transition-colors`}
-              >
-                <Icon icon="lucide:chevron-down" className={`text-sm transition-transform duration-300 ${isDark ? "text-white" : "text-default-700"}`} />
-              </Button>
-            )}
-          </div>
-        )}
+        ) : null}
       </div>
     </aside>
   );

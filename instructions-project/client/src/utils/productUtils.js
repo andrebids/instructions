@@ -1,6 +1,78 @@
+// Função para verificar se uma URL de imagem é válida
+function isValidImageUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  var trimmed = url.trim();
+  if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') return false;
+  return true;
+}
+
+// Lista de imagens disponíveis nas pastas locais
+var availableDayImages = [
+  '/SHOP/TRENDING/DAY/GX349L_DAY.webp',
+  '/SHOP/TRENDING/DAY/GX350LW.webp',
+  '/SHOP/TRENDING/DAY/IPL317R_DAY.webp',
+  '/SHOP/TRENDING/DAY/IPL337.webp',
+  '/SHOP/TRENDING/DAY/IPL337W.webp',
+];
+
+var availableNightImages = [
+  '/SHOP/TRENDING/NIGHT/GX349L_NIGHT.webp',
+  '/SHOP/TRENDING/NIGHT/GX350LW_NIGHT.webp',
+  '/SHOP/TRENDING/NIGHT/IPL317R_NIGHT.webp',
+  '/SHOP/TRENDING/NIGHT/IPL337.webp',
+  '/SHOP/TRENDING/NIGHT/IPL337W.webp',
+];
+
+// Função para gerar uma imagem aleatória baseada no ID do produto
+function getRandomImage(productId, isNight) {
+  // Usar o ID do produto para gerar um número determinístico mas variado
+  var hash = 0;
+  var seedString = productId + (isNight ? '_night' : '_day');
+  if (seedString) {
+    for (var i = 0; i < seedString.length; i++) {
+      hash = ((hash << 5) - hash) + seedString.charCodeAt(i);
+      hash = hash & hash; // Convert to 32bit integer
+    }
+  }
+  
+  // Selecionar uma imagem da lista baseada no hash
+  var imageList = isNight ? availableNightImages : availableDayImages;
+  var index = Math.abs(hash) % imageList.length;
+  return imageList[index];
+}
+
 // Função para transformar dados da API para formato esperado pelo contexto
 export function transformApiProduct(apiProduct) {
   if (!apiProduct) return null;
+  
+  // Sempre atribuir imagens - verificar se as URLs existentes são válidas
+  var dayImage = null;
+  var nightImage = null;
+  
+  // Tentar usar imagens existentes se forem válidas
+  if (isValidImageUrl(apiProduct.imagesDayUrl)) {
+    dayImage = apiProduct.imagesDayUrl;
+  } else if (isValidImageUrl(apiProduct.thumbnailUrl)) {
+    dayImage = apiProduct.thumbnailUrl;
+  }
+  
+  if (isValidImageUrl(apiProduct.imagesNightUrl)) {
+    nightImage = apiProduct.imagesNightUrl;
+  } else if (isValidImageUrl(apiProduct.imagesDayUrl)) {
+    nightImage = apiProduct.imagesDayUrl;
+  } else if (isValidImageUrl(apiProduct.thumbnailUrl)) {
+    nightImage = apiProduct.thumbnailUrl;
+  }
+  
+  // Se ainda não houver imagens válidas, usar imagens aleatórias das pastas locais
+  if (!isValidImageUrl(dayImage)) {
+    dayImage = getRandomImage(apiProduct.id, false);
+    console.log('🖼️ [transformApiProduct] Atribuindo imagem aleatória (dia) para produto:', apiProduct.id, dayImage);
+  }
+  if (!isValidImageUrl(nightImage)) {
+    nightImage = getRandomImage(apiProduct.id, true);
+    console.log('🖼️ [transformApiProduct] Atribuindo imagem aleatória (noite) para produto:', apiProduct.id, nightImage);
+  }
   
   var transformed = {
     id: apiProduct.id,
@@ -11,8 +83,8 @@ export function transformApiProduct(apiProduct) {
     animationUrl: apiProduct.animationUrl || null,
     animationSimulationUrl: apiProduct.animationSimulationUrl || null,
     images: {
-      day: apiProduct.imagesDayUrl || apiProduct.thumbnailUrl || null,
-      night: apiProduct.imagesNightUrl || apiProduct.imagesDayUrl || apiProduct.thumbnailUrl || null,
+      day: dayImage,
+      night: nightImage,
       colors: apiProduct.availableColors || {},
     },
     tags: Array.isArray(apiProduct.tags) ? apiProduct.tags : [],

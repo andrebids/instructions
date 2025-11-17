@@ -7,7 +7,7 @@ import RequestInfoModal from "./RequestInfoModal";
 import CompareSuggestModal from "./CompareSuggestModal";
 import FavoriteFolderModal from "./FavoriteFolderModal";
 
-export default function ProductCard({ product, onOrder, glass = false, allowQty = false, removable = false }) {
+export default function ProductCard({ product, onOrder, glass = false, allowQty = false, removable = false, isSquare = false }) {
   const [open, setOpen] = React.useState(false);
   const [activeColor, setActiveColor] = React.useState(null);
   const { addToProject, projects, favorites, compare, toggleFavorite, toggleCompare, products, getAvailableStock } = useShop();
@@ -40,13 +40,13 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
     <>
       <div
         onClick={() => setOpen(true)}
-        className="group cursor-pointer select-none rounded-2xl overflow-hidden"
+        className={`group cursor-pointer select-none rounded-2xl overflow-hidden ${isSquare ? 'h-full flex flex-col' : ''}`}
         style={glass ? {
           WebkitMaskImage: "radial-gradient(100% 100% at 50% 50%, black calc(100% - 16px), rgba(0,0,0,0) 100%)",
           maskImage: "radial-gradient(100% 100% at 50% 50%, black calc(100% - 16px), rgba(0,0,0,0) 100%)",
         } : undefined}
       >
-          <div className="relative overflow-hidden rounded-t-2xl bg-[#0b1b3a]">
+          <div className={`relative overflow-hidden rounded-t-2xl bg-[#0b1b3a] ${isSquare ? 'flex-1 flex items-center justify-center' : ''}`}>
             {discountPct ? (
               <Chip size="sm" color="danger" variant="solid" className="absolute left-3 top-3 z-30 text-white">{discountPct}% Off</Chip>
             ) : null}
@@ -55,7 +55,18 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
             ) : isLowStock ? (
               <Chip size="sm" color="warning" variant="solid" className="absolute left-3 top-3 z-30 text-white">Low stock</Chip>
             ) : null}
-            <Image removeWrapper src={previewSrc} alt={product.name} className="w-full h-64 object-contain transition-transform duration-300 group-hover:scale-105" />
+            <Image 
+              removeWrapper 
+              src={previewSrc || "/demo-images/placeholder.png"} 
+              alt={product.name} 
+              className={`w-full ${isSquare ? 'h-full' : 'h-64'} object-contain transition-transform duration-300 group-hover:scale-105`}
+              onError={(e) => {
+                // Fallback para placeholder se a imagem falhar
+                if (e.target.src !== "/demo-images/placeholder.png") {
+                  e.target.src = "/demo-images/placeholder.png";
+                }
+              }}
+            />
             {glass && (
               <div
                 className="absolute inset-0 z-5 pointer-events-none rounded-t-2xl"
@@ -159,16 +170,16 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
             </div>
           </div>
           {/* Info area: light solid gray; dark has black→blue vertical gradient */}
-          <div className="relative rounded-b-2xl p-4 bg-[#e5e7eb] dark:bg-gradient-to-t dark:from-black dark:to-[#0b1b3a] overflow-hidden">
+          <div className={`relative rounded-b-2xl ${isSquare ? 'p-3' : 'p-4'} bg-[#e5e7eb] dark:bg-gradient-to-t dark:from-black dark:to-[#0b1b3a] overflow-hidden ${isSquare ? 'flex-shrink-0' : ''}`}>
             <div className="relative z-10">
-              <div className="font-medium text-foreground mb-1 truncate" title={product.name}>{product.name}</div>
+              <div className={`font-medium text-foreground mb-1 truncate ${isSquare ? 'text-sm' : ''}`} title={product.name}>{product.name}</div>
               <div className="flex items-baseline gap-2">
-                <div className="text-base font-semibold text-primary">€{product.price}</div>
+                <div className={`${isSquare ? 'text-sm' : 'text-base'} font-semibold text-primary`}>€{product.price}</div>
                 {product.oldPrice ? (
-                  <div className="text-sm text-default-500 line-through">€{product.oldPrice}</div>
+                  <div className={`${isSquare ? 'text-xs' : 'text-sm'} text-default-500 line-through`}>€{product.oldPrice}</div>
                 ) : null}
               </div>
-              <div className="mt-1 text-xs text-default-500">
+              <div className={`mt-1 ${isSquare ? 'text-[10px]' : 'text-xs'} text-default-500`}>
                 {isOutOfStock ? (
                   <span className="text-danger-400">Out of stock</span>
                 ) : (
@@ -176,12 +187,12 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
                 )}
               </div>
               {colorKeys.length > 0 && (
-                <div className="mt-3 flex items-center gap-2">
+                <div className={`${isSquare ? 'mt-2' : 'mt-3'} flex items-center gap-2`}>
                   {colorKeys.slice(0, 4).map((key) => (
                     <Tooltip key={key} content={key}>
                       <div
                         aria-hidden
-                        className={`w-5 h-5 rounded-full border ${activeColor === key ? 'ring-2 ring-primary' : 'border-default-200'}`}
+                        className={`${isSquare ? 'w-4 h-4' : 'w-5 h-5'} rounded-full border ${activeColor === key ? 'ring-2 ring-primary' : 'border-default-200'}`}
                         style={{ background: colorKeyToStyle[key] || '#e5e7eb', boxShadow: key === 'brancoPuro' ? 'inset 0 0 0 1px rgba(0,0,0,0.08)' : undefined, pointerEvents: 'none' }}
                       />
                     </Tooltip>
