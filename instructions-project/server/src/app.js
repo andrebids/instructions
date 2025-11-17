@@ -20,7 +20,7 @@ const app = express();
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
+      defaultSrc: ["'self'", "blob:", "data:"], // Permitir blob e data para Service Worker
       scriptSrc: [
         "'self'",
         "'unsafe-inline'", // Necessário para scripts inline do Vite
