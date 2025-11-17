@@ -54,17 +54,22 @@ async function migrate() {
     const existingColumnNames = existingColumns.map(col => col.column_name);
     console.log('📋 Colunas existentes:', existingColumnNames.length > 0 ? existingColumnNames : 'Nenhuma');
     
-    // Criar tipo ENUM se não existir
-    const createEnumQuery = `
-      DO $$ BEGIN
-        CREATE TYPE season_enum AS ENUM ('xmas', 'summer');
-      EXCEPTION
-        WHEN duplicate_object THEN null;
-      END $$;
-    `;
-    
-    await sequelize.query(createEnumQuery);
-    console.log('✅ Tipo ENUM season_enum criado/verificado');
+    // Criar tipo ENUM se não existir (apenas se o campo season não existir ou for VARCHAR)
+    // Se o campo season já existe, não precisamos criar o ENUM
+    if (!existingColumnNames.includes('season')) {
+      const createEnumQuery = `
+        DO $$ BEGIN
+          CREATE TYPE season_enum AS ENUM ('xmas', 'summer');
+        EXCEPTION
+          WHEN duplicate_object THEN null;
+        END $$;
+      `;
+      
+      await sequelize.query(createEnumQuery);
+      console.log('✅ Tipo ENUM season_enum criado/verificado');
+    } else {
+      console.log('⏭️  Campo "season" já existe, pulando criação do ENUM...');
+    }
     
     // Adicionar campos que não existem
     const fieldsToAdd = [

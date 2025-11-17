@@ -19,7 +19,8 @@ if (!PUBLISHABLE_KEY) {
 }
 
 // Register service worker with prompt mode (no auto-update)
-if ('serviceWorker' in navigator) {
+// Desativar Service Worker em desenvolvimento para evitar interferência com Vite HMR
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   registerSW({
     immediate: false, // Don't update immediately - wait for user confirmation
     onOfflineReady() {

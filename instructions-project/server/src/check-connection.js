@@ -15,10 +15,17 @@ async function checkConnection() {
     
     // Mostrar configuração do .env
     console.log('📋 Configuração atual:');
-    console.log('   DB_HOST:', process.env.DB_HOST || 'localhost');
-    console.log('   DB_PORT:', process.env.DB_PORT || '5433');
-    console.log('   DB_NAME:', process.env.DB_NAME || 'instructions_demo');
-    console.log('   DB_USER:', process.env.DB_USER || 'demo_user');
+    if (process.env.DATABASE_URL) {
+      // Ocultar senha na connection string
+      const maskedUrl = process.env.DATABASE_URL.replace(/:[^:@]+@/, ':****@');
+      console.log('   DATABASE_URL:', maskedUrl);
+      console.log('   (Usando connection string)');
+    } else {
+      console.log('   DB_HOST:', process.env.DB_HOST || 'localhost');
+      console.log('   DB_PORT:', process.env.DB_PORT || '5433');
+      console.log('   DB_NAME:', process.env.DB_NAME || 'instructions_demo');
+      console.log('   DB_USER:', process.env.DB_USER || 'demo_user');
+    }
     console.log('');
     
     // Testar conexão

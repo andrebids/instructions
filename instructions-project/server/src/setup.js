@@ -45,99 +45,199 @@ async function setup() {
     // Migration 1: Campos de canvas
     console.log('   📋 Migration: Campos de canvas...');
     try {
-      await execAsync('npm run migrate');
-      console.log('   ✅ Campos de canvas verificados');
+      const { stdout } = await execAsync('npm run migrate', { 
+        timeout: 30000,
+        maxBuffer: 1024 * 1024
+      });
+      if (stdout.includes('✅') || stdout.includes('⏭️')) {
+        console.log('   ✅ Campos de canvas verificados');
+      } else {
+        console.log('   ⚠️  Migration executada (pode já estar aplicada)');
+      }
     } catch (error) {
-      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
-      console.log('   💡 Continuando...');
+      if (error.stdout && (error.stdout.includes('já existe') || error.stdout.includes('já existem'))) {
+        console.log('   ✅ Campos já existem, pulando...');
+      } else {
+        console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+        console.log('   💡 Continuando (campos podem já existir)...');
+      }
     }
     console.log('');
     
     // Migration 2: Campos de categoria de produtos
     console.log('   📋 Migration: Campos de categoria de produtos...');
     try {
-      await execAsync('npm run migrate:products');
-      console.log('   ✅ Campos de categoria verificados');
+      const { stdout, stderr } = await execAsync('npm run migrate:products', { 
+        timeout: 30000, // 30 segundos timeout
+        maxBuffer: 1024 * 1024 // 1MB buffer
+      });
+      if (stdout.includes('✅') || stdout.includes('⏭️')) {
+        console.log('   ✅ Campos de categoria verificados');
+      } else {
+        console.log('   ⚠️  Migration executada (pode já estar aplicada)');
+      }
     } catch (error) {
-      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
-      console.log('   💡 Continuando...');
+      // Se a migration falhar mas os campos já existem, não é um erro crítico
+      if (error.stdout && (error.stdout.includes('já existe') || error.stdout.includes('já existem'))) {
+        console.log('   ✅ Campos já existem, pulando...');
+      } else {
+        console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+        console.log('   💡 Continuando (campos podem já existir)...');
+      }
     }
     console.log('');
     
     // Migration 3: Campos de dimensões de produtos
     console.log('   📋 Migration: Campos de dimensões de produtos...');
     try {
-      await execAsync('npm run migrate:dimensions');
-      console.log('   ✅ Campos de dimensões verificados');
+      const { stdout } = await execAsync('npm run migrate:dimensions', { 
+        timeout: 30000,
+        maxBuffer: 1024 * 1024
+      });
+      if (stdout.includes('✅') || stdout.includes('⏭️')) {
+        console.log('   ✅ Campos de dimensões verificados');
+      } else {
+        console.log('   ⚠️  Migration executada (pode já estar aplicada)');
+      }
     } catch (error) {
-      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
-      console.log('   💡 Continuando...');
+      if (error.stdout && (error.stdout.includes('já existe') || error.stdout.includes('já existem'))) {
+        console.log('   ✅ Campos já existem, pulando...');
+      } else {
+        console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+        console.log('   💡 Continuando (campos podem já existir)...');
+      }
     }
     console.log('');
     
     // Migration 4: Campo de animação/simulação de produtos
     console.log('   📋 Migration: Campo de animação/simulação...');
     try {
-      await execAsync('npm run migrate:animationSimulation');
-      console.log('   ✅ Campo de animação/simulação verificado');
+      const { stdout } = await execAsync('npm run migrate:animationSimulation', { 
+        timeout: 30000,
+        maxBuffer: 1024 * 1024
+      });
+      if (stdout.includes('✅') || stdout.includes('⏭️')) {
+        console.log('   ✅ Campo de animação/simulação verificado');
+      } else {
+        console.log('   ⚠️  Migration executada (pode já estar aplicada)');
+      }
     } catch (error) {
-      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
-      console.log('   💡 Continuando...');
+      if (error.stdout && (error.stdout.includes('já existe') || error.stdout.includes('já existem'))) {
+        console.log('   ✅ Campo já existe, pulando...');
+      } else {
+        console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+        console.log('   💡 Continuando (campo pode já existir)...');
+      }
     }
     console.log('');
     
     // Migration 5: Tabela de notas de projetos
     console.log('   📋 Migration: Tabela de notas de projetos...');
     try {
-      await execAsync('npm run migrate:notes');
-      console.log('   ✅ Tabela de notas verificada');
+      const { stdout } = await execAsync('npm run migrate:notes', { 
+        timeout: 30000,
+        maxBuffer: 1024 * 1024
+      });
+      if (stdout.includes('✅') || stdout.includes('⏭️')) {
+        console.log('   ✅ Tabela de notas verificada');
+      } else {
+        console.log('   ⚠️  Migration executada (pode já estar aplicada)');
+      }
     } catch (error) {
-      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
-      console.log('   💡 Continuando...');
+      if (error.stdout && (error.stdout.includes('já existe') || error.stdout.includes('já existem'))) {
+        console.log('   ✅ Tabela já existe, pulando...');
+      } else {
+        console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+        console.log('   💡 Continuando (tabela pode já existir)...');
+      }
     }
     console.log('');
     
     // Migration 6: Campo lastEditedStep
     console.log('   📋 Migration: Campo lastEditedStep...');
     try {
-      await execAsync('npm run migrate:lastEditedStep');
-      console.log('   ✅ Campo lastEditedStep verificado');
+      const { stdout } = await execAsync('npm run migrate:lastEditedStep', { 
+        timeout: 30000,
+        maxBuffer: 1024 * 1024
+      });
+      if (stdout.includes('✅') || stdout.includes('⏭️')) {
+        console.log('   ✅ Campo lastEditedStep verificado');
+      } else {
+        console.log('   ⚠️  Migration executada (pode já estar aplicada)');
+      }
     } catch (error) {
-      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
-      console.log('   💡 Continuando...');
+      if (error.stdout && (error.stdout.includes('já existe') || error.stdout.includes('já existem'))) {
+        console.log('   ✅ Campo já existe, pulando...');
+      } else {
+        console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+        console.log('   💡 Continuando (campo pode já existir)...');
+      }
     }
     console.log('');
     
     // Migration 7: Campos de cartouche por imagem
     console.log('   📋 Migration: Campos de cartouche por imagem...');
     try {
-      await execAsync('npm run migrate:cartouche');
-      console.log('   ✅ Campos de cartouche verificados');
+      const { stdout } = await execAsync('npm run migrate:cartouche', { 
+        timeout: 30000,
+        maxBuffer: 1024 * 1024
+      });
+      if (stdout.includes('✅') || stdout.includes('⏭️')) {
+        console.log('   ✅ Campos de cartouche verificados');
+      } else {
+        console.log('   ⚠️  Migration executada (pode já estar aplicada)');
+      }
     } catch (error) {
-      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
-      console.log('   💡 Continuando...');
+      if (error.stdout && (error.stdout.includes('já existe') || error.stdout.includes('já existem'))) {
+        console.log('   ✅ Campos já existem, pulando...');
+      } else {
+        console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+        console.log('   💡 Continuando (campos podem já existir)...');
+      }
     }
     console.log('');
     
     // Migration 8: Campos de estado das simulações
     console.log('   📋 Migration: Campos de estado das simulações (uploadedImages, simulationState)...');
     try {
-      await execAsync('npm run migrate:simulationState');
-      console.log('   ✅ Campos de estado das simulações verificados');
+      const { stdout } = await execAsync('npm run migrate:simulationState', { 
+        timeout: 30000,
+        maxBuffer: 1024 * 1024
+      });
+      if (stdout.includes('✅') || stdout.includes('⏭️')) {
+        console.log('   ✅ Campos de estado das simulações verificados');
+      } else {
+        console.log('   ⚠️  Migration executada (pode já estar aplicada)');
+      }
     } catch (error) {
-      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
-      console.log('   💡 Continuando...');
+      if (error.stdout && (error.stdout.includes('já existe') || error.stdout.includes('já existem'))) {
+        console.log('   ✅ Campos já existem, pulando...');
+      } else {
+        console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+        console.log('   💡 Continuando (campos podem já existir)...');
+      }
     }
     console.log('');
     
     // Migration 9: Status draft para projetos
     console.log('   📋 Migration: Adicionar status "draft" aos projetos...');
     try {
-      await execAsync('npm run migrate:draft');
-      console.log('   ✅ Status "draft" verificado');
+      const { stdout } = await execAsync('npm run migrate:draft', { 
+        timeout: 30000,
+        maxBuffer: 1024 * 1024
+      });
+      if (stdout.includes('✅') || stdout.includes('⏭️')) {
+        console.log('   ✅ Status "draft" verificado');
+      } else {
+        console.log('   ⚠️  Migration executada (pode já estar aplicada)');
+      }
     } catch (error) {
-      console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
-      console.log('   💡 Continuando...');
+      if (error.stdout && (error.stdout.includes('já existe') || error.stdout.includes('já existem'))) {
+        console.log('   ✅ Status já existe, pulando...');
+      } else {
+        console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+        console.log('   💡 Continuando (status pode já existir)...');
+      }
     }
     console.log('');
     
