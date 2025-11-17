@@ -17,7 +17,62 @@ import { clerkMiddleware, requireAuth, getAuth } from '@clerk/express';
 const app = express();
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'", "blob:", "data:"], // Permitir blob e data para Service Worker
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'", // Necessário para scripts inline do Vite
+        "'unsafe-eval'", // Necessário para alguns scripts do Vite em dev
+        "https://nice-oriole-77.clerk.accounts.dev", // Clerk scripts
+        "https://*.clerk.accounts.dev", // Clerk scripts (qualquer subdomínio)
+        "https://*.clerk.com", // Clerk scripts alternativos
+      ],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'", // Necessário para estilos inline
+        "https://fonts.googleapis.com", // Google Fonts
+      ],
+      fontSrc: [
+        "'self'",
+        "https://fonts.gstatic.com", // Google Fonts
+        "data:", // Fontes em base64
+      ],
+      imgSrc: [
+        "'self'",
+        "data:",
+        "blob:",
+        "https:", // Permitir imagens de qualquer origem HTTPS
+      ],
+      connectSrc: [
+        "'self'",
+        "https://nice-oriole-77.clerk.accounts.dev", // Clerk API
+        "https://*.clerk.accounts.dev", // Clerk API (qualquer subdomínio)
+        "https://*.clerk.com", // Clerk API alternativos
+        "https://api.iconify.design", // Iconify API
+        "https://api.simplesvg.com", // SimpleSVG API
+        "https://api.unisvg.com", // UniSVG API
+        "wss://nice-oriole-77.clerk.accounts.dev", // Clerk WebSocket
+        "wss://*.clerk.accounts.dev", // Clerk WebSocket
+      ],
+      frameSrc: [
+        "'self'",
+        "https://nice-oriole-77.clerk.accounts.dev", // Clerk iframes
+        "https://*.clerk.accounts.dev", // Clerk iframes
+      ],
+      workerSrc: [
+        "'self'",
+        "blob:", // Service Worker
+      ],
+      scriptSrcAttr: ["'unsafe-inline'"], // Permitir atributos inline em scripts
+      baseUri: ["'self'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Desabilitar para permitir recursos externos
+}));
 app.use(cors({
   origin: [
     'http://localhost:3003',
@@ -46,22 +101,46 @@ app.use((req, res, next) => {
   if (req.path.endsWith('.webmanifest') || req.path.endsWith('/manifest.json')) {
     res.type('application/manifest+json');
   }
+  // Garantir que Service Worker seja servido com tipo MIME correto
+  if (req.path === '/sw.js' || req.path.endsWith('/sw.js')) {
+    res.type('application/javascript');
+  }
   next();
 });
-
-app.use(express.static('public'));
 
 // Servir uploads também via /api para funcionar por trás do proxy do Vite
 app.use('/api/uploads', express.static(path.resolve(process.cwd(), 'public/uploads')));
 
 // Servir também arquivos estáticos do client/public (para imagens da loja)
+// MAS: Não servir sw.js de public/ - ele deve vir de dist/ após processamento pelo VitePWA
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = path.dirname(__filename);
 var clientPublicPath = path.resolve(__dirname, '../../client/public');
 if (fs.existsSync(clientPublicPath)) {
-  app.use(express.static(clientPublicPath));
-  console.log('📁 Servindo arquivos estáticos do client/public');
+  // Middleware customizado para servir public mas excluir sw.js
+  app.use((req, res, next) => {
+    // Se for sw.js, não servir de public - deixar o dist/ servir
+    if (req.path === '/sw.js' || req.path.endsWith('/sw.js')) {
+      return next(); // Pular este middleware, deixar dist/ servir
+    }
+    // Para outros arquivos, servir de public normalmente
+    express.static(clientPublicPath)(req, res, next);
+  });
+  console.log('📁 Servindo arquivos estáticos do client/public (exceto sw.js)');
 }
+
+// Servir arquivos estáticos do public do servidor (apenas para uploads e outros assets do servidor)
+// NOTA: O Service Worker (sw.js) deve vir de dist/, não de public/
+// O public/sw.js é apenas o source - o VitePWA processa e coloca em dist/sw.js
+// Excluir sw.js de public para garantir que dist/ sirva o arquivo processado
+app.use((req, res, next) => {
+  // Se for sw.js, não servir de public - deixar o dist/ servir
+  if (req.path === '/sw.js' || req.path.endsWith('/sw.js')) {
+    return next(); // Pular este middleware, deixar dist/ servir
+  }
+  // Para outros arquivos, servir de public normalmente
+  express.static('public')(req, res, next);
+});
 
 // Frontend é servido via build estático (client/dist) quando disponível, ou via Vite dev server em desenvolvimento
 
@@ -126,11 +205,32 @@ app.get('/api/me', (req, res) => {
   res.json({ userId: auth?.userId || null, sessionId: auth?.sessionId || null });
 });
 
-// Servir arquivos estáticos do build de produção (client/dist) se existir
+// CRÍTICO: Servir sw.js de dist/ ANTES de qualquer outro middleware estático
+// Isso garante que o arquivo processado pelo VitePWA seja servido, não o source de public/
 // (__filename e __dirname já declarados acima)
 var distPath = path.resolve(__dirname, '../../client/dist');
 var distExists = fs.existsSync(distPath) && fs.statSync(distPath).isDirectory();
 
+if (distExists) {
+  // Servir sw.js especificamente de dist/ com prioridade máxima
+  app.use('/sw.js', (req, res, next) => {
+    const swPath = path.join(distPath, 'sw.js');
+    if (fs.existsSync(swPath)) {
+      // Cache-Control restritivo para sw.js
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Content-Type', 'application/javascript');
+      console.log('✅ [APP] Servindo sw.js de dist/ (processado pelo VitePWA)');
+      res.sendFile(swPath);
+    } else {
+      console.warn('⚠️ [APP] sw.js não encontrado em dist/, servindo 404');
+      res.status(404).send('Service Worker not found');
+    }
+  });
+}
+
+// Servir arquivos estáticos do build de produção (client/dist) se existir
 if (distExists) {
   console.log('📦 [APP] Build de produção detectado - servindo arquivos estáticos de client/dist');
   
@@ -158,7 +258,7 @@ if (distExists) {
     next();
   });
   
-  // Servir arquivos estáticos do dist
+  // Servir arquivos estáticos do dist (sw.js já foi servido acima, então não será servido aqui)
   app.use(express.static(distPath, {
     maxAge: '1y', // Cache agressivo para assets estáticos (será sobrescrito pelo middleware acima para arquivos críticos)
     etag: true,
