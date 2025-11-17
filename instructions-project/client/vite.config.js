@@ -62,7 +62,7 @@ export default defineConfig({
           '**/simuvideo.webp' // Excluir vídeo grande
         ],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB para permitir ficheiros maiores
-        rollupFormat: 'iife',
+        // rollupFormat removido - usar padrão do VitePWA (ES modules)
         // O injectionPoint padrão é 'self.__WB_MANIFEST' que será substituído pelo manifest
       },
       devOptions: {
