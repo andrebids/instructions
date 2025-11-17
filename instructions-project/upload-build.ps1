@@ -271,7 +271,191 @@ Write-Host "Caminho Raiz: $serverRootPath" -ForegroundColor Gray
 Write-Host "PM2 App: $pm2AppName" -ForegroundColor Gray
 Write-Host ""
 
-Write-Host "=== 1. Build Local ===" -ForegroundColor Cyan
+Write-Host "=== 0. Atualizar código do GitHub ===" -ForegroundColor Cyan
+$gitUpdateSuccess = $false
+try {
+    # Procurar repositório Git: primeiro no diretório do script, depois na raiz (um nível acima)
+    $gitRoot = $PSScriptRoot
+    if (-not (Test-Path (Join-Path $gitRoot ".git"))) {
+        $parentDir = Split-Path $PSScriptRoot -Parent
+        if ($parentDir -and (Test-Path (Join-Path $parentDir ".git"))) {
+            $gitRoot = $parentDir
+            Write-Host "[INFO] Repositório Git encontrado na raiz: $gitRoot" -ForegroundColor Gray
+        }
+    }
+    
+    Set-Location $gitRoot
+    
+    # Verificar se estamos num repositório Git válido
+    if (-not (Test-Path ".git")) {
+        Write-Host "[AVISO] Diretório .git não encontrado em $gitRoot" -ForegroundColor Yellow
+        Write-Host "   Continuando com código local existente..." -ForegroundColor Yellow
+        Write-Host ""
+    } else {
+        Write-Host "Verificando repositório Git..." -ForegroundColor Gray
+        
+        # Verificar se git está disponível
+        $gitAvailable = $false
+        try {
+            $null = git --version 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                $gitAvailable = $true
+            }
+        } catch {
+            $gitAvailable = $false
+        }
+        
+        if (-not $gitAvailable) {
+            Write-Host "[AVISO] Git não está disponível no sistema" -ForegroundColor Yellow
+            Write-Host "   Continuando com código local existente..." -ForegroundColor Yellow
+            Write-Host ""
+        } else {
+            # Verificar remote origin
+            $remoteUrl = ""
+            try {
+                $remoteUrl = git remote get-url origin 2>&1
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "[AVISO] Remote 'origin' não configurado" -ForegroundColor Yellow
+                    Write-Host "   Continuando com código local existente..." -ForegroundColor Yellow
+                    Write-Host ""
+                } else {
+                    Write-Host "Remote origin: $remoteUrl" -ForegroundColor Gray
+                    
+                    # Detectar branch atual
+                    $currentBranch = ""
+                    try {
+                        $currentBranch = git rev-parse --abbrev-ref HEAD 2>&1
+                        if ($LASTEXITCODE -ne 0) {
+                            Write-Host "[AVISO] Não foi possível detectar branch atual" -ForegroundColor Yellow
+                            $currentBranch = "main"
+                        }
+                    } catch {
+                        $currentBranch = "main"
+                    }
+                    
+                    if ([string]::IsNullOrWhiteSpace($currentBranch)) {
+                        $currentBranch = "main"
+                    }
+                    
+                    Write-Host "Branch atual: $currentBranch" -ForegroundColor Gray
+                    
+                    # Fazer git fetch para atualizar referências remotas
+                    Write-Host "Atualizando referências remotas (git fetch)..." -ForegroundColor Gray
+                    $null = git fetch origin 2>&1
+                    $fetchExitCode = $LASTEXITCODE
+                    
+                    if ($fetchExitCode -ne 0) {
+                        Write-Host "[AVISO] git fetch falhou (código: $fetchExitCode)" -ForegroundColor Yellow
+                        Write-Host "   Possíveis causas: sem conexão, problemas de autenticação, ou repositório não existe" -ForegroundColor Yellow
+                        Write-Host "   Continuando com código local existente..." -ForegroundColor Yellow
+                        Write-Host ""
+                    } else {
+                        # Verificar se há atualizações disponíveis
+                        $behindCount = 0
+                        try {
+                            $statusOutput = git rev-list --count HEAD..origin/$currentBranch 2>&1
+                            if ($LASTEXITCODE -eq 0 -and $statusOutput -match '^\d+$') {
+                                $behindCount = [int]$statusOutput
+                            }
+                        } catch {
+                            # Ignorar erro, continuar com pull
+                        }
+                        
+                        if ($behindCount -gt 0) {
+                            Write-Host "Encontradas $behindCount commit(s) novos no remoto" -ForegroundColor Cyan
+                        } else {
+                            Write-Host "Repositório local já está atualizado" -ForegroundColor Green
+                        }
+                        
+                        # Fazer git pull para obter versão mais recente
+                        Write-Host "Atualizando código local (git pull origin $currentBranch)..." -ForegroundColor Gray
+                        $pullOutput = git pull origin $currentBranch 2>&1
+                        $pullExitCode = $LASTEXITCODE
+                        
+                        # Converter output para string se for array
+                        $pullOutputString = if ($pullOutput -is [System.Array]) { $pullOutput -join "`n" } else { $pullOutput.ToString() }
+                        
+                        if ($pullExitCode -ne 0) {
+                            Write-Host "[ERRO] git pull falhou (código: $pullExitCode)" -ForegroundColor Red
+                            Write-Host "   Output: $pullOutputString" -ForegroundColor Red
+                            Write-Host ""
+                            Write-Host "Possíveis causas:" -ForegroundColor Yellow
+                            Write-Host "  1. Conflitos de merge (resolver manualmente)" -ForegroundColor Yellow
+                            Write-Host "  2. Alterações locais não commitadas (fazer stash ou commit)" -ForegroundColor Yellow
+                            Write-Host "  3. Problemas de conexão ou autenticação" -ForegroundColor Yellow
+                            Write-Host ""
+                            Write-Host "Deseja continuar com código local? (S/N)" -ForegroundColor Yellow
+                            Write-Host "   Pressione S para continuar ou N para abortar..." -ForegroundColor Yellow
+                            
+                            # Em modo não-interativo, continuar com aviso
+                            Write-Host "[AVISO] Continuando com código local existente (modo não-interativo)" -ForegroundColor Yellow
+                            Write-Host ""
+                        } else {
+                            # Verificar se houve atualizações
+                            if ($pullOutputString -match 'Already up to date' -or $pullOutputString -match 'já está atualizado') {
+                                Write-Host "[OK] Código já estava atualizado com a versão mais recente do GitHub" -ForegroundColor Green
+                                $gitUpdateSuccess = $true
+                            } else {
+                                Write-Host "[OK] Código atualizado com sucesso do GitHub!" -ForegroundColor Green
+                                if ($pullOutputString) {
+                                    Write-Host "   Detalhes: $pullOutputString" -ForegroundColor Gray
+                                }
+                                $gitUpdateSuccess = $true
+                            }
+                            
+                            # Mostrar status do repositório
+                            Write-Host "Verificando status do repositório..." -ForegroundColor Gray
+                            $statusOutput = git status --short 2>&1
+                            if ($LASTEXITCODE -eq 0 -and $statusOutput) {
+                                Write-Host "[INFO] Alterações locais detectadas:" -ForegroundColor Cyan
+                                Write-Host $statusOutput -ForegroundColor Gray
+                            } else {
+                                Write-Host "[OK] Repositório limpo (sem alterações locais)" -ForegroundColor Green
+                            }
+                            
+                            # Mostrar commit atual para confirmar versão
+                            try {
+                                $currentCommit = git rev-parse --short HEAD 2>&1
+                                $commitExitCode = $LASTEXITCODE
+                                $commitMessage = ""
+                                if ($commitExitCode -eq 0) {
+                                    $commitMessage = git log -1 --pretty=format:"%s" 2>&1
+                                    if ($LASTEXITCODE -eq 0) {
+                                        Write-Host "[INFO] Commit atual: $currentCommit - $commitMessage" -ForegroundColor Cyan
+                                    } else {
+                                        Write-Host "[INFO] Commit atual: $currentCommit" -ForegroundColor Cyan
+                                    }
+                                }
+                            } catch {
+                                # Ignorar erro ao obter commit
+                            }
+                            Write-Host ""
+                        }
+                    }
+                }
+            } catch {
+                Write-Host "[AVISO] Erro ao verificar remote: $_" -ForegroundColor Yellow
+                Write-Host "   Continuando com código local existente..." -ForegroundColor Yellow
+                Write-Host ""
+            }
+        }
+    }
+} catch {
+    Write-Host "[AVISO] Erro ao atualizar código do GitHub: $_" -ForegroundColor Yellow
+    Write-Host "   Continuando com código local existente..." -ForegroundColor Yellow
+    Write-Host ""
+}
+
+# Garantir que estamos no diretório correto antes do build (voltar para o diretório do script)
+Set-Location $PSScriptRoot
+
+Write-Host "=== 1. Build Local (versão GitHub mais recente) ===" -ForegroundColor Cyan
+if ($gitUpdateSuccess) {
+    Write-Host "[INFO] Fazendo build com a versão mais recente do GitHub..." -ForegroundColor Cyan
+} else {
+    Write-Host "[AVISO] Fazendo build com código local (git pull pode ter falhado)" -ForegroundColor Yellow
+}
+Write-Host ""
 try {
     Set-Location "$PSScriptRoot\client"
     if (-not (Test-Path "$PSScriptRoot\client")) {
@@ -280,13 +464,25 @@ try {
     }
     
     Write-Host "Executando npm run build..." -ForegroundColor Gray
-npm run build
-if ($LASTEXITCODE -ne 0) {
+    npm run build
+    if ($LASTEXITCODE -ne 0) {
         Write-Host "[ERRO] Build falhou com código: $LASTEXITCODE" -ForegroundColor Red
         Exit-Script -ExitCode 1
-}
-Write-Host "[OK] Build concluído!" -ForegroundColor Green
-Write-Host ""
+    }
+    
+    Write-Host "[OK] Build concluído com sucesso!" -ForegroundColor Green
+    if ($gitUpdateSuccess) {
+        Write-Host "[INFO] Build foi feito com a versão mais recente do GitHub" -ForegroundColor Cyan
+    }
+    
+    # Verificar se o diretório dist foi criado
+    if (-not (Test-Path ".\dist")) {
+        Write-Host "[ERRO] Diretório dist não foi criado após o build!" -ForegroundColor Red
+        Exit-Script -ExitCode 1
+    }
+    
+    Write-Host "[OK] Diretório dist verificado e pronto para envio" -ForegroundColor Green
+    Write-Host ""
 } catch {
     Write-Host "[ERRO] Erro ao executar build: $_" -ForegroundColor Red
     Exit-Script -ExitCode 1
@@ -440,7 +636,13 @@ function Get-AvailableSpace {
     }
 }
 
-Write-Host "=== 2. Enviar para servidor ===" -ForegroundColor Cyan
+Write-Host "=== 2. Enviar build para servidor ===" -ForegroundColor Cyan
+if ($gitUpdateSuccess) {
+    Write-Host "[INFO] Enviando build da versão mais recente do GitHub para o servidor..." -ForegroundColor Cyan
+} else {
+    Write-Host "[AVISO] Enviando build do código local (versão GitHub pode não estar atualizada)" -ForegroundColor Yellow
+}
+Write-Host ""
 $tempPath = "/tmp/client-dist-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 
 # Verificar espaço em disco antes de fazer upload
