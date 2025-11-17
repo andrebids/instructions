@@ -24,6 +24,7 @@ export default function Shop() {
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [selected, setSelected] = React.useState({ product: null, variant: null });
   const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [filtersVisible, setFiltersVisible] = React.useState(true);
   const [query, setQuery] = React.useState("");
   const [sort, setSort] = React.useState("relevance");
   const [cols, setCols] = React.useState(4);
@@ -223,31 +224,28 @@ export default function Shop() {
         <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setFiltersOpen(false)} />
       )}
       <div className="md:flex md:items-start md:gap-4 xl:gap-6 2xl:gap-8">
-        <div className={`fixed left-0 top-0 bottom-0 z-50 w-80 bg-background border-r border-divider p-4 transition-transform transform ${filtersOpen ? 'translate-x-0' : '-translate-x-full'} md:static md:translate-x-0 md:z-auto md:w-[22rem] xl:w-[26rem] 2xl:w-[32rem] md:bg-transparent md:border-0 md:rounded-none md:top-auto md:h-auto md:overflow-visible`}> 
-          <div className="flex items-center justify-between mb-3">
-            <div className="font-semibold">Filters</div>
-            <Button isIconOnly size="sm" variant="light" className="md:hidden" onPress={() => setFiltersOpen(false)} aria-label="Close filters">✕</Button>
-          </div>
-          <TrendingFiltersSidebar
-            products={products || []}
-            filters={filters}
-            onChange={setFilters}
-            priceRange={priceRange}
-            priceLimits={priceLimits}
-            onPriceChange={setPriceRange}
-          />
-          <div className="mt-2 flex gap-2 justify-end">
-            <Button
-              size="sm"
-              variant="flat"
-              radius="full"
-              className="bg-[#e4e3e8] text-foreground/80 hover:text-foreground dark:bg-content1 shadow-sm"
-              startContent={<Icon icon="lucide:rotate-ccw" className="text-sm" />}
-              onPress={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false, dimKey: "", dimRange: null, releaseYear: "" }); setPriceRange([priceLimits.min, priceLimits.max]); setQuery(""); }}
-            >
-              Clear filters
-            </Button>
-            <Button size="sm" color="primary" className="md:hidden" onPress={() => setFiltersOpen(false)}>Apply</Button>
+        <div className={`fixed left-0 top-0 bottom-0 z-50 transition-all duration-300 ease-in-out transform ${filtersOpen ? 'translate-x-0' : '-translate-x-full'} md:static md:translate-x-0 md:z-auto ${filtersVisible ? 'md:w-[22rem] xl:w-[26rem] 2xl:w-[32rem]' : 'md:w-fit'}`}>
+          <div className="w-80 md:w-full h-full bg-background border-r border-divider p-4 md:bg-transparent md:border-0 md:rounded-none flex flex-col">
+            <div className="flex items-center justify-between mb-3 md:hidden">
+              <div className="font-semibold">Filters</div>
+              <Button isIconOnly size="sm" variant="light" onPress={() => setFiltersOpen(false)} aria-label="Close filters">✕</Button>
+            </div>
+            <div className="flex-1 overflow-auto">
+              <TrendingFiltersSidebar
+                products={products || []}
+                filters={filters}
+                onChange={setFilters}
+                priceRange={priceRange}
+                priceLimits={priceLimits}
+                onPriceChange={setPriceRange}
+                onClearAll={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false, dimKey: "", dimRange: null, releaseYear: "" }); setPriceRange([priceLimits.min, priceLimits.max]); setQuery(""); }}
+                onToggleVisibility={() => setFiltersVisible(!filtersVisible)}
+                filtersVisible={filtersVisible}
+              />
+            </div>
+            <div className="mt-2 flex gap-2 justify-end md:hidden">
+              <Button size="sm" color="primary" onPress={() => setFiltersOpen(false)}>Apply</Button>
+            </div>
           </div>
         </div>
 
@@ -324,6 +322,7 @@ export default function Shop() {
             onOrder={(product, variant) => { setSelected({ product, variant }); setAssignOpen(true); }}
             cols={cols}
             glass={false}
+            filtersVisible={filtersVisible}
           />
         </div>
       </div>

@@ -30,7 +30,7 @@ export function StepLocationDescription({ formData, onInputChange }) {
         
         {/* Location Input */}
         <div>
-          <label className="block text-sm font-medium mb-2">
+          <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">
             Project Location (Optional)
           </label>
           <Input
@@ -44,7 +44,7 @@ export function StepLocationDescription({ formData, onInputChange }) {
         
         {/* Description Textarea */}
         <div>
-          <label className="block text-sm font-medium mb-2">
+          <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">
             Project Description (Optional)
           </label>
           <Textarea
