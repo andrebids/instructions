@@ -12,7 +12,23 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Definir diretórios do projeto
-PROJECT_ROOT="/home/andre/apps/instructions/instructions-project"
+# Detectar automaticamente o caminho base do script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${SCRIPT_DIR}"
+# Se o script estiver na raiz do projeto, usar diretamente
+# Caso contrário, tentar caminhos comuns
+if [ ! -d "${PROJECT_ROOT}/server" ] || [ ! -d "${PROJECT_ROOT}/client" ]; then
+  # Tentar caminhos alternativos
+  if [ -d "/home/bids/apps/instructions-project/instructions-project" ]; then
+    PROJECT_ROOT="/home/bids/apps/instructions-project/instructions-project"
+  elif [ -d "/home/andre/apps/instructions/instructions-project" ]; then
+    PROJECT_ROOT="/home/andre/apps/instructions/instructions-project"
+  else
+    echo -e "${RED}❌ Não foi possível determinar o caminho do projeto!${NC}"
+    echo "   Execute o script a partir do diretório raiz do projeto"
+    exit 1
+  fi
+fi
 SERVER_DIR="${PROJECT_ROOT}/server"
 CLIENT_DIR="${PROJECT_ROOT}/client"
 
@@ -131,9 +147,16 @@ echo ""
 # 7. Reiniciar PM2
 echo -e "${YELLOW}🔄 [7/7] Reiniciando servidor com PM2...${NC}"
 PM2_NAME_FINAL="${PM2_NAME:-instructions-server}"
-pm2 delete ${PM2_NAME_FINAL} 2>/dev/null || true
 cd "${SERVER_DIR}"
-pm2 start npm --name ${PM2_NAME_FINAL} -- start
+
+# Tentar reiniciar se já estiver rodando, senão iniciar
+if pm2 list | grep -q "${PM2_NAME_FINAL}"; then
+  echo -e "${YELLOW}   Servidor já está rodando, reiniciando...${NC}"
+  pm2 restart ${PM2_NAME_FINAL}
+else
+  echo -e "${YELLOW}   Servidor não está rodando, iniciando...${NC}"
+  pm2 start npm --name ${PM2_NAME_FINAL} -- start
+fi
 pm2 save
 echo ""
 
