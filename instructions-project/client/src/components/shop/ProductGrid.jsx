@@ -3,6 +3,9 @@ import ProductCard from "./ProductCard";
 
 export default function ProductGrid({ products, onOrder, cols = 4, glass = false, allowQty = false, cardProps = {}, filtersVisible = true }) {
   const colClasses = React.useMemo(() => {
+    if (cols === 1) {
+      return "grid-cols-1";
+    }
     if (cols === 2) {
       return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2";
     }

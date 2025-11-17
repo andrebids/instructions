@@ -30,6 +30,7 @@ import {
   getNormalizedProductTags,
   normalizeTag,
 } from "../utils/tagHierarchy";
+import { Scroller } from "../components/ui/scroller";
 
 export default function AdminProducts() {
   var { userName } = useUser();
@@ -1270,7 +1271,7 @@ export default function AdminProducts() {
           </CardBody>
         </Card>
       ) : (
-        <div className={`flex-1 overflow-y-auto ${isHandheld ? "pb-24" : "pb-6"}`}>
+        <Scroller className={`flex-1 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredProducts.map(function(product) {
               return (
@@ -1429,7 +1430,7 @@ export default function AdminProducts() {
               );
             })}
           </div>
-        </div>
+        </Scroller>
       )}
 
       {/* Modal de criação/edição */}

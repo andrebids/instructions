@@ -15,6 +15,7 @@ import {
   getNormalizedProductTags,
 } from "../utils/tagHierarchy";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
+import { Scroller } from "../components/ui/scroller";
 
 export default function Shop() {
   const { products } = useShop();
@@ -22,7 +23,7 @@ export default function Shop() {
   const { userName } = useUser();
   const { isHandheld } = useResponsiveProfile();
   const { theme } = useTheme();
-  const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false, dimKey: "", dimRange: null, releaseYear: "" });
+  const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", eco: false, dimKey: "", dimRange: null, releaseYear: "" });
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [selected, setSelected] = React.useState({ product: null, variant: null });
   const [filtersOpen, setFiltersOpen] = React.useState(false);
@@ -44,6 +45,28 @@ export default function Shop() {
   React.useEffect(() => {
     setPriceRange([priceLimits.min, priceLimits.max]);
   }, [priceLimits.min, priceLimits.max]);
+
+  // Stock limits and range - based on all products
+  const stockLimits = React.useMemo(() => {
+    if (!products || products.length === 0) return { min: 0, max: 0 };
+    const computeStock = (id) => {
+      try {
+        let s = 0;
+        for (const ch of String(id || "")) s += ch.charCodeAt(0);
+        return 5 + (s % 60);
+      } catch (_) {
+        return 20;
+      }
+    };
+    const stocks = products.map((p) => (typeof p.stock === "number" ? p.stock : computeStock(p.id)));
+    if (stocks.length === 0) return { min: 0, max: 0 };
+    return { min: Math.min(...stocks), max: Math.max(...stocks) };
+  }, [products]);
+
+  const [stockRange, setStockRange] = React.useState([stockLimits.min, stockLimits.max]);
+  React.useEffect(() => {
+    setStockRange([stockLimits.min, stockLimits.max]);
+  }, [stockLimits.min, stockLimits.max]);
 
   // Filtered products - no category filter, all products
   const filtered = React.useMemo(function() {
@@ -105,23 +128,6 @@ export default function Shop() {
           include = false;
         }
       }
-      if (include && typeof filters.minStock === 'number') {
-        var computeStock = function(id) { 
-          try { 
-            var s = 0; 
-            for (var ch_idx = 0; ch_idx < String(id||'').length; ch_idx++) {
-              s += String(id||'').charCodeAt(ch_idx);
-            }
-            return 5 + (s % 60); 
-          } catch(_) { 
-            return 20; 
-          } 
-        };
-        var stock = typeof p.stock === 'number' ? p.stock : computeStock(p.id);
-        if (stock < filters.minStock) {
-          include = false;
-        }
-      }
       if (include && filters.releaseYear && filters.releaseYear !== "") {
         var productYear = p.releaseYear;
         var yearValue = typeof productYear === 'number' ? productYear : parseInt(productYear, 10);
@@ -135,6 +141,23 @@ export default function Shop() {
           if (p.price < priceRange[0] || p.price > priceRange[1]) {
             include = false;
           }
+        }
+      }
+      if (include && Array.isArray(stockRange) && stockRange.length === 2) {
+        var computeStock = function(id) { 
+          try { 
+            var s = 0; 
+            for (var ch_idx = 0; ch_idx < String(id||'').length; ch_idx++) {
+              s += String(id||'').charCodeAt(ch_idx);
+            }
+            return 5 + (s % 60); 
+          } catch(_) { 
+            return 20; 
+          } 
+        };
+        var stock = typeof p.stock === 'number' ? p.stock : computeStock(p.id);
+        if (stock < stockRange[0] || stock > stockRange[1]) {
+          include = false;
         }
       }
       
@@ -210,10 +233,10 @@ export default function Shop() {
     });
     
     return list;
-  }, [products, filters, query, sort, priceRange]);
+  }, [products, filters, query, sort, priceRange, stockRange]);
 
   return (
-    <div className={`flex-1 min-h-0 overflow-auto p-6 ${isHandheld ? "pb-24" : "pb-6"}`}>
+    <Scroller className={`flex-1 min-h-0 p-6 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>
       <PageTitle title="Shop" userName={userName} lead={`Here's your catalog, ${userName}`} subtitle={mainDescription} />
       
       {/* Mobile filter button */}
@@ -241,7 +264,10 @@ export default function Shop() {
                 priceRange={priceRange}
                 priceLimits={priceLimits}
                 onPriceChange={setPriceRange}
-                onClearAll={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", minStock: 0, eco: false, dimKey: "", dimRange: null, releaseYear: "" }); setPriceRange([priceLimits.min, priceLimits.max]); setQuery(""); }}
+                stockRange={stockRange}
+                stockLimits={stockLimits}
+                onStockChange={setStockRange}
+                onClearAll={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", eco: false, dimKey: "", dimRange: null, releaseYear: "" }); setPriceRange([priceLimits.min, priceLimits.max]); setStockRange([stockLimits.min, stockLimits.max]); setQuery(""); }}
                 onToggleVisibility={() => setFiltersVisible(!filtersVisible)}
                 filtersVisible={filtersVisible}
               />
@@ -255,7 +281,7 @@ export default function Shop() {
         <div className="flex-1 w-full md:pt-[15px]">
           <div className="mb-4 flex items-center justify-between">
             <div className="hidden md:flex items-center gap-2">
-              {[2,3,4].map((n)=> (
+              {[1,2,3,4].map((n)=> (
                 <Button
                   key={n}
                   isIconOnly
@@ -336,6 +362,6 @@ export default function Shop() {
         product={selected.product}
         variant={selected.variant}
       />
-    </div>
+    </Scroller>
   );
 }
