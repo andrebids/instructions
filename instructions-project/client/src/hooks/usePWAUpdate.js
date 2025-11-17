@@ -95,13 +95,18 @@ export function usePWAUpdate() {
 
   // Function to update now
   // Following vite-plugin-pwa documentation: call updateSW() when user clicks refresh
+  // When the user clicks the "refresh" button when onNeedRefresh called, then call updateSW() function;
+  // the page will reload and the up-to-date content will be served.
   const updateNow = useCallback(() => {
     setIsUpdating(true);
     
     // Use updateSW from registerSW if available (recommended way)
+    // This is the function returned by registerSW() and should be called when user confirms update
     if (window.updateSW && typeof window.updateSW === 'function') {
       console.log('🔄 [PWA Update] Calling updateSW() from registerSW');
-      window.updateSW(true); // true = reload immediately
+      // Call updateSW() - this will reload the page and serve the up-to-date content
+      window.updateSW();
+      // Note: updateSW() will handle the page reload, so we don't need to do it manually
       return;
     }
     
