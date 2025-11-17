@@ -44,27 +44,25 @@ try {
 
 // Precaching assets - manifest is injected by VitePWA during build
 // O VitePWA substitui 'self.__WB_MANIFEST' pelo manifest real durante o build
+// IMPORTANTE: Deve haver apenas UMA referência a self.__WB_MANIFEST para o Workbox substituir
 try {
   console.log('📋 [SW] Checking manifest...');
   
-  // Verificar se o manifest foi injetado
-  if (typeof self.__WB_MANIFEST === 'undefined') {
-    console.error('❌ [SW] CRITICAL: __WB_MANIFEST is undefined!');
+  // Esta é a única referência a self.__WB_MANIFEST que o Workbox substituirá
+  // O Workbox procura por exatamente uma ocorrência e substitui pelo array de manifest
+  const manifest = self.__WB_MANIFEST;
+  
+  console.log('📋 [SW] Manifest entries count:', manifest ? manifest.length : 0);
+  
+  if (!manifest || manifest.length === 0) {
+    console.error('❌ [SW] CRITICAL: Manifest is empty or undefined!');
     console.error('❌ [SW] The Service Worker was not processed by VitePWA during build');
     console.error('❌ [SW] This means the build did not inject the manifest');
     console.error('❌ [SW] The sw.js file should be in dist/ and processed, not served from public/');
     throw new Error('Service Worker manifest not injected - build may have failed or sw.js is being served from wrong location');
   }
   
-  const manifest = self.__WB_MANIFEST || [];
-  console.log('📋 [SW] Manifest entries count:', manifest.length);
-  
-  if (manifest.length === 0) {
-    console.warn('⚠️ [SW] Manifest is empty - no assets to precache');
-  } else {
-    console.log('📋 [SW] First 3 manifest entries:', manifest.slice(0, 3));
-  }
-  
+  console.log('📋 [SW] First 3 manifest entries:', manifest.slice(0, 3));
   console.log('📦 [SW] Starting precache and route...');
   precacheAndRoute(manifest);
   console.log('✅ [SW] Precaching completed successfully');
