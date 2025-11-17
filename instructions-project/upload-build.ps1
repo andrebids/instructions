@@ -681,19 +681,34 @@ if [ $RESTART_EXIT -eq 0 ]; then
     echo ''
     echo 'Aguardando servidor iniciar...'
     sleep 3
-    echo 'Verificando se servidor responde...'
+    echo 'Verificando se servidor backend responde...'
     HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5000/health 2>/dev/null || echo '000')
     if [ -z "$HTTP_CODE" ]; then
         HTTP_CODE='000'
     fi
     if [ "$HTTP_CODE" = "200" ]; then
-        echo 'Servidor esta online e respondendo!'
+        echo '✅ Backend esta online e respondendo na porta 5000!'
     elif [ "$HTTP_CODE" = "000" ]; then
-        echo 'ERRO: Servidor nao esta respondendo (curl falhou)'
+        echo 'ERRO: Backend nao esta respondendo (curl falhou)'
         echo 'Verificando logs de erro...'
         pm2 logs $pm2AppName --err --lines 20 --nostream 2>&1 | tail -20
     else
-        echo "AVISO: Servidor respondeu com codigo HTTP $HTTP_CODE"
+        echo "AVISO: Backend respondeu com codigo HTTP $HTTP_CODE"
+    fi
+    echo ''
+    echo 'Verificando se frontend (instructions-client) esta rodando...'
+    CLIENT_STATUS=$(pm2 jlist | grep -A 5 "\"name\":\"instructions-client\"" | grep -o '"pm_id":[0-9]*' | cut -d: -f2 | head -1)
+    if [ -n "$CLIENT_STATUS" ] && [ "$CLIENT_STATUS" != "null" ]; then
+        echo '✅ Frontend (instructions-client) esta rodando na porta 3003'
+        FRONTEND_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3003/ 2>/dev/null || echo '000')
+        if [ "$FRONTEND_CODE" = "200" ] || [ "$FRONTEND_CODE" = "304" ]; then
+            echo '✅ Frontend esta respondendo corretamente!'
+        else
+            echo "⚠️  Frontend respondeu com codigo HTTP $FRONTEND_CODE (pode estar iniciando ainda)"
+        fi
+    else
+        echo '⚠️  Frontend (instructions-client) nao encontrado no PM2'
+        echo '💡 Para iniciar o frontend: cd client && pm2 start npm --name instructions-client -- run dev'
     fi
 else
     echo 'ERRO ao reiniciar servidor PM2'
