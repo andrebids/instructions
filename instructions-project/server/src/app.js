@@ -28,6 +28,10 @@ app.use(cors({
     'http://192.168.2.28:3005',
     'http://192.168.2.108:3003',
     'http://192.168.2.108:3005',
+    'https://thecore.dsproject.pt',
+    'http://thecore.dsproject.pt',
+    'https://test2.dsproject.pt',
+    'http://test2.dsproject.pt',
   ],
   credentials: true
 }));

@@ -75,6 +75,11 @@ export default defineConfig({
   server: {
     port: 3003,
     host: true, // Permite acesso externo
+    allowedHosts: [
+      'test2.dsproject.pt',
+      'localhost',
+      '.dsproject.pt' // Permite todos os subdomínios de dsproject.pt
+    ],
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
