@@ -1,2 +1,82 @@
-{}
-
+{
+  "common": {
+    "retry": "Retry",
+    "close": "Close",
+    "search": "Search",
+    "loading": "Loading..."
+  },
+  "pages": {
+    "landing": {
+      "welcomeTo": "Welcome to ",
+      "theCore": "TheCore.",
+      "lets": "Let's ",
+      "create": "create",
+      "somethingGreat": " something great.",
+      "signInSubtitle": "Sign in to access your dashboard.",
+      "signIn": "Sign in",
+      "signUp": "Sign up"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Here's your project overview.",
+      "createNewProject": "Create New Project",
+      "loadingData": "Loading data...",
+      "stats": {
+        "totalProjects": "Total Projects",
+        "draft": "Draft",
+        "created": "Created",
+        "inProgress": "In Progress",
+        "finished": "Finished",
+        "approved": "Approved",
+        "inQueue": "In Queue",
+        "cancelled": "Cancelled"
+      },
+      "timePeriods": {
+        "allTime": "All time",
+        "pending": "Pending",
+        "new": "New",
+        "currently": "Currently",
+        "thisMonth": "This month"
+      }
+    }
+  },
+  "components": {
+    "header": {
+      "searchPlaceholder": "Search...",
+      "recentUpdates": "Recent Updates",
+      "notifications": {
+        "designApproved": "Design approved",
+        "designApprovedDescription": "Living room decoration concept approved by client.",
+        "projectDeadline": "Project deadline",
+        "projectDeadlineDescription": "Office renovation project due in 3 days.",
+        "newRevision": "New revision",
+        "newRevisionDescription": "Kitchen design revision requested by client.",
+        "projectDelivered": "Project delivered",
+        "projectDeliveredDescription": "Bedroom decoration project completed successfully.",
+        "hoursAgo": "{{count}} hours ago",
+        "hourAgo": "1 hour ago",
+        "daysAgo": "{{count}} days ago",
+        "dayAgo": "1 day ago"
+      },
+      "viewAllProjects": "View all projects",
+      "mySettings": "My Settings",
+      "logOut": "Log Out",
+      "manageAccount": "Manage Account",
+      "ariaLabels": {
+        "changeLanguage": "Change language",
+        "toggleTheme": "Toggle theme",
+        "openSearch": "Open search",
+        "notifications": "Notifications",
+        "closeNotifications": "Close notifications",
+        "close": "Close"
+      }
+    }
+  },
+  "errors": {
+    "failedToLoadData": "Failed to load data.",
+    "serverError": "Server error: {{error}}",
+    "serverErrorWithHint": "Server error: {{error}} ({{hint}})",
+    "serverError500": "Server error (500). Please check if the server is running and the database is set up correctly.",
+    "requestFailed": "Request failed with status {{status}}"
+  }
+}

@@ -1,6 +1,7 @@
 import React from 'react'
 import { SignInButton, SignUpButton } from '@clerk/clerk-react'
 import { ArrowRightOnRectangleIcon, UserPlusIcon } from '@heroicons/react/24/outline'
+import { useTranslation } from 'react-i18next'
 import LiquidEther from '../components/ui/LiquidEther'
 import GlassSurface from '../components/ui/GlassSurface'
 import ShinyText from '../components/ui/ShinyText'
@@ -9,24 +10,19 @@ import SplitText from '../components/ui/SplitText'
 import FadeContent from '../components/ui/FadeContent'
 
 export default function Landing() {
+  const { t } = useTranslation()
   const sectionRef = React.useRef(null)
   const [showSubtitle, setShowSubtitle] = React.useState(false)
   const etherColors = React.useMemo(() => ['#5227FF', '#FF9FFC', '#B19EEF'], [])
 
-  React.useEffect(() => {
-    // Reveal subtitle after headline typing completes (computed below via delays)
-    const t = setTimeout(() => setShowSubtitle(true), totalRevealMs)
-    return () => clearTimeout(t)
-  }, [])
-
   // Typing configuration (requested: 45ms per char)
   const speed = 45; // ms per char
-  const l1a = "Welcome to ";
-  const l1b = "TheCore.";
-  const l2a = "Let’s ";
-  const l2b = "create";
-  const l2c = " something great.";
-  const subtitleText = "Sign in to access your dashboard.";
+  const l1a = t('pages.landing.welcomeTo')
+  const l1b = t('pages.landing.theCore')
+  const l2a = t('pages.landing.lets')
+  const l2b = t('pages.landing.create')
+  const l2c = t('pages.landing.somethingGreat')
+  const subtitleText = t('pages.landing.signInSubtitle')
 
   // Buffers between segments to taste
   const buf1 = 150; // after l1a
@@ -41,6 +37,12 @@ export default function Landing() {
   const d2b = d2a + l2a.length * speed + buf3;
   const d2c = d2b + l2b.length * speed + buf4;
   const totalRevealMs = d2c + l2c.length * speed + buf5;
+
+  React.useEffect(() => {
+    // Reveal subtitle after headline typing completes (computed below via delays)
+    const timeout = setTimeout(() => setShowSubtitle(true), totalRevealMs)
+    return () => clearTimeout(timeout)
+  }, [totalRevealMs])
 
   return (
     <main className="flex flex-1 items-center justify-center p-0">
@@ -138,7 +140,7 @@ export default function Landing() {
                     <GlassSurface width={"100%"} height={"100%"} borderRadius={9999} className="!p-0">
                       <ArrowRightOnRectangleIcon className="auth-icon w-7 h-7" />
                     </GlassSurface>
-                    <span className="title">Sign in</span>
+                    <span className="title">{t('pages.landing.signIn')}</span>
                   </li>
                 </SignInButton>
 
@@ -147,7 +149,7 @@ export default function Landing() {
                     <GlassSurface width={"100%"} height={"100%"} borderRadius={9999} className="!p-0">
                       <UserPlusIcon className="auth-icon w-7 h-7" />
                     </GlassSurface>
-                    <span className="title">Sign up</span>
+                    <span className="title">{t('pages.landing.signUp')}</span>
                   </li>
                 </SignUpButton>
               </ul>

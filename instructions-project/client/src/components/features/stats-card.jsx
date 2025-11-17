@@ -2,17 +2,7 @@ import React from "react";
 import { Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
-export function StatsCard({ title, value, change, isPositive, icon, timePeriod = "This month" }) {
-  const colorKeyByTitle = {
-    "Total Projects": "primary",
-    "In Progress": "warning",
-    Finished: "success",
-    Approved: "success",
-    "In Queue": "secondary",
-    Cancelled: "danger",
-  };
-
-  const colorKey = colorKeyByTitle[title] || "primary";
+export function StatsCard({ title, value, change, isPositive, icon, timePeriod = "This month", colorKey = "primary" }) {
 
   const colorStyles = {
     primary: { bg: "bg-primary/10", icon: "text-primary" },
@@ -20,9 +10,10 @@ export function StatsCard({ title, value, change, isPositive, icon, timePeriod =
     success: { bg: "bg-success/10", icon: "text-success" },
     warning: { bg: "bg-warning/10", icon: "text-warning" },
     danger: { bg: "bg-danger/10", icon: "text-danger" },
+    default: { bg: "bg-default/10", icon: "text-default" },
   };
 
-  const { bg, icon: iconColor } = colorStyles[colorKey];
+  const { bg, icon: iconColor } = colorStyles[colorKey] || colorStyles.primary;
 
   return (
     <Card className="bg-[#e4e3e8] dark:bg-content1 shadow-sm">
