@@ -1,2 +1,82 @@
-{}
-
+{
+  "common": {
+    "retry": "Tentar novamente",
+    "close": "Fechar",
+    "search": "Pesquisar",
+    "loading": "Carregando..."
+  },
+  "pages": {
+    "landing": {
+      "welcomeTo": "Bem-vindo ao ",
+      "theCore": "TheCore.",
+      "lets": "Vamos ",
+      "create": "criar",
+      "somethingGreat": " algo incrível.",
+      "signInSubtitle": "Entre para acessar seu painel.",
+      "signIn": "Entrar",
+      "signUp": "Cadastrar"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Aqui está a visão geral dos seus projetos.",
+      "createNewProject": "Criar Novo Projeto",
+      "loadingData": "Carregando dados...",
+      "stats": {
+        "totalProjects": "Total de Projetos",
+        "draft": "Rascunho",
+        "created": "Criado",
+        "inProgress": "Em Progresso",
+        "finished": "Finalizado",
+        "approved": "Aprovado",
+        "inQueue": "Na Fila",
+        "cancelled": "Cancelado"
+      },
+      "timePeriods": {
+        "allTime": "Todo o tempo",
+        "pending": "Pendente",
+        "new": "Novo",
+        "currently": "Atualmente",
+        "thisMonth": "Este mês"
+      }
+    }
+  },
+  "components": {
+    "header": {
+      "searchPlaceholder": "Pesquisar...",
+      "recentUpdates": "Atualizações Recentes",
+      "notifications": {
+        "designApproved": "Design aprovado",
+        "designApprovedDescription": "Conceito de decoração da sala de estar aprovado pelo cliente.",
+        "projectDeadline": "Prazo do projeto",
+        "projectDeadlineDescription": "Projeto de renovação do escritório vence em 3 dias.",
+        "newRevision": "Nova revisão",
+        "newRevisionDescription": "Revisão do design da cozinha solicitada pelo cliente.",
+        "projectDelivered": "Projeto entregue",
+        "projectDeliveredDescription": "Projeto de decoração do quarto concluído com sucesso.",
+        "hoursAgo": "{{count}} horas atrás",
+        "hourAgo": "1 hora atrás",
+        "daysAgo": "{{count}} dias atrás",
+        "dayAgo": "1 dia atrás"
+      },
+      "viewAllProjects": "Ver todos os projetos",
+      "mySettings": "Minhas Configurações",
+      "logOut": "Sair",
+      "manageAccount": "Gerenciar Conta",
+      "ariaLabels": {
+        "changeLanguage": "Alterar idioma",
+        "toggleTheme": "Alternar tema",
+        "openSearch": "Abrir pesquisa",
+        "notifications": "Notificações",
+        "closeNotifications": "Fechar notificações",
+        "close": "Fechar"
+      }
+    }
+  },
+  "errors": {
+    "failedToLoadData": "Falha ao carregar dados.",
+    "serverError": "Erro do servidor: {{error}}",
+    "serverErrorWithHint": "Erro do servidor: {{error}} ({{hint}})",
+    "serverError500": "Erro do servidor (500). Verifique se o servidor está em execução e o banco de dados está configurado corretamente.",
+    "requestFailed": "Falha na requisição com status {{status}}"
+  }
+}

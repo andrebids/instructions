@@ -7,8 +7,10 @@ import { useClerk, useUser as useClerkUser, UserProfile } from "@clerk/clerk-rea
 import { dark } from "@clerk/themes";
 import { GlobalSyncStatus } from "../features/SyncStatus";
 import { LocaleSelector } from "./LocaleSelector";
+import { useTranslation } from "react-i18next";
 
 export function Header() {
+  const { t } = useTranslation();
   const {theme, setTheme} = useTheme();
   const [showSearch, setShowSearch] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(false);
@@ -37,7 +39,7 @@ export function Header() {
           variant="light" 
           onClick={toggleTheme}
           className="bg-default-100/50 hover:bg-default-200/50"
-          aria-label="Toggle theme"
+          aria-label={t('components.header.ariaLabels.toggleTheme')}
         >
           <Icon 
             icon={theme === "light" ? "lucide:moon" : "lucide:sun"} 
@@ -50,8 +52,8 @@ export function Header() {
             autoFocus
             size="sm"
             className="w-64"
-            placeholder="Search..."
-            aria-label="Search"
+            placeholder={t('components.header.searchPlaceholder')}
+            aria-label={t('common.search')}
             startContent={<Icon icon="lucide:search" className="text-default-400" />}
             onBlur={() => setShowSearch(false)}
           />
@@ -59,7 +61,7 @@ export function Header() {
           <Button
             isIconOnly
             variant="light"
-            aria-label="Open search"
+            aria-label={t('components.header.ariaLabels.openSearch')}
             onClick={() => setShowSearch(true)}
           >
             <Icon icon="lucide:search" className="text-xl" />
@@ -76,7 +78,7 @@ export function Header() {
               <Button 
                 isIconOnly 
                 variant="light" 
-                aria-label="Notifications"
+                aria-label={t('components.header.ariaLabels.notifications')}
                 className="bg-default-100/50 hover:bg-default-200/50"
                 onPress={() => {
                   console.log("🔔 Notifications button clicked");
@@ -90,14 +92,14 @@ export function Header() {
           <PopoverContent className="w-80 p-0 bg-background/70 border border-default-200/30 rounded-xl shadow-xl">
             <div className="p-4 border-b border-divider/50">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg">Recent Updates</h3>
+                <h3 className="font-semibold text-lg">{t('components.header.recentUpdates')}</h3>
                 <Button 
                   size="sm" 
                   variant="light" 
                   isIconOnly
                   onPress={() => setShowNotifications(false)}
                   className="mr-0"
-                  aria-label="Close notifications"
+                  aria-label={t('components.header.ariaLabels.closeNotifications')}
                 >
                   <Icon icon="lucide:x" className="text-sm" />
                 </Button>
@@ -108,36 +110,36 @@ export function Header() {
                 <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-default-100/30 transition-colors cursor-pointer">
                   <div className="flex-shrink-0 w-2 h-2 bg-success rounded-full mt-2"></div>
                   <div className="flex-1">
-                    <div className="font-medium text-sm">Design approved</div>
-                    <div className="text-xs text-default-500 mt-1">Living room decoration concept approved by client.</div>
-                    <div className="text-xs text-default-400 mt-1">2 hours ago</div>
+                    <div className="font-medium text-sm">{t('components.header.notifications.designApproved')}</div>
+                    <div className="text-xs text-default-500 mt-1">{t('components.header.notifications.designApprovedDescription')}</div>
+                    <div className="text-xs text-default-400 mt-1">{t('components.header.notifications.hoursAgo', { count: 2 })}</div>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-default-100/30 transition-colors cursor-pointer">
                   <div className="flex-shrink-0 w-2 h-2 bg-warning rounded-full mt-2"></div>
                   <div className="flex-1">
-                    <div className="font-medium text-sm">Project deadline</div>
-                    <div className="text-xs text-default-500 mt-1">Office renovation project due in 3 days.</div>
-                    <div className="text-xs text-default-400 mt-1">4 hours ago</div>
+                    <div className="font-medium text-sm">{t('components.header.notifications.projectDeadline')}</div>
+                    <div className="text-xs text-default-500 mt-1">{t('components.header.notifications.projectDeadlineDescription')}</div>
+                    <div className="text-xs text-default-400 mt-1">{t('components.header.notifications.hoursAgo', { count: 4 })}</div>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-default-100/30 transition-colors cursor-pointer">
                   <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></div>
                   <div className="flex-1">
-                    <div className="font-medium text-sm">New revision</div>
-                    <div className="text-xs text-default-500 mt-1">Kitchen design revision requested by client.</div>
-                    <div className="text-xs text-default-400 mt-1">1 day ago</div>
+                    <div className="font-medium text-sm">{t('components.header.notifications.newRevision')}</div>
+                    <div className="text-xs text-default-500 mt-1">{t('components.header.notifications.newRevisionDescription')}</div>
+                    <div className="text-xs text-default-400 mt-1">{t('components.header.notifications.dayAgo')}</div>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-default-100/30 transition-colors cursor-pointer opacity-60">
                   <div className="flex-shrink-0 w-2 h-2 bg-default-300 rounded-full mt-2"></div>
                   <div className="flex-1">
-                    <div className="font-medium text-sm">Project delivered</div>
-                    <div className="text-xs text-default-500 mt-1">Bedroom decoration project completed successfully.</div>
-                    <div className="text-xs text-default-400 mt-1">2 days ago</div>
+                    <div className="font-medium text-sm">{t('components.header.notifications.projectDelivered')}</div>
+                    <div className="text-xs text-default-500 mt-1">{t('components.header.notifications.projectDeliveredDescription')}</div>
+                    <div className="text-xs text-default-400 mt-1">{t('components.header.notifications.daysAgo', { count: 2 })}</div>
                   </div>
                 </div>
               </div>
@@ -149,7 +151,7 @@ export function Header() {
                 className="w-full"
                 onPress={() => console.log("📋 View all projects clicked")}
               >
-                View all projects
+                {t('components.header.viewAllProjects')}
               </Button>
             </div>
           </PopoverContent>
@@ -174,9 +176,9 @@ export function Header() {
               signOut({ redirectUrl: '/' });
             }
           }}>
-            <DropdownItem key="settings">My Settings</DropdownItem>
+            <DropdownItem key="settings">{t('components.header.mySettings')}</DropdownItem>
             <DropdownItem key="logout" color="danger">
-              Log Out
+              {t('components.header.logOut')}
             </DropdownItem>
           </DropdownMenu>
         </Dropdown>
@@ -195,12 +197,12 @@ export function Header() {
             {(onClose) => (
               <>
                 <ModalHeader className="flex items-center justify-between p-4 border-b border-divider">
-                  <span className="text-xl font-semibold">Manage Account</span>
+                  <span className="text-xl font-semibold">{t('components.header.manageAccount')}</span>
                   <Button
                     isIconOnly
                     variant="light"
                     onPress={onClose}
-                    aria-label="Close"
+                    aria-label={t('components.header.ariaLabels.close')}
                   >
                     <Icon icon="lucide:x" className="text-lg" />
                   </Button>

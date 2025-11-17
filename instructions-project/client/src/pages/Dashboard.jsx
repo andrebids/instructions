@@ -12,8 +12,10 @@ import {motion, AnimatePresence} from "framer-motion";
 import { useUser } from "../context/UserContext";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 import { Scroller } from "../components/ui/scroller";
+import { useTranslation } from "react-i18next";
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const { userName } = useUser();
   const [isOpen, setIsOpen] = React.useState(false);
   const [showCreateProject, setShowCreateProject] = React.useState(false);
@@ -95,19 +97,20 @@ export default function Dashboard() {
       console.error('❌ Erro ao carregar dados:', err);
       
       // Mensagem de erro mais detalhada
-      let errorMessage = 'Failed to load data.';
+      let errorMessage = t('errors.failedToLoadData');
       if (err.response?.status === 500) {
         const errorData = err.response?.data;
         if (errorData?.error) {
-          errorMessage = `Server error: ${errorData.error}`;
           if (errorData.hint) {
-            errorMessage += ` (${errorData.hint})`;
+            errorMessage = t('errors.serverErrorWithHint', { error: errorData.error, hint: errorData.hint });
+          } else {
+            errorMessage = t('errors.serverError', { error: errorData.error });
           }
         } else {
-          errorMessage = 'Server error (500). Please check if the server is running and the database is set up correctly.';
+          errorMessage = t('errors.serverError500');
         }
       } else if (err.response?.status) {
-        errorMessage = `Request failed with status ${err.response.status}`;
+        errorMessage = t('errors.requestFailed', { status: err.response.status });
       } else if (err.message) {
         errorMessage = err.message;
       }
@@ -216,7 +219,7 @@ export default function Dashboard() {
         <Scroller className={`flex-1 min-h-0 p-6 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>
           {/* Title section + Create button */}
             <div className="flex justify-between items-center mb-6">
-              <PageTitle title="Dashboard" userName={userName} subtitle="Here's your project overview." showWelcome />
+              <PageTitle title={t('pages.dashboard.title')} userName={userName} subtitle={t('pages.dashboard.subtitle')} showWelcome />
               <Button 
                 color="primary" 
                 startContent={<Icon icon="lucide:plus" />}
@@ -224,7 +227,7 @@ export default function Dashboard() {
                 onPress={handleCreateProject}
                 isDisabled={loading}
               >
-                Create New Project
+                {t('pages.dashboard.createNewProject')}
               </Button>
             </div>
             
@@ -242,7 +245,7 @@ export default function Dashboard() {
                   className="mt-2"
                   onPress={loadData}
                 >
-                  Retry
+                  {t('common.retry')}
                 </Button>
               </div>
             )}
@@ -250,75 +253,83 @@ export default function Dashboard() {
             {/* Loading State */}
             {loading ? (
               <div className="flex justify-center items-center h-64">
-                <Spinner size="lg" label="Loading data..." />
+                <Spinner size="lg" label={t('pages.dashboard.loadingData')} />
               </div>
             ) : (
               <>
                 {/* Stats Grid */}
                 <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8">
                   <StatsCard
-                    title="Total Projects"
+                    title={t('pages.dashboard.stats.totalProjects')}
                     value={stats.total.toString()}
                     change={`${stats.total} projects total`}
                     isPositive={true}
                     icon="lucide:folder"
-                    timePeriod="All time"
+                    timePeriod={t('pages.dashboard.timePeriods.allTime')}
+                    colorKey="primary"
                   />
                   <StatsCard
-                    title="Draft"
+                    title={t('pages.dashboard.stats.draft')}
                     value={stats.draft.toString()}
                     change={`${stats.draft} drafts`}
                     isPositive={false}
                     icon="lucide:file-edit"
-                    timePeriod="Pending"
+                    timePeriod={t('pages.dashboard.timePeriods.pending')}
+                    colorKey="default"
                   />
                   <StatsCard
-                    title="Created"
+                    title={t('pages.dashboard.stats.created')}
                     value={stats.created.toString()}
                     change={`${stats.created} created`}
                     isPositive={true}
                     icon="lucide:file-plus"
-                    timePeriod="New"
+                    timePeriod={t('pages.dashboard.timePeriods.new')}
+                    colorKey="primary"
                   />
                   <StatsCard
-                    title="In Progress"
+                    title={t('pages.dashboard.stats.inProgress')}
                     value={stats.inProgress.toString()}
                     change={`${stats.inProgress} active`}
                     isPositive={true}
                     icon="lucide:loader"
-                    timePeriod="Currently"
+                    timePeriod={t('pages.dashboard.timePeriods.currently')}
+                    colorKey="warning"
                   />
                   <StatsCard
-                    title="Finished"
+                    title={t('pages.dashboard.stats.finished')}
                     value={stats.finished.toString()}
                     change={`${stats.finished} completed`}
                     isPositive={true}
                     icon="lucide:check-circle"
-                    timePeriod="This month"
+                    timePeriod={t('pages.dashboard.timePeriods.thisMonth')}
+                    colorKey="success"
                   />
                   <StatsCard
-                    title="Approved"
+                    title={t('pages.dashboard.stats.approved')}
                     value={stats.approved.toString()}
                     change={`${stats.approved} approved`}
                     isPositive={true}
                     icon="lucide:thumbs-up"
-                    timePeriod="This month"
+                    timePeriod={t('pages.dashboard.timePeriods.thisMonth')}
+                    colorKey="success"
                   />
                   <StatsCard
-                    title="In Queue"
+                    title={t('pages.dashboard.stats.inQueue')}
                     value={stats.inQueue.toString()}
                     change={`${stats.inQueue} waiting`}
                     isPositive={false}
                     icon="lucide:clock"
-                    timePeriod="Pending"
+                    timePeriod={t('pages.dashboard.timePeriods.pending')}
+                    colorKey="secondary"
                   />
                   <StatsCard
-                    title="Cancelled"
+                    title={t('pages.dashboard.stats.cancelled')}
                     value={stats.cancelled.toString()}
                     change={`${stats.cancelled} cancelled`}
                     isPositive={false}
                     icon="lucide:x-circle"
-                    timePeriod="This month"
+                    timePeriod={t('pages.dashboard.timePeriods.thisMonth')}
+                    colorKey="danger"
                   />
                 </div>
 
