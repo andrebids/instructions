@@ -205,11 +205,32 @@ app.get('/api/me', (req, res) => {
   res.json({ userId: auth?.userId || null, sessionId: auth?.sessionId || null });
 });
 
-// Servir arquivos estáticos do build de produção (client/dist) se existir
+// CRÍTICO: Servir sw.js de dist/ ANTES de qualquer outro middleware estático
+// Isso garante que o arquivo processado pelo VitePWA seja servido, não o source de public/
 // (__filename e __dirname já declarados acima)
 var distPath = path.resolve(__dirname, '../../client/dist');
 var distExists = fs.existsSync(distPath) && fs.statSync(distPath).isDirectory();
 
+if (distExists) {
+  // Servir sw.js especificamente de dist/ com prioridade máxima
+  app.use('/sw.js', (req, res, next) => {
+    const swPath = path.join(distPath, 'sw.js');
+    if (fs.existsSync(swPath)) {
+      // Cache-Control restritivo para sw.js
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Content-Type', 'application/javascript');
+      console.log('✅ [APP] Servindo sw.js de dist/ (processado pelo VitePWA)');
+      res.sendFile(swPath);
+    } else {
+      console.warn('⚠️ [APP] sw.js não encontrado em dist/, servindo 404');
+      res.status(404).send('Service Worker not found');
+    }
+  });
+}
+
+// Servir arquivos estáticos do build de produção (client/dist) se existir
 if (distExists) {
   console.log('📦 [APP] Build de produção detectado - servindo arquivos estáticos de client/dist');
   
@@ -237,7 +258,7 @@ if (distExists) {
     next();
   });
   
-  // Servir arquivos estáticos do dist
+  // Servir arquivos estáticos do dist (sw.js já foi servido acima, então não será servido aqui)
   app.use(express.static(distPath, {
     maxAge: '1y', // Cache agressivo para assets estáticos (será sobrescrito pelo middleware acima para arquivos críticos)
     etag: true,
