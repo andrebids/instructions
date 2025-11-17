@@ -108,19 +108,39 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static('public'));
-
 // Servir uploads também via /api para funcionar por trás do proxy do Vite
 app.use('/api/uploads', express.static(path.resolve(process.cwd(), 'public/uploads')));
 
 // Servir também arquivos estáticos do client/public (para imagens da loja)
+// MAS: Não servir sw.js de public/ - ele deve vir de dist/ após processamento pelo VitePWA
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = path.dirname(__filename);
 var clientPublicPath = path.resolve(__dirname, '../../client/public');
 if (fs.existsSync(clientPublicPath)) {
-  app.use(express.static(clientPublicPath));
-  console.log('📁 Servindo arquivos estáticos do client/public');
+  // Middleware customizado para servir public mas excluir sw.js
+  app.use((req, res, next) => {
+    // Se for sw.js, não servir de public - deixar o dist/ servir
+    if (req.path === '/sw.js' || req.path.endsWith('/sw.js')) {
+      return next(); // Pular este middleware, deixar dist/ servir
+    }
+    // Para outros arquivos, servir de public normalmente
+    express.static(clientPublicPath)(req, res, next);
+  });
+  console.log('📁 Servindo arquivos estáticos do client/public (exceto sw.js)');
 }
+
+// Servir arquivos estáticos do public do servidor (apenas para uploads e outros assets do servidor)
+// NOTA: O Service Worker (sw.js) deve vir de dist/, não de public/
+// O public/sw.js é apenas o source - o VitePWA processa e coloca em dist/sw.js
+// Excluir sw.js de public para garantir que dist/ sirva o arquivo processado
+app.use((req, res, next) => {
+  // Se for sw.js, não servir de public - deixar o dist/ servir
+  if (req.path === '/sw.js' || req.path.endsWith('/sw.js')) {
+    return next(); // Pular este middleware, deixar dist/ servir
+  }
+  // Para outros arquivos, servir de public normalmente
+  express.static('public')(req, res, next);
+});
 
 // Frontend é servido via build estático (client/dist) quando disponível, ou via Vite dev server em desenvolvimento
 
