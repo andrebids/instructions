@@ -18,23 +18,21 @@ echo    PROJECT MANAGER - THECORE
 echo ========================================
 echo.
 echo 1. 🚀 INICIAR PROJETO
-echo 2. 📊 VERIFICAR STATUS
-echo 3. 🔄 REINICIAR PROJETO
-echo 4. 📦 INSTALAR DEPENDÊNCIAS
-echo 5. 📤 FAZER BUILD E ENVIAR PARA SERVIDOR
-echo 6. 🗄️  VERIFICAR CONEXÃO BASE DE DADOS
-echo 7. ❌ SAIR
+echo 2. 📦 INSTALAR DEPENDÊNCIAS
+echo 3. 📤 FAZER BUILD E ENVIAR PARA SERVIDOR
+echo 4. 🗄️  VERIFICAR CONEXÃO BASE DE DADOS
+echo 5. 🔄 VERIFICAR E ATUALIZAR PACOTES PWA
+echo 6. ❌ SAIR
 echo.
 echo ========================================
-set /p choice="Escolha uma opção (1-7): "
+set /p choice="Escolha uma opção (1-6): "
 
 if "%choice%"=="1" goto start
-if "%choice%"=="2" goto status
-if "%choice%"=="3" goto restart
-if "%choice%"=="4" goto install_deps
-if "%choice%"=="5" goto deploy_build
-if "%choice%"=="6" goto check_db
-if "%choice%"=="7" goto exit
+if "%choice%"=="2" goto install_deps
+if "%choice%"=="3" goto deploy_build
+if "%choice%"=="4" goto check_db
+if "%choice%"=="5" goto check_pwa_updates
+if "%choice%"=="6" goto exit
 goto menu
 
 :start
@@ -892,6 +890,262 @@ if %CONNECTION_RESULT% equ 0 (
 )
 
 cd /d "%~dp0"
+pause
+goto menu
+
+:check_pwa_updates
+cls
+echo ========================================
+echo    VERIFICAR E ATUALIZAR PACOTES PWA
+echo ========================================
+echo.
+echo [%DATE% %TIME%] Verificando atualizações dos pacotes PWA... >> "%LOG_FILE%"
+echo Verificando atualizações disponíveis para os pacotes PWA e dependências principais...
+echo.
+
+rem Configurar NODE_OPTIONS para preferir IPv4
+set "NODE_OPTIONS=--dns-result-order=ipv4first"
+
+rem Mudar para o diretório do cliente
+cd /d "%~dp0client"
+if errorlevel 1 (
+    echo ❌ Erro ao acessar o diretório client
+    echo [%DATE% %TIME%] Erro ao acessar diretorio client >> "%LOG_FILE%"
+    pause
+    goto menu
+)
+
+echo ========================================
+echo    [1/3] VERIFICANDO PACOTES PWA
+echo ========================================
+echo [%DATE% %TIME%] Verificando pacotes PWA... >> "%LOG_FILE%"
+echo.
+
+rem Verificar atualizações disponíveis
+echo Verificando atualizações disponíveis...
+call npm outdated vite-plugin-pwa @vite-pwa/assets-generator workbox-core workbox-precaching workbox-routing workbox-strategies > "%TEMP%\pwa_updates.txt" 2>&1
+set "HAS_UPDATES=0"
+
+rem Verificar se o arquivo contém linhas de pacotes desatualizados
+rem npm outdated mostra pacotes desatualizados em linhas que começam com o nome do pacote
+findstr /B /C:"vite-plugin-pwa" "%TEMP%\pwa_updates.txt" >nul 2>&1
+if not errorlevel 1 set "HAS_UPDATES=1"
+
+findstr /B /C:"@vite-pwa/assets-generator" "%TEMP%\pwa_updates.txt" >nul 2>&1
+if not errorlevel 1 set "HAS_UPDATES=1"
+
+findstr /B /C:"workbox-core" "%TEMP%\pwa_updates.txt" >nul 2>&1
+if not errorlevel 1 set "HAS_UPDATES=1"
+
+findstr /B /C:"workbox-precaching" "%TEMP%\pwa_updates.txt" >nul 2>&1
+if not errorlevel 1 set "HAS_UPDATES=1"
+
+findstr /B /C:"workbox-routing" "%TEMP%\pwa_updates.txt" >nul 2>&1
+if not errorlevel 1 set "HAS_UPDATES=1"
+
+findstr /B /C:"workbox-strategies" "%TEMP%\pwa_updates.txt" >nul 2>&1
+if not errorlevel 1 set "HAS_UPDATES=1"
+
+if "%HAS_UPDATES%"=="1" (
+    echo ========================================
+    echo    ATUALIZAÇÕES DISPONÍVEIS
+    echo ========================================
+    echo.
+    type "%TEMP%\pwa_updates.txt"
+    echo.
+    echo ========================================
+    echo.
+    set /p UPDATE_CHOICE="Deseja atualizar os pacotes PWA? (S/N): "
+    
+    rem Remover espaços extras e converter para maiúscula para comparação
+    set "UPDATE_CHOICE=%UPDATE_CHOICE: =%"
+    if "%UPDATE_CHOICE%"=="" set "UPDATE_CHOICE=N"
+    
+    rem Aceitar S, s, SIM, sim, Y, y, YES, yes
+    if /i "%UPDATE_CHOICE%"=="S" goto do_update
+    if /i "%UPDATE_CHOICE%"=="SIM" goto do_update
+    if /i "%UPDATE_CHOICE%"=="Y" goto do_update
+    if /i "%UPDATE_CHOICE%"=="YES" goto do_update
+    
+    rem Se não for nenhuma das opções acima, cancelar
+    echo.
+    echo Atualização cancelada pelo usuário.
+    echo [%DATE% %TIME%] Atualizacao cancelada pelo usuario >> "%LOG_FILE%"
+    goto after_update_choice
+    
+:do_update
+    echo.
+    echo Atualizando pacotes PWA...
+    echo [%DATE% %TIME%] Iniciando atualizacao dos pacotes PWA... >> "%LOG_FILE%"
+    echo.
+    
+    rem Atualizar cada pacote individualmente para melhor controle
+    echo Atualizando vite-plugin-pwa...
+    call npm install vite-plugin-pwa@latest --save-dev
+    if errorlevel 1 (
+        echo ❌ Erro ao atualizar vite-plugin-pwa
+        echo [%DATE% %TIME%] Erro ao atualizar vite-plugin-pwa >> "%LOG_FILE%"
+    ) else (
+        echo ✅ vite-plugin-pwa atualizado com sucesso
+        echo [%DATE% %TIME%] vite-plugin-pwa atualizado com sucesso >> "%LOG_FILE%"
+    )
+    
+    echo.
+    echo Atualizando @vite-pwa/assets-generator...
+    call npm install @vite-pwa/assets-generator@latest --save-dev
+    if errorlevel 1 (
+        echo ❌ Erro ao atualizar @vite-pwa/assets-generator
+        echo [%DATE% %TIME%] Erro ao atualizar @vite-pwa/assets-generator >> "%LOG_FILE%"
+    ) else (
+        echo ✅ @vite-pwa/assets-generator atualizado com sucesso
+        echo [%DATE% %TIME%] @vite-pwa/assets-generator atualizado com sucesso >> "%LOG_FILE%"
+    )
+    
+    echo.
+    echo Atualizando pacotes workbox...
+    call npm install workbox-core@latest workbox-precaching@latest workbox-routing@latest workbox-strategies@latest --save-dev
+    if errorlevel 1 (
+        echo ❌ Erro ao atualizar pacotes workbox
+        echo [%DATE% %TIME%] Erro ao atualizar pacotes workbox >> "%LOG_FILE%"
+    ) else (
+        echo ✅ Pacotes workbox atualizados com sucesso
+        echo [%DATE% %TIME%] Pacotes workbox atualizados com sucesso >> "%LOG_FILE%"
+    )
+    
+    echo.
+    echo ========================================
+    echo    ATUALIZAÇÃO CONCLUÍDA
+    echo ========================================
+    echo.
+    echo ⚠️  IMPORTANTE: Após atualizar os pacotes PWA:
+    echo    1. Verifique se há breaking changes nas versões major
+    echo    2. Teste o service worker em desenvolvimento
+    echo    3. Faça um novo build antes de fazer deploy
+    echo.
+    echo [%DATE% %TIME%] Atualizacao dos pacotes PWA concluida >> "%LOG_FILE%"
+    
+:after_update_choice
+) else (
+    echo ✅ Todos os pacotes PWA estão atualizados!
+    echo [%DATE% %TIME%] Todos os pacotes PWA estao atualizados >> "%LOG_FILE%"
+    echo.
+    echo Nenhuma atualização disponível para:
+    echo   - vite-plugin-pwa
+    echo   - @vite-pwa/assets-generator
+    echo   - workbox-core
+    echo   - workbox-precaching
+    echo   - workbox-routing
+    echo   - workbox-strategies
+)
+
+rem Limpar arquivo temporário
+del "%TEMP%\pwa_updates.txt" >nul 2>&1
+
+echo.
+echo ========================================
+echo    [2/3] VERIFICANDO DEPENDÊNCIAS PRINCIPAIS
+echo ========================================
+echo [%DATE% %TIME%] Verificando dependencias principais... >> "%LOG_FILE%"
+echo.
+
+rem Verificar atualizações de dependências principais
+echo Verificando: Vite, React, React-DOM, TailwindCSS, Vite Plugin React...
+call npm outdated vite react react-dom tailwindcss @vitejs/plugin-react @tailwindcss/vite > "%TEMP%\main_updates.txt" 2>&1
+set "HAS_MAIN_UPDATES=0"
+
+findstr /B /C:"vite" "%TEMP%\main_updates.txt" >nul 2>&1
+if not errorlevel 1 set "HAS_MAIN_UPDATES=1"
+
+findstr /B /C:"react" "%TEMP%\main_updates.txt" >nul 2>&1
+if not errorlevel 1 set "HAS_MAIN_UPDATES=1"
+
+findstr /B /C:"react-dom" "%TEMP%\main_updates.txt" >nul 2>&1
+if not errorlevel 1 set "HAS_MAIN_UPDATES=1"
+
+findstr /B /C:"tailwindcss" "%TEMP%\main_updates.txt" >nul 2>&1
+if not errorlevel 1 set "HAS_MAIN_UPDATES=1"
+
+findstr /B /C:"@vitejs/plugin-react" "%TEMP%\main_updates.txt" >nul 2>&1
+if not errorlevel 1 set "HAS_MAIN_UPDATES=1"
+
+findstr /B /C:"@tailwindcss/vite" "%TEMP%\main_updates.txt" >nul 2>&1
+if not errorlevel 1 set "HAS_MAIN_UPDATES=1"
+
+if "%HAS_MAIN_UPDATES%"=="1" (
+    echo ⚠️  Atualizações disponíveis para dependências principais:
+    echo.
+    type "%TEMP%\main_updates.txt"
+    echo.
+    echo ℹ️  Nota: Estas atualizações podem incluir breaking changes.
+    echo    Revise o changelog antes de atualizar.
+    echo.
+) else (
+    echo ✅ Todas as dependências principais estão atualizadas!
+    echo.
+)
+
+del "%TEMP%\main_updates.txt" >nul 2>&1
+
+echo ========================================
+echo    [3/3] VERIFICANDO STATUS DO PWA
+echo ========================================
+echo [%DATE% %TIME%] Verificando status do PWA... >> "%LOG_FILE%"
+echo.
+
+rem Verificar se o service worker existe
+if exist "public\sw.js" (
+    echo ✅ Service Worker encontrado: public\sw.js
+    echo [%DATE% %TIME%] Service Worker encontrado >> "%LOG_FILE%"
+) else (
+    echo ⚠️  Service Worker não encontrado em public\sw.js
+    echo [%DATE% %TIME%] Service Worker nao encontrado >> "%LOG_FILE%"
+)
+
+rem Verificar se o manifest existe no build
+if exist "dist\manifest.webmanifest" (
+    echo ✅ Manifest encontrado no build: dist\manifest.webmanifest
+    echo [%DATE% %TIME%] Manifest encontrado no build >> "%LOG_FILE%"
+) else (
+    echo ⚠️  Manifest não encontrado no build (execute 'npm run build' primeiro)
+    echo [%DATE% %TIME%] Manifest nao encontrado no build >> "%LOG_FILE%"
+)
+
+rem Verificar versão do projeto
+if exist "package.json" (
+    echo.
+    echo 📦 Versão do projeto:
+    findstr /C:"\"version\"" "package.json"
+    echo [%DATE% %TIME%] Versao do projeto verificada >> "%LOG_FILE%"
+)
+
+rem Verificar se há build recente
+if exist "dist" (
+    echo.
+    echo 📁 Diretório dist encontrado
+    echo    Execute 'npm run build' para gerar uma nova versão do PWA
+    echo [%DATE% %TIME%] Diretorio dist encontrado >> "%LOG_FILE%"
+) else (
+    echo.
+    echo ⚠️  Diretório dist não encontrado
+    echo    Execute 'npm run build' para criar o build de produção
+    echo [%DATE% %TIME%] Diretorio dist nao encontrado >> "%LOG_FILE%"
+)
+
+echo.
+echo ========================================
+echo    VERIFICAÇÃO CONCLUÍDA
+echo ========================================
+echo.
+echo 💡 Próximos passos recomendados:
+echo    1. Se houver atualizações, revise os changelogs
+echo    2. Teste localmente após atualizar
+echo    3. Execute 'npm run build' para gerar novo build
+echo    4. Teste o service worker antes de fazer deploy
+echo.
+
+rem Voltar ao diretório raiz
+cd /d "%~dp0"
+echo.
 pause
 goto menu
 

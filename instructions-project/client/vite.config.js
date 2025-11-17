@@ -65,7 +65,7 @@ export default defineConfig({
         rollupFormat: 'iife'
       },
       devOptions: {
-        enabled: false, // Desativar Service Worker em desenvolvimento para evitar interferência com Vite HMR
+        enabled: true, // Habilitar Service Worker em desenvolvimento (funciona com HMR)
         type: 'module',
         navigateFallback: 'index.html',
         suppressWarnings: true

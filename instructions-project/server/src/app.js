@@ -63,6 +63,9 @@ if (fs.existsSync(clientPublicPath)) {
   console.log('📁 Servindo arquivos estáticos do client/public');
 }
 
+// Nota: Frontend é servido via Vite dev server na porta 3003 (instructions-client)
+// ou via build estático se necessário
+
 // Initialize Clerk middleware (only if configured)
 const hasClerk = !!process.env.CLERK_SECRET_KEY;
 const enableAuth = process.env.ENABLE_AUTH === 'true';
@@ -225,6 +228,8 @@ app.get('/api/media/:name', async (req, res) => {
     res.status(500).json({ error: 'Media stream error' });
   }
 });
+
+// Nota: Frontend é servido via Vite dev server (instructions-client) na porta 3003
 
 // 404 handler
 app.use((req, res) => {
