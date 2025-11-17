@@ -21,18 +21,26 @@ if (!PUBLISHABLE_KEY) {
 // Register service worker with prompt mode (no auto-update)
 // Service Worker está habilitado tanto em produção quanto em desenvolvimento
 // Em dev, funciona com HMR do Vite através de configuração especial
+// Seguindo a documentação do vite-plugin-pwa: https://vite-pwa-org.netlify.app/frameworks/react.html
+let updateSW = null;
+
 if ('serviceWorker' in navigator) {
   const isDev = import.meta.env.DEV;
   console.log(`🔧 [Main] Registering Service Worker in ${isDev ? 'development' : 'production'} mode...`);
   
-  registerSW({
+  // Store updateSW function globally so UpdateNotification can use it
+  updateSW = registerSW({
     immediate: false, // Don't update immediately - wait for user confirmation
     onOfflineReady() {
       console.log('✅ [Main] App ready to work offline');
+      // You can show a notification here if needed
     },
     onNeedRefresh() {
-      // Update notification will be shown by UpdateNotification component
-      console.log('🔄 [Main] New content available - notification will be shown');
+      // This is called when a new service worker is available
+      // The UpdateNotification component will detect this and show the prompt
+      console.log('🔄 [Main] New content available - UpdateNotification will show prompt');
+      // Dispatch custom event to notify UpdateNotification component
+      window.dispatchEvent(new CustomEvent('sw-update-available'));
     },
     onRegistered(registration) {
       console.log('✅ [Main] Service Worker registered successfully:', registration);
@@ -64,6 +72,9 @@ if ('serviceWorker' in navigator) {
       console.error('❌ [Main] Service Worker registration error:', error);
     }
   });
+  
+  // Make updateSW available globally for UpdateNotification component
+  window.updateSW = updateSW;
 } else {
   console.warn('⚠️ [Main] Service Worker API not available in this browser');
 }
