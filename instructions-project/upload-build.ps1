@@ -2,11 +2,11 @@
 # Uso: .\upload-build.ps1
 #
 # Configuração via variáveis de ambiente ou ficheiro .env.deploy:
-#   DEPLOY_SSH_KEY      - Caminho para chave SSH (padrão: $env:USERPROFILE\.ssh\thecore)
-#   DEPLOY_SSH_USER     - Utilizador SSH (padrão: andre)
-#   DEPLOY_SSH_HOST     - IP ou hostname do servidor (padrão: 136.116.79.244)
-#   DEPLOY_SERVER_PATH  - Caminho no servidor (padrão: /home/andre/apps/instructions/instructions-project/client)
-#   DEPLOY_SITE_URL     - URL do site (padrão: https://136.116.79.244)
+#   DEPLOY_SSH_KEY      - Caminho para chave SSH (opcional, usa SSH config se não especificado)
+#   DEPLOY_SSH_USER     - Utilizador SSH (padrão: bids)
+#   DEPLOY_SSH_HOST     - IP ou hostname do servidor (padrão: dev - usa SSH config)
+#   DEPLOY_SERVER_PATH  - Caminho no servidor (padrão: /home/bids/apps/instructions-project/client)
+#   DEPLOY_SITE_URL     - URL do site (opcional)
 
 # Configurar tratamento de erros
 $ErrorActionPreference = "Stop"
@@ -76,28 +76,63 @@ if (Test-Path $envFile) {
 }
 
 # Configuração com valores padrão
-$sshKey = if ($env:DEPLOY_SSH_KEY) { $env:DEPLOY_SSH_KEY } else { "$env:USERPROFILE\.ssh\thecore" }
-$sshUser = if ($env:DEPLOY_SSH_USER) { $env:DEPLOY_SSH_USER } else { "andre" }
-$sshHost = if ($env:DEPLOY_SSH_HOST) { $env:DEPLOY_SSH_HOST } else { "136.116.79.244" }
-$serverPath = if ($env:DEPLOY_SERVER_PATH) { $env:DEPLOY_SERVER_PATH } else { "/home/andre/apps/instructions/instructions-project/client" }
-$serverRootPath = if ($env:DEPLOY_SERVER_ROOT_PATH) { $env:DEPLOY_SERVER_ROOT_PATH } else { "/home/andre/apps/instructions/instructions-project" }
+$sshKey = if ($env:DEPLOY_SSH_KEY) { $env:DEPLOY_SSH_KEY } else { $null }
+$sshUser = if ($env:DEPLOY_SSH_USER) { $env:DEPLOY_SSH_USER } else { "bids" }
+$sshHost = if ($env:DEPLOY_SSH_HOST) { $env:DEPLOY_SSH_HOST } else { "dev" }
+$serverPath = if ($env:DEPLOY_SERVER_PATH) { $env:DEPLOY_SERVER_PATH } else { "/home/bids/apps/instructions-project/client" }
+$serverRootPath = if ($env:DEPLOY_SERVER_ROOT_PATH) { $env:DEPLOY_SERVER_ROOT_PATH } else { "/home/bids/apps/instructions-project" }
 $pm2AppName = if ($env:DEPLOY_PM2_APP_NAME) { $env:DEPLOY_PM2_APP_NAME } else { "instructions-server" }
-$siteUrl = if ($env:DEPLOY_SITE_URL) { $env:DEPLOY_SITE_URL } else { "https://136.116.79.244" }
+$siteUrl = if ($env:DEPLOY_SITE_URL) { $env:DEPLOY_SITE_URL } else { "" }
 
-# Verificar se chave SSH existe
-if (-not (Test-Path $sshKey)) {
+# Verificar se chave SSH foi especificada, caso contrário usa SSH config
+if ($sshKey -and -not (Test-Path $sshKey)) {
     Write-Host "❌ Chave SSH não encontrada: $sshKey" -ForegroundColor Red
     Write-Host ""
     Write-Host "Soluções:" -ForegroundColor Yellow
     Write-Host "1. Copie a chave SSH para: $sshKey"
     Write-Host "2. Ou defina DEPLOY_SSH_KEY no ficheiro .env.deploy"
     Write-Host "3. Ou defina a variável de ambiente DEPLOY_SSH_KEY"
+    Write-Host "4. Ou remova DEPLOY_SSH_KEY para usar configuração SSH padrão (recomendado para host 'dev')"
     Write-Host ""
     Write-Host "Exemplo de .env.deploy:" -ForegroundColor Cyan
-    Write-Host "DEPLOY_SSH_KEY=C:\caminho\para\sua\chave"
-    Write-Host "DEPLOY_SSH_USER=seu_usuario"
-    Write-Host "DEPLOY_SSH_HOST=seu_servidor.com"
+    Write-Host "DEPLOY_SSH_USER=bids"
+    Write-Host "DEPLOY_SSH_HOST=dev"
+    Write-Host "DEPLOY_SERVER_PATH=/home/bids/apps/instructions-project/client"
     Exit-Script -ExitCode 1
+}
+
+# Função auxiliar para construir comando SSH com ou sem chave
+function Get-SshCommand {
+    param(
+        [string]$Command,
+        [string]$User,
+        [string]$SshHost,
+        [string]$Key = $null
+    )
+    $sshOptions = "-o StrictHostKeyChecking=no -o ConnectTimeout=30"
+    if ($Key) {
+        return "$Command -i `"$Key`" $sshOptions ${User}@${SshHost}"
+    } else {
+        return "$Command $sshOptions ${User}@${SshHost}"
+    }
+}
+
+# Função auxiliar para construir comando SCP com ou sem chave
+function Get-ScpCommand {
+    param(
+        [string]$Source,
+        [string]$Destination,
+        [string]$User,
+        [string]$SshHost,
+        [string]$Key = $null,
+        [string]$AdditionalOptions = ""
+    )
+    $scpOptions = "-o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=60"
+    if ($Key) {
+        return "scp -i `"$Key`" $scpOptions $AdditionalOptions `"$Source`" ${User}@${SshHost}:`"$Destination`""
+    } else {
+        return "scp $scpOptions $AdditionalOptions `"$Source`" ${User}@${SshHost}:`"$Destination`""
+    }
 }
 
 Write-Host "=== Configuração ===" -ForegroundColor Cyan
@@ -230,11 +265,12 @@ echo "Espaço total liberado: ~`$TOTAL_FREED MB"
 "@
     
     try {
-        $cleanupOutput = ssh -i $SshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${SshUser}@${SshHost}" $cleanupCommands 2>&1
+        $sshCmd = Get-SshCommand -Command "ssh" -User $SshUser -SshHost $SshHost -Key $SshKey
+        $cleanupOutput = Invoke-Expression "$sshCmd `"$cleanupCommands`"" 2>&1
         Write-Host $cleanupOutput -ForegroundColor Gray
         
         # Verificar espaço após limpeza
-        $diskLine = ssh -i $SshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${SshUser}@${SshHost}" "df -BM /tmp 2>/dev/null | tail -1 || df -BM / | tail -1" 2>&1
+        $diskLine = Invoke-Expression "$sshCmd `"df -BM /tmp 2>/dev/null | tail -1 || df -BM / | tail -1`"" 2>&1
         $availableSpaceMB = "0"
         if ($diskLine -match '\s+(\d+)M\s+') {
             $availableSpaceMB = $matches[1]
@@ -258,7 +294,8 @@ function Get-AvailableSpace {
     )
     
     try {
-        $diskLine = ssh -i $SshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${SshUser}@${SshHost}" "df -BM /tmp 2>/dev/null | tail -1 || df -BM / | tail -1" 2>&1
+        $sshCmd = Get-SshCommand -Command "ssh" -User $SshUser -SshHost $SshHost -Key $SshKey
+        $diskLine = Invoke-Expression "$sshCmd `"df -BM /tmp 2>/dev/null | tail -1 || df -BM / | tail -1`"" 2>&1
         if ($LASTEXITCODE -ne 0) {
             return 0
         }
@@ -282,7 +319,8 @@ $tempPath = "/tmp/client-dist-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 # Verificar espaço em disco antes de fazer upload
 Write-Host "Verificando espaço em disco no servidor..." -ForegroundColor Gray
 try {
-    $diskInfo = ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" "df -h /tmp 2>/dev/null | tail -1 || df -h / | tail -1" 2>&1
+    $sshCmd = Get-SshCommand -Command "ssh" -User $sshUser -SshHost $sshHost -Key $sshKey
+    $diskInfo = Invoke-Expression "$sshCmd `"df -h /tmp 2>/dev/null | tail -1 || df -h / | tail -1`"" 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Espaço disponível: $diskInfo" -ForegroundColor Gray
     } else {
@@ -312,11 +350,11 @@ if ($availableSpaceMB -lt $requiredSpaceMB) {
         Write-Host ""
         Write-Host "Soluções manuais:" -ForegroundColor Yellow
         Write-Host "  1. Verificar o que está ocupando espaço:"
-        Write-Host "     ssh $sshUser@$sshHost 'du -sh /tmp/* /home/andre/* 2>/dev/null | sort -h | tail -20'"
+        Write-Host "     ssh $sshUser@$sshHost 'du -sh /tmp/* ~/* 2>/dev/null | sort -h | tail -20'"
         Write-Host "  2. Limpar manualmente builds antigos:"
         Write-Host "     ssh $sshUser@$sshHost 'rm -rf $serverPath/dist-old-*'"
         Write-Host "  3. Limpar node_modules antigos (se houver):"
-        Write-Host "     ssh $sshUser@$sshHost 'find /home/andre -name node_modules -type d -exec du -sh {} \; | sort -h | tail -10'"
+        Write-Host "     ssh $sshUser@$sshHost 'find ~ -name node_modules -type d -exec du -sh {} \; | sort -h | tail -10'"
         Write-Host ""
         Exit-Script -ExitCode 1
     } else {
@@ -331,7 +369,8 @@ if ($availableSpaceMB -lt $requiredSpaceMB) {
 Write-Host "Criando diretório temporário no servidor..." -ForegroundColor Gray
 try {
     $createDirCmd = "mkdir -p $tempPath && chmod 755 $tempPath"
-    $createOutput = ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=60 "${sshUser}@${sshHost}" $createDirCmd 2>&1
+    $sshCmd = Get-SshCommand -Command "ssh" -User $sshUser -SshHost $sshHost -Key $sshKey
+    $createOutput = Invoke-Expression "$sshCmd `"$createDirCmd`"" 2>&1
     
     if ($LASTEXITCODE -ne 0) {
         if ($createOutput -match "Connection timed out|Connection refused|Network is unreachable") {
@@ -355,7 +394,7 @@ try {
                 Exit-Script -ExitCode 1
             }
             # Tentar criar novamente após limpeza
-            $createOutput = ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" $createDirCmd 2>&1
+            $createOutput = Invoke-Expression "$sshCmd `"$createDirCmd`"" 2>&1
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "ERRO: Ainda não foi possível criar diretório após limpeza" -ForegroundColor Red
                 Exit-Script -ExitCode 1
@@ -382,7 +421,8 @@ while ($retryCount -lt $maxRetries -and -not $uploadSuccess) {
         Write-Host "Tentativa $($retryCount + 1) de $maxRetries..." -ForegroundColor Yellow
         Start-Sleep -Seconds 3
         # Limpar diretório parcialmente criado antes de tentar novamente
-        ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" "rm -rf $tempPath 2>/dev/null; mkdir -p $tempPath && chmod 755 $tempPath" | Out-Null
+        $sshCmd = Get-SshCommand -Command "ssh" -User $sshUser -SshHost $sshHost -Key $sshKey
+        Invoke-Expression "$sshCmd `"rm -rf $tempPath 2>/dev/null; mkdir -p $tempPath && chmod 755 $tempPath`"" | Out-Null
     }
     
     # Usar scp com compressão e timeout aumentado
@@ -396,7 +436,8 @@ while ($retryCount -lt $maxRetries -and -not $uploadSuccess) {
     }
     # Usar scp com wildcard - PowerShell pode não expandir, mas o script no servidor corrige se necessário
     # Tentar enviar conteúdo diretamente usando caminho relativo
-    $scpOutput = scp -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=60 -C -r ".\dist\*" "${sshUser}@${sshHost}:$tempPath/" 2>&1
+    $scpCmd = Get-ScpCommand -Source ".\dist\*" -Destination "$tempPath/" -User $sshUser -SshHost $sshHost -Key $sshKey -AdditionalOptions "-C -r"
+    $scpOutput = Invoke-Expression $scpCmd 2>&1
     
     if ($LASTEXITCODE -eq 0) {
         $uploadSuccess = $true
@@ -497,12 +538,13 @@ else
     exit 1
 fi
 "@
-$updateOutput = ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" $sshCommands.Replace("`r`n", "`n")
+$sshCmd = Get-SshCommand -Command "ssh" -User $sshUser -Host $sshHost -Key $sshKey
+$updateOutput = Invoke-Expression "$sshCmd `"$($sshCommands.Replace("`r`n", "`n"))`"" 2>&1
 Write-Host $updateOutput -ForegroundColor Gray
 if ($LASTEXITCODE -ne 0 -or $updateOutput -match "Erro|error|cannot access") {
     Write-Host "❌ Erro ao atualizar build no servidor!" -ForegroundColor Red
     Write-Host "Verificando estado do servidor..." -ForegroundColor Yellow
-    ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" "ls -la $serverPath/ | grep dist" | Out-Host
+    Invoke-Expression "$sshCmd `"ls -la $serverPath/ | grep dist`"" | Out-Host
     Exit-Script -ExitCode 1
 }
 Write-Host "✅ Build atualizado no servidor!" -ForegroundColor Green
@@ -707,7 +749,8 @@ EOF
 node check-tables.cjs 2>&1 || echo 'Verificacao de tabelas nao disponivel (Node.js pode nao estar no PATH)'
 rm -f check-tables.cjs 2>/dev/null || true
 "@
-ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" $migrationCommands.Replace("`r`n", "`n")
+$sshCmd = Get-SshCommand -Command "ssh" -User $sshUser -Host $sshHost -Key $sshKey
+Invoke-Expression "$sshCmd `"$($migrationCommands.Replace("`r`n", "`n"))`"" 2>&1
 Write-Host "✅ Migrations processadas!" -ForegroundColor Green
 Write-Host ""
 
@@ -719,25 +762,104 @@ $fixScriptPath = Join-Path $PSScriptRoot "fix-nginx-upload-limit.sh"
 if (Test-Path $fixScriptPath) {
     Write-Host "Enviando script de correção para o servidor..." -ForegroundColor Gray
     $remoteScriptPath = "/tmp/fix-nginx-upload-limit.sh"
-    scp -i $sshKey -o StrictHostKeyChecking=no $fixScriptPath "${sshUser}@${sshHost}:$remoteScriptPath" 2>&1 | Out-Null
+    $scpCmd = Get-ScpCommand -Source $fixScriptPath -Destination $remoteScriptPath -User $sshUser -SshHost $sshHost -Key $sshKey
+    Invoke-Expression $scpCmd 2>&1 | Out-Null
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Executando script de correção no servidor..." -ForegroundColor Gray
         # Tentar executar com sudo primeiro, se falhar, executar sem sudo
-        $nginxFixOutput = ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" "chmod +x $remoteScriptPath && sudo bash $remoteScriptPath 2>&1 || bash $remoteScriptPath 2>&1" 2>&1
+        $sshCmd = Get-SshCommand -Command "ssh" -User $sshUser -SshHost $sshHost -Key $sshKey
+        $nginxFixOutput = Invoke-Expression "$sshCmd `"chmod +x $remoteScriptPath && sudo bash $remoteScriptPath 2>&1 || bash $remoteScriptPath 2>&1`"" 2>&1
         Write-Host $nginxFixOutput -ForegroundColor Gray
         
         # Limpar script temporário
-        ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" "rm -f $remoteScriptPath" 2>&1 | Out-Null
+        Invoke-Expression "$sshCmd `"rm -f $remoteScriptPath`"" 2>&1 | Out-Null
     } else {
         Write-Host "⚠️  Não foi possível enviar script, tentando método alternativo..." -ForegroundColor Yellow
-        # Método alternativo: comando simples inline
-        $nginxFixOutput = ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" 'if command -v nginx >/dev/null 2>&1; then NGINX_CONF="/etc/nginx/nginx.conf"; NGINX_SITES="/etc/nginx/sites-enabled"; CONFIG_FILE=""; if [ -d "$NGINX_SITES" ]; then for f in "$NGINX_SITES"/*; do [ -f "$f" ] && grep -q "proxy_pass\|upstream" "$f" 2>/dev/null && CONFIG_FILE="$f" && break; done; fi; [ -z "$CONFIG_FILE" ] && CONFIG_FILE="$NGINX_CONF"; if [ -f "$CONFIG_FILE" ]; then if grep -q "client_max_body_size" "$CONFIG_FILE"; then LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk "{print \$2}" | tr -d ";"); NUM=$(echo "$LIMIT" | sed "s/[^0-9]//g"); if [ -z "$NUM" ] || [ "$NUM" -lt 15 ]; then echo "⚠️  Ajustando limite para 15MB..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; sed -i "s/client_max_body_size.*/client_max_body_size 15M;/" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); else echo "✅ Limite adequado: $LIMIT"; fi; else echo "⚠️  Adicionando client_max_body_size 15M..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; grep -q "^http {" "$CONFIG_FILE" && sed -i "/^http {/a\    client_max_body_size 15M;" "$CONFIG_FILE" || sed -i "1i client_max_body_size 15M;" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); fi; else echo "⚠️  Arquivo de configuração não encontrado"; fi; else echo "ℹ️  Nginx não encontrado (servidor pode estar rodando diretamente via PM2)"; echo "✅ Limites do Express já foram ajustados no código (15MB)"; fi' 2>&1
+        # Método alternativo: usar here-string para evitar problemas de escape
+        $sshCmd = Get-SshCommand -Command "ssh" -User $sshUser -SshHost $sshHost -Key $sshKey
+        $bashCommand = @'
+if command -v nginx >/dev/null 2>&1; then
+  NGINX_CONF="/etc/nginx/nginx.conf"
+  NGINX_SITES="/etc/nginx/sites-enabled"
+  CONFIG_FILE=""
+  if [ -d "$NGINX_SITES" ]; then
+    for f in "$NGINX_SITES"/*; do
+      [ -f "$f" ] && grep -q "proxy_pass\|upstream" "$f" 2>/dev/null && CONFIG_FILE="$f" && break
+    done
+  fi
+  [ -z "$CONFIG_FILE" ] && CONFIG_FILE="$NGINX_CONF"
+  if [ -f "$CONFIG_FILE" ]; then
+    if grep -q "client_max_body_size" "$CONFIG_FILE"; then
+      LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk '{print $2}' | tr -d ";")
+      NUM=$(echo "$LIMIT" | sed 's/[^0-9]//g')
+      if [ -z "$NUM" ] || [ "$NUM" -lt 15 ]; then
+        echo "⚠️  Ajustando limite para 15MB..."
+        cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+        sed -i "s/client_max_body_size.*/client_max_body_size 15M;/" "$CONFIG_FILE"
+        nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe")
+      else
+        echo "✅ Limite adequado: $LIMIT"
+      fi
+    else
+      echo "⚠️  Adicionando client_max_body_size 15M..."
+      cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+      grep -q "^http {" "$CONFIG_FILE" && sed -i "/^http {/a\    client_max_body_size 15M;" "$CONFIG_FILE" || sed -i "1i client_max_body_size 15M;" "$CONFIG_FILE"
+      nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe")
+    fi
+  else
+    echo "⚠️  Arquivo de configuração não encontrado"
+  fi
+else
+  echo "ℹ️  Nginx não encontrado (servidor pode estar rodando diretamente via PM2)"
+  echo "✅ Limites do Express já foram ajustados no código (15MB)"
+fi
+'@
+        $nginxFixOutput = Invoke-Expression "$sshCmd `"$bashCommand`"" 2>&1
         Write-Host $nginxFixOutput -ForegroundColor Gray
     }
 } else {
     Write-Host "⚠️  Script fix-nginx-upload-limit.sh não encontrado, usando método alternativo..." -ForegroundColor Yellow
-    $nginxFixOutput = ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" 'if command -v nginx >/dev/null 2>&1; then NGINX_CONF="/etc/nginx/nginx.conf"; NGINX_SITES="/etc/nginx/sites-enabled"; CONFIG_FILE=""; if [ -d "$NGINX_SITES" ]; then for f in "$NGINX_SITES"/*; do [ -f "$f" ] && grep -q "proxy_pass\|upstream" "$f" 2>/dev/null && CONFIG_FILE="$f" && break; done; fi; [ -z "$CONFIG_FILE" ] && CONFIG_FILE="$NGINX_CONF"; if [ -f "$CONFIG_FILE" ]; then if grep -q "client_max_body_size" "$CONFIG_FILE"; then LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk "{print \$2}" | tr -d ";"); NUM=$(echo "$LIMIT" | sed "s/[^0-9]//g"); if [ -z "$NUM" ] || [ "$NUM" -lt 15 ]; then echo "⚠️  Ajustando limite para 15MB..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; sed -i "s/client_max_body_size.*/client_max_body_size 15M;/" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); else echo "✅ Limite adequado: $LIMIT"; fi; else echo "⚠️  Adicionando client_max_body_size 15M..."; cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"; grep -q "^http {" "$CONFIG_FILE" && sed -i "/^http {/a\    client_max_body_size 15M;" "$CONFIG_FILE" || sed -i "1i client_max_body_size 15M;" "$CONFIG_FILE"; nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe"); fi; else echo "⚠️  Arquivo de configuração não encontrado"; fi; else echo "ℹ️  Nginx não encontrado (servidor pode estar rodando diretamente via PM2)"; echo "✅ Limites do Express já foram ajustados no código (15MB)"; fi' 2>&1
+    $sshCmd = Get-SshCommand -Command "ssh" -User $sshUser -SshHost $sshHost -Key $sshKey
+    # Usar here-string para evitar problemas de escape com comandos bash complexos
+    $bashCommand = @'
+if command -v nginx >/dev/null 2>&1; then
+  NGINX_CONF="/etc/nginx/nginx.conf"
+  NGINX_SITES="/etc/nginx/sites-enabled"
+  CONFIG_FILE=""
+  if [ -d "$NGINX_SITES" ]; then
+    for f in "$NGINX_SITES"/*; do
+      [ -f "$f" ] && grep -q "proxy_pass\|upstream" "$f" 2>/dev/null && CONFIG_FILE="$f" && break
+    done
+  fi
+  [ -z "$CONFIG_FILE" ] && CONFIG_FILE="$NGINX_CONF"
+  if [ -f "$CONFIG_FILE" ]; then
+    if grep -q "client_max_body_size" "$CONFIG_FILE"; then
+      LIMIT=$(grep "client_max_body_size" "$CONFIG_FILE" | head -1 | awk '{print $2}' | tr -d ";")
+      NUM=$(echo "$LIMIT" | sed 's/[^0-9]//g')
+      if [ -z "$NUM" ] || [ "$NUM" -lt 15 ]; then
+        echo "⚠️  Ajustando limite para 15MB..."
+        cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+        sed -i "s/client_max_body_size.*/client_max_body_size 15M;/" "$CONFIG_FILE"
+        nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe")
+      else
+        echo "✅ Limite adequado: $LIMIT"
+      fi
+    else
+      echo "⚠️  Adicionando client_max_body_size 15M..."
+      cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+      grep -q "^http {" "$CONFIG_FILE" && sed -i "/^http {/a\    client_max_body_size 15M;" "$CONFIG_FILE" || sed -i "1i client_max_body_size 15M;" "$CONFIG_FILE"
+      nginx -t >/dev/null 2>&1 && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || echo "⚠️  Execute: sudo systemctl reload nginx") && echo "✅ Nginx atualizado!" || (cp "${CONFIG_FILE}.backup."* "$CONFIG_FILE" 2>/dev/null; echo "❌ Erro na sintaxe")
+    fi
+  else
+    echo "⚠️  Arquivo de configuração não encontrado"
+  fi
+else
+  echo "ℹ️  Nginx não encontrado (servidor pode estar rodando diretamente via PM2)"
+  echo "✅ Limites do Express já foram ajustados no código (15MB)"
+fi
+'@
+    $nginxFixOutput = Invoke-Expression "$sshCmd `"$bashCommand`"" 2>&1
     Write-Host $nginxFixOutput -ForegroundColor Gray
 }
 
@@ -830,7 +952,8 @@ if [ -n "`$RESTART_COUNT" ] && [ "`$RESTART_COUNT" != "null" ] && [ "`$RESTART_C
     pm2 logs $pm2AppName --err --lines 30 --nostream 2>&1 | tail -30
 fi
 "@
-ssh -i $sshKey -o StrictHostKeyChecking=no -o ConnectTimeout=30 "${sshUser}@${sshHost}" $restartCommands.Replace("`r`n", "`n")
+$sshCmd = Get-SshCommand -Command "ssh" -User $sshUser -Host $sshHost -Key $sshKey
+Invoke-Expression "$sshCmd `"$($restartCommands.Replace("`r`n", "`n"))`"" 2>&1
 if ($LASTEXITCODE -ne 0) {
     Write-Host "⚠️  Aviso: Pode ter havido problemas ao reiniciar o servidor" -ForegroundColor Yellow
     Write-Host "   Verifique manualmente: ssh $sshUser@$sshHost 'pm2 status'" -ForegroundColor Yellow
@@ -848,7 +971,9 @@ Write-Host "Build atualizado" -ForegroundColor Green
 Write-Host "Migrations executadas" -ForegroundColor Green
 Write-Host "Servidor reiniciado" -ForegroundColor Green
 Write-Host ""
-Write-Host "Site disponivel em: $siteUrl" -ForegroundColor Yellow
+if ($siteUrl) {
+    Write-Host "Site disponivel em: $siteUrl" -ForegroundColor Yellow
+}
 Write-Host ""
 
 # Garantir que o script retorna código de sucesso
