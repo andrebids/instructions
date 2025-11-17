@@ -25,7 +25,7 @@ export function StepProjectDetails({
         <div className="space-y-5">
           {/* Project Name */}
           <div className="max-w-md mx-auto">
-            <label className="block text-sm font-semibold mb-2 text-foreground">
+            <label className="block text-sm font-semibold mb-2 text-primary-700 dark:text-primary-400">
               Project Name *
             </label>
             <Input
@@ -73,11 +73,14 @@ export function StepProjectDetails({
                 showMonthAndYearPickers
                 locale="pt-PT"
                 minValue={today(getLocalTimeZone())}
+                classNames={{
+                  label: "text-primary-700 dark:text-primary-400"
+                }}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Budget (EUR) *</label>
+              <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">Budget (EUR) *</label>
               <Input
                 type="number"
                 placeholder="Enter the budget amount"

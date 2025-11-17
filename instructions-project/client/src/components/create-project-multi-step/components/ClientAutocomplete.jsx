@@ -28,7 +28,7 @@ export function ClientAutocomplete({
         inputValue={inputValue}
         onInputChange={onInputChange}
         classNames={{
-          label: "text-foreground font-semibold",
+          label: "text-primary-700 dark:text-primary-400 font-semibold",
           input: "text-foreground font-medium",
           inputWrapper: "bg-content1 border-2 border-divider hover:border-primary focus-within:border-primary"
         }}
