@@ -1,14 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Slider, Button } from "@heroui/react";
-import { Icon } from "@iconify/react";
-import { useResponsiveProfile } from "../../hooks/useResponsiveProfile";
 import ProductCard from "./ProductCard";
 
 export default function ProductGrid({ products, onOrder, cols = 4, glass = false, allowQty = false, cardProps = {}, filtersVisible = true }) {
-  const { isDesktop } = useResponsiveProfile();
-  const [sliderValue, setSliderValue] = useState(0);
-  const sliderRef = useRef(null);
-  
   const colClasses = React.useMemo(() => {
     if (cols === 1) {
       return "grid-cols-1";
@@ -121,9 +114,9 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     };
   }, [cols, products.length, isDragging, isPaused]);
 
-  // Handle mouse/touch drag (only for touch devices, not desktop)
+  // Handle mouse/touch drag
   const handleStart = useCallback((e) => {
-    if (cols !== 1 || isDesktop) return; // Disable drag on desktop
+    if (cols !== 1) return;
     setIsDragging(true);
     setIsPaused(true);
     hasMovedRef.current = false;
@@ -137,7 +130,7 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
-  }, [cols, isDesktop]);
+  }, [cols]);
 
   const handleMove = useCallback((e) => {
     if (!isDragging || cols !== 1) return;
@@ -193,23 +186,29 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     }
   }, [isDragging]);
 
-  // Attach event listeners (only for touch devices, not desktop)
+  // Attach event listeners
   useEffect(() => {
-    if (cols !== 1 || isDesktop) return; // Disable drag on desktop
+    if (cols !== 1) return;
     
     const container = containerRef.current;
     if (!container) return;
 
+    container.addEventListener('mousedown', handleStart);
     container.addEventListener('touchstart', handleStart, { passive: false });
+    window.addEventListener('mousemove', handleMove);
     window.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('mouseup', handleEnd);
     window.addEventListener('touchend', handleEnd);
 
     return () => {
+      container.removeEventListener('mousedown', handleStart);
       container.removeEventListener('touchstart', handleStart);
+      window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('mouseup', handleEnd);
       window.removeEventListener('touchend', handleEnd);
     };
-  }, [cols, isDesktop, handleStart, handleMove, handleEnd]);
+  }, [cols, handleStart, handleMove, handleEnd]);
 
   // Pause on hover
   const handleMouseEnter = useCallback(() => {
@@ -271,69 +270,8 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     };
   }, [cols]);
 
-  // Update slider value based on scroll position
-  useEffect(() => {
-    if (cols !== 1 || !isDesktop || !containerRef.current || products.length <= 1) return;
-    
-    const container = containerRef.current;
-    const updateSliderFromScroll = () => {
-      const maxScroll = container.scrollWidth - container.offsetWidth;
-      if (maxScroll > 0) {
-        const scrollPercent = (container.scrollLeft / maxScroll) * 100;
-        setSliderValue(scrollPercent);
-      } else {
-        setSliderValue(0);
-      }
-    };
-    
-    container.addEventListener('scroll', updateSliderFromScroll);
-    updateSliderFromScroll();
-    
-    return () => {
-      container.removeEventListener('scroll', updateSliderFromScroll);
-    };
-  }, [cols, isDesktop, products.length]);
-
-  // Handle slider change (desktop only)
-  const handleSliderChange = useCallback((value) => {
-    if (cols !== 1 || !isDesktop || !containerRef.current) return;
-    
-    const container = containerRef.current;
-    const maxScroll = container.scrollWidth - container.offsetWidth;
-    if (maxScroll > 0) {
-      const newScrollLeft = (value / 100) * maxScroll;
-      container.scrollTo({
-        left: newScrollLeft,
-        behavior: 'smooth'
-      });
-    }
-    setSliderValue(value);
-  }, [cols, isDesktop]);
-
-  // Navigation buttons (desktop only)
-  const handlePrevious = useCallback(() => {
-    if (cols !== 1 || !isDesktop || !containerRef.current) return;
-    const container = containerRef.current;
-    const cardWidthWithGap = cardSize + 24;
-    container.scrollBy({
-      left: -cardWidthWithGap,
-      behavior: 'smooth'
-    });
-  }, [cols, isDesktop, cardSize]);
-
-  const handleNext = useCallback(() => {
-    if (cols !== 1 || !isDesktop || !containerRef.current) return;
-    const container = containerRef.current;
-    const cardWidthWithGap = cardSize + 24;
-    container.scrollBy({
-      left: cardWidthWithGap,
-      behavior: 'smooth'
-    });
-  }, [cols, isDesktop, cardSize]);
-
   // Render carousel when cols === 1
   if (cols === 1) {
-    const maxSliderValue = products.length > 1 ? 100 : 0;
 
     return (
       <div
@@ -342,38 +280,12 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        {/* Navigation buttons for desktop */}
-        {isDesktop && products.length > 1 && (
-          <>
-            <Button
-              isIconOnly
-              variant="flat"
-              radius="full"
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm border border-divider shadow-lg"
-              onPress={handlePrevious}
-              aria-label="Previous product"
-            >
-              <Icon icon="lucide:chevron-left" className="text-lg" />
-            </Button>
-            <Button
-              isIconOnly
-              variant="flat"
-              radius="full"
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm border border-divider shadow-lg"
-              onPress={handleNext}
-              aria-label="Next product"
-            >
-              <Icon icon="lucide:chevron-right" className="text-lg" />
-            </Button>
-          </>
-        )}
-
         <div
           ref={containerRef}
           className="flex gap-6 overflow-x-auto scrollbar-hide"
           style={{
             scrollBehavior: isDragging ? 'auto' : 'smooth',
-            cursor: isDesktop ? 'default' : (isDragging ? 'grabbing' : 'grab'),
+            cursor: isDragging ? 'grabbing' : 'grab',
             WebkitOverflowScrolling: 'touch',
             paddingLeft: '15%', // Add padding to center first card
             paddingRight: '15%', // Add padding to center last card
@@ -403,23 +315,6 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
             </div>
           ))}
         </div>
-
-        {/* Slider control for desktop */}
-        {isDesktop && products.length > 1 && (
-          <div className="mt-6 px-4">
-            <Slider
-              ref={sliderRef}
-              size="sm"
-              step={1}
-              minValue={0}
-              maxValue={maxSliderValue}
-              value={sliderValue}
-              onChange={handleSliderChange}
-              className="w-full"
-              aria-label="Carousel position"
-            />
-          </div>
-        )}
       </div>
     );
   }
