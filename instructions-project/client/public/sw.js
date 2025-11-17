@@ -13,10 +13,17 @@ self.addEventListener('install', (event) => {
   // self.skipWaiting(); // Removed for manual update control
 });
 
+// Cleanup outdated caches - deve ser chamado antes de precacheAndRoute
+// Conforme documentação VitePWA: https://vite-pwa-org.netlify.app/guide/inject-manifest.html
+cleanupOutdatedCaches();
+
+// Precaching assets - manifest is injected by VitePWA during build
+// O VitePWA substitui 'self.__WB_MANIFEST' pelo manifest real durante o build
+precacheAndRoute(self.__WB_MANIFEST || []);
+
 // Service Worker activation
 self.addEventListener('activate', (event) => {
   console.log('✅ [SW] Service Worker activating...');
-  cleanupOutdatedCaches();
   event.waitUntil(
     self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
       // Only claim clients after user confirms update
@@ -25,10 +32,6 @@ self.addEventListener('activate', (event) => {
     })
   );
 });
-
-// Precaching assets - manifest is injected by VitePWA during build
-// injectionPoint: self.__WB_MANIFEST
-precacheAndRoute(self.__WB_MANIFEST || []);
 
 // Don't claim clients immediately - wait for user confirmation
 // clientsClaim(); // Removed for manual update control
