@@ -30,35 +30,138 @@ const isDev = import.meta.env.DEV;
 // Só registrar Service Worker em produção
 if ('serviceWorker' in navigator && !isDev) {
   console.log(`🔧 [Main] Registering Service Worker in production mode...`);
+  console.log(`📋 [Main] Environment: ${import.meta.env.MODE}`);
+  console.log(`📋 [Main] Service Worker URL: ${window.location.origin}/sw.js`);
+  console.log(`📋 [Main] Navigator serviceWorker available:`, 'serviceWorker' in navigator);
+  
+  // Diagnostic: Tentar buscar o Service Worker para verificar se está acessível
+  fetch(`${window.location.origin}/sw.js`)
+    .then(response => {
+      if (response.ok) {
+        return response.text();
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    })
+    .then(text => {
+      console.log('✅ [Main] Service Worker file is accessible');
+      console.log('📋 [Main] SW file size:', text.length, 'bytes');
+      console.log('📋 [Main] SW file starts with:', text.substring(0, 300));
+      
+      // Verificar se contém imports do Workbox
+      if (text.includes('workbox-precaching') || text.includes('cleanupOutdatedCaches')) {
+        console.log('✅ [Main] SW file contains Workbox imports');
+      } else {
+        console.warn('⚠️ [Main] SW file does NOT contain Workbox imports - this may be the problem!');
+      }
+      
+      // Verificar se contém o manifest (importante: se contém __WB_MANIFEST, não foi processado)
+      if (text.includes('__WB_MANIFEST') && !text.includes('self.__WB_MANIFEST = [')) {
+        console.warn('⚠️ [Main] SW file contains __WB_MANIFEST PLACEHOLDER - manifest was NOT injected by VitePWA!');
+        console.warn('⚠️ [Main] This means the build did not process the Service Worker correctly');
+        console.warn('⚠️ [Main] The SW file should contain: self.__WB_MANIFEST = [array of entries]');
+      } else if (text.includes('self.__WB_MANIFEST = [')) {
+        console.log('✅ [Main] SW file contains injected manifest (self.__WB_MANIFEST = [...])');
+        // Tentar extrair uma amostra do manifest
+        const manifestMatch = text.match(/self\.__WB_MANIFEST\s*=\s*\[(.*?)\]/s);
+        if (manifestMatch) {
+          console.log('📋 [Main] Manifest found in SW file');
+        }
+      } else if (text.includes('self.__WB_MANIFEST')) {
+        console.log('✅ [Main] SW file contains self.__WB_MANIFEST reference');
+      } else {
+        console.warn('⚠️ [Main] SW file does NOT contain manifest - may not be processed by VitePWA');
+      }
+      
+      // Verificar se há erros de sintaxe óbvios
+      if (text.includes('import(') && !text.includes('import ')) {
+        console.warn('⚠️ [Main] SW file may have dynamic imports which might cause issues');
+      }
+      
+      // Verificar se há IIFE ou outros wrappers que possam causar problemas
+      if (text.trim().startsWith('(function')) {
+        console.warn('⚠️ [Main] SW file starts with IIFE - this might cause issues with ES modules');
+      }
+    })
+    .catch(error => {
+      console.error('❌ [Main] Failed to fetch Service Worker file:', error);
+      console.error('❌ [Main] This may indicate the SW file is not being served correctly');
+    });
   
   // Store updateSW function globally so UpdateNotification can use it
-  updateSW = registerSW({
+  try {
+    updateSW = registerSW({
     immediate: false, // Don't update immediately - wait for user confirmation
     onOfflineReady() {
       console.log('✅ [Main] App ready to work offline');
-      // You can show a notification here if needed
+      // Dispatch custom event to notify OfflineReadyNotification component
+      // The component will show a prompt with "OK" button
+      window.dispatchEvent(new CustomEvent('sw-offline-ready'));
     },
     onNeedRefresh() {
       // This is called when a new service worker is available
       // The UpdateNotification component will detect this and show the prompt
+      // with "Refresh" and "Cancel" buttons
       console.log('🔄 [Main] New content available - UpdateNotification will show prompt');
       // Dispatch custom event to notify UpdateNotification component
       window.dispatchEvent(new CustomEvent('sw-update-available'));
     },
     onRegistered(registration) {
-      console.log('✅ [Main] Service Worker registered successfully:', registration);
-      console.log('📋 [Main] Service Worker scope:', registration.scope);
-      console.log('📋 [Main] Service Worker active:', registration.active?.scriptURL);
+      console.log('✅ [Main] Service Worker registered successfully');
+      console.log('📋 [Main] Registration object:', {
+        scope: registration.scope,
+        active: registration.active?.scriptURL || 'none',
+        installing: registration.installing?.scriptURL || 'none',
+        waiting: registration.waiting?.scriptURL || 'none',
+        updateViaCache: registration.updateViaCache
+      });
+      
+      // Monitor service worker state changes
+      if (registration.installing) {
+        console.log('📦 [Main] Service Worker installing...');
+        registration.installing.addEventListener('statechange', (event) => {
+          console.log(`📦 [Main] SW state changed to: ${event.target.state}`);
+          if (event.target.state === 'installed') {
+            console.log('✅ [Main] Service Worker installed successfully');
+          }
+        });
+      }
+      
+      if (registration.waiting) {
+        console.log('⏳ [Main] Service Worker waiting for activation');
+      }
+      
+      if (registration.active) {
+        console.log('✅ [Main] Service Worker is active');
+      }
       
       // Check Background Sync availability
-      isBackgroundSyncAvailable();
+      try {
+        isBackgroundSyncAvailable();
+        console.log('✅ [Main] Background Sync availability checked');
+      } catch (error) {
+        console.error('❌ [Main] Error checking Background Sync:', error);
+      }
       
       // Setup push notification click listener when SW is ready
-      setupNotificationClickListener()
+      try {
+        setupNotificationClickListener();
+        console.log('✅ [Main] Push notification click listener setup');
+      } catch (error) {
+        console.error('❌ [Main] Error setting up push notification listener:', error);
+      }
       
       // Listener for messages from service worker (Background Sync and Updates)
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener('message', async (event) => {
+          console.log('📨 [Main] Message received from Service Worker:', event.data);
+          
+          // Handle Service Worker errors
+          if (event.data && event.data.type === 'SW_ERROR') {
+            console.error('❌ [Main] Service Worker reported an error:', event.data.error);
+            return;
+          }
+          
+          // Handle Background Sync
           if (event.data && event.data.type === 'SYNC_PROJECT') {
             const { projectId } = event.data;
             try {
@@ -69,15 +172,39 @@ if ('serviceWorker' in navigator && !isDev) {
             }
           }
         });
+        console.log('✅ [Main] Message listener from Service Worker registered');
       }
     },
     onRegisterError(error) {
       console.error('❌ [Main] Service Worker registration error:', error);
+      console.error('❌ [Main] Error type:', error?.constructor?.name);
+      console.error('❌ [Main] Error message:', error?.message);
+      console.error('❌ [Main] Error stack:', error?.stack);
+      console.error('❌ [Main] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      
+      // Tentar obter mais informações sobre o erro
+      if (error?.message?.includes('threw an exception')) {
+        console.error('❌ [Main] Service Worker script evaluation failed');
+        console.error('❌ [Main] This usually means there is a syntax error or import issue in sw.js');
+        console.error('❌ [Main] Check the Service Worker script at:', window.location.origin + '/sw.js');
+      }
     }
-  });
-  
-  // Make updateSW available globally for UpdateNotification component
-  window.updateSW = updateSW;
+    });
+    
+    console.log('✅ [Main] registerSW called successfully');
+    console.log('📋 [Main] updateSW function:', typeof updateSW);
+    
+    // Make updateSW available globally for UpdateNotification component
+    window.updateSW = updateSW;
+    console.log('✅ [Main] updateSW made available globally');
+  } catch (error) {
+    console.error('❌ [Main] Error calling registerSW:', error);
+    console.error('❌ [Main] Error details:', {
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack
+    });
+  }
 } else if (isDev) {
   console.log('ℹ️ [Main] Service Worker desabilitado em desenvolvimento (HMR funciona sem ele)');
 } else {
