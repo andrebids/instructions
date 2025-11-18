@@ -377,8 +377,8 @@ if (distExists) {
   // Rota catch-all para SPA routing (deve vir depois de todas as rotas de API)
   // Retorna index.html para qualquer rota que não seja API e não seja um arquivo estático
   app.get('*', (req, res, next) => {
-    // Ignorar rotas de API
-    if (req.path.startsWith('/api/')) {
+    // Ignorar rotas de API e Auth.js
+    if (req.path.startsWith('/api/') || req.path.startsWith('/auth/')) {
       return next();
     }
     
