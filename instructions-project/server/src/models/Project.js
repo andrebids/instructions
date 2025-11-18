@@ -98,12 +98,12 @@ const Project = sequelize.define('Project', {
     },
     comment: 'Estado da simulação: { uploadStep, selectedImageId, isDayMode, conversionComplete }',
   },
-  // ID do utilizador que criou o projeto (Clerk userId)
+  // ID do utilizador que criou o projeto (Auth.js userId)
   createdBy: {
     type: DataTypes.STRING,
     allowNull: true,
     field: 'created_by',
-    comment: 'ID do utilizador que criou o projeto (Clerk userId)',
+    comment: 'ID do utilizador que criou o projeto (Auth.js userId)',
   },
 }, {
   tableName: 'projects',

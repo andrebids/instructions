@@ -33,13 +33,21 @@ import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 import { Scroller } from "../components/ui/scroller";
 import { useTranslation } from "react-i18next";
 import { useUserRole } from "../hooks/useUserRole";
-import { useUser as useClerkUser } from "@clerk/clerk-react";
+import { useAuthContext } from "../context/AuthContext";
 
 export default function AdminUsers() {
   const { t } = useTranslation();
   const { userName } = useUser();
   const { isAdmin, isLoaded: roleLoaded } = useUserRole();
-  const { user: clerkUser } = useClerkUser();
+  
+  // Usar AuthContext para obter o usuário atual
+  let currentUser = null;
+  try {
+    const authContext = useAuthContext();
+    currentUser = authContext?.user;
+  } catch (e) {
+    // AuthContext não disponível
+  }
   const { isHandheld } = useResponsiveProfile();
   
   const [users, setUsers] = React.useState([]);
@@ -221,7 +229,7 @@ export default function AdminUsers() {
   
   // Verificar se é o próprio utilizador
   const isCurrentUser = (userId) => {
-    return clerkUser?.id === userId;
+    return currentUser?.id === userId;
   };
   
   if (!roleLoaded) {

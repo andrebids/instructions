@@ -1,5 +1,5 @@
 import React from "react";
-import { useUser as useClerkUser } from "@clerk/clerk-react";
+import { useAuthContext } from "./AuthContext";
 
 const UserContext = React.createContext({
   userName: "Christopher",
@@ -7,20 +7,30 @@ const UserContext = React.createContext({
 });
 
 export function UserProvider({ children }) {
-  const { user: clerkUser } = useClerkUser();
+  // Usar sempre AuthContext (que gerencia Auth.js)
+  const authContext = useAuthContext();
+  const authUser = authContext?.user;
   
-  // Get user name from Clerk or fallback to localStorage/default
+  // Get user name from AuthContext
   const userName = React.useMemo(() => {
-    if (clerkUser?.fullName) return clerkUser.fullName;
-    if (clerkUser?.firstName) return clerkUser.firstName;
+    // Prioridade: AuthContext > localStorage
+    if (authUser?.name) {
+      console.log('🔍 [UserContext] Usando nome do authUser:', authUser.name);
+      return authUser.name;
+    }
+    if (authUser?.email) {
+      console.log('🔍 [UserContext] Usando email do authUser:', authUser.email);
+      return authUser.email;
+    }
     
     try {
       const saved = localStorage.getItem("userName");
+      console.log('🔍 [UserContext] Usando nome do localStorage:', saved);
       return saved ? saved : "Christopher";
     } catch (_) {
       return "Christopher";
     }
-  }, [clerkUser?.fullName, clerkUser?.firstName]);
+  }, [authUser?.name, authUser?.email, authUser?.id]); // Adicionar id para garantir atualização
 
   const setUserName = React.useCallback((name) => {
     try { localStorage.setItem("userName", name); } catch (_) {}

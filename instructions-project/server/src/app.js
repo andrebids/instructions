@@ -9,11 +9,12 @@ import productRoutes from './routes/products.js';
 import uploadRoutes from './routes/upload.js';
 import editorUploadRoutes from './routes/editor-upload.js';
 import userRoutes from './routes/users.js';
+import authRoutes from './routes/auth.route.js';
 import { createHocuspocusServer } from './hocuspocus-server.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { clerkMiddleware, requireAuth, getAuth } from '@clerk/express';
+import { requireAuth } from './middleware/auth.js';
 
 const app = express();
 
@@ -26,9 +27,6 @@ app.use(helmet({
         "'self'",
         "'unsafe-inline'", // Necessário para scripts inline do Vite
         "'unsafe-eval'", // Necessário para alguns scripts do Vite em dev
-        "https://nice-oriole-77.clerk.accounts.dev", // Clerk scripts
-        "https://*.clerk.accounts.dev", // Clerk scripts (qualquer subdomínio)
-        "https://*.clerk.com", // Clerk scripts alternativos
       ],
       styleSrc: [
         "'self'",
@@ -48,19 +46,12 @@ app.use(helmet({
       ],
       connectSrc: [
         "'self'",
-        "https://nice-oriole-77.clerk.accounts.dev", // Clerk API
-        "https://*.clerk.accounts.dev", // Clerk API (qualquer subdomínio)
-        "https://*.clerk.com", // Clerk API alternativos
         "https://api.iconify.design", // Iconify API
         "https://api.simplesvg.com", // SimpleSVG API
         "https://api.unisvg.com", // UniSVG API
-        "wss://nice-oriole-77.clerk.accounts.dev", // Clerk WebSocket
-        "wss://*.clerk.accounts.dev", // Clerk WebSocket
       ],
       frameSrc: [
         "'self'",
-        "https://nice-oriole-77.clerk.accounts.dev", // Clerk iframes
-        "https://*.clerk.accounts.dev", // Clerk iframes
       ],
       workerSrc: [
         "'self'",
@@ -145,17 +136,125 @@ app.use((req, res, next) => {
 
 // Frontend é servido via build estático (client/dist) quando disponível, ou via Vite dev server em desenvolvimento
 
-// Initialize Clerk middleware (only if configured)
-const hasClerk = !!process.env.CLERK_SECRET_KEY;
+// Configurar autenticação usando Auth.js
+const useAuthJs = process.env.USE_AUTH_JS === 'true';
 const enableAuth = process.env.ENABLE_AUTH === 'true';
-if (hasClerk && enableAuth) {
-  app.use(clerkMiddleware());
-  // Protect all /api/** routes with Clerk
+
+// Configurar Auth.js
+if (useAuthJs) {
+  // Trust proxy para Auth.js funcionar corretamente
+  app.set('trust proxy', true);
+  
+  // Montar rotas do Auth.js em /auth/*
+  app.use('/auth', authRoutes);
+  console.log('✅ Auth.js configurado em /auth/*');
+}
+
+// Proxy para APIs de ícones do Iconify (resolve problemas CORS)
+// IMPORTANTE: Esta rota deve estar ANTES do middleware de autenticação
+// pois os ícones são necessários para renderizar a UI antes da autenticação
+// Suporta múltiplos providers: iconify, simplesvg, unisvg
+app.get('/api/icons/*', async (req, res) => {
+  try {
+    // Capturar o path completo após /api/icons/
+    const iconPath = req.params[0] || '';
+    // Preservar query string se existir
+    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    
+    // Detectar qual provider está sendo usado baseado no path ou query string
+    // O Iconify pode usar diferentes APIs: iconify.design, simplesvg.com, unisvg.com
+    // Por padrão, usamos api.iconify.design, mas podemos detectar outros providers
+    // se necessário no futuro
+    let baseUrl = 'https://api.iconify.design';
+    
+    // Se o path contém indicação de outro provider, ajustar baseUrl
+    // (Por enquanto, todos os providers do Iconify usam api.iconify.design)
+    // Mas mantemos a estrutura para facilitar futuras expansões
+    const iconUrl = `${baseUrl}/${iconPath}${queryString}`;
+    
+    console.log('🔍 [Icon Proxy] Requisição recebida:', req.path);
+    console.log('🔍 [Icon Proxy] Fazendo proxy para:', iconUrl);
+    console.log('🔍 [Icon Proxy] Path completo:', req.path);
+    console.log('🔍 [Icon Proxy] Query string:', queryString);
+    console.log('🔍 [Icon Proxy] Headers:', JSON.stringify(req.headers, null, 2));
+    
+    // Fazer requisição para o CDN do Iconify com timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
+    
+    let response;
+    try {
+      response = await fetch(iconUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'TheCore-Server/1.0'
+        },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        console.error('❌ [Icon Proxy] Timeout ao buscar ícone:', iconUrl);
+        return res.status(504).json({ error: 'Request timeout', url: iconUrl });
+      }
+      throw fetchError;
+    }
+    
+    if (!response.ok) {
+      console.warn(`⚠️  [Icon Proxy] CDN retornou status ${response.status} para: ${iconUrl}`);
+      console.warn(`⚠️  [Icon Proxy] Response status text: ${response.statusText}`);
+      
+      // Retornar erro com informações úteis para debug
+      return res.status(response.status).json({ 
+        error: 'Failed to fetch icon',
+        status: response.status,
+        statusText: response.statusText,
+        url: iconUrl
+      });
+    }
+    
+    const data = await response.json();
+    
+    // Retornar com headers CORS corretos
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache por 24 horas
+    res.setHeader('Content-Type', 'application/json');
+    
+    console.debug('✅ [Icon Proxy] Proxy bem-sucedido para:', iconPath);
+    res.json(data);
+  } catch (error) {
+    console.error('❌ [Icon Proxy] Erro ao fazer proxy de ícone:', error.message);
+    console.error('❌ [Icon Proxy] Stack:', error.stack);
+    console.error('❌ [Icon Proxy] URL original:', req.url);
+    
+    // Retornar erro detalhado para debug
+    res.status(500).json({ 
+      error: 'Failed to proxy icon request',
+      message: error.message,
+      url: req.url
+    });
+  }
+});
+
+// OPTIONS para CORS preflight
+app.options('/api/icons/*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.sendStatus(204);
+});
+
+// Proteger rotas se o auth estiver explicitamente habilitado
+if (useAuthJs && enableAuth) {
   app.use('/api', requireAuth());
-  console.log('🔐 Clerk auth enabled for /api routes');
+  console.log('🔐 Auth.js habilitado para rotas /api (exceto /api/icons/*)');
+} else if (useAuthJs) {
+  console.warn('⚠️  Auth.js presente mas ENABLE_AUTH!=true. Rotas /api não protegidas em desenvolvimento.');
 } else {
-  if (!hasClerk) console.warn('Clerk disabled (missing CLERK_SECRET_KEY). /api routes are unsecured.');
-  if (hasClerk && !enableAuth) console.warn('Clerk present but ENABLE_AUTH!=true. Skipping auth protection for /api in dev.');
+  console.warn('⚠️  Auth.js desabilitado (USE_AUTH_JS != true). Rotas /api não protegidas.');
 }
 
 // Rota raiz - informações do servidor (apenas quando não há build de produção)
@@ -193,6 +292,7 @@ app.get('/health', async (req, res) => {
   });
 });
 
+
 // API Routes
 app.use('/api/projects', projectRoutes);
 app.use('/api/decorations', decorationRoutes);
@@ -202,9 +302,16 @@ app.use('/api/upload', editorUploadRoutes);
 app.use('/api/users', userRoutes);
 
 // Example protected route to inspect auth context
-app.get('/api/me', (req, res) => {
-  const auth = getAuth(req);
-  res.json({ userId: auth?.userId || null, sessionId: auth?.sessionId || null });
+app.get('/api/me', async (req, res) => {
+  // Usar middleware dual que suporta ambos os sistemas
+  const { getAuth } = await import('./middleware/auth.js');
+  const auth = await getAuth(req);
+  res.json({ 
+    userId: auth?.userId || null, 
+    sessionId: auth?.sessionId || null,
+    role: auth?.role || null,
+    source: auth?.source || 'none'
+  });
 });
 
 // CRÍTICO: Servir sw.js de dist/ ANTES de qualquer outro middleware estático

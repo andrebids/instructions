@@ -1,3 +1,6 @@
 .env*
 
+# Scripts de build (não devem ser commitados)
+scripts/build-env.*
+scripts/switch-auth.js
 
