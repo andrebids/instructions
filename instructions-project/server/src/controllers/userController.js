@@ -70,15 +70,38 @@ export async function getAll(req, res) {
     const { role, search } = req.query;
     const supabase = getSupabaseAdmin();
     
-    // Listar todos os utilizadores usando Admin API
-    const { data: usersList, error: listError } = await supabase.auth.admin.listUsers();
+    // Listar todos os utilizadores usando Admin API com paginação
+    // Por padrão, listUsers() retorna apenas 50 usuários por página
+    // Precisamos buscar todas as páginas
+    let allUsers = [];
+    let page = 1;
+    let hasMore = true;
+    const perPage = 1000; // Máximo permitido pela API
     
-    if (listError) {
-      throw new Error(listError.message);
+    while (hasMore) {
+      const { data: usersList, error: listError } = await supabase.auth.admin.listUsers({
+        page: page,
+        perPage: perPage
+      });
+      
+      if (listError) {
+        throw new Error(listError.message);
+      }
+      
+      if (usersList && usersList.users && usersList.users.length > 0) {
+        allUsers = allUsers.concat(usersList.users);
+        // Se retornou menos que perPage, não há mais páginas
+        hasMore = usersList.users.length === perPage;
+        page++;
+      } else {
+        hasMore = false;
+      }
     }
     
+    logInfo(`Total de usuários encontrados no Supabase: ${allUsers.length}`);
+    
     // Transformar dados do Supabase para formato da aplicação
-    let users = (usersList.users || []).map(transformUser);
+    let users = allUsers.map(transformUser);
     
     // Filtrar por role se especificado
     if (role && role !== 'all') {
