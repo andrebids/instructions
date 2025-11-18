@@ -24,14 +24,32 @@ export async function checkTableExists() {
 
 /**
  * Busca todos os projetos com filtros opcionais
+ * @param {Object} filters - Filtros de busca
+ * @param {string} filters.status - Filtrar por status
+ * @param {string} filters.projectType - Filtrar por tipo de projeto
+ * @param {string} filters.favorite - Filtrar por favorito
+ * @param {string} filters.includeElements - Incluir elementos do projeto
+ * @param {string} filters.createdBy - Filtrar por criador (userId)
+ * @param {string} filters.userRole - Role do usuário (para filtrar automaticamente se comercial)
+ * @param {string} filters.userId - ID do usuário (para filtrar automaticamente se comercial)
  */
 export async function findAllProjects(filters = {}) {
-  const { status, projectType, favorite, includeElements } = filters;
+  const { status, projectType, favorite, includeElements, createdBy, userRole, userId } = filters;
   const where = {};
   
   if (status) where.status = status;
   if (projectType) where.projectType = projectType;
   if (favorite) where.isFavorite = favorite === 'true';
+  
+  // Se for comercial, filtrar apenas projetos criados por ele
+  // Se createdBy for explicitamente passado, usar esse valor
+  if (createdBy) {
+    where.created_by = createdBy;
+  } else if (userRole === 'comercial' && userId) {
+    // Comercial só vê seus próprios projetos
+    where.created_by = userId;
+  }
+  // Admin vê todos os projetos (não adiciona filtro createdBy)
   
   // Só carregar elementos se explicitamente solicitado (para melhor performance)
   const includeOptions = includeElements === 'true' ? [
@@ -94,6 +112,8 @@ export async function findProjectById(id, includeElements = true) {
 
 /**
  * Cria um novo projeto
+ * @param {Object} projectData - Dados do projeto
+ * @param {string} projectData.createdBy - ID do usuário que cria o projeto (Clerk userId)
  */
 export async function createProject(projectData) {
   logServerOperation('CRIANDO NOVO PROJETO', {
@@ -103,6 +123,7 @@ export async function createProject(projectData) {
     location: projectData.location,
     description: projectData.description ? `[${projectData.description.length} caracteres]` : '[vazio]',
     hasSnapZones: !!(projectData.snapZonesByImage && Object.keys(projectData.snapZonesByImage).length > 0),
+    createdBy: projectData.createdBy || 'N/A',
   });
   
   // Log das zonas se existirem
@@ -122,10 +143,14 @@ export async function createProject(projectData) {
   }
   
   // Garantir que cartoucheByImage existe e tem valor padrão se não fornecido
+  // createdBy deve ser definido pelo controller (do req.auth.userId)
   const data = {
     ...projectData,
     cartoucheByImage: projectData.cartoucheByImage || {}
   };
+  
+  // Se createdBy não foi fornecido, não definir (será null)
+  // Isso permite que projetos antigos continuem funcionando
   
   const project = await Project.create(data);
   
@@ -144,6 +169,7 @@ export async function createProject(projectData) {
   }
   
   logSuccess('Projeto criado com ID:', project.id);
+  logSuccess('Created by:', project.createdBy || 'N/A');
   logSuccess('Description guardada na BD:', project.description ? `[${project.description.length} caracteres]` : '[vazio]');
   logSuccess('===== PROJETO CRIADO COM SUCESSO =====');
   

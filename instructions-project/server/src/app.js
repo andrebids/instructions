@@ -8,6 +8,7 @@ import decorationRoutes from './routes/decorations.js';
 import productRoutes from './routes/products.js';
 import uploadRoutes from './routes/upload.js';
 import editorUploadRoutes from './routes/editor-upload.js';
+import userRoutes from './routes/users.js';
 import { createHocuspocusServer } from './hocuspocus-server.js';
 import fs from 'fs';
 import path from 'path';
@@ -198,6 +199,7 @@ app.use('/api/decorations', decorationRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/upload', editorUploadRoutes);
+app.use('/api/users', userRoutes);
 
 // Example protected route to inspect auth context
 app.get('/api/me', (req, res) => {
