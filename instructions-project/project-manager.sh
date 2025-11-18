@@ -59,16 +59,6 @@ ensure_prereqs() {
     fi
     echo -e "${GREEN}✅ npm encontrado: $(npm --version)${NC}"
     
-    # Verificar Docker (opcional)
-    if command -v docker &> /dev/null; then
-        echo -e "${GREEN}✅ Docker encontrado${NC}"
-        if docker compose version &> /dev/null || command -v docker-compose &> /dev/null; then
-            echo -e "${GREEN}✅ Docker Compose encontrado${NC}"
-        fi
-    else
-        echo -e "${YELLOW}⚠️  Docker não encontrado (opcional)${NC}"
-    fi
-    
     # Verificar PM2
     if ! command -v pm2 &> /dev/null; then
         echo -e "${YELLOW}⚠️  PM2 não encontrado. Instalando globalmente...${NC}"
@@ -136,7 +126,7 @@ wait_for_postgres() {
     TRY_COUNT=0
     
     while [ $TRY_COUNT -lt $MAX_TRIES ]; do
-        if nc -z localhost 5433 2>/dev/null || docker exec instructions-project-postgres-1 pg_isready -U demo_user 2>/dev/null; then
+        if nc -z localhost 5433 2>/dev/null; then
             sleep 2
             echo -e "${GREEN}✅ PostgreSQL pronto e acessível!${NC}"
             return 0
@@ -180,30 +170,9 @@ start_project() {
     
     cd "${PROJECT_ROOT}"
     
-    # Iniciar PostgreSQL
-    echo "========================================"
-    echo "   [1/5] INICIANDO BASE DE DADOS"
-    echo "========================================"
-    echo ""
-    if command -v docker &> /dev/null; then
-        if docker compose version &> /dev/null; then
-            docker compose -f docker-compose.prod.yml up -d || docker compose -f docker-compose.dev.yml up -d
-        elif command -v docker-compose &> /dev/null; then
-            docker-compose -f docker-compose.prod.yml up -d || docker-compose -f docker-compose.dev.yml up -d
-        fi
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}✅ PostgreSQL iniciado com sucesso!${NC}"
-        else
-            echo -e "${YELLOW}⚠️  Erro ao iniciar PostgreSQL via Docker${NC}"
-        fi
-    else
-        echo -e "${YELLOW}⚠️  Docker não encontrado. Base de dados via Docker não será iniciada.${NC}"
-    fi
-    echo ""
-    
     # Aguardar PostgreSQL
     echo "========================================"
-    echo "   [2/5] AGUARDANDO POSTGRESQL"
+    echo "   [1/4] AGUARDANDO POSTGRESQL"
     echo "========================================"
     echo ""
     wait_for_postgres
@@ -211,7 +180,7 @@ start_project() {
     
     # Setup da BD
     echo "========================================"
-    echo "   [3/5] EXECUTANDO SETUP DA BD"
+    echo "   [2/4] EXECUTANDO SETUP DA BD"
     echo "========================================"
     echo ""
     cd "${SERVER_DIR}"
@@ -226,7 +195,7 @@ start_project() {
     
     # Iniciar servidor backend
     echo "========================================"
-    echo "   [4/5] INICIANDO SERVIDOR BACKEND"
+    echo "   [3/4] INICIANDO SERVIDOR BACKEND"
     echo "========================================"
     echo ""
     cd "${SERVER_DIR}"
@@ -238,7 +207,7 @@ start_project() {
     
     # Iniciar cliente frontend (opcional - desenvolvimento)
     echo "========================================"
-    echo "   [5/5] INICIANDO CLIENTE FRONTEND"
+    echo "   [4/4] INICIANDO CLIENTE FRONTEND"
     echo "========================================"
     echo ""
     echo -e "${YELLOW}💡 Frontend pode ser servido via build estático ou dev server${NC}"
@@ -265,19 +234,11 @@ check_status() {
     echo "========================================"
     echo ""
     
-    echo "[1/3] Verificando PostgreSQL..."
-    if command -v docker &> /dev/null; then
-        docker ps --filter "name=instructions-project-postgres" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-    else
-        echo -e "${YELLOW}⚠️  Docker não encontrado${NC}"
-    fi
-    echo ""
-    
-    echo "[2/3] Verificando processos PM2..."
+    echo "[1/2] Verificando processos PM2..."
     pm2 status
     echo ""
     
-    echo "[3/3] Testando conectividade..."
+    echo "[2/2] Testando conectividade..."
     if curl -s http://localhost:5000/health > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Backend: http://localhost:5000 - ONLINE${NC}"
     else
@@ -315,25 +276,13 @@ stop_project() {
     echo "========================================"
     echo ""
     
-    echo "[1/3] Parando containers Docker..."
-    if command -v docker &> /dev/null; then
-        cd "${PROJECT_ROOT}"
-        if docker compose version &> /dev/null; then
-            docker compose -f docker-compose.prod.yml down || docker compose -f docker-compose.dev.yml down
-        elif command -v docker-compose &> /dev/null; then
-            docker-compose -f docker-compose.prod.yml down || docker-compose -f docker-compose.dev.yml down
-        fi
-        echo -e "${GREEN}✅ Containers Docker parados${NC}"
-    fi
-    echo ""
-    
-    echo "[2/3] Parando processos PM2..."
+    echo "[1/2] Parando processos PM2..."
     pm2 delete instructions-server 2>/dev/null || true
     pm2 save
     echo -e "${GREEN}✅ Processos PM2 parados${NC}"
     echo ""
     
-    echo "[3/3] Verificando processos Node.js restantes..."
+    echo "[2/2] Verificando processos Node.js restantes..."
     pkill -f "node.*server" 2>/dev/null || true
     echo -e "${GREEN}✅ Processos Node.js parados${NC}"
     echo ""
@@ -348,13 +297,6 @@ stop_project() {
 stop_quick() {
     # Paragem rápida e silenciosa
     cd "${PROJECT_ROOT}"
-    if command -v docker &> /dev/null; then
-        if docker compose version &> /dev/null; then
-            docker compose -f docker-compose.prod.yml down > /dev/null 2>&1 || docker compose -f docker-compose.dev.yml down > /dev/null 2>&1
-        elif command -v docker-compose &> /dev/null; then
-            docker-compose -f docker-compose.prod.yml down > /dev/null 2>&1 || docker-compose -f docker-compose.dev.yml down > /dev/null 2>&1
-        fi
-    fi
     pm2 delete instructions-server > /dev/null 2>&1 || true
     pkill -f "node.*server" > /dev/null 2>&1 || true
 }

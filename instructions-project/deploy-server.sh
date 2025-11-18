@@ -35,19 +35,8 @@ CLIENT_DIR="${PROJECT_ROOT}/client"
 echo -e "${GREEN}🚀 Iniciando deploy do Instructions Project...${NC}"
 echo ""
 
-# 1. Garantir que Docker Compose está a correr
-echo -e "${YELLOW}🐳 [1/6] Verificando Docker Compose (PostgreSQL)...${NC}"
-cd "${PROJECT_ROOT}"
-if command -v docker-compose &> /dev/null; then
-  docker-compose -f docker-compose.prod.yml up -d || docker-compose -f docker-compose.dev.yml up -d
-elif command -v docker &> /dev/null && docker compose version &> /dev/null; then
-  docker compose -f docker-compose.prod.yml up -d || docker compose -f docker-compose.dev.yml up -d
-fi
-echo -e "${GREEN}✅ PostgreSQL verificado/iniciado${NC}"
-echo ""
-
-# 2. Atualizar código via git pull
-echo -e "${YELLOW}📥 [2/6] Atualizando código via git pull...${NC}"
+# 1. Atualizar código via git pull
+echo -e "${YELLOW}📥 [1/6] Atualizando código via git pull...${NC}"
 cd "${PROJECT_ROOT}"
 if [ -d .git ]; then
   git fetch origin
@@ -65,8 +54,8 @@ else
 fi
 echo ""
 
-# 3. Atualizar .env do servidor
-echo -e "${YELLOW}🔧 [3/6] Configurando variáveis de ambiente...${NC}"
+# 2. Atualizar .env do servidor
+echo -e "${YELLOW}🔧 [2/6] Configurando variáveis de ambiente...${NC}"
 cd "${SERVER_DIR}"
 if [ -f .env ]; then
   # Garantir DB_HOST=localhost
@@ -106,8 +95,8 @@ else
 fi
 echo ""
 
-# 4. Instalar dependências do servidor
-echo -e "${YELLOW}📦 [4/6] Instalando dependências do servidor...${NC}"
+# 3. Instalar dependências do servidor
+echo -e "${YELLOW}📦 [3/6] Instalando dependências do servidor...${NC}"
 cd "${SERVER_DIR}"
 if [ -f package-lock.json ]; then
   npm ci --omit=dev || npm install --omit=dev
@@ -117,8 +106,8 @@ fi
 echo -e "${GREEN}✅ Dependências do servidor instaladas${NC}"
 echo ""
 
-# 5. Build do cliente (se necessário)
-echo -e "${YELLOW}🏗️  [5/6] Fazendo build do cliente...${NC}"
+# 4. Build do cliente (se necessário)
+echo -e "${YELLOW}🏗️  [4/6] Fazendo build do cliente...${NC}"
 cd "${CLIENT_DIR}"
 if [ -f package-lock.json ]; then
   npm ci || npm install
@@ -129,8 +118,8 @@ npm run build
 echo -e "${GREEN}✅ Cliente compilado${NC}"
 echo ""
 
-# 6. Verificar/Ajustar configuração nginx (se necessário)
-echo -e "${YELLOW}🔧 [6/7] Verificando configuração nginx para uploads...${NC}"
+# 5. Verificar/Ajustar configuração nginx (se necessário)
+echo -e "${YELLOW}🔧 [5/6] Verificando configuração nginx para uploads...${NC}"
 if command -v nginx &> /dev/null; then
   if [ -f "${PROJECT_ROOT}/fix-nginx-upload-limit.sh" ]; then
     echo -e "${YELLOW}💡 Execute manualmente se necessário:${NC}"
@@ -144,8 +133,8 @@ else
 fi
 echo ""
 
-# 7. Reiniciar PM2
-echo -e "${YELLOW}🔄 [7/7] Reiniciando servidor com PM2...${NC}"
+# 6. Reiniciar PM2
+echo -e "${YELLOW}🔄 [6/6] Reiniciando servidor com PM2...${NC}"
 PM2_NAME_FINAL="${PM2_NAME:-instructions-server}"
 cd "${SERVER_DIR}"
 

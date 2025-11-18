@@ -79,13 +79,12 @@ server/
 
 ### 3. Base de Dados - **CONFIGURADA**
 
-**Docker Compose:**
-- ✅ PostgreSQL 15 configurado
-- ✅ Porta 5432
-- ✅ Credenciais definidas (`demo_user` / `demo_password`)
-- ✅ Volume para persistência
+**Supabase:**
+- ✅ PostgreSQL configurado via Supabase
+- ✅ Autenticação configurada
+- ✅ Storage configurado para uploads
 
-**Estado:** PostgreSQL pronto para usar, falta apenas conectar com Sequelize
+**Estado:** Base de dados Supabase configurada e pronta para usar
 
 ---
 
@@ -307,10 +306,7 @@ npm install date-fns
 ### Iniciar Ambiente Completo:
 
 ```bash
-# Terminal 1 - PostgreSQL
-docker-compose up -d
-
-# Terminal 2 - Backend
+# Terminal 1 - Backend
 cd server
 npm run dev
 

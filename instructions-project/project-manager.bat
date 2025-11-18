@@ -77,7 +77,7 @@ echo [DEBUG] Continuando apos stop_quick...
 echo [%DATE% %TIME%] [DEBUG] Continuando apos stop_quick... >> "%LOG_FILE%"
 echo.
 
-rem Verificar pré-requisitos (Node, npm, Docker/Compose)
+rem Verificar pré-requisitos (Node, npm)
 echo [DEBUG] Verificando pre-requisitos...
 echo [%DATE% %TIME%] [DEBUG] Verificando pre-requisitos... >> "%LOG_FILE%"
 call :ensure_prereqs
@@ -515,17 +515,7 @@ echo    PARANDO PROJETO THECORE
 echo ========================================
 echo.
 
-echo [1/3] Parando containers Docker...
-call :detect_docker
-if "%DOCKER_AVAILABLE%"=="1" (
-    %COMPOSE_CMD% -f docker-compose.dev.yml down
-    echo ✅ Containers Docker parados
-) else (
-    echo ⚠️  Docker/Compose nao encontrado. Nada para parar via Docker.
-)
-echo.
-
-echo [2/3] Parando processos Node.js nas portas do projeto...
+echo [1/2] Parando processos Node.js nas portas do projeto...
 rem Fechar apenas processos nas portas específicas do projeto
 rem Porta 5000 - Backend
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5000" ^| findstr "LISTENING"') do (
@@ -554,7 +544,7 @@ for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5173" ^| findstr "LISTENING
 echo ✅ Processos Node.js nas portas do projeto parados
 echo.
 
-echo [3/3] Limpando processos restantes...
+echo [2/2] Limpando processos restantes...
 rem Não fechar todos os nodemon, apenas os relacionados ao projeto
 echo ✅ Processos de desenvolvimento parados
 echo.
@@ -573,16 +563,7 @@ echo    STATUS DO PROJETO THECORE
 echo ========================================
 echo.
 
-echo [1/3] Verificando PostgreSQL...
-call :detect_docker >nul 2>&1
-if "%DOCKER_AVAILABLE%"=="1" (
-    docker ps --filter "name=instructions-project-postgres" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-) else (
-    echo ⚠️  Docker nao encontrado. Saltando verificacao de containers.
-)
-echo.
-
-echo [2/3] Verificando processos Node.js...
+echo [1/2] Verificando processos Node.js...
 tasklist /fi "imagename eq node.exe" 2>nul | findstr node.exe
 if %errorlevel% neq 0 (
     echo ❌ Nenhum processo Node.js encontrado
@@ -591,7 +572,7 @@ if %errorlevel% neq 0 (
 )
 echo.
 
-echo [3/3] Testando conectividade...
+echo [2/2] Testando conectividade...
 echo Testando backend...
 curl -s http://localhost:5000/health >nul 2>&1
 if %errorlevel% equ 0 (
@@ -1507,11 +1488,6 @@ rem Paragem rápida (silenciosa) para reinício
 rem =====================
 
 :stop_quick
-call :detect_docker >nul 2>&1
-if "%DOCKER_AVAILABLE%"=="1" (
-    %COMPOSE_CMD% -f "%~dp0docker-compose.dev.yml" down >nul 2>&1
-)
-
 rem Fechar apenas processos nas portas específicas do projeto
 rem Porta 5000 - Backend
 echo [DEBUG] Verificando processos na porta 5000 (backend)...
@@ -1567,8 +1543,6 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-rem Docker/Compose (opcional mas recomendado para a BD)
-call :detect_docker
 exit /b 0
 
 :wait_for_postgres
@@ -1619,23 +1593,3 @@ if errorlevel 1 (
 ) else (
     exit /b 0
 )
-
-:detect_docker
-set "DOCKER_AVAILABLE=0"
-set "COMPOSE_CMD=docker compose"
-docker --version >nul 2>&1
-if %errorlevel% equ 0 (
-    docker compose version >nul 2>&1
-    if %errorlevel% equ 0 (
-        set "DOCKER_AVAILABLE=1"
-        exit /b 0
-    ) else (
-        where docker-compose >nul 2>&1
-        if %errorlevel% equ 0 (
-            set "DOCKER_AVAILABLE=1"
-            set "COMPOSE_CMD=docker-compose"
-            exit /b 0
-        )
-    )
-)
-exit /b 1
