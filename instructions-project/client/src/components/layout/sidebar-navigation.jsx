@@ -4,10 +4,35 @@ import { Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useTheme } from "@heroui/use-theme";
 import { navigationItems } from "../../constants/navigation";
+import { useUserRole } from "../../hooks/useUserRole";
 
 export function SidebarNavigation() {
   // Mantemos o hook (pode ser útil para outras reações ao tema)
   useTheme();
+  const { isAdmin, isEditorStock, isComercial } = useUserRole();
+  
+  // Filtrar itens de navegação baseado no role
+  const filteredItems = React.useMemo(() => {
+    return navigationItems.filter((item) => {
+      // Dashboard e Shop são acessíveis para todos
+      if (item.href === '/' || item.href === '/shop') {
+        return true;
+      }
+      
+      // Admin Products apenas para admin e editor_stock
+      if (item.href === '/admin/products') {
+        return isAdmin || isEditorStock;
+      }
+      
+      // Users apenas para admin
+      if (item.href === '/admin/users') {
+        return isAdmin;
+      }
+      
+      // Outros itens (por padrão, mostrar para todos autenticados)
+      return true;
+    });
+  }, [isAdmin, isEditorStock, isComercial]);
 
   return (
     <div className={`flex flex-col items-center h-full bg-transparent py-6`}>
@@ -28,7 +53,7 @@ export function SidebarNavigation() {
       {/* Ícones centrados verticalmente */}
       <div className="flex-1 flex items-center">
         <div className="flex flex-col items-center gap-4">
-          {navigationItems.map((item) => {
+          {filteredItems.map((item) => {
             const isPlaceholder = !item.href || item.href === "#";
             return (
               <Tooltip

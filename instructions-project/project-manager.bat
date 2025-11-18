@@ -647,9 +647,9 @@ echo ⚠️  NOTA: O servidor remoto deve estar acessível via SSH
 echo    Certifique-se de que a chave SSH está configurada
 echo.
        echo 💡 O script irá executar automaticamente:
+       echo    - Atualização do código do servidor (git pull)
+       echo    - Execução de migrations na base de dados
        echo    - pm2 restart instructions-server
-       echo.
-       echo ℹ️  Migrations não são necessárias (usando Supabase)
 echo.
 echo Iniciando deploy automaticamente...
 timeout /t 2 /nobreak >nul
@@ -1245,8 +1245,23 @@ if not exist "node_modules" (
         set "SERVER_NEED_INSTALL=1"
     )
     if not exist "node_modules\pg" (
-        echo ⚠️  pg não encontrado. Reinstalando dependências...
+        echo pg nao encontrado. Reinstalando dependencias...
         echo [%DATE% %TIME%] pg nao encontrado >> "%LOG_FILE%" 2>&1
+        set "SERVER_NEED_INSTALL=1"
+    )
+    if not exist "node_modules\@clerk" (
+        echo @clerk nao encontrado. Reinstalando dependencias...
+        echo [%DATE% %TIME%] @clerk nao encontrado >> "%LOG_FILE%" 2>&1
+        set "SERVER_NEED_INSTALL=1"
+    )
+    if not exist "node_modules\@clerk\backend" (
+        echo @clerk/backend nao encontrado. Reinstalando dependencias...
+        echo [%DATE% %TIME%] @clerk/backend nao encontrado >> "%LOG_FILE%" 2>&1
+        set "SERVER_NEED_INSTALL=1"
+    )
+    if not exist "node_modules\@clerk\express" (
+        echo @clerk/express nao encontrado. Reinstalando dependencias...
+        echo [%DATE% %TIME%] @clerk/express nao encontrado >> "%LOG_FILE%" 2>&1
         set "SERVER_NEED_INSTALL=1"
     )
 )
@@ -1309,12 +1324,12 @@ if %INSTALL_ERROR% neq 0 (
     exit /b 1
 )
 echo [%DATE% %TIME%] Dependencias do servidor instaladas com sucesso >> "%LOG_FILE%" 2>&1
-echo ✅ Dependências do servidor instaladas com sucesso!
+echo Dependencias do servidor instaladas com sucesso!
 rem Verificar novamente após instalação
 if not exist "node_modules\sharp" (
-    echo ❌ AVISO: sharp ainda não foi instalado após npm install
+    echo AVISO: sharp ainda nao foi instalado apos npm install
     echo    -> Execute manualmente: cd server ^&^& npm install sharp
-    echo    -> O servidor pode não iniciar sem esta dependência!
+    echo    -> O servidor pode nao iniciar sem esta dependencia!
 )
 goto after_server_check
 

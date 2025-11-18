@@ -2,6 +2,7 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import * as projectController from '../controllers/projectController.js';
 import { projectImageUploadMiddleware, projectNightImageUploadMiddleware } from '../middleware/projectUpload.js';
+import { requireAdmin } from '../middleware/roles.js';
 
 const router = express.Router();
 
@@ -34,7 +35,7 @@ const notesUpdateRateLimiter = (req, res, next) => {
 
 // Rotas de projetos
 // IMPORTANTE: Rotas específicas devem vir ANTES das rotas genéricas com parâmetros
-router.get('/stats', projectController.getStats); // Deve vir antes de /:id
+router.get('/stats', requireAdmin(), projectController.getStats); // Deve vir antes de /:id (apenas admin)
 router.post('/:id/images/upload', projectImageUploadMiddleware, projectController.uploadImages); // Upload de imagens - DEVE VIR ANTES de /:id
 router.post('/:id/images/:imageId/night', projectNightImageUploadMiddleware, projectController.receiveNightImage); // Receber imagem de noite convertida
 router.post('/:id/images/:imageId/night/failed', projectController.markConversionFailed); // Marcar conversão como falhada

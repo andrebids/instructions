@@ -552,6 +552,7 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
         accept="image/*"
         onChange={handleFileInputChange}
         className="hidden"
+        aria-label="Upload image file"
       />
       {/* Camera input for mobile */}
       <input
@@ -561,6 +562,7 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
         capture="environment"
         onChange={handleFileInputChange}
         className="hidden"
+        aria-label="Capture image from camera"
       />
       {/* Gallery input for mobile */}
       <input
@@ -570,6 +572,7 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
         multiple={false}
         onChange={handleFileInputChange}
         className="hidden"
+        aria-label="Select image from gallery"
       />
 
       {/* Toolbar */}
@@ -611,6 +614,7 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
             editor.isActive('heading', { level: 2 }) ? 2 :
             editor.isActive('heading', { level: 3 }) ? 3 : 0
           }
+          aria-label="Text heading level"
         >
           <option value={0}>Paragraph</option>
           <option value={1}>Heading 1</option>

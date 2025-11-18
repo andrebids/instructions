@@ -26,9 +26,11 @@
     "migrate:cartouche": "node src/migrations/add-cartouche-by-image-field.js",
     "migrate:simulationState": "node src/migrations/add-simulation-state-fields.js",
     "migrate:draft": "node src/migrations/add-draft-status.js",
-    "migrate:all": "npm run migrate && npm run migrate:products && npm run migrate:dimensions && npm run migrate:animationSimulation && npm run migrate:notes && npm run migrate:lastEditedStep && npm run migrate:cartouche && npm run migrate:simulationState && npm run migrate:draft"
+    "migrate:createdBy": "node src/migrations/add-created-by-to-projects.js",
+    "migrate:all": "npm run migrate && npm run migrate:products && npm run migrate:dimensions && npm run migrate:animationSimulation && npm run migrate:notes && npm run migrate:lastEditedStep && npm run migrate:cartouche && npm run migrate:simulationState && npm run migrate:draft && npm run migrate:createdBy"
   },
   "dependencies": {
+    "@clerk/backend": "^1.20.0",
     "@clerk/express": "^1.7.42",
     "@hocuspocus/server": "^2.10.0",
     "@hocuspocus/extension-database": "^2.10.0",
