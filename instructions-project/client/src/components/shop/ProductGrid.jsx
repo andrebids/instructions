@@ -35,9 +35,12 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
   const rafRef = useRef(null);
   const cardSizeRef = useRef(400);
   const [cardSize, setCardSize] = useState(400);
+  const [cardHeight, setCardHeight] = useState(600);
   const containerWidthRef = useRef(0);
   const hasMovedRef = useRef(false);
   const dragStartTimeRef = useRef(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isTouch, setIsTouch] = useState(false);
 
   // Sync refs with state
   useEffect(() => {
@@ -48,7 +51,27 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     isPausedRef.current = isPaused;
   }, [isPaused]);
 
-  // Start/stop autoplay
+  // Create infinite loop products array
+  const infiniteProducts = React.useMemo(() => {
+    if (cols !== 1 || products.length === 0) return products;
+    // Duplicate products at the beginning and end for seamless loop
+    return [...products, ...products, ...products];
+  }, [cols, products]);
+
+  // Initialize scroll position to middle set
+  useEffect(() => {
+    if (cols !== 1 || products.length === 0) return;
+    if (containerRef.current && cardSizeRef.current > 0) {
+      const cardWidthWithGap = cardSizeRef.current + 24;
+      const loopOffset = products.length * cardWidthWithGap;
+      // Set initial scroll to middle set (second copy) only if not already set
+      if (containerRef.current.scrollLeft < loopOffset / 2) {
+        containerRef.current.scrollLeft = loopOffset;
+      }
+    }
+  }, [cols, products.length, cardSize]);
+
+  // Start/stop autoplay with infinite loop
   useEffect(() => {
     if (cols !== 1 || products.length <= 1) {
       if (rafRef.current) {
@@ -69,7 +92,10 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     const container = containerRef.current;
     if (!container) return;
 
-    const scrollAmount = 1.5; // pixels per frame (faster scroll)
+    // Smoother, slower scroll for better animation
+    const scrollAmount = 0.8; // pixels per frame (smoother scroll)
+    const cardWidthWithGap = cardSizeRef.current + 24;
+    const singleSetWidth = products.length * cardWidthWithGap;
     
     const scroll = () => {
       if (!containerRef.current || isDraggingRef.current || isPausedRef.current) {
@@ -83,22 +109,34 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
       const cont = containerRef.current;
       cont.scrollLeft += scrollAmount;
       
-      // Check if we've scrolled past the end
-      if (cont.scrollLeft >= cont.scrollWidth - cont.offsetWidth - 1) {
-        // Reset to start smoothly
-        cont.scrollLeft = 0;
-        setCurrentIndex(0);
-      } else {
-        // Update current index based on scroll position
-        // Card width + gap (24px = gap-6)
-        const cardWidthWithGap = cardSizeRef.current + 24;
-        const newIndex = Math.round(cont.scrollLeft / cardWidthWithGap);
-        if (newIndex < products.length) {
-          setCurrentIndex(prev => {
-            if (prev !== newIndex) return newIndex;
-            return prev;
-          });
+      // Seamless infinite loop: jump before reaching the end
+      // When we're about to reach the end of the second set, jump back to equivalent position in middle set
+      // This happens when we still have enough content ahead so the jump is imperceptible
+      const threshold = singleSetWidth * 2 - (cardWidthWithGap * 4); // Jump when 4 cards before the end
+      if (cont.scrollLeft >= threshold) {
+        // Calculate how far we are into the second set
+        const offset = cont.scrollLeft - singleSetWidth;
+        // Jump to equivalent position in middle set (seamless - same visual position)
+        cont.scrollLeft = singleSetWidth + (offset % singleSetWidth);
+      } else if (cont.scrollLeft < singleSetWidth - (cardWidthWithGap * 4)) {
+        // Jump forward if scrolled too far back
+        const offset = cont.scrollLeft - singleSetWidth;
+        cont.scrollLeft = singleSetWidth + (offset % singleSetWidth);
+        if (cont.scrollLeft < singleSetWidth) {
+          cont.scrollLeft += singleSetWidth;
         }
+      }
+      
+      // Update current index based on scroll position within the middle set
+      const relativeScroll = cont.scrollLeft - singleSetWidth;
+      const newIndex = Math.round(relativeScroll / cardWidthWithGap) % products.length;
+      const normalizedIndex = newIndex < 0 ? products.length + newIndex : newIndex;
+      
+      if (normalizedIndex >= 0 && normalizedIndex < products.length) {
+        setCurrentIndex(prev => {
+          if (prev !== normalizedIndex) return normalizedIndex;
+          return prev;
+        });
       }
       
       rafRef.current = requestAnimationFrame(scroll);
@@ -114,9 +152,17 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     };
   }, [cols, products.length, isDragging, isPaused]);
 
-  // Handle mouse/touch drag
+  // Check if device is touch-enabled
+  const isTouchDevice = useRef(false);
+  useEffect(() => {
+    const isTouchDeviceValue = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    isTouchDevice.current = isTouchDeviceValue;
+    setIsTouch(isTouchDeviceValue);
+  }, []);
+
+  // Handle mouse/touch drag (only for touch devices)
   const handleStart = useCallback((e) => {
-    if (cols !== 1) return;
+    if (cols !== 1 || !isTouchDevice.current) return;
     setIsDragging(true);
     setIsPaused(true);
     hasMovedRef.current = false;
@@ -186,39 +232,183 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     }
   }, [isDragging]);
 
-  // Attach event listeners
+
+  // Navigate functions with infinite loop support
+  const scrollToNext = useCallback(() => {
+    if (!containerRef.current || cols !== 1 || products.length === 0) return;
+    const container = containerRef.current;
+    const cardWidthWithGap = cardSizeRef.current + 24;
+    const scrollAmount = cardWidthWithGap * 2; // Scroll 2 cards at a time
+    const singleSetWidth = products.length * cardWidthWithGap;
+    
+    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    
+    // Check if we need to loop after scroll animation (seamless)
+    setTimeout(() => {
+      const threshold = singleSetWidth * 2 - (cardWidthWithGap * 4);
+      if (container.scrollLeft >= threshold) {
+        const offset = container.scrollLeft - singleSetWidth;
+        container.scrollLeft = singleSetWidth + (offset % singleSetWidth);
+      }
+    }, 500);
+    
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 3000);
+  }, [cols, products.length]);
+
+  const scrollToPrev = useCallback(() => {
+    if (!containerRef.current || cols !== 1 || products.length === 0) return;
+    const container = containerRef.current;
+    const cardWidthWithGap = cardSizeRef.current + 24;
+    const scrollAmount = cardWidthWithGap * 2; // Scroll 2 cards at a time
+    const singleSetWidth = products.length * cardWidthWithGap;
+    
+    container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    
+    // Check if we need to loop after scroll animation (seamless)
+    setTimeout(() => {
+      if (container.scrollLeft < singleSetWidth - (cardWidthWithGap * 4)) {
+        const offset = container.scrollLeft - singleSetWidth;
+        let newPos = singleSetWidth + (offset % singleSetWidth);
+        if (newPos < singleSetWidth) {
+          newPos += singleSetWidth;
+        }
+        container.scrollLeft = newPos;
+      }
+    }, 500);
+    
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 3000);
+  }, [cols, products.length]);
+
+  // Handle mouse wheel scroll with infinite loop
+  const handleWheel = useCallback((e) => {
+    if (cols !== 1 || products.length === 0) return;
+    e.preventDefault();
+    if (containerRef.current) {
+      const container = containerRef.current;
+      const cardWidthWithGap = cardSizeRef.current + 24;
+      const singleSetWidth = products.length * cardWidthWithGap;
+      
+      container.scrollLeft += e.deltaY;
+      
+      // Seamless infinite loop: jump before reaching boundaries
+      const threshold = singleSetWidth * 2 - (cardWidthWithGap * 4);
+      if (container.scrollLeft >= threshold) {
+        const offset = container.scrollLeft - singleSetWidth;
+        container.scrollLeft = singleSetWidth + (offset % singleSetWidth);
+      } else if (container.scrollLeft < singleSetWidth - (cardWidthWithGap * 4)) {
+        const offset = container.scrollLeft - singleSetWidth;
+        let newPos = singleSetWidth + (offset % singleSetWidth);
+        if (newPos < singleSetWidth) {
+          newPos += singleSetWidth;
+        }
+        container.scrollLeft = newPos;
+      }
+      
+      // Update current index
+      const relativeScroll = container.scrollLeft - singleSetWidth;
+      const newIndex = Math.round(relativeScroll / cardWidthWithGap) % products.length;
+      const normalizedIndex = newIndex < 0 ? products.length + newIndex : newIndex;
+      if (normalizedIndex >= 0 && normalizedIndex < products.length) {
+        setCurrentIndex(normalizedIndex);
+      }
+    }
+  }, [cols, products.length]);
+
+  // Handle keyboard navigation
   useEffect(() => {
     if (cols !== 1) return;
+    
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        scrollToPrev();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        scrollToNext();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [cols, scrollToPrev, scrollToNext]);
+
+  // Attach event listeners (only for touch devices)
+  useEffect(() => {
+    if (cols !== 1 || !isTouchDevice.current) return;
     
     const container = containerRef.current;
     if (!container) return;
 
-    container.addEventListener('mousedown', handleStart);
     container.addEventListener('touchstart', handleStart, { passive: false });
-    window.addEventListener('mousemove', handleMove);
     window.addEventListener('touchmove', handleMove, { passive: false });
-    window.addEventListener('mouseup', handleEnd);
     window.addEventListener('touchend', handleEnd);
 
     return () => {
-      container.removeEventListener('mousedown', handleStart);
       container.removeEventListener('touchstart', handleStart);
-      window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('touchmove', handleMove);
-      window.removeEventListener('mouseup', handleEnd);
       window.removeEventListener('touchend', handleEnd);
     };
   }, [cols, handleStart, handleMove, handleEnd]);
+
+  // Update scroll buttons and current index on scroll with infinite loop
+  useEffect(() => {
+    if (cols !== 1 || products.length === 0) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const cardWidthWithGap = cardSizeRef.current + 24;
+      const singleSetWidth = products.length * cardWidthWithGap;
+      
+      // Seamless infinite loop: jump before reaching visible boundaries
+      // Jump when we're 4 cards before the end to make it imperceptible
+      const threshold = singleSetWidth * 2 - (cardWidthWithGap * 4);
+      if (container.scrollLeft >= threshold) {
+        // Calculate offset from middle set start
+        const offset = container.scrollLeft - singleSetWidth;
+        // Jump to equivalent position in middle set (same visual position)
+        container.scrollLeft = singleSetWidth + (offset % singleSetWidth);
+      } else if (container.scrollLeft < singleSetWidth - (cardWidthWithGap * 4)) {
+        // Jump forward if scrolled too far back
+        const offset = container.scrollLeft - singleSetWidth;
+        let newPos = singleSetWidth + (offset % singleSetWidth);
+        if (newPos < singleSetWidth) {
+          newPos += singleSetWidth;
+        }
+        container.scrollLeft = newPos;
+      }
+      
+      // Update current index based on scroll position within the middle set
+      const relativeScroll = container.scrollLeft - singleSetWidth;
+      const newIndex = Math.round(relativeScroll / cardWidthWithGap) % products.length;
+      const normalizedIndex = newIndex < 0 ? products.length + newIndex : newIndex;
+      if (normalizedIndex >= 0 && normalizedIndex < products.length) {
+        setCurrentIndex(normalizedIndex);
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial index update
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, [cols, products.length]);
 
   // Pause on hover
   const handleMouseEnter = useCallback(() => {
     if (cols === 1) {
       setIsPaused(true);
+      setIsHovered(true);
     }
   }, [cols]);
 
   const handleMouseLeave = useCallback(() => {
     if (cols === 1) {
+      setIsHovered(false);
       setTimeout(() => {
         if (!isDragging) {
           setIsPaused(false);
@@ -227,19 +417,44 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     }
   }, [cols, isDragging]);
 
-  // Calculate card size based on container width to show partial cards on sides
+  // Calculate card size based on container width and height to show 2 cards at a time
+  // and fit within viewport without vertical scroll
   useEffect(() => {
     if (cols !== 1) return;
     
     const updateCardSize = () => {
-      if (containerRef.current) {
+      if (containerRef.current && carouselRef.current) {
         const containerWidth = containerRef.current.offsetWidth || containerRef.current.clientWidth;
         if (containerWidth > 0) {
           containerWidthRef.current = containerWidth;
-          // Make cards about 70% of container width so we can see parts of adjacent cards
-          const newSize = Math.min(containerWidth * 0.7, 500);
-          setCardSize(newSize);
-          cardSizeRef.current = newSize;
+          
+          // Calculate available height: viewport height minus header, controls, and padding
+          // Get the carousel container's position relative to viewport
+          const carouselRect = carouselRef.current.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          
+          // Calculate available height: from carousel top to bottom of viewport
+          // Subtract some padding for breathing room (e.g., 40px total)
+          const availableHeight = Math.max(400, viewportHeight - carouselRect.top - 40);
+          
+          // Aspect ratio: 3/4 means width/height = 3/4, so height = width * 4/3
+          // We want to show 2 cards, so: 2 * width + gap = containerWidth
+          const gap = 24;
+          const aspectRatio = 3 / 4; // width / height
+          
+          // Calculate width based on available height
+          const widthFromHeight = availableHeight * aspectRatio;
+          
+          // Calculate width to show exactly 2 cards
+          const widthForTwoCards = Math.floor((containerWidth - gap) / 2);
+          
+          // Use the smaller width to ensure both constraints are met
+          const finalCardWidth = Math.min(widthFromHeight, widthForTwoCards);
+          const finalCardHeight = finalCardWidth / aspectRatio;
+          
+          setCardSize(finalCardWidth);
+          setCardHeight(finalCardHeight);
+          cardSizeRef.current = finalCardWidth;
         }
       }
     };
@@ -260,6 +475,7 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     }
     
     window.addEventListener('resize', updateCardSize);
+    window.addEventListener('scroll', updateCardSize, { passive: true });
     
     return () => {
       clearTimeout(timeoutId);
@@ -267,11 +483,16 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
         resizeObserver.disconnect();
       }
       window.removeEventListener('resize', updateCardSize);
+      window.removeEventListener('scroll', updateCardSize);
     };
   }, [cols]);
 
   // Render carousel when cols === 1
   if (cols === 1) {
+    const totalCards = products.length;
+    const cardsPerView = 2;
+    const totalPages = Math.ceil(totalCards / cardsPerView);
+    const currentPage = Math.min(Math.floor(currentIndex / cardsPerView), totalPages - 1);
 
     return (
       <div
@@ -279,26 +500,26 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
         className="relative w-full overflow-hidden"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onWheel={handleWheel}
       >
         <div
           ref={containerRef}
-          className="flex gap-6 overflow-x-auto scrollbar-hide"
+          className={`flex gap-6 overflow-x-auto scrollbar-hide ${
+            isTouch ? 'cursor-grab active:cursor-grabbing' : ''
+          }`}
           style={{
             scrollBehavior: isDragging ? 'auto' : 'smooth',
-            cursor: isDragging ? 'grabbing' : 'grab',
             WebkitOverflowScrolling: 'touch',
-            paddingLeft: '15%', // Add padding to center first card
-            paddingRight: '15%', // Add padding to center last card
           }}
           onClick={handleContainerClick}
         >
-          {products.map((p, index) => (
+          {infiniteProducts.map((p, index) => (
             <div
-              key={p.id}
+              key={`${p.id}-${index}`}
               className="flex-shrink-0"
               style={{ 
                 width: `${cardSize}px`,
-                aspectRatio: '1 / 1',
+                height: `${cardHeight}px`,
               }}
               onClick={handleCardClick}
             >
@@ -315,6 +536,36 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
             </div>
           ))}
         </div>
+
+        {/* Page Indicators */}
+        {!isTouch && totalPages > 1 && (
+          <div className="flex justify-center gap-2 mt-4">
+            {Array.from({ length: totalPages }).map((_, index) => {
+              const isActive = index === currentPage;
+              return (
+                <button
+                  key={index}
+                  onClick={() => {
+                    if (containerRef.current && products.length > 0) {
+                      const cardWidthWithGap = cardSizeRef.current + 24;
+                      const singleSetWidth = products.length * cardWidthWithGap;
+                      const targetScroll = singleSetWidth + (index * cardsPerView * cardWidthWithGap);
+                      containerRef.current.scrollTo({ left: targetScroll, behavior: 'smooth' });
+                      setIsPaused(true);
+                      setTimeout(() => setIsPaused(false), 3000);
+                    }
+                  }}
+                  className={`transition-all duration-200 rounded-full ${
+                    isActive 
+                      ? 'w-8 h-2 bg-primary' 
+                      : 'w-2 h-2 bg-default-300 hover:bg-default-400'
+                  }`}
+                  aria-label={`Go to page ${index + 1}`}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }
