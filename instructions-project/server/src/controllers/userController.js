@@ -195,7 +195,7 @@ export async function create(req, res) {
     
     res.status(400).json({ 
       error: 'Erro ao criar utilizador',
-      message: error.message || 'Erro desconhecido'
+      message: error.message 
     });
   }
 }
@@ -263,7 +263,7 @@ export async function sendInvitation(req, res) {
     
     res.status(400).json({ 
       error: 'Erro ao enviar convite',
-      message: error.message || 'Erro desconhecido'
+      message: error.message 
     });
   }
 }
@@ -324,9 +324,9 @@ export async function updateRole(req, res) {
     res.json(user);
   } catch (error) {
     logError('Erro ao atualizar role', error);
-    res.status(400).json({ 
+    res.status(500).json({ 
       error: 'Erro ao atualizar role',
-      message: error.message || 'Erro desconhecido'
+      message: error.message 
     });
   }
 }
@@ -624,9 +624,9 @@ export async function deleteUser(req, res) {
     });
   } catch (error) {
     logError('Erro ao remover utilizador', error);
-    res.status(400).json({ 
+    res.status(500).json({ 
       error: 'Erro ao remover utilizador',
-      message: error.message || 'Erro desconhecido'
+      message: error.message 
     });
   }
 }
