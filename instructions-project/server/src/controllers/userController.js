@@ -1,4 +1,4 @@
-import { clerkClient } from '@clerk/clerk-sdk-node';
+import { createClerkClient } from '@clerk/backend';
 import { getAuth } from '@clerk/express';
 import { logError, logInfo } from '../utils/projectLogger.js';
 
@@ -6,8 +6,11 @@ import { logError, logInfo } from '../utils/projectLogger.js';
  * Controller de utilizadores - Gestão via Clerk API
  * Todas as operações requerem role admin
  * 
- * Nota: clerkClient é inicializado automaticamente usando CLERK_SECRET_KEY do ambiente
+ * Nota: clerkClient é inicializado usando CLERK_SECRET_KEY do ambiente
  */
+const clerkClient = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY,
+});
 
 // GET /api/users - Listar todos os utilizadores
 export async function getAll(req, res) {
