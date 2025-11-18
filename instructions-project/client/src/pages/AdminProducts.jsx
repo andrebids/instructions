@@ -1834,7 +1834,15 @@ export default function AdminProducts() {
                                 onValueChange={function(val) {
                                   setFormData(function(prev) {
                                     var newPrices = Object.assign({}, prev.prices);
-                                    newPrices.new = Object.assign({}, newPrices.new, { price: val });
+                                    var newPrice = parseFloat(val) || 0;
+                                    var currentOldPrice = parseFloat(prev.prices.new.oldPrice) || 0;
+                                    
+                                    // Se o novo Price for maior que o Old Price existente, limpar o Old Price
+                                    if (prev.prices.new.oldPrice && currentOldPrice > 0 && newPrice > currentOldPrice) {
+                                      newPrices.new = Object.assign({}, newPrices.new, { price: val, oldPrice: "" });
+                                    } else {
+                                      newPrices.new = Object.assign({}, newPrices.new, { price: val });
+                                    }
                                     return Object.assign({}, prev, { prices: newPrices });
                                   });
                                 }}
@@ -1850,10 +1858,31 @@ export default function AdminProducts() {
                                 onValueChange={function(val) {
                                   setFormData(function(prev) {
                                     var newPrices = Object.assign({}, prev.prices);
+                                    var currentPrice = parseFloat(prev.prices.new.price) || 0;
+                                    var newOldPrice = parseFloat(val) || 0;
+                                    
+                                    // Se o Old Price for menor que o Price, não permitir
+                                    if (val && newOldPrice > 0 && newOldPrice < currentPrice) {
+                                      return prev; // Não atualizar se inválido
+                                    }
+                                    
                                     newPrices.new = Object.assign({}, newPrices.new, { oldPrice: val });
                                     return Object.assign({}, prev, { prices: newPrices });
                                   });
                                 }}
+                                isInvalid={function() {
+                                  var currentPrice = parseFloat(formData.prices.new.price) || 0;
+                                  var oldPrice = parseFloat(formData.prices.new.oldPrice) || 0;
+                                  return formData.prices.new.oldPrice && oldPrice > 0 && oldPrice < currentPrice;
+                                }()}
+                                errorMessage={function() {
+                                  var currentPrice = parseFloat(formData.prices.new.price) || 0;
+                                  var oldPrice = parseFloat(formData.prices.new.oldPrice) || 0;
+                                  if (formData.prices.new.oldPrice && oldPrice > 0 && oldPrice < currentPrice) {
+                                    return "Old Price must be greater than or equal to Price";
+                                  }
+                                  return "";
+                                }()}
                                 classNames={{
                                   label: "text-primary-700 dark:text-primary-400"
                                 }}

@@ -724,8 +724,8 @@ export default function TrendingFiltersSidebar({
           };
 
           return (
-            <div className="space-y-2">
-              <span className="text-xs text-default-500">{label}</span>
+            <div className="space-y-1">
+              <span className="text-xs text-default-500 block -mt-2">{label}</span>
               {typeof Slider !== "undefined" && values.min !== values.max ? (
                 <>
                   <Slider
