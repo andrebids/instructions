@@ -3,6 +3,13 @@ import { Checkbox, Slider, Tooltip, Dropdown, DropdownTrigger, DropdownMenu, Dro
 import { Icon } from "@iconify/react";
 import { useTheme } from "@heroui/use-theme";
 
+// Componente memoizado para ícones para evitar loops
+const MountIcon = React.memo(({ iconName }) => {
+  if (!iconName) return null;
+  return <Icon icon={iconName} className="text-xs" />;
+}, (prevProps, nextProps) => prevProps.iconName === nextProps.iconName);
+MountIcon.displayName = "MountIcon";
+
 /**
  * Redesigned shop filters sidebar styled after the provided inspiration,
  * but wired to the existing filters/state.
@@ -22,7 +29,14 @@ export default function TrendingFiltersSidebar({
   onToggleVisibility,
   filtersVisible = true,
 }) {
-  const handle = (key, value) => onChange?.({ ...filters, [key]: value });
+  const filtersRef = React.useRef(filters);
+  React.useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+
+  const handle = React.useCallback((key, value) => {
+    onChange?.({ ...filtersRef.current, [key]: value });
+  }, [onChange]);
   const { theme } = useTheme();
   
   // Force component to re-render when theme changes by checking both hook and DOM
@@ -122,9 +136,14 @@ export default function TrendingFiltersSidebar({
       outdoor: products.filter((p) => p.location === "Exterior").length,
       usageShopping: products.filter((p) => p.usage === "Shopping").length,
       eco: products.filter((p) => isEcoProduct(p)).length,
-      mountPole: products.filter((p) => p.mount === "Poste").length,
-      mountCrossarm: products.filter((p) => p.mount === "Transversal").length,
-      mountGround: products.filter((p) => p.mount === "Chão").length,
+      mountSidePole: products.filter((p) => p.mount === "SIDE POLE").length,
+      mountCentralPole: products.filter((p) => p.mount === "CENTRAL POLE").length,
+      mountSuspended: products.filter((p) => p.mount === "SUSPENDED").length,
+      mountTransverse: products.filter((p) => p.mount === "TRANSVERSE").length,
+      mountWallMounted: products.filter((p) => p.mount === "WALL-MOUNTED").length,
+      mountFloorStanding: products.filter((p) => p.mount === "FLOOR-STANDING").length,
+      mountSpecial: products.filter((p) => p.mount === "SPECIAL").length,
+      mountNoFixing: products.filter((p) => p.mount === "NO FIXING").length,
       colorWhite: products.filter((p) => Boolean(p.images?.colors?.brancoPuro)).length,
       colorWarm: products.filter((p) => Boolean(p.images?.colors?.brancoQuente)).length,
       colorRGB: products.filter((p) => Boolean(p.images?.colors?.rgb)).length,
@@ -145,9 +164,14 @@ export default function TrendingFiltersSidebar({
   ];
 
   const mountOptions = [
-    { value: "Poste", label: "Pole", countKey: "mountPole" },
-    { value: "Transversal", label: "Transversal", countKey: "mountCrossarm" },
-    { value: "Chão", label: "Ground", countKey: "mountGround" },
+    { value: "SIDE POLE", label: "Side Pole", countKey: "mountSidePole", icon: "lucide:flag" },
+    { value: "CENTRAL POLE", label: "Central Pole", countKey: "mountCentralPole", icon: "lucide:flag" },
+    { value: "SUSPENDED", label: "Suspended", countKey: "mountSuspended", icon: "lucide:move-vertical" },
+    { value: "TRANSVERSE", label: "Transverse", countKey: "mountTransverse", icon: "lucide:move-horizontal" },
+    { value: "WALL-MOUNTED", label: "Wall-Mounted", countKey: "mountWallMounted", icon: "lucide:square" },
+    { value: "FLOOR-STANDING", label: "Floor-Standing", countKey: "mountFloorStanding", icon: "lucide:square" },
+    { value: "SPECIAL", label: "Special", countKey: "mountSpecial", icon: "lucide:star" },
+    { value: "NO FIXING", label: "No Fixing", countKey: "mountNoFixing", icon: "lucide:x-circle" },
   ];
 
 
@@ -163,15 +187,27 @@ export default function TrendingFiltersSidebar({
   const effectiveStockMin = stockMin === stockMax ? Math.max(0, stockMin - 1) : stockMin;
   const effectiveStockMax = stockMin === stockMax ? stockMin + 1 : stockMax;
 
-  const handlePriceChange = (value) => {
+  const [isDraggingPrice, setIsDraggingPrice] = React.useState(false);
+
+  const handlePriceChange = React.useCallback((value) => {
     if (Array.isArray(value)) {
-      onPriceChange?.([Math.min(...value), Math.max(...value)]);
+      const newMin = Math.min(...value);
+      const newMax = Math.max(...value);
+      onPriceChange?.([newMin, newMax]);
     } else if (typeof value === "object" && value !== null && "start" in value && "end" in value) {
       onPriceChange?.([value.start, value.end]);
     } else if (typeof value === "number") {
       onPriceChange?.([min, value]);
     }
-  };
+  }, [onPriceChange, min]);
+
+  const handlePriceChangeStart = React.useCallback(() => {
+    setIsDraggingPrice(true);
+  }, []);
+
+  const handlePriceChangeEnd = React.useCallback(() => {
+    setIsDraggingPrice(false);
+  }, []);
 
   const resetPrice = React.useCallback(() => {
     if (onPriceChange) {
@@ -179,15 +215,17 @@ export default function TrendingFiltersSidebar({
     }
   }, [onPriceChange, min, max]);
 
-  const handleStockChange = (value) => {
+  const handleStockChange = React.useCallback((value) => {
     if (Array.isArray(value)) {
-      onStockChange?.([Math.round(Math.min(...value)), Math.round(Math.max(...value))]);
+      const newMin = Math.round(Math.min(...value));
+      const newMax = Math.round(Math.max(...value));
+      onStockChange?.([newMin, newMax]);
     } else if (typeof value === "object" && value !== null && "start" in value && "end" in value) {
       onStockChange?.([Math.round(value.start), Math.round(value.end)]);
     } else if (typeof value === "number") {
       onStockChange?.([stockMin, Math.round(value)]);
     }
-  };
+  }, [onStockChange, stockMin]);
 
   const resetStock = React.useCallback(() => {
     if (onStockChange) {
@@ -195,27 +233,55 @@ export default function TrendingFiltersSidebar({
     }
   }, [onStockChange, stockMin, stockMax]);
 
-  const dimKey = filters.dimKey || "";
   const dimLabels = {
     heightM: "Height",
     widthM: "Width",
     depthM: "Depth",
   };
   const availableDimKeys = ["heightM", "widthM", "depthM"];
-  const dimValues = React.useMemo(() => {
+  
+  // Calculate values for each dimension separately
+  const heightValues = React.useMemo(() => {
     const vals = products
-      .map((p) => p?.specs?.dimensions?.[dimKey])
+      .map((p) => p?.specs?.dimensions?.heightM)
       .filter((v) => typeof v === "number" && Number.isFinite(v));
     if (!vals.length) return { min: 0, max: 0 };
     return { min: Math.min(...vals), max: Math.max(...vals) };
-  }, [products, dimKey]);
-  const dimRange = Array.isArray(filters.dimRange) ? filters.dimRange : null;
-  const effectiveDimRange = React.useMemo(() => {
-    if (dimRange && dimRange.length === 2 && Number.isFinite(dimRange[0]) && Number.isFinite(dimRange[1])) {
-      return dimRange;
+  }, [products]);
+
+  const widthValues = React.useMemo(() => {
+    const vals = products
+      .map((p) => p?.specs?.dimensions?.widthM)
+      .filter((v) => typeof v === "number" && Number.isFinite(v));
+    if (!vals.length) return { min: 0, max: 0 };
+    return { min: Math.min(...vals), max: Math.max(...vals) };
+  }, [products]);
+
+  const depthValues = React.useMemo(() => {
+    const vals = products
+      .map((p) => p?.specs?.dimensions?.depthM)
+      .filter((v) => typeof v === "number" && Number.isFinite(v));
+    if (!vals.length) return { min: 0, max: 0 };
+    return { min: Math.min(...vals), max: Math.max(...vals) };
+  }, [products]);
+
+  // Get effective ranges for each dimension
+  const getDimensionRange = (key) => {
+    const dimRanges = filters.dimRanges || {};
+    const range = dimRanges[key];
+    if (range && Array.isArray(range) && range.length === 2 && Number.isFinite(range[0]) && Number.isFinite(range[1])) {
+      return range;
     }
-    return [dimValues.min, dimValues.max];
-  }, [dimRange, dimValues.min, dimValues.max]);
+    let values;
+    if (key === "heightM") values = heightValues;
+    else if (key === "widthM") values = widthValues;
+    else values = depthValues;
+    return [values.min, values.max];
+  };
+
+  const effectiveHeightRange = React.useMemo(() => getDimensionRange("heightM"), [filters.dimRanges, heightValues]);
+  const effectiveWidthRange = React.useMemo(() => getDimensionRange("widthM"), [filters.dimRanges, widthValues]);
+  const effectiveDepthRange = React.useMemo(() => getDimensionRange("depthM"), [filters.dimRanges, depthValues]);
 
   const getSelectedLocationLabel = () => {
     if (!filters.location) return "All";
@@ -248,9 +314,9 @@ export default function TrendingFiltersSidebar({
   const selectedColorsCount = Array.isArray(filters.color) ? filters.color.length : 0;
   const priceSummary = `${formatCurrency(priceRange[0])} — ${formatCurrency(priceRange[1])}`;
   const colorSummary = selectedColorsCount ? `${selectedColorsCount} selected` : "All colors";
-  const dimensionSummary = dimKey
-    ? `${dimLabels[dimKey]} • ${formatDimensionValue(effectiveDimRange?.[0])}–${formatDimensionValue(effectiveDimRange?.[1])} m`
-    : "Not selected";
+  const dimensionSummary = filters.dimRanges && Object.keys(filters.dimRanges).length > 0
+    ? "Custom ranges"
+    : "All dimensions";
   const usageSummaryParts = [];
   if (filters.usage === "Shopping") usageSummaryParts.push("Shopping");
   if (filters.eco) usageSummaryParts.push("Eco");
@@ -269,7 +335,13 @@ export default function TrendingFiltersSidebar({
 
   const clearColors = () => onChange?.({ ...filters, color: [] });
   const clearYear = () => onChange?.({ ...filters, releaseYear: "" });
-  const clearDimensions = () => onChange?.({ ...filters, dimKey: "", dimRange: null });
+  const clearDimensions = () => {
+    const next = { ...filters };
+    delete next.dimRanges;
+    delete next.dimKey;
+    delete next.dimRange;
+    onChange?.(next);
+  };
   const clearUsage = () => onChange?.({ ...filters, usage: "", eco: false });
   const clearLocation = () => onChange?.({ ...filters, location: "" });
 
@@ -280,11 +352,9 @@ export default function TrendingFiltersSidebar({
   };
 
   const [openSections, setOpenSections] = React.useState(() => [
-    "category",
     "usage",
     "location",
     "collectionYear",
-    "dimensions",
   ]);
 
   const toggleSection = (key) => {
@@ -319,12 +389,6 @@ export default function TrendingFiltersSidebar({
 
   const collapsibleSections = [
     {
-      key: "category",
-      title: "Mounting",
-      summary: getMountSummary(),
-      onClear: filters.mount ? () => handle("mount", "") : null,
-    },
-    {
       key: "usage",
       title: "Usage & Sustainability",
       summary: usageSummary,
@@ -342,57 +406,146 @@ export default function TrendingFiltersSidebar({
       summary: selectedYear ? String(selectedYear) : "All years",
       onClear: selectedYear ? clearYear : null,
     },
-    {
-      key: "dimensions",
-      title: "Dimensions",
-      summary: dimensionSummary,
-      onClear: dimKey ? clearDimensions : null,
-    },
   ];
+
+  // Calculate price distribution histogram
+  const histogramBins = 20; // Number of bars in histogram
+  const priceHistogram = React.useMemo(() => {
+    if (!products || products.length === 0 || min === max) {
+      return Array(histogramBins).fill(0);
+    }
+    
+    const binSize = (max - min) / histogramBins;
+    const bins = Array(histogramBins).fill(0);
+    
+    products.forEach((product) => {
+      const price = typeof product.price === "number" ? product.price : 0;
+      if (price >= min && price <= max) {
+        const binIndex = Math.min(
+          Math.floor((price - min) / binSize),
+          histogramBins - 1
+        );
+        bins[binIndex]++;
+      }
+    });
+    
+    return bins;
+  }, [products, min, max]);
+  
+  const maxCount = Math.max(...priceHistogram, 1);
+
+  // Componente memoizado para Mounting para evitar loops com Icon
+  const MountingFilter = React.useMemo(() => {
+    const mountCounts = mountOptions.reduce((acc, opt) => {
+      acc[opt.countKey] = itemsCount[opt.countKey] || 0;
+      return acc;
+    }, {});
+    
+    return (
+      <div className="grid grid-cols-4 gap-1.5">
+        {mountOptions.map((opt) => {
+          const isSelected = filters.mount === opt.value;
+          const selectedClass = isDark
+            ? "border-primary bg-primary text-white"
+            : "border-primary bg-primary text-white";
+          const idleClass = isDark
+            ? "border-white/20 bg-white/[0.05] hover:border-white/30 hover:bg-white/[0.08] text-white"
+            : "border-black/10 bg-white hover:border-black/20 hover:bg-default-50 text-default-700";
+          const count = mountCounts[opt.countKey] || 0;
+
+          return (
+            <Tooltip
+              key={opt.value}
+              content={`${opt.label}${count > 0 ? ` (${count})` : ""}`}
+            >
+              <button
+                type="button"
+                onClick={() => handle("mount", isSelected ? "" : opt.value)}
+                className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 transition-all ${
+                  isSelected ? selectedClass : idleClass
+                }`}
+              >
+                {opt.icon && <MountIcon iconName={opt.icon} />}
+                <span className="text-xs font-medium">{opt.label}</span>
+              </button>
+            </Tooltip>
+          );
+        })}
+      </div>
+    );
+  }, [filters.mount, isDark, itemsCount, handle]);
 
   const renderSectionContent = React.useCallback((sectionKey) => {
     switch (sectionKey) {
       case "category":
-        return (
-          <ul className="space-y-2">
-            {mountOptions.map((opt) => {
-              const isSelected = filters.mount === opt.value;
-              const selectedClass = isDark
-                ? "border-primary bg-primary/10 text-white"
-                : "border-primary bg-primary/5 text-primary-700";
-              const idleClass = isDark
-                ? "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]"
-                : "border-black/10 bg-white hover:border-black/20 hover:bg-default-50";
-
-              return (
-                <li key={opt.value}>
-                  <button
-                    type="button"
-                    onClick={() => handle("mount", isSelected ? "" : opt.value)}
-                    className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors ${isSelected ? selectedClass : idleClass}`}
-                  >
-                    <span className={`text-sm font-medium ${isDark ? "text-white" : isSelected ? "text-primary-700" : "text-default-700"}`}>{opt.label}</span>
-                    <span className={`text-xs font-medium ${isDark ? "text-white" : "text-default-600"}`}>({itemsCount[opt.countKey]})</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        );
+        return MountingFilter;
       case "price":
         return (
-          <div className="space-y-3">
+          <div className="space-y-2">
+            {/* Histogram bars */}
+            <div className="relative h-20 flex items-end gap-1 justify-between">
+              {priceHistogram.map((count, index) => {
+                const binStart = min + (index * (max - min) / histogramBins);
+                const binEnd = min + ((index + 1) * (max - min) / histogramBins);
+                const isInRange = binStart <= priceRange[1] && binEnd >= priceRange[0];
+                
+                // Calculate actual bar height (10px to 60px based on count)
+                const actualBarHeight = maxCount > 0 
+                  ? Math.max(10, Math.min(60, 10 + (count / maxCount) * 50))
+                  : 10;
+                
+                return (
+                  <div
+                    key={index}
+                    className="relative w-1 overflow-hidden rounded-sm"
+                    style={{
+                      height: `${actualBarHeight}px`,
+                      minHeight: count > 0 ? "10px" : "10px",
+                      marginLeft: index === 0 ? "9px" : undefined,
+                      marginRight: index === histogramBins - 1 ? "9px" : undefined,
+                    }}
+                    title={`${formatCurrency(binStart)} - ${formatCurrency(binEnd)}: ${count} produtos`}
+                  >
+                    {/* Gray background bar (always visible) */}
+                    <div
+                      className={`absolute bottom-0 w-full ${
+                        isDark ? "bg-white/20" : "bg-default-300"
+                      }`}
+                      style={{
+                        height: "100%",
+                      }}
+                    />
+                    {/* Colored fill that animates from bottom to top */}
+                    <div
+                      className={`absolute bottom-0 w-full transition-all duration-500 ease-out ${
+                        isDark ? "bg-primary-500" : "bg-primary-500"
+                      }`}
+                      style={{
+                        height: isInRange ? "100%" : "0%",
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            
             {typeof Slider !== "undefined" && min !== max ? (
               <Slider
-                aria-label="Price range"
-                minValue={effectiveMin}
-                maxValue={effectiveMax}
-                step={1}
-                value={priceRange}
-                onChange={handlePriceChange}
-                showTooltip
+                  key={`price-slider-${effectiveMin}-${effectiveMax}`}
+                  aria-label="Price range"
+                  minValue={effectiveMin}
+                  maxValue={effectiveMax}
+                  step={1}
+                  value={Array.isArray(priceRange) && priceRange.length === 2 ? priceRange : [effectiveMin, effectiveMax]}
+                  onChange={handlePriceChange}
+                  onChangeStart={handlePriceChangeStart}
+                  onChangeEnd={handlePriceChangeEnd}
                 formatOptions={{ style: "currency", currency: "EUR" }}
                 className="max-w-full"
+                classNames={{
+                  track: "h-1",
+                  filler: "h-1"
+                }}
               />
             ) : (
               <div className="space-y-2">
@@ -431,15 +584,11 @@ export default function TrendingFiltersSidebar({
                 </div>
               </div>
             )}
-            <div className="flex items-center justify-between text-xs font-medium text-default-500">
-              <span>{formatCurrency(priceRange[0])}</span>
-              <span>{formatCurrency(priceRange[1])}</span>
-            </div>
           </div>
         );
       case "color":
         return (
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-6 gap-2">
             {colorOptions.map((c) => {
               const isActive = Array.isArray(filters.color) && filters.color.includes(c.key);
               const handleColorClick = () => {
@@ -459,14 +608,16 @@ export default function TrendingFiltersSidebar({
                     onClick={handleColorClick}
                     className={`h-9 w-9 rounded-full border transition-all ${
                       isActive
-                        ? `ring-2 ring-offset-2 ${isDark ? "ring-offset-[#0b1224]" : "ring-offset-white"} ring-primary`
+                        ? `ring-2 ring-primary ${c.key === "brancoPuro" ? "" : c.bordered ? "ring-offset-2" : "ring-offset-1"} ${c.key === "brancoPuro" ? "" : isDark ? "ring-offset-[#0b1224]" : "ring-offset-white"}`
                         : isDark
                           ? "border-white/20"
                           : "border-black/10"
                     }`}
                     style={{
                       background: c.gradient || c.swatch,
-                      boxShadow: c.bordered
+                      boxShadow: c.bordered && !isActive
+                        ? "inset 0 0 0 1px rgba(0,0,0,0.15), inset 0 0 0 2px rgba(255,255,255,0.6)"
+                        : c.bordered && isActive && c.key !== "brancoPuro"
                         ? "inset 0 0 0 1px rgba(0,0,0,0.15), inset 0 0 0 2px rgba(255,255,255,0.6)"
                         : undefined,
                     }}
@@ -556,112 +707,57 @@ export default function TrendingFiltersSidebar({
           </div>
         );
       case "dimensions":
-        return (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs uppercase tracking-[0.2em] text-primary-700 dark:text-primary-400">Field</span>
-              <Dropdown>
-                <DropdownTrigger>
-                  <Button
-                    size="sm"
-                    radius="full"
-                    variant="bordered"
-                    endContent={<Icon icon="lucide:chevron-down" className="text-sm" />}
-                  >
-                    {dimKey ? dimLabels[dimKey] : "Select"}
-                  </Button>
-                </DropdownTrigger>
-                <DropdownMenu
-                  aria-label="Select dimension"
-                  selectedKeys={new Set([dimKey || ""])}
-                  selectionMode="single"
-                  onAction={(key) => {
-                    const k = String(key);
-                    const next = { ...filters, dimKey: k === "" ? "" : k };
-                    if (k === "") {
-                      next.dimRange = null;
-                    } else {
-                      const vals = products
-                        .map((p) => p?.specs?.dimensions?.[k])
-                        .filter((v) => typeof v === "number" && Number.isFinite(v));
-                      next.dimRange = vals.length ? [Math.min(...vals), Math.max(...vals)] : [0, 0];
-                    }
-                    onChange?.(next);
-                  }}
-                >
-                  <DropdownItem key="">None</DropdownItem>
-                  {availableDimKeys.map((k) => (
-                    <DropdownItem key={k}>{dimLabels[k]}</DropdownItem>
-                  ))}
-                </DropdownMenu>
-              </Dropdown>
-            </div>
+        const renderDimensionSlider = (key, label, values, effectiveRange) => {
+          const handleDimensionChange = (value) => {
+            if (Array.isArray(value)) {
+              const newMin = Math.min(...value);
+              const newMax = Math.max(...value);
+              const dimRanges = filters.dimRanges || {};
+              onChange?.({ ...filters, dimRanges: { ...dimRanges, [key]: [newMin, newMax] } });
+            } else if (typeof value === "object" && value !== null && "start" in value && "end" in value) {
+              const dimRanges = filters.dimRanges || {};
+              onChange?.({ ...filters, dimRanges: { ...dimRanges, [key]: [value.start, value.end] } });
+            } else if (typeof value === "number") {
+              const dimRanges = filters.dimRanges || {};
+              onChange?.({ ...filters, dimRanges: { ...dimRanges, [key]: [values.min, value] } });
+            }
+          };
 
-            {dimKey ? (
-              <div className="space-y-2">
-                {typeof Slider !== "undefined" && dimValues.min !== dimValues.max ? (
+          return (
+            <div className="space-y-2">
+              <span className="text-xs text-default-500">{label}</span>
+              {typeof Slider !== "undefined" && values.min !== values.max ? (
+                <>
                   <Slider
-                    aria-label={`${dimLabels[dimKey]} range`}
-                    minValue={dimValues.min}
-                    maxValue={dimValues.max}
+                    key={`${key}-slider-${values.min}-${values.max}`}
+                    aria-label={`${label} range`}
+                    minValue={values.min}
+                    maxValue={values.max}
                     step={0.01}
-                    value={effectiveDimRange}
-                    onChange={(value) => {
-                      if (Array.isArray(value)) {
-                        onChange?.({ ...filters, dimRange: [Math.min(...value), Math.max(...value)] });
-                      }
-                    }}
-                    showTooltip
-                    formatOptions={{ style: "unit", unit: "meter", maximumFractionDigits: 2 }}
+                    value={Array.isArray(effectiveRange) && effectiveRange.length === 2 ? effectiveRange : [values.min, values.max]}
+                    onChange={handleDimensionChange}
                     className="max-w-full"
+                    classNames={{
+                      track: "h-1",
+                      filler: "h-1"
+                    }}
                   />
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="range"
-                      min={dimValues.min}
-                      max={dimValues.max}
-                      step={0.01}
-                      value={effectiveDimRange[0]}
-                      onChange={(e) =>
-                        onChange?.({
-                          ...filters,
-                          dimRange: [Math.min(Number(e.target.value), effectiveDimRange[1] - 0.01), effectiveDimRange[1]],
-                        })
-                      }
-                      className="w-full"
-                    />
-                    <input
-                      type="range"
-                      min={dimValues.min}
-                      max={dimValues.max}
-                      step={0.01}
-                      value={effectiveDimRange[1]}
-                      onChange={(e) =>
-                        onChange?.({
-                          ...filters,
-                          dimRange: [effectiveDimRange[0], Math.max(Number(e.target.value), effectiveDimRange[0] + 0.01)],
-                        })
-                      }
-                      className="w-full"
-                    />
-                  </div>
-                )}
-                <div className="text-xs text-default-500">
-                  <span className="text-primary-700 dark:text-primary-400 font-medium">{dimLabels[dimKey]}:</span>{" "}
-                  <span className="font-semibold text-foreground dark:text-white">
-                    {formatDimensionValue(effectiveDimRange[0])}m — {formatDimensionValue(effectiveDimRange[1])}m
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="text-xs text-default-500">Select a dimension field to filter.</div>
-            )}
+                </>
+              ) : null}
+            </div>
+          );
+        };
+
+        return (
+          <div className="space-y-4">
+            {renderDimensionSlider("heightM", "Height", heightValues, effectiveHeightRange)}
+            {renderDimensionSlider("widthM", "Width", widthValues, effectiveWidthRange)}
+            {renderDimensionSlider("depthM", "Depth", depthValues, effectiveDepthRange)}
           </div>
         );
       case "usage":
         return (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <Checkbox
               isSelected={filters.usage === "Shopping"}
               onValueChange={(value) => handle("usage", value ? "Shopping" : "")}
@@ -720,19 +816,24 @@ export default function TrendingFiltersSidebar({
         );
       case "stock":
         return (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {typeof Slider !== "undefined" && stockMin !== stockMax ? (
               <Slider
+                key={`stock-slider-${effectiveStockMin}-${effectiveStockMax}`}
                 aria-label="Stock range"
                 minValue={effectiveStockMin}
                 maxValue={effectiveStockMax}
                 step={0.01}
-                value={stockRange}
+                value={Array.isArray(stockRange) && stockRange.length === 2 ? stockRange : [effectiveStockMin, effectiveStockMax]}
                 onChange={handleStockChange}
                 showTooltip
                 formatOptions={{ maximumFractionDigits: 0 }}
                 tooltipValueFormatOptions={{ maximumFractionDigits: 0 }}
                 className="max-w-full"
+                classNames={{
+                  track: "h-1",
+                  filler: "h-1"
+                }}
               />
             ) : (
               <div className="space-y-2">
@@ -776,7 +877,7 @@ export default function TrendingFiltersSidebar({
       default:
         return null;
     }
-  }, [isDark, filters, itemsCount, mountOptions, dimKey, dimValues, effectiveDimRange, products, handle, formatCurrency, formatDimensionValue, availableYears, priceRange, effectiveMin, effectiveMax, handlePriceChange, onPriceChange, colorOptions, typeOptions, stockRange, stockMin, stockMax, effectiveStockMin, effectiveStockMax, handleStockChange, resetStock, onStockChange]);
+  }, [isDark, filters, itemsCount, mountOptions, heightValues, widthValues, depthValues, effectiveHeightRange, effectiveWidthRange, effectiveDepthRange, products, handle, formatCurrency, formatDimensionValue, availableYears, priceRange, effectiveMin, effectiveMax, handlePriceChange, handlePriceChangeStart, handlePriceChangeEnd, isDraggingPrice, colorOptions, typeOptions, stockRange, stockMin, stockMax, effectiveStockMin, effectiveStockMax, handleStockChange, priceHistogram, maxCount, histogramBins, min, max, statPillClass]);
 
   const CollapsibleCard = ({ section }) => {
     const isOpen = openSections.includes(section.key);
@@ -800,13 +901,13 @@ export default function TrendingFiltersSidebar({
 
     return (
       <div className={collapsibleCardClass}>
-        <div className="flex w-full items-center justify-between gap-3 px-4 py-3">
+        <div className="flex w-full items-center justify-between gap-3 px-4 py-2">
           <button
             type="button"
             onClick={handleToggle}
             className="flex flex-1 items-center justify-between gap-3 text-left"
           >
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-0.5">
               <span className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>{section.title}</span>
             </div>
             <Icon
@@ -836,8 +937,8 @@ export default function TrendingFiltersSidebar({
           ) : null}
         </div>
         {isOpen ? (
-          <div className="px-4 pb-4">
-            <div className="space-y-3">{renderSectionContent(section.key)}</div>
+          <div className="px-4 pb-3">
+            <div className="space-y-2">{renderSectionContent(section.key)}</div>
           </div>
         ) : null}
       </div>
@@ -872,8 +973,31 @@ export default function TrendingFiltersSidebar({
               )}
             </div>
             
-            <div className="space-y-6">
-              <div className={sectionCardClass}>
+            <div className="space-y-4">
+              <div className={isDark
+                ? "rounded-2xl border border-white/10 bg-content1/60 p-4 shadow-[0_18px_60px_rgba(8,15,36,0.45)]"
+                : "rounded-2xl border border-black/5 bg-white/80 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.1)]"}>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>Mounting</div>
+                </div>
+                {filters.mount ? (
+                  <Button
+                    size="sm"
+                    variant="light"
+                    className={`h-7 px-2 text-xs font-medium ${isDark ? "text-white hover:text-white/80" : "text-default-600 hover:text-default-700"}`}
+                    onPress={() => handle("mount", "")}
+                  >
+                    Clear
+                  </Button>
+                ) : null}
+              </div>
+              <div>{renderSectionContent("category")}</div>
+            </div>
+
+            <div className={isDark
+                ? "rounded-2xl border border-white/10 bg-content1/60 p-4 shadow-[0_18px_60px_rgba(8,15,36,0.45)]"
+                : "rounded-2xl border border-black/5 bg-white/80 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.1)]"}>
               <div className="flex items-center justify-between">
                 <div>
                   <div className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>Price Range</div>
@@ -891,23 +1015,25 @@ export default function TrendingFiltersSidebar({
                   Reset
                 </Button>
               </div>
-              <div className="mt-5 space-y-4">
+              <div className="space-y-2">
                 {renderSectionContent("price")}
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className={statPillClass}>
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-default-400">Min</span>
-                    <div className={`mt-1 text-sm font-semibold ${isDark ? "text-white" : "text-foreground"}`}>{formatCurrency(priceRange[0])}</div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className={`${statPillClass} py-1.5`}>
+                    <span className="text-[9px] uppercase tracking-[0.15em] text-default-400">Min</span>
+                    <div className={`mt-0.5 text-xs font-semibold ${isDark ? "text-white" : "text-foreground"}`}>{formatCurrency(priceRange[0])}</div>
                   </div>
-                  <div className={statPillClass}>
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-default-400">Max</span>
-                    <div className={`mt-1 text-sm font-semibold ${isDark ? "text-white" : "text-foreground"}`}>{formatCurrency(priceRange[1])}</div>
+                  <div className={`${statPillClass} py-1.5`}>
+                    <span className="text-[9px] uppercase tracking-[0.15em] text-default-400">Max</span>
+                    <div className={`mt-0.5 text-xs font-semibold ${isDark ? "text-white" : "text-foreground"}`}>{formatCurrency(priceRange[1])}</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className={sectionCardClass}>
-              <div className="flex items-center justify-between">
+            <div className={isDark
+                ? "rounded-2xl border border-white/10 bg-content1/60 p-4 shadow-[0_18px_60px_rgba(8,15,36,0.45)]"
+                : "rounded-2xl border border-black/5 bg-white/80 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.1)]"}>
+              <div className="flex items-center justify-between mb-2">
                 <div>
                   <div className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>Stock Level</div>
                 </div>
@@ -924,23 +1050,50 @@ export default function TrendingFiltersSidebar({
                   Reset
                 </Button>
               </div>
-              <div className="mt-5 space-y-4">
+              <div className="space-y-2">
                 {renderSectionContent("stock")}
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className={statPillClass}>
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-default-400">Min</span>
-                    <div className={`mt-1 text-sm font-semibold ${isDark ? "text-white" : "text-foreground"}`}>{stockRange[0]}</div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className={`${statPillClass} py-1.5`}>
+                    <span className="text-[9px] uppercase tracking-[0.15em] text-default-400">Min</span>
+                    <div className={`mt-0.5 text-xs font-semibold ${isDark ? "text-white" : "text-foreground"}`}>{stockRange[0]}</div>
                   </div>
-                  <div className={statPillClass}>
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-default-400">Max</span>
-                    <div className={`mt-1 text-sm font-semibold ${isDark ? "text-white" : "text-foreground"}`}>{stockRange[1]}</div>
+                  <div className={`${statPillClass} py-1.5`}>
+                    <span className="text-[9px] uppercase tracking-[0.15em] text-default-400">Max</span>
+                    <div className={`mt-0.5 text-xs font-semibold ${isDark ? "text-white" : "text-foreground"}`}>{stockRange[1]}</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className={sectionCardClass}>
-          <div className="flex items-center justify-between">
+            <div className={isDark
+                ? "rounded-2xl border border-white/10 bg-content1/60 p-4 shadow-[0_18px_60px_rgba(8,15,36,0.45)]"
+                : "rounded-2xl border border-black/5 bg-white/80 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.1)]"}>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>Dimensions</div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="light"
+                  className={`h-7 px-2 text-xs font-medium ${isDark ? "text-white hover:text-white/80" : "text-default-600 hover:text-default-700"}`}
+                  onPress={(e) => {
+                    e?.stopPropagation?.();
+                    clearDimensions();
+                  }}
+                  isDisabled={!filters.dimRanges || Object.keys(filters.dimRanges).length === 0}
+                >
+                  Reset
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {renderSectionContent("dimensions")}
+              </div>
+            </div>
+
+            <div className={isDark
+                ? "rounded-2xl border border-white/10 bg-content1/60 p-4 shadow-[0_18px_60px_rgba(8,15,36,0.45)]"
+                : "rounded-2xl border border-black/5 bg-white/80 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.1)]"}>
+          <div className="flex items-center justify-between mb-2">
             <div>
               <div className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>Type</div>
             </div>
@@ -955,11 +1108,13 @@ export default function TrendingFiltersSidebar({
               </Button>
             ) : null}
           </div>
-          <div className="mt-4">{renderSectionContent("type")}</div>
+          <div>{renderSectionContent("type")}</div>
         </div>
 
-        <div className={sectionCardClass}>
-          <div className="flex items-center justify-between">
+        <div className={isDark
+                ? "rounded-2xl border border-white/10 bg-content1/60 p-4 shadow-[0_18px_60px_rgba(8,15,36,0.45)]"
+                : "rounded-2xl border border-black/5 bg-white/80 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.1)]"}>
+          <div className="flex items-center justify-between mb-2">
             <div>
               <div className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>Color</div>
             </div>
@@ -974,10 +1129,10 @@ export default function TrendingFiltersSidebar({
               </Button>
             ) : null}
           </div>
-          <div className="mt-4">{renderSectionContent("color")}</div>
+          <div>{renderSectionContent("color")}</div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {collapsibleSections.map((section) => (
             <CollapsibleCard key={section.key} section={section} />
           ))}
@@ -985,7 +1140,7 @@ export default function TrendingFiltersSidebar({
 
               {/* Clear Filters Button */}
               {onClearAll && (
-                <div className="mt-6 pt-6 border-t border-divider">
+                <div className="mt-4 pt-4 border-t border-divider">
                   <Button
                     size="sm"
                     variant="flat"

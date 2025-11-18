@@ -3,6 +3,8 @@ function isValidImageUrl(url) {
   if (!url || typeof url !== 'string') return false;
   var trimmed = url.trim();
   if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') return false;
+  // Filtrar URLs temporárias que não existem mais
+  if (trimmed.includes('temp_nightImage_') || trimmed.includes('temp_') || trimmed.includes('/temp/')) return false;
   return true;
 }
 
@@ -67,11 +69,13 @@ export function transformApiProduct(apiProduct) {
   // Se ainda não houver imagens válidas, usar imagens aleatórias das pastas locais
   if (!isValidImageUrl(dayImage)) {
     dayImage = getRandomImage(apiProduct.id, false);
-    console.log('🖼️ [transformApiProduct] Atribuindo imagem aleatória (dia) para produto:', apiProduct.id, dayImage);
+    // Log silenciado - apenas para debug se necessário
+    // console.log('🖼️ [transformApiProduct] Atribuindo imagem aleatória (dia) para produto:', apiProduct.id, dayImage);
   }
   if (!isValidImageUrl(nightImage)) {
     nightImage = getRandomImage(apiProduct.id, true);
-    console.log('🖼️ [transformApiProduct] Atribuindo imagem aleatória (noite) para produto:', apiProduct.id, nightImage);
+    // Log silenciado - apenas para debug se necessário
+    // console.log('🖼️ [transformApiProduct] Atribuindo imagem aleatória (noite) para produto:', apiProduct.id, nightImage);
   }
   
   var transformed = {
