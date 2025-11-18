@@ -10,7 +10,7 @@
 - Frontend React + Vite + HeroUI funcionando em `http://localhost:3003/` ✅
 - Dashboard moderno com dark mode, notificações, e estatísticas ✅
 - Backend Express básico em `http://localhost:5000/` ✅
-- PostgreSQL configurado (Docker) ✅
+- PostgreSQL configurado (Supabase) ✅
 
 ### 📖 **COMECE AQUI:**
 **[📍 ESTADO ATUAL E PRÓXIMOS PASSOS](./docs/00_ESTADO_ATUAL_PROJETO.md)** ⭐ **LEIA ESTE DOCUMENTO PRIMEIRO!**
@@ -113,8 +113,8 @@ Este projeto é uma **aplicação de demonstração** para gestão de projetos d
 
 ### Pré-requisitos
 - Node.js 18+
-- Docker & Docker Compose
 - NPM ou Yarn
+- Conta Supabase (para base de dados)
 
 ### Instalação Rápida
 
@@ -123,8 +123,9 @@ Este projeto é uma **aplicação de demonstração** para gestão de projetos d
 mkdir instructions-project
 cd instructions-project
 
-# 2. Iniciar PostgreSQL com Docker
-docker-compose up -d
+# 2. Configurar variáveis de ambiente
+# Criar arquivo server/.env com as credenciais do Supabase
+# Ver exemplo em server/.env.example
 
 # 3. Instalar dependências do backend
 cd server
@@ -135,7 +136,10 @@ npm run seed  # Popular BD com dados demo
 cd ../client
 npm install
 
-# 5. Iniciar ambos em modo desenvolvimento
+# 5. Configurar variáveis de ambiente do frontend
+# Criar arquivo client/.env.local com VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY
+
+# 6. Iniciar ambos em modo desenvolvimento
 # Terminal 1 - Backend
 cd server && npm run dev
 
@@ -146,7 +150,6 @@ cd client && npm run dev
 ### Acesso
 - **Frontend:** http://localhost:3000 (com Hot Reload 🔥)
 - **Backend API:** http://localhost:5000/api
-- **pgAdmin:** http://localhost:5050
 
 ### Utilizadores Demo
 - **Admin:** admin@demo.com / demo123
@@ -204,8 +207,6 @@ instructions-project/
 │   └── seeders/         # Dados de demonstração
 │
 ├── docs/                # Documentação adicional
-│
-├── docker-compose.yml   # PostgreSQL + pgAdmin
 └── README.md           # Este ficheiro
 ```
 
@@ -229,8 +230,8 @@ instructions-project/
 - Multer (uploads)
 
 ### DevOps
-- Docker & Docker Compose
 - ESLint + Prettier
+- Supabase (Base de dados e autenticação)
 
 ---
 
@@ -373,7 +374,7 @@ Formato padronizado para integração:
 
 - [x] Documentação completa criada
 - [ ] Setup inicial do projeto
-- [ ] Configuração Docker + PostgreSQL
+- [ ] Configuração Supabase
 - [ ] Backend API básico
 - [ ] Frontend - Layout e navegação
 - [ ] Página: Dashboard

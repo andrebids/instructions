@@ -96,16 +96,6 @@ echo "🌐 IP externo da VM:"
 curl -s ifconfig.me 2>/dev/null || curl -s icanhazip.com 2>/dev/null || echo "⚠️ Não foi possível obter IP externo"
 echo ""
 
-# Verificar Docker (caso esteja a usar Docker)
-echo "🐳 Verificando Docker..."
-if command -v docker >/dev/null 2>&1; then
-    echo "✅ Docker instalado"
-    echo "   Containers PostgreSQL:"
-    docker ps --filter "name=postgres" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "   (nenhum container PostgreSQL encontrado)"
-else
-    echo "⚠️ Docker não encontrado"
-fi
-echo ""
 
 echo "✅ Verificação concluída!"
 echo ""

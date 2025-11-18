@@ -66,42 +66,6 @@ npm install helmet express-rate-limit
 npm install nodemon --save-dev
 ```
 
-### 1.4 Docker para PostgreSQL
-
-Criar `docker-compose.yml` na raiz:
-
-```yaml
-version: '3.8'
-services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: instructions_demo
-      POSTGRES_USER: demo_user
-      POSTGRES_PASSWORD: demo_password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  pgadmin:
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@demo.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
-    depends_on:
-      - postgres
-
-volumes:
-  postgres_data:
-```
-
-```bash
-docker-compose up -d
-```
-
 ---
 
 ## 2. Base de Dados

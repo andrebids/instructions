@@ -117,7 +117,6 @@ instructions-project/
 │   ├── MOCK_DATA.md                 # Estrutura dados mock
 │   └── WORKFLOW.md                  # Fluxo de trabalho
 │
-├── docker-compose.yml               # PostgreSQL + pgAdmin
 ├── package.json
 └── README.md
 ```

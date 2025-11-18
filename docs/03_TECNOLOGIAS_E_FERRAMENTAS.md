@@ -29,10 +29,9 @@
 
 ### Base de Dados
 - **PostgreSQL 15** - Base de dados relacional
-- **Docker** - Containerização da BD
 
 ### DevOps/Tools
-- **Docker Compose** - Orquestração de containers
+- **Supabase** - Base de dados PostgreSQL gerenciada e autenticação
 - **ESLint** - Linting JavaScript
 - **Prettier** - Formatação de código
 - **Nodemon** - Auto-restart do servidor
@@ -625,21 +624,13 @@ install:
 	cd server && npm install
 
 dev:
-	docker-compose up -d
 	cd server && npm run dev &
 	cd client && npm run dev
-
-db-up:
-	docker-compose up -d postgres
-
-db-down:
-	docker-compose down
 
 seed:
 	cd server && npm run seed
 
 clean:
-	docker-compose down -v
 	rm -rf client/node_modules
 	rm -rf server/node_modules
 ```
