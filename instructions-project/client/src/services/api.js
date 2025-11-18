@@ -47,10 +47,21 @@ const isValidAbortSignal = (signal) => {
 // Attach authentication token to requests (Auth.js)
 api.interceptors.request.use(async (config) => {
   try {
-    // Usar a URL da API do servidor (backend)
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-    const baseUrl = apiUrl.replace('/api', ''); // Remover /api para obter base URL
-    const sessionUrl = `${baseUrl}/auth/session`;
+    // Usar caminho relativo em produção para evitar problemas de CSP
+    // Em dev, usar VITE_API_URL se disponível, senão usar caminho relativo
+    const isDev = import.meta.env.DEV;
+    let sessionUrl;
+    
+    if (isDev && import.meta.env.VITE_API_URL) {
+      // Em desenvolvimento, usar VITE_API_URL se configurado
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const baseUrl = apiUrl.replace('/api', ''); // Remover /api para obter base URL
+      sessionUrl = `${baseUrl}/auth/session`;
+    } else {
+      // Em produção ou quando VITE_API_URL não está definido, usar caminho relativo
+      // Isso garante que funcione com a mesma origem (evita problemas de CSP)
+      sessionUrl = '/auth/session';
+    }
     
     const response = await fetch(sessionUrl, {
       credentials: 'include',
@@ -475,6 +486,30 @@ export const usersAPI = {
   // PUT /api/users/:id/role
   updateRole: async (id, role) => {
     const response = await api.put(`/users/${id}/role`, { role });
+    return response.data;
+  },
+
+  // PUT /api/users/:id - Atualização geral de usuário
+  update: async (id, data) => {
+    const response = await api.put(`/users/${id}`, data);
+    return response.data;
+  },
+
+  // PUT /api/users/:id/password - Atualizar senha
+  updatePassword: async (id, password) => {
+    const response = await api.put(`/users/${id}/password`, { password });
+    return response.data;
+  },
+
+  // PUT /api/users/:id/email - Atualizar email
+  updateEmail: async (id, email) => {
+    const response = await api.put(`/users/${id}/email`, { email });
+    return response.data;
+  },
+
+  // PUT /api/users/:id/profile - Atualizar perfil (admin)
+  updateUserProfile: async (id, profileData) => {
+    const response = await api.put(`/users/${id}/profile`, profileData);
     return response.data;
   },
 
