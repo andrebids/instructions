@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAuth } from '../middleware/auth.js';
 import { logError, logInfo } from '../utils/projectLogger.js';
+import sequelize from '../config/database.js';
 
 /**
- * Controller de utilizadores usando Supabase Admin API
+ * Controller de utilizadores usando Supabase Admin API e next_auth.users
  * Todas as operações requerem role admin
  */
 
@@ -31,9 +32,33 @@ function getSupabaseAdmin() {
 }
 
 /**
- * Transforma usuário do Supabase para formato da aplicação
+ * Transforma usuário da tabela next_auth.users para formato da aplicação
  */
-function transformUser(user) {
+function transformUserFromNextAuth(user) {
+  // Separar nome completo em firstName e lastName
+  const nameParts = (user.name || '').split(' ');
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ') || '';
+  const fullName = user.name || user.email || 'Sem nome';
+
+  return {
+    id: user.id,
+    firstName: firstName,
+    lastName: lastName,
+    fullName: fullName,
+    email: user.email || '',
+    role: user.role || null,
+    imageUrl: user.image || null,
+    createdAt: null, // next_auth.users não tem created_at
+    lastSignInAt: null, // next_auth.users não tem last_sign_in_at
+    emailVerified: user.emailVerified !== null,
+  };
+}
+
+/**
+ * Transforma usuário do Supabase Auth para formato da aplicação
+ */
+function transformUserFromSupabase(user) {
   const rawUserMeta = user.user_metadata || {};
   const rawAppMeta = user.app_metadata || {};
   
@@ -68,40 +93,19 @@ export async function getAll(req, res) {
     logInfo('GET /api/users - Listando utilizadores');
     
     const { role, search } = req.query;
-    const supabase = getSupabaseAdmin();
     
-    // Listar todos os utilizadores usando Admin API com paginação
-    // Por padrão, listUsers() retorna apenas 50 usuários por página
-    // Precisamos buscar todas as páginas
-    let allUsers = [];
-    let page = 1;
-    let hasMore = true;
-    const perPage = 1000; // Máximo permitido pela API
-    
-    while (hasMore) {
-      const { data: usersList, error: listError } = await supabase.auth.admin.listUsers({
-        page: page,
-        perPage: perPage
-      });
-      
-      if (listError) {
-        throw new Error(listError.message);
+    // Buscar usuários da tabela next_auth.users (usada pelo Auth.js)
+    const usersFromNextAuth = await sequelize.query(
+      `SELECT id, name, email, image, role, "emailVerified" FROM next_auth.users`,
+      {
+        type: sequelize.QueryTypes.SELECT
       }
-      
-      if (usersList && usersList.users && usersList.users.length > 0) {
-        allUsers = allUsers.concat(usersList.users);
-        // Se retornou menos que perPage, não há mais páginas
-        hasMore = usersList.users.length === perPage;
-        page++;
-      } else {
-        hasMore = false;
-      }
-    }
+    );
     
-    logInfo(`Total de usuários encontrados no Supabase: ${allUsers.length}`);
+    logInfo(`Total de usuários encontrados em next_auth.users: ${usersFromNextAuth.length}`);
     
-    // Transformar dados do Supabase para formato da aplicação
-    let users = allUsers.map(transformUser);
+    // Transformar dados para formato da aplicação
+    let users = usersFromNextAuth.map(transformUserFromNextAuth);
     
     // Filtrar por role se especificado
     if (role && role !== 'all') {
@@ -141,23 +145,20 @@ export async function getById(req, res) {
     const { id } = req.params;
     logInfo(`GET /api/users/${id} - Buscando utilizador`);
     
-    const supabase = getSupabaseAdmin();
-    
-    // Buscar usuário específico usando Admin API
-    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(id);
-    
-    if (userError) {
-      if (userError.message?.includes('not found')) {
-        return res.status(404).json({ error: 'Utilizador não encontrado' });
+    // Buscar usuário da tabela next_auth.users
+    const users = await sequelize.query(
+      `SELECT id, name, email, image, role, "emailVerified" FROM next_auth.users WHERE id = :userId LIMIT 1`,
+      {
+        replacements: { userId: id },
+        type: sequelize.QueryTypes.SELECT
       }
-      throw new Error(userError.message);
-    }
+    );
     
-    if (!userData.user) {
+    if (!users || users.length === 0) {
       return res.status(404).json({ error: 'Utilizador não encontrado' });
     }
     
-    const user = transformUser(userData.user);
+    const user = transformUserFromNextAuth(users[0]);
     res.json(user);
   } catch (error) {
     logError('Erro ao buscar utilizador', error);
@@ -201,7 +202,10 @@ export async function create(req, res) {
       throw new Error(createError.message);
     }
     
-    const user = transformUser(userData.user);
+    // Após criar no Supabase Auth, buscar da tabela next_auth.users
+    // Nota: O Auth.js pode criar automaticamente na next_auth.users quando o usuário faz login
+    // Por enquanto, retornamos os dados do Supabase
+    const user = transformUserFromSupabase(userData.user);
     
     logInfo('Utilizador criado com sucesso', { id: user.id, email });
     res.status(201).json(user);
@@ -341,7 +345,7 @@ export async function updateRole(req, res) {
       throw new Error(updateError.message);
     }
     
-    const user = transformUser(updatedUser.user);
+    const user = transformUserFromSupabase(updatedUser.user);
     
     logInfo('Role atualizado com sucesso', { id, role });
     res.json(user);
@@ -386,7 +390,7 @@ export async function updatePassword(req, res) {
       throw new Error(updateError.message);
     }
     
-    const user = transformUser(updatedUser.user);
+    const user = transformUserFromSupabase(updatedUser.user);
     
     logInfo('Senha atualizada com sucesso', { id });
     res.json(user);
@@ -441,7 +445,7 @@ export async function updateEmail(req, res) {
       throw new Error(updateError.message);
     }
     
-    const user = transformUser(updatedUser.user);
+    const user = transformUserFromSupabase(updatedUser.user);
     
     logInfo('Email atualizado com sucesso', { id, email });
     res.json(user);
@@ -490,7 +494,7 @@ export async function updateProfile(req, res) {
       throw new Error(updateError.message);
     }
     
-    const user = transformUser(updatedUser.user);
+    const user = transformUserFromSupabase(updatedUser.user);
     
     logInfo('Perfil atualizado com sucesso', { id });
     res.json(user);
@@ -600,7 +604,7 @@ export async function update(req, res) {
       throw new Error(updateError.message);
     }
     
-    const user = transformUser(updatedUser.user);
+    const user = transformUserFromSupabase(updatedUser.user);
     
     logInfo('Utilizador atualizado com sucesso', { id });
     res.json(user);
