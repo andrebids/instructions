@@ -188,8 +188,15 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
     // sem VITE_API_URL: usar /api/uploads para passar no proxy
     return path.indexOf('/uploads/') === 0 ? ('/api' + path) : path;
   };
-  const baseDay = mapPath(activeProduct.images?.day || activeProduct.imagesDayUrl || activeProduct.thumbnailUrl);
-  const baseNight = mapPath(activeProduct.images?.night || activeProduct.imagesNightUrl || baseDay);
+  let baseDay = mapPath(activeProduct.images?.day || activeProduct.imagesDayUrl || activeProduct.thumbnailUrl);
+  let baseNight = mapPath(activeProduct.images?.night || activeProduct.imagesNightUrl || baseDay);
+  // Filtrar URLs temporárias
+  if (baseNight && (baseNight.includes('temp_') || baseNight.includes('temp_nightImage_'))) {
+    baseNight = baseDay; // Fallback para day image se night for temporária
+  }
+  if (baseDay && (baseDay.includes('temp_') || baseDay.includes('temp_nightImage_'))) {
+    baseDay = null; // Se day também for temporária, usar placeholder
+  }
   const imageSrc = mode === "day" ? baseDay : baseNight;
   const imageSrcWithBuster = imageSrc 
     ? imageSrc + '?v=' + encodeURIComponent(String(activeProduct.updatedAt || activeProduct.id || '1')) 
@@ -314,7 +321,11 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                         onError={(e) => {
                           if (e.target.dataset.fb === '1') return;
                           e.target.dataset.fb = '1';
-                          const fallback = activeProduct?.images?.day || "/demo-images/placeholder.png";
+                          // Filtrar URLs temporárias no fallback também
+                          let fallback = activeProduct?.images?.day || "/demo-images/placeholder.png";
+                          if (fallback && (fallback.includes('temp_') || fallback.includes('temp_nightImage_'))) {
+                            fallback = "/demo-images/placeholder.png";
+                          }
                           e.target.src = fallback;
                         }}
                         onLoad={() => {

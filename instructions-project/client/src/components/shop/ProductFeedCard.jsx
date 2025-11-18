@@ -533,7 +533,11 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
 
   const videoUrl = getVideoUrl();
   console.log('🎬 [ProductFeedCard Render] videoUrl:', videoUrl, 'showAnimationSimulation:', showAnimationSimulation, 'manuallyToggledRef:', manuallyToggledRef.current);
-  const imageUrl = product?.images?.day || product?.images?.night || product?.images?.thumbnailUrl;
+  // Filtrar URLs temporárias
+  let imageUrl = product?.images?.day || product?.images?.night || product?.images?.thumbnailUrl;
+  if (imageUrl && (imageUrl.includes('temp_') || imageUrl.includes('temp_nightImage_'))) {
+    imageUrl = null; // Usar placeholder se for temporária
+  }
   const discountPct = product?.oldPrice 
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100) 
     : null;
@@ -690,7 +694,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
             />
           ) : (
             <img
-              src={imageUrl}
+              src={imageUrl || "/demo-images/placeholder.png"}
               alt={product.name}
               className="w-full h-full object-contain bg-black relative"
               style={{
@@ -698,6 +702,12 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                 height: '100%',
                 objectFit: 'contain',
                 transform: `scale(${layoutConfig.scale})`, // Escala específica por resolução/orientação
+              }}
+              onError={(e) => {
+                // Fallback para placeholder se a imagem falhar (silenciosamente)
+                if (e.target.src && !e.target.src.includes("/demo-images/placeholder.png")) {
+                  e.target.src = "/demo-images/placeholder.png";
+                }
               }}
             />
           )}
@@ -1265,12 +1275,18 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                       </div>
                     );
                   }
-                  const originalImageUrl = product?.images?.day || product?.images?.night || product?.images?.thumbnailUrl;
+                  let originalImageUrl = product?.images?.day || product?.images?.night || product?.images?.thumbnailUrl;
+                  if (originalImageUrl && (originalImageUrl.includes('temp_') || originalImageUrl.includes('temp_nightImage_'))) {
+                    originalImageUrl = null;
+                  }
                   
                   // Encontrar produto original se existir
                   const originalProduct = originalProductId && products?.find(p => p.id === originalProductId);
                   const showOriginalProductOption = showAnimationSimulation && originalProductId && originalProductId !== product?.id && onResetOriginalProduct && originalProduct;
-                  const originalProductImageUrl = originalProduct?.images?.day || originalProduct?.images?.night || originalProduct?.images?.thumbnailUrl;
+                  let originalProductImageUrl = originalProduct?.images?.day || originalProduct?.images?.night || originalProduct?.images?.thumbnailUrl;
+                  if (originalProductImageUrl && (originalProductImageUrl.includes('temp_') || originalProductImageUrl.includes('temp_nightImage_'))) {
+                    originalProductImageUrl = null;
+                  }
                   
                   return (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -1292,6 +1308,12 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                                 className="w-full h-full object-contain"
                                 classNames={{
                                   wrapper: "w-full h-full",
+                                }}
+                                onError={(e) => {
+                                  // Silenciosamente não mostrar a imagem se falhar
+                                  if (e.target && e.target.parentElement) {
+                                    e.target.parentElement.style.display = 'none';
+                                  }
                                 }}
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-blue-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -1363,7 +1385,10 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                       )}
                       
                       {similarProducts.map((similarProduct) => {
-                        const similarImageUrl = similarProduct?.images?.day || similarProduct?.images?.night || similarProduct?.images?.thumbnailUrl;
+                        let similarImageUrl = similarProduct?.images?.day || similarProduct?.images?.night || similarProduct?.images?.thumbnailUrl;
+                        if (similarImageUrl && (similarImageUrl.includes('temp_') || similarImageUrl.includes('temp_nightImage_'))) {
+                          similarImageUrl = null;
+                        }
                         const isSimilarGX349L = similarProduct?.name === 'GX349L' || similarProduct?.id === 'prd-005';
                         const isSimilarGX350LW = similarProduct?.name === 'GX350LW' || similarProduct?.id?.includes('GX350LW');
                         const similarSupportsAnimation = isSimilarGX349L || isSimilarGX350LW;
@@ -1405,6 +1430,12 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                                   className="w-full h-full object-contain"
                                   classNames={{
                                     wrapper: "w-full h-full",
+                                  }}
+                                  onError={(e) => {
+                                    // Silenciosamente não mostrar a imagem se falhar
+                                    if (e.target && e.target.parentElement) {
+                                      e.target.parentElement.style.display = 'none';
+                                    }
                                   }}
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

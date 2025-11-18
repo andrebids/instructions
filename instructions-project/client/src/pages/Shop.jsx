@@ -23,7 +23,7 @@ export default function Shop() {
   const { userName } = useUser();
   const { isHandheld } = useResponsiveProfile();
   const { theme } = useTheme();
-  const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", eco: false, dimKey: "", dimRange: null, releaseYear: "" });
+  const [filters, setFilters] = React.useState({ type: "", usage: "", location: "", color: [], mount: "", eco: false, dimKey: "", dimRange: null, dimRanges: {}, releaseYear: "" });
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [selected, setSelected] = React.useState({ product: null, variant: null });
   const [filtersOpen, setFiltersOpen] = React.useState(false);
@@ -119,6 +119,23 @@ export default function Shop() {
           include = false;
         }
       }
+      if (include && filters.dimRanges && typeof filters.dimRanges === 'object') {
+        var specsDimensions = (p && p.specs && p.specs.dimensions) ? p.specs.dimensions : null;
+        for (var dimKey in filters.dimRanges) {
+          var dimRange = filters.dimRanges[dimKey];
+          if (Array.isArray(dimRange) && dimRange.length === 2) {
+            var dimValue = (specsDimensions && specsDimensions[dimKey]) ? specsDimensions[dimKey] : null;
+            if (!(typeof dimValue === 'number' && Number.isFinite(dimValue))) {
+              include = false;
+              break;
+            } else if (dimValue < dimRange[0] || dimValue > dimRange[1]) {
+              include = false;
+              break;
+            }
+          }
+        }
+      }
+      // Backward compatibility: support old dimKey/dimRange format
       if (include && filters.dimKey && Array.isArray(filters.dimRange) && filters.dimRange.length === 2) {
         var specsDimensions = (p && p.specs && p.specs.dimensions) ? p.specs.dimensions : null;
         var dimValue = (specsDimensions && specsDimensions[filters.dimKey]) ? specsDimensions[filters.dimKey] : null;
@@ -268,7 +285,7 @@ export default function Shop() {
                   stockRange={stockRange}
                   stockLimits={stockLimits}
                   onStockChange={setStockRange}
-                  onClearAll={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", eco: false, dimKey: "", dimRange: null, releaseYear: "" }); setPriceRange([priceLimits.min, priceLimits.max]); setStockRange([stockLimits.min, stockLimits.max]); setQuery(""); }}
+                  onClearAll={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", eco: false, dimKey: "", dimRange: null, dimRanges: {}, releaseYear: "" }); setPriceRange([priceLimits.min, priceLimits.max]); setStockRange([stockLimits.min, stockLimits.max]); setQuery(""); }}
                   onToggleVisibility={() => setFiltersVisible(!filtersVisible)}
                   filtersVisible={filtersVisible}
                 />
