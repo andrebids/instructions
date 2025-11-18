@@ -3,7 +3,28 @@ import axios from 'axios';
 // Configuração base da API
 // Preferimos caminho relativo para funcionar com o proxy do Vite
 // e evitar CORS/portas diferentes (ex.: quando o Vite alterna 3003→3005).
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+let API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
+// Garantir que baseURL sempre termina sem barra e começa com /api se não especificado
+if (!API_BASE_URL) {
+  API_BASE_URL = '/api';
+} else {
+  // Remover barra final se existir
+  API_BASE_URL = API_BASE_URL.replace(/\/$/, '');
+  // Se não começar com /api e for um caminho relativo, adicionar /api
+  if (!API_BASE_URL.startsWith('http') && !API_BASE_URL.startsWith('/api')) {
+    API_BASE_URL = '/api';
+  }
+}
+
+// Debug: Log da configuração da API em desenvolvimento
+if (import.meta.env.DEV) {
+  console.log('🔧 [API Config]', {
+    VITE_API_URL: import.meta.env.VITE_API_URL,
+    API_BASE_URL: API_BASE_URL,
+    env: import.meta.env.MODE
+  });
+}
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -41,6 +62,19 @@ api.interceptors.request.use(async (config) => {
   if (config.signal && !isValidAbortSignal(config.signal)) {
     console.warn('⚠️ Invalid AbortSignal detected, removing from config:', config.signal);
     delete config.signal;
+  }
+  
+  // Debug: Log da URL final para verificar se baseURL está sendo aplicado
+  const finalURL = config.baseURL && config.url 
+    ? `${config.baseURL}${config.url.startsWith('/') ? '' : '/'}${config.url}`
+    : config.url;
+  if (config.url?.includes('/users')) {
+    console.log('🔍 [API Debug] Request URL:', {
+      baseURL: config.baseURL,
+      url: config.url,
+      finalURL: finalURL,
+      method: config.method
+    });
   }
   
   return config;
