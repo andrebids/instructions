@@ -1,17 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
+import AutoScroll from 'embla-carousel-auto-scroll';
 import { Button, Card } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { SimulationPreview } from './SimulationPreview';
 
 export function SimulationCarousel({ canvasImages = [], decorationsByImage = {} }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [viewMode, setViewMode] = useState('day'); // 'day', 'night', 'both'
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    { loop: true, align: 'center' },
+    [AutoScroll({ speed: 2, stopOnInteraction: false, stopOnMouseEnter: true })]
+  );
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+  
+  React.useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+    
+    return () => {
+      emblaApi.off('select', onSelect);
+      emblaApi.off('reInit', onSelect);
+    };
+  }, [emblaApi, onSelect]);
+  
+  const scrollPrev = useCallback(() => {
+    if (emblaApi) emblaApi.scrollPrev();
+  }, [emblaApi]);
+  
+  const scrollNext = useCallback(() => {
+    if (emblaApi) emblaApi.scrollNext();
+  }, [emblaApi]);
+  
+  const scrollTo = useCallback((index) => {
+    if (emblaApi) emblaApi.scrollTo(index);
+  }, [emblaApi]);
   
   if (!canvasImages || canvasImages.length === 0) {
     return null;
   }
   
-  const currentImage = canvasImages[currentIndex];
+  const currentImage = canvasImages[selectedIndex];
   
   // Tentar encontrar decorações pela chave do canvasImage.id
   // Se não encontrar, tentar pela primeira chave disponível (já que normalmente só há uma imagem por vez)
@@ -21,18 +56,6 @@ export function SimulationCarousel({ canvasImages = [], decorationsByImage = {} 
     const firstKey = Object.keys(decorationsByImage)[0];
     currentDecorations = decorationsByImage[firstKey] || [];
   }
-  
-  const nextSimulation = () => {
-    setCurrentIndex((prev) => (prev + 1) % canvasImages.length);
-  };
-  
-  const prevSimulation = () => {
-    setCurrentIndex((prev) => (prev - 1 + canvasImages.length) % canvasImages.length);
-  };
-  
-  const goToSimulation = (index) => {
-    setCurrentIndex(index);
-  };
   
   return (
     <div className="space-y-4">
@@ -72,57 +95,70 @@ export function SimulationCarousel({ canvasImages = [], decorationsByImage = {} 
         </div>
         
         <div className="text-sm text-default-500">
-          {currentIndex + 1} / {canvasImages.length}
+          {selectedIndex + 1} / {canvasImages.length}
         </div>
       </div>
       
       {/* Preview principal */}
       <Card className="p-4">
-        <div className="relative">
-          {viewMode === 'both' ? (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-xs text-default-500 mb-2 flex items-center gap-1">
-                  <Icon icon="lucide:sun" className="text-warning" />
-                  Day Version
+        <div className="relative overflow-hidden" ref={emblaRef}>
+          <div className="flex">
+            {canvasImages.map((image, index) => {
+              const decorations = decorationsByImage[image?.id] || [];
+              const imageDecorations = decorations.length === 0 && Object.keys(decorationsByImage).length > 0
+                ? decorationsByImage[Object.keys(decorationsByImage)[0]] || []
+                : decorations;
+              
+              return (
+                <div key={image.id || index} className="flex-[0_0_100%] min-w-0">
+                  {viewMode === 'both' ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-xs text-default-500 mb-2 flex items-center gap-1">
+                          <Icon icon="lucide:sun" className="text-warning" />
+                          Day Version
+                        </div>
+                        <div className="h-64">
+                          <SimulationPreview
+                            canvasImage={image}
+                            decorations={imageDecorations}
+                            mode="day"
+                            width={600}
+                            height={256}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-default-500 mb-2 flex items-center gap-1">
+                          <Icon icon="lucide:moon" className="text-primary" />
+                          Night Version
+                        </div>
+                        <div className="h-64">
+                          <SimulationPreview
+                            canvasImage={image}
+                            decorations={imageDecorations}
+                            mode="night"
+                            width={600}
+                            height={256}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-96">
+                      <SimulationPreview
+                        canvasImage={image}
+                        decorations={imageDecorations}
+                        mode={viewMode}
+                        width={800}
+                        height={384}
+                      />
+                    </div>
+                  )}
                 </div>
-                <div className="h-64">
-                  <SimulationPreview
-                    canvasImage={currentImage}
-                    decorations={currentDecorations}
-                    mode="day"
-                    width={600}
-                    height={256}
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-default-500 mb-2 flex items-center gap-1">
-                  <Icon icon="lucide:moon" className="text-primary" />
-                  Night Version
-                </div>
-                <div className="h-64">
-                  <SimulationPreview
-                    canvasImage={currentImage}
-                    decorations={currentDecorations}
-                    mode="night"
-                    width={600}
-                    height={256}
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="h-96">
-              <SimulationPreview
-                canvasImage={currentImage}
-                decorations={currentDecorations}
-                mode={viewMode}
-                width={800}
-                height={384}
-              />
-            </div>
-          )}
+              );
+            })}
+          </div>
           
           {/* Navegação */}
           {canvasImages.length > 1 && (
@@ -131,8 +167,8 @@ export function SimulationCarousel({ canvasImages = [], decorationsByImage = {} 
                 isIconOnly
                 size="lg"
                 variant="flat"
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 backdrop-blur-sm"
-                onPress={prevSimulation}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 backdrop-blur-sm z-10"
+                onPress={scrollPrev}
                 aria-label="Previous simulation"
               >
                 <Icon icon="lucide:chevron-left" className="text-white" />
@@ -141,8 +177,8 @@ export function SimulationCarousel({ canvasImages = [], decorationsByImage = {} 
                 isIconOnly
                 size="lg"
                 variant="flat"
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 backdrop-blur-sm"
-                onPress={nextSimulation}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 backdrop-blur-sm z-10"
+                onPress={scrollNext}
                 aria-label="Next simulation"
               >
                 <Icon icon="lucide:chevron-right" className="text-white" />
@@ -170,9 +206,9 @@ export function SimulationCarousel({ canvasImages = [], decorationsByImage = {} 
           {canvasImages.map((img, index) => (
             <button
               key={img.id || index}
-              onClick={() => goToSimulation(index)}
+              onClick={() => scrollTo(index)}
               className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                index === currentIndex
+                index === selectedIndex
                   ? 'border-primary ring-2 ring-primary/20'
                   : 'border-default-200 hover:border-default-400'
               }`}
