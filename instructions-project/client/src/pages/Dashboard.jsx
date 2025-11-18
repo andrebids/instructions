@@ -60,23 +60,69 @@ export default function Dashboard() {
       setError(null);
       
       // Carregar projetos e stats em paralelo
+      // Se stats falhar com 403, ainda tentar carregar projetos
       const options = signal ? { signal } : {};
-      const [projectsData, statsData] = await Promise.all([
-        projectsAPI.getAll(options),
-        projectsAPI.getStats(options),
-      ]);
       
-      setProjects(projectsData);
-      setStats({
-        total: statsData.total,
-        draft: statsData.draft || 0,
-        created: statsData.created || 0,
-        inProgress: statsData.inProgress,
-        finished: statsData.finished,
-        approved: statsData.approved,
-        cancelled: statsData.cancelled,
-        inQueue: statsData.inQueue,
-      });
+      try {
+        const [projectsData, statsData] = await Promise.all([
+          projectsAPI.getAll(options),
+          projectsAPI.getStats(options).catch((statsErr) => {
+            // Se stats falhar com 403, não bloquear o carregamento de projetos
+            if (statsErr.response?.status === 403) {
+              console.warn('⚠️  [Dashboard] Acesso negado para /projects/stats (requer role admin)');
+              // Retornar stats vazios se não tiver permissão
+              return {
+                total: 0,
+                draft: 0,
+                created: 0,
+                inProgress: 0,
+                finished: 0,
+                approved: 0,
+                cancelled: 0,
+                inQueue: 0,
+              };
+            }
+            throw statsErr;
+          }),
+        ]);
+        
+        setProjects(projectsData);
+        setStats({
+          total: statsData.total,
+          draft: statsData.draft || 0,
+          created: statsData.created || 0,
+          inProgress: statsData.inProgress,
+          finished: statsData.finished,
+          approved: statsData.approved,
+          cancelled: statsData.cancelled,
+          inQueue: statsData.inQueue,
+        });
+      } catch (err) {
+        // Se for erro 403 em stats, ainda tentar carregar projetos
+        if (err.response?.status === 403 && err.config?.url?.includes('/projects/stats')) {
+          console.warn('⚠️  [Dashboard] Acesso negado para stats, carregando apenas projetos');
+          try {
+            const projectsData = await projectsAPI.getAll(options);
+            setProjects(projectsData);
+            // Usar stats vazios
+            setStats({
+              total: 0,
+              draft: 0,
+              created: 0,
+              inProgress: 0,
+              finished: 0,
+              approved: 0,
+              cancelled: 0,
+              inQueue: 0,
+            });
+            return; // Sucesso parcial, não definir erro
+          } catch (projectsErr) {
+            // Se projetos também falhar, tratar como erro geral
+            throw projectsErr;
+          }
+        }
+        throw err;
+      }
     } catch (err) {
       // Ignorar erros de requisições abortadas/canceladas
       if (
@@ -96,7 +142,10 @@ export default function Dashboard() {
       
       // Mensagem de erro mais detalhada
       let errorMessage = t('errors.failedToLoadData');
-      if (err.response?.status === 500) {
+      if (err.response?.status === 403) {
+        const errorData = err.response?.data;
+        errorMessage = errorData?.message || 'Acesso negado. Você não tem permissão para acessar este recurso.';
+      } else if (err.response?.status === 500) {
         const errorData = err.response?.data;
         if (errorData?.error) {
           if (errorData.hint) {

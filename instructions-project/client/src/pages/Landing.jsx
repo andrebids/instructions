@@ -1,6 +1,7 @@
 import React from 'react'
-import { SignInButton, SignUpButton } from '@clerk/clerk-react'
-import { ArrowRightOnRectangleIcon, UserPlusIcon } from '@heroicons/react/24/outline'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
+import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline'
 import { useTranslation } from 'react-i18next'
 import LiquidEther from '../components/ui/LiquidEther'
 import GlassSurface from '../components/ui/GlassSurface'
@@ -11,9 +12,20 @@ import FadeContent from '../components/ui/FadeContent'
 
 export default function Landing() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const useAuthJs = import.meta.env.VITE_USE_AUTH_JS === 'true'
+  // Sempre chamar o hook, mas apenas usar quando Auth.js estiver ativo
+  const authJsHook = useAuth()
+  const signIn = useAuthJs ? authJsHook.signIn : null
   const sectionRef = React.useRef(null)
   const [showSubtitle, setShowSubtitle] = React.useState(false)
   const etherColors = React.useMemo(() => ['#5227FF', '#FF9FFC', '#B19EEF'], [])
+
+  const handleAuthJsSignIn = async (e) => {
+    e.preventDefault()
+    // Redirecionar para página de sign-in (email/password)
+    navigate('/sign-in')
+  }
 
   // Typing configuration (requested: 45ms per char)
   const speed = 45; // ms per char
@@ -135,23 +147,14 @@ export default function Landing() {
               className="w-full"
             >
               <ul>
-                <SignInButton mode="modal" redirectUrl="/">
+                <button onClick={useAuthJs ? handleAuthJsSignIn : () => navigate('/sign-in')} type="button">
                   <li style={{"--i":"#36d1dc","--j":"#5b86e5", background:"transparent"}}>
                     <GlassSurface width={"100%"} height={"100%"} borderRadius={9999} className="!p-0">
                       <ArrowRightOnRectangleIcon className="auth-icon w-7 h-7" />
                     </GlassSurface>
                     <span className="title">{t('pages.landing.signIn')}</span>
                   </li>
-                </SignInButton>
-
-                <SignUpButton mode="modal" redirectUrl="/">
-                  <li style={{"--i":"#f7971e","--j":"#ffd200", background:"transparent"}}>
-                    <GlassSurface width={"100%"} height={"100%"} borderRadius={9999} className="!p-0">
-                      <UserPlusIcon className="auth-icon w-7 h-7" />
-                    </GlassSurface>
-                    <span className="title">{t('pages.landing.signUp')}</span>
-                  </li>
-                </SignUpButton>
+                </button>
               </ul>
             </FadeContent>
           ) : null}

@@ -8,7 +8,7 @@ import * as projectImageService from '../services/projectImageService.js';
 import { validateDescription, validateProjectId, validateFiles } from '../validators/projectValidator.js';
 import { logInfo, logError, logServerOperation, formatErrorMessage } from '../utils/projectLogger.js';
 import { getUserRole } from '../middleware/roles.js';
-import { getAuth } from '@clerk/express';
+import { getAuth } from '../middleware/auth.js';
 
 // GET /api/projects - Listar todos os projetos
 export async function getAll(req, res) {
@@ -26,9 +26,18 @@ export async function getAll(req, res) {
     }
     
     // Obter informações do usuário para filtrar projetos
-    const auth = getAuth(req);
-    const userId = auth?.userId || null;
-    const userRole = getUserRole(req);
+    let userId = null;
+    let userRole = null;
+    
+    try {
+      // Obter auth usando Auth.js
+      const auth = await getAuth(req);
+      userId = auth?.userId || null;
+      userRole = await getUserRole(req);
+    } catch (error) {
+      // Se houver erro ao obter auth (ex: middleware não registrado), continuar sem auth
+      console.warn('Aviso: Não foi possível obter informações de autenticação:', error.message);
+    }
     
     // Adicionar filtros baseados no role do usuário
     const filters = {
@@ -83,8 +92,8 @@ export async function getById(req, res) {
 // POST /api/projects - Criar novo projeto
 export async function create(req, res) {
   try {
-    // Obter userId do Clerk e definir createdBy automaticamente
-    const auth = getAuth(req);
+    // Obter userId do Auth.js e definir createdBy automaticamente
+    const auth = await getAuth(req);
     const userId = auth?.userId || null;
     
     if (!userId) {

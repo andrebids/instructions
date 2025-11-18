@@ -28,8 +28,47 @@ export default defineConfig({
     '__APP_VERSION__': JSON.stringify(APP_VERSION)
   },
   plugins: [
-    react(), 
+    react({
+      // Configuração do plugin React para suprimir avisos de source maps
+      jsxRuntime: 'automatic',
+    }), 
     tailwindcss(),
+    // Plugin customizado para interceptar source maps inexistentes
+    // Isso previne erros do React DevTools ao tentar carregar installHook.js.map
+    {
+      name: 'suppress-source-map-errors',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          // Interceptar requisições de source maps (.map) que podem não existir
+          if (req.url.endsWith('.map')) {
+            // Para source maps que não existem (como installHook.js.map do React DevTools),
+            // retornar um source map vazio válido em vez de erro 404
+            // Isso previne erros de JSON.parse no navegador
+            // O Vite tentará servir o arquivo primeiro via next(), então só retornamos
+            // um source map vazio se o arquivo realmente não existir
+            
+            // Armazenar a função original do end para interceptar 404s
+            const originalEnd = res.end.bind(res);
+            let responseEnded = false;
+            
+            res.end = function(chunk, encoding) {
+              // Se for um 404 e ainda não tivermos respondido
+              if (res.statusCode === 404 && !responseEnded && req.url.endsWith('.map')) {
+                responseEnded = true;
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                return originalEnd(JSON.stringify({ version: 3, sources: [], mappings: '' }));
+              }
+              return originalEnd(chunk, encoding);
+            };
+            
+            next();
+            return;
+          }
+          next();
+        });
+      },
+    },
     VitePWA({
       strategies: 'injectManifest',
       registerType: 'prompt', // Changed from 'autoUpdate' to 'prompt' for manual control

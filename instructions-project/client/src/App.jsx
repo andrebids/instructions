@@ -12,7 +12,8 @@ import AdminProducts from "./pages/AdminProducts";
 import AdminUsers from "./pages/AdminUsers";
 import ProjectNotes from "./pages/ProjectNotes";
 import EditProject from "./pages/EditProject";
-import { SignedIn, SignedOut, SignIn, SignUp } from "@clerk/clerk-react";
+import SignIn from "./pages/SignIn";
+import { SignedIn, SignedOut } from "./components/auth/AuthGuard";
 import { MobileBottomNav } from "./components/layout/mobile-bottom-nav";
 import { useResponsiveProfile } from "./hooks/useResponsiveProfile";
 import PWAInstallPrompt from "./components/features/PWAInstallPrompt";
@@ -76,8 +77,8 @@ export default function App() {
           <main className="flex flex-1 flex-col overflow-hidden">
             <Routes>
               <Route path="/" element={<Landing />} />
-              <Route path="/sign-in/*" element={<SignIn routing="path" signUpUrl="/sign-up" />} />
-              <Route path="/sign-up/*" element={<SignUp routing="path" signInUrl="/sign-in" />} />
+              <Route path="/sign-in" element={<SignIn />} />
+              <Route path="/sign-up" element={<Navigate to="/sign-in" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>

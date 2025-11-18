@@ -5,18 +5,104 @@ import { HeroUIProvider } from '@heroui/react'
 import { ThemeProvider } from './components/features/ThemeProvider'
 import { ShopProvider } from './context/ShopContext'
 import { UserProvider } from './context/UserContext'
+import { AuthProvider } from './context/AuthContext'
 import App from './App'
 import './index.css'
-import { ClerkProvider } from '@clerk/clerk-react'
 import { registerSW } from 'virtual:pwa-register'
 import { setupNotificationClickListener } from './services/pushNotifications'
 import { isBackgroundSyncAvailable } from './services/backgroundSync'
 import './i18n' // Inicializar i18next
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-if (!PUBLISHABLE_KEY) {
-  throw new Error('Missing Clerk Publishable Key')
+// Configurar Iconify para usar proxy do servidor (resolve problemas CORS)
+// IMPORTANTE: Configuração executada imediatamente para garantir que esteja pronta antes dos componentes
+if (typeof window !== 'undefined') {
+  // Interceptar requisições fetch do Iconify para redirecionar ao proxy
+  // Isso garante que TODAS as requisições do Iconify passem pelo nosso proxy
+  const originalFetch = window.fetch;
+  const iconifyAPIs = [
+    'https://api.iconify.design',
+    'https://api.simplesvg.com',
+    'https://api.unisvg.com'
+  ];
+  
+  // Construir URL do proxy
+  const isDev = import.meta.env.DEV;
+  const proxyBaseUrl = isDev 
+    ? 'http://localhost:5000/api/icons'
+    : (import.meta.env.VITE_API_URL || window.location.origin).replace(/\/api$/, '') + '/api/icons';
+  
+  window.fetch = function(input, init) {
+    const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : input?.url || '');
+    
+    // NÃO interceptar requisições internas (Vite, localhost, etc)
+    // Apenas interceptar requisições HTTPS para as APIs externas do Iconify
+    if (!url || typeof url !== 'string') {
+      return originalFetch.call(this, input, init);
+    }
+    
+    // Ignorar requisições locais, relativas, ou do Vite
+    if (url.startsWith('/') || 
+        url.startsWith('http://localhost') || 
+        url.startsWith('http://127.0.0.1') ||
+        url.startsWith('ws://') ||
+        url.startsWith('wss://') ||
+        url.includes('@vite') ||
+        url.includes('@react-refresh') ||
+        url.includes('node_modules') ||
+        !url.startsWith('https://')) {
+      return originalFetch.call(this, input, init);
+    }
+    
+    // Verificar se é uma requisição para as APIs do Iconify
+    const isIconifyRequest = iconifyAPIs.some(api => url.startsWith(api));
+    
+    if (isIconifyRequest) {
+      // Extrair o path após o domínio da API
+      const apiMatch = iconifyAPIs.find(api => url.startsWith(api));
+      if (apiMatch) {
+        const path = url.substring(apiMatch.length);
+        const proxyUrl = proxyBaseUrl + path;
+        
+        console.log('🔄 [Icon Proxy] Interceptando requisição:', url);
+        console.log('🔄 [Icon Proxy] Redirecionando para:', proxyUrl);
+        
+        // Fazer requisição para o proxy em vez da API externa
+        return originalFetch.call(this, proxyUrl, init);
+      }
+    }
+    
+    // Para outras requisições, usar fetch original
+    return originalFetch.call(this, input, init);
+  };
+  
+  console.log('✅ [Main] Interceptação de fetch configurada para Iconify');
+  console.log('✅ [Main] Proxy URL:', proxyBaseUrl);
+  
+  // Também configurar addAPIProvider como fallback
+  (async () => {
+    try {
+      const iconifyModule = await import('@iconify/react');
+      const { addAPIProvider } = iconifyModule;
+      
+      // Configurar providers com URL do proxy
+      const providers = ['iconify', 'simplesvg', 'unisvg'];
+      providers.forEach(provider => {
+        try {
+          addAPIProvider(provider, {
+            resources: [proxyBaseUrl],
+          });
+          console.log(`✅ [Main] Provider '${provider}' configurado com proxy:`, proxyBaseUrl);
+        } catch (providerError) {
+          console.warn(`⚠️ [Main] Erro ao configurar provider '${provider}':`, providerError.message);
+        }
+      });
+    } catch (error) {
+      console.warn('⚠️ [Main] Erro ao configurar addAPIProvider (interceptação de fetch ativa):', error.message);
+    }
+  })();
 }
+
+const useAuthJs = import.meta.env.VITE_USE_AUTH_JS === 'true'
 
 // Register service worker with prompt mode (no auto-update)
 // Service Worker está habilitado APENAS em produção
@@ -212,9 +298,21 @@ if ('serviceWorker' in navigator && !isDev) {
 }
 
 const rootElement = document.getElementById('root')
-createRoot(rootElement).render(
-  <React.StrictMode>
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
+
+// Componente raiz usando Auth.js
+function RootApp() {
+  if (!useAuthJs) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center' }}>
+        <h1>Erro de Configuração</h1>
+        <p>Auth.js não está ativo. Configure VITE_USE_AUTH_JS=true</p>
+      </div>
+    );
+  }
+
+  console.log('✅ Auth.js está ativo');
+  return (
+    <AuthProvider>
       <HeroUIProvider>
         <ThemeProvider>
           <ShopProvider>
@@ -226,6 +324,12 @@ createRoot(rootElement).render(
           </ShopProvider>
         </ThemeProvider>
       </HeroUIProvider>
-    </ClerkProvider>
+    </AuthProvider>
+  )
+}
+
+createRoot(rootElement).render(
+  <React.StrictMode>
+    <RootApp />
   </React.StrictMode>
 )

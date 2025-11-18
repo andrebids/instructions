@@ -1,13 +1,15 @@
 import express from 'express';
 import * as userController from '../controllers/userController.js';
+import * as profileController from '../controllers/profileController.js';
 import { requireAdmin } from '../middleware/roles.js';
-import { getAuth } from '@clerk/express';
+import { requireAuth } from '../middleware/auth.js';
+import { getAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Debug: Log de todas as requisições para /api/users
-router.use((req, res, next) => {
-  const auth = getAuth(req);
+router.use(async (req, res, next) => {
+  const auth = await getAuth(req);
   console.log(`📋 [Users Route] ${req.method} ${req.path}`, {
     query: req.query,
     body: req.body,
@@ -17,7 +19,11 @@ router.use((req, res, next) => {
   next();
 });
 
-// Todas as rotas requerem role admin
+// Rotas de perfil (não requerem admin, apenas autenticação)
+router.put('/profile', requireAuth(), profileController.updateProfile);
+router.post('/profile/avatar', requireAuth(), profileController.uploadAvatar, profileController.uploadAvatarImage);
+
+// Todas as outras rotas requerem role admin
 router.use(requireAdmin());
 
 // Rotas de utilizadores

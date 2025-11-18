@@ -32,6 +32,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 10000, // 10 segundos
+  withCredentials: true, // IMPORTANTE: Enviar cookies para Auth.js funcionar
 });
 
 // Função auxiliar para validar AbortSignal
@@ -42,16 +43,31 @@ const isValidAbortSignal = (signal) => {
          typeof signal.abort === 'function';
 };
 
-// Attach Clerk session token to requests when available
+// Attach authentication token to requests (Auth.js)
 api.interceptors.request.use(async (config) => {
   try {
-    const clerk = window?.Clerk;
-    const session = clerk?.session;
-    if (session) {
-      const token = await session.getToken();
-      if (token) {
-        config.headers = config.headers || {};
-        config.headers.Authorization = `Bearer ${token}`;
+    // Usar a URL da API do servidor (backend)
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const baseUrl = apiUrl.replace('/api', ''); // Remover /api para obter base URL
+    const sessionUrl = `${baseUrl}/auth/session`;
+    
+    const response = await fetch(sessionUrl, {
+      credentials: 'include',
+    });
+    
+    if (response.ok) {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const session = await response.json();
+        // Auth.js usa cookies para sessão, não precisa de token Bearer
+        // Mas podemos adicionar headers customizados se necessário
+        if (session?.user) {
+          config.headers = config.headers || {};
+          // Auth.js gerencia autenticação via cookies automaticamente
+        }
+      } else {
+        // Se não for JSON, pode ser HTML (erro 404 ou página de erro)
+        console.debug('Resposta Auth.js não é JSON');
       }
     }
   } catch (e) {
@@ -99,7 +115,26 @@ api.interceptors.response.use(
       error.message?.includes('canceled');
     
     if (!isCanceled) {
-      console.error(`❌ ${error.config?.method?.toUpperCase()} ${error.config?.url}:`, error.message);
+      const status = error.response?.status;
+      const url = error.config?.url;
+      const method = error.config?.method?.toUpperCase();
+      
+      // Tratamento especial para erro 403 (Forbidden)
+      if (status === 403) {
+        const errorData = error.response?.data;
+        console.warn(`⚠️  ${method} ${url}: Acesso negado (403)`, {
+          message: errorData?.message || error.message,
+          error: errorData?.error,
+          path: url
+        });
+        
+        // Se for erro de autenticação, adicionar informação útil
+        if (errorData?.message?.includes('autenticado') || errorData?.error === 'Não autenticado') {
+          console.warn('💡 Dica: Verifique se está autenticado e se os cookies estão sendo enviados');
+        }
+      } else {
+        console.error(`❌ ${method} ${url}:`, error.message);
+      }
     }
     return Promise.reject(error);
   }
@@ -445,6 +480,24 @@ export const usersAPI = {
   // DELETE /api/users/:id
   delete: async (id) => {
     const response = await api.delete(`/users/${id}`);
+    return response.data;
+  },
+
+  // PUT /api/users/profile - Atualizar perfil do usuário
+  updateProfile: async (name, image) => {
+    const response = await api.put('/users/profile', { name, image });
+    return response.data;
+  },
+
+  // POST /api/users/profile/avatar - Upload de imagem de perfil
+  uploadAvatar: async (file) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await api.post('/users/profile/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 };
