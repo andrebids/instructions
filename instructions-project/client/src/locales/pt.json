@@ -3,7 +3,10 @@
     "retry": "Tentar novamente",
     "close": "Fechar",
     "search": "Pesquisar",
-    "loading": "Carregando..."
+    "loading": "Carregando...",
+    "name": "Nome",
+    "email": "Email",
+    "role": "Função"
   },
   "pages": {
     "landing": {
@@ -249,6 +252,7 @@
       "mySettings": "Minhas Configurações",
       "logOut": "Sair",
       "manageAccount": "Gerenciar Conta",
+      "accountInfo": "Informações da Conta",
       "ariaLabels": {
         "changeLanguage": "Alterar idioma",
         "toggleTheme": "Alternar tema",

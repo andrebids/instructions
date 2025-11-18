@@ -3,7 +3,10 @@
     "retry": "Retry",
     "close": "Close",
     "search": "Search",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role"
   },
   "pages": {
     "landing": {
@@ -249,6 +252,7 @@
       "mySettings": "My Settings",
       "logOut": "Log Out",
       "manageAccount": "Manage Account",
+      "accountInfo": "Account Information",
       "ariaLabels": {
         "changeLanguage": "Change language",
         "toggleTheme": "Toggle theme",

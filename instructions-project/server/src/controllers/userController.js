@@ -3,10 +3,11 @@ import { getAuth } from '@clerk/express';
 import { logError, logInfo } from '../utils/projectLogger.js';
 
 /**
- * Controller de utilizadores - Gestão via Clerk API
+ * Controller de utilizadores - ATENÇÃO: Este controller ainda usa Clerk
+ * TODO: Migrar para Auth.js - Este arquivo precisa ser reescrito para usar Auth.js
  * Todas as operações requerem role admin
  * 
- * Nota: clerkClient é inicializado usando CLERK_SECRET_KEY do ambiente
+ * Nota: Este controller ainda depende do Clerk e precisa ser migrado
  */
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
@@ -227,7 +228,7 @@ export async function updateRole(req, res) {
       });
     }
     
-    // Obter utilizador atual
+    // Obter utilizador atual (ainda usando Clerk - precisa migrar)
     const auth = getAuth(req);
     const currentUserId = auth?.userId;
     
@@ -275,7 +276,7 @@ export async function deleteUser(req, res) {
     const { id } = req.params;
     logInfo(`DELETE /api/users/${id} - Removendo utilizador`);
     
-    // Obter utilizador atual
+    // Obter utilizador atual (ainda usando Clerk - precisa migrar)
     const auth = getAuth(req);
     const currentUserId = auth?.userId;
     

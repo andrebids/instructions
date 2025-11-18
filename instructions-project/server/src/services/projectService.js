@@ -113,7 +113,7 @@ export async function findProjectById(id, includeElements = true) {
 /**
  * Cria um novo projeto
  * @param {Object} projectData - Dados do projeto
- * @param {string} projectData.createdBy - ID do usuário que cria o projeto (Clerk userId)
+ * @param {string} projectData.createdBy - ID do usuário que cria o projeto (Auth.js userId)
  */
 export async function createProject(projectData) {
   logServerOperation('CRIANDO NOVO PROJETO', {
