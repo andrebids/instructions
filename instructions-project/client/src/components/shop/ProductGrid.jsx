@@ -69,7 +69,7 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     const container = containerRef.current;
     if (!container) return;
 
-    const scrollAmount = 0.5; // pixels per frame (slow scroll)
+    const scrollAmount = 1.5; // pixels per frame (faster scroll)
     
     const scroll = () => {
       if (!containerRef.current || isDraggingRef.current || isPausedRef.current) {
