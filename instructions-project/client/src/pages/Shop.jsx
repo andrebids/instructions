@@ -284,7 +284,6 @@ export default function Shop() {
           <div className="mb-4 flex items-center justify-between">
             <div className="hidden md:flex items-center gap-2">
               <Button
-                size="sm"
                 variant="flat"
                 radius="full"
                 onPress={() => setFiltersVisible(!filtersVisible)}
