@@ -103,8 +103,12 @@ echo Verificando e instalando dependências do projeto...
 echo Isso pode demorar alguns minutos na primeira vez.
 echo.
 echo [%DATE% %TIME%] [DEBUG] Chamando check_and_install_dependencies... >> "%LOG_FILE%" 2>&1
+echo [DEBUG] Antes de chamar check_and_install_dependencies...
+echo [%DATE% %TIME%] [DEBUG] Antes de chamar check_and_install_dependencies... >> "%LOG_FILE%" 2>&1
 call :check_and_install_dependencies
 set "DEPS_RESULT=%errorlevel%"
+echo [DEBUG] Apos chamar check_and_install_dependencies, errorlevel: %DEPS_RESULT%
+echo [%DATE% %TIME%] [DEBUG] Apos chamar check_and_install_dependencies, errorlevel: %DEPS_RESULT% >> "%LOG_FILE%" 2>&1
 echo [DEBUG] check_and_install_dependencies retornou: %DEPS_RESULT%
 echo [%DATE% %TIME%] [DEBUG] check_and_install_dependencies retornou: %DEPS_RESULT% >> "%LOG_FILE%" 2>&1
 if %DEPS_RESULT% neq 0 (
@@ -1146,6 +1150,7 @@ rem Verificação e instalação de dependências
 rem =====================
 
 :check_and_install_dependencies
+echo [%DATE% %TIME%] [DEBUG] FUNCAO check_and_install_dependencies INICIADA >> "%LOG_FILE%" 2>&1
 echo ========================================
 echo    VERIFICANDO DEPENDÊNCIAS
 echo ========================================
@@ -1230,21 +1235,6 @@ if not exist "node_modules" (
         echo [%DATE% %TIME%] pg nao encontrado >> "%LOG_FILE%" 2>&1
         set "SERVER_NEED_INSTALL=1"
     )
-    if not exist "node_modules\@clerk" (
-        echo @clerk nao encontrado. Reinstalando dependencias...
-        echo [%DATE% %TIME%] @clerk nao encontrado >> "%LOG_FILE%" 2>&1
-        set "SERVER_NEED_INSTALL=1"
-    )
-    if not exist "node_modules\@clerk\backend" (
-        echo @clerk/backend nao encontrado. Reinstalando dependencias...
-        echo [%DATE% %TIME%] @clerk/backend nao encontrado >> "%LOG_FILE%" 2>&1
-        set "SERVER_NEED_INSTALL=1"
-    )
-    if not exist "node_modules\@clerk\express" (
-        echo @clerk/express nao encontrado. Reinstalando dependencias...
-        echo [%DATE% %TIME%] @clerk/express nao encontrado >> "%LOG_FILE%" 2>&1
-        set "SERVER_NEED_INSTALL=1"
-    )
 )
 echo [DEBUG] Verificacao concluida. SERVER_NEED_INSTALL=%SERVER_NEED_INSTALL%
 echo [%DATE% %TIME%] [DEBUG] Verificacao concluida. SERVER_NEED_INSTALL=%SERVER_NEED_INSTALL% >> "%LOG_FILE%" 2>&1
@@ -1271,26 +1261,61 @@ echo [%DATE% %TIME%] [DEBUG] Diretorio atual antes de instalar: %CD% >> "%LOG_FI
 set "INSTALL_ERROR=0"
 if exist "package-lock.json" (
     echo    Usando npm ci (instalação limpa baseada em package-lock.json)...
+    echo    Isso pode demorar alguns minutos. Verifique o log para progresso: %LOG_FILE%
     echo [%DATE% %TIME%] Executando npm ci no servidor... >> "%LOG_FILE%" 2>&1
     echo [DEBUG] Executando: npm ci
-    npm ci
-    set "INSTALL_ERROR=%errorlevel%"
+    echo [DEBUG] Comando npm ci iniciado, aguardando conclusao... >> "%LOG_FILE%" 2>&1
+    echo [DEBUG] Antes de executar npm ci, diretorio: %CD%
+    echo [%DATE% %TIME%] [DEBUG] Antes de executar npm ci, diretorio: %CD% >> "%LOG_FILE%"
+    echo [DEBUG] Verificando se npm esta disponivel...
+    where npm >nul 2>&1
+    if errorlevel 1 (
+        echo [DEBUG] ERRO: npm nao encontrado no PATH
+        echo [%DATE% %TIME%] [DEBUG] ERRO: npm nao encontrado no PATH >> "%LOG_FILE%"
+        set "INSTALL_ERROR=1"
+    ) else (
+        echo [DEBUG] npm encontrado, executando npm ci...
+        echo [%DATE% %TIME%] [DEBUG] npm encontrado, executando npm ci... >> "%LOG_FILE%"
+        echo [DEBUG] Diretorio de trabalho: %CD%
+        echo [%DATE% %TIME%] [DEBUG] Diretorio de trabalho: %CD% >> "%LOG_FILE%"
+        echo [DEBUG] INICIANDO EXECUCAO DO NPM CI...
+        echo [%DATE% %TIME%] [DEBUG] INICIANDO EXECUCAO DO NPM CI... >> "%LOG_FILE%"
+        echo    Por favor aguarde, isso pode demorar varios minutos...
+        npm ci --no-audit --no-fund >> "%LOG_FILE%" 2>&1
+        set "INSTALL_ERROR=%errorlevel%"
+        echo [DEBUG] Comando npm ci concluido, errorlevel: %INSTALL_ERROR%
+        echo [%DATE% %TIME%] [DEBUG] Comando npm ci concluido, errorlevel: %INSTALL_ERROR% >> "%LOG_FILE%"
+    )
     echo [DEBUG] npm ci retornou errorlevel: %INSTALL_ERROR%
     echo [%DATE% %TIME%] [DEBUG] npm ci retornou errorlevel: %INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
     if %INSTALL_ERROR% neq 0 (
         echo ⚠️  npm ci falhou, tentando npm install...
-        echo [%DATE% %TIME%] npm ci falhou (errorlevel: %INSTALL_ERROR%), tentando npm install... >> "%LOG_FILE%" 2>&1
+        echo    Isso pode demorar alguns minutos. Verifique o log para progresso: %LOG_FILE%
+        echo [%DATE% %TIME%] npm ci falhou, tentando npm install... >> "%LOG_FILE%" 2>&1
         echo [DEBUG] Executando: npm install
-        npm install
+        echo [DEBUG] Comando npm install iniciado, aguardando conclusao... >> "%LOG_FILE%" 2>&1
+        echo [DEBUG] Antes de executar npm install, diretorio: %CD%
+        echo [%DATE% %TIME%] [DEBUG] Antes de executar npm install, diretorio: %CD% >> "%LOG_FILE%"
+        echo [DEBUG] Executando npm install...
+        echo [%DATE% %TIME%] [DEBUG] Executando npm install... >> "%LOG_FILE%"
+        echo    Por favor aguarde, isso pode demorar varios minutos...
+        npm install --no-audit --no-fund >> "%LOG_FILE%" 2>&1
         set "INSTALL_ERROR=%errorlevel%"
-        echo [DEBUG] npm install retornou errorlevel: %INSTALL_ERROR%
-        echo [%DATE% %TIME%] [DEBUG] npm install retornou errorlevel: %INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
+        echo [DEBUG] Comando npm install concluido, errorlevel: %INSTALL_ERROR%
+        echo [%DATE% %TIME%] [DEBUG] Comando npm install concluido, errorlevel: %INSTALL_ERROR% >> "%LOG_FILE%"
     )
 ) else (
     echo    Usando npm install...
-    echo [%DATE% %TIME%] Executando npm install no servidor... >> "%LOG_FILE%" 2>&1
+    echo    Isso pode demorar alguns minutos. Verifique o log para progresso: %LOG_FILE%
+    echo [%DATE% %TIME%] Executando npm install no servidor... >> "%LOG_FILE%"
     echo [DEBUG] Executando: npm install
-    npm install
+    echo [DEBUG] Comando npm install iniciado, aguardando conclusao... >> "%LOG_FILE%"
+    echo [DEBUG] Antes de executar npm install, diretorio: %CD%
+    echo [%DATE% %TIME%] [DEBUG] Antes de executar npm install, diretorio: %CD% >> "%LOG_FILE%"
+    echo [DEBUG] INICIANDO EXECUCAO DO NPM INSTALL...
+    echo [%DATE% %TIME%] [DEBUG] INICIANDO EXECUCAO DO NPM INSTALL... >> "%LOG_FILE%"
+    echo    Por favor aguarde, isso pode demorar varios minutos...
+    npm install --no-audit --no-fund >> "%LOG_FILE%" 2>&1
     set "INSTALL_ERROR=%errorlevel%"
     echo [DEBUG] npm install retornou errorlevel: %INSTALL_ERROR%
     echo [%DATE% %TIME%] [DEBUG] npm install retornou errorlevel: %INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
@@ -1363,10 +1388,6 @@ if not exist "node_modules" (
     echo [DEBUG] node_modules encontrado no cliente, verificando dependencias criticas...
     echo [%DATE% %TIME%] [DEBUG] node_modules encontrado no cliente, verificando dependencias criticas... >> "%LOG_FILE%" 2>&1
     rem Verificar se dependências críticas estão instaladas
-    if not exist "node_modules\@clerk\clerk-react" (
-        echo ⚠️  @clerk/clerk-react não encontrado. Reinstalando dependências...
-        set "NEED_INSTALL=1"
-    )
     if not exist "node_modules\three" (
         echo ⚠️  three não encontrado. Reinstalando dependências...
         set "NEED_INSTALL=1"
@@ -1404,26 +1425,43 @@ echo [%DATE% %TIME%] [DEBUG] Diretorio atual antes de instalar cliente: %CD% >> 
 set "CLIENT_INSTALL_ERROR=0"
 if exist "package-lock.json" (
         echo 🔄 Instalando dependências do cliente com npm ci...
+        echo    Isso pode demorar alguns minutos. Verifique o log para progresso: %LOG_FILE%
         echo [%DATE% %TIME%] Instalando dependencias do cliente com npm ci... >> "%LOG_FILE%" 2>&1
         echo [DEBUG] Executando: npm ci
-        npm ci
+        echo [DEBUG] Comando npm ci iniciado, aguardando conclusao... >> "%LOG_FILE%" 2>&1
+        echo [DEBUG] Antes de executar npm ci, diretorio: %CD%
+        echo [%DATE% %TIME%] [DEBUG] Antes de executar npm ci, diretorio: %CD% >> "%LOG_FILE%"
+        echo [DEBUG] INICIANDO EXECUCAO DO NPM CI...
+        echo [%DATE% %TIME%] [DEBUG] INICIANDO EXECUCAO DO NPM CI... >> "%LOG_FILE%"
+        echo    Por favor aguarde, isso pode demorar varios minutos...
+        npm ci --no-audit --no-fund >> "%LOG_FILE%" 2>&1
         set "CLIENT_INSTALL_ERROR=%errorlevel%"
-        echo [DEBUG] npm ci retornou errorlevel: %CLIENT_INSTALL_ERROR%
-        echo [%DATE% %TIME%] [DEBUG] npm ci retornou errorlevel: %CLIENT_INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
+        echo [DEBUG] Comando npm ci concluido, errorlevel: %CLIENT_INSTALL_ERROR%
+        echo [%DATE% %TIME%] [DEBUG] Comando npm ci concluido, errorlevel: %CLIENT_INSTALL_ERROR% >> "%LOG_FILE%"
         if %CLIENT_INSTALL_ERROR% neq 0 (
             echo ⚠️  npm ci falhou, tentando npm install...
-            echo [%DATE% %TIME%] npm ci falhou (errorlevel: %CLIENT_INSTALL_ERROR%), tentando npm install... >> "%LOG_FILE%" 2>&1
-            echo [DEBUG] Executando: npm install
-            npm install
-            set "CLIENT_INSTALL_ERROR=%errorlevel%"
-            echo [DEBUG] npm install retornou errorlevel: %CLIENT_INSTALL_ERROR%
-            echo [%DATE% %TIME%] [DEBUG] npm install retornou errorlevel: %CLIENT_INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
+            echo    Isso pode demorar alguns minutos. Verifique o log para progresso: %LOG_FILE%
+            echo [%DATE% %TIME%] npm ci falhou (errorlevel: %CLIENT_INSTALL_ERROR%), tentando npm install... >> "%LOG_FILE%"
+            echo [DEBUG] Executando npm install...
+            echo [%DATE% %TIME%] [DEBUG] Executando npm install... >> "%LOG_FILE%"
+            echo    Por favor aguarde, isso pode demorar varios minutos...
+            npm install --no-audit --no-fund >> "%LOG_FILE%" 2>&1
+        set "CLIENT_INSTALL_ERROR=%errorlevel%"
+        echo [DEBUG] Comando npm install concluido, errorlevel: %CLIENT_INSTALL_ERROR%
+        echo [%DATE% %TIME%] [DEBUG] Comando npm install concluido, errorlevel: %CLIENT_INSTALL_ERROR% >> "%LOG_FILE%"
         )
     ) else (
         echo 🔄 Instalando dependências do cliente com npm install...
-        echo [%DATE% %TIME%] Instalando dependencias do cliente com npm install... >> "%LOG_FILE%" 2>&1
+        echo    Isso pode demorar alguns minutos. Verifique o log para progresso: %LOG_FILE%
+        echo [%DATE% %TIME%] Instalando dependencias do cliente com npm install... >> "%LOG_FILE%"
         echo [DEBUG] Executando: npm install
-        npm install
+        echo [DEBUG] Comando npm install iniciado, aguardando conclusao... >> "%LOG_FILE%"
+        echo [DEBUG] Antes de executar npm install, diretorio: %CD%
+        echo [%DATE% %TIME%] [DEBUG] Antes de executar npm install, diretorio: %CD% >> "%LOG_FILE%"
+        echo [DEBUG] INICIANDO EXECUCAO DO NPM INSTALL...
+        echo [%DATE% %TIME%] [DEBUG] INICIANDO EXECUCAO DO NPM INSTALL... >> "%LOG_FILE%"
+        echo    Por favor aguarde, isso pode demorar varios minutos...
+        npm install --no-audit --no-fund >> "%LOG_FILE%" 2>&1
         set "CLIENT_INSTALL_ERROR=%errorlevel%"
         echo [DEBUG] npm install retornou errorlevel: %CLIENT_INSTALL_ERROR%
         echo [%DATE% %TIME%] [DEBUG] npm install retornou errorlevel: %CLIENT_INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
@@ -1440,10 +1478,6 @@ if exist "package-lock.json" (
     echo [%DATE% %TIME%] Dependencias do cliente instaladas com sucesso >> "%LOG_FILE%" 2>&1
     echo ✅ Dependências do cliente instaladas com sucesso!
     rem Verificar novamente após instalação
-    if not exist "node_modules\@clerk\clerk-react" (
-        echo ❌ AVISO: @clerk/clerk-react ainda não foi instalado após npm install
-        echo    -> Execute manualmente: cd client ^&^& npm install @clerk/clerk-react
-    )
     if not exist "node_modules\three" (
         echo ❌ AVISO: three ainda não foi instalado após npm install
         echo    -> Execute manualmente: cd client ^&^& npm install three
@@ -1458,18 +1492,6 @@ echo [%DATE% %TIME%] Dependencias do cliente ja instaladas >> "%LOG_FILE%" 2>&1
 
 :after_client_check
 echo.
-
-rem Aviso de variável Vite Clerk
-if not exist ".env" (
-    echo ⚠️  Arquivo .env nao encontrado em client. Defina VITE_CLERK_PUBLISHABLE_KEY
-) else (
-    findstr /B /C:"VITE_CLERK_PUBLISHABLE_KEY=" ".env" >nul
-    if errorlevel 1 (
-        echo ⚠️  VITE_CLERK_PUBLISHABLE_KEY nao definida em client\.env
-    ) else (
-        echo ✅ VITE_CLERK_PUBLISHABLE_KEY detectada
-    )
-)
 
 echo [3/3] Verificação de dependências concluída!
 echo ✅ Todas as dependências estão prontas
