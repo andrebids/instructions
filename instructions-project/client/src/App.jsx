@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { SidebarNavigation } from "./components/layout/sidebar-navigation";
 import { Header } from "./components/layout/header";
 import Dashboard from "./pages/Dashboard";
@@ -9,7 +9,7 @@ import Projects from "./pages/Projects";
 import Favorites from "./pages/Favorites";
 import Landing from "./pages/Landing";
 import AdminProducts from "./pages/AdminProducts";
-import ProductFeed from "./pages/ProductFeed";
+import AdminUsers from "./pages/AdminUsers";
 import ProjectNotes from "./pages/ProjectNotes";
 import EditProject from "./pages/EditProject";
 import { SignedIn, SignedOut, SignIn, SignUp } from "@clerk/clerk-react";
@@ -18,16 +18,11 @@ import { useResponsiveProfile } from "./hooks/useResponsiveProfile";
 import PWAInstallPrompt from "./components/features/PWAInstallPrompt";
 import UpdateNotification from "./components/features/UpdateNotification";
 import OfflineReadyNotification from "./components/features/OfflineReadyNotification";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function AppLayout() {
-  const location = useLocation();
-  const isFeedPage = location.pathname === '/feed';
   const { isHandheld } = useResponsiveProfile();
   const showSidebar = !isHandheld;
-
-  if (isFeedPage) {
-    return <ProductFeed />;
-  }
 
   return (
     <div className="bg-background text-foreground flex h-screen">
@@ -47,7 +42,22 @@ function AppLayout() {
           <Route path="/projects/:id/notes" element={<ProjectNotes />} />
           <Route path="/projects/:id/edit" element={<EditProject />} />
           <Route path="/orders" element={<Projects />} />
-          <Route path="/admin/products" element={<AdminProducts />} />
+          <Route 
+            path="/admin/products" 
+            element={
+              <ProtectedRoute requireRole={['admin', 'editor_stock']}>
+                <AdminProducts />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/users" 
+            element={
+              <ProtectedRoute requireRole={['admin']}>
+                <AdminUsers />
+              </ProtectedRoute>
+            } 
+          />
         </Routes>
       </main>
       <MobileBottomNav />

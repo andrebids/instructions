@@ -1,2 +1,269 @@
-{}
-
+{
+  "common": {
+    "retry": "Tentar novamente",
+    "close": "Fechar",
+    "search": "Pesquisar",
+    "loading": "Carregando..."
+  },
+  "pages": {
+    "landing": {
+      "welcomeTo": "Bem-vindo ao ",
+      "theCore": "TheCore.",
+      "lets": "Vamos ",
+      "create": "criar",
+      "somethingGreat": " algo incrível.",
+      "signInSubtitle": "Entre para acessar seu painel.",
+      "signIn": "Entrar",
+      "signUp": "Cadastrar"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Aqui está a visão geral dos seus projetos.",
+      "welcomeBack": "Bem-vindo de volta,",
+      "createNewProject": "Criar Novo Projeto",
+      "loadingData": "Carregando dados...",
+      "stats": {
+        "totalProjects": "Total de Projetos",
+        "draft": "Rascunho",
+        "created": "Criado",
+        "inProgress": "Em Progresso",
+        "finished": "Finalizado",
+        "approved": "Aprovado",
+        "inQueue": "Na Fila",
+        "cancelled": "Cancelado"
+      },
+      "timePeriods": {
+        "allTime": "Todo o tempo",
+        "pending": "Pendente",
+        "new": "Novo",
+        "currently": "Atualmente",
+        "thisMonth": "Este mês"
+      },
+      "projectTable": {
+        "title": "Histórico de Projetos ({{count}} projetos)",
+        "titleOne": "Histórico de Projetos (1 projeto)",
+        "searchPlaceholder": "Pesquisar por nome ou cliente...",
+        "statusFilter": "Status: {{status}}",
+        "statusAll": "Todos",
+        "favoritesFilter": "Favoritos: {{filter}}",
+        "favoritesAll": "Todos",
+        "favoritesOnly": "Favoritos",
+        "favoritesNone": "Não favoritos",
+        "startDate": "Data de Início",
+        "endDate": "Data de Término",
+        "clearFilters": "Limpar filtros",
+        "rowsPerPage": "Linhas por página:",
+        "noProjectsFound": "Nenhum projeto encontrado",
+        "columns": {
+          "favorite": "FAVORITO",
+          "projectName": "NOME DO PROJETO",
+          "client": "CLIENTE",
+          "status": "STATUS",
+          "startDate": "DATA DE INÍCIO",
+          "endDate": "DATA DE TÉRMINO",
+          "budget": "ORÇAMENTO",
+          "actions": "AÇÕES"
+        },
+        "actions": {
+          "viewNotes": "Ver notas",
+          "viewProject": "Ver projeto",
+          "editProject": "Editar projeto",
+          "deleteProject": "Excluir projeto",
+          "addToFavorites": "Adicionar aos favoritos",
+          "removeFromFavorites": "Remover dos favoritos"
+        },
+        "deleteModal": {
+          "title": "Confirmar Exclusão",
+          "description": "Tem certeza de que deseja excluir o projeto <strong>{{name}}</strong>?",
+          "warning": "Esta ação não pode ser desfeita. Todos os dados relacionados a este projeto serão permanentemente removidos.",
+          "deleting": "Excluindo...",
+          "delete": "Excluir",
+          "cancel": "Cancelar"
+        },
+        "statusLabels": {
+          "all": "Todos",
+          "draft": "Rascunho",
+          "created": "Criado",
+          "inProgress": "Em Progresso",
+          "finished": "Finalizado",
+          "approved": "Aprovado",
+          "cancelled": "Cancelado",
+          "inQueue": "Na Fila",
+          "toOrder": "Para Encomendar",
+          "ordered": "Encomendado"
+        }
+      },
+      "adminProducts": {
+        "title": "Administração de Produtos",
+        "lead": "Gerenciar produtos da loja",
+        "subtitle": "Criar, editar e excluir produtos",
+        "searchPlaceholder": "Pesquisar produtos...",
+        "search": "Pesquisar",
+        "createNewProduct": "Criar Novo Produto",
+        "filters": {
+          "type": "Tipo",
+          "location": "Localização",
+          "tag": "Tag",
+          "clearFilters": "Limpar Filtros",
+          "showArchived": "Mostrar Arquivados",
+          "ariaLabels": {
+            "filterByType": "Filtrar por tipo de produto",
+            "filterByLocation": "Filtrar por localização",
+            "filterByTag": "Filtrar por tag"
+          }
+        },
+        "bulkActions": {
+          "selectProducts": "Selecionar Produtos",
+          "selectAll": "Selecionar Todos",
+          "deselectAll": "Desselecionar Todos",
+          "selected": "selecionado",
+          "selectedPlural": "selecionados",
+          "archive": "Arquivar",
+          "unarchive": "Desarquivar",
+          "delete": "Excluir",
+          "cancel": "Cancelar"
+        },
+        "status": {
+          "archived": "Arquivado",
+          "loading": "Carregando produtos...",
+          "noProductsFound": "Nenhum produto encontrado",
+          "tryAgain": "Tentar Novamente",
+          "stock": "Estoque:"
+        },
+        "actions": {
+          "edit": "Editar",
+          "archive": "Arquivar",
+          "unarchive": "Desarquivar",
+          "delete": "Excluir"
+        },
+        "tags": {
+          "priority": "PRIORIDADE",
+          "sale": "Promoção",
+          "new": "Novo",
+          "trending": "Em Alta",
+          "summer": "Verão",
+          "christmas": "Natal"
+        }
+      },
+      "adminUsers": {
+        "title": "Gestão de Utilizadores",
+        "lead": "Gerir utilizadores do sistema",
+        "subtitle": "Criar, editar e remover utilizadores",
+        "addUser": "Adicionar Utilizador",
+        "sendInvite": "Enviar Convite",
+        "searchPlaceholder": "Pesquisar por nome ou email...",
+        "filterByRole": "Filtrar por role",
+        "roles": {
+          "admin": "Administrador",
+          "comercial": "Comercial",
+          "editor_stock": "Editor Stock/Loja",
+          "all": "Todos"
+        },
+        "table": {
+          "name": "Nome",
+          "email": "Email",
+          "role": "Role",
+          "createdAt": "Data de Criação",
+          "lastLogin": "Último Login",
+          "actions": "Ações",
+          "noUsersFound": "Nenhum utilizador encontrado"
+        },
+        "actions": {
+          "editRole": "Editar Role",
+          "remove": "Remover",
+          "view": "Ver"
+        },
+        "modals": {
+          "createUser": {
+            "title": "Criar Novo Utilizador",
+            "firstName": "Primeiro Nome",
+            "lastName": "Último Nome",
+            "email": "Email",
+            "password": "Password",
+            "role": "Role",
+            "create": "Criar",
+            "cancel": "Cancelar",
+            "creating": "A criar..."
+          },
+          "inviteUser": {
+            "title": "Enviar Convite",
+            "email": "Email",
+            "role": "Role",
+            "send": "Enviar",
+            "cancel": "Cancelar",
+            "sending": "A enviar...",
+            "success": "Convite enviado com sucesso!"
+          },
+          "editRole": {
+            "title": "Editar Role",
+            "currentRole": "Role Atual",
+            "newRole": "Novo Role",
+            "save": "Guardar",
+            "cancel": "Cancelar",
+            "saving": "A guardar..."
+          },
+          "deleteConfirm": {
+            "title": "Confirmar Remoção",
+            "description": "Tem certeza de que deseja remover o utilizador <strong>{{name}}</strong>?",
+            "warning": "Esta ação não pode ser desfeita. O utilizador será permanentemente removido do sistema.",
+            "delete": "Remover",
+            "cancel": "Cancelar",
+            "deleting": "A remover..."
+          }
+        },
+        "status": {
+          "loading": "A carregar utilizadores...",
+          "error": "Erro ao carregar utilizadores",
+          "noRole": "Sem role"
+        },
+        "errors": {
+          "createFailed": "Erro ao criar utilizador",
+          "inviteFailed": "Erro ao enviar convite",
+          "updateRoleFailed": "Erro ao atualizar role",
+          "deleteFailed": "Erro ao remover utilizador",
+          "cannotRemoveSelf": "Não pode remover a si mesmo",
+          "cannotChangeOwnRole": "Não pode alterar seu próprio role"
+        }
+      }
+    }
+  },
+  "components": {
+    "header": {
+      "searchPlaceholder": "Pesquisar...",
+      "recentUpdates": "Atualizações Recentes",
+      "notifications": {
+        "designApproved": "Design aprovado",
+        "designApprovedDescription": "Conceito de decoração da sala de estar aprovado pelo cliente.",
+        "projectDeadline": "Prazo do projeto",
+        "projectDeadlineDescription": "Projeto de renovação do escritório vence em 3 dias.",
+        "newRevision": "Nova revisão",
+        "newRevisionDescription": "Revisão do design da cozinha solicitada pelo cliente.",
+        "projectDelivered": "Projeto entregue",
+        "projectDeliveredDescription": "Projeto de decoração do quarto concluído com sucesso.",
+        "hoursAgo": "{{count}} horas atrás",
+        "hourAgo": "1 hora atrás",
+        "daysAgo": "{{count}} dias atrás",
+        "dayAgo": "1 dia atrás"
+      },
+      "viewAllProjects": "Ver todos os projetos",
+      "mySettings": "Minhas Configurações",
+      "logOut": "Sair",
+      "manageAccount": "Gerenciar Conta",
+      "ariaLabels": {
+        "changeLanguage": "Alterar idioma",
+        "toggleTheme": "Alternar tema",
+        "openSearch": "Abrir pesquisa",
+        "notifications": "Notificações",
+        "closeNotifications": "Fechar notificações",
+        "close": "Fechar"
+      }
+    }
+  },
+  "errors": {
+    "failedToLoadData": "Falha ao carregar dados.",
+    "serverError": "Erro do servidor: {{error}}",
+    "serverErrorWithHint": "Erro do servidor: {{error}} ({{hint}})",
+    "serverError500": "Erro do servidor (500). Verifique se o servidor está em execução e o banco de dados está configurado corretamente.",
+    "requestFailed": "Falha na requisição com status {{status}}"
+  }
+}

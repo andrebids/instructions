@@ -7,6 +7,8 @@ import * as projectUploadService from '../services/projectUploadService.js';
 import * as projectImageService from '../services/projectImageService.js';
 import { validateDescription, validateProjectId, validateFiles } from '../validators/projectValidator.js';
 import { logInfo, logError, logServerOperation, formatErrorMessage } from '../utils/projectLogger.js';
+import { getUserRole } from '../middleware/roles.js';
+import { getAuth } from '@clerk/express';
 
 // GET /api/projects - Listar todos os projetos
 export async function getAll(req, res) {
@@ -23,9 +25,22 @@ export async function getAll(req, res) {
       });
     }
     
-    const projects = await projectService.findAllProjects(req.query);
+    // Obter informações do usuário para filtrar projetos
+    const auth = getAuth(req);
+    const userId = auth?.userId || null;
+    const userRole = getUserRole(req);
+    
+    // Adicionar filtros baseados no role do usuário
+    const filters = {
+      ...req.query,
+      userId,
+      userRole,
+    };
+    
+    const projects = await projectService.findAllProjects(filters);
     
     logInfo('Projetos encontrados:', projects.length);
+    logInfo('Filtros aplicados:', { userId, userRole });
     res.json(projects);
   } catch (error) {
     logError('Erro ao buscar projetos', error);
@@ -46,6 +61,18 @@ export async function getById(req, res) {
       return res.status(404).json({ error: 'Project not found' });
     }
     
+    // Verificar permissões: comercial só pode ver seus próprios projetos
+    const auth = getAuth(req);
+    const userId = auth?.userId || null;
+    const userRole = getUserRole(req);
+    
+    if (userRole === 'comercial' && project.createdBy && project.createdBy !== userId) {
+      return res.status(403).json({ 
+        error: 'Sem permissão',
+        message: 'Só pode visualizar os seus próprios projetos'
+      });
+    }
+    
     res.json(project);
   } catch (error) {
     logError('Erro ao buscar projeto', error);
@@ -56,7 +83,24 @@ export async function getById(req, res) {
 // POST /api/projects - Criar novo projeto
 export async function create(req, res) {
   try {
-    const project = await projectService.createProject(req.body);
+    // Obter userId do Clerk e definir createdBy automaticamente
+    const auth = getAuth(req);
+    const userId = auth?.userId || null;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        error: 'Não autenticado',
+        message: 'É necessário estar autenticado para criar projetos'
+      });
+    }
+    
+    // Adicionar createdBy aos dados do projeto
+    const projectData = {
+      ...req.body,
+      createdBy: userId,
+    };
+    
+    const project = await projectService.createProject(projectData);
     res.status(201).json(project);
   } catch (error) {
     logError('===== ERRO AO CRIAR PROJETO =====', error);
@@ -76,14 +120,33 @@ export async function update(req, res) {
       }
     }
     
-    const project = await projectService.updateProject(req.params.id, req.body);
+    // Buscar projeto primeiro para verificar permissões
+    const project = await projectService.findProjectById(req.params.id, false);
     
     if (!project) {
       logError('Projeto não encontrado:', req.params.id);
       return res.status(404).json({ error: 'Project not found' });
     }
     
-    res.json(project);
+    // Verificar permissões: comercial só pode editar seus próprios projetos
+    const auth = getAuth(req);
+    const userId = auth?.userId || null;
+    const userRole = getUserRole(req);
+    
+    if (userRole === 'comercial' && project.createdBy && project.createdBy !== userId) {
+      return res.status(403).json({ 
+        error: 'Sem permissão',
+        message: 'Só pode editar os seus próprios projetos'
+      });
+    }
+    
+    // Não permitir alterar createdBy (proteção)
+    const updateData = { ...req.body };
+    delete updateData.createdBy;
+    
+    const updatedProject = await projectService.updateProject(req.params.id, updateData);
+    
+    res.json(updatedProject);
   } catch (error) {
     logError('===== ERRO AO ATUALIZAR PROJETO =====', error);
     logError('Project ID:', req.params.id);
@@ -100,6 +163,25 @@ export async function deleteProject(req, res) {
     const idValidation = validateProjectId(projectId);
     if (!idValidation.valid) {
       return res.status(400).json({ error: idValidation.error });
+    }
+    
+    // Buscar projeto primeiro para verificar permissões
+    const project = await projectService.findProjectById(projectId, false);
+    
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    // Verificar permissões: comercial só pode deletar seus próprios projetos
+    const auth = getAuth(req);
+    const userId = auth?.userId || null;
+    const userRole = getUserRole(req);
+    
+    if (userRole === 'comercial' && project.createdBy && project.createdBy !== userId) {
+      return res.status(403).json({ 
+        error: 'Sem permissão',
+        message: 'Só pode eliminar os seus próprios projetos'
+      });
     }
     
     const result = await projectService.deleteProjectWithRelations(projectId);

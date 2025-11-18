@@ -1004,6 +1004,89 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host ""
 
+Write-Host "=== 4.6. Executar Migrations na Base de Dados ===" -ForegroundColor Cyan
+Write-Host "Executando migrations no servidor remoto..." -ForegroundColor Gray
+$migrationCommands = @"
+cd $serverRootPath/server
+echo '=== Executando Migrations ==='
+echo ''
+
+# Verificar se diretório server existe
+if [ ! -d "$serverRootPath/server" ]; then
+    echo '[ERRO] Diretório server não encontrado: $serverRootPath/server'
+    exit 1
+fi
+
+# Verificar se package.json existe
+if [ ! -f "package.json" ]; then
+    echo '[ERRO] package.json não encontrado no diretório server'
+    exit 1
+fi
+
+# Verificar se node_modules existe
+if [ ! -d "node_modules" ]; then
+    echo '[AVISO] node_modules não encontrado, instalando dependências...'
+    npm install
+    if [ `$? -ne 0 ]; then
+        echo '[ERRO] Falha ao instalar dependências'
+        exit 1
+    fi
+fi
+
+# Verificar se .env existe
+if [ ! -f ".env" ]; then
+    echo '[AVISO] Arquivo .env não encontrado'
+    echo '   Migrations podem falhar sem configuração de base de dados'
+    echo '   Continuando mesmo assim...'
+fi
+
+echo 'Executando npm run setup (cria tabelas e executa migrations)...'
+npm run setup
+SETUP_EXIT=`$?
+
+if [ `$SETUP_EXIT -eq 0 ]; then
+    echo ''
+    echo '[OK] Setup e migrations executados com sucesso!'
+    echo ''
+    # Verificar se há migrations individuais também
+    echo 'Verificando se há migrations adicionais...'
+    npm run migrate:all 2>&1 | grep -E '(Migration|migration|✅|❌|ERRO|OK)' || echo 'Migrations adicionais concluídas'
+    echo ''
+    echo '[OK] Todas as migrations foram executadas!'
+else
+    echo ''
+    echo '[AVISO] npm run setup retornou código: '$SETUP_EXIT
+    echo '   Tentando executar migrations individuais...'
+    echo ''
+    
+    # Tentar executar migrations individuais como fallback
+    npm run migrate:all
+    MIGRATE_EXIT=`$?
+    
+    if [ `$MIGRATE_EXIT -eq 0 ]; then
+        echo '[OK] Migrations executadas com sucesso (via migrate:all)!'
+    else
+        echo '[AVISO] Migrations podem ter falhado (código: '$MIGRATE_EXIT')'
+        echo '   Verifique os logs acima para mais detalhes'
+        echo '   Continuando com deploy mesmo assim...'
+    fi
+fi
+
+echo ''
+echo '=== Migrations Concluídas ==='
+"@
+
+$migrationOutput = Invoke-SshCommand -User $sshUser -SshHost $sshHost -Key $sshKey -BashCommand $migrationCommands
+Write-Host $migrationOutput -ForegroundColor Gray
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[AVISO] Pode ter havido problemas ao executar migrations" -ForegroundColor Yellow
+    Write-Host "   Verifique os logs acima para mais detalhes" -ForegroundColor Yellow
+    Write-Host "   Continuando com deploy mesmo assim..." -ForegroundColor Yellow
+} else {
+    Write-Host "[OK] Migrations executadas no servidor remoto!" -ForegroundColor Green
+}
+Write-Host ""
+
 Write-Host "=== 5. Reiniciar Servidor ===" -ForegroundColor Cyan
 Write-Host "Reiniciando servidor PM2..." -ForegroundColor Gray
 # Criar comando bash usando here-string com aspas simples para evitar interpretação do PowerShell

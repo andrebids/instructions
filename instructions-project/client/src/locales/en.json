@@ -1,2 +1,269 @@
-{}
-
+{
+  "common": {
+    "retry": "Retry",
+    "close": "Close",
+    "search": "Search",
+    "loading": "Loading..."
+  },
+  "pages": {
+    "landing": {
+      "welcomeTo": "Welcome to ",
+      "theCore": "TheCore.",
+      "lets": "Let's ",
+      "create": "create",
+      "somethingGreat": " something great.",
+      "signInSubtitle": "Sign in to access your dashboard.",
+      "signIn": "Sign in",
+      "signUp": "Sign up"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Here's your project overview.",
+      "welcomeBack": "Welcome back,",
+      "createNewProject": "Create New Project",
+      "loadingData": "Loading data...",
+      "stats": {
+        "totalProjects": "Total Projects",
+        "draft": "Draft",
+        "created": "Created",
+        "inProgress": "In Progress",
+        "finished": "Finished",
+        "approved": "Approved",
+        "inQueue": "In Queue",
+        "cancelled": "Cancelled"
+      },
+      "timePeriods": {
+        "allTime": "All time",
+        "pending": "Pending",
+        "new": "New",
+        "currently": "Currently",
+        "thisMonth": "This month"
+      },
+      "projectTable": {
+        "title": "Project History ({{count}} projects)",
+        "titleOne": "Project History (1 project)",
+        "searchPlaceholder": "Search by name or client...",
+        "statusFilter": "Status: {{status}}",
+        "statusAll": "All",
+        "favoritesFilter": "Favorites: {{filter}}",
+        "favoritesAll": "All",
+        "favoritesOnly": "Favorites",
+        "favoritesNone": "Non-favorites",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "clearFilters": "Clear filters",
+        "rowsPerPage": "Rows per page:",
+        "noProjectsFound": "No projects found",
+        "columns": {
+          "favorite": "FAVORITE",
+          "projectName": "PROJECT NAME",
+          "client": "CLIENT",
+          "status": "STATUS",
+          "startDate": "START DATE",
+          "endDate": "END DATE",
+          "budget": "BUDGET",
+          "actions": "ACTIONS"
+        },
+        "actions": {
+          "viewNotes": "View notes",
+          "viewProject": "View project",
+          "editProject": "Edit project",
+          "deleteProject": "Delete project",
+          "addToFavorites": "Add to favorites",
+          "removeFromFavorites": "Remove from favorites"
+        },
+        "deleteModal": {
+          "title": "Confirm Deletion",
+          "description": "Are you sure you want to delete the project <strong>{{name}}</strong>?",
+          "warning": "This action cannot be undone. All data related to this project will be permanently removed.",
+          "deleting": "Deleting...",
+          "delete": "Delete",
+          "cancel": "Cancel"
+        },
+        "statusLabels": {
+          "all": "All",
+          "draft": "Draft",
+          "created": "Created",
+          "inProgress": "In Progress",
+          "finished": "Finished",
+          "approved": "Approved",
+          "cancelled": "Cancelled",
+          "inQueue": "In Queue",
+          "toOrder": "To Order",
+          "ordered": "Ordered"
+        }
+      },
+      "adminProducts": {
+        "title": "Product Administration",
+        "lead": "Manage store products",
+        "subtitle": "Create, edit and delete products",
+        "searchPlaceholder": "Search products...",
+        "search": "Search",
+        "createNewProduct": "Create New Product",
+        "filters": {
+          "type": "Type",
+          "location": "Location",
+          "tag": "Tag",
+          "clearFilters": "Clear Filters",
+          "showArchived": "Show Archived",
+          "ariaLabels": {
+            "filterByType": "Filter by product type",
+            "filterByLocation": "Filter by location",
+            "filterByTag": "Filter by tag"
+          }
+        },
+        "bulkActions": {
+          "selectProducts": "Select Products",
+          "selectAll": "Select All",
+          "deselectAll": "Deselect All",
+          "selected": "selected",
+          "selectedPlural": "selected",
+          "archive": "Archive",
+          "unarchive": "Unarchive",
+          "delete": "Delete",
+          "cancel": "Cancel"
+        },
+        "status": {
+          "archived": "Archived",
+          "loading": "Loading products...",
+          "noProductsFound": "No products found",
+          "tryAgain": "Try Again",
+          "stock": "Stock:"
+        },
+        "actions": {
+          "edit": "Edit",
+          "archive": "Archive",
+          "unarchive": "Unarchive",
+          "delete": "Delete"
+        },
+        "tags": {
+          "priority": "PRIORITY",
+          "sale": "Sale",
+          "new": "New",
+          "trending": "Trending",
+          "summer": "Summer",
+          "christmas": "Christmas"
+        }
+      },
+      "adminUsers": {
+        "title": "User Management",
+        "lead": "Manage system users",
+        "subtitle": "Create, edit and remove users",
+        "addUser": "Add User",
+        "sendInvite": "Send Invitation",
+        "searchPlaceholder": "Search by name or email...",
+        "filterByRole": "Filter by role",
+        "roles": {
+          "admin": "Administrator",
+          "comercial": "Commercial",
+          "editor_stock": "Stock/Store Editor",
+          "all": "All"
+        },
+        "table": {
+          "name": "Name",
+          "email": "Email",
+          "role": "Role",
+          "createdAt": "Created At",
+          "lastLogin": "Last Login",
+          "actions": "Actions",
+          "noUsersFound": "No users found"
+        },
+        "actions": {
+          "editRole": "Edit Role",
+          "remove": "Remove",
+          "view": "View"
+        },
+        "modals": {
+          "createUser": {
+            "title": "Create New User",
+            "firstName": "First Name",
+            "lastName": "Last Name",
+            "email": "Email",
+            "password": "Password",
+            "role": "Role",
+            "create": "Create",
+            "cancel": "Cancel",
+            "creating": "Creating..."
+          },
+          "inviteUser": {
+            "title": "Send Invitation",
+            "email": "Email",
+            "role": "Role",
+            "send": "Send",
+            "cancel": "Cancel",
+            "sending": "Sending...",
+            "success": "Invitation sent successfully!"
+          },
+          "editRole": {
+            "title": "Edit Role",
+            "currentRole": "Current Role",
+            "newRole": "New Role",
+            "save": "Save",
+            "cancel": "Cancel",
+            "saving": "Saving..."
+          },
+          "deleteConfirm": {
+            "title": "Confirm Removal",
+            "description": "Are you sure you want to remove user <strong>{{name}}</strong>?",
+            "warning": "This action cannot be undone. The user will be permanently removed from the system.",
+            "delete": "Remove",
+            "cancel": "Cancel",
+            "deleting": "Removing..."
+          }
+        },
+        "status": {
+          "loading": "Loading users...",
+          "error": "Error loading users",
+          "noRole": "No role"
+        },
+        "errors": {
+          "createFailed": "Error creating user",
+          "inviteFailed": "Error sending invitation",
+          "updateRoleFailed": "Error updating role",
+          "deleteFailed": "Error removing user",
+          "cannotRemoveSelf": "Cannot remove yourself",
+          "cannotChangeOwnRole": "Cannot change your own role"
+        }
+      }
+    }
+  },
+  "components": {
+    "header": {
+      "searchPlaceholder": "Search...",
+      "recentUpdates": "Recent Updates",
+      "notifications": {
+        "designApproved": "Design approved",
+        "designApprovedDescription": "Living room decoration concept approved by client.",
+        "projectDeadline": "Project deadline",
+        "projectDeadlineDescription": "Office renovation project due in 3 days.",
+        "newRevision": "New revision",
+        "newRevisionDescription": "Kitchen design revision requested by client.",
+        "projectDelivered": "Project delivered",
+        "projectDeliveredDescription": "Bedroom decoration project completed successfully.",
+        "hoursAgo": "{{count}} hours ago",
+        "hourAgo": "1 hour ago",
+        "daysAgo": "{{count}} days ago",
+        "dayAgo": "1 day ago"
+      },
+      "viewAllProjects": "View all projects",
+      "mySettings": "My Settings",
+      "logOut": "Log Out",
+      "manageAccount": "Manage Account",
+      "ariaLabels": {
+        "changeLanguage": "Change language",
+        "toggleTheme": "Toggle theme",
+        "openSearch": "Open search",
+        "notifications": "Notifications",
+        "closeNotifications": "Close notifications",
+        "close": "Close"
+      }
+    }
+  },
+  "errors": {
+    "failedToLoadData": "Failed to load data.",
+    "serverError": "Server error: {{error}}",
+    "serverErrorWithHint": "Server error: {{error}} ({{hint}})",
+    "serverError500": "Server error (500). Please check if the server is running and the database is set up correctly.",
+    "requestFailed": "Request failed with status {{status}}"
+  }
+}
