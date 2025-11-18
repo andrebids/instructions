@@ -368,17 +368,33 @@ if (distExists) {
   });
   
   // Servir arquivos estáticos do dist (sw.js já foi servido acima, então não será servido aqui)
-  app.use(express.static(distPath, {
-    maxAge: '1y', // Cache agressivo para assets estáticos (será sobrescrito pelo middleware acima para arquivos críticos)
-    etag: true,
-    lastModified: true
-  }));
+  // IMPORTANTE: Usar fallthrough: false para não servir index.html automaticamente
+  // e adicionar verificação customizada para ignorar rotas /auth/ e /api/
+  app.use((req, res, next) => {
+    // Se for rota de API ou Auth, passar para o próximo middleware (não servir arquivo estático)
+    if (req.path.startsWith('/api/') || req.path.startsWith('/auth/')) {
+      return next();
+    }
+    // Para outras rotas, usar express.static
+    express.static(distPath, {
+      maxAge: '1y', // Cache agressivo para assets estáticos (será sobrescrito pelo middleware acima para arquivos críticos)
+      etag: true,
+      lastModified: true,
+      fallthrough: false // Não servir index.html automaticamente se arquivo não for encontrado
+    })(req, res, (err) => {
+      // Se express.static não encontrou o arquivo, passar para o próximo middleware
+      if (err) {
+        return next();
+      }
+      // Se encontrou e serviu, não fazer nada (já foi servido)
+    });
+  });
   
   // Rota catch-all para SPA routing (deve vir depois de todas as rotas de API)
   // Retorna index.html para qualquer rota que não seja API e não seja um arquivo estático
   app.get('*', (req, res, next) => {
-    // Ignorar rotas de API
-    if (req.path.startsWith('/api/')) {
+    // Ignorar rotas de API e Auth.js
+    if (req.path.startsWith('/api/') || req.path.startsWith('/auth/')) {
       return next();
     }
     
