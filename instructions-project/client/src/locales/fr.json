@@ -38,6 +38,112 @@
         "new": "Nouveau",
         "currently": "Actuellement",
         "thisMonth": "Ce mois-ci"
+      },
+      "projectTable": {
+        "title": "Historique des projets ({{count}} projets)",
+        "titleOne": "Historique des projets (1 projet)",
+        "searchPlaceholder": "Rechercher par nom ou client...",
+        "statusFilter": "Statut : {{status}}",
+        "statusAll": "Tous",
+        "favoritesFilter": "Favoris : {{filter}}",
+        "favoritesAll": "Tous",
+        "favoritesOnly": "Favoris",
+        "favoritesNone": "Non favoris",
+        "startDate": "Date de début",
+        "endDate": "Date de fin",
+        "clearFilters": "Effacer les filtres",
+        "rowsPerPage": "Lignes par page :",
+        "noProjectsFound": "Aucun projet trouvé",
+        "columns": {
+          "favorite": "FAVORI",
+          "projectName": "NOM DU PROJET",
+          "client": "CLIENT",
+          "status": "STATUT",
+          "startDate": "DATE DE DÉBUT",
+          "endDate": "DATE DE FIN",
+          "budget": "BUDGET",
+          "actions": "ACTIONS"
+        },
+        "actions": {
+          "viewNotes": "Voir les notes",
+          "viewProject": "Voir le projet",
+          "editProject": "Modifier le projet",
+          "deleteProject": "Supprimer le projet",
+          "addToFavorites": "Ajouter aux favoris",
+          "removeFromFavorites": "Retirer des favoris"
+        },
+        "deleteModal": {
+          "title": "Confirmer la suppression",
+          "description": "Êtes-vous sûr de vouloir supprimer le projet <strong>{{name}}</strong> ?",
+          "warning": "Cette action ne peut pas être annulée. Toutes les données liées à ce projet seront définitivement supprimées.",
+          "deleting": "Suppression...",
+          "delete": "Supprimer",
+          "cancel": "Annuler"
+        },
+        "statusLabels": {
+          "all": "Tous",
+          "draft": "Brouillon",
+          "created": "Créé",
+          "inProgress": "En cours",
+          "finished": "Terminé",
+          "approved": "Approuvé",
+          "cancelled": "Annulé",
+          "inQueue": "En attente",
+          "toOrder": "À commander",
+          "ordered": "Commandé"
+        }
+      },
+      "adminProducts": {
+        "title": "Administration des produits",
+        "lead": "Gérer les produits du magasin",
+        "subtitle": "Créer, modifier et supprimer des produits",
+        "searchPlaceholder": "Rechercher des produits...",
+        "search": "Rechercher",
+        "createNewProduct": "Créer un nouveau produit",
+        "filters": {
+          "type": "Type",
+          "location": "Emplacement",
+          "tag": "Étiquette",
+          "clearFilters": "Effacer les filtres",
+          "showArchived": "Afficher les archivés",
+          "ariaLabels": {
+            "filterByType": "Filtrer par type de produit",
+            "filterByLocation": "Filtrer par emplacement",
+            "filterByTag": "Filtrer par étiquette"
+          }
+        },
+        "bulkActions": {
+          "selectProducts": "Sélectionner les produits",
+          "selectAll": "Tout sélectionner",
+          "deselectAll": "Tout désélectionner",
+          "selected": "sélectionné",
+          "selectedPlural": "sélectionnés",
+          "archive": "Archiver",
+          "unarchive": "Désarchiver",
+          "delete": "Supprimer",
+          "cancel": "Annuler"
+        },
+        "status": {
+          "archived": "Archivé",
+          "loading": "Chargement des produits...",
+          "noProductsFound": "Aucun produit trouvé",
+          "tryAgain": "Réessayer",
+          "stock": "Stock :"
+        },
+        "actions": {
+          "edit": "Modifier",
+          "archive": "Archiver",
+          "unarchive": "Désarchiver",
+          "delete": "Supprimer"
+        },
+        "tags": {
+          "priority": "PRIORITÉ",
+          "sale": "Promotion",
+          "new": "Nouveau",
+          "trending": "Tendance",
+          "summer": "Été",
+          "christmas": "Noël"
+        }
       }
     }
   },

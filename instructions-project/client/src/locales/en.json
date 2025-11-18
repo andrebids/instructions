@@ -38,6 +38,112 @@
         "new": "New",
         "currently": "Currently",
         "thisMonth": "This month"
+      },
+      "projectTable": {
+        "title": "Project History ({{count}} projects)",
+        "titleOne": "Project History (1 project)",
+        "searchPlaceholder": "Search by name or client...",
+        "statusFilter": "Status: {{status}}",
+        "statusAll": "All",
+        "favoritesFilter": "Favorites: {{filter}}",
+        "favoritesAll": "All",
+        "favoritesOnly": "Favorites",
+        "favoritesNone": "Non-favorites",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "clearFilters": "Clear filters",
+        "rowsPerPage": "Rows per page:",
+        "noProjectsFound": "No projects found",
+        "columns": {
+          "favorite": "FAVORITE",
+          "projectName": "PROJECT NAME",
+          "client": "CLIENT",
+          "status": "STATUS",
+          "startDate": "START DATE",
+          "endDate": "END DATE",
+          "budget": "BUDGET",
+          "actions": "ACTIONS"
+        },
+        "actions": {
+          "viewNotes": "View notes",
+          "viewProject": "View project",
+          "editProject": "Edit project",
+          "deleteProject": "Delete project",
+          "addToFavorites": "Add to favorites",
+          "removeFromFavorites": "Remove from favorites"
+        },
+        "deleteModal": {
+          "title": "Confirm Deletion",
+          "description": "Are you sure you want to delete the project <strong>{{name}}</strong>?",
+          "warning": "This action cannot be undone. All data related to this project will be permanently removed.",
+          "deleting": "Deleting...",
+          "delete": "Delete",
+          "cancel": "Cancel"
+        },
+        "statusLabels": {
+          "all": "All",
+          "draft": "Draft",
+          "created": "Created",
+          "inProgress": "In Progress",
+          "finished": "Finished",
+          "approved": "Approved",
+          "cancelled": "Cancelled",
+          "inQueue": "In Queue",
+          "toOrder": "To Order",
+          "ordered": "Ordered"
+        }
+      },
+      "adminProducts": {
+        "title": "Product Administration",
+        "lead": "Manage store products",
+        "subtitle": "Create, edit and delete products",
+        "searchPlaceholder": "Search products...",
+        "search": "Search",
+        "createNewProduct": "Create New Product",
+        "filters": {
+          "type": "Type",
+          "location": "Location",
+          "tag": "Tag",
+          "clearFilters": "Clear Filters",
+          "showArchived": "Show Archived",
+          "ariaLabels": {
+            "filterByType": "Filter by product type",
+            "filterByLocation": "Filter by location",
+            "filterByTag": "Filter by tag"
+          }
+        },
+        "bulkActions": {
+          "selectProducts": "Select Products",
+          "selectAll": "Select All",
+          "deselectAll": "Deselect All",
+          "selected": "selected",
+          "selectedPlural": "selected",
+          "archive": "Archive",
+          "unarchive": "Unarchive",
+          "delete": "Delete",
+          "cancel": "Cancel"
+        },
+        "status": {
+          "archived": "Archived",
+          "loading": "Loading products...",
+          "noProductsFound": "No products found",
+          "tryAgain": "Try Again",
+          "stock": "Stock:"
+        },
+        "actions": {
+          "edit": "Edit",
+          "archive": "Archive",
+          "unarchive": "Unarchive",
+          "delete": "Delete"
+        },
+        "tags": {
+          "priority": "PRIORITY",
+          "sale": "Sale",
+          "new": "New",
+          "trending": "Trending",
+          "summer": "Summer",
+          "christmas": "Christmas"
+        }
       }
     }
   },

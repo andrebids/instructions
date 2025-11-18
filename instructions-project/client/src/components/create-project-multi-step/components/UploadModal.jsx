@@ -241,6 +241,7 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
           multiple
           onChange={handleFileInputChange}
           className="hidden"
+          aria-label="Upload image files"
         />
         <input
           ref={cameraInputRef}
@@ -249,6 +250,7 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
           capture="environment"
           onChange={handleCameraInputChange}
           className="hidden"
+          aria-label="Capture image from camera"
         />
         {isPreparing ? (
           <>
