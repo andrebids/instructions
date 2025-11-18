@@ -38,6 +38,112 @@
         "new": "Novo",
         "currently": "Atualmente",
         "thisMonth": "Este mês"
+      },
+      "projectTable": {
+        "title": "Histórico de Projetos ({{count}} projetos)",
+        "titleOne": "Histórico de Projetos (1 projeto)",
+        "searchPlaceholder": "Pesquisar por nome ou cliente...",
+        "statusFilter": "Status: {{status}}",
+        "statusAll": "Todos",
+        "favoritesFilter": "Favoritos: {{filter}}",
+        "favoritesAll": "Todos",
+        "favoritesOnly": "Favoritos",
+        "favoritesNone": "Não favoritos",
+        "startDate": "Data de Início",
+        "endDate": "Data de Término",
+        "clearFilters": "Limpar filtros",
+        "rowsPerPage": "Linhas por página:",
+        "noProjectsFound": "Nenhum projeto encontrado",
+        "columns": {
+          "favorite": "FAVORITO",
+          "projectName": "NOME DO PROJETO",
+          "client": "CLIENTE",
+          "status": "STATUS",
+          "startDate": "DATA DE INÍCIO",
+          "endDate": "DATA DE TÉRMINO",
+          "budget": "ORÇAMENTO",
+          "actions": "AÇÕES"
+        },
+        "actions": {
+          "viewNotes": "Ver notas",
+          "viewProject": "Ver projeto",
+          "editProject": "Editar projeto",
+          "deleteProject": "Excluir projeto",
+          "addToFavorites": "Adicionar aos favoritos",
+          "removeFromFavorites": "Remover dos favoritos"
+        },
+        "deleteModal": {
+          "title": "Confirmar Exclusão",
+          "description": "Tem certeza de que deseja excluir o projeto <strong>{{name}}</strong>?",
+          "warning": "Esta ação não pode ser desfeita. Todos os dados relacionados a este projeto serão permanentemente removidos.",
+          "deleting": "Excluindo...",
+          "delete": "Excluir",
+          "cancel": "Cancelar"
+        },
+        "statusLabels": {
+          "all": "Todos",
+          "draft": "Rascunho",
+          "created": "Criado",
+          "inProgress": "Em Progresso",
+          "finished": "Finalizado",
+          "approved": "Aprovado",
+          "cancelled": "Cancelado",
+          "inQueue": "Na Fila",
+          "toOrder": "Para Encomendar",
+          "ordered": "Encomendado"
+        }
+      },
+      "adminProducts": {
+        "title": "Administração de Produtos",
+        "lead": "Gerenciar produtos da loja",
+        "subtitle": "Criar, editar e excluir produtos",
+        "searchPlaceholder": "Pesquisar produtos...",
+        "search": "Pesquisar",
+        "createNewProduct": "Criar Novo Produto",
+        "filters": {
+          "type": "Tipo",
+          "location": "Localização",
+          "tag": "Tag",
+          "clearFilters": "Limpar Filtros",
+          "showArchived": "Mostrar Arquivados",
+          "ariaLabels": {
+            "filterByType": "Filtrar por tipo de produto",
+            "filterByLocation": "Filtrar por localização",
+            "filterByTag": "Filtrar por tag"
+          }
+        },
+        "bulkActions": {
+          "selectProducts": "Selecionar Produtos",
+          "selectAll": "Selecionar Todos",
+          "deselectAll": "Desselecionar Todos",
+          "selected": "selecionado",
+          "selectedPlural": "selecionados",
+          "archive": "Arquivar",
+          "unarchive": "Desarquivar",
+          "delete": "Excluir",
+          "cancel": "Cancelar"
+        },
+        "status": {
+          "archived": "Arquivado",
+          "loading": "Carregando produtos...",
+          "noProductsFound": "Nenhum produto encontrado",
+          "tryAgain": "Tentar Novamente",
+          "stock": "Estoque:"
+        },
+        "actions": {
+          "edit": "Editar",
+          "archive": "Arquivar",
+          "unarchive": "Desarquivar",
+          "delete": "Excluir"
+        },
+        "tags": {
+          "priority": "PRIORIDADE",
+          "sale": "Promoção",
+          "new": "Novo",
+          "trending": "Em Alta",
+          "summer": "Verão",
+          "christmas": "Natal"
+        }
       }
     }
   },

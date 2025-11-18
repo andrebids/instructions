@@ -77,8 +77,6 @@ export default function Dashboard() {
         cancelled: statsData.cancelled,
         inQueue: statsData.inQueue,
       });
-      
-      console.log('✅ Dados carregados:', { projects: projectsData.length, stats: statsData });
     } catch (err) {
       // Ignorar erros de requisições abortadas/canceladas
       if (

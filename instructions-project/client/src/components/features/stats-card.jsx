@@ -1,8 +1,13 @@
 import React from "react";
 import { Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
 
-export function StatsCard({ title, value, change, isPositive, icon, timePeriod = "This month", colorKey = "primary" }) {
+export function StatsCard({ title, value, change, isPositive, icon, timePeriod, colorKey = "primary" }) {
+  const { t } = useTranslation();
+  
+  // Se timePeriod não for fornecido, usar tradução padrão
+  const displayTimePeriod = timePeriod || t('pages.dashboard.timePeriods.thisMonth');
 
   const colorStyles = {
     primary: { bg: "bg-primary/10", icon: "text-primary" },
@@ -24,7 +29,7 @@ export function StatsCard({ title, value, change, isPositive, icon, timePeriod =
               <span className="text-3xl font-semibold text-gray-800 dark:text-foreground -mt-0.5">{value}</span>
               <p className="text-sm font-semibold leading-tight text-gray-800 dark:text-foreground">{title}</p>
             </div>
-            <p className="text-sm text-default-500">{timePeriod}</p>
+            <p className="text-sm text-default-500">{displayTimePeriod}</p>
           </div>
           <div className={`flex items-center justify-center w-12 h-12 rounded-lg ${bg}`}>
             <Icon icon={icon} className={`text-2xl ${iconColor}`} />

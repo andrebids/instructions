@@ -31,9 +31,38 @@ import {
   normalizeTag,
 } from "../utils/tagHierarchy";
 import { Scroller } from "../components/ui/scroller";
+import { useTranslation } from "react-i18next";
 
 export default function AdminProducts() {
+  const { t } = useTranslation();
   var { userName } = useUser();
+  
+  // Função helper para traduzir tags
+  const getTranslatedTag = React.useCallback((tag) => {
+    if (!tag) return tag;
+    const tagLower = String(tag).toLowerCase();
+    const tagMap = {
+      "priority": t('pages.dashboard.adminProducts.tags.priority'),
+      "priori": t('pages.dashboard.adminProducts.tags.priority'),
+      "sale": t('pages.dashboard.adminProducts.tags.sale'),
+      "new": t('pages.dashboard.adminProducts.tags.new'),
+      "trending": t('pages.dashboard.adminProducts.tags.trending'),
+      "summer": t('pages.dashboard.adminProducts.tags.summer'),
+      "christmas": t('pages.dashboard.adminProducts.tags.christmas'),
+      "xmas": t('pages.dashboard.adminProducts.tags.christmas'),
+    };
+    
+    // Verificar correspondência exata primeiro
+    if (tagMap[tagLower]) return tagMap[tagLower];
+    
+    // Verificar correspondência parcial
+    for (const [key, value] of Object.entries(tagMap)) {
+      if (tagLower.indexOf(key) >= 0) return value;
+    }
+    
+    // Se não encontrar, retornar o tag original
+    return String(tag).toUpperCase();
+  }, [t]);
   var [products, setProducts] = React.useState([]);
   var [loading, setLoading] = React.useState(true);
   var [error, setError] = React.useState(null);
@@ -1339,10 +1368,10 @@ export default function AdminProducts() {
   return (
     <div className={`flex-1 min-h-0 overflow-hidden p-6 flex flex-col ${isHandheld ? "pb-24" : "pb-6"}`}>
       <PageTitle 
-        title="Product Administration" 
+        title={t('pages.dashboard.adminProducts.title')} 
         userName={userName} 
-        lead="Manage store products" 
-        subtitle="Create, edit and delete products" 
+        lead={t('pages.dashboard.adminProducts.lead')} 
+        subtitle={t('pages.dashboard.adminProducts.subtitle')} 
       />
       
       {/* Barra de ações e filtros */}
@@ -1350,28 +1379,28 @@ export default function AdminProducts() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex-1 flex items-center gap-2">
             <Input
-              placeholder="Search products..."
+              placeholder={t('pages.dashboard.adminProducts.searchPlaceholder')}
               value={searchQuery}
               onValueChange={setSearchQuery}
               startContent={<Icon icon="lucide:search" className="text-default-400" />}
               className="max-w-xs"
             />
-            <Button onPress={handleSearch} color="primary">Search</Button>
+            <Button onPress={handleSearch} color="primary">{t('pages.dashboard.adminProducts.search')}</Button>
           </div>
           <Button 
             color="primary" 
             onPress={handleCreateNew}
             startContent={<Icon icon="lucide:plus" />}
           >
-            Create New Product
+            {t('pages.dashboard.adminProducts.createNewProduct')}
           </Button>
         </div>
         
         {/* Filtros */}
         <div className="flex gap-2 flex-wrap">
           <Select
-            placeholder="Type"
-            aria-label="Filter by product type"
+            placeholder={t('pages.dashboard.adminProducts.filters.type')}
+            aria-label={t('pages.dashboard.adminProducts.filters.ariaLabels.filterByType')}
             selectedKeys={filters.type ? new Set([filters.type]) : new Set()}
             onSelectionChange={function(keys) {
               var selected = Array.from(keys)[0] || "";
@@ -1386,8 +1415,8 @@ export default function AdminProducts() {
           </Select>
           
           <Select
-            placeholder="Location"
-            aria-label="Filter by location"
+            placeholder={t('pages.dashboard.adminProducts.filters.location')}
+            aria-label={t('pages.dashboard.adminProducts.filters.ariaLabels.filterByLocation')}
             selectedKeys={filters.location ? new Set([filters.location]) : new Set()}
             onSelectionChange={function(keys) {
               var selected = Array.from(keys)[0] || "";
@@ -1402,8 +1431,8 @@ export default function AdminProducts() {
           </Select>
           
           <Select
-            placeholder="Tag"
-            aria-label="Filter by tag"
+            placeholder={t('pages.dashboard.adminProducts.filters.tag')}
+            aria-label={t('pages.dashboard.adminProducts.filters.ariaLabels.filterByTag')}
             selectedKeys={filters.tag ? new Set([filters.tag]) : new Set()}
             onSelectionChange={function(keys) {
               var selected = Array.from(keys)[0] || "";
@@ -1413,12 +1442,12 @@ export default function AdminProducts() {
             }}
             className="w-40"
           >
-            <SelectItem key="priority" textValue="PRIORITY">PRIORITY</SelectItem>
-            <SelectItem key="sale" textValue="Sale">Sale</SelectItem>
-            <SelectItem key="new" textValue="New">New</SelectItem>
-            <SelectItem key="trending" textValue="Trending">Trending</SelectItem>
-            <SelectItem key="summer" textValue="Summer">Summer</SelectItem>
-            <SelectItem key="christmas" textValue="Christmas">Christmas</SelectItem>
+            <SelectItem key="priority" textValue="PRIORITY">{t('pages.dashboard.adminProducts.tags.priority')}</SelectItem>
+            <SelectItem key="sale" textValue="Sale">{t('pages.dashboard.adminProducts.tags.sale')}</SelectItem>
+            <SelectItem key="new" textValue="New">{t('pages.dashboard.adminProducts.tags.new')}</SelectItem>
+            <SelectItem key="trending" textValue="Trending">{t('pages.dashboard.adminProducts.tags.trending')}</SelectItem>
+            <SelectItem key="summer" textValue="Summer">{t('pages.dashboard.adminProducts.tags.summer')}</SelectItem>
+            <SelectItem key="christmas" textValue="Christmas">{t('pages.dashboard.adminProducts.tags.christmas')}</SelectItem>
           </Select>
           
           <Button
@@ -1428,14 +1457,14 @@ export default function AdminProducts() {
               setSearchQuery("");
             }}
           >
-            Clear Filters
+            {t('pages.dashboard.adminProducts.filters.clearFilters')}
           </Button>
           
           <Checkbox
             isSelected={showArchived}
             onValueChange={setShowArchived}
           >
-            Show Archived
+            {t('pages.dashboard.adminProducts.filters.showArchived')}
           </Checkbox>
         </div>
         
@@ -1449,7 +1478,7 @@ export default function AdminProducts() {
                 onPress={toggleSelectionMode}
                 startContent={<Icon icon="lucide:check-square" />}
               >
-                Select Products
+                {t('pages.dashboard.adminProducts.bulkActions.selectProducts')}
               </Button>
             ) : (
               <>
@@ -1460,10 +1489,10 @@ export default function AdminProducts() {
                   onPress={function() { toggleSelectAll(filteredProducts); }}
                   startContent={<Icon icon={selectedProducts.size === filteredProducts.length ? "lucide:square" : "lucide:check-square"} />}
                 >
-                  {selectedProducts.size === filteredProducts.length ? "Deselect All" : "Select All"}
+                  {selectedProducts.size === filteredProducts.length ? t('pages.dashboard.adminProducts.bulkActions.deselectAll') : t('pages.dashboard.adminProducts.bulkActions.selectAll')}
                 </Button>
                 <span className="text-sm text-default-500">
-                  ({selectedProducts.size} selected)
+                  ({selectedProducts.size} {selectedProducts.size === 1 ? t('pages.dashboard.adminProducts.bulkActions.selected') : t('pages.dashboard.adminProducts.bulkActions.selectedPlural')})
                 </span>
                 
                 {selectedProducts.size > 0 && (
@@ -1480,7 +1509,7 @@ export default function AdminProducts() {
                         return product && !product.isActive;
                       })}
                     >
-                      Archive ({selectedProducts.size})
+                      {t('pages.dashboard.adminProducts.bulkActions.archive')} ({selectedProducts.size})
                     </Button>
                     <Button
                       size="sm"
@@ -1493,7 +1522,7 @@ export default function AdminProducts() {
                         return product && product.isActive;
                       })}
                     >
-                      Unarchive ({selectedProducts.size})
+                      {t('pages.dashboard.adminProducts.bulkActions.unarchive')} ({selectedProducts.size})
                     </Button>
                     <Button
                       size="sm"
@@ -1502,7 +1531,7 @@ export default function AdminProducts() {
                       onPress={handleBulkDelete}
                       startContent={<Icon icon="lucide:trash-2" />}
                     >
-                      Delete ({selectedProducts.size})
+                      {t('pages.dashboard.adminProducts.bulkActions.delete')} ({selectedProducts.size})
                     </Button>
                   </>
                 )}
@@ -1512,7 +1541,7 @@ export default function AdminProducts() {
                   onPress={clearSelection}
                   startContent={<Icon icon="lucide:x" />}
                 >
-                  Cancel
+                  {t('pages.dashboard.adminProducts.bulkActions.cancel')}
                 </Button>
               </>
             )}
@@ -1525,20 +1554,20 @@ export default function AdminProducts() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <Icon icon="lucide:loader-2" className="text-4xl animate-spin mx-auto mb-2" />
-            <p>Loading products...</p>
+            <p>{t('pages.dashboard.adminProducts.status.loading')}</p>
           </div>
         </div>
       ) : error ? (
         <Card className="p-6">
           <CardBody>
             <p className="text-danger">Error: {error}</p>
-            <Button onPress={loadProducts} className="mt-4">Try Again</Button>
+            <Button onPress={loadProducts} className="mt-4">{t('pages.dashboard.adminProducts.status.tryAgain')}</Button>
           </CardBody>
         </Card>
       ) : filteredProducts.length === 0 ? (
         <Card className="p-6">
           <CardBody>
-            <p className="text-center text-default-500">No products found</p>
+            <p className="text-center text-default-500">{t('pages.dashboard.adminProducts.status.noProductsFound')}</p>
             <p className="text-center text-default-400 text-sm mt-2">
               Total products loaded: {products.length} | 
               Search query: "{searchQuery}" | 
@@ -1598,7 +1627,7 @@ export default function AdminProducts() {
                       }()}
                       {!product.isActive && (
                         <Chip size="sm" color="warning" className="absolute top-2 right-2">
-                          Archived
+                          {t('pages.dashboard.adminProducts.status.archived')}
                         </Chip>
                       )}
                     </div>
@@ -1630,19 +1659,19 @@ export default function AdminProducts() {
                               var tagConfig = null;
                               
                               if (tagLower === "sale" || tagLower.indexOf("sale") >= 0) {
-                                tagConfig = { label: "Sale", color: "#ef4444", bgColor: "#ef444420" };
+                                tagConfig = { label: getTranslatedTag("sale"), color: "#ef4444", bgColor: "#ef444420" };
                               } else if (tagLower === "priority" || tagLower.indexOf("priority") >= 0 || tagLower.indexOf("priori") >= 0) {
-                                tagConfig = { label: "PRIORITY", color: "#f59e0b", bgColor: "#f59e0b20" };
+                                tagConfig = { label: getTranslatedTag("priority"), color: "#f59e0b", bgColor: "#f59e0b20" };
                               } else if (tagLower === "new") {
-                                tagConfig = { label: "New", color: "#10b981", bgColor: "#10b98120" };
+                                tagConfig = { label: getTranslatedTag("new"), color: "#10b981", bgColor: "#10b98120" };
                               } else if (tagLower === "trending" || tagLower.indexOf("trending") >= 0) {
-                                tagConfig = { label: "Trending", color: "#8b5cf6", bgColor: "#8b5cf620" };
+                                tagConfig = { label: getTranslatedTag("trending"), color: "#8b5cf6", bgColor: "#8b5cf620" };
                               } else if (tagLower === "summer" || tagLower.indexOf("summer") >= 0) {
-                                tagConfig = { label: "Summer", color: "#f59e0b", bgColor: "#f59e0b20" };
+                                tagConfig = { label: getTranslatedTag("summer"), color: "#f59e0b", bgColor: "#f59e0b20" };
                               } else if (tagLower === "christmas" || tagLower.indexOf("christmas") >= 0 || tagLower.indexOf("xmas") >= 0) {
-                                tagConfig = { label: "Christmas", color: "#ef4444", bgColor: "#ef444420" };
+                                tagConfig = { label: getTranslatedTag("christmas"), color: "#ef4444", bgColor: "#ef444420" };
                               } else {
-                                tagConfig = { label: String(tag), color: "#6b7280", bgColor: "#6b728020" };
+                                tagConfig = { label: getTranslatedTag(tag) || String(tag), color: "#6b7280", bgColor: "#6b728020" };
                               }
                               
                               return (
@@ -1671,7 +1700,7 @@ export default function AdminProducts() {
                           <span className="line-through text-default-400 ml-2">€{product.oldPrice}</span>
                         )}
                       </p>
-                      <p className="text-default-400 text-xs mb-2">Stock: {product.stock}</p>
+                      <p className="text-default-400 text-xs mb-2">{t('pages.dashboard.adminProducts.status.stock')} {product.stock}</p>
                       <div className="flex gap-2 mt-4 flex-wrap">
                         <Button
                           size="sm"
@@ -1679,7 +1708,7 @@ export default function AdminProducts() {
                           onPress={function() { handleEdit(product); }}
                           startContent={<Icon icon="lucide:edit" />}
                         >
-                          Edit
+                          {t('pages.dashboard.adminProducts.actions.edit')}
                         </Button>
                         {product.isActive ? (
                           <Button
@@ -1689,7 +1718,7 @@ export default function AdminProducts() {
                             onPress={function() { handleArchive(product.id); }}
                             startContent={<Icon icon="lucide:archive" />}
                           >
-                            Archive
+                            {t('pages.dashboard.adminProducts.actions.archive')}
                           </Button>
                         ) : (
                           <Button
@@ -1699,7 +1728,7 @@ export default function AdminProducts() {
                             onPress={function() { handleUnarchive(product.id); }}
                             startContent={<Icon icon="lucide:archive-restore" />}
                           >
-                            Unarchive
+                            {t('pages.dashboard.adminProducts.actions.unarchive')}
                           </Button>
                         )}
                         <Button
@@ -1709,7 +1738,7 @@ export default function AdminProducts() {
                           onPress={function() { handleDelete(product.id); }}
                           startContent={<Icon icon="lucide:trash-2" />}
                         >
-                          Delete
+                          {t('pages.dashboard.adminProducts.actions.delete')}
                         </Button>
                       </div>
                     </div>
