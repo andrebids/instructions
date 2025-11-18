@@ -144,6 +144,86 @@
           "summer": "Summer",
           "christmas": "Christmas"
         }
+      },
+      "adminUsers": {
+        "title": "User Management",
+        "lead": "Manage system users",
+        "subtitle": "Create, edit and remove users",
+        "addUser": "Add User",
+        "sendInvite": "Send Invitation",
+        "searchPlaceholder": "Search by name or email...",
+        "filterByRole": "Filter by role",
+        "roles": {
+          "admin": "Administrator",
+          "comercial": "Commercial",
+          "editor_stock": "Stock/Store Editor",
+          "all": "All"
+        },
+        "table": {
+          "name": "Name",
+          "email": "Email",
+          "role": "Role",
+          "createdAt": "Created At",
+          "lastLogin": "Last Login",
+          "actions": "Actions",
+          "noUsersFound": "No users found"
+        },
+        "actions": {
+          "editRole": "Edit Role",
+          "remove": "Remove",
+          "view": "View"
+        },
+        "modals": {
+          "createUser": {
+            "title": "Create New User",
+            "firstName": "First Name",
+            "lastName": "Last Name",
+            "email": "Email",
+            "password": "Password",
+            "role": "Role",
+            "create": "Create",
+            "cancel": "Cancel",
+            "creating": "Creating..."
+          },
+          "inviteUser": {
+            "title": "Send Invitation",
+            "email": "Email",
+            "role": "Role",
+            "send": "Send",
+            "cancel": "Cancel",
+            "sending": "Sending...",
+            "success": "Invitation sent successfully!"
+          },
+          "editRole": {
+            "title": "Edit Role",
+            "currentRole": "Current Role",
+            "newRole": "New Role",
+            "save": "Save",
+            "cancel": "Cancel",
+            "saving": "Saving..."
+          },
+          "deleteConfirm": {
+            "title": "Confirm Removal",
+            "description": "Are you sure you want to remove user <strong>{{name}}</strong>?",
+            "warning": "This action cannot be undone. The user will be permanently removed from the system.",
+            "delete": "Remove",
+            "cancel": "Cancel",
+            "deleting": "Removing..."
+          }
+        },
+        "status": {
+          "loading": "Loading users...",
+          "error": "Error loading users",
+          "noRole": "No role"
+        },
+        "errors": {
+          "createFailed": "Error creating user",
+          "inviteFailed": "Error sending invitation",
+          "updateRoleFailed": "Error updating role",
+          "deleteFailed": "Error removing user",
+          "cannotRemoveSelf": "Cannot remove yourself",
+          "cannotChangeOwnRole": "Cannot change your own role"
+        }
       }
     }
   },

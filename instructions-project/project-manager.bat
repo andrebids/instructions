@@ -1245,8 +1245,13 @@ if not exist "node_modules" (
         set "SERVER_NEED_INSTALL=1"
     )
     if not exist "node_modules\pg" (
-        echo ⚠️  pg não encontrado. Reinstalando dependências...
+        echo pg nao encontrado. Reinstalando dependencias...
         echo [%DATE% %TIME%] pg nao encontrado >> "%LOG_FILE%" 2>&1
+        set "SERVER_NEED_INSTALL=1"
+    )
+    if not exist "node_modules\@clerk" (
+        echo @clerk nao encontrado. Reinstalando dependencias...
+        echo [%DATE% %TIME%] @clerk nao encontrado >> "%LOG_FILE%" 2>&1
         set "SERVER_NEED_INSTALL=1"
     )
 )
@@ -1309,12 +1314,12 @@ if %INSTALL_ERROR% neq 0 (
     exit /b 1
 )
 echo [%DATE% %TIME%] Dependencias do servidor instaladas com sucesso >> "%LOG_FILE%" 2>&1
-echo ✅ Dependências do servidor instaladas com sucesso!
+echo Dependencias do servidor instaladas com sucesso!
 rem Verificar novamente após instalação
 if not exist "node_modules\sharp" (
-    echo ❌ AVISO: sharp ainda não foi instalado após npm install
+    echo AVISO: sharp ainda nao foi instalado apos npm install
     echo    -> Execute manualmente: cd server ^&^& npm install sharp
-    echo    -> O servidor pode não iniciar sem esta dependência!
+    echo    -> O servidor pode nao iniciar sem esta dependencia!
 )
 goto after_server_check
 

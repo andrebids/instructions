@@ -144,6 +144,86 @@
           "summer": "Verão",
           "christmas": "Natal"
         }
+      },
+      "adminUsers": {
+        "title": "Gestão de Utilizadores",
+        "lead": "Gerir utilizadores do sistema",
+        "subtitle": "Criar, editar e remover utilizadores",
+        "addUser": "Adicionar Utilizador",
+        "sendInvite": "Enviar Convite",
+        "searchPlaceholder": "Pesquisar por nome ou email...",
+        "filterByRole": "Filtrar por role",
+        "roles": {
+          "admin": "Administrador",
+          "comercial": "Comercial",
+          "editor_stock": "Editor Stock/Loja",
+          "all": "Todos"
+        },
+        "table": {
+          "name": "Nome",
+          "email": "Email",
+          "role": "Role",
+          "createdAt": "Data de Criação",
+          "lastLogin": "Último Login",
+          "actions": "Ações",
+          "noUsersFound": "Nenhum utilizador encontrado"
+        },
+        "actions": {
+          "editRole": "Editar Role",
+          "remove": "Remover",
+          "view": "Ver"
+        },
+        "modals": {
+          "createUser": {
+            "title": "Criar Novo Utilizador",
+            "firstName": "Primeiro Nome",
+            "lastName": "Último Nome",
+            "email": "Email",
+            "password": "Password",
+            "role": "Role",
+            "create": "Criar",
+            "cancel": "Cancelar",
+            "creating": "A criar..."
+          },
+          "inviteUser": {
+            "title": "Enviar Convite",
+            "email": "Email",
+            "role": "Role",
+            "send": "Enviar",
+            "cancel": "Cancelar",
+            "sending": "A enviar...",
+            "success": "Convite enviado com sucesso!"
+          },
+          "editRole": {
+            "title": "Editar Role",
+            "currentRole": "Role Atual",
+            "newRole": "Novo Role",
+            "save": "Guardar",
+            "cancel": "Cancelar",
+            "saving": "A guardar..."
+          },
+          "deleteConfirm": {
+            "title": "Confirmar Remoção",
+            "description": "Tem certeza de que deseja remover o utilizador <strong>{{name}}</strong>?",
+            "warning": "Esta ação não pode ser desfeita. O utilizador será permanentemente removido do sistema.",
+            "delete": "Remover",
+            "cancel": "Cancelar",
+            "deleting": "A remover..."
+          }
+        },
+        "status": {
+          "loading": "A carregar utilizadores...",
+          "error": "Erro ao carregar utilizadores",
+          "noRole": "Sem role"
+        },
+        "errors": {
+          "createFailed": "Erro ao criar utilizador",
+          "inviteFailed": "Erro ao enviar convite",
+          "updateRoleFailed": "Erro ao atualizar role",
+          "deleteFailed": "Erro ao remover utilizador",
+          "cannotRemoveSelf": "Não pode remover a si mesmo",
+          "cannotChangeOwnRole": "Não pode alterar seu próprio role"
+        }
       }
     }
   },

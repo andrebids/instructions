@@ -32,10 +32,20 @@ import {
 } from "../utils/tagHierarchy";
 import { Scroller } from "../components/ui/scroller";
 import { useTranslation } from "react-i18next";
+import { useUserRole } from "../hooks/useUserRole";
 
 export default function AdminProducts() {
   const { t } = useTranslation();
   var { userName } = useUser();
+  const { isAdmin, isEditorStock, isLoaded } = useUserRole();
+  
+  // Verificação adicional de role (a rota já está protegida, mas esta é uma camada extra)
+  React.useEffect(() => {
+    if (isLoaded && !isAdmin && !isEditorStock) {
+      // Se não tiver permissão, redirecionar (embora a rota já esteja protegida)
+      window.location.href = '/';
+    }
+  }, [isLoaded, isAdmin, isEditorStock]);
   
   // Função helper para traduzir tags
   const getTranslatedTag = React.useCallback((tag) => {

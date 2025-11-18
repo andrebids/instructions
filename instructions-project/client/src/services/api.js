@@ -376,6 +376,45 @@ export const editorAPI = {
   },
 };
 
+// ===== USERS API =====
+export const usersAPI = {
+  // GET /api/users
+  getAll: async (params = {}) => {
+    const response = await api.get('/users', { params });
+    return response.data;
+  },
+
+  // GET /api/users/:id
+  getById: async (id) => {
+    const response = await api.get(`/users/${id}`);
+    return response.data;
+  },
+
+  // POST /api/users
+  create: async (data) => {
+    const response = await api.post('/users', data);
+    return response.data;
+  },
+
+  // POST /api/users/invite
+  sendInvitation: async (email, role = 'comercial') => {
+    const response = await api.post('/users/invite', { email, role });
+    return response.data;
+  },
+
+  // PUT /api/users/:id/role
+  updateRole: async (id, role) => {
+    const response = await api.put(`/users/${id}/role`, { role });
+    return response.data;
+  },
+
+  // DELETE /api/users/:id
+  delete: async (id) => {
+    const response = await api.delete(`/users/${id}`);
+    return response.data;
+  },
+};
+
 // Health check
 export const healthCheck = async () => {
   try {

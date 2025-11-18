@@ -144,6 +144,86 @@
           "summer": "Été",
           "christmas": "Noël"
         }
+      },
+      "adminUsers": {
+        "title": "Gestion des Utilisateurs",
+        "lead": "Gérer les utilisateurs du système",
+        "subtitle": "Créer, modifier et supprimer des utilisateurs",
+        "addUser": "Ajouter un Utilisateur",
+        "sendInvite": "Envoyer une Invitation",
+        "searchPlaceholder": "Rechercher par nom ou email...",
+        "filterByRole": "Filtrer par rôle",
+        "roles": {
+          "admin": "Administrateur",
+          "comercial": "Commercial",
+          "editor_stock": "Éditeur Stock/Magasin",
+          "all": "Tous"
+        },
+        "table": {
+          "name": "Nom",
+          "email": "Email",
+          "role": "Rôle",
+          "createdAt": "Date de Création",
+          "lastLogin": "Dernière Connexion",
+          "actions": "Actions",
+          "noUsersFound": "Aucun utilisateur trouvé"
+        },
+        "actions": {
+          "editRole": "Modifier le Rôle",
+          "remove": "Supprimer",
+          "view": "Voir"
+        },
+        "modals": {
+          "createUser": {
+            "title": "Créer un Nouvel Utilisateur",
+            "firstName": "Prénom",
+            "lastName": "Nom de Famille",
+            "email": "Email",
+            "password": "Mot de Passe",
+            "role": "Rôle",
+            "create": "Créer",
+            "cancel": "Annuler",
+            "creating": "Création en cours..."
+          },
+          "inviteUser": {
+            "title": "Envoyer une Invitation",
+            "email": "Email",
+            "role": "Rôle",
+            "send": "Envoyer",
+            "cancel": "Annuler",
+            "sending": "Envoi en cours...",
+            "success": "Invitation envoyée avec succès !"
+          },
+          "editRole": {
+            "title": "Modifier le Rôle",
+            "currentRole": "Rôle Actuel",
+            "newRole": "Nouveau Rôle",
+            "save": "Enregistrer",
+            "cancel": "Annuler",
+            "saving": "Enregistrement en cours..."
+          },
+          "deleteConfirm": {
+            "title": "Confirmer la Suppression",
+            "description": "Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{{name}}</strong> ?",
+            "warning": "Cette action ne peut pas être annulée. L'utilisateur sera définitivement supprimé du système.",
+            "delete": "Supprimer",
+            "cancel": "Annuler",
+            "deleting": "Suppression en cours..."
+          }
+        },
+        "status": {
+          "loading": "Chargement des utilisateurs...",
+          "error": "Erreur lors du chargement des utilisateurs",
+          "noRole": "Aucun rôle"
+        },
+        "errors": {
+          "createFailed": "Erreur lors de la création de l'utilisateur",
+          "inviteFailed": "Erreur lors de l'envoi de l'invitation",
+          "updateRoleFailed": "Erreur lors de la mise à jour du rôle",
+          "deleteFailed": "Erreur lors de la suppression de l'utilisateur",
+          "cannotRemoveSelf": "Impossible de vous supprimer vous-même",
+          "cannotChangeOwnRole": "Impossible de modifier votre propre rôle"
+        }
       }
     }
   },

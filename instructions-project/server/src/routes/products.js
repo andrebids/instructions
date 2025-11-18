@@ -1,6 +1,7 @@
 import express from 'express';
 import * as productController from '../controllers/productController.js';
 import { uploadProductImagesWithLimits } from '../middleware/upload.js';
+import { requireEditorStockOrAdmin } from '../middleware/roles.js';
 
 const router = express.Router();
 
@@ -13,20 +14,20 @@ router.get('/', productController.getAll);
 router.get('/:id/debug-media', productController.debugMedia);
 router.get('/:id', productController.getById);
 
-// Criar produto com upload de imagens
-router.post('/', uploadProductImagesWithLimits, productController.create);
+// Criar produto com upload de imagens (apenas admin e editor_stock)
+router.post('/', requireEditorStockOrAdmin(), uploadProductImagesWithLimits, productController.create);
 
-// Atualizar produto com upload opcional de imagens
-router.put('/:id', uploadProductImagesWithLimits, productController.update);
+// Atualizar produto com upload opcional de imagens (apenas admin e editor_stock)
+router.put('/:id', requireEditorStockOrAdmin(), uploadProductImagesWithLimits, productController.update);
 
-// Arquivar produto (soft delete)
-router.patch('/:id/archive', productController.archiveProduct);
+// Arquivar produto (soft delete) (apenas admin e editor_stock)
+router.patch('/:id/archive', requireEditorStockOrAdmin(), productController.archiveProduct);
 
-// Desarquivar produto
-router.patch('/:id/unarchive', productController.unarchiveProduct);
+// Desarquivar produto (apenas admin e editor_stock)
+router.patch('/:id/unarchive', requireEditorStockOrAdmin(), productController.unarchiveProduct);
 
-// Deletar produto permanentemente (hard delete)
-router.delete('/:id', productController.deleteProduct);
+// Deletar produto permanentemente (hard delete) (apenas admin e editor_stock)
+router.delete('/:id', requireEditorStockOrAdmin(), productController.deleteProduct);
 
 export default router;
 
