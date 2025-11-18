@@ -72,8 +72,15 @@ export default function ProductMediaViewer({ product, initialMode = "night", cla
     if (baseApi) return path.indexOf('/uploads/') === 0 ? (baseApi + path) : path;
     return path.indexOf('/uploads/') === 0 ? ('/api' + path) : path;
   };
-  const baseDay = mapPath(product.images?.day || product.imagesDayUrl || product.thumbnailUrl);
-  const baseNight = mapPath(product.images?.night || product.imagesNightUrl || baseDay);
+  let baseDay = mapPath(product.images?.day || product.imagesDayUrl || product.thumbnailUrl);
+  let baseNight = mapPath(product.images?.night || product.imagesNightUrl || baseDay);
+  // Filtrar URLs temporárias
+  if (baseNight && (baseNight.includes('temp_') || baseNight.includes('temp_nightImage_'))) {
+    baseNight = baseDay; // Fallback para day image se night for temporária
+  }
+  if (baseDay && (baseDay.includes('temp_') || baseDay.includes('temp_nightImage_'))) {
+    baseDay = null; // Se day também for temporária, usar placeholder
+  }
   const imageSrc = mode === "day" ? baseDay : baseNight;
   const imageSrcWithBuster = imageSrc 
     ? imageSrc + '?v=' + encodeURIComponent(String(product.updatedAt || product.id || '1')) 
@@ -114,7 +121,11 @@ export default function ProductMediaViewer({ product, initialMode = "night", cla
             onError={(e) => {
               if (e.target.dataset.fb === '1') return;
               e.target.dataset.fb = '1';
-              const fallback = product?.images?.day || "/demo-images/placeholder.png";
+              // Filtrar URLs temporárias no fallback também
+              let fallback = product?.images?.day || "/demo-images/placeholder.png";
+              if (fallback && (fallback.includes('temp_') || fallback.includes('temp_nightImage_'))) {
+                fallback = "/demo-images/placeholder.png";
+              }
               e.target.src = fallback;
             }}
             onLoad={() => {

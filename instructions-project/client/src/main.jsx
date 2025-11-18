@@ -13,6 +13,181 @@ import { setupNotificationClickListener } from './services/pushNotifications'
 import { isBackgroundSyncAvailable } from './services/backgroundSync'
 import './i18n' // Inicializar i18next
 
+// Interceptar e silenciar erros do cliente Vite HMR ANTES de qualquer outro código
+// Isso precisa ser executado o mais cedo possível para capturar erros do cliente Vite
+(function() {
+  // Interceptar console.error/warn/info/log especificamente para o cliente Vite
+  const originalConsoleError = console.error;
+  const originalConsoleWarn = console.warn;
+  const originalConsoleInfo = console.info;
+  const originalConsoleLog = console.log;
+  
+  // Função para verificar se é um erro do cliente Vite
+  const isViteClientError = (...args) => {
+    const message = args.join(' ');
+    const firstArg = String(args[0] || '');
+    
+    return (
+      message.includes('WebSocket') ||
+      message.includes('server connection lost') ||
+      message.includes('Polling for restart') ||
+      message.includes('ERR_CONNECTION_REFUSED') ||
+      message.includes('GET https://localhost/') ||
+      message.includes('wss://localhost') ||
+      firstArg.includes('client:') ||
+      firstArg.includes('@vite/client') ||
+      (message.includes('localhost') && (message.includes('failed') || message.includes('Failed to load resource')))
+    );
+  };
+  
+  console.error = function(...args) {
+    if (isViteClientError(...args)) return;
+    originalConsoleError.apply(console, args);
+  };
+  
+  console.warn = function(...args) {
+    if (isViteClientError(...args)) return;
+    originalConsoleWarn.apply(console, args);
+  };
+  
+  console.info = function(...args) {
+    if (isViteClientError(...args)) return;
+    originalConsoleInfo.apply(console, args);
+  };
+  
+  console.log = function(...args) {
+    if (isViteClientError(...args)) return;
+    originalConsoleLog.apply(console, args);
+  };
+})();
+
+// Silenciar erros de CORS do Iconify e erros de WebSocket do Vite HMR
+// Esses erros são normais em desenvolvimento e não afetam a funcionalidade
+// Interceptar eventos de erro globalmente para filtrar erros comuns de desenvolvimento
+window.addEventListener('error', (event) => {
+  const url = event.filename || event.target?.src || event.target?.href || '';
+  const message = event.message || '';
+  const source = event.filename || '';
+  
+  // Filtrar erros do Iconify
+  if (typeof url === 'string' && (
+    url.includes('api.iconify.design') ||
+    url.includes('api.simplesvg.com') ||
+    url.includes('api.unisvg.com') ||
+    url.includes('lucide.json')
+  )) {
+    event.preventDefault();
+    event.stopPropagation();
+    return false;
+  }
+  
+  // Filtrar erros do cliente Vite (HMR) - aparecem como client:536, client:560, etc.
+  if (source.includes('client:') || source.includes('@vite/client')) {
+    // Silenciar todos os erros do cliente Vite relacionados a WebSocket e conexões
+    if (message.includes('WebSocket') || 
+        message.includes('ERR_CONNECTION_REFUSED') ||
+        url.includes('localhost') ||
+        url.includes('wss://localhost')) {
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    }
+  }
+  
+  // Filtrar erros de WebSocket do Vite HMR
+  if (message.includes('WebSocket') && message.includes('failed')) {
+    event.preventDefault();
+    event.stopPropagation();
+    return false;
+  }
+  
+  // Filtrar erros de conexão com localhost do Vite
+  if ((url.includes('localhost') || message.includes('ERR_CONNECTION_REFUSED')) &&
+      (url.includes('client:') || url.includes('wss://localhost') || url.includes('@vite'))) {
+    event.preventDefault();
+    event.stopPropagation();
+    return false;
+  }
+}, true);
+
+// Também interceptar eventos de unhandledrejection para erros de fetch e WebSocket
+window.addEventListener('unhandledrejection', (event) => {
+  const reason = event.reason;
+  const message = reason?.message || reason?.toString() || '';
+  
+  // Filtrar erros de CORS do Iconify
+  if (message.includes('CORS') && (
+    message.includes('api.iconify.design') ||
+    message.includes('api.simplesvg.com') ||
+    message.includes('api.unisvg.com') ||
+    message.includes('lucide.json')
+  )) {
+    event.preventDefault();
+    return false;
+  }
+  
+  // Filtrar erros de WebSocket do Vite HMR
+  if (message.includes('WebSocket') || 
+      message.includes('ERR_CONNECTION_REFUSED') ||
+      message.includes('localhost')) {
+    event.preventDefault();
+    return false;
+  }
+});
+
+// Filtrar console.error e console.warn para erros comuns de desenvolvimento
+const originalError = console.error;
+const originalWarn = console.warn;
+
+console.error = function(...args) {
+  const message = args.join(' ');
+  const firstArg = args[0] || '';
+  
+  // Filtrar erros de CORS do Iconify
+  if ((message.includes('CORS') || message.includes('Failed to load resource')) && (
+    message.includes('api.iconify.design') ||
+    message.includes('api.simplesvg.com') ||
+    message.includes('api.unisvg.com') ||
+    message.includes('lucide.json')
+  )) {
+    return;
+  }
+  
+  // Filtrar erros de WebSocket do Vite HMR (normais em desenvolvimento)
+  if (message.includes('WebSocket connection') || 
+      message.includes('WebSocket') && message.includes('failed')) {
+    return;
+  }
+  
+  // Filtrar erros de conexão com localhost do Vite (incluindo client:536, client:560, etc.)
+  if (message.includes('Failed to load resource') || 
+      message.includes('GET https://localhost/') ||
+      message.includes('ERR_CONNECTION_REFUSED')) {
+    if (message.includes('localhost') || 
+        message.includes('wss://localhost') ||
+        String(firstArg).includes('client:') ||
+        String(firstArg).includes('@vite')) {
+      return;
+    }
+  }
+  
+  originalError.apply(console, args);
+};
+
+console.warn = function(...args) {
+  const message = args.join(' ');
+  // Filtrar avisos do Vite HMR (normais em desenvolvimento)
+  if (message.includes('[vite] server connection lost') || 
+      message.includes('Polling for restart')) {
+    return;
+  }
+  // Filtrar aviso de tag meta deprecada (não crítico)
+  if (message.includes('apple-mobile-web-app-capable') && message.includes('deprecated')) {
+    return;
+  }
+  originalWarn.apply(console, args);
+};
+
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 if (!PUBLISHABLE_KEY) {
   throw new Error('Missing Clerk Publishable Key')
@@ -206,7 +381,8 @@ if ('serviceWorker' in navigator && !isDev) {
     });
   }
 } else if (isDev) {
-  console.log('ℹ️ [Main] Service Worker desabilitado em desenvolvimento (HMR funciona sem ele)');
+  // Log silenciado - apenas para debug se necessário
+  // console.log('ℹ️ [Main] Service Worker desabilitado em desenvolvimento (HMR funciona sem ele)');
 } else {
   console.warn('⚠️ [Main] Service Worker API not available in this browser');
 }

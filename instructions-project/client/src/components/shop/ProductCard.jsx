@@ -13,9 +13,18 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
   const { addToProject, projects, favorites, compare, toggleFavorite, toggleCompare, products, getAvailableStock } = useShop();
 
   const previewSrc = React.useMemo(() => {
-    if (activeColor && product.images?.colors?.[activeColor]) return product.images.colors[activeColor];
-    if (product.images?.night) return product.images.night; // prefer night on cards
-    return product.images?.day;
+    if (activeColor && product.images?.colors?.[activeColor]) {
+      const colorImg = product.images.colors[activeColor];
+      // Filtrar URLs temporárias
+      if (colorImg && !colorImg.includes('temp_')) return colorImg;
+    }
+    if (product.images?.night && !product.images.night.includes('temp_')) {
+      return product.images.night; // prefer night on cards
+    }
+    if (product.images?.day && !product.images.day.includes('temp_')) {
+      return product.images.day;
+    }
+    return null; // Retornar null para usar placeholder
   }, [activeColor, product]);
 
   const colorKeyToStyle = {
@@ -61,8 +70,8 @@ export default function ProductCard({ product, onOrder, glass = false, allowQty 
               alt={product.name} 
               className={`w-full ${isSquare ? 'h-full' : 'h-64'} object-contain transition-transform duration-300 group-hover:scale-105`}
               onError={(e) => {
-                // Fallback para placeholder se a imagem falhar
-                if (e.target.src !== "/demo-images/placeholder.png") {
+                // Fallback para placeholder se a imagem falhar (silenciosamente)
+                if (e.target.src && !e.target.src.includes("/demo-images/placeholder.png")) {
                   e.target.src = "/demo-images/placeholder.png";
                 }
               }}

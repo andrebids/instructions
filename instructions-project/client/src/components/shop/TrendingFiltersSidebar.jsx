@@ -6,7 +6,7 @@ import { useTheme } from "@heroui/use-theme";
 // Componente memoizado para ícones para evitar loops
 const MountIcon = React.memo(({ iconName }) => {
   if (!iconName) return null;
-  return <Icon icon={iconName} className="text-base" />;
+  return <Icon icon={iconName} className="text-xs" />;
 }, (prevProps, nextProps) => prevProps.iconName === nextProps.iconName);
 MountIcon.displayName = "MountIcon";
 
@@ -136,9 +136,14 @@ export default function TrendingFiltersSidebar({
       outdoor: products.filter((p) => p.location === "Exterior").length,
       usageShopping: products.filter((p) => p.usage === "Shopping").length,
       eco: products.filter((p) => isEcoProduct(p)).length,
-      mountPole: products.filter((p) => p.mount === "Poste").length,
-      mountCrossarm: products.filter((p) => p.mount === "Transversal").length,
-      mountGround: products.filter((p) => p.mount === "Chão").length,
+      mountSidePole: products.filter((p) => p.mount === "SIDE POLE").length,
+      mountCentralPole: products.filter((p) => p.mount === "CENTRAL POLE").length,
+      mountSuspended: products.filter((p) => p.mount === "SUSPENDED").length,
+      mountTransverse: products.filter((p) => p.mount === "TRANSVERSE").length,
+      mountWallMounted: products.filter((p) => p.mount === "WALL-MOUNTED").length,
+      mountFloorStanding: products.filter((p) => p.mount === "FLOOR-STANDING").length,
+      mountSpecial: products.filter((p) => p.mount === "SPECIAL").length,
+      mountNoFixing: products.filter((p) => p.mount === "NO FIXING").length,
       colorWhite: products.filter((p) => Boolean(p.images?.colors?.brancoPuro)).length,
       colorWarm: products.filter((p) => Boolean(p.images?.colors?.brancoQuente)).length,
       colorRGB: products.filter((p) => Boolean(p.images?.colors?.rgb)).length,
@@ -159,9 +164,14 @@ export default function TrendingFiltersSidebar({
   ];
 
   const mountOptions = [
-    { value: "Poste", label: "Pole", countKey: "mountPole", icon: "lucide:flag" },
-    { value: "Transversal", label: "Transversal", countKey: "mountCrossarm", icon: "lucide:move-horizontal" },
-    { value: "Chão", label: "Ground", countKey: "mountGround", icon: "lucide:square" },
+    { value: "SIDE POLE", label: "Side Pole", countKey: "mountSidePole", icon: "lucide:flag" },
+    { value: "CENTRAL POLE", label: "Central Pole", countKey: "mountCentralPole", icon: "lucide:flag" },
+    { value: "SUSPENDED", label: "Suspended", countKey: "mountSuspended", icon: "lucide:move-vertical" },
+    { value: "TRANSVERSE", label: "Transverse", countKey: "mountTransverse", icon: "lucide:move-horizontal" },
+    { value: "WALL-MOUNTED", label: "Wall-Mounted", countKey: "mountWallMounted", icon: "lucide:square" },
+    { value: "FLOOR-STANDING", label: "Floor-Standing", countKey: "mountFloorStanding", icon: "lucide:square" },
+    { value: "SPECIAL", label: "Special", countKey: "mountSpecial", icon: "lucide:star" },
+    { value: "NO FIXING", label: "No Fixing", countKey: "mountNoFixing", icon: "lucide:x-circle" },
   ];
 
 
@@ -223,27 +233,55 @@ export default function TrendingFiltersSidebar({
     }
   }, [onStockChange, stockMin, stockMax]);
 
-  const dimKey = filters.dimKey || "";
   const dimLabels = {
     heightM: "Height",
     widthM: "Width",
     depthM: "Depth",
   };
   const availableDimKeys = ["heightM", "widthM", "depthM"];
-  const dimValues = React.useMemo(() => {
+  
+  // Calculate values for each dimension separately
+  const heightValues = React.useMemo(() => {
     const vals = products
-      .map((p) => p?.specs?.dimensions?.[dimKey])
+      .map((p) => p?.specs?.dimensions?.heightM)
       .filter((v) => typeof v === "number" && Number.isFinite(v));
     if (!vals.length) return { min: 0, max: 0 };
     return { min: Math.min(...vals), max: Math.max(...vals) };
-  }, [products, dimKey]);
-  const dimRange = Array.isArray(filters.dimRange) ? filters.dimRange : null;
-  const effectiveDimRange = React.useMemo(() => {
-    if (dimRange && dimRange.length === 2 && Number.isFinite(dimRange[0]) && Number.isFinite(dimRange[1])) {
-      return dimRange;
+  }, [products]);
+
+  const widthValues = React.useMemo(() => {
+    const vals = products
+      .map((p) => p?.specs?.dimensions?.widthM)
+      .filter((v) => typeof v === "number" && Number.isFinite(v));
+    if (!vals.length) return { min: 0, max: 0 };
+    return { min: Math.min(...vals), max: Math.max(...vals) };
+  }, [products]);
+
+  const depthValues = React.useMemo(() => {
+    const vals = products
+      .map((p) => p?.specs?.dimensions?.depthM)
+      .filter((v) => typeof v === "number" && Number.isFinite(v));
+    if (!vals.length) return { min: 0, max: 0 };
+    return { min: Math.min(...vals), max: Math.max(...vals) };
+  }, [products]);
+
+  // Get effective ranges for each dimension
+  const getDimensionRange = (key) => {
+    const dimRanges = filters.dimRanges || {};
+    const range = dimRanges[key];
+    if (range && Array.isArray(range) && range.length === 2 && Number.isFinite(range[0]) && Number.isFinite(range[1])) {
+      return range;
     }
-    return [dimValues.min, dimValues.max];
-  }, [dimRange, dimValues.min, dimValues.max]);
+    let values;
+    if (key === "heightM") values = heightValues;
+    else if (key === "widthM") values = widthValues;
+    else values = depthValues;
+    return [values.min, values.max];
+  };
+
+  const effectiveHeightRange = React.useMemo(() => getDimensionRange("heightM"), [filters.dimRanges, heightValues]);
+  const effectiveWidthRange = React.useMemo(() => getDimensionRange("widthM"), [filters.dimRanges, widthValues]);
+  const effectiveDepthRange = React.useMemo(() => getDimensionRange("depthM"), [filters.dimRanges, depthValues]);
 
   const getSelectedLocationLabel = () => {
     if (!filters.location) return "All";
@@ -276,9 +314,9 @@ export default function TrendingFiltersSidebar({
   const selectedColorsCount = Array.isArray(filters.color) ? filters.color.length : 0;
   const priceSummary = `${formatCurrency(priceRange[0])} — ${formatCurrency(priceRange[1])}`;
   const colorSummary = selectedColorsCount ? `${selectedColorsCount} selected` : "All colors";
-  const dimensionSummary = dimKey
-    ? `${dimLabels[dimKey]} • ${formatDimensionValue(effectiveDimRange?.[0])}–${formatDimensionValue(effectiveDimRange?.[1])} m`
-    : "Not selected";
+  const dimensionSummary = filters.dimRanges && Object.keys(filters.dimRanges).length > 0
+    ? "Custom ranges"
+    : "All dimensions";
   const usageSummaryParts = [];
   if (filters.usage === "Shopping") usageSummaryParts.push("Shopping");
   if (filters.eco) usageSummaryParts.push("Eco");
@@ -297,7 +335,13 @@ export default function TrendingFiltersSidebar({
 
   const clearColors = () => onChange?.({ ...filters, color: [] });
   const clearYear = () => onChange?.({ ...filters, releaseYear: "" });
-  const clearDimensions = () => onChange?.({ ...filters, dimKey: "", dimRange: null });
+  const clearDimensions = () => {
+    const next = { ...filters };
+    delete next.dimRanges;
+    delete next.dimKey;
+    delete next.dimRange;
+    onChange?.(next);
+  };
   const clearUsage = () => onChange?.({ ...filters, usage: "", eco: false });
   const clearLocation = () => onChange?.({ ...filters, location: "" });
 
@@ -311,7 +355,6 @@ export default function TrendingFiltersSidebar({
     "usage",
     "location",
     "collectionYear",
-    "dimensions",
   ]);
 
   const toggleSection = (key) => {
@@ -363,12 +406,6 @@ export default function TrendingFiltersSidebar({
       summary: selectedYear ? String(selectedYear) : "All years",
       onClear: selectedYear ? clearYear : null,
     },
-    {
-      key: "dimensions",
-      title: "Dimensions",
-      summary: dimensionSummary,
-      onClear: dimKey ? clearDimensions : null,
-    },
   ];
 
   // Calculate price distribution histogram
@@ -399,14 +436,13 @@ export default function TrendingFiltersSidebar({
 
   // Componente memoizado para Mounting para evitar loops com Icon
   const MountingFilter = React.useMemo(() => {
-    const mountCounts = {
-      mountPole: itemsCount.mountPole || 0,
-      mountCrossarm: itemsCount.mountCrossarm || 0,
-      mountGround: itemsCount.mountGround || 0,
-    };
+    const mountCounts = mountOptions.reduce((acc, opt) => {
+      acc[opt.countKey] = itemsCount[opt.countKey] || 0;
+      return acc;
+    }, {});
     
     return (
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-4 gap-1.5">
         {mountOptions.map((opt) => {
           const isSelected = filters.mount === opt.value;
           const selectedClass = isDark
@@ -425,19 +461,19 @@ export default function TrendingFiltersSidebar({
               <button
                 type="button"
                 onClick={() => handle("mount", isSelected ? "" : opt.value)}
-                className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-all ${
+                className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 transition-all ${
                   isSelected ? selectedClass : idleClass
                 }`}
               >
                 {opt.icon && <MountIcon iconName={opt.icon} />}
-                <span className="text-sm font-medium">{opt.label}</span>
+                <span className="text-xs font-medium">{opt.label}</span>
               </button>
             </Tooltip>
           );
         })}
       </div>
     );
-  }, [filters.mount, isDark, itemsCount.mountPole, itemsCount.mountCrossarm, itemsCount.mountGround, handle]);
+  }, [filters.mount, isDark, itemsCount, handle]);
 
   const renderSectionContent = React.useCallback((sectionKey) => {
     switch (sectionKey) {
@@ -447,15 +483,15 @@ export default function TrendingFiltersSidebar({
         return (
           <div className="space-y-2">
             {/* Histogram bars */}
-            <div className="relative h-32 flex items-end gap-1 mb-1 justify-between">
+            <div className="relative h-20 flex items-end gap-1 justify-between">
               {priceHistogram.map((count, index) => {
                 const binStart = min + (index * (max - min) / histogramBins);
                 const binEnd = min + ((index + 1) * (max - min) / histogramBins);
                 const isInRange = binStart <= priceRange[1] && binEnd >= priceRange[0];
                 
-                // Calculate actual bar height (10px to 80px based on count)
+                // Calculate actual bar height (10px to 60px based on count)
                 const actualBarHeight = maxCount > 0 
-                  ? Math.max(10, Math.min(80, 10 + (count / maxCount) * 70))
+                  ? Math.max(10, Math.min(60, 10 + (count / maxCount) * 50))
                   : 10;
                 
                 return (
@@ -495,17 +531,21 @@ export default function TrendingFiltersSidebar({
             
             {typeof Slider !== "undefined" && min !== max ? (
               <Slider
-                key={`price-slider-${effectiveMin}-${effectiveMax}`}
-                aria-label="Price range"
-                minValue={effectiveMin}
-                maxValue={effectiveMax}
-                step={1}
-                value={Array.isArray(priceRange) && priceRange.length === 2 ? priceRange : [effectiveMin, effectiveMax]}
-                onChange={handlePriceChange}
-                onChangeStart={handlePriceChangeStart}
-                onChangeEnd={handlePriceChangeEnd}
+                  key={`price-slider-${effectiveMin}-${effectiveMax}`}
+                  aria-label="Price range"
+                  minValue={effectiveMin}
+                  maxValue={effectiveMax}
+                  step={1}
+                  value={Array.isArray(priceRange) && priceRange.length === 2 ? priceRange : [effectiveMin, effectiveMax]}
+                  onChange={handlePriceChange}
+                  onChangeStart={handlePriceChangeStart}
+                  onChangeEnd={handlePriceChangeEnd}
                 formatOptions={{ style: "currency", currency: "EUR" }}
                 className="max-w-full"
+                classNames={{
+                  track: "h-1",
+                  filler: "h-1"
+                }}
               />
             ) : (
               <div className="space-y-2">
@@ -548,7 +588,7 @@ export default function TrendingFiltersSidebar({
         );
       case "color":
         return (
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-6 gap-2">
             {colorOptions.map((c) => {
               const isActive = Array.isArray(filters.color) && filters.color.includes(c.key);
               const handleColorClick = () => {
@@ -568,14 +608,16 @@ export default function TrendingFiltersSidebar({
                     onClick={handleColorClick}
                     className={`h-9 w-9 rounded-full border transition-all ${
                       isActive
-                        ? `ring-2 ring-offset-2 ${isDark ? "ring-offset-[#0b1224]" : "ring-offset-white"} ring-primary`
+                        ? `ring-2 ring-primary ${c.key === "brancoPuro" ? "" : c.bordered ? "ring-offset-2" : "ring-offset-1"} ${c.key === "brancoPuro" ? "" : isDark ? "ring-offset-[#0b1224]" : "ring-offset-white"}`
                         : isDark
                           ? "border-white/20"
                           : "border-black/10"
                     }`}
                     style={{
                       background: c.gradient || c.swatch,
-                      boxShadow: c.bordered
+                      boxShadow: c.bordered && !isActive
+                        ? "inset 0 0 0 1px rgba(0,0,0,0.15), inset 0 0 0 2px rgba(255,255,255,0.6)"
+                        : c.bordered && isActive && c.key !== "brancoPuro"
                         ? "inset 0 0 0 1px rgba(0,0,0,0.15), inset 0 0 0 2px rgba(255,255,255,0.6)"
                         : undefined,
                     }}
@@ -665,107 +707,52 @@ export default function TrendingFiltersSidebar({
           </div>
         );
       case "dimensions":
-        return (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs uppercase tracking-[0.2em] text-primary-700 dark:text-primary-400">Field</span>
-              <Dropdown>
-                <DropdownTrigger>
-                  <Button
-                    size="sm"
-                    radius="full"
-                    variant="bordered"
-                    endContent={<Icon icon="lucide:chevron-down" className="text-sm" />}
-                  >
-                    {dimKey ? dimLabels[dimKey] : "Select"}
-                  </Button>
-                </DropdownTrigger>
-                <DropdownMenu
-                  aria-label="Select dimension"
-                  selectedKeys={new Set([dimKey || ""])}
-                  selectionMode="single"
-                  onAction={(key) => {
-                    const k = String(key);
-                    const next = { ...filters, dimKey: k === "" ? "" : k };
-                    if (k === "") {
-                      next.dimRange = null;
-                    } else {
-                      const vals = products
-                        .map((p) => p?.specs?.dimensions?.[k])
-                        .filter((v) => typeof v === "number" && Number.isFinite(v));
-                      next.dimRange = vals.length ? [Math.min(...vals), Math.max(...vals)] : [0, 0];
-                    }
-                    onChange?.(next);
-                  }}
-                >
-                  <DropdownItem key="">None</DropdownItem>
-                  {availableDimKeys.map((k) => (
-                    <DropdownItem key={k}>{dimLabels[k]}</DropdownItem>
-                  ))}
-                </DropdownMenu>
-              </Dropdown>
-            </div>
+        const renderDimensionSlider = (key, label, values, effectiveRange) => {
+          const handleDimensionChange = (value) => {
+            if (Array.isArray(value)) {
+              const newMin = Math.min(...value);
+              const newMax = Math.max(...value);
+              const dimRanges = filters.dimRanges || {};
+              onChange?.({ ...filters, dimRanges: { ...dimRanges, [key]: [newMin, newMax] } });
+            } else if (typeof value === "object" && value !== null && "start" in value && "end" in value) {
+              const dimRanges = filters.dimRanges || {};
+              onChange?.({ ...filters, dimRanges: { ...dimRanges, [key]: [value.start, value.end] } });
+            } else if (typeof value === "number") {
+              const dimRanges = filters.dimRanges || {};
+              onChange?.({ ...filters, dimRanges: { ...dimRanges, [key]: [values.min, value] } });
+            }
+          };
 
-            {dimKey ? (
-              <div className="space-y-1.5">
-                {typeof Slider !== "undefined" && dimValues.min !== dimValues.max ? (
+          return (
+            <div className="space-y-2">
+              <span className="text-xs text-default-500">{label}</span>
+              {typeof Slider !== "undefined" && values.min !== values.max ? (
+                <>
                   <Slider
-                    aria-label={`${dimLabels[dimKey]} range`}
-                    minValue={dimValues.min}
-                    maxValue={dimValues.max}
+                    key={`${key}-slider-${values.min}-${values.max}`}
+                    aria-label={`${label} range`}
+                    minValue={values.min}
+                    maxValue={values.max}
                     step={0.01}
-                    value={effectiveDimRange}
-                    onChange={(value) => {
-                      if (Array.isArray(value)) {
-                        onChange?.({ ...filters, dimRange: [Math.min(...value), Math.max(...value)] });
-                      }
-                    }}
-                    showTooltip
-                    formatOptions={{ style: "unit", unit: "meter", maximumFractionDigits: 2 }}
+                    value={Array.isArray(effectiveRange) && effectiveRange.length === 2 ? effectiveRange : [values.min, values.max]}
+                    onChange={handleDimensionChange}
                     className="max-w-full"
+                    classNames={{
+                      track: "h-1",
+                      filler: "h-1"
+                    }}
                   />
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="range"
-                      min={dimValues.min}
-                      max={dimValues.max}
-                      step={0.01}
-                      value={effectiveDimRange[0]}
-                      onChange={(e) =>
-                        onChange?.({
-                          ...filters,
-                          dimRange: [Math.min(Number(e.target.value), effectiveDimRange[1] - 0.01), effectiveDimRange[1]],
-                        })
-                      }
-                      className="w-full"
-                    />
-                    <input
-                      type="range"
-                      min={dimValues.min}
-                      max={dimValues.max}
-                      step={0.01}
-                      value={effectiveDimRange[1]}
-                      onChange={(e) =>
-                        onChange?.({
-                          ...filters,
-                          dimRange: [effectiveDimRange[0], Math.max(Number(e.target.value), effectiveDimRange[0] + 0.01)],
-                        })
-                      }
-                      className="w-full"
-                    />
-                  </div>
-                )}
-                <div className="text-xs text-default-500">
-                  <span className="text-primary-700 dark:text-primary-400 font-medium">{dimLabels[dimKey]}:</span>{" "}
-                  <span className="font-semibold text-foreground dark:text-white">
-                    {formatDimensionValue(effectiveDimRange[0])}m — {formatDimensionValue(effectiveDimRange[1])}m
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="text-xs text-default-500">Select a dimension field to filter.</div>
-            )}
+                </>
+              ) : null}
+            </div>
+          );
+        };
+
+        return (
+          <div className="space-y-4">
+            {renderDimensionSlider("heightM", "Height", heightValues, effectiveHeightRange)}
+            {renderDimensionSlider("widthM", "Width", widthValues, effectiveWidthRange)}
+            {renderDimensionSlider("depthM", "Depth", depthValues, effectiveDepthRange)}
           </div>
         );
       case "usage":
@@ -843,6 +830,10 @@ export default function TrendingFiltersSidebar({
                 formatOptions={{ maximumFractionDigits: 0 }}
                 tooltipValueFormatOptions={{ maximumFractionDigits: 0 }}
                 className="max-w-full"
+                classNames={{
+                  track: "h-1",
+                  filler: "h-1"
+                }}
               />
             ) : (
               <div className="space-y-2">
@@ -886,7 +877,7 @@ export default function TrendingFiltersSidebar({
       default:
         return null;
     }
-  }, [isDark, filters, itemsCount, mountOptions, dimKey, dimValues, effectiveDimRange, products, handle, formatCurrency, formatDimensionValue, availableYears, priceRange, effectiveMin, effectiveMax, handlePriceChange, handlePriceChangeStart, handlePriceChangeEnd, isDraggingPrice, colorOptions, typeOptions, stockRange, stockMin, stockMax, effectiveStockMin, effectiveStockMax, handleStockChange, priceHistogram, maxCount, histogramBins, min, max]);
+  }, [isDark, filters, itemsCount, mountOptions, heightValues, widthValues, depthValues, effectiveHeightRange, effectiveWidthRange, effectiveDepthRange, products, handle, formatCurrency, formatDimensionValue, availableYears, priceRange, effectiveMin, effectiveMax, handlePriceChange, handlePriceChangeStart, handlePriceChangeEnd, isDraggingPrice, colorOptions, typeOptions, stockRange, stockMin, stockMax, effectiveStockMin, effectiveStockMax, handleStockChange, priceHistogram, maxCount, histogramBins, min, max, statPillClass]);
 
   const CollapsibleCard = ({ section }) => {
     const isOpen = openSections.includes(section.key);
@@ -1007,7 +998,7 @@ export default function TrendingFiltersSidebar({
             <div className={isDark
                 ? "rounded-2xl border border-white/10 bg-content1/60 p-4 shadow-[0_18px_60px_rgba(8,15,36,0.45)]"
                 : "rounded-2xl border border-black/5 bg-white/80 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.1)]"}>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between">
                 <div>
                   <div className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>Price Range</div>
                 </div>
@@ -1071,6 +1062,31 @@ export default function TrendingFiltersSidebar({
                     <div className={`mt-0.5 text-xs font-semibold ${isDark ? "text-white" : "text-foreground"}`}>{stockRange[1]}</div>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div className={isDark
+                ? "rounded-2xl border border-white/10 bg-content1/60 p-4 shadow-[0_18px_60px_rgba(8,15,36,0.45)]"
+                : "rounded-2xl border border-black/5 bg-white/80 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.1)]"}>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className={`text-sm font-semibold ${isDark ? "text-primary-400" : "text-primary-700"}`}>Dimensions</div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="light"
+                  className={`h-7 px-2 text-xs font-medium ${isDark ? "text-white hover:text-white/80" : "text-default-600 hover:text-default-700"}`}
+                  onPress={(e) => {
+                    e?.stopPropagation?.();
+                    clearDimensions();
+                  }}
+                  isDisabled={!filters.dimRanges || Object.keys(filters.dimRanges).length === 0}
+                >
+                  Reset
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {renderSectionContent("dimensions")}
               </div>
             </div>
 
