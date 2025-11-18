@@ -1254,6 +1254,16 @@ if not exist "node_modules" (
         echo [%DATE% %TIME%] @clerk nao encontrado >> "%LOG_FILE%" 2>&1
         set "SERVER_NEED_INSTALL=1"
     )
+    if not exist "node_modules\@clerk\backend" (
+        echo @clerk/backend nao encontrado. Reinstalando dependencias...
+        echo [%DATE% %TIME%] @clerk/backend nao encontrado >> "%LOG_FILE%" 2>&1
+        set "SERVER_NEED_INSTALL=1"
+    )
+    if not exist "node_modules\@clerk\express" (
+        echo @clerk/express nao encontrado. Reinstalando dependencias...
+        echo [%DATE% %TIME%] @clerk/express nao encontrado >> "%LOG_FILE%" 2>&1
+        set "SERVER_NEED_INSTALL=1"
+    )
 )
 echo [DEBUG] Verificacao concluida. SERVER_NEED_INSTALL=%SERVER_NEED_INSTALL%
 echo [%DATE% %TIME%] [DEBUG] Verificacao concluida. SERVER_NEED_INSTALL=%SERVER_NEED_INSTALL% >> "%LOG_FILE%" 2>&1
