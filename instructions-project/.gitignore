@@ -1,1 +1,5 @@
 ﻿.env.deploy
+
+# Scripts de build (não devem ser commitados)
+server/scripts/build-env.*
+server/scripts/switch-auth.js

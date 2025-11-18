@@ -1,31 +1,23 @@
-import { useUser as useClerkUser } from '@clerk/clerk-react';
+import { useAuth } from './useAuth.js';
 import { useMemo } from 'react';
 
 /**
- * Hook para obter e verificar roles do usuário
- * Extrai o role do Clerk user publicMetadata
+ * Hook para obter e verificar roles do usuário usando Auth.js
  * 
  * @returns {Object} - Objeto com role e funções helper
  */
 export function useUserRole() {
-  const { user: clerkUser, isLoaded } = useClerkUser();
+  const authJs = useAuth();
+  const activeUser = authJs.user;
+  const isLoaded = !authJs.loading;
   
   const role = useMemo(() => {
-    if (!isLoaded || !clerkUser) {
+    if (!isLoaded || !activeUser) {
       return null;
     }
     
-    // Clerk armazena roles em publicMetadata.role
-    // Pode ser uma string ou um array (se o usuário tiver múltiplos roles)
-    const userRole = clerkUser.publicMetadata?.role;
-    
-    if (Array.isArray(userRole)) {
-      // Se for array, retornar o primeiro role
-      return userRole[0] || null;
-    }
-    
-    return userRole || null;
-  }, [clerkUser, isLoaded]);
+    return activeUser.role || null;
+  }, [activeUser, isLoaded]);
   
   const isAdmin = useMemo(() => role === 'admin', [role]);
   const isComercial = useMemo(() => role === 'comercial', [role]);
@@ -53,7 +45,7 @@ export function useUserRole() {
     hasRole,
     hasAnyRole,
     isLoaded,
-    userId: clerkUser?.id || null,
+    userId: activeUser?.id || null,
   };
 }
 

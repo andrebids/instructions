@@ -3,11 +3,11 @@ import {Icon} from "@iconify/react";
 import React from "react";
 import {useTheme} from "@heroui/use-theme";
 import { useUser } from "../../context/UserContext";
-import { useClerk, useUser as useClerkUser, UserProfile } from "@clerk/clerk-react";
-import { dark } from "@clerk/themes";
+import { useAuthContext } from "../../context/AuthContext";
 import { GlobalSyncStatus } from "../features/SyncStatus";
 import { LocaleSelector } from "./LocaleSelector";
 import { useTranslation } from "react-i18next";
+import { usersAPI } from "../../services/api";
 
 export function Header() {
   const { t } = useTranslation();
@@ -17,11 +17,112 @@ export function Header() {
   const [showSettings, setShowSettings] = React.useState(false);
   const { userName, setUserName } = useUser();
   const [tempName, setTempName] = React.useState("");
-  const { signOut } = useClerk();
-  const { user: clerkUser } = useClerkUser();
+  
+  // Estados para edição de perfil
+  const [editingName, setEditingName] = React.useState("");
+  const [editingImage, setEditingImage] = React.useState(null);
+  const [imagePreview, setImagePreview] = React.useState(null);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [saveError, setSaveError] = React.useState(null);
+  const [saveSuccess, setSaveSuccess] = React.useState(false);
+  
+  const authContext = useAuthContext();
+  const activeUser = authContext?.user;
+  const handleSignOut = async () => {
+    if (authContext?.signOut) {
+      await authContext.signOut();
+    }
+  };
   
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
+  };
+
+  // Inicializar valores do formulário quando o modal abrir
+  React.useEffect(() => {
+    if (showSettings && activeUser) {
+      setEditingName(activeUser.name || activeUser.email || "");
+      setEditingImage(null);
+      setImagePreview(activeUser.image || activeUser.imageUrl || null);
+      setSaveError(null);
+      setSaveSuccess(false);
+    }
+  }, [showSettings, activeUser]);
+
+  // Função para lidar com seleção de imagem
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validar tipo de arquivo
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        setSaveError('Apenas imagens (JPEG, PNG, WebP) são permitidas');
+        return;
+      }
+
+      // Validar tamanho (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setSaveError('A imagem deve ter no máximo 5MB');
+        return;
+      }
+
+      setEditingImage(file);
+      setSaveError(null);
+
+      // Criar preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Função para salvar perfil
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+
+    try {
+      let imageUrl = activeUser?.image || activeUser?.imageUrl;
+
+      // Se há uma nova imagem, fazer upload primeiro
+      if (editingImage) {
+        const uploadResult = await usersAPI.uploadAvatar(editingImage);
+        imageUrl = uploadResult.url;
+      }
+
+      // Atualizar perfil
+      const updatedUser = await usersAPI.updateProfile(editingName.trim(), imageUrl);
+
+      // Atualizar estado local
+      setSaveSuccess(true);
+      
+      // Aguardar um pouco para garantir que o banco processou a atualização
+      // e então forçar atualização da sessão para refletir as mudanças
+      setTimeout(async () => {
+        if (authContext?.refreshSession) {
+          try {
+            console.log('🔄 [Header] Atualizando sessão após salvar perfil...');
+            await authContext.refreshSession();
+            console.log('✅ [Header] Sessão atualizada com sucesso');
+          } catch (error) {
+            console.warn('⚠️ [Header] Não foi possível atualizar a sessão:', error);
+          }
+        }
+      }, 300); // Pequeno delay para garantir que o banco processou
+      
+      // Fechar modal após 1 segundo
+      setTimeout(() => {
+        setShowSettings(false);
+      }, 1000);
+    } catch (error) {
+      console.error('Erro ao salvar perfil:', error);
+      setSaveError(error.response?.data?.message || error.message || 'Erro ao salvar perfil');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -162,8 +263,8 @@ export function Header() {
             <Avatar
               isBordered
               as="button"
-              src={clerkUser?.imageUrl}
-              name={clerkUser?.fullName || clerkUser?.firstName || userName || "User"}
+              src={activeUser?.image || activeUser?.imageUrl}
+              name={activeUser?.name || activeUser?.fullName || activeUser?.firstName || userName || "User"}
               className="transition-transform"
             />
           </DropdownTrigger>
@@ -172,8 +273,7 @@ export function Header() {
               setTempName(userName || "Christopher");
               setShowSettings(true);
             } else if (key === 'logout') {
-              // Sign out via Clerk and redirect to landing
-              signOut({ redirectUrl: '/' });
+              handleSignOut();
             }
           }}>
             <DropdownItem key="settings">{t('components.header.mySettings')}</DropdownItem>
@@ -183,7 +283,7 @@ export function Header() {
           </DropdownMenu>
         </Dropdown>
 
-        {/* My Settings Modal with Clerk UserProfile */}
+        {/* My Settings Modal */}
         <Modal 
           isOpen={showSettings} 
           onClose={()=>setShowSettings(false)} 
@@ -209,17 +309,108 @@ export function Header() {
                 </ModalHeader>
                 <ModalBody className="p-0 overflow-hidden">
                   <div className="w-full max-h-[calc(80vh-80px)] overflow-auto">
-                    <UserProfile 
-                      appearance={{
-                        baseTheme: theme === "dark" ? dark : undefined,
-                        elements: {
-                          rootBox: "w-full",
-                          card: "w-full shadow-none",
-                        }
-                      }}
-                    />
+                    <div className="p-6">
+                      <div className="space-y-6">
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4">{t('components.header.accountInfo')}</h3>
+                          
+                          {/* Informações não editáveis */}
+                          <div className="space-y-2 mb-6">
+                            <p><strong>{t('common.email')}:</strong> {activeUser?.email || '-'}</p>
+                            {activeUser?.role && (
+                              <p><strong>{t('common.role')}:</strong> {activeUser.role}</p>
+                            )}
+                          </div>
+
+                          {/* Formulário de edição */}
+                          <div className="space-y-4">
+                            {/* Campo de nome */}
+                            <div>
+                              <label className="block text-sm font-medium mb-2">{t('common.name')}</label>
+                              <Input
+                                value={editingName}
+                                onChange={(e) => setEditingName(e.target.value)}
+                                placeholder={t('common.name')}
+                                variant="bordered"
+                                size="md"
+                                maxLength={100}
+                              />
+                            </div>
+
+                            {/* Upload de imagem */}
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Imagem de Perfil</label>
+                              <div className="flex items-start gap-4">
+                                {/* Preview da imagem */}
+                                <div className="flex-shrink-0">
+                                  <Avatar
+                                    src={imagePreview}
+                                    name={editingName || activeUser?.name || activeUser?.email}
+                                    size="lg"
+                                    isBordered
+                                  />
+                                </div>
+                                
+                                {/* Botão de upload */}
+                                <div className="flex-1">
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                                    onChange={handleImageSelect}
+                                    className="hidden"
+                                    id="avatar-upload"
+                                  />
+                                  <label htmlFor="avatar-upload">
+                                    <Button
+                                      as="span"
+                                      variant="bordered"
+                                      size="sm"
+                                      startContent={<Icon icon="lucide:upload" />}
+                                    >
+                                      Selecionar Imagem
+                                    </Button>
+                                  </label>
+                                  <p className="text-xs text-default-500 mt-2">
+                                    Formatos: JPEG, PNG, WebP. Máximo: 5MB
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Mensagens de erro/sucesso */}
+                            {saveError && (
+                              <div className="p-3 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg">
+                                <p className="text-sm text-danger">{saveError}</p>
+                              </div>
+                            )}
+                            {saveSuccess && (
+                              <div className="p-3 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-lg">
+                                <p className="text-sm text-success">Perfil atualizado com sucesso!</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </ModalBody>
+                <ModalFooter className="border-t border-divider">
+                  <Button
+                    variant="light"
+                    onPress={() => setShowSettings(false)}
+                    isDisabled={isSaving}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    color="primary"
+                    onPress={handleSaveProfile}
+                    isLoading={isSaving}
+                    startContent={!isSaving && <Icon icon="lucide:save" />}
+                  >
+                    Salvar
+                  </Button>
+                </ModalFooter>
               </>
             )}
           </ModalContent>
