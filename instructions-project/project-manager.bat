@@ -647,9 +647,9 @@ echo ⚠️  NOTA: O servidor remoto deve estar acessível via SSH
 echo    Certifique-se de que a chave SSH está configurada
 echo.
        echo 💡 O script irá executar automaticamente:
+       echo    - Atualização do código do servidor (git pull)
+       echo    - Execução de migrations na base de dados
        echo    - pm2 restart instructions-server
-       echo.
-       echo ℹ️  Migrations não são necessárias (usando Supabase)
 echo.
 echo Iniciando deploy automaticamente...
 timeout /t 2 /nobreak >nul
