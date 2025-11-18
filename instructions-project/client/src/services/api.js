@@ -18,13 +18,14 @@ if (!API_BASE_URL) {
 }
 
 // Debug: Log da configuração da API em desenvolvimento
-if (import.meta.env.DEV) {
-  console.log('🔧 [API Config]', {
-    VITE_API_URL: import.meta.env.VITE_API_URL,
-    API_BASE_URL: API_BASE_URL,
-    env: import.meta.env.MODE
-  });
-}
+// Log silenciado - apenas para debug se necessário
+// if (import.meta.env.DEV) {
+//   console.log('🔧 [API Config]', {
+//     VITE_API_URL: import.meta.env.VITE_API_URL,
+//     API_BASE_URL: API_BASE_URL,
+//     env: import.meta.env.MODE
+//   });
+// }
 
 const api = axios.create({
   baseURL: API_BASE_URL,

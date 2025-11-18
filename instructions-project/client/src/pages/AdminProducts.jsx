@@ -2059,6 +2059,14 @@ export default function AdminProducts() {
                               src={imagePreviews.dayImage}
                               alt="Day preview"
                               className="max-h-32 object-contain rounded-lg"
+                              onError={(e) => {
+                                console.warn('⚠️ [AdminProducts] Erro ao carregar preview de dayImage, limpando preview');
+                                setImagePreviews((prev) => {
+                                  const newPreviews = { ...prev };
+                                  delete newPreviews.dayImage;
+                                  return newPreviews;
+                                });
+                              }}
                             />
                           </div>
                         )}
@@ -2097,6 +2105,14 @@ export default function AdminProducts() {
                               src={imagePreviews.nightImage}
                               alt="Night preview"
                               className="max-h-32 object-contain rounded-lg"
+                              onError={(e) => {
+                                console.warn('⚠️ [AdminProducts] Erro ao carregar preview de nightImage, limpando preview');
+                                setImagePreviews((prev) => {
+                                  const newPreviews = { ...prev };
+                                  delete newPreviews.nightImage;
+                                  return newPreviews;
+                                });
+                              }}
                             />
                           </div>
                         )}
@@ -2162,6 +2178,14 @@ export default function AdminProducts() {
                               src={imagePreviews.animationSimulation}
                               controls
                               className="max-h-32 w-full object-contain rounded-lg"
+                              onError={(e) => {
+                                console.warn('⚠️ [AdminProducts] Erro ao carregar preview de animationSimulation, limpando preview');
+                                setImagePreviews((prev) => {
+                                  const newPreviews = { ...prev };
+                                  delete newPreviews.animationSimulation;
+                                  return newPreviews;
+                                });
+                              }}
                             />
                           </div>
                         )}

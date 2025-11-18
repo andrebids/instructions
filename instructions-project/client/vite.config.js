@@ -150,10 +150,15 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
-    hmr: {
+    hmr: process.env.NODE_ENV === 'development' ? {
+      // Em desenvolvimento local, usar configuração simplificada
+      port: 3003, // Usar a mesma porta do servidor
+      protocol: 'ws', // WebSocket não seguro em desenvolvimento
+      overlay: false, // Desativar overlay de erros do HMR
+      // Não definir clientPort - deixar o Vite escolher automaticamente
+    } : {
+      // Em produção (atrás do Caddy), usar configuração para HTTPS
       port: 3004, // Porta separada para HMR no servidor
-      // Em produção (atrás do Caddy), o WebSocket passa pela porta 443 (HTTPS)
-      // O Caddy faz upgrade automático de HTTP para WebSocket
       clientPort: 443, // Quando atrás do Caddy, usar porta 443 (HTTPS)
       protocol: 'wss', // Usar WebSocket seguro quando atrás do Caddy
       overlay: false, // Desativar overlay de erros do HMR (são temporários)
