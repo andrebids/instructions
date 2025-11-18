@@ -3,29 +3,41 @@ import axios from 'axios';
 // Configuração base da API
 // Preferimos caminho relativo para funcionar com o proxy do Vite
 // e evitar CORS/portas diferentes (ex.: quando o Vite alterna 3003→3005).
-let API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// IMPORTANTE: Em produção, sempre usar caminho relativo para evitar problemas de CSP
+const isDev = import.meta.env.DEV;
+let API_BASE_URL;
 
-// Garantir que baseURL sempre termina sem barra e começa com /api se não especificado
-if (!API_BASE_URL) {
-  API_BASE_URL = '/api';
-} else {
-  // Remover barra final se existir
-  API_BASE_URL = API_BASE_URL.replace(/\/$/, '');
-  // Se não começar com /api e for um caminho relativo, adicionar /api
-  if (!API_BASE_URL.startsWith('http') && !API_BASE_URL.startsWith('/api')) {
+if (isDev) {
+  // Em desenvolvimento, usar VITE_API_URL se disponível, senão usar caminho relativo
+  API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+  
+  // Garantir que baseURL sempre termina sem barra e começa com /api se não especificado
+  if (!API_BASE_URL) {
     API_BASE_URL = '/api';
+  } else {
+    // Remover barra final se existir
+    API_BASE_URL = API_BASE_URL.replace(/\/$/, '');
+    // Se não começar com /api e for um caminho relativo, adicionar /api
+    if (!API_BASE_URL.startsWith('http') && !API_BASE_URL.startsWith('/api')) {
+      API_BASE_URL = '/api';
+    }
   }
+} else {
+  // Em produção, SEMPRE usar caminho relativo para evitar problemas de CSP
+  // Isso garante que funcione com a mesma origem (https://thecore.dsproject.pt)
+  API_BASE_URL = '/api';
 }
 
-// Debug: Log da configuração da API em desenvolvimento
-// Log silenciado - apenas para debug se necessário
-// if (import.meta.env.DEV) {
-//   console.log('🔧 [API Config]', {
-//     VITE_API_URL: import.meta.env.VITE_API_URL,
-//     API_BASE_URL: API_BASE_URL,
-//     env: import.meta.env.MODE
-//   });
-// }
+// Debug: Log da configuração da API (temporário para debug)
+if (typeof window !== 'undefined') {
+  console.log('🔧 [API Config]', {
+    DEV: import.meta.env.DEV,
+    MODE: import.meta.env.MODE,
+    VITE_API_URL: import.meta.env.VITE_API_URL,
+    API_BASE_URL: API_BASE_URL,
+    location: window.location.origin
+  });
+}
 
 const api = axios.create({
   baseURL: API_BASE_URL,
