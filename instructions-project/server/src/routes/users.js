@@ -31,7 +31,12 @@ router.get('/', userController.getAll);
 router.get('/:id', userController.getById);
 router.post('/', userController.create);
 router.post('/invite', userController.sendInvitation);
+// Rotas de atualização (específicas primeiro)
+router.put('/:id/password', userController.updatePassword);
+router.put('/:id/email', userController.updateEmail);
+router.put('/:id/profile', userController.updateProfile);
 router.put('/:id/role', userController.updateRole);
+router.put('/:id', userController.update); // Atualização geral (deve vir por último)
 router.delete('/:id', userController.deleteUser);
 
 export default router;

@@ -1,17 +1,66 @@
-import { createClerkClient } from '@clerk/backend';
-import { getAuth } from '@clerk/express';
+import { createClient } from '@supabase/supabase-js';
+import { getAuth } from '../middleware/auth.js';
 import { logError, logInfo } from '../utils/projectLogger.js';
 
 /**
- * Controller de utilizadores - ATENÇÃO: Este controller ainda usa Clerk
- * TODO: Migrar para Auth.js - Este arquivo precisa ser reescrito para usar Auth.js
+ * Controller de utilizadores usando Supabase Admin API
  * Todas as operações requerem role admin
- * 
- * Nota: Este controller ainda depende do Clerk e precisa ser migrado
  */
-const clerkClient = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY,
-});
+
+// Criar cliente Supabase Admin (usando service role key)
+let supabaseAdmin = null;
+
+function getSupabaseAdmin() {
+  if (!supabaseAdmin) {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY devem estar configurados');
+    }
+
+    supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+  }
+
+  return supabaseAdmin;
+}
+
+/**
+ * Transforma usuário do Supabase para formato da aplicação
+ */
+function transformUser(user) {
+  const rawUserMeta = user.user_metadata || {};
+  const rawAppMeta = user.app_metadata || {};
+  
+  // Extrair nome (firstName, lastName) de raw_user_meta_data
+  const firstName = rawUserMeta.firstName || rawUserMeta.first_name || '';
+  const lastName = rawUserMeta.lastName || rawUserMeta.last_name || '';
+  const fullName = `${firstName} ${lastName}`.trim() || user.email || 'Sem nome';
+  
+  // Extrair role de raw_app_meta_data
+  const role = rawAppMeta.role || null;
+  
+  // Extrair imagem de perfil
+  const imageUrl = rawUserMeta.avatar_url || rawUserMeta.imageUrl || rawUserMeta.image || null;
+
+  return {
+    id: user.id,
+    firstName: firstName,
+    lastName: lastName,
+    fullName: fullName,
+    email: user.email || '',
+    role: role,
+    imageUrl: imageUrl,
+    createdAt: user.created_at ? new Date(user.created_at).toISOString() : null,
+    lastSignInAt: user.last_sign_in_at ? new Date(user.last_sign_in_at).toISOString() : null,
+    emailVerified: user.email_confirmed_at !== null,
+  };
+}
 
 // GET /api/users - Listar todos os utilizadores
 export async function getAll(req, res) {
@@ -19,28 +68,17 @@ export async function getAll(req, res) {
     logInfo('GET /api/users - Listando utilizadores');
     
     const { role, search } = req.query;
+    const supabase = getSupabaseAdmin();
     
-    // Listar todos os utilizadores do Clerk
-    const usersList = await clerkClient.users.getUserList({
-      limit: 500, // Limite máximo
-    });
+    // Listar todos os utilizadores usando Admin API
+    const { data: usersList, error: listError } = await supabase.auth.admin.listUsers();
     
-    // Transformar dados do Clerk para formato da aplicação
-    let users = usersList.data.map(user => {
-      const role = user.publicMetadata?.role || null;
-      return {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.emailAddresses[0]?.emailAddress || 'Sem nome',
-        email: user.emailAddresses[0]?.emailAddress || '',
-        role: role,
-        imageUrl: user.imageUrl,
-        createdAt: new Date(user.createdAt).toISOString(),
-        lastSignInAt: user.lastSignInAt ? new Date(user.lastSignInAt).toISOString() : null,
-        emailVerified: user.emailAddresses[0]?.verification?.status === 'verified',
-      };
-    });
+    if (listError) {
+      throw new Error(listError.message);
+    }
+    
+    // Transformar dados do Supabase para formato da aplicação
+    let users = (usersList.users || []).map(transformUser);
     
     // Filtrar por role se especificado
     if (role && role !== 'all') {
@@ -57,7 +95,11 @@ export async function getAll(req, res) {
     }
     
     // Ordenar por data de criação (mais recentes primeiro)
-    users.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    users.sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+      const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+      return dateB - dateA;
+    });
     
     logInfo(`Utilizadores encontrados: ${users.length}`);
     res.json(users);
@@ -76,27 +118,24 @@ export async function getById(req, res) {
     const { id } = req.params;
     logInfo(`GET /api/users/${id} - Buscando utilizador`);
     
-    const user = await clerkClient.users.getUser(id);
+    const supabase = getSupabaseAdmin();
     
-    if (!user) {
+    // Buscar usuário específico usando Admin API
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(id);
+    
+    if (userError) {
+      if (userError.message?.includes('not found')) {
+        return res.status(404).json({ error: 'Utilizador não encontrado' });
+      }
+      throw new Error(userError.message);
+    }
+    
+    if (!userData.user) {
       return res.status(404).json({ error: 'Utilizador não encontrado' });
     }
     
-    const role = user.publicMetadata?.role || null;
-    const userData = {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.emailAddresses[0]?.emailAddress || 'Sem nome',
-      email: user.emailAddresses[0]?.emailAddress || '',
-      role: role,
-      imageUrl: user.imageUrl,
-      createdAt: new Date(user.createdAt).toISOString(),
-      lastSignInAt: user.lastSignInAt ? new Date(user.lastSignInAt).toISOString() : null,
-      emailVerified: user.emailAddresses[0]?.verification?.status === 'verified',
-    };
-    
-    res.json(userData);
+    const user = transformUser(userData.user);
+    res.json(user);
   } catch (error) {
     logError('Erro ao buscar utilizador', error);
     res.status(500).json({ 
@@ -119,35 +158,41 @@ export async function create(req, res) {
       });
     }
     
-    // Criar utilizador no Clerk
-    const user = await clerkClient.users.createUser({
-      firstName: firstName || '',
-      lastName: lastName || '',
-      emailAddress: [email],
+    const supabase = getSupabaseAdmin();
+    
+    // Criar utilizador usando Admin API
+    const { data: userData, error: createError } = await supabase.auth.admin.createUser({
+      email: email,
       password: password,
-      skipPasswordChecks: false, // Validar password
-      publicMetadata: {
-        role: role || 'comercial', // Role padrão: comercial
+      email_confirm: true, // Confirmar email automaticamente
+      user_metadata: {
+        firstName: firstName || '',
+        lastName: lastName || '',
+      },
+      app_metadata: {
+        role: role || 'comercial',
       },
     });
     
-    const userData = {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || email,
-      email: user.emailAddresses[0]?.emailAddress || email,
-      role: user.publicMetadata?.role || 'comercial',
-      imageUrl: user.imageUrl,
-      createdAt: new Date(user.createdAt).toISOString(),
-      lastSignInAt: null,
-      emailVerified: false,
-    };
+    if (createError) {
+      throw new Error(createError.message);
+    }
+    
+    const user = transformUser(userData.user);
     
     logInfo('Utilizador criado com sucesso', { id: user.id, email });
-    res.status(201).json(userData);
+    res.status(201).json(user);
   } catch (error) {
     logError('Erro ao criar utilizador', error);
+    
+    // Tratar erros específicos
+    if (error.message?.includes('already registered') || error.message?.includes('already exists')) {
+      return res.status(400).json({ 
+        error: 'Este email já está registrado',
+        message: 'O utilizador com este email já existe no sistema'
+      });
+    }
+    
     res.status(400).json({ 
       error: 'Erro ao criar utilizador',
       message: error.message || 'Erro desconhecido'
@@ -176,33 +221,44 @@ export async function sendInvitation(req, res) {
       });
     }
     
-    // Criar convite no Clerk
-    const invitation = await clerkClient.invitations.createInvitation({
-      emailAddress: email,
-      publicMetadata: {
-        role: role || 'comercial', // Role padrão: comercial
+    const supabase = getSupabaseAdmin();
+    
+    // Verificar se usuário já existe
+    const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email);
+    if (existingUser?.user) {
+      return res.status(400).json({ 
+        error: 'Este email já está registrado',
+        message: 'O utilizador com este email já existe no sistema'
+      });
+    }
+    
+    // Criar convite usando Admin API
+    const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
+      data: {
+        role: role || 'comercial',
       },
     });
     
-    logInfo('Convite enviado com sucesso', { email, id: invitation.id });
+    if (inviteError) {
+      throw new Error(inviteError.message);
+    }
+    
+    logInfo('Convite enviado com sucesso', { email, id: inviteData.user?.id });
     res.status(201).json({
       success: true,
       message: 'Convite enviado com sucesso',
-      invitationId: invitation.id,
-      email: invitation.emailAddress,
+      invitationId: inviteData.user?.id,
+      email: email,
     });
   } catch (error) {
     logError('Erro ao enviar convite', error);
     
-    // Tratar erros específicos do Clerk
-    if (error.errors && error.errors.length > 0) {
-      const clerkError = error.errors[0];
-      if (clerkError.message?.includes('already exists') || clerkError.message?.includes('already registered')) {
-        return res.status(400).json({ 
-          error: 'Este email já está registrado',
-          message: 'O utilizador com este email já existe no sistema'
-        });
-      }
+    // Tratar erros específicos
+    if (error.message?.includes('already registered') || error.message?.includes('already exists')) {
+      return res.status(400).json({ 
+        error: 'Este email já está registrado',
+        message: 'O utilizador com este email já existe no sistema'
+      });
     }
     
     res.status(400).json({ 
@@ -228,8 +284,8 @@ export async function updateRole(req, res) {
       });
     }
     
-    // Obter utilizador atual (ainda usando Clerk - precisa migrar)
-    const auth = getAuth(req);
+    // Obter utilizador atual
+    const auth = await getAuth(req);
     const currentUserId = auth?.userId;
     
     // Não permitir que admin remova seu próprio role de admin
@@ -240,31 +296,295 @@ export async function updateRole(req, res) {
       });
     }
     
-    // Atualizar publicMetadata do utilizador
-    const user = await clerkClient.users.updateUserMetadata(id, {
-      publicMetadata: {
+    const supabase = getSupabaseAdmin();
+    
+    // Buscar usuário atual para preservar app_metadata existente
+    const { data: currentUserData, error: getUserError } = await supabase.auth.admin.getUserById(id);
+    if (getUserError || !currentUserData.user) {
+      return res.status(404).json({ error: 'Utilizador não encontrado' });
+    }
+    
+    const currentAppMeta = currentUserData.user.app_metadata || {};
+    
+    // Atualizar role mantendo outros metadados
+    const { data: updatedUser, error: updateError } = await supabase.auth.admin.updateUserById(id, {
+      app_metadata: {
+        ...currentAppMeta,
         role: role,
       },
     });
     
-    const userData = {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.emailAddresses[0]?.emailAddress || 'Sem nome',
-      email: user.emailAddresses[0]?.emailAddress || '',
-      role: user.publicMetadata?.role || null,
-      imageUrl: user.imageUrl,
-      createdAt: new Date(user.createdAt).toISOString(),
-      lastSignInAt: user.lastSignInAt ? new Date(user.lastSignInAt).toISOString() : null,
-    };
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+    
+    const user = transformUser(updatedUser.user);
     
     logInfo('Role atualizado com sucesso', { id, role });
-    res.json(userData);
+    res.json(user);
   } catch (error) {
     logError('Erro ao atualizar role', error);
     res.status(400).json({ 
       error: 'Erro ao atualizar role',
+      message: error.message || 'Erro desconhecido'
+    });
+  }
+}
+
+// PUT /api/users/:id/password - Atualizar senha
+export async function updatePassword(req, res) {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+    logInfo(`PUT /api/users/${id}/password - Atualizando senha`);
+    
+    if (!password) {
+      return res.status(400).json({ 
+        error: 'Password é obrigatório' 
+      });
+    }
+    
+    // Validar força da senha (mínimo 6 caracteres)
+    if (password.length < 6) {
+      return res.status(400).json({ 
+        error: 'Password muito curto',
+        message: 'A senha deve ter pelo menos 6 caracteres'
+      });
+    }
+    
+    const supabase = getSupabaseAdmin();
+    
+    // Atualizar senha usando Admin API
+    const { data: updatedUser, error: updateError } = await supabase.auth.admin.updateUserById(id, {
+      password: password,
+    });
+    
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+    
+    const user = transformUser(updatedUser.user);
+    
+    logInfo('Senha atualizada com sucesso', { id });
+    res.json(user);
+  } catch (error) {
+    logError('Erro ao atualizar senha', error);
+    res.status(400).json({ 
+      error: 'Erro ao atualizar senha',
+      message: error.message || 'Erro desconhecido'
+    });
+  }
+}
+
+// PUT /api/users/:id/email - Atualizar email
+export async function updateEmail(req, res) {
+  try {
+    const { id } = req.params;
+    const { email } = req.body;
+    logInfo(`PUT /api/users/${id}/email - Atualizando email`, { email });
+    
+    if (!email) {
+      return res.status(400).json({ 
+        error: 'Email é obrigatório' 
+      });
+    }
+    
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        error: 'Email inválido' 
+      });
+    }
+    
+    const supabase = getSupabaseAdmin();
+    
+    // Verificar se email já está em uso por outro usuário
+    const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email);
+    if (existingUser?.user && existingUser.user.id !== id) {
+      return res.status(400).json({ 
+        error: 'Email já está em uso',
+        message: 'Este email já está registrado por outro utilizador'
+      });
+    }
+    
+    // Atualizar email usando Admin API
+    const { data: updatedUser, error: updateError } = await supabase.auth.admin.updateUserById(id, {
+      email: email,
+      email_confirm: true, // Confirmar novo email automaticamente
+    });
+    
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+    
+    const user = transformUser(updatedUser.user);
+    
+    logInfo('Email atualizado com sucesso', { id, email });
+    res.json(user);
+  } catch (error) {
+    logError('Erro ao atualizar email', error);
+    res.status(400).json({ 
+      error: 'Erro ao atualizar email',
+      message: error.message || 'Erro desconhecido'
+    });
+  }
+}
+
+// PUT /api/users/:id/profile - Atualizar perfil (nome, imagem)
+export async function updateProfile(req, res) {
+  try {
+    const { id } = req.params;
+    const { firstName, lastName, imageUrl } = req.body;
+    logInfo(`PUT /api/users/${id}/profile - Atualizando perfil`);
+    
+    const supabase = getSupabaseAdmin();
+    
+    // Buscar usuário atual para preservar user_metadata existente
+    const { data: currentUserData, error: getUserError } = await supabase.auth.admin.getUserById(id);
+    if (getUserError || !currentUserData.user) {
+      return res.status(404).json({ error: 'Utilizador não encontrado' });
+    }
+    
+    const currentUserMeta = currentUserData.user.user_metadata || {};
+    
+    // Preparar novos metadados
+    const newUserMeta = { ...currentUserMeta };
+    if (firstName !== undefined) newUserMeta.firstName = firstName;
+    if (lastName !== undefined) newUserMeta.lastName = lastName;
+    if (imageUrl !== undefined) {
+      newUserMeta.avatar_url = imageUrl;
+      newUserMeta.imageUrl = imageUrl;
+      newUserMeta.image = imageUrl;
+    }
+    
+    // Atualizar perfil usando Admin API
+    const { data: updatedUser, error: updateError } = await supabase.auth.admin.updateUserById(id, {
+      user_metadata: newUserMeta,
+    });
+    
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+    
+    const user = transformUser(updatedUser.user);
+    
+    logInfo('Perfil atualizado com sucesso', { id });
+    res.json(user);
+  } catch (error) {
+    logError('Erro ao atualizar perfil', error);
+    res.status(400).json({ 
+      error: 'Erro ao atualizar perfil',
+      message: error.message || 'Erro desconhecido'
+    });
+  }
+}
+
+// PUT /api/users/:id - Atualização geral de usuário
+export async function update(req, res) {
+  try {
+    const { id } = req.params;
+    const { firstName, lastName, email, role, password, imageUrl } = req.body;
+    logInfo(`PUT /api/users/${id} - Atualizando utilizador`);
+    
+    const supabase = getSupabaseAdmin();
+    
+    // Buscar usuário atual
+    const { data: currentUserData, error: getUserError } = await supabase.auth.admin.getUserById(id);
+    if (getUserError || !currentUserData.user) {
+      return res.status(404).json({ error: 'Utilizador não encontrado' });
+    }
+    
+    const currentUserMeta = currentUserData.user.user_metadata || {};
+    const currentAppMeta = currentUserData.user.app_metadata || {};
+    
+    // Preparar atualizações
+    const updateData = {};
+    
+    // Atualizar email se fornecido
+    if (email !== undefined) {
+      // Validar formato de email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Email inválido' });
+      }
+      
+      // Verificar se email já está em uso
+      const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email);
+      if (existingUser?.user && existingUser.user.id !== id) {
+        return res.status(400).json({ 
+          error: 'Email já está em uso',
+          message: 'Este email já está registrado por outro utilizador'
+        });
+      }
+      
+      updateData.email = email;
+      updateData.email_confirm = true;
+    }
+    
+    // Atualizar senha se fornecida
+    if (password !== undefined) {
+      if (password.length < 6) {
+        return res.status(400).json({ 
+          error: 'Password muito curto',
+          message: 'A senha deve ter pelo menos 6 caracteres'
+        });
+      }
+      updateData.password = password;
+    }
+    
+    // Atualizar user_metadata
+    const newUserMeta = { ...currentUserMeta };
+    if (firstName !== undefined) newUserMeta.firstName = firstName;
+    if (lastName !== undefined) newUserMeta.lastName = lastName;
+    if (imageUrl !== undefined) {
+      newUserMeta.avatar_url = imageUrl;
+      newUserMeta.imageUrl = imageUrl;
+      newUserMeta.image = imageUrl;
+    }
+    updateData.user_metadata = newUserMeta;
+    
+    // Atualizar app_metadata (role)
+    if (role !== undefined) {
+      const validRoles = ['admin', 'comercial', 'editor_stock'];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ 
+          error: 'Role inválido',
+          message: `Role deve ser um dos seguintes: ${validRoles.join(', ')}`
+        });
+      }
+      
+      // Verificar se não está removendo próprio role de admin
+      const auth = await getAuth(req);
+      const currentUserId = auth?.userId;
+      if (id === currentUserId && role !== 'admin') {
+        return res.status(400).json({ 
+          error: 'Não pode alterar seu próprio role',
+          message: 'Não é possível remover seu próprio role de administrador'
+        });
+      }
+      
+      updateData.app_metadata = {
+        ...currentAppMeta,
+        role: role,
+      };
+    }
+    
+    // Aplicar atualizações
+    const { data: updatedUser, error: updateError } = await supabase.auth.admin.updateUserById(id, updateData);
+    
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+    
+    const user = transformUser(updatedUser.user);
+    
+    logInfo('Utilizador atualizado com sucesso', { id });
+    res.json(user);
+  } catch (error) {
+    logError('Erro ao atualizar utilizador', error);
+    res.status(400).json({ 
+      error: 'Erro ao atualizar utilizador',
       message: error.message || 'Erro desconhecido'
     });
   }
@@ -276,8 +596,8 @@ export async function deleteUser(req, res) {
     const { id } = req.params;
     logInfo(`DELETE /api/users/${id} - Removendo utilizador`);
     
-    // Obter utilizador atual (ainda usando Clerk - precisa migrar)
-    const auth = getAuth(req);
+    // Obter utilizador atual
+    const auth = await getAuth(req);
     const currentUserId = auth?.userId;
     
     // Não permitir que admin remova a si mesmo
@@ -288,8 +608,14 @@ export async function deleteUser(req, res) {
       });
     }
     
-    // Remover utilizador do Clerk
-    await clerkClient.users.deleteUser(id);
+    const supabase = getSupabaseAdmin();
+    
+    // Remover utilizador usando Admin API
+    const { error: deleteError } = await supabase.auth.admin.deleteUser(id);
+    
+    if (deleteError) {
+      throw new Error(deleteError.message);
+    }
     
     logInfo('Utilizador removido com sucesso', { id });
     res.json({ 
@@ -304,4 +630,3 @@ export async function deleteUser(req, res) {
     });
   }
 }
-

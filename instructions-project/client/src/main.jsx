@@ -204,9 +204,18 @@ if (typeof window !== 'undefined') {
   
   // Construir URL do proxy
   const isDev = import.meta.env.DEV;
-  const proxyBaseUrl = isDev 
-    ? 'http://localhost:5000/api/icons'
-    : (import.meta.env.VITE_API_URL || window.location.origin).replace(/\/api$/, '') + '/api/icons';
+  let proxyBaseUrl;
+  
+  if (isDev) {
+    // Em desenvolvimento, usar localhost se VITE_API_URL não estiver definido
+    proxyBaseUrl = import.meta.env.VITE_API_URL 
+      ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') + '/api/icons'
+      : 'http://localhost:5000/api/icons';
+  } else {
+    // Em produção, sempre usar caminho relativo para evitar problemas de CSP
+    // Isso garante que funcione com a mesma origem
+    proxyBaseUrl = '/api/icons';
+  }
   
   window.fetch = function(input, init) {
     const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : input?.url || '');

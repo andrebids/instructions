@@ -60,6 +60,10 @@ export default function AdminUsers() {
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
   const { isOpen: isInviteOpen, onOpen: onInviteOpen, onClose: onInviteClose } = useDisclosure();
   const { isOpen: isEditRoleOpen, onOpen: onEditRoleOpen, onClose: onEditRoleClose } = useDisclosure();
+  const { isOpen: isEditUserOpen, onOpen: onEditUserOpen, onClose: onEditUserClose } = useDisclosure();
+  const { isOpen: isEditPasswordOpen, onOpen: onEditPasswordOpen, onClose: onEditPasswordClose } = useDisclosure();
+  const { isOpen: isEditEmailOpen, onOpen: onEditEmailOpen, onClose: onEditEmailClose } = useDisclosure();
+  const { isOpen: isEditImageOpen, onOpen: onEditImageOpen, onClose: onEditImageClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   
   const [selectedUser, setSelectedUser] = React.useState(null);
@@ -75,6 +79,15 @@ export default function AdminUsers() {
     role: "comercial",
   });
   const [newRole, setNewRole] = React.useState("comercial");
+  const [editUserData, setEditUserData] = React.useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    role: "comercial",
+  });
+  const [newPassword, setNewPassword] = React.useState("");
+  const [newEmail, setNewEmail] = React.useState("");
+  const [newImageUrl, setNewImageUrl] = React.useState("");
   const [actionLoading, setActionLoading] = React.useState(false);
   
   // Verificação de role
@@ -153,7 +166,7 @@ export default function AdminUsers() {
     setNewRole(user.role || "comercial");
     onEditRoleOpen();
   };
-  
+
   const handleUpdateRole = async () => {
     try {
       setActionLoading(true);
@@ -164,6 +177,114 @@ export default function AdminUsers() {
     } catch (err) {
       console.error('Erro ao atualizar role:', err);
       alert(err.response?.data?.message || t('pages.dashboard.adminUsers.errors.updateRoleFailed'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handlers para editar usuário completo
+  const handleEditUser = (user) => {
+    setSelectedUser(user);
+    setEditUserData({
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      email: user.email || "",
+      role: user.role || "comercial",
+    });
+    onEditUserOpen();
+  };
+
+  const handleUpdateUser = async () => {
+    try {
+      setActionLoading(true);
+      await usersAPI.update(selectedUser.id, editUserData);
+      onEditUserClose();
+      setSelectedUser(null);
+      setEditUserData({ firstName: "", lastName: "", email: "", role: "comercial" });
+      loadUsers();
+    } catch (err) {
+      console.error('Erro ao atualizar utilizador:', err);
+      alert(err.response?.data?.message || err.response?.data?.error || 'Erro ao atualizar utilizador');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handlers para alterar senha
+  const handleEditPassword = (user) => {
+    setSelectedUser(user);
+    setNewPassword("");
+    onEditPasswordOpen();
+  };
+
+  const handleUpdatePassword = async () => {
+    try {
+      setActionLoading(true);
+      if (!newPassword || newPassword.length < 6) {
+        alert('A senha deve ter pelo menos 6 caracteres');
+        return;
+      }
+      await usersAPI.updatePassword(selectedUser.id, newPassword);
+      onEditPasswordClose();
+      setSelectedUser(null);
+      setNewPassword("");
+      alert('Senha atualizada com sucesso');
+      loadUsers();
+    } catch (err) {
+      console.error('Erro ao atualizar senha:', err);
+      alert(err.response?.data?.message || err.response?.data?.error || 'Erro ao atualizar senha');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handlers para alterar email
+  const handleEditEmail = (user) => {
+    setSelectedUser(user);
+    setNewEmail(user.email || "");
+    onEditEmailOpen();
+  };
+
+  const handleUpdateEmail = async () => {
+    try {
+      setActionLoading(true);
+      if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+        alert('Email inválido');
+        return;
+      }
+      await usersAPI.updateEmail(selectedUser.id, newEmail);
+      onEditEmailClose();
+      setSelectedUser(null);
+      setNewEmail("");
+      alert('Email atualizado com sucesso');
+      loadUsers();
+    } catch (err) {
+      console.error('Erro ao atualizar email:', err);
+      alert(err.response?.data?.message || err.response?.data?.error || 'Erro ao atualizar email');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handlers para alterar imagem
+  const handleEditImage = (user) => {
+    setSelectedUser(user);
+    setNewImageUrl(user.imageUrl || "");
+    onEditImageOpen();
+  };
+
+  const handleUpdateImage = async () => {
+    try {
+      setActionLoading(true);
+      await usersAPI.updateUserProfile(selectedUser.id, { imageUrl: newImageUrl });
+      onEditImageClose();
+      setSelectedUser(null);
+      setNewImageUrl("");
+      alert('Imagem atualizada com sucesso');
+      loadUsers();
+    } catch (err) {
+      console.error('Erro ao atualizar imagem:', err);
+      alert(err.response?.data?.message || err.response?.data?.error || 'Erro ao atualizar imagem');
     } finally {
       setActionLoading(false);
     }
@@ -367,11 +488,43 @@ export default function AdminUsers() {
                         <DropdownMenu aria-label="Ações do utilizador">
                           <DropdownItem
                             key="edit"
-                            startContent={<Icon icon="lucide:edit" />}
+                            startContent={<Icon icon="lucide:user" />}
+                            onPress={() => handleEditUser(user)}
+                            isDisabled={isCurrentUser(user.id)}
+                          >
+                            Editar Usuário
+                          </DropdownItem>
+                          <DropdownItem
+                            key="editRole"
+                            startContent={<Icon icon="lucide:shield" />}
                             onPress={() => handleEditRole(user)}
                             isDisabled={isCurrentUser(user.id)}
                           >
                             {t('pages.dashboard.adminUsers.actions.editRole')}
+                          </DropdownItem>
+                          <DropdownItem
+                            key="editPassword"
+                            startContent={<Icon icon="lucide:key" />}
+                            onPress={() => handleEditPassword(user)}
+                            isDisabled={isCurrentUser(user.id)}
+                          >
+                            Alterar Senha
+                          </DropdownItem>
+                          <DropdownItem
+                            key="editEmail"
+                            startContent={<Icon icon="lucide:mail" />}
+                            onPress={() => handleEditEmail(user)}
+                            isDisabled={isCurrentUser(user.id)}
+                          >
+                            Alterar Email
+                          </DropdownItem>
+                          <DropdownItem
+                            key="editImage"
+                            startContent={<Icon icon="lucide:image" />}
+                            onPress={() => handleEditImage(user)}
+                            isDisabled={isCurrentUser(user.id)}
+                          >
+                            Alterar Imagem
                           </DropdownItem>
                           <DropdownItem
                             key="delete"
@@ -541,6 +694,184 @@ export default function AdminUsers() {
         </ModalContent>
       </Modal>
       
+      {/* Modal Editar Usuário */}
+      <Modal isOpen={isEditUserOpen} onOpenChange={onEditUserClose} size="lg">
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader>Editar Usuário</ModalHeader>
+              <ModalBody>
+                <div className="flex flex-col gap-4">
+                  <Input
+                    label="Primeiro Nome"
+                    value={editUserData.firstName}
+                    onChange={(e) => setEditUserData({ ...editUserData, firstName: e.target.value })}
+                  />
+                  <Input
+                    label="Último Nome"
+                    value={editUserData.lastName}
+                    onChange={(e) => setEditUserData({ ...editUserData, lastName: e.target.value })}
+                  />
+                  <Input
+                    label="Email"
+                    type="email"
+                    value={editUserData.email}
+                    onChange={(e) => setEditUserData({ ...editUserData, email: e.target.value })}
+                    isRequired
+                  />
+                  <Select
+                    label="Role"
+                    selectedKeys={[editUserData.role]}
+                    onSelectionChange={(keys) => setEditUserData({ ...editUserData, role: Array.from(keys)[0] || 'comercial' })}
+                  >
+                    <SelectItem key="admin" value="admin">{t('pages.dashboard.adminUsers.roles.admin')}</SelectItem>
+                    <SelectItem key="comercial" value="comercial">{t('pages.dashboard.adminUsers.roles.comercial')}</SelectItem>
+                    <SelectItem key="editor_stock" value="editor_stock">{t('pages.dashboard.adminUsers.roles.editor_stock')}</SelectItem>
+                  </Select>
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="flat" onPress={onClose}>
+                  Cancelar
+                </Button>
+                <Button
+                  color="primary"
+                  onPress={handleUpdateUser}
+                  isLoading={actionLoading}
+                  isDisabled={!editUserData.email}
+                >
+                  {actionLoading ? 'Salvando...' : 'Salvar'}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* Modal Alterar Senha */}
+      <Modal isOpen={isEditPasswordOpen} onOpenChange={onEditPasswordClose}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader>Alterar Senha</ModalHeader>
+              <ModalBody>
+                <div className="flex flex-col gap-4">
+                  <p className="text-sm text-default-500">
+                    Usuário: {selectedUser?.fullName || selectedUser?.email}
+                  </p>
+                  <Input
+                    label="Nova Senha"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    isRequired
+                    description="A senha deve ter pelo menos 6 caracteres"
+                  />
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="flat" onPress={onClose}>
+                  Cancelar
+                </Button>
+                <Button
+                  color="primary"
+                  onPress={handleUpdatePassword}
+                  isLoading={actionLoading}
+                  isDisabled={!newPassword || newPassword.length < 6}
+                >
+                  {actionLoading ? 'Atualizando...' : 'Atualizar Senha'}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* Modal Alterar Email */}
+      <Modal isOpen={isEditEmailOpen} onOpenChange={onEditEmailClose}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader>Alterar Email</ModalHeader>
+              <ModalBody>
+                <div className="flex flex-col gap-4">
+                  <p className="text-sm text-default-500">
+                    Usuário: {selectedUser?.fullName || selectedUser?.email}
+                  </p>
+                  <Input
+                    label="Novo Email"
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    isRequired
+                  />
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="flat" onPress={onClose}>
+                  Cancelar
+                </Button>
+                <Button
+                  color="primary"
+                  onPress={handleUpdateEmail}
+                  isLoading={actionLoading}
+                  isDisabled={!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)}
+                >
+                  {actionLoading ? 'Atualizando...' : 'Atualizar Email'}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* Modal Alterar Imagem */}
+      <Modal isOpen={isEditImageOpen} onOpenChange={onEditImageClose}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader>Alterar Imagem de Perfil</ModalHeader>
+              <ModalBody>
+                <div className="flex flex-col gap-4">
+                  <p className="text-sm text-default-500">
+                    Usuário: {selectedUser?.fullName || selectedUser?.email}
+                  </p>
+                  {selectedUser?.imageUrl && (
+                    <div className="flex justify-center">
+                      <img
+                        src={selectedUser.imageUrl}
+                        alt={selectedUser.fullName}
+                        className="w-24 h-24 rounded-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <Input
+                    label="URL da Imagem"
+                    type="url"
+                    value={newImageUrl}
+                    onChange={(e) => setNewImageUrl(e.target.value)}
+                    placeholder="https://exemplo.com/imagem.jpg"
+                    description="Cole a URL da imagem de perfil"
+                  />
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="flat" onPress={onClose}>
+                  Cancelar
+                </Button>
+                <Button
+                  color="primary"
+                  onPress={handleUpdateImage}
+                  isLoading={actionLoading}
+                >
+                  {actionLoading ? 'Atualizando...' : 'Atualizar Imagem'}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
       {/* Modal Confirmar Remoção */}
       <Modal isOpen={isDeleteOpen} onOpenChange={onDeleteClose}>
         <ModalContent>

@@ -10,10 +10,18 @@ export function useAuth() {
   // Buscar sessão do Auth.js
   const fetchSession = useCallback(async () => {
     try {
-      // Usar a URL da API do servidor (backend)
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const baseUrl = apiUrl.replace('/api', ''); // Remover /api para obter base URL
-      const sessionUrl = `${baseUrl}/auth/session`;
+      // Usar caminho relativo em produção para evitar problemas de CSP
+      const isDev = import.meta.env.DEV;
+      let sessionUrl;
+      
+      if (isDev && import.meta.env.VITE_API_URL) {
+        const apiUrl = import.meta.env.VITE_API_URL;
+        const baseUrl = apiUrl.replace('/api', ''); // Remover /api para obter base URL
+        sessionUrl = `${baseUrl}/auth/session`;
+      } else {
+        // Em produção, usar caminho relativo (mesma origem)
+        sessionUrl = '/auth/session';
+      }
       
       const response = await fetch(sessionUrl, {
         credentials: 'include',
@@ -52,8 +60,17 @@ export function useAuth() {
 
   const signIn = async (email, password, options = {}) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const baseUrl = apiUrl.replace('/api', '');
+      // Usar caminho relativo em produção para evitar problemas de CSP
+      const isDev = import.meta.env.DEV;
+      let baseUrl;
+      
+      if (isDev && import.meta.env.VITE_API_URL) {
+        const apiUrl = import.meta.env.VITE_API_URL;
+        baseUrl = apiUrl.replace('/api', '');
+      } else {
+        // Em produção, usar caminho relativo (mesma origem)
+        baseUrl = '';
+      }
       
       // Auth.js Credentials provider usa /auth/callback/credentials
       const response = await fetch(`${baseUrl}/auth/callback/credentials`, {
@@ -96,8 +113,18 @@ export function useAuth() {
 
   const signOut = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const baseUrl = apiUrl.replace('/api', '');
+      // Usar caminho relativo em produção para evitar problemas de CSP
+      const isDev = import.meta.env.DEV;
+      let baseUrl;
+      
+      if (isDev && import.meta.env.VITE_API_URL) {
+        const apiUrl = import.meta.env.VITE_API_URL;
+        baseUrl = apiUrl.replace('/api', '');
+      } else {
+        // Em produção, usar caminho relativo (mesma origem)
+        baseUrl = '';
+      }
+      
       await fetch(`${baseUrl}/auth/signout`, {
         method: 'POST',
         credentials: 'include',
