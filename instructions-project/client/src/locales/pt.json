@@ -163,6 +163,7 @@
           "all": "Todos"
         },
         "table": {
+          "image": "Imagem",
           "name": "Nome",
           "email": "Email",
           "role": "Role",
@@ -172,7 +173,11 @@
           "noUsersFound": "Nenhum utilizador encontrado"
         },
         "actions": {
+          "editUser": "Editar Usuário",
           "editRole": "Editar Role",
+          "changePassword": "Alterar Senha",
+          "changeEmail": "Alterar Email",
+          "changeImage": "Alterar Imagem",
           "remove": "Remover",
           "view": "Ver"
         },
@@ -197,6 +202,16 @@
             "sending": "A enviar...",
             "success": "Convite enviado com sucesso!"
           },
+          "editUser": {
+            "title": "Editar Usuário",
+            "firstName": "Primeiro Nome",
+            "lastName": "Último Nome",
+            "email": "Email",
+            "role": "Role",
+            "save": "Salvar",
+            "cancel": "Cancelar",
+            "saving": "Salvando..."
+          },
           "editRole": {
             "title": "Editar Role",
             "currentRole": "Role Atual",
@@ -204,6 +219,33 @@
             "save": "Guardar",
             "cancel": "Cancelar",
             "saving": "A guardar..."
+          },
+          "changePassword": {
+            "title": "Alterar Senha",
+            "user": "Usuário",
+            "newPassword": "Nova Senha",
+            "passwordDescription": "A senha deve ter pelo menos 6 caracteres",
+            "update": "Atualizar Senha",
+            "updating": "Atualizando...",
+            "cancel": "Cancelar"
+          },
+          "changeEmail": {
+            "title": "Alterar Email",
+            "user": "Usuário",
+            "newEmail": "Novo Email",
+            "update": "Atualizar Email",
+            "updating": "Atualizando...",
+            "cancel": "Cancelar"
+          },
+          "changeImage": {
+            "title": "Alterar Imagem de Perfil",
+            "user": "Usuário",
+            "imageUrl": "URL da Imagem",
+            "imageUrlPlaceholder": "https://exemplo.com/imagem.jpg",
+            "imageUrlDescription": "Cole a URL da imagem de perfil",
+            "update": "Atualizar Imagem",
+            "updating": "Atualizando...",
+            "cancel": "Cancelar"
           },
           "deleteConfirm": {
             "title": "Confirmar Remoção",

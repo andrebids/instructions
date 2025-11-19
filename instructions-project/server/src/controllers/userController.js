@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getAuth } from '../middleware/auth.js';
 import { logError, logInfo } from '../utils/projectLogger.js';
 import sequelize from '../config/database.js';
+import { sendInvitationEmail } from '../services/emailService.js';
 
 /**
  * Controller de utilizadores usando Supabase Admin API e next_auth.users
@@ -104,8 +105,28 @@ export async function getAll(req, res) {
     
     logInfo(`Total de usuários encontrados em next_auth.users: ${usersFromNextAuth.length}`);
     
+    // Buscar dados adicionais do Supabase Auth (created_at, last_sign_in_at)
+    const supabase = getSupabaseAdmin();
+    const { data: supabaseUsers } = await supabase.auth.admin.listUsers();
+    const supabaseUsersMap = new Map();
+    if (supabaseUsers?.users) {
+      supabaseUsers.users.forEach(user => {
+        supabaseUsersMap.set(user.id, user);
+      });
+    }
+    
     // Transformar dados para formato da aplicação
-    let users = usersFromNextAuth.map(transformUserFromNextAuth);
+    let users = usersFromNextAuth.map(user => {
+      const transformed = transformUserFromNextAuth(user);
+      // Tentar buscar dados do Supabase Auth pelo ID
+      const supabaseUser = supabaseUsersMap.get(user.id);
+      if (supabaseUser) {
+        // Usar dados do Supabase se disponível
+        transformed.createdAt = supabaseUser.created_at ? new Date(supabaseUser.created_at).toISOString() : null;
+        transformed.lastSignInAt = supabaseUser.last_sign_in_at ? new Date(supabaseUser.last_sign_in_at).toISOString() : null;
+      }
+      return transformed;
+    });
     
     // Filtrar por role se especificado
     if (role && role !== 'all') {
@@ -159,6 +180,20 @@ export async function getById(req, res) {
     }
     
     const user = transformUserFromNextAuth(users[0]);
+    
+    // Buscar dados adicionais do Supabase Auth (created_at, last_sign_in_at)
+    try {
+      const supabase = getSupabaseAdmin();
+      const { data: supabaseUser } = await supabase.auth.admin.getUserById(id);
+      if (supabaseUser?.user) {
+        user.createdAt = supabaseUser.user.created_at ? new Date(supabaseUser.user.created_at).toISOString() : null;
+        user.lastSignInAt = supabaseUser.user.last_sign_in_at ? new Date(supabaseUser.user.last_sign_in_at).toISOString() : null;
+      }
+    } catch (supabaseError) {
+      // Se não encontrar no Supabase, usar valores null (não crítico)
+      logInfo('Usuário não encontrado no Supabase Auth ou erro ao buscar', { id });
+    }
+    
     res.json(user);
   } catch (error) {
     logError('Erro ao buscar utilizador', error);
@@ -248,15 +283,33 @@ export async function sendInvitation(req, res) {
       });
     }
     
-    const supabase = getSupabaseAdmin();
+    // Verificar se usuário já existe na tabela next_auth.users
+    const existingUsers = await sequelize.query(
+      `SELECT id FROM next_auth.users WHERE email = :emailValue LIMIT 1`,
+      {
+        replacements: { emailValue: email },
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
     
-    // Verificar se usuário já existe
-    const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email);
-    if (existingUser?.user) {
+    if (existingUsers && existingUsers.length > 0) {
       return res.status(400).json({ 
         error: 'Este email já está registrado',
         message: 'O utilizador com este email já existe no sistema'
       });
+    }
+    
+    // Verificar também no Supabase Auth (listar usuários)
+    const supabase = getSupabaseAdmin();
+    const { data: usersList } = await supabase.auth.admin.listUsers();
+    if (usersList?.users) {
+      const existingSupabaseUser = usersList.users.find(u => u.email === email);
+      if (existingSupabaseUser) {
+        return res.status(400).json({ 
+          error: 'Este email já está registrado',
+          message: 'O utilizador com este email já existe no Supabase'
+        });
+      }
     }
     
     // Criar convite usando Admin API
@@ -271,6 +324,42 @@ export async function sendInvitation(req, res) {
     }
     
     logInfo('Convite enviado com sucesso', { email, id: inviteData.user?.id });
+    
+    // Enviar email de convite (não-bloqueante)
+    if (process.env.EMAIL_ENABLED === 'true') {
+      try {
+        // Gerar link de ativação
+        // O Supabase envia automaticamente um email, mas podemos enviar um customizado também
+        // Usar URL do frontend ou URL padrão
+        const frontendUrl = process.env.FRONTEND_URL || 
+                           process.env.CLIENT_URL || 
+                           'http://localhost:3003';
+        
+        // O Supabase gera um token de confirmação, mas podemos usar a página de sign-in
+        // ou criar uma rota específica de ativação
+        // Por enquanto, vamos usar a página de sign-in com o email como parâmetro
+        const invitationLink = `${frontendUrl}/signin?email=${encodeURIComponent(email)}&invited=true`;
+        
+        // Enviar email de forma assíncrona (não bloquear a resposta)
+        sendInvitationEmail(email, role || 'comercial', invitationLink)
+          .then((result) => {
+            if (result.success) {
+              logInfo('Email de convite enviado com sucesso', { email, messageId: result.messageId });
+            } else {
+              logError('Falha ao enviar email de convite', { email, error: result.message });
+            }
+          })
+          .catch((error) => {
+            logError('Erro ao enviar email de convite', error);
+          });
+      } catch (emailError) {
+        // Não falhar a criação do convite se o email falhar
+        logError('Erro ao tentar enviar email de convite', emailError);
+      }
+    } else {
+      logInfo('Email desabilitado, não enviando email de convite');
+    }
+    
     res.status(201).json({
       success: true,
       message: 'Convite enviado com sucesso',
@@ -424,15 +513,33 @@ export async function updateEmail(req, res) {
       });
     }
     
-    const supabase = getSupabaseAdmin();
+    // Verificar se email já está em uso na tabela next_auth.users
+    const existingUsers = await sequelize.query(
+      `SELECT id FROM next_auth.users WHERE email = :emailValue AND id != :userIdValue LIMIT 1`,
+      {
+        replacements: { emailValue: email, userIdValue: id },
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
     
-    // Verificar se email já está em uso por outro usuário
-    const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email);
-    if (existingUser?.user && existingUser.user.id !== id) {
+    if (existingUsers && existingUsers.length > 0) {
       return res.status(400).json({ 
         error: 'Email já está em uso',
         message: 'Este email já está registrado por outro utilizador'
       });
+    }
+    
+    // Verificar também no Supabase Auth
+    const supabase = getSupabaseAdmin();
+    const { data: usersList } = await supabase.auth.admin.listUsers();
+    if (usersList?.users) {
+      const existingSupabaseUser = usersList.users.find(u => u.email === email && u.id !== id);
+      if (existingSupabaseUser) {
+        return res.status(400).json({ 
+          error: 'Email já está em uso',
+          message: 'Este email já está registrado por outro utilizador no Supabase'
+        });
+      }
     }
     
     // Atualizar email usando Admin API
@@ -514,16 +621,37 @@ export async function update(req, res) {
     const { firstName, lastName, email, role, password, imageUrl } = req.body;
     logInfo(`PUT /api/users/${id} - Atualizando utilizador`);
     
-    const supabase = getSupabaseAdmin();
+    // Primeiro, buscar o usuário na tabela next_auth.users para obter o email
+    const usersFromNextAuth = await sequelize.query(
+      `SELECT id, name, email, image, role FROM next_auth.users WHERE id = :userId LIMIT 1`,
+      {
+        replacements: { userId: id },
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
     
-    // Buscar usuário atual
-    const { data: currentUserData, error: getUserError } = await supabase.auth.admin.getUserById(id);
-    if (getUserError || !currentUserData.user) {
+    if (!usersFromNextAuth || usersFromNextAuth.length === 0) {
       return res.status(404).json({ error: 'Utilizador não encontrado' });
     }
     
-    const currentUserMeta = currentUserData.user.user_metadata || {};
-    const currentAppMeta = currentUserData.user.app_metadata || {};
+    const userFromNextAuth = usersFromNextAuth[0];
+    const userEmail = email !== undefined ? email : userFromNextAuth.email;
+    
+    const supabase = getSupabaseAdmin();
+    
+    // Tentar buscar usuário no Supabase Auth pelo ID (pode ser que o ID seja o mesmo)
+    let supabaseUserId = id;
+    let currentUserMeta = {};
+    let currentAppMeta = {};
+    let supabaseUserExists = false;
+    
+    const { data: userById, error: getUserByIdError } = await supabase.auth.admin.getUserById(id);
+    if (!getUserByIdError && userById?.user) {
+      supabaseUserExists = true;
+      supabaseUserId = userById.user.id;
+      currentUserMeta = userById.user.user_metadata || {};
+      currentAppMeta = userById.user.app_metadata || {};
+    }
     
     // Preparar atualizações
     const updateData = {};
@@ -536,13 +664,35 @@ export async function update(req, res) {
         return res.status(400).json({ error: 'Email inválido' });
       }
       
-      // Verificar se email já está em uso
-      const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email);
-      if (existingUser?.user && existingUser.user.id !== id) {
+      // Verificar se email já está em uso na tabela next_auth.users
+      const existingUsers = await sequelize.query(
+        `SELECT id FROM next_auth.users WHERE email = :emailValue AND id != :userIdValue LIMIT 1`,
+        {
+          replacements: { emailValue: email, userIdValue: id },
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
+      
+      if (existingUsers && existingUsers.length > 0) {
         return res.status(400).json({ 
           error: 'Email já está em uso',
           message: 'Este email já está registrado por outro utilizador'
         });
+      }
+      
+      // Se o usuário existe no Supabase, verificar lá também
+      if (supabaseUserExists) {
+        // Listar usuários e verificar se algum tem o email (não há getUserByEmail)
+        const { data: usersList } = await supabase.auth.admin.listUsers();
+        if (usersList?.users) {
+          const existingSupabaseUser = usersList.users.find(u => u.email === email && u.id !== supabaseUserId);
+          if (existingSupabaseUser) {
+            return res.status(400).json({ 
+              error: 'Email já está em uso',
+              message: 'Este email já está registrado por outro utilizador no Supabase'
+            });
+          }
+        }
       }
       
       updateData.email = email;
@@ -557,7 +707,22 @@ export async function update(req, res) {
           message: 'A senha deve ter pelo menos 6 caracteres'
         });
       }
-      updateData.password = password;
+      
+      // Se o usuário existe no Supabase, atualizar lá também
+      if (supabaseUserExists) {
+        updateData.password = password;
+      }
+      
+      // Sempre atualizar na tabela next_auth.users (usar bcrypt)
+      const bcrypt = await import('bcrypt');
+      const hashedPassword = await bcrypt.default.hash(password, 10);
+      await sequelize.query(
+        `UPDATE next_auth.users SET password = :passwordValue WHERE id = :userIdValue`,
+        {
+          replacements: { passwordValue: hashedPassword, userIdValue: id },
+          type: sequelize.QueryTypes.UPDATE
+        }
+      );
     }
     
     // Atualizar user_metadata
@@ -597,16 +762,74 @@ export async function update(req, res) {
       };
     }
     
-    // Aplicar atualizações
-    const { data: updatedUser, error: updateError } = await supabase.auth.admin.updateUserById(id, updateData);
-    
-    if (updateError) {
-      throw new Error(updateError.message);
+    // Aplicar atualizações no Supabase Auth apenas se o usuário existir lá
+    let updatedSupabaseUser = null;
+    if (supabaseUserExists && Object.keys(updateData).length > 0) {
+      const { data: updatedUser, error: updateError } = await supabase.auth.admin.updateUserById(supabaseUserId, updateData);
+      
+      if (updateError) {
+        logError('Erro ao atualizar no Supabase Auth (não crítico)', updateError);
+        // Não falhar se houver erro no Supabase, continuar com atualização em next_auth.users
+      } else {
+        updatedSupabaseUser = updatedUser?.user;
+      }
     }
     
-    const user = transformUserFromSupabase(updatedUser.user);
+    // Atualizar também na tabela next_auth.users para manter sincronização
+    try {
+      // Construir nome completo
+      let nameToUpdate;
+      if (firstName !== undefined || lastName !== undefined) {
+        const first = firstName !== undefined ? firstName : (userFromNextAuth.name?.split(' ')[0] || '');
+        const last = lastName !== undefined ? lastName : (userFromNextAuth.name?.split(' ').slice(1).join(' ') || '');
+        nameToUpdate = `${first} ${last}`.trim();
+      } else {
+        nameToUpdate = userFromNextAuth.name || userEmail;
+      }
+      
+      if (!nameToUpdate) {
+        nameToUpdate = userEmail;
+      }
+      
+      await sequelize.query(
+        `UPDATE next_auth.users SET 
+          name = :nameValue,
+          email = :emailValue,
+          image = :imageValue,
+          role = :roleValue
+        WHERE id = :userIdValue`,
+        {
+          replacements: {
+            nameValue: nameToUpdate,
+            emailValue: email !== undefined ? email : userFromNextAuth.email,
+            imageValue: imageUrl !== undefined ? imageUrl : userFromNextAuth.image,
+            roleValue: role !== undefined ? role : userFromNextAuth.role,
+            userIdValue: id
+          },
+          type: sequelize.QueryTypes.UPDATE
+        }
+      );
+    } catch (updateNextAuthError) {
+      logError('Erro ao atualizar next_auth.users (não crítico)', updateNextAuthError);
+      // Não falhar a requisição se houver erro ao atualizar next_auth.users
+    }
     
-    logInfo('Utilizador atualizado com sucesso', { id });
+    // Buscar usuário atualizado da tabela next_auth.users
+    const updatedUsers = await sequelize.query(
+      `SELECT id, name, email, image, role, "emailVerified" FROM next_auth.users WHERE id = :userId LIMIT 1`,
+      {
+        replacements: { userId: id },
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
+    
+    if (!updatedUsers || updatedUsers.length === 0) {
+      return res.status(404).json({ error: 'Utilizador não encontrado após atualização' });
+    }
+    
+    const user = transformUserFromNextAuth(updatedUsers[0]);
+    
+    logInfo('Utilizador atualizado com sucesso', { id, supabaseUserId, supabaseUserExists });
     res.json(user);
   } catch (error) {
     logError('Erro ao atualizar utilizador', error);

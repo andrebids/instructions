@@ -163,6 +163,7 @@
           "all": "All"
         },
         "table": {
+          "image": "Image",
           "name": "Name",
           "email": "Email",
           "role": "Role",
@@ -172,7 +173,11 @@
           "noUsersFound": "No users found"
         },
         "actions": {
+          "editUser": "Edit User",
           "editRole": "Edit Role",
+          "changePassword": "Change Password",
+          "changeEmail": "Change Email",
+          "changeImage": "Change Image",
           "remove": "Remove",
           "view": "View"
         },
@@ -197,6 +202,16 @@
             "sending": "Sending...",
             "success": "Invitation sent successfully!"
           },
+          "editUser": {
+            "title": "Edit User",
+            "firstName": "First Name",
+            "lastName": "Last Name",
+            "email": "Email",
+            "role": "Role",
+            "save": "Save",
+            "cancel": "Cancel",
+            "saving": "Saving..."
+          },
           "editRole": {
             "title": "Edit Role",
             "currentRole": "Current Role",
@@ -204,6 +219,33 @@
             "save": "Save",
             "cancel": "Cancel",
             "saving": "Saving..."
+          },
+          "changePassword": {
+            "title": "Change Password",
+            "user": "User",
+            "newPassword": "New Password",
+            "passwordDescription": "Password must be at least 6 characters",
+            "update": "Update Password",
+            "updating": "Updating...",
+            "cancel": "Cancel"
+          },
+          "changeEmail": {
+            "title": "Change Email",
+            "user": "User",
+            "newEmail": "New Email",
+            "update": "Update Email",
+            "updating": "Updating...",
+            "cancel": "Cancel"
+          },
+          "changeImage": {
+            "title": "Change Profile Image",
+            "user": "User",
+            "imageUrl": "Image URL",
+            "imageUrlPlaceholder": "https://example.com/image.jpg",
+            "imageUrlDescription": "Paste the profile image URL",
+            "update": "Update Image",
+            "updating": "Updating...",
+            "cancel": "Cancel"
           },
           "deleteConfirm": {
             "title": "Confirm Removal",
