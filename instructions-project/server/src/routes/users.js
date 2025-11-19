@@ -4,6 +4,7 @@ import * as profileController from '../controllers/profileController.js';
 import { requireAdmin } from '../middleware/roles.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getAuth } from '../middleware/auth.js';
+import { passwordUpdateLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
@@ -33,7 +34,8 @@ router.post('/', userController.create);
 router.post('/invite', userController.sendInvitation);
 router.post('/:id/avatar', profileController.uploadAvatar, userController.uploadUserAvatar);
 // Rotas de atualização (específicas primeiro)
-router.put('/:id/password', userController.updatePassword);
+router.put('/:id/password', passwordUpdateLimiter, userController.updatePassword);
+
 router.put('/:id/email', userController.updateEmail);
 router.put('/:id/profile', userController.updateProfile);
 router.put('/:id/role', userController.updateRole);
