@@ -241,6 +241,28 @@ async function setup() {
     }
     console.log('');
     
+    // Migration 10: Campo logoDetails para projetos
+    console.log('   📋 Migration: Campo logoDetails para projetos...');
+    try {
+      const { stdout } = await execAsync('npm run migrate:logoDetails', { 
+        timeout: 30000,
+        maxBuffer: 1024 * 1024
+      });
+      if (stdout.includes('✅') || stdout.includes('⏭️')) {
+        console.log('   ✅ Campo logoDetails verificado');
+      } else {
+        console.log('   ⚠️  Migration executada (pode já estar aplicada)');
+      }
+    } catch (error) {
+      if (error.stdout && (error.stdout.includes('já existe') || error.stdout.includes('já existem'))) {
+        console.log('   ✅ Campo já existe, pulando...');
+      } else {
+        console.log('   ⚠️  Aviso:', error.message.split('\n')[0]);
+        console.log('   💡 Continuando (campo pode já existir)...');
+      }
+    }
+    console.log('');
+    
     console.log('✅ Setup concluído com sucesso!');
     console.log('');
     console.log('📝 Próximos passos:');

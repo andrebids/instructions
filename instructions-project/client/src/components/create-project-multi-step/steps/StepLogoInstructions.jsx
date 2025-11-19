@@ -730,6 +730,7 @@ export function StepLogoInstructions({ formData, onInputChange }) {
                                   isIconOnly
                                   onPress={() => handleToggleEditComponente(index)}
                                   title="Editar componente"
+                                  aria-label="Editar componente"
                                 >
                                   <Icon icon="lucide:pencil" className="w-4 h-4" />
                                 </Button>
@@ -740,6 +741,7 @@ export function StepLogoInstructions({ formData, onInputChange }) {
                                   isIconOnly
                                   onPress={() => handleRemoveComponente(index)}
                                   title="Remover componente"
+                                  aria-label="Remover componente"
                                 >
                                   <Icon icon="lucide:trash-2" className="w-4 h-4" />
                                 </Button>
@@ -829,6 +831,7 @@ export function StepLogoInstructions({ formData, onInputChange }) {
                                   isIconOnly
                                   onPress={() => handleToggleEditComponente(index)}
                                   title="Fechar edição"
+                                  aria-label="Fechar edição"
                                 >
                                   <Icon icon="lucide:check" className="w-4 h-4" />
                                 </Button>
@@ -840,6 +843,7 @@ export function StepLogoInstructions({ formData, onInputChange }) {
                                 isIconOnly
                                 onPress={() => handleRemoveComponente(index)}
                                 title="Remover componente"
+                                aria-label="Remover componente"
                               >
                                 <Icon icon="lucide:trash-2" className="w-4 h-4" />
                               </Button>
@@ -953,6 +957,7 @@ export function StepLogoInstructions({ formData, onInputChange }) {
                               color="danger"
                               isIconOnly
                               onPress={() => handleRemoveBola(index)}
+                              aria-label="Remover bola"
                             >
                               <Icon icon="lucide:trash-2" className="w-4 h-4" />
                             </Button>
