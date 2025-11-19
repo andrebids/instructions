@@ -9,8 +9,7 @@ const STEPS = {
     ASK_CLIENT: 'ASK_CLIENT',
     LISTEN_CLIENT: 'LISTEN_CLIENT',
     CONFIRM_CLIENT_CREATE: 'CONFIRM_CLIENT_CREATE',
-    ASK_CLIENT_EMAIL: 'ASK_CLIENT_EMAIL',
-    LISTEN_CLIENT_EMAIL: 'LISTEN_CLIENT_EMAIL',
+    // Email steps removed as requested
     ASK_DATE: 'ASK_DATE',
     LISTEN_DATE: 'LISTEN_DATE',
     ASK_BUDGET: 'ASK_BUDGET',
@@ -36,15 +35,16 @@ export function useProjectFormVoiceLogic({
         startListening,
         stopListening,
         listening,
-        speaking: isSpeaking
+        speaking: isSpeaking,
+        currentLang, // Use the one from context which is already mapped
+        isOpen // Get isOpen state
     } = useVoiceAssistant();
 
-    const currentLang = i18n.language || 'pt';
-    const speechLang = currentLang === 'pt' ? 'pt-PT' :
-        currentLang === 'fr' ? 'fr-FR' : 'en-US';
+    // Use context language or fallback
+    const speechLang = currentLang || 'pt-PT';
 
     const [step, setStep] = useState(STEPS.IDLE);
-    const tempClientDataRef = useRef({ name: '', email: '' });
+    const tempClientDataRef = useRef({ name: '' });
 
     const stepRef = useRef(step);
     useEffect(() => { stepRef.current = step; }, [step]);
@@ -54,7 +54,6 @@ export function useProjectFormVoiceLogic({
         askName: t('pages.projectDetails.voiceAssistant.prompts.askName'),
         askClient: t('pages.projectDetails.voiceAssistant.prompts.askClient'),
         confirmClient: t('pages.projectDetails.voiceAssistant.prompts.confirmClient'),
-        askEmail: t('pages.projectDetails.voiceAssistant.prompts.askEmail'),
         askDate: t('pages.projectDetails.voiceAssistant.prompts.askDate'),
         askBudget: t('pages.projectDetails.voiceAssistant.prompts.askBudget'),
         askConfirm: t('pages.projectDetails.voiceAssistant.prompts.askConfirm'),
@@ -65,18 +64,23 @@ export function useProjectFormVoiceLogic({
     const processTranscript = (text) => {
         if (!text) return;
 
+        // Simple Echo Cancellation: If the text is exactly the prompt, ignore it.
+        // Or better: rely on the fact that we shouldn't be listening while speaking.
+
         console.log(`[VoiceWizard] Processing step ${stepRef.current}: ${text}`);
         const lowerText = text.toLowerCase();
         addMessage('user', text);
 
         switch (stepRef.current) {
             case STEPS.LISTEN_NAME:
-                onUpdateField('name', text);
+                // Clean up the text (remove trailing punctuation if any)
+                const cleanName = text.replace(/[?.!]$/, '');
+                onUpdateField('name', cleanName);
                 setStep(STEPS.ASK_CLIENT);
                 break;
 
             case STEPS.LISTEN_CLIENT:
-                const clientName = text;
+                const clientName = text.replace(/[?.!]$/, '');
                 const foundClients = clients.filter(c => c.name.toLowerCase().includes(lowerText));
 
                 if (foundClients.length > 0) {
@@ -89,7 +93,7 @@ export function useProjectFormVoiceLogic({
                     }
                     setStep(STEPS.ASK_DATE);
                 } else {
-                    tempClientDataRef.current = { ...tempClientDataRef.current, name: clientName };
+                    tempClientDataRef.current = { name: clientName };
                     onUpdateField('clientName', clientName);
                     setStep(STEPS.CONFIRM_CLIENT_CREATE);
                 }
@@ -99,20 +103,12 @@ export function useProjectFormVoiceLogic({
                 if (lowerText.includes('create') || lowerText.includes('criar') || lowerText.includes('sim') || lowerText.includes('yes')) {
                     // Open modal immediately with the captured name
                     onAddNewClient({ name: tempClientDataRef.current.name });
-                    setStep(STEPS.ASK_CLIENT_EMAIL);
+                    // Skip email, go to Date
+                    setStep(STEPS.ASK_DATE);
                 } else {
+                    // If they say no, ask for client again?
                     setStep(STEPS.ASK_CLIENT);
                 }
-                break;
-
-            case STEPS.LISTEN_CLIENT_EMAIL:
-                const email = text.toLowerCase().replace(/\s+/g, '').replace('arroba', '@').replace('dot', '.').replace('ponto', '.');
-                // Update modal with email
-                onAddNewClient({
-                    name: tempClientDataRef.current.name,
-                    email: email
-                });
-                setStep(STEPS.ASK_DATE);
                 break;
 
             case STEPS.LISTEN_DATE:
@@ -164,13 +160,22 @@ export function useProjectFormVoiceLogic({
             onTranscript: processTranscript
         });
 
-        // Start the flow immediately if we just arrived here from a voice command
-        setStep(STEPS.ASK_NAME);
+        // Removed immediate start. Now controlled by isOpen.
+        // setStep(STEPS.ASK_NAME);
 
         return () => {
             unregisterWizard();
         };
     }, []);
+
+    // Control Flow based on isOpen
+    useEffect(() => {
+        if (isOpen && step === STEPS.IDLE) {
+            setStep(STEPS.ASK_NAME);
+        } else if (!isOpen && step !== STEPS.IDLE) {
+            setStep(STEPS.IDLE);
+        }
+    }, [isOpen, step]);
 
     // Step Execution Logic (TTS + State Transition)
     useEffect(() => {
@@ -180,7 +185,6 @@ export function useProjectFormVoiceLogic({
                 case STEPS.ASK_NAME: msg = prompts.askName; break;
                 case STEPS.ASK_CLIENT: msg = prompts.askClient; break;
                 case STEPS.CONFIRM_CLIENT_CREATE: msg = prompts.confirmClient; break;
-                case STEPS.ASK_CLIENT_EMAIL: msg = prompts.askEmail; break;
                 case STEPS.ASK_DATE: msg = prompts.askDate; break;
                 case STEPS.ASK_BUDGET: msg = prompts.askBudget; break;
                 case STEPS.ASK_CONFIRMATION: msg = prompts.askConfirm; break;
@@ -203,7 +207,6 @@ export function useProjectFormVoiceLogic({
                 [STEPS.ASK_NAME]: STEPS.LISTEN_NAME,
                 [STEPS.ASK_CLIENT]: STEPS.LISTEN_CLIENT,
                 [STEPS.CONFIRM_CLIENT_CREATE]: STEPS.CONFIRM_CLIENT_CREATE,
-                [STEPS.ASK_CLIENT_EMAIL]: STEPS.LISTEN_CLIENT_EMAIL,
                 [STEPS.ASK_DATE]: STEPS.LISTEN_DATE,
                 [STEPS.ASK_BUDGET]: STEPS.LISTEN_BUDGET,
                 [STEPS.ASK_CONFIRMATION]: STEPS.LISTEN_CONFIRMATION,

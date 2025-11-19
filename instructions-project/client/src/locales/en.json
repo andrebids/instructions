@@ -348,6 +348,17 @@
           "status": "Status"
         }
       }
+    },
+    "createProject": {
+      "backToDashboard": "Back to dashboard",
+      "steps": {
+        "projectDetails": "Project Details",
+        "notes": "Notes",
+        "projectType": "Project Type",
+        "aiDesigner": "AI Designer",
+        "logoInstructions": "Logo Instructions",
+        "confirmDetails": "Confirm Details"
+      }
     }
   },
   "components": {

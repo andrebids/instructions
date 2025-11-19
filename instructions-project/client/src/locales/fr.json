@@ -346,6 +346,17 @@
           "status": "Statut"
         }
       }
+    },
+    "createProject": {
+      "backToDashboard": "Retour au tableau de bord",
+      "steps": {
+        "projectDetails": "Détails du Projet",
+        "notes": "Notes",
+        "projectType": "Type de Projet",
+        "aiDesigner": "Designer IA",
+        "logoInstructions": "Instructions du Logo",
+        "confirmDetails": "Confirmer les Détails"
+      }
     }
   },
   "components": {

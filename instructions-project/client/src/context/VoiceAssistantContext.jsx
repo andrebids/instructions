@@ -15,11 +15,17 @@ export const useVoiceAssistant = () => {
 
 export const VoiceAssistantProvider = ({ children }) => {
   const { t, i18n } = useTranslation();
-  const currentLang = i18n.language || 'en-US';
+  // Map i18n language to Speech API language
+  const getSpeechLang = (lang) => {
+    if (lang.startsWith('pt')) return 'pt-PT';
+    if (lang.startsWith('fr')) return 'fr-FR';
+    return 'en-US';
+  };
+  const currentLang = getSpeechLang(i18n.language || 'en-US');
   
   // Core Hooks
   const { speak, cancel: cancelSpeech, speaking } = useTTS(currentLang);
-  const { start, stop, listening, transcript, supported } = useSTT(currentLang);
+  const { start, stop, listening, transcript, supported, resetTranscript } = useSTT(currentLang);
 
   // UI State
   const [isOpen, setIsOpen] = useState(false);
@@ -31,7 +37,7 @@ export const VoiceAssistantProvider = ({ children }) => {
   
   // Message Handling
   const addMessage = useCallback((sender, text) => {
-    setMessages(prev => [...prev, { sender, text, id: Date.now() }]);
+    setMessages(prev => [...prev, { sender, text, id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}` }]);
   }, []);
 
   const clearMessages = useCallback(() => {
@@ -56,20 +62,15 @@ export const VoiceAssistantProvider = ({ children }) => {
     setIsOpen(false);
     stop();
     cancelSpeech();
-    // Don't reset mode here, as we might want to resume? 
-    // Actually, usually closing means stop everything.
-    // But if user just minimizes? Let's keep mode but stop listening.
   }, [stop, cancelSpeech]);
 
   // Register Wizard Handler
-  // This allows a component to "take over" the assistant logic
   const registerWizard = useCallback((wizardLogic) => {
     setMode('WIZARD');
     setWizardState(wizardLogic);
-    // Clear previous messages or keep them? Maybe keep them.
-    // But usually wizard starts fresh.
-    // setMessages([]); 
-  }, []);
+    // Reset transcript when entering wizard mode to avoid processing previous commands
+    resetTranscript();
+  }, [resetTranscript]);
 
   const unregisterWizard = useCallback(() => {
     setMode('GLOBAL');
@@ -82,39 +83,30 @@ export const VoiceAssistantProvider = ({ children }) => {
 
     const lower = transcript.toLowerCase();
     const createKeywords = [
-      'criar projeto', 'novo projeto', 'adicionar projeto', 'iniciar obra',
-      'create project', 'new project', 'add project',
+      'criar projeto', 'novo projeto', 'adicionar projeto', 'iniciar obra', 'criar novo',
+      'create project', 'new project', 'add project', 'create new',
       'créer un projet', 'nouveau projet', 'ajouter un projet'
     ];
 
     if (createKeywords.some(k => lower.includes(k))) {
       stop();
+      resetTranscript(); // Clear the command so it doesn't persist
       const response = t('dashboard.voiceAssistant.openingProject', { defaultValue: "A abrir novo projeto..." });
       addMessage('user', transcript);
       addMessage('bot', response);
       speak(response);
       
-      // Trigger global action if registered (e.g. navigation)
-      // We can use a custom event or callback stored in context
       if (window.handleCreateProjectGlobal) {
         setTimeout(() => {
            window.handleCreateProjectGlobal();
-           // Note: The wizard component will mount and call registerWizard
         }, 1500);
       }
     }
-  }, [mode, transcript, listening, t, speak, stop, addMessage]);
+  }, [mode, transcript, listening, t, speak, stop, addMessage, resetTranscript]);
 
   // Wizard Logic Proxy
-  // When in WIZARD mode, we pass transcript to the registered wizard handler
   useEffect(() => {
     if (mode === 'WIZARD' && wizardState && transcript && !listening) {
-        // We only pass "final" transcripts (when listening stops or we detect silence/final result)
-        // Actually useSTT might update transcript continuously. 
-        // The wizard logic usually expects final text.
-        // For now, let's pass it and let wizard decide.
-        // BUT, we need to know when to "process" it.
-        // The original wizard processed on "useEffect [listening, transcript]".
         wizardState.onTranscript(transcript);
     }
   }, [mode, wizardState, transcript, listening]);
@@ -131,12 +123,14 @@ export const VoiceAssistantProvider = ({ children }) => {
       speaking,
       startListening: start,
       stopListening: stop,
+      resetTranscript,
       listening,
       transcript,
       supported,
       mode,
       registerWizard,
-      unregisterWizard
+      unregisterWizard,
+      currentLang // Expose the calculated speech lang
     }}>
       {children}
     </VoiceAssistantContext.Provider>

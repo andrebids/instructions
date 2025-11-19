@@ -27,6 +27,10 @@
       "welcomeBack": "Bem-vindo de volta,",
       "createNewProject": "Criar Novo Projeto",
       "loadingData": "Carregando dados...",
+      "voiceAssistant": {
+        "greeting": "Olá, onde posso ser útil?",
+        "openingProject": "A abrir novo projeto..."
+      },
       "stats": {
         "totalProjects": "Total de Projetos",
         "draft": "Rascunho",
@@ -347,6 +351,17 @@
         "location": "Localização",
         "type": "Tipo",
         "status": "Status"
+      }
+    },
+    "createProject": {
+      "backToDashboard": "Voltar ao dashboard",
+      "steps": {
+        "projectDetails": "Detalhes do Projeto",
+        "notes": "Notas",
+        "projectType": "Tipo de Projeto",
+        "aiDesigner": "Designer IA",
+        "logoInstructions": "Instruções do Logo",
+        "confirmDetails": "Confirmar Detalhes"
       }
     }
   },

@@ -1,7 +1,20 @@
 import React from "react";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
 
 export function StepIndicator({ steps, currentStep }) {
+  const { t } = useTranslation();
+  
+  // Função para traduzir o label do step
+  const getTranslatedLabel = (stepId) => {
+    // Converter stepId de kebab-case para camelCase
+    // project-details -> projectDetails, logo-instructions -> logoInstructions
+    const camelCaseId = stepId.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+    const translationKey = `pages.createProject.steps.${camelCaseId}`;
+    const translated = t(translationKey);
+    // Se a tradução não existir, retornar o label original
+    return translated !== translationKey ? translated : steps.find(s => s.id === stepId)?.label || stepId;
+  };
   return (
     <div className="flex-1 overflow-x-auto scrollbar-hide">
       <div className="flex justify-center">
@@ -35,7 +48,7 @@ export function StepIndicator({ steps, currentStep }) {
                       isActive ? "font-semibold text-foreground" : "text-default-500"
                     }`}
                   >
-                    {step.label}
+                    {getTranslatedLabel(step.id)}
                   </span>
                 </li>
                 {!isLast && (

@@ -90,10 +90,15 @@ export const useSTT = (defaultLang = 'en-US') => {
         }
     }, [supported]);
 
+    const resetTranscript = useCallback(() => {
+        setTranscript('');
+    }, []);
+
     return {
         start,
         stop,
         abort,
+        resetTranscript,
         listening,
         transcript,
         supported
