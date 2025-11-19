@@ -26,6 +26,8 @@ export function useAuth() {
 
       const response = await fetch(sessionUrl, {
         credentials: 'include',
+        // Em desenvolvimento, adicionar cache: 'no-store' para evitar interferência do SW
+        cache: import.meta.env.DEV ? 'no-store' : 'default',
       });
 
       if (response.ok) {
@@ -100,6 +102,8 @@ export function useAuth() {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         credentials: 'include',
+        // Em desenvolvimento, adicionar cache: 'no-store' para evitar interferência do SW
+        cache: import.meta.env.DEV ? 'no-store' : 'default',
         body: new URLSearchParams({
           email: email.trim(),
           password: password,
@@ -111,7 +115,10 @@ export function useAuth() {
         // Atualizar sessão após login bem-sucedido
         const fetchSession = async () => {
           const sessionUrl = `${baseUrl}/auth/session`;
-          const sessionResponse = await fetch(sessionUrl, { credentials: 'include' });
+          const sessionResponse = await fetch(sessionUrl, { 
+            credentials: 'include',
+            cache: import.meta.env.DEV ? 'no-store' : 'default',
+          });
           if (sessionResponse.ok) {
             const data = await sessionResponse.json();
             setSession(data);
@@ -147,7 +154,10 @@ export function useAuth() {
       }
 
       // Obter token CSRF antes de fazer logout
-      const csrfResponse = await fetch(`${baseUrl}/auth/csrf`, { credentials: 'include' });
+      const csrfResponse = await fetch(`${baseUrl}/auth/csrf`, { 
+        credentials: 'include',
+        cache: import.meta.env.DEV ? 'no-store' : 'default',
+      });
       const { csrfToken } = await csrfResponse.json();
 
       await fetch(`${baseUrl}/auth/signout`, {
@@ -160,6 +170,8 @@ export function useAuth() {
           callbackUrl: window.location.origin,
         }),
         credentials: 'include',
+        // Em desenvolvimento, adicionar cache: 'no-store' para evitar interferência do SW
+        cache: import.meta.env.DEV ? 'no-store' : 'default',
       });
       setSession(null);
       localStorage.removeItem('auth_session_backup'); // Limpar backup local

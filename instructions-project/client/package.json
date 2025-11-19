@@ -53,6 +53,7 @@
     "embla-carousel-auto-scroll": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.22",
+    "generate-password": "^1.7.1",
     "gsap": "^3.13.0",
     "i18next": "^25.6.2",
     "konva": "^10.0.2",

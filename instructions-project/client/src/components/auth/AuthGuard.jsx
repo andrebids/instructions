@@ -6,13 +6,22 @@ import { useAuthContext } from '../../context/AuthContext';
  * Compatível com Auth.js e Clerk
  */
 export function SignedIn({ children }) {
-  const { isAuthenticated, loading } = useAuthContext();
+  try {
+    const { isAuthenticated, loading } = useAuthContext();
 
-  if (loading) {
-    return null; // ou um loading spinner se preferir
+    if (loading) {
+      return null; // ou um loading spinner se preferir
+    }
+
+    return isAuthenticated ? <>{children}</> : null;
+  } catch (error) {
+    // Durante hot reload, pode haver erros temporários
+    if (import.meta.env.DEV) {
+      console.warn('⚠️ [SignedIn] Erro durante hot reload:', error.message);
+      return null;
+    }
+    throw error;
   }
-
-  return isAuthenticated ? <>{children}</> : null;
 }
 
 /**
@@ -20,12 +29,21 @@ export function SignedIn({ children }) {
  * Compatível com Auth.js e Clerk
  */
 export function SignedOut({ children }) {
-  const { isAuthenticated, loading } = useAuthContext();
+  try {
+    const { isAuthenticated, loading } = useAuthContext();
 
-  if (loading) {
-    return null; // ou um loading spinner se preferir
+    if (loading) {
+      return null; // ou um loading spinner se preferir
+    }
+
+    return !isAuthenticated ? <>{children}</> : null;
+  } catch (error) {
+    // Durante hot reload, pode haver erros temporários
+    if (import.meta.env.DEV) {
+      console.warn('⚠️ [SignedOut] Erro durante hot reload:', error.message);
+      return null;
+    }
+    throw error;
   }
-
-  return !isAuthenticated ? <>{children}</> : null;
 }
 

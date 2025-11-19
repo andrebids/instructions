@@ -299,6 +299,36 @@ let updateSW = null;
 
 const isDev = import.meta.env.DEV;
 
+// Em desenvolvimento, desregistrar qualquer Service Worker ativo
+// Isso previne interferência do SW durante hot reload
+if (isDev && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    if (registrations.length > 0) {
+      console.log(`🧹 [Main] Desregistrando ${registrations.length} Service Worker(s) em desenvolvimento...`);
+      Promise.all(registrations.map(reg => reg.unregister()))
+        .then(() => {
+          console.log('✅ [Main] Service Workers desregistrados com sucesso');
+          // Limpar caches do Service Worker também
+          if ('caches' in window) {
+            caches.keys().then(cacheNames => {
+              return Promise.all(
+                cacheNames.map(cacheName => {
+                  console.log(`🧹 [Main] Limpando cache: ${cacheName}`);
+                  return caches.delete(cacheName);
+                })
+              );
+            }).then(() => {
+              console.log('✅ [Main] Caches limpos com sucesso');
+            });
+          }
+        })
+        .catch(error => {
+          console.warn('⚠️ [Main] Erro ao desregistrar Service Workers:', error);
+        });
+    }
+  });
+}
+
 // Só registrar Service Worker em produção
 if ('serviceWorker' in navigator && !isDev) {
   console.log(`🔧 [Main] Registering Service Worker in production mode...`);

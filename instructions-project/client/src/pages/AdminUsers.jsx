@@ -26,6 +26,7 @@ import {
   Spinner,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import generatePassword from "generate-password";
 import { usersAPI } from "../services/api";
 import { PageTitle } from "../components/layout/page-title";
 import { useUser } from "../context/UserContext";
@@ -184,6 +185,25 @@ export default function AdminUsers() {
         avatarPreview: URL.createObjectURL(file)
       });
     }
+  };
+
+  // Gerar senha segura que cumpre todos os requisitos
+  const generateSecurePassword = () => {
+    const newPassword = generatePassword.generate({
+      length: 12,
+      uppercase: true,
+      lowercase: true,
+      numbers: true,
+      symbols: true,
+      strict: true, // Garante que todos os critérios sejam atendidos
+    });
+    
+    // Preencher ambos os campos com a senha gerada
+    setEditFormData({
+      ...editFormData,
+      password: newPassword,
+      passwordConfirm: newPassword
+    });
   };
 
   const handleSaveChanges = async () => {
@@ -645,19 +665,32 @@ export default function AdminUsers() {
                     type="password"
                     value={editFormData.password}
                     onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
-                    description="Mínimo 8 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais"
+                    endContent={
+                      <Button
+                        isIconOnly
+                        variant="light"
+                        size="sm"
+                        onPress={generateSecurePassword}
+                        aria-label="Gerar senha segura"
+                      >
+                        <Icon icon="lucide:refresh-cw" className="text-default-400" />
+                      </Button>
+                    }
                   />
                   
                   {editFormData.password && (
-                    <Input
-                      label="Confirmar Nova Password"
-                      placeholder="Digite a password novamente"
-                      type="password"
-                      value={editFormData.passwordConfirm}
-                      onChange={(e) => setEditFormData({ ...editFormData, passwordConfirm: e.target.value })}
-                      color={editFormData.password === editFormData.passwordConfirm ? 'success' : 'danger'}
-                      description={editFormData.password === editFormData.passwordConfirm ? '✓ Passwords coincidem' : '✗ Passwords não coincidem'}
-                    />
+                    <>
+                      <Input
+                        label="Confirmar Nova Password"
+                        placeholder="Digite a password novamente"
+                        type="password"
+                        value={editFormData.passwordConfirm}
+                        onChange={(e) => setEditFormData({ ...editFormData, passwordConfirm: e.target.value })}
+                        color={editFormData.password === editFormData.passwordConfirm ? 'success' : 'danger'}
+                        description={editFormData.password === editFormData.passwordConfirm ? '✓ Passwords coincidem' : '✗ Passwords não coincidem'}
+                      />
+                      <p className="text-tiny text-default-500 -mt-2">Mínimo 8 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais</p>
+                    </>
                   )}
                 </div>
               </ModalBody>
