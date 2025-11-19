@@ -35,6 +35,69 @@ import {
   getTamanhosByCorEAcabamentoBola,
 } from "../utils/materialsUtils.js";
 
+// Componente para texto em movimento quando truncado
+const MarqueeText = ({ children, className = "" }) => {
+  const containerRef = React.useRef(null);
+  const textRef = React.useRef(null);
+  const [needsMarquee, setNeedsMarquee] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkOverflow = () => {
+      if (textRef.current && containerRef.current) {
+        const textElement = textRef.current;
+        const containerElement = containerRef.current;
+        // Verificar se o texto está truncado
+        const isOverflowing = textElement.scrollWidth > containerElement.clientWidth;
+        setNeedsMarquee(isOverflowing);
+      }
+    };
+
+    // Verificar após renderização
+    checkOverflow();
+    
+    // Verificar também após um pequeno delay para garantir que o layout está completo
+    const timeout = setTimeout(checkOverflow, 100);
+    
+    // Verificar quando a janela é redimensionada
+    window.addEventListener('resize', checkOverflow);
+    
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener('resize', checkOverflow);
+    };
+  }, [children]);
+
+  return (
+    <>
+      {needsMarquee && (
+        <style>{`
+          @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(calc(-100% - 1rem)); }
+          }
+        `}</style>
+      )}
+      <div ref={containerRef} className={`overflow-hidden ${className}`} style={{ maxWidth: "100%" }}>
+        {needsMarquee ? (
+          <div
+            className="inline-block whitespace-nowrap"
+            style={{
+              animation: "marquee 10s linear infinite",
+              paddingRight: "2rem",
+            }}
+          >
+            {children}
+          </div>
+        ) : (
+          <span ref={textRef} className="inline-block whitespace-nowrap">
+            {children}
+          </span>
+        )}
+      </div>
+    </>
+  );
+};
+
 // Schema de validação para Logo Instructions
 const validationSchema = Yup.object({
   logoNumber: Yup.string()
@@ -188,13 +251,35 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         newArray[index].componenteNome = componente.nome;
         newArray[index].componenteReferencia = componente.referencia;
         
-        // Se semCor === true, usar referência do próprio componente e limpar cor
+        // Se semCor === true, verificar se há apenas uma combinação disponível
         if (componente.semCor) {
-          newArray[index].corId = null;
-          newArray[index].corNome = null;
-          newArray[index].combinacaoId = null;
-          // Usar a referência do componente se existir
-          newArray[index].referencia = componente.referencia || null;
+          // Verificar se há apenas uma cor/combinação disponível para este componente
+          const coresDisponiveis = getCoresByComponente(value);
+          
+          if (coresDisponiveis.length === 1) {
+            // Se há apenas uma cor disponível, usar automaticamente
+            const corUnica = coresDisponiveis[0];
+            const combinacao = getCombinacaoByComponenteECor(value, corUnica.id);
+            
+            if (combinacao) {
+              newArray[index].corId = corUnica.id;
+              newArray[index].corNome = corUnica.nome;
+              newArray[index].combinacaoId = combinacao.id;
+              newArray[index].referencia = combinacao.referencia;
+            } else {
+              // Se não há combinação, usar referência do componente
+              newArray[index].corId = null;
+              newArray[index].corNome = null;
+              newArray[index].combinacaoId = null;
+              newArray[index].referencia = componente.referencia || null;
+            }
+          } else {
+            // Se não há cores ou há múltiplas, usar referência do componente
+            newArray[index].corId = null;
+            newArray[index].corNome = null;
+            newArray[index].combinacaoId = null;
+            newArray[index].referencia = componente.referencia || null;
+          }
         } else {
           // Se semCor === false, manter cor se já existir, senão limpar
           if (!newArray[index].corId) {
@@ -719,9 +804,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                               {componente?.nome || "Componente"}
                             </div>
                             <div className="flex items-center justify-between gap-2">
-                              <div className="flex-1 text-xs text-default-600 bg-default-100 p-2 rounded">
+                              <div className="flex-1 text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden">
                                 <span className="font-semibold">Referência: </span>
-                                {comp.referencia}
+                                <MarqueeText>
+                                  {comp.referencia}
+                                </MarqueeText>
                               </div>
                               <div className="flex gap-1">
                                 <Button
@@ -816,9 +903,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                               )}
                               
                               {comp.referencia && (
-                                <div className="text-xs text-default-600 bg-default-100 p-2 rounded">
+                                <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden">
                                   <span className="font-semibold">Referência: </span>
-                                  {comp.referencia}
+                                  <MarqueeText>
+                                    {comp.referencia}
+                                  </MarqueeText>
                                 </div>
                               )}
                             </div>
@@ -945,9 +1034,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                               </Select>
                               
                               {bola.referencia && (
-                                <div className="text-xs text-default-600 bg-default-100 p-2 rounded">
+                                <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden">
                                   <span className="font-semibold">Referência: </span>
-                                  {bola.referencia}
+                                  <MarqueeText>
+                                    {bola.referencia}
+                                  </MarqueeText>
                                 </div>
                               )}
                             </div>
