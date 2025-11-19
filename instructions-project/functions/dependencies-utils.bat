@@ -103,6 +103,12 @@ if not exist "node_modules" (
         echo [%DATE% %TIME%] pg nao encontrado >> "%LOG_FILE%" 2>&1
         set "SERVER_NEED_INSTALL=1"
     )
+    rem Verificar nodemon (devDependency importante para desenvolvimento)
+    if not exist "node_modules\nodemon" (
+        echo AVISO: nodemon nao encontrado. Reinstalando dependencias...
+        echo [%DATE% %TIME%] nodemon nao encontrado >> "%LOG_FILE%" 2>&1
+        set "SERVER_NEED_INSTALL=1"
+    )
 )
 echo [DEBUG] Verificacao concluida. SERVER_NEED_INSTALL=%SERVER_NEED_INSTALL%
 echo [%DATE% %TIME%] [DEBUG] Verificacao concluida. SERVER_NEED_INSTALL=%SERVER_NEED_INSTALL% >> "%LOG_FILE%" 2>&1
@@ -127,32 +133,69 @@ echo [%DATE% %TIME%] Instalando dependencias do servidor... >> "%LOG_FILE%" 2>&1
 echo [DEBUG] Diretorio atual antes de instalar: %CD%
 echo [%DATE% %TIME%] [DEBUG] Diretorio atual antes de instalar: %CD% >> "%LOG_FILE%" 2>&1
 set "INSTALL_ERROR=0"
+echo [DEBUG] Verificando se package-lock.json existe...
+echo [%DATE% %TIME%] [DEBUG] Verificando se package-lock.json existe... >> "%LOG_FILE%"
+rem Verificar se package-lock.json existe usando uma forma mais robusta
+set "HAS_PACKAGE_LOCK=0"
 if exist "package-lock.json" (
+    set "HAS_PACKAGE_LOCK=1"
+    echo [DEBUG] package-lock.json EXISTE >> "%LOG_FILE%"
+) else (
+    echo [DEBUG] package-lock.json NAO EXISTE >> "%LOG_FILE%"
+)
+echo [DEBUG] HAS_PACKAGE_LOCK=%HAS_PACKAGE_LOCK%
+echo [%DATE% %TIME%] [DEBUG] HAS_PACKAGE_LOCK=%HAS_PACKAGE_LOCK% >> "%LOG_FILE%"
+
+rem Usar goto em vez de if aninhado para evitar problemas
+if "%HAS_PACKAGE_LOCK%"=="1" goto use_npm_ci
+goto use_npm_install
+
+:use_npm_ci
+    echo [DEBUG] package-lock.json encontrado, usando npm ci
+    echo [%DATE% %TIME%] [DEBUG] package-lock.json encontrado, usando npm ci >> "%LOG_FILE%"
     echo    Usando npm ci (instalação limpa baseada em package-lock.json)...
-    echo [%DATE% %TIME%] Executando npm ci no servidor... >> "%LOG_FILE%" 2>&1
+    echo    Isto pode demorar varios minutos. Aguarde...
+    echo [%DATE% %TIME%] Executando npm ci no servidor... >> "%LOG_FILE%"
+    echo [%DATE% %TIME%] Isto pode demorar varios minutos. Aguarde... >> "%LOG_FILE%"
     echo [DEBUG] Executando: npm ci
-    npm ci
+    echo [DEBUG] Executando: npm ci >> "%LOG_FILE%"
+    echo [%DATE% %TIME%] [DEBUG] Iniciando execucao do npm ci... >> "%LOG_FILE%"
+    npm ci --loglevel=info >> "%LOG_FILE%" 2>&1
     set "INSTALL_ERROR=%errorlevel%"
+    echo [%DATE% %TIME%] [DEBUG] npm ci concluido, errorlevel: %INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
     echo [DEBUG] npm ci retornou errorlevel: %INSTALL_ERROR%
     echo [%DATE% %TIME%] [DEBUG] npm ci retornou errorlevel: %INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
     if %INSTALL_ERROR% neq 0 (
         echo AVISO: npm ci falhou, tentando npm install...
         echo [%DATE% %TIME%] npm ci falhou (errorlevel: %INSTALL_ERROR%), tentando npm install... >> "%LOG_FILE%" 2>&1
         echo [DEBUG] Executando: npm install
-        npm install
+        echo [DEBUG] Executando: npm install >> "%LOG_FILE%" 2>&1
+        echo [%DATE% %TIME%] [DEBUG] Iniciando execucao do npm install (fallback)... >> "%LOG_FILE%" 2>&1
+        npm install --loglevel=info >> "%LOG_FILE%" 2>&1
         set "INSTALL_ERROR=%errorlevel%"
+        echo [%DATE% %TIME%] [DEBUG] npm install concluido, errorlevel: %INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
         echo [DEBUG] npm install retornou errorlevel: %INSTALL_ERROR%
         echo [%DATE% %TIME%] [DEBUG] npm install retornou errorlevel: %INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
     )
-) else (
+    goto after_server_install
+
+:use_npm_install
+    echo [DEBUG] package-lock.json NAO encontrado, usando npm install
+    echo [%DATE% %TIME%] [DEBUG] package-lock.json NAO encontrado, usando npm install >> "%LOG_FILE%"
     echo    Usando npm install...
-    echo [%DATE% %TIME%] Executando npm install no servidor... >> "%LOG_FILE%" 2>&1
+    echo    Isto pode demorar varios minutos. Aguarde...
+    echo [%DATE% %TIME%] Executando npm install no servidor... >> "%LOG_FILE%"
+    echo [%DATE% %TIME%] Isto pode demorar varios minutos. Aguarde... >> "%LOG_FILE%"
     echo [DEBUG] Executando: npm install
-    npm install
+    echo [DEBUG] Executando: npm install >> "%LOG_FILE%"
+    echo [%DATE% %TIME%] [DEBUG] Iniciando execucao do npm install... >> "%LOG_FILE%"
+    npm install --loglevel=info >> "%LOG_FILE%" 2>&1
     set "INSTALL_ERROR=%errorlevel%"
+    echo [%DATE% %TIME%] [DEBUG] npm install concluido, errorlevel: %INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
     echo [DEBUG] npm install retornou errorlevel: %INSTALL_ERROR%
     echo [%DATE% %TIME%] [DEBUG] npm install retornou errorlevel: %INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
-)
+
+:after_server_install
 if %INSTALL_ERROR% neq 0 (
     echo ERRO: Erro ao instalar dependencias do servidor (errorlevel: %INSTALL_ERROR%)
     echo [%DATE% %TIME%] ERRO ao instalar dependencias do servidor (errorlevel: %INSTALL_ERROR%) >> "%LOG_FILE%" 2>&1
@@ -258,27 +301,40 @@ echo [%DATE% %TIME%] [DEBUG] Diretorio atual antes de instalar cliente: %CD% >> 
 set "CLIENT_INSTALL_ERROR=0"
 if exist "package-lock.json" (
         echo Instalando dependencias do cliente com npm ci...
+        echo Isto pode demorar varios minutos. Aguarde...
         echo [%DATE% %TIME%] Instalando dependencias do cliente com npm ci... >> "%LOG_FILE%" 2>&1
+        echo [%DATE% %TIME%] Isto pode demorar varios minutos. Aguarde... >> "%LOG_FILE%" 2>&1
         echo [DEBUG] Executando: npm ci
-        npm ci
+        echo [DEBUG] Executando: npm ci >> "%LOG_FILE%" 2>&1
+        echo [%DATE% %TIME%] [DEBUG] Iniciando execucao do npm ci (cliente)... >> "%LOG_FILE%" 2>&1
+        npm ci --loglevel=info >> "%LOG_FILE%" 2>&1
         set "CLIENT_INSTALL_ERROR=%errorlevel%"
+        echo [%DATE% %TIME%] [DEBUG] npm ci concluido (cliente), errorlevel: %CLIENT_INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
         echo [DEBUG] npm ci retornou errorlevel: %CLIENT_INSTALL_ERROR%
         echo [%DATE% %TIME%] [DEBUG] npm ci retornou errorlevel: %CLIENT_INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
         if %CLIENT_INSTALL_ERROR% neq 0 (
             echo AVISO: npm ci falhou, tentando npm install...
             echo [%DATE% %TIME%] npm ci falhou (errorlevel: %CLIENT_INSTALL_ERROR%), tentando npm install... >> "%LOG_FILE%" 2>&1
             echo [DEBUG] Executando: npm install
-            npm install
+            echo [DEBUG] Executando: npm install >> "%LOG_FILE%" 2>&1
+            echo [%DATE% %TIME%] [DEBUG] Iniciando execucao do npm install (cliente, fallback)... >> "%LOG_FILE%" 2>&1
+            npm install --loglevel=info >> "%LOG_FILE%" 2>&1
             set "CLIENT_INSTALL_ERROR=%errorlevel%"
+            echo [%DATE% %TIME%] [DEBUG] npm install concluido (cliente), errorlevel: %CLIENT_INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
             echo [DEBUG] npm install retornou errorlevel: %CLIENT_INSTALL_ERROR%
             echo [%DATE% %TIME%] [DEBUG] npm install retornou errorlevel: %CLIENT_INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
         )
     ) else (
         echo Instalando dependencias do cliente com npm install...
+        echo Isto pode demorar varios minutos. Aguarde...
         echo [%DATE% %TIME%] Instalando dependencias do cliente com npm install... >> "%LOG_FILE%" 2>&1
+        echo [%DATE% %TIME%] Isto pode demorar varios minutos. Aguarde... >> "%LOG_FILE%" 2>&1
         echo [DEBUG] Executando: npm install
-        npm install
+        echo [DEBUG] Executando: npm install >> "%LOG_FILE%" 2>&1
+        echo [%DATE% %TIME%] [DEBUG] Iniciando execucao do npm install (cliente)... >> "%LOG_FILE%" 2>&1
+        npm install --loglevel=info >> "%LOG_FILE%" 2>&1
         set "CLIENT_INSTALL_ERROR=%errorlevel%"
+        echo [%DATE% %TIME%] [DEBUG] npm install concluido (cliente), errorlevel: %CLIENT_INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
         echo [DEBUG] npm install retornou errorlevel: %CLIENT_INSTALL_ERROR%
         echo [%DATE% %TIME%] [DEBUG] npm install retornou errorlevel: %CLIENT_INSTALL_ERROR% >> "%LOG_FILE%" 2>&1
     )
