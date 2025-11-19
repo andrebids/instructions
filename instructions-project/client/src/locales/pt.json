@@ -28,7 +28,14 @@
       "createNewProject": "Criar Novo Projeto",
       "loadingData": "Carregando dados...",
       "voiceAssistant": {
-        "greeting": "Olá, onde posso ser útil?",
+        "greetings": [
+          "Olá, onde posso ser útil?",
+          "Olá! Como posso ajudar?",
+          "Boa tarde! Em que posso ajudar?",
+          "Olá! Estou aqui para ajudar.",
+          "Olá! Diga-me, o que precisa?",
+          "Bom dia! Como posso ser útil?"
+        ],
         "openingProject": "A abrir novo projeto..."
       },
       "stats": {
@@ -320,6 +327,7 @@
           "askName": "Qual é o nome do projeto?",
           "askClient": "Quem é o cliente?",
           "confirmClient": "Cliente novo. Diga 'Criar' para preencher ficha.",
+          "confirmClientDynamic": "Cliente {{name}} não encontrado. Deseja criar um novo?",
           "askEmail": "Qual é o email do cliente?",
           "askPhone": "Qual é o telefone do cliente?",
           "askDate": "Qual é a data de entrega?",

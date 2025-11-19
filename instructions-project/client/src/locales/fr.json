@@ -25,6 +25,17 @@
       "welcomeBack": "Bon retour,",
       "createNewProject": "Créer un nouveau projet",
       "loadingData": "Chargement des données...",
+      "voiceAssistant": {
+        "greetings": [
+          "Bonjour, comment puis-je vous aider?",
+          "Salut! Que puis-je faire pour vous?",
+          "Bonjour! Comment puis-je être utile?",
+          "Bonjour! Je suis là pour vous aider.",
+          "Salut! De quoi avez-vous besoin?",
+          "Bonjour! En quoi puis-je vous assister?"
+        ],
+        "openingProject": "Ouverture d'un nouveau projet..."
+      },
       "stats": {
         "totalProjects": "Total des projets",
         "draft": "Brouillon",
