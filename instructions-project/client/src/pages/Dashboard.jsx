@@ -1,22 +1,25 @@
 import React from "react";
-import {Header} from "../components/layout/header";
-import {StatsCard} from "../components/features/stats-card";
-import {Button, Spinner} from "@heroui/react";
-import {Icon} from "@iconify/react";
-import {ProjectTable} from "../components/features/project-table";
-import {CreateProjectMultiStep} from "../components/create-project-multi-step";
-import {projectsAPI} from "../services/api";
-import {PageTitle} from "../components/layout/page-title";
-import {DashboardVoiceAssistant} from "../components/features/DashboardVoiceAssistant";
-import {motion, AnimatePresence} from "framer-motion";
+import { Header } from "../components/layout/header";
+import { StatsCard } from "../components/features/stats-card";
+import { Button, Spinner } from "@heroui/react";
+import { Icon } from "@iconify/react";
+import { ProjectTable } from "../components/features/project-table";
+import { CreateProjectMultiStep } from "../components/create-project-multi-step";
+import { projectsAPI } from "../services/api";
+import { PageTitle } from "../components/layout/page-title";
+import { DashboardVoiceAssistant } from "../components/features/DashboardVoiceAssistant";
+import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "../context/UserContext";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 import { Scroller } from "../components/ui/scroller";
 import { useTranslation } from "react-i18next";
+import { useVoiceAssistant } from "../context/VoiceAssistantContext";
+
 
 export default function Dashboard() {
   const { t } = useTranslation();
   const { userName } = useUser();
+  const { updateDashboardContext } = useVoiceAssistant();
   const [isOpen, setIsOpen] = React.useState(false);
   const [showCreateProject, setShowCreateProject] = React.useState(false);
   const [projects, setProjects] = React.useState([]);
@@ -34,35 +37,36 @@ export default function Dashboard() {
   const [error, setError] = React.useState(null);
   const [selectedImage, setSelectedImage] = React.useState(null);
   const { isHandheld } = useResponsiveProfile();
-  
+
+
   // Imagens carregadas (simuladas)
   const loadedImages = [
-    { 
-      id: 1, 
-      name: 'source 1.jpeg', 
+    {
+      id: 1,
+      name: 'source 1.jpeg',
       thumbnail: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop&crop=center'
     },
-    { 
-      id: 2, 
-      name: 'source 2.jpeg', 
+    {
+      id: 2,
+      name: 'source 2.jpeg',
       thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop&crop=center'
     },
-    { 
-      id: 3, 
-      name: 'source 3.jpeg', 
+    {
+      id: 3,
+      name: 'source 3.jpeg',
       thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop&crop=center'
     },
   ];
-  
+
   const loadData = React.useCallback(async (signal = null) => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Carregar projetos e stats em paralelo
       // Se stats falhar com 403, ainda tentar carregar projetos
       const options = signal ? { signal } : {};
-      
+
       try {
         const [projectsData, statsData] = await Promise.all([
           projectsAPI.getAll(options),
@@ -85,7 +89,7 @@ export default function Dashboard() {
             throw statsErr;
           }),
         ]);
-        
+
         setProjects(projectsData);
         setStats({
           total: statsData.total,
@@ -126,20 +130,20 @@ export default function Dashboard() {
     } catch (err) {
       // Ignorar erros de requisições abortadas/canceladas
       if (
-        err.name === 'AbortError' || 
+        err.name === 'AbortError' ||
         err.name === 'CanceledError' ||
-        err.code === 'ECONNABORTED' || 
+        err.code === 'ECONNABORTED' ||
         err.code === 'ERR_CANCELED' ||
-        err.message === 'Request aborted' || 
+        err.message === 'Request aborted' ||
         err.message === 'canceled' ||
         err.message?.includes('aborted') ||
         err.message?.includes('canceled')
       ) {
         return;
       }
-      
+
       console.error('❌ Erro ao carregar dados:', err);
-      
+
       // Mensagem de erro mais detalhada
       let errorMessage = t('errors.failedToLoadData');
       if (err.response?.status === 403) {
@@ -161,26 +165,32 @@ export default function Dashboard() {
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, []);
-  
+  }, [t, updateDashboardContext, userName]);
+
+  // Update voice assistant context when projects change
+  React.useEffect(() => {
+    if (!loading && projects.length >= 0) {
+      updateDashboardContext(projects, { name: userName });
+    }
+  }, [projects, loading, userName, updateDashboardContext]);
   // Carregar dados ao iniciar
   React.useEffect(() => {
     const abortController = new AbortController();
-    
+
     // Chamar loadData diretamente
     loadData(abortController.signal);
-    
+
     // Cleanup: cancelar requisições quando o componente desmontar
     return () => {
       abortController.abort();
     };
   }, []); // Executar apenas uma vez na montagem
-  
+
   const handleCreateProject = () => {
     setShowCreateProject(true);
   };
@@ -192,7 +202,7 @@ export default function Dashboard() {
       delete window.handleCreateProjectGlobal;
     };
   }, []);
-  
+
   const handleCloseCreateProject = () => {
     setShowCreateProject(false);
     setSelectedImage(null);
@@ -209,10 +219,10 @@ export default function Dashboard() {
   const updateStatsAfterDelete = React.useCallback((project) => {
     setStats(prev => {
       const newStats = { ...prev };
-      
+
       // Decrementar total
       newStats.total = Math.max(0, prev.total - 1);
-      
+
       // Decrementar contador baseado no status do projeto
       const status = project.status;
       if (status === 'draft' && prev.draft > 0) {
@@ -230,7 +240,7 @@ export default function Dashboard() {
       } else if (status === 'in_queue' && prev.inQueue > 0) {
         newStats.inQueue = prev.inQueue - 1;
       }
-      
+
       return newStats;
     });
   }, []);
@@ -240,7 +250,7 @@ export default function Dashboard() {
     // Atualização otimista: remover localmente e atualizar stats
     removeProjectFromState(project.id);
     updateStatsAfterDelete(project);
-    
+
     // Opcional: sincronizar stats com servidor em background (sem bloquear UI)
     // Isso garante que as stats estejam sempre corretas mesmo se houver discrepâncias
     projectsAPI.getStats().then(statsData => {
@@ -265,139 +275,139 @@ export default function Dashboard() {
       {/* Dashboard Content */}
       {showCreateProject ? (
         <div className="flex-1 min-h-0 overflow-hidden">
-          <CreateProjectMultiStep 
-            onClose={handleCloseCreateProject} 
+          <CreateProjectMultiStep
+            onClose={handleCloseCreateProject}
             selectedImage={selectedImage}
           />
         </div>
       ) : (
         <Scroller className={`flex-1 min-h-0 p-6 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>
           {/* Title section + Create button */}
-            <div className="flex justify-between items-center mb-6">
-              <PageTitle title={t('pages.dashboard.title')} userName={userName} subtitle={t('pages.dashboard.subtitle')} showWelcome />
-              <Button 
-                color="primary" 
-                startContent={<Icon icon="lucide:plus" />}
-                className="font-medium"
-                onPress={handleCreateProject}
-                isDisabled={loading}
+          <div className="flex justify-between items-center mb-6">
+            <PageTitle title={t('pages.dashboard.title')} userName={userName} subtitle={t('pages.dashboard.subtitle')} showWelcome />
+            <Button
+              color="primary"
+              startContent={<Icon icon="lucide:plus" />}
+              className="font-medium"
+              onPress={handleCreateProject}
+              isDisabled={loading}
+            >
+              {t('pages.dashboard.createNewProject')}
+            </Button>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-600">
+              <div className="flex items-center gap-2">
+                <Icon icon="lucide:alert-circle" className="text-xl" />
+                <span>{error}</span>
+              </div>
+              <Button
+                size="sm"
+                color="danger"
+                variant="flat"
+                className="mt-2"
+                onPress={loadData}
               >
-                {t('pages.dashboard.createNewProject')}
+                {t('common.retry')}
               </Button>
             </div>
-            
-            {/* Error Message */}
-            {error && (
-              <div className="mb-6 p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-600">
-                <div className="flex items-center gap-2">
-                  <Icon icon="lucide:alert-circle" className="text-xl" />
-                  <span>{error}</span>
-                </div>
-                <Button 
-                  size="sm" 
-                  color="danger" 
-                  variant="flat"
-                  className="mt-2"
-                  onPress={loadData}
-                >
-                  {t('common.retry')}
-                </Button>
-              </div>
-            )}
-            
-            {/* Loading State */}
-            {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <Spinner size="lg" label={t('pages.dashboard.loadingData')} />
-              </div>
-            ) : (
-              <>
-                {/* Stats Grid */}
-                <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8">
-                  <StatsCard
-                    title={t('pages.dashboard.stats.totalProjects')}
-                    value={stats.total.toString()}
-                    change={`${stats.total} projects total`}
-                    isPositive={true}
-                    icon="lucide:folder"
-                    timePeriod={t('pages.dashboard.timePeriods.allTime')}
-                    colorKey="primary"
-                  />
-                  <StatsCard
-                    title={t('pages.dashboard.stats.draft')}
-                    value={stats.draft.toString()}
-                    change={`${stats.draft} drafts`}
-                    isPositive={false}
-                    icon="lucide:file-edit"
-                    timePeriod={t('pages.dashboard.timePeriods.pending')}
-                    colorKey="default"
-                  />
-                  <StatsCard
-                    title={t('pages.dashboard.stats.created')}
-                    value={stats.created.toString()}
-                    change={`${stats.created} created`}
-                    isPositive={true}
-                    icon="lucide:file-plus"
-                    timePeriod={t('pages.dashboard.timePeriods.new')}
-                    colorKey="primary"
-                  />
-                  <StatsCard
-                    title={t('pages.dashboard.stats.inProgress')}
-                    value={stats.inProgress.toString()}
-                    change={`${stats.inProgress} active`}
-                    isPositive={true}
-                    icon="lucide:loader"
-                    timePeriod={t('pages.dashboard.timePeriods.currently')}
-                    colorKey="warning"
-                  />
-                  <StatsCard
-                    title={t('pages.dashboard.stats.finished')}
-                    value={stats.finished.toString()}
-                    change={`${stats.finished} completed`}
-                    isPositive={true}
-                    icon="lucide:check-circle"
-                    timePeriod={t('pages.dashboard.timePeriods.thisMonth')}
-                    colorKey="success"
-                  />
-                  <StatsCard
-                    title={t('pages.dashboard.stats.approved')}
-                    value={stats.approved.toString()}
-                    change={`${stats.approved} approved`}
-                    isPositive={true}
-                    icon="lucide:thumbs-up"
-                    timePeriod={t('pages.dashboard.timePeriods.thisMonth')}
-                    colorKey="success"
-                  />
-                  <StatsCard
-                    title={t('pages.dashboard.stats.inQueue')}
-                    value={stats.inQueue.toString()}
-                    change={`${stats.inQueue} waiting`}
-                    isPositive={false}
-                    icon="lucide:clock"
-                    timePeriod={t('pages.dashboard.timePeriods.pending')}
-                    colorKey="secondary"
-                  />
-                  <StatsCard
-                    title={t('pages.dashboard.stats.cancelled')}
-                    value={stats.cancelled.toString()}
-                    change={`${stats.cancelled} cancelled`}
-                    isPositive={false}
-                    icon="lucide:x-circle"
-                    timePeriod={t('pages.dashboard.timePeriods.thisMonth')}
-                    colorKey="danger"
-                  />
-                </div>
+          )}
 
-                {/* Project Table */}
-                <div className="mb-6">
-                  <ProjectTable 
-                    projects={projects} 
-                    onProjectsUpdate={loadData}
-                    onProjectDeleted={handleProjectDeleted}
-                  />
-                </div>
-              </>
-            )}
+          {/* Loading State */}
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <Spinner size="lg" label={t('pages.dashboard.loadingData')} />
+            </div>
+          ) : (
+            <>
+              {/* Stats Grid */}
+              <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8">
+                <StatsCard
+                  title={t('pages.dashboard.stats.totalProjects')}
+                  value={stats.total.toString()}
+                  change={`${stats.total} projects total`}
+                  isPositive={true}
+                  icon="lucide:folder"
+                  timePeriod={t('pages.dashboard.timePeriods.allTime')}
+                  colorKey="primary"
+                />
+                <StatsCard
+                  title={t('pages.dashboard.stats.draft')}
+                  value={stats.draft.toString()}
+                  change={`${stats.draft} drafts`}
+                  isPositive={false}
+                  icon="lucide:file-edit"
+                  timePeriod={t('pages.dashboard.timePeriods.pending')}
+                  colorKey="default"
+                />
+                <StatsCard
+                  title={t('pages.dashboard.stats.created')}
+                  value={stats.created.toString()}
+                  change={`${stats.created} created`}
+                  isPositive={true}
+                  icon="lucide:file-plus"
+                  timePeriod={t('pages.dashboard.timePeriods.new')}
+                  colorKey="primary"
+                />
+                <StatsCard
+                  title={t('pages.dashboard.stats.inProgress')}
+                  value={stats.inProgress.toString()}
+                  change={`${stats.inProgress} active`}
+                  isPositive={true}
+                  icon="lucide:loader"
+                  timePeriod={t('pages.dashboard.timePeriods.currently')}
+                  colorKey="warning"
+                />
+                <StatsCard
+                  title={t('pages.dashboard.stats.finished')}
+                  value={stats.finished.toString()}
+                  change={`${stats.finished} completed`}
+                  isPositive={true}
+                  icon="lucide:check-circle"
+                  timePeriod={t('pages.dashboard.timePeriods.thisMonth')}
+                  colorKey="success"
+                />
+                <StatsCard
+                  title={t('pages.dashboard.stats.approved')}
+                  value={stats.approved.toString()}
+                  change={`${stats.approved} approved`}
+                  isPositive={true}
+                  icon="lucide:thumbs-up"
+                  timePeriod={t('pages.dashboard.timePeriods.thisMonth')}
+                  colorKey="success"
+                />
+                <StatsCard
+                  title={t('pages.dashboard.stats.inQueue')}
+                  value={stats.inQueue.toString()}
+                  change={`${stats.inQueue} waiting`}
+                  isPositive={false}
+                  icon="lucide:clock"
+                  timePeriod={t('pages.dashboard.timePeriods.pending')}
+                  colorKey="secondary"
+                />
+                <StatsCard
+                  title={t('pages.dashboard.stats.cancelled')}
+                  value={stats.cancelled.toString()}
+                  change={`${stats.cancelled} cancelled`}
+                  isPositive={false}
+                  icon="lucide:x-circle"
+                  timePeriod={t('pages.dashboard.timePeriods.thisMonth')}
+                  colorKey="danger"
+                />
+              </div>
+
+              {/* Project Table */}
+              <div className="mb-6">
+                <ProjectTable
+                  projects={projects}
+                  onProjectsUpdate={loadData}
+                  onProjectDeleted={handleProjectDeleted}
+                />
+              </div>
+            </>
+          )}
         </Scroller>
       )}
 

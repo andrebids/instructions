@@ -36,7 +36,16 @@
           "Olá! Diga-me, o que precisa?",
           "Bom dia! Como posso ser útil?"
         ],
-        "openingProject": "A abrir novo projeto..."
+        "openingProject": "A abrir novo projeto...",
+        "title": "Assistente IA",
+        "status": {
+          "listening": "A ouvir...",
+          "idle": "Inativo"
+        },
+        "footer": {
+          "listening": "A ouvir...",
+          "clickToSpeak": "Clique para falar"
+        }
       },
       "stats": {
         "totalProjects": "Total de Projetos",

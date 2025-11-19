@@ -34,7 +34,16 @@
           "Salut! De quoi avez-vous besoin?",
           "Bonjour! En quoi puis-je vous assister?"
         ],
-        "openingProject": "Ouverture d'un nouveau projet..."
+        "openingProject": "Ouverture d'un nouveau projet...",
+        "title": "Assistant IA",
+        "status": {
+          "listening": "Écoute...",
+          "idle": "Inactif"
+        },
+        "footer": {
+          "listening": "À l'écoute...",
+          "clickToSpeak": "Cliquez pour parler"
+        }
       },
       "stats": {
         "totalProjects": "Total des projets",
@@ -285,77 +294,77 @@
           "cannotChangeOwnRole": "Impossible de modifier votre propre rôle",
           "passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères"
         }
+      }
+    },
+    "projectDetails": {
+      "title": "Détails du Projet",
+      "subtitle": "Commençons par les informations de base de votre projet.",
+      "projectName": "Nom du Projet",
+      "projectNameRequired": "*",
+      "projectNamePlaceholder": "Entrez le nom du projet",
+      "deliveryDate": "Date de Livraison",
+      "budget": "Budget (EUR)",
+      "budgetRequired": "*",
+      "budgetPlaceholder": "Entrez le montant du budget",
+      "client": "Client",
+      "location": "Emplacement",
+      "type": "Type",
+      "status": "Statut",
+      "name": "Nom",
+      "projectInformation": "Informations du Projet",
+      "validation": {
+        "projectNameRequired": "Le nom du projet est requis",
+        "projectNameMinLength": "Le nom du projet doit contenir au moins 3 caractères",
+        "budgetRequired": "Le budget est requis",
+        "budgetMustBePositive": "Le budget doit être supérieur à 0",
+        "deliveryDateRequired": "La date de livraison est requise"
       },
-      "projectDetails": {
-        "title": "Détails du Projet",
-        "subtitle": "Commençons par les informations de base de votre projet.",
-        "projectName": "Nom du Projet",
-        "projectNameRequired": "*",
-        "projectNamePlaceholder": "Entrez le nom du projet",
-        "deliveryDate": "Date de Livraison",
-        "budget": "Budget (EUR)",
-        "budgetRequired": "*",
-        "budgetPlaceholder": "Entrez le montant du budget",
+      "clientAutocomplete": {
+        "label": "Client",
+        "placeholder": "Rechercher un client",
+        "addNewClient": "Ajouter un Nouveau Client"
+      },
+      "voiceAssistant": {
+        "title": "Assistant Vocal",
+        "ready": "Prêt. Cliquez sur le microphone.",
+        "clickToStart": "Cliquez sur le micro pour commencer...",
+        "speaking": "Parle...",
+        "listening": "Écoute...",
+        "prompts": {
+          "askName": "Quel est le nom du projet?",
+          "askClient": "Qui est le client?",
+          "confirmClient": "Nouveau client. Dites 'Créer' pour remplir le formulaire.",
+          "askEmail": "Quel est l'email du client?",
+          "askPhone": "Quel est le téléphone du client?",
+          "askDate": "Quelle est la date de livraison?",
+          "askBudget": "Quel est le budget?",
+          "askConfirm": "Données remplies. Dites 'Continuer' pour procéder.",
+          "finished": "Assistant terminé."
+        }
+      }
+    },
+    "projectNotes": {
+      "title": "Notes : {{name}}",
+      "subtitle": "Client : {{clientName}}",
+      "loading": "Chargement du projet...",
+      "errorTitle": "Erreur lors du chargement du projet",
+      "errorMessage": "Erreur lors du chargement du projet. Veuillez vérifier si le projet existe.",
+      "projectNotFound": "Projet non trouvé",
+      "backToDashboard": "Retour au Tableau de bord",
+      "back": "Retour",
+      "editProject": "Modifier le Projet",
+      "projectInformation": "Informations du Projet",
+      "projectNotesTitle": "Notes du Projet",
+      "notesEditor": "Éditeur de Notes",
+      "createProjectFirst": "Créer le projet d'abord",
+      "createProjectFirstDescription": "Complétez les détails du projet pour commencer à ajouter des notes.",
+      "addNotesDescription": "Ajoutez des notes et observations sur ce projet. Les modifications sont enregistrées automatiquement toutes les 2 secondes.",
+      "fields": {
+        "name": "Nom",
         "client": "Client",
         "location": "Emplacement",
         "type": "Type",
-        "status": "Statut",
-        "name": "Nom",
-        "projectInformation": "Informations du Projet",
-        "validation": {
-          "projectNameRequired": "Le nom du projet est requis",
-          "projectNameMinLength": "Le nom du projet doit contenir au moins 3 caractères",
-          "budgetRequired": "Le budget est requis",
-          "budgetMustBePositive": "Le budget doit être supérieur à 0",
-          "deliveryDateRequired": "La date de livraison est requise"
-        },
-        "clientAutocomplete": {
-          "label": "Client",
-          "placeholder": "Rechercher un client",
-          "addNewClient": "Ajouter un Nouveau Client"
-        },
-        "voiceAssistant": {
-          "title": "Assistant Vocal",
-          "ready": "Prêt. Cliquez sur le microphone.",
-          "clickToStart": "Cliquez sur le micro pour commencer...",
-          "speaking": "Parle...",
-          "listening": "Écoute...",
-          "prompts": {
-            "askName": "Quel est le nom du projet?",
-            "askClient": "Qui est le client?",
-            "confirmClient": "Nouveau client. Dites 'Créer' pour remplir le formulaire.",
-            "askEmail": "Quel est l'email du client?",
-            "askPhone": "Quel est le téléphone du client?",
-            "askDate": "Quelle est la date de livraison?",
-            "askBudget": "Quel est le budget?",
-            "askConfirm": "Données remplies. Dites 'Continuer' pour procéder.",
-            "finished": "Assistant terminé."
-          }
-        }
-      },
-      "projectNotes": {
-        "title": "Notes : {{name}}",
-        "subtitle": "Client : {{clientName}}",
-        "loading": "Chargement du projet...",
-        "errorTitle": "Erreur lors du chargement du projet",
-        "errorMessage": "Erreur lors du chargement du projet. Veuillez vérifier si le projet existe.",
-        "projectNotFound": "Projet non trouvé",
-        "backToDashboard": "Retour au Tableau de bord",
-        "back": "Retour",
-        "editProject": "Modifier le Projet",
-        "projectInformation": "Informations du Projet",
-        "projectNotesTitle": "Notes du Projet",
-        "notesEditor": "Éditeur de Notes",
-        "createProjectFirst": "Créer le projet d'abord",
-        "createProjectFirstDescription": "Complétez les détails du projet pour commencer à ajouter des notes.",
-        "addNotesDescription": "Ajoutez des notes et observations sur ce projet. Les modifications sont enregistrées automatiquement toutes les 2 secondes.",
-        "fields": {
-          "name": "Nom",
-          "client": "Client",
-          "location": "Emplacement",
-          "type": "Type",
-          "status": "Statut"
-        }
+        "status": "Statut"
       }
     },
     "createProject": {

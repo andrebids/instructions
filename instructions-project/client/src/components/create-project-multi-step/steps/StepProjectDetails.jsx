@@ -1,5 +1,5 @@
 import React from "react";
-import { Input, DatePicker } from "@heroui/react";
+import { Input, DatePicker, Button } from "@heroui/react";
 import { today, getLocalTimeZone } from "@internationalized/date";
 import { Icon } from "@iconify/react";
 import * as Yup from "yup";
@@ -49,17 +49,17 @@ export function StepProjectDetails({
   });
 
   // Integrate Voice Assistant Logic
-  useProjectFormVoiceLogic({
+  const { listening, startListening } = useProjectFormVoiceLogic({
     onUpdateField: (field, value) => {
       // Handle special cases if needed
       if (field === 'endDate' && typeof value === 'string') {
-         try {
-           formik.updateField(field, parseDate(value));
-         } catch (e) {
-           console.error("Date parse error", e);
-         }
+        try {
+          formik.updateField(field, parseDate(value));
+        } catch (e) {
+          console.error("Date parse error", e);
+        }
       } else {
-         formik.updateField(field, value);
+        formik.updateField(field, value);
       }
     },
     clients,
@@ -77,7 +77,7 @@ export function StepProjectDetails({
             {t('pages.projectDetails.subtitle')}
           </p>
         </div>
-        
+
 
 
         <div className="space-y-5">
@@ -107,7 +107,7 @@ export function StepProjectDetails({
               }}
             />
           </div>
-          
+
           {/* Client Autocomplete */}
           <div className="max-w-md mx-auto">
             <ClientAutocomplete
@@ -119,7 +119,7 @@ export function StepProjectDetails({
               onAddNewClick={onAddNewClient}
             />
           </div>
-          
+
           {/* Date and Budget */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
             <div>
@@ -137,7 +137,6 @@ export function StepProjectDetails({
                 size="md"
                 radius="lg"
                 showMonthAndYearPickers
-                locale="pt-PT"
                 minValue={today(getLocalTimeZone())}
                 classNames={{
                   label: "text-primary-700 dark:text-primary-400"
