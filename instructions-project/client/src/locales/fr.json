@@ -163,6 +163,7 @@
           "all": "Tous"
         },
         "table": {
+          "image": "Image",
           "name": "Nom",
           "email": "Email",
           "role": "Rôle",
@@ -172,7 +173,11 @@
           "noUsersFound": "Aucun utilisateur trouvé"
         },
         "actions": {
+          "editUser": "Modifier l'Utilisateur",
           "editRole": "Modifier le Rôle",
+          "changePassword": "Changer le Mot de Passe",
+          "changeEmail": "Changer l'Email",
+          "changeImage": "Changer l'Image",
           "remove": "Supprimer",
           "view": "Voir"
         },
@@ -197,6 +202,20 @@
             "sending": "Envoi en cours...",
             "success": "Invitation envoyée avec succès !"
           },
+          "editUser": {
+            "title": "Modifier l'Utilisateur",
+            "firstName": "Prénom",
+            "lastName": "Nom de Famille",
+            "email": "Email",
+            "role": "Rôle",
+            "save": "Enregistrer",
+            "cancel": "Annuler",
+            "saving": "Enregistrement en cours...",
+            "newPasswordOptional": "Nouveau mot de passe (Optionnel)",
+            "passwordPlaceholder": "Laisser vide pour conserver l'actuel",
+            "passwordDescription": "Minimum 6 caractères",
+            "changePhoto": "Changer la photo"
+          },
           "editRole": {
             "title": "Modifier le Rôle",
             "currentRole": "Rôle Actuel",
@@ -204,6 +223,33 @@
             "save": "Enregistrer",
             "cancel": "Annuler",
             "saving": "Enregistrement en cours..."
+          },
+          "changePassword": {
+            "title": "Changer le Mot de Passe",
+            "user": "Utilisateur",
+            "newPassword": "Nouveau Mot de Passe",
+            "passwordDescription": "Le mot de passe doit contenir au moins 6 caractères",
+            "update": "Mettre à Jour le Mot de Passe",
+            "updating": "Mise à jour en cours...",
+            "cancel": "Annuler"
+          },
+          "changeEmail": {
+            "title": "Changer l'Email",
+            "user": "Utilisateur",
+            "newEmail": "Nouvel Email",
+            "update": "Mettre à Jour l'Email",
+            "updating": "Mise à jour en cours...",
+            "cancel": "Annuler"
+          },
+          "changeImage": {
+            "title": "Changer l'Image de Profil",
+            "user": "Utilisateur",
+            "imageUrl": "URL de l'Image",
+            "imageUrlPlaceholder": "https://exemple.com/image.jpg",
+            "imageUrlDescription": "Collez l'URL de l'image de profil",
+            "update": "Mettre à Jour l'Image",
+            "updating": "Mise à jour en cours...",
+            "cancel": "Annuler"
           },
           "deleteConfirm": {
             "title": "Confirmer la Suppression",
@@ -225,7 +271,8 @@
           "updateRoleFailed": "Erreur lors de la mise à jour du rôle",
           "deleteFailed": "Erreur lors de la suppression de l'utilisateur",
           "cannotRemoveSelf": "Impossible de vous supprimer vous-même",
-          "cannotChangeOwnRole": "Impossible de modifier votre propre rôle"
+          "cannotChangeOwnRole": "Impossible de modifier votre propre rôle",
+          "passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères"
         }
       }
     }

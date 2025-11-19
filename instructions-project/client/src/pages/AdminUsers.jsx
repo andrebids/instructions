@@ -59,12 +59,7 @@ export default function AdminUsers() {
   // Modais
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
   const { isOpen: isInviteOpen, onOpen: onInviteOpen, onClose: onInviteClose } = useDisclosure();
-  const { isOpen: isEditRoleOpen, onOpen: onEditRoleOpen, onClose: onEditRoleClose } = useDisclosure();
-  const { isOpen: isEditUserOpen, onOpen: onEditUserOpen, onClose: onEditUserClose } = useDisclosure();
-  const { isOpen: isEditPasswordOpen, onOpen: onEditPasswordOpen, onClose: onEditPasswordClose } = useDisclosure();
-  const { isOpen: isEditEmailOpen, onOpen: onEditEmailOpen, onClose: onEditEmailClose } = useDisclosure();
-  const { isOpen: isEditImageOpen, onOpen: onEditImageOpen, onClose: onEditImageClose } = useDisclosure();
-  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   
   const [selectedUser, setSelectedUser] = React.useState(null);
   const [formData, setFormData] = React.useState({
@@ -78,17 +73,20 @@ export default function AdminUsers() {
     email: "",
     role: "comercial",
   });
-  const [newRole, setNewRole] = React.useState("comercial");
-  const [editUserData, setEditUserData] = React.useState({
+  
+  // Unified Edit State
+  const [editFormData, setEditFormData] = React.useState({
     firstName: "",
     lastName: "",
     email: "",
     role: "comercial",
+    password: "",
+    avatarFile: null,
+    avatarPreview: null
   });
-  const [newPassword, setNewPassword] = React.useState("");
-  const [newEmail, setNewEmail] = React.useState("");
-  const [newImageUrl, setNewImageUrl] = React.useState("");
+  
   const [actionLoading, setActionLoading] = React.useState(false);
+  const fileInputRef = React.useRef(null);
   
   // Verificação de role
   React.useEffect(() => {
@@ -160,47 +158,65 @@ export default function AdminUsers() {
     }
   };
   
-  // Handlers para editar role
-  const handleEditRole = (user) => {
+  // Handler unificado para editar usuário
+  const handleEditClick = (user) => {
     setSelectedUser(user);
-    setNewRole(user.role || "comercial");
-    onEditRoleOpen();
-  };
-
-  const handleUpdateRole = async () => {
-    try {
-      setActionLoading(true);
-      await usersAPI.updateRole(selectedUser.id, newRole);
-      onEditRoleClose();
-      setSelectedUser(null);
-      loadUsers();
-    } catch (err) {
-      console.error('Erro ao atualizar role:', err);
-      alert(err.response?.data?.message || t('pages.dashboard.adminUsers.errors.updateRoleFailed'));
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Handlers para editar usuário completo
-  const handleEditUser = (user) => {
-    setSelectedUser(user);
-    setEditUserData({
+    setEditFormData({
       firstName: user.firstName || "",
       lastName: user.lastName || "",
       email: user.email || "",
       role: user.role || "comercial",
+      password: "",
+      avatarFile: null,
+      avatarPreview: user.imageUrl || null
     });
-    onEditUserOpen();
+    onEditOpen();
   };
 
-  const handleUpdateUser = async () => {
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setEditFormData({
+        ...editFormData,
+        avatarFile: file,
+        avatarPreview: URL.createObjectURL(file)
+      });
+    }
+  };
+
+  const handleSaveChanges = async () => {
     try {
       setActionLoading(true);
-      await usersAPI.update(selectedUser.id, editUserData);
-      onEditUserClose();
+      let imageUrl = selectedUser.imageUrl;
+
+      // 1. Upload avatar if changed
+      if (editFormData.avatarFile) {
+        const uploadResult = await usersAPI.uploadUserAvatar(selectedUser.id, editFormData.avatarFile);
+        imageUrl = uploadResult.url;
+      }
+
+      // 2. Update user data
+      const updateData = {
+        firstName: editFormData.firstName,
+        lastName: editFormData.lastName,
+        email: editFormData.email,
+        role: editFormData.role,
+        imageUrl: imageUrl
+      };
+
+      if (editFormData.password) {
+        if (editFormData.password.length < 6) {
+            alert(t('pages.dashboard.adminUsers.errors.passwordTooShort'));
+            setActionLoading(false);
+            return;
+        }
+        updateData.password = editFormData.password;
+      }
+
+      await usersAPI.update(selectedUser.id, updateData);
+      
+      onEditClose();
       setSelectedUser(null);
-      setEditUserData({ firstName: "", lastName: "", email: "", role: "comercial" });
       loadUsers();
     } catch (err) {
       console.error('Erro ao atualizar utilizador:', err);
@@ -210,97 +226,13 @@ export default function AdminUsers() {
     }
   };
 
-  // Handlers para alterar senha
-  const handleEditPassword = (user) => {
-    setSelectedUser(user);
-    setNewPassword("");
-    onEditPasswordOpen();
-  };
-
-  const handleUpdatePassword = async () => {
-    try {
-      setActionLoading(true);
-      if (!newPassword || newPassword.length < 6) {
-        alert('A senha deve ter pelo menos 6 caracteres');
-        return;
-      }
-      await usersAPI.updatePassword(selectedUser.id, newPassword);
-      onEditPasswordClose();
-      setSelectedUser(null);
-      setNewPassword("");
-      alert('Senha atualizada com sucesso');
-      loadUsers();
-    } catch (err) {
-      console.error('Erro ao atualizar senha:', err);
-      alert(err.response?.data?.message || err.response?.data?.error || 'Erro ao atualizar senha');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Handlers para alterar email
-  const handleEditEmail = (user) => {
-    setSelectedUser(user);
-    setNewEmail(user.email || "");
-    onEditEmailOpen();
-  };
-
-  const handleUpdateEmail = async () => {
-    try {
-      setActionLoading(true);
-      if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
-        alert('Email inválido');
-        return;
-      }
-      await usersAPI.updateEmail(selectedUser.id, newEmail);
-      onEditEmailClose();
-      setSelectedUser(null);
-      setNewEmail("");
-      alert('Email atualizado com sucesso');
-      loadUsers();
-    } catch (err) {
-      console.error('Erro ao atualizar email:', err);
-      alert(err.response?.data?.message || err.response?.data?.error || 'Erro ao atualizar email');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Handlers para alterar imagem
-  const handleEditImage = (user) => {
-    setSelectedUser(user);
-    setNewImageUrl(user.imageUrl || "");
-    onEditImageOpen();
-  };
-
-  const handleUpdateImage = async () => {
-    try {
-      setActionLoading(true);
-      await usersAPI.updateUserProfile(selectedUser.id, { imageUrl: newImageUrl });
-      onEditImageClose();
-      setSelectedUser(null);
-      setNewImageUrl("");
-      alert('Imagem atualizada com sucesso');
-      loadUsers();
-    } catch (err) {
-      console.error('Erro ao atualizar imagem:', err);
-      alert(err.response?.data?.message || err.response?.data?.error || 'Erro ao atualizar imagem');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-  
-  // Handlers para remover utilizador
-  const handleDeleteUser = (user) => {
-    setSelectedUser(user);
-    onDeleteOpen();
-  };
-  
-  const handleConfirmDelete = async () => {
+  const handleDeleteUser = async () => {
+    if (!confirm(t('pages.dashboard.adminUsers.modals.delete.confirm') || 'Tem a certeza que deseja remover este utilizador?')) return;
+    
     try {
       setActionLoading(true);
       await usersAPI.delete(selectedUser.id);
-      onDeleteClose();
+      onEditClose();
       setSelectedUser(null);
       loadUsers();
     } catch (err) {
@@ -440,6 +372,7 @@ export default function AdminUsers() {
           <CardBody className="p-0">
             <Table aria-label="Tabela de utilizadores">
               <TableHeader>
+                <TableColumn>{t('pages.dashboard.adminUsers.table.image')}</TableColumn>
                 <TableColumn>{t('pages.dashboard.adminUsers.table.name')}</TableColumn>
                 <TableColumn>{t('pages.dashboard.adminUsers.table.email')}</TableColumn>
                 <TableColumn>{t('pages.dashboard.adminUsers.table.role')}</TableColumn>
@@ -451,16 +384,20 @@ export default function AdminUsers() {
                 {users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        {user.imageUrl && (
-                          <img
-                            src={user.imageUrl}
-                            alt={user.fullName}
-                            className="w-8 h-8 rounded-full"
-                          />
-                        )}
-                        <span>{user.fullName}</span>
-                      </div>
+                      {user.imageUrl ? (
+                        <img
+                          src={user.imageUrl}
+                          alt={user.fullName}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-default-200 flex items-center justify-center">
+                          <Icon icon="lucide:user" className="text-default-400" />
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span>{user.fullName}</span>
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
@@ -469,75 +406,24 @@ export default function AdminUsers() {
                         color={getRoleColor(user.role)}
                         variant="flat"
                       >
-                        {getRoleLabel(user.role)}
+                        {t(`pages.dashboard.adminUsers.roles.${user.role}`)}
                       </Chip>
                     </TableCell>
-                    <TableCell>{formatDate(user.createdAt)}</TableCell>
-                    <TableCell>{formatDate(user.lastSignInAt)}</TableCell>
                     <TableCell>
-                      <Dropdown>
-                        <DropdownTrigger>
-                          <Button
-                            isIconOnly
-                            variant="light"
-                            size="sm"
-                          >
-                            <Icon icon="lucide:more-vertical" />
-                          </Button>
-                        </DropdownTrigger>
-                        <DropdownMenu aria-label="Ações do utilizador">
-                          <DropdownItem
-                            key="edit"
-                            startContent={<Icon icon="lucide:user" />}
-                            onPress={() => handleEditUser(user)}
-                            isDisabled={isCurrentUser(user.id)}
-                          >
-                            Editar Usuário
-                          </DropdownItem>
-                          <DropdownItem
-                            key="editRole"
-                            startContent={<Icon icon="lucide:shield" />}
-                            onPress={() => handleEditRole(user)}
-                            isDisabled={isCurrentUser(user.id)}
-                          >
-                            {t('pages.dashboard.adminUsers.actions.editRole')}
-                          </DropdownItem>
-                          <DropdownItem
-                            key="editPassword"
-                            startContent={<Icon icon="lucide:key" />}
-                            onPress={() => handleEditPassword(user)}
-                            isDisabled={isCurrentUser(user.id)}
-                          >
-                            Alterar Senha
-                          </DropdownItem>
-                          <DropdownItem
-                            key="editEmail"
-                            startContent={<Icon icon="lucide:mail" />}
-                            onPress={() => handleEditEmail(user)}
-                            isDisabled={isCurrentUser(user.id)}
-                          >
-                            Alterar Email
-                          </DropdownItem>
-                          <DropdownItem
-                            key="editImage"
-                            startContent={<Icon icon="lucide:image" />}
-                            onPress={() => handleEditImage(user)}
-                            isDisabled={isCurrentUser(user.id)}
-                          >
-                            Alterar Imagem
-                          </DropdownItem>
-                          <DropdownItem
-                            key="delete"
-                            className="text-danger"
-                            color="danger"
-                            startContent={<Icon icon="lucide:trash" />}
-                            onPress={() => handleDeleteUser(user)}
-                            isDisabled={isCurrentUser(user.id)}
-                          >
-                            {t('pages.dashboard.adminUsers.actions.remove')}
-                          </DropdownItem>
-                        </DropdownMenu>
-                      </Dropdown>
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        isIconOnly
+                        variant="light"
+                        onPress={() => handleEditClick(user)}
+                        isDisabled={isCurrentUser(user.id)}
+                      >
+                        <Icon icon="lucide:pencil" className="text-default-400" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -652,255 +538,118 @@ export default function AdminUsers() {
         </ModalContent>
       </Modal>
       
-      {/* Modal Editar Role */}
-      <Modal isOpen={isEditRoleOpen} onOpenChange={onEditRoleClose}>
+      {/* Modal Editar Usuário Unificado */}
+      <Modal isOpen={isEditOpen} onOpenChange={onEditClose} size="2xl">
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>{t('pages.dashboard.adminUsers.modals.editRole.title')}</ModalHeader>
+              <ModalHeader>{t('pages.dashboard.adminUsers.modals.editUser.title')}</ModalHeader>
               <ModalBody>
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <p className="text-sm text-default-500 mb-2">{t('pages.dashboard.adminUsers.modals.editRole.currentRole')}</p>
-                    <Chip color={getRoleColor(selectedUser?.role)} variant="flat">
-                      {getRoleLabel(selectedUser?.role)}
-                    </Chip>
-                  </div>
-                  <Select
-                    label={t('pages.dashboard.adminUsers.modals.editRole.newRole')}
-                    selectedKeys={[newRole]}
-                    onSelectionChange={(keys) => setNewRole(Array.from(keys)[0] || 'comercial')}
-                  >
-                    <SelectItem key="admin" value="admin">{t('pages.dashboard.adminUsers.roles.admin')}</SelectItem>
-                    <SelectItem key="comercial" value="comercial">{t('pages.dashboard.adminUsers.roles.comercial')}</SelectItem>
-                    <SelectItem key="editor_stock" value="editor_stock">{t('pages.dashboard.adminUsers.roles.editor_stock')}</SelectItem>
-                  </Select>
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="flat" onPress={onClose}>
-                  {t('pages.dashboard.adminUsers.modals.editRole.cancel')}
-                </Button>
-                <Button
-                  color="primary"
-                  onPress={handleUpdateRole}
-                  isLoading={actionLoading}
-                >
-                  {actionLoading ? t('pages.dashboard.adminUsers.modals.editRole.saving') : t('pages.dashboard.adminUsers.modals.editRole.save')}
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
-      
-      {/* Modal Editar Usuário */}
-      <Modal isOpen={isEditUserOpen} onOpenChange={onEditUserClose} size="lg">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>Editar Usuário</ModalHeader>
-              <ModalBody>
-                <div className="flex flex-col gap-4">
-                  <Input
-                    label="Primeiro Nome"
-                    value={editUserData.firstName}
-                    onChange={(e) => setEditUserData({ ...editUserData, firstName: e.target.value })}
-                  />
-                  <Input
-                    label="Último Nome"
-                    value={editUserData.lastName}
-                    onChange={(e) => setEditUserData({ ...editUserData, lastName: e.target.value })}
-                  />
-                  <Input
-                    label="Email"
-                    type="email"
-                    value={editUserData.email}
-                    onChange={(e) => setEditUserData({ ...editUserData, email: e.target.value })}
-                    isRequired
-                  />
-                  <Select
-                    label="Role"
-                    selectedKeys={[editUserData.role]}
-                    onSelectionChange={(keys) => setEditUserData({ ...editUserData, role: Array.from(keys)[0] || 'comercial' })}
-                  >
-                    <SelectItem key="admin" value="admin">{t('pages.dashboard.adminUsers.roles.admin')}</SelectItem>
-                    <SelectItem key="comercial" value="comercial">{t('pages.dashboard.adminUsers.roles.comercial')}</SelectItem>
-                    <SelectItem key="editor_stock" value="editor_stock">{t('pages.dashboard.adminUsers.roles.editor_stock')}</SelectItem>
-                  </Select>
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="flat" onPress={onClose}>
-                  Cancelar
-                </Button>
-                <Button
-                  color="primary"
-                  onPress={handleUpdateUser}
-                  isLoading={actionLoading}
-                  isDisabled={!editUserData.email}
-                >
-                  {actionLoading ? 'Salvando...' : 'Salvar'}
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
-
-      {/* Modal Alterar Senha */}
-      <Modal isOpen={isEditPasswordOpen} onOpenChange={onEditPasswordClose}>
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>Alterar Senha</ModalHeader>
-              <ModalBody>
-                <div className="flex flex-col gap-4">
-                  <p className="text-sm text-default-500">
-                    Usuário: {selectedUser?.fullName || selectedUser?.email}
-                  </p>
-                  <Input
-                    label="Nova Senha"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    isRequired
-                    description="A senha deve ter pelo menos 6 caracteres"
-                  />
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="flat" onPress={onClose}>
-                  Cancelar
-                </Button>
-                <Button
-                  color="primary"
-                  onPress={handleUpdatePassword}
-                  isLoading={actionLoading}
-                  isDisabled={!newPassword || newPassword.length < 6}
-                >
-                  {actionLoading ? 'Atualizando...' : 'Atualizar Senha'}
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
-
-      {/* Modal Alterar Email */}
-      <Modal isOpen={isEditEmailOpen} onOpenChange={onEditEmailClose}>
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>Alterar Email</ModalHeader>
-              <ModalBody>
-                <div className="flex flex-col gap-4">
-                  <p className="text-sm text-default-500">
-                    Usuário: {selectedUser?.fullName || selectedUser?.email}
-                  </p>
-                  <Input
-                    label="Novo Email"
-                    type="email"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    isRequired
-                  />
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="flat" onPress={onClose}>
-                  Cancelar
-                </Button>
-                <Button
-                  color="primary"
-                  onPress={handleUpdateEmail}
-                  isLoading={actionLoading}
-                  isDisabled={!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)}
-                >
-                  {actionLoading ? 'Atualizando...' : 'Atualizar Email'}
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
-
-      {/* Modal Alterar Imagem */}
-      <Modal isOpen={isEditImageOpen} onOpenChange={onEditImageClose}>
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>Alterar Imagem de Perfil</ModalHeader>
-              <ModalBody>
-                <div className="flex flex-col gap-4">
-                  <p className="text-sm text-default-500">
-                    Usuário: {selectedUser?.fullName || selectedUser?.email}
-                  </p>
-                  {selectedUser?.imageUrl && (
-                    <div className="flex justify-center">
-                      <img
-                        src={selectedUser.imageUrl}
-                        alt={selectedUser.fullName}
-                        className="w-24 h-24 rounded-full object-cover"
+                <div className="flex flex-col gap-6">
+                  {/* Avatar Section */}
+                  <div className="flex items-center gap-4">
+                    <div className="relative group">
+                      {editFormData.avatarPreview ? (
+                        <img
+                          src={editFormData.avatarPreview}
+                          alt="Avatar Preview"
+                          className="w-20 h-20 rounded-full object-cover border-2 border-default-200"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 rounded-full bg-default-200 flex items-center justify-center border-2 border-default-200">
+                          <Icon icon="lucide:user" className="w-8 h-8 text-default-400" />
+                        </div>
+                      )}
+                      <div 
+                        className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Icon icon="lucide:camera" className="text-white" />
+                      </div>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleAvatarChange}
                       />
                     </div>
-                  )}
-                  <Input
-                    label="URL da Imagem"
-                    type="url"
-                    value={newImageUrl}
-                    onChange={(e) => setNewImageUrl(e.target.value)}
-                    placeholder="https://exemplo.com/imagem.jpg"
-                    description="Cole a URL da imagem de perfil"
-                  />
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="flat" onPress={onClose}>
-                  Cancelar
-                </Button>
-                <Button
-                  color="primary"
-                  onPress={handleUpdateImage}
-                  isLoading={actionLoading}
-                >
-                  {actionLoading ? 'Atualizando...' : 'Atualizar Imagem'}
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+                    <div className="flex-1">
+                      <p className="font-medium">{editFormData.firstName} {editFormData.lastName}</p>
+                      <p className="text-small text-default-500">{editFormData.email}</p>
+                      <Button 
+                        size="sm" 
+                        variant="flat" 
+                        className="mt-2"
+                        onPress={() => fileInputRef.current?.click()}
+                      >
+                        {t('pages.dashboard.adminUsers.modals.editUser.changePhoto')}
+                      </Button>
+                    </div>
+                  </div>
 
-      {/* Modal Confirmar Remoção */}
-      <Modal isOpen={isDeleteOpen} onOpenChange={onDeleteClose}>
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>{t('pages.dashboard.adminUsers.modals.deleteConfirm.title')}</ModalHeader>
-              <ModalBody>
-                <div className="flex flex-col gap-2">
-                  <p
-                    dangerouslySetInnerHTML={{
-                      __html: t('pages.dashboard.adminUsers.modals.deleteConfirm.description', { name: selectedUser?.fullName || selectedUser?.email })
-                    }}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label={t('pages.dashboard.adminUsers.modals.editUser.firstName')}
+                      value={editFormData.firstName}
+                      onChange={(e) => setEditFormData({ ...editFormData, firstName: e.target.value })}
+                    />
+                    <Input
+                      label={t('pages.dashboard.adminUsers.modals.editUser.lastName')}
+                      value={editFormData.lastName}
+                      onChange={(e) => setEditFormData({ ...editFormData, lastName: e.target.value })}
+                    />
+                  </div>
+
+                  <Input
+                    label={t('pages.dashboard.adminUsers.modals.editUser.email')}
+                    type="email"
+                    value={editFormData.email}
+                    onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                    isRequired
                   />
-                  <p className="text-sm text-default-500 mt-2">
-                    {t('pages.dashboard.adminUsers.modals.deleteConfirm.warning')}
-                  </p>
+
+                  <Select
+                    label={t('pages.dashboard.adminUsers.modals.editUser.role')}
+                    selectedKeys={[editFormData.role]}
+                    onSelectionChange={(keys) => setEditFormData({ ...editFormData, role: Array.from(keys)[0] || 'comercial' })}
+                  >
+                    <SelectItem key="admin" value="admin">{t('pages.dashboard.adminUsers.roles.admin')}</SelectItem>
+                    <SelectItem key="comercial" value="comercial">{t('pages.dashboard.adminUsers.roles.comercial')}</SelectItem>
+                    <SelectItem key="editor_stock" value="editor_stock">{t('pages.dashboard.adminUsers.roles.editor_stock')}</SelectItem>
+                  </Select>
+
+                  <Input
+                    label={t('pages.dashboard.adminUsers.modals.editUser.newPasswordOptional')}
+                    placeholder={t('pages.dashboard.adminUsers.modals.editUser.passwordPlaceholder')}
+                    type="password"
+                    value={editFormData.password}
+                    onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
+                    description={t('pages.dashboard.adminUsers.modals.editUser.passwordDescription')}
+                  />
                 </div>
               </ModalBody>
-              <ModalFooter>
-                <Button variant="flat" onPress={onClose}>
-                  {t('pages.dashboard.adminUsers.modals.deleteConfirm.cancel')}
-                </Button>
-                <Button
-                  color="danger"
-                  onPress={handleConfirmDelete}
-                  isLoading={actionLoading}
+              <ModalFooter className="justify-between">
+                <Button 
+                  color="danger" 
+                  variant="light" 
+                  onPress={handleDeleteUser}
+                  startContent={<Icon icon="lucide:trash" />}
                 >
-                  {actionLoading ? t('pages.dashboard.adminUsers.modals.deleteConfirm.deleting') : t('pages.dashboard.adminUsers.modals.deleteConfirm.delete')}
+                  {t('pages.dashboard.adminUsers.actions.remove')}
                 </Button>
+                <div className="flex gap-2">
+                  <Button variant="flat" onPress={onClose}>
+                    {t('common.cancel')}
+                  </Button>
+                  <Button
+                    color="primary"
+                    onPress={handleSaveChanges}
+                    isLoading={actionLoading}
+                  >
+                    {t('common.save')}
+                  </Button>
+                </div>
               </ModalFooter>
             </>
           )}
