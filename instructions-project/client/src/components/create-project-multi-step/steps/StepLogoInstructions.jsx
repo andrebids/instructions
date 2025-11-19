@@ -74,6 +74,7 @@ export function StepLogoInstructions({ formData, onInputChange }) {
                 label="Logo Number"
                 placeholder="142STE..."
                 variant="bordered"
+                isRequired
                 value={logoDetails.logoNumber || ""}
                 onValueChange={(v) => handleUpdate("logoNumber", v)}
               />
@@ -81,6 +82,7 @@ export function StepLogoInstructions({ formData, onInputChange }) {
                 label="Logo Name"
                 placeholder="Project Name"
                 variant="bordered"
+                isRequired
                 value={logoDetails.logoName || ""}
                 onValueChange={(v) => handleUpdate("logoName", v)}
               />
@@ -88,6 +90,7 @@ export function StepLogoInstructions({ formData, onInputChange }) {
                 label="Requested By"
                 placeholder="Name"
                 variant="bordered"
+                isRequired
                 value={logoDetails.requestedBy || ""}
                 onValueChange={(v) => handleUpdate("requestedBy", v)}
               />
@@ -97,14 +100,14 @@ export function StepLogoInstructions({ formData, onInputChange }) {
           {/* 2. Physical Specifications */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Dimensions */}
-            <Card className="shadow-sm h-full">
-              <CardHeader className="px-6 pt-6 pb-0">
+            <Card className="shadow-sm">
+              <CardHeader className="px-4 pt-4 pb-0">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <Icon icon="lucide:ruler" className="text-primary" />
                   Dimensions
                 </h3>
               </CardHeader>
-              <CardBody className="p-6 space-y-4">
+              <CardBody className="p-4 space-y-2">
                 {['Height', 'Length', 'Width', 'Diameter'].map((dim) => {
                   const key = dim.toLowerCase();
                   return (
@@ -151,7 +154,7 @@ export function StepLogoInstructions({ formData, onInputChange }) {
                     fullWidth
                     size="md"
                     aria-label="Usage Options"
-                    selectedKey={logoDetails.usageIndoor ? "indoor" : "outdoor"}
+                    selectedKey={logoDetails.usageOutdoor ? "outdoor" : "indoor"}
                     onSelectionChange={(key) => {
                       if (key === "indoor") {
                         handleUpdate("usageIndoor", true);
@@ -240,45 +243,6 @@ export function StepLogoInstructions({ formData, onInputChange }) {
               </CardBody>
             </Card>
           </div>
-
-          {/* 3. Description & Criteria */}
-          <Card className="shadow-sm">
-            <CardHeader className="px-6 pt-6 pb-0">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="lucide:file-text" className="text-primary" />
-                Details & Criteria
-              </h3>
-            </CardHeader>
-            <CardBody className="p-6 space-y-4">
-              <Textarea
-                label="Specific Criteria"
-                placeholder="Enter any specific requirements or criteria..."
-                minRows={2}
-                variant="bordered"
-                value={logoDetails.criteria || ""}
-                onValueChange={(v) => handleUpdate("criteria", v)}
-              />
-              <div className="flex gap-4">
-                <Textarea
-                  label="Full Description"
-                  placeholder="Detailed description of the logo..."
-                  minRows={4}
-                  className="flex-1"
-                  variant="bordered"
-                  value={logoDetails.description || ""}
-                  onValueChange={(v) => handleUpdate("description", v)}
-                />
-                <div className="flex flex-col gap-2 pt-2">
-                  <Checkbox
-                    isSelected={logoDetails.hasAttachments}
-                    onValueChange={(v) => handleUpdate("hasAttachments", v)}
-                  >
-                    Has Attachments
-                  </Checkbox>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
 
         </div>
 
@@ -394,6 +358,69 @@ export function StepLogoInstructions({ formData, onInputChange }) {
           </Card>
         </div>
       </div>
+
+      {/* 3. Details & Criteria (Full Width) */}
+      <Card className="shadow-sm">
+        <CardHeader className="px-6 pt-6 pb-0">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Icon icon="lucide:file-text" className="text-primary" />
+            Details & Criteria
+          </h3>
+        </CardHeader>
+        <CardBody className="p-6 space-y-4">
+          <Textarea
+            label="Specific Criteria"
+            placeholder="Enter any specific requirements or criteria..."
+            minRows={2}
+            variant="bordered"
+            value={logoDetails.criteria || ""}
+            onValueChange={(v) => handleUpdate("criteria", v)}
+          />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Textarea
+              label="Full Description"
+              placeholder="Detailed description of the logo..."
+              minRows={4}
+              className="lg:col-span-2"
+              variant="bordered"
+              value={logoDetails.description || ""}
+              onValueChange={(v) => handleUpdate("description", v)}
+            />
+            <div className="flex flex-col gap-3">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-default-700">Attachments</p>
+                <Button
+                  color="primary"
+                  variant="flat"
+                  size="sm"
+                  startContent={<Icon icon="lucide:paperclip" />}
+                  onPress={() => document.getElementById('logo-file-input').click()}
+                  className="w-full"
+                >
+                  Upload Files
+                </Button>
+                <input
+                  id="logo-file-input"
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ai,.eps"
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files);
+                    handleUpdate("attachmentFiles", files);
+                    console.log("Files selected:", files);
+                  }}
+                />
+                {logoDetails.attachmentFiles && logoDetails.attachmentFiles.length > 0 && (
+                  <div className="text-xs text-default-500">
+                    {logoDetails.attachmentFiles.length} file(s) selected
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
     </div>
   );
 }
