@@ -8,6 +8,8 @@ import { GlobalSyncStatus } from "../features/SyncStatus";
 import { LocaleSelector } from "./LocaleSelector";
 import { useTranslation } from "react-i18next";
 import { usersAPI } from "../../services/api";
+import { PasswordField } from "../admin/PasswordField";
+import { usePasswordGenerator } from "../../hooks/usePasswordGenerator";
 
 export function Header() {
   const { t } = useTranslation();
@@ -22,9 +24,18 @@ export function Header() {
   const [editingName, setEditingName] = React.useState("");
   const [editingImage, setEditingImage] = React.useState(null);
   const [imagePreview, setImagePreview] = React.useState(null);
+  const [password, setPassword] = React.useState("");
+  const [passwordConfirm, setPasswordConfirm] = React.useState("");
+  const [showPasswordConfirm, setShowPasswordConfirm] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState(null);
   const [saveSuccess, setSaveSuccess] = React.useState(false);
+
+  // Hook para gerenciar senha
+  const passwordGenerator = usePasswordGenerator((newPassword) => {
+    setPassword(newPassword);
+    setPasswordConfirm(newPassword);
+  });
   
   const authContext = useAuthContext();
   const activeUser = authContext?.user;
@@ -44,9 +55,14 @@ export function Header() {
       setEditingName(activeUser.name || activeUser.email || "");
       setEditingImage(null);
       setImagePreview(activeUser.image || activeUser.imageUrl || null);
+      setPassword("");
+      setPasswordConfirm("");
+      setShowPasswordConfirm(false);
       setSaveError(null);
       setSaveSuccess(false);
+      passwordGenerator.reset();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSettings, activeUser]);
 
   // Função para lidar com seleção de imagem
@@ -85,6 +101,67 @@ export function Header() {
     setSaveSuccess(false);
 
     try {
+      // Validar senha se fornecida
+      const passwordTrimmed = password?.trim() || '';
+      const passwordConfirmTrimmed = passwordConfirm?.trim() || '';
+      const hasPassword = passwordTrimmed.length > 0;
+      const hasPasswordConfirm = passwordConfirmTrimmed.length > 0;
+
+      if (hasPassword || hasPasswordConfirm) {
+        // Se apenas um campo está preenchido, mostrar erro
+        if (hasPassword !== hasPasswordConfirm) {
+          setSaveError('Por favor, preencha ambos os campos de senha ou deixe-os vazios');
+          setIsSaving(false);
+          return;
+        }
+
+        // Se ambos estão preenchidos, validar
+        if (hasPassword && hasPasswordConfirm) {
+          if (passwordTrimmed !== passwordConfirmTrimmed) {
+            setSaveError('As senhas não coincidem. Por favor, verifique.');
+            setIsSaving(false);
+            return;
+          }
+
+          if (passwordTrimmed.length < 8) {
+            setSaveError('A senha deve ter pelo menos 8 caracteres');
+            setIsSaving(false);
+            return;
+          }
+
+          // Validar força da senha (mesma validação do backend)
+          const hasUpperCase = /[A-Z]/.test(passwordTrimmed);
+          const hasLowerCase = /[a-z]/.test(passwordTrimmed);
+          const hasNumbers = /\d/.test(passwordTrimmed);
+          const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>_\-+=[\]\\/'`~;]/.test(passwordTrimmed);
+
+          if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+            setSaveError('A senha deve conter pelo menos uma letra maiúscula, uma minúscula, um número e um caractere especial');
+            setIsSaving(false);
+            return;
+          }
+        }
+      }
+
+      // Atualizar senha se fornecida
+      if (hasPassword && hasPasswordConfirm && passwordTrimmed === passwordConfirmTrimmed) {
+        try {
+          await usersAPI.updateProfilePassword(passwordTrimmed);
+        } catch (passwordError) {
+          const errorMessage = passwordError.response?.data?.message || passwordError.response?.data?.error || 'Erro ao atualizar senha';
+          const errorDetails = passwordError.response?.data?.details;
+          
+          if (errorDetails && Array.isArray(errorDetails)) {
+            setSaveError(`${errorMessage}\n\n${errorDetails.join('\n')}`);
+          } else {
+            setSaveError(errorMessage);
+          }
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      // Atualizar imagem e nome
       let imageUrl = activeUser?.image || activeUser?.imageUrl;
 
       // Se há uma nova imagem, fazer upload primeiro
@@ -93,8 +170,10 @@ export function Header() {
         imageUrl = uploadResult.url;
       }
 
-      // Atualizar perfil
-      const updatedUser = await usersAPI.updateProfile(editingName.trim(), imageUrl);
+      // Atualizar perfil (nome e imagem)
+      if (editingName.trim() !== (activeUser?.name || '') || imageUrl !== (activeUser?.image || activeUser?.imageUrl)) {
+        await usersAPI.updateProfile(editingName.trim(), imageUrl);
+      }
 
       // Atualizar estado local
       setSaveSuccess(true);
@@ -310,86 +389,167 @@ export function Header() {
                 <ModalBody className="p-0 overflow-hidden">
                   <div className="w-full max-h-[calc(80vh-80px)] overflow-auto">
                     <div className="p-6">
-                      <div className="space-y-6">
+                      <div className="space-y-8">
+                        {/* Seção: Informações da Conta */}
                         <div>
                           <h3 className="text-lg font-semibold mb-4">{t('components.header.accountInfo')}</h3>
                           
                           {/* Informações não editáveis */}
-                          <div className="space-y-2 mb-6">
-                            <p><strong>{t('common.email')}:</strong> {activeUser?.email || '-'}</p>
+                          <div className="space-y-2 mb-6 p-4 bg-default-50 dark:bg-default-100/30 rounded-lg">
+                            <p className="text-sm">
+                              <span className="font-medium text-default-600 dark:text-default-400">{t('common.email')}:</span>{' '}
+                              <span className="text-default-700 dark:text-default-300">{activeUser?.email || '-'}</span>
+                            </p>
                             {activeUser?.role && (
-                              <p><strong>{t('common.role')}:</strong> {activeUser.role}</p>
+                              <p className="text-sm">
+                                <span className="font-medium text-default-600 dark:text-default-400">{t('common.role')}:</span>{' '}
+                                <span className="text-default-700 dark:text-default-300">{activeUser.role}</span>
+                              </p>
                             )}
                           </div>
 
-                          {/* Formulário de edição */}
-                          <div className="space-y-4">
-                            {/* Campo de nome */}
-                            <div>
-                              <label className="block text-sm font-medium mb-2">{t('common.name')}</label>
-                              <Input
-                                value={editingName}
-                                onChange={(e) => setEditingName(e.target.value)}
-                                placeholder={t('common.name')}
-                                variant="bordered"
-                                size="md"
-                                maxLength={100}
+                          {/* Campo de nome */}
+                          <div>
+                            <label className="block text-sm font-medium mb-2">{t('common.name')}</label>
+                            <Input
+                              value={editingName}
+                              onChange={(e) => setEditingName(e.target.value)}
+                              placeholder={t('common.name')}
+                              variant="bordered"
+                              size="md"
+                              maxLength={100}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Separador visual */}
+                        <div className="h-px bg-divider my-2" />
+
+                        {/* Seção: Imagem de Perfil */}
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4">Imagem de Perfil</h3>
+                          <div className="flex items-start gap-4">
+                            {/* Preview da imagem */}
+                            <div className="flex-shrink-0">
+                              <Avatar
+                                src={imagePreview}
+                                name={editingName || activeUser?.name || activeUser?.email}
+                                size="lg"
+                                isBordered
+                                className="ring-2 ring-default-200"
                               />
                             </div>
-
-                            {/* Upload de imagem */}
-                            <div>
-                              <label className="block text-sm font-medium mb-2">Imagem de Perfil</label>
-                              <div className="flex items-start gap-4">
-                                {/* Preview da imagem */}
-                                <div className="flex-shrink-0">
-                                  <Avatar
-                                    src={imagePreview}
-                                    name={editingName || activeUser?.name || activeUser?.email}
-                                    size="lg"
-                                    isBordered
-                                  />
-                                </div>
-                                
-                                {/* Botão de upload */}
-                                <div className="flex-1">
-                                  <input
-                                    type="file"
-                                    accept="image/jpeg,image/jpg,image/png,image/webp"
-                                    onChange={handleImageSelect}
-                                    className="hidden"
-                                    id="avatar-upload"
-                                  />
-                                  <label htmlFor="avatar-upload">
-                                    <Button
-                                      as="span"
-                                      variant="bordered"
-                                      size="sm"
-                                      startContent={<Icon icon="lucide:upload" />}
-                                    >
-                                      Selecionar Imagem
-                                    </Button>
-                                  </label>
-                                  <p className="text-xs text-default-500 mt-2">
-                                    Formatos: JPEG, PNG, WebP. Máximo: 5MB
-                                  </p>
-                                </div>
-                              </div>
+                            
+                            {/* Botão de upload */}
+                            <div className="flex-1">
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                onChange={handleImageSelect}
+                                className="hidden"
+                                id="avatar-upload"
+                              />
+                              <label htmlFor="avatar-upload">
+                                <Button
+                                  as="span"
+                                  variant="bordered"
+                                  size="sm"
+                                  startContent={<Icon icon="lucide:upload" />}
+                                >
+                                  Selecionar Imagem
+                                </Button>
+                              </label>
+                              <p className="text-xs text-default-500 mt-2">
+                                Formatos: JPEG, PNG, WebP. Máximo: 5MB
+                              </p>
                             </div>
+                          </div>
+                        </div>
 
-                            {/* Mensagens de erro/sucesso */}
-                            {saveError && (
-                              <div className="p-3 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg">
-                                <p className="text-sm text-danger">{saveError}</p>
-                              </div>
-                            )}
-                            {saveSuccess && (
-                              <div className="p-3 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-lg">
-                                <p className="text-sm text-success">Perfil atualizado com sucesso!</p>
-                              </div>
+                        {/* Separador visual */}
+                        <div className="h-px bg-divider my-2" />
+
+                        {/* Seção: Alterar Senha */}
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4">Alterar Senha</h3>
+                          <div className="space-y-4">
+                            <PasswordField
+                              label="Nova Senha (opcional)"
+                              placeholder="Digite a nova senha"
+                              value={password}
+                              onChange={(e) => {
+                                const newPassword = e.target.value;
+                                setPassword(newPassword);
+                                passwordGenerator.updatePasswordStrength(newPassword);
+                              }}
+                              onPasswordGenerated={(newPassword) => {
+                                setPassword(newPassword);
+                                setPasswordConfirm(newPassword);
+                              }}
+                            />
+
+                            {password && (
+                              <>
+                                <Input
+                                  label="Confirmar Nova Senha"
+                                  placeholder="Digite a senha novamente"
+                                  type={showPasswordConfirm ? 'text' : 'password'}
+                                  value={passwordConfirm}
+                                  onChange={(e) => {
+                                    setPasswordConfirm(e.target.value);
+                                  }}
+                                  size="md"
+                                  variant="bordered"
+                                  color={
+                                    password &&
+                                    passwordConfirm &&
+                                    password === passwordConfirm
+                                      ? 'success'
+                                      : passwordConfirm
+                                      ? 'danger'
+                                      : 'default'
+                                  }
+                                  description={
+                                    password && passwordConfirm
+                                      ? password === passwordConfirm
+                                        ? '✓ Senhas coincidem'
+                                        : '✗ Senhas não coincidem'
+                                      : ''
+                                  }
+                                  endContent={
+                                    <Button
+                                      isIconOnly
+                                      variant="light"
+                                      size="sm"
+                                      onPress={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                                      aria-label={showPasswordConfirm ? 'Ocultar senha' : 'Mostrar senha'}
+                                    >
+                                      <Icon
+                                        icon={showPasswordConfirm ? 'lucide:eye-off' : 'lucide:eye'}
+                                        className="text-default-400"
+                                      />
+                                    </Button>
+                                  }
+                                />
+                                <p className="text-xs text-default-500">
+                                  Mínimo 8 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais
+                                </p>
+                              </>
                             )}
                           </div>
                         </div>
+
+                        {/* Mensagens de erro/sucesso */}
+                        {saveError && (
+                          <div className="p-3 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg">
+                            <p className="text-sm text-danger whitespace-pre-line">{saveError}</p>
+                          </div>
+                        )}
+                        {saveSuccess && (
+                          <div className="p-3 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-lg">
+                            <p className="text-sm text-success">Perfil atualizado com sucesso!</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

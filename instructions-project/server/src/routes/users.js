@@ -30,6 +30,7 @@ router.use(async (req, res, next) => {
 
 // Rotas de perfil (não requerem admin, apenas autenticação)
 router.put('/profile', requireAuth(), profileController.updateProfile);
+router.put('/profile/password', requireAuth(), passwordUpdateLimiter, profileController.updatePassword);
 router.post('/profile/avatar', requireAuth(), profileController.uploadAvatar, profileController.uploadAvatarImage);
 
 // Todas as outras rotas requerem role admin
