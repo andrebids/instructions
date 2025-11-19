@@ -12,11 +12,13 @@ import { registerSyncTag, isBackgroundSyncAvailable } from '../../../services/ba
  * @param {Object} params.logoDetails - Dados das instruções do logo
  * @param {Object} params.formData - Dados do formulário
  * @param {Function} params.onInputChange - Callback para atualizar formData
+ * @param {Object} params.saveStatus - Objeto com métodos setSaving, setSaved, setError para status visual
  */
 export const useLogoPersistence = ({
   logoDetails,
   formData,
-  onInputChange
+  onInputChange,
+  saveStatus
 }) => {
   // Ref para rastrear valores anteriores e evitar atualizações desnecessárias
   const prevValuesRef = useRef({
@@ -55,6 +57,9 @@ export const useLogoPersistence = ({
     
     if (temProjectId) {
       const timeoutId = setTimeout(async function() {
+        // Indicar início do salvamento
+        if (saveStatus) saveStatus.setSaving();
+        
         const dadosParaSalvar = {
           logoDetails: logoDetails || {},
           lastEditedStep: 'logo-instructions', // Logo instructions step
@@ -80,15 +85,21 @@ export const useLogoPersistence = ({
         }
         
         // Salvar na API usando updateCanvas (que suporta logoDetails)
-        projectsAPI.updateCanvas(formData.id, dadosParaSalvar)
-          .catch(function(err) {
-            console.error('❌ Erro ao salvar logoDetails na API:', err.message);
-            
-            // Se offline, registar para sync quando voltar online
-            if (!navigator.onLine && isBackgroundSyncAvailable()) {
-              registerSyncTag(formData.id);
-            }
-          });
+        try {
+          await projectsAPI.updateCanvas(formData.id, dadosParaSalvar);
+          // Indicar salvamento bem-sucedido
+          if (saveStatus) saveStatus.setSaved();
+        } catch (err) {
+          console.error('❌ Erro ao salvar logoDetails na API:', err.message);
+          
+          // Indicar erro no salvamento
+          if (saveStatus) saveStatus.setError();
+          
+          // Se offline, registar para sync quando voltar online
+          if (!navigator.onLine && isBackgroundSyncAvailable()) {
+            registerSyncTag(formData.id);
+          }
+        }
       }, 500); // Debounce de 500ms para evitar muitas chamadas
       
       return function() {
