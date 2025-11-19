@@ -5,6 +5,8 @@ import { Icon } from "@iconify/react";
 import * as Yup from "yup";
 import { useFormikStep } from "../hooks/useFormikStep";
 import { ClientAutocomplete } from "../components/ClientAutocomplete";
+import { ProjectFormVoiceWizard } from "../components/ProjectFormVoiceWizard";
+import { parseDate } from "@internationalized/date";
 
 // Schema de validação para este step
 const validationSchema = Yup.object({
@@ -29,6 +31,7 @@ export function StepProjectDetails({
   onClientSelect,
   onClientInputChange,
   onAddNewClient,
+  onNext,
 }) {
   // Usar Formik para gerenciar estado e validação deste step
   const formik = useFormikStep({
@@ -52,6 +55,24 @@ export function StepProjectDetails({
           </p>
         </div>
         
+        <ProjectFormVoiceWizard 
+          onUpdateField={(field, value) => {
+            // Handle special cases if needed
+            if (field === 'endDate' && typeof value === 'string') {
+               try {
+                 formik.updateField(field, parseDate(value));
+               } catch (e) {
+                 console.error("Date parse error", e);
+               }
+            } else {
+               formik.updateField(field, value);
+            }
+          }}
+          clients={clients}
+          onAddNewClient={onAddNewClient}
+          onNext={onNext}
+        />
+
         <div className="space-y-5">
           {/* Project Name */}
           <div className="max-w-md mx-auto">
