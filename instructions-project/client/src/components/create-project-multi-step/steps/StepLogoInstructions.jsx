@@ -77,7 +77,7 @@ const MarqueeText = ({ children, className = "" }) => {
           }
         `}</style>
       )}
-      <div ref={containerRef} className={`overflow-hidden ${className}`} style={{ maxWidth: "100%" }}>
+      <div ref={containerRef} className={`overflow-hidden ${className}`} style={{ maxWidth: "100%", width: "100%" }}>
         {needsMarquee ? (
           <div
             className="inline-block whitespace-nowrap"
@@ -89,7 +89,7 @@ const MarqueeText = ({ children, className = "" }) => {
             {children}
           </div>
         ) : (
-          <span ref={textRef} className="inline-block whitespace-nowrap">
+          <span ref={textRef} className="inline-block whitespace-nowrap" style={{ maxWidth: "100%" }}>
             {children}
           </span>
         )}
@@ -804,9 +804,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                               {componente?.nome || "Componente"}
                             </div>
                             <div className="flex items-center justify-between gap-2">
-                              <div className="flex-1 text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden">
+                              <div className="flex-1 min-w-0 text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden">
                                 <span className="font-semibold">Referência: </span>
-                                <MarqueeText>
+                                <MarqueeText className="inline-block">
                                   {comp.referencia}
                                 </MarqueeText>
                               </div>
@@ -903,9 +903,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                               )}
                               
                               {comp.referencia && (
-                                <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden">
+                                <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden min-w-0">
                                   <span className="font-semibold">Referência: </span>
-                                  <MarqueeText>
+                                  <MarqueeText className="inline-block">
                                     {comp.referencia}
                                   </MarqueeText>
                                 </div>
@@ -1034,9 +1034,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                               </Select>
                               
                               {bola.referencia && (
-                                <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden">
+                                <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden min-w-0">
                                   <span className="font-semibold">Referência: </span>
-                                  <MarqueeText>
+                                  <MarqueeText className="inline-block">
                                     {bola.referencia}
                                   </MarqueeText>
                                 </div>
