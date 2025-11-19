@@ -39,10 +39,21 @@ export const VoiceAssistantProvider = ({ children }) => {
   const { speak: speakBase, cancel: cancelSpeech, speaking } = useTTS(currentLang);
   const { start: startBase, stop, listening, transcript, supported, resetTranscript } = useSTT(currentLang);
 
-  // Wrap speak and start to always use current language
-  const speak = useCallback((text) => {
-    speakBase(text, currentLang);
-  }, [speakBase, currentLang]);
+  // Wrap speak to enable auto-detection by default
+  // Text will be auto-detected unless explicitly overridden
+  const speak = useCallback((text, options = {}) => {
+    // If options is a string (backward compatibility), pass it through
+    if (typeof options === 'string') {
+      speakBase(text, options);
+    } else {
+      // Enable auto-detection by default
+      speakBase(text, {
+        autoDetect: true,
+        confidenceThreshold: 0.5,
+        ...options
+      });
+    }
+  }, [speakBase]);
 
   const start = useCallback(() => {
     startBase(currentLang);
@@ -76,6 +87,12 @@ export const VoiceAssistantProvider = ({ children }) => {
     conversationMemory.current.clearSession();
   }, []);
 
+  // Helper function to speak and then listen for response
+  const speakAndListen = useCallback((text) => {
+    speak(text);
+    // Listening will start automatically via the useEffect that monitors 'speaking' state
+  }, [speak]);
+
   // Update dashboard context
   const updateDashboardContext = useCallback((projects, user) => {
     const context = analyzeDashboardContext(projects, user);
@@ -105,9 +122,10 @@ export const VoiceAssistantProvider = ({ children }) => {
 
       addMessage('bot', greeting);
       speak(greeting);
-      start(); // Auto-start listening when opening chat
+
+      // Note: We'll start listening after speech finishes (handled by useEffect below)
     }
-  }, [mode, t, speak, start, addMessage, dashboardContext, languageCode]);
+  }, [mode, t, speak, addMessage, dashboardContext, languageCode]);
 
   const closeAssistant = useCallback(() => {
     setIsOpen(false);
@@ -127,6 +145,26 @@ export const VoiceAssistantProvider = ({ children }) => {
     setMode('GLOBAL');
     setWizardState(null);
   }, []);
+
+  // Auto-start listening after bot finishes speaking
+  const speakingRef = useRef(speaking);
+  const wasJustSpeaking = useRef(false);
+
+  useEffect(() => {
+    // Track when speaking transitions from true to false
+    if (speakingRef.current && !speaking) {
+      wasJustSpeaking.current = true;
+
+      // Start listening after a small delay when bot finishes speaking
+      if (isOpen && mode === 'GLOBAL' && !listening) {
+        setTimeout(() => {
+          start();
+          wasJustSpeaking.current = false;
+        }, 300); // Small buffer to ensure smooth transition
+      }
+    }
+    speakingRef.current = speaking;
+  }, [speaking, isOpen, mode, listening, start]);
 
   // Global Command Logic (only active if mode === 'GLOBAL')
   useEffect(() => {
@@ -180,6 +218,7 @@ export const VoiceAssistantProvider = ({ children }) => {
       addMessage,
       clearMessages,
       speak,
+      speakAndListen, // Helper that speaks and waits for response
       speaking,
       startListening: start,
       stopListening: stop,

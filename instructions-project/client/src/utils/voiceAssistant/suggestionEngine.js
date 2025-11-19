@@ -31,7 +31,7 @@ export function generateSmartGreeting(context, language = 'pt') {
 
     const timeGreeting = greetings[language]?.[timeOfDay] || greetings.pt[timeOfDay];
 
-    // New user
+    // New user - highest priority
     if (userActivity.isNewUser || projectStatus.total === 0) {
         const newUserMessages = {
             pt: `${timeGreeting}! Vamos criar o seu primeiro projeto juntos?`,
@@ -41,41 +41,32 @@ export function generateSmartGreeting(context, language = 'pt') {
         return newUserMessages[language] || newUserMessages.pt;
     }
 
-    // Upcoming deadlines
-    if (projectStatus.upcomingDeadlines > 0) {
-        const deadlineMessages = {
-            pt: `${timeGreeting}! Tem ${projectStatus.upcomingDeadlines} projeto${projectStatus.upcomingDeadlines > 1 ? 's' : ''} com entrega esta semana. Quer revê-los?`,
-            en: `${timeGreeting}! You have ${projectStatus.upcomingDeadlines} project${projectStatus.upcomingDeadlines > 1 ? 's' : ''} due this week. Want to review them?`,
-            fr: `${timeGreeting}! Vous avez ${projectStatus.upcomingDeadlines} projet${projectStatus.upcomingDeadlines > 1 ? 's' : ''} à livrer cette semaine. Voulez-vous les examiner?`
+    // PRIORITY: Always encourage new project creation for existing users
+    // Mention recent activity to encourage continuing momentum
+    if (userActivity.projectsThisWeek > 0) {
+        const createNewMessages = {
+            pt: `${timeGreeting}! Criou ${userActivity.projectsThisWeek} projeto${userActivity.projectsThisWeek > 1 ? 's' : ''} esta semana. Quer criar mais um?`,
+            en: `${timeGreeting}! You created ${userActivity.projectsThisWeek} project${userActivity.projectsThisWeek > 1 ? 's' : ''} this week. Want to create another?`,
+            fr: `${timeGreeting}! Vous avez créé ${userActivity.projectsThisWeek} projet${userActivity.projectsThisWeek > 1 ? 's' : ''} cette semaine. Voulez-vous en créer un autre?`
         };
-        return deadlineMessages[language] || deadlineMessages.pt;
+        return createNewMessages[language] || createNewMessages.pt;
     }
 
-    // Drafts to complete
-    if (projectStatus.drafts > 0) {
-        const draftMessages = {
-            pt: `${timeGreeting}! Tem ${projectStatus.drafts} projeto${projectStatus.drafts > 1 ? 's' : ''} em rascunho. Quer finalizar algum?`,
-            en: `${timeGreeting}! You have ${projectStatus.drafts} draft project${projectStatus.drafts > 1 ? 's' : ''}. Want to finish one?`,
-            fr: `${timeGreeting}! Vous avez ${projectStatus.drafts} projet${projectStatus.drafts > 1 ? 's' : ''} en brouillon. Voulez-vous en terminer un?`
+    // Encourage project creation even without recent activity
+    if (userActivity.totalProjects > 0) {
+        const encourageMessages = {
+            pt: `${timeGreeting}! Pronto para criar um novo projeto?`,
+            en: `${timeGreeting}! Ready to create a new project?`,
+            fr: `${timeGreeting}! Prêt à créer un nouveau projet?`
         };
-        return draftMessages[language] || draftMessages.pt;
+        return encourageMessages[language] || encourageMessages.pt;
     }
 
-    // Recent activity with frequent client
-    if (userActivity.projectsThisWeek > 0 && frequentClient) {
-        const activityMessages = {
-            pt: `${timeGreeting}! Criou ${userActivity.projectsThisWeek} projeto${userActivity.projectsThisWeek > 1 ? 's' : ''} esta semana. Pronto para mais um?`,
-            en: `${timeGreeting}! You created ${userActivity.projectsThisWeek} project${userActivity.projectsThisWeek > 1 ? 's' : ''} this week. Ready for another?`,
-            fr: `${timeGreeting}! Vous avez créé ${userActivity.projectsThisWeek} projet${userActivity.projectsThisWeek > 1 ? 's' : ''} cette semaine. Prêt pour un autre?`
-        };
-        return activityMessages[language] || activityMessages.pt;
-    }
-
-    // Default greeting
+    // Default greeting with project creation focus
     const defaultMessages = {
-        pt: `${timeGreeting}! Como posso ajudar?`,
-        en: `${timeGreeting}! How can I help?`,
-        fr: `${timeGreeting}! Comment puis-je vous aider?`
+        pt: `${timeGreeting}! Quer criar um novo projeto?`,
+        en: `${timeGreeting}! Want to create a new project?`,
+        fr: `${timeGreeting}! Voulez-vous créer un nouveau projet?`
     };
     return defaultMessages[language] || defaultMessages.pt;
 }
@@ -136,35 +127,20 @@ export function generateBudgetSuggestion(projectType = 'general', language = 'pt
 export function generateActionSuggestions(context, language = 'pt') {
     const suggestions = [];
 
-    // Suggest reviewing upcoming deadlines
-    if (context.projectStatus.upcomingDeadlines > 0) {
-        const messages = {
-            pt: 'Ver projetos com entrega esta semana',
-            en: 'View projects due this week',
-            fr: 'Voir les projets à livrer cette semaine'
-        };
-        suggestions.push({
-            type: 'action',
-            action: 'viewUpcomingDeadlines',
-            message: messages[language] || messages.pt
-        });
-    }
+    // PRIORITY 1: Always suggest creating a new project first
+    const createProjectMessages = {
+        pt: 'Criar novo projeto',
+        en: 'Create new project',
+        fr: 'Créer un nouveau projet'
+    };
+    suggestions.push({
+        type: 'action',
+        action: 'createNewProject',
+        message: createProjectMessages[language] || createProjectMessages.pt,
+        priority: 'high'
+    });
 
-    // Suggest completing drafts
-    if (context.projectStatus.drafts > 0) {
-        const messages = {
-            pt: 'Finalizar projetos em rascunho',
-            en: 'Complete draft projects',
-            fr: 'Terminer les projets en brouillon'
-        };
-        suggestions.push({
-            type: 'action',
-            action: 'completeDrafts',
-            message: messages[language] || messages.pt
-        });
-    }
-
-    // Suggest creating project for frequent client
+    // PRIORITY 2: Suggest creating project for frequent client (if exists)
     if (context.frequentClient) {
         const messages = {
             pt: `Criar projeto para ${context.frequentClient.name}`,
@@ -175,7 +151,41 @@ export function generateActionSuggestions(context, language = 'pt') {
             type: 'action',
             action: 'createForClient',
             message: messages[language] || messages.pt,
-            data: context.frequentClient
+            data: context.frequentClient,
+            priority: 'medium'
+        });
+    }
+
+    // PRIORITY 3 (Low): Only show existing project management if specifically needed
+    // These are now secondary and only shown as additional options
+
+    // Suggest completing drafts (low priority)
+    if (context.projectStatus.drafts > 2) { // Only if multiple drafts
+        const messages = {
+            pt: 'Ver projetos em rascunho',
+            en: 'View draft projects',
+            fr: 'Voir les projets en brouillon'
+        };
+        suggestions.push({
+            type: 'action',
+            action: 'viewDrafts',
+            message: messages[language] || messages.pt,
+            priority: 'low'
+        });
+    }
+
+    // Suggest reviewing upcoming deadlines (low priority)
+    if (context.projectStatus.upcomingDeadlines > 2) { // Only if multiple deadlines
+        const messages = {
+            pt: 'Ver projetos com entrega próxima',
+            en: 'View upcoming deadlines',
+            fr: 'Voir les échéances à venir'
+        };
+        suggestions.push({
+            type: 'action',
+            action: 'viewUpcomingDeadlines',
+            message: messages[language] || messages.pt,
+            priority: 'low'
         });
     }
 

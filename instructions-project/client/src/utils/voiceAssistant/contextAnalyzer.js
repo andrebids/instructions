@@ -179,38 +179,48 @@ export function analyzeDashboardContext(projects, user) {
 export function getContextPriority(context) {
     const priorities = [];
 
-    // High priority: Upcoming deadlines
-    if (context.projectStatus.upcomingDeadlines > 0) {
-        priorities.push({
-            type: 'deadline',
-            priority: 'high',
-            count: context.projectStatus.upcomingDeadlines
-        });
-    }
+    // HIGHEST PRIORITY: Always encourage creating new projects
+    priorities.push({
+        type: 'createNewProject',
+        priority: 'high',
+        message: 'Create a new project'
+    });
 
-    // Medium priority: Drafts to complete
-    if (context.projectStatus.drafts > 0) {
-        priorities.push({
-            type: 'drafts',
-            priority: 'medium',
-            count: context.projectStatus.drafts
-        });
-    }
-
-    // Low priority: Frequent client
-    if (context.frequentClient) {
-        priorities.push({
-            type: 'frequentClient',
-            priority: 'low',
-            client: context.frequentClient
-        });
-    }
-
-    // New user priority
+    // New user gets additional high priority
     if (context.userActivity.isNewUser || context.projectStatus.total === 0) {
         priorities.push({
             type: 'newUser',
             priority: 'high'
+        });
+    }
+
+    // Medium priority: Frequent client (for creating new projects with them)
+    if (context.frequentClient) {
+        priorities.push({
+            type: 'frequentClient',
+            priority: 'medium',
+            client: context.frequentClient
+        });
+    }
+
+    // LOW PRIORITY: Existing project management
+    // Only show if there are multiple items requiring attention
+
+    // Drafts to complete (low priority, only if multiple)
+    if (context.projectStatus.drafts > 2) {
+        priorities.push({
+            type: 'drafts',
+            priority: 'low',
+            count: context.projectStatus.drafts
+        });
+    }
+
+    // Upcoming deadlines (low priority, only if multiple)
+    if (context.projectStatus.upcomingDeadlines > 2) {
+        priorities.push({
+            type: 'deadline',
+            priority: 'low',
+            count: context.projectStatus.upcomingDeadlines
         });
     }
 
