@@ -98,6 +98,13 @@ const Project = sequelize.define('Project', {
     },
     comment: 'Estado da simulação: { uploadStep, selectedImageId, isDayMode, conversionComplete }',
   },
+  // Dados das instruções do logo (apenas para projetos tipo logo)
+  logoDetails: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: {},
+    comment: 'Dados das instruções do logo: { logoNumber, logoName, requestedBy, dimensions, usageOutdoor, fixationType, composition, description, attachmentFiles, etc }',
+  },
   // ID do utilizador que criou o projeto (Auth.js userId)
   createdBy: {
     type: DataTypes.STRING,

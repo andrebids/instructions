@@ -2,7 +2,25 @@ import React from "react";
 import { Input, DatePicker } from "@heroui/react";
 import { today, getLocalTimeZone } from "@internationalized/date";
 import { Icon } from "@iconify/react";
+import * as Yup from "yup";
+import { useFormikStep } from "../hooks/useFormikStep";
 import { ClientAutocomplete } from "../components/ClientAutocomplete";
+
+// Schema de validação para este step
+const validationSchema = Yup.object({
+  name: Yup.string()
+    .required("Project name is required")
+    .min(3, "Project name must be at least 3 characters"),
+  budget: Yup.string()
+    .required("Budget is required")
+    .test("is-positive", "Budget must be greater than 0", (value) => {
+      const num = parseFloat(value);
+      return !isNaN(num) && num > 0;
+    }),
+  endDate: Yup.mixed()
+    .required("Delivery date is required")
+    .nullable(),
+});
 
 export function StepProjectDetails({
   formData,
@@ -12,6 +30,18 @@ export function StepProjectDetails({
   onClientInputChange,
   onAddNewClient,
 }) {
+  // Usar Formik para gerenciar estado e validação deste step
+  const formik = useFormikStep({
+    initialValues: {
+      name: formData.name || "",
+      budget: formData.budget || "",
+      endDate: formData.endDate || null,
+    },
+    validationSchema,
+    onChange: onInputChange,
+    formData,
+  });
+
   return (
     <div className="flex justify-center">
       <div className="w-full max-w-lg space-y-6">
@@ -31,8 +61,11 @@ export function StepProjectDetails({
             <Input
               isRequired
               placeholder="Enter the project name"
-              value={formData.name}
-              onChange={(e) => onInputChange("name", e.target.value)}
+              value={formik.values.name}
+              onChange={(e) => formik.updateField("name", e.target.value)}
+              onBlur={formik.handleBlur}
+              isInvalid={formik.touched.name && !!formik.errors.name}
+              errorMessage={formik.touched.name && formik.errors.name}
               className="w-full"
               variant="bordered"
               size="md"
@@ -40,7 +73,9 @@ export function StepProjectDetails({
               startContent={<Icon icon="lucide:folder" className="text-default-400" />}
               classNames={{
                 input: "text-foreground font-medium",
-                inputWrapper: "bg-content1 border-2 border-divider hover:border-primary focus-within:border-primary"
+                inputWrapper: formik.touched.name && formik.errors.name
+                  ? "bg-content1 border-2 border-danger hover:border-danger focus-within:border-danger"
+                  : "bg-content1 border-2 border-divider hover:border-primary focus-within:border-primary"
               }}
             />
           </div>
@@ -64,8 +99,11 @@ export function StepProjectDetails({
                 labelPlacement="outside"
                 label="Delivery Date"
                 isRequired
-                value={formData.endDate}
-                onChange={(value) => onInputChange("endDate", value)}
+                value={formik.values.endDate}
+                onChange={(value) => formik.updateField("endDate", value)}
+                onBlur={() => formik.setFieldTouched("endDate", true)}
+                isInvalid={formik.touched.endDate && !!formik.errors.endDate}
+                errorMessage={formik.touched.endDate && formik.errors.endDate}
                 className="w-full"
                 variant="bordered"
                 size="md"
@@ -80,12 +118,17 @@ export function StepProjectDetails({
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">Budget (EUR) *</label>
+              <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">
+                Budget (EUR) *
+              </label>
               <Input
                 type="number"
                 placeholder="Enter the budget amount"
-                value={formData.budget}
-                onChange={(e) => onInputChange("budget", e.target.value)}
+                value={formik.values.budget}
+                onChange={(e) => formik.updateField("budget", e.target.value)}
+                onBlur={formik.handleBlur}
+                isInvalid={formik.touched.budget && !!formik.errors.budget}
+                errorMessage={formik.touched.budget && formik.errors.budget}
                 className="w-full"
                 variant="bordered"
                 size="md"
@@ -95,6 +138,11 @@ export function StepProjectDetails({
                     <span className="text-default-400 text-small">€</span>
                   </div>
                 }
+                classNames={{
+                  inputWrapper: formik.touched.budget && formik.errors.budget
+                    ? "bg-content1 border-2 border-danger hover:border-danger focus-within:border-danger"
+                    : "bg-content1 border-2 border-divider hover:border-primary focus-within:border-primary"
+                }}
               />
             </div>
           </div>

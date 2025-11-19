@@ -43,6 +43,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
       isDayMode: true,
       conversionComplete: {}
     },
+    logoDetails: {},          // Dados das instruções do logo (apenas para projetos tipo logo)
   });
 
   // 🧪 Logging inicial - removido para evitar logs infinitos
@@ -96,6 +97,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
               isDayMode: true,
               conversionComplete: {}
             },
+            logoDetails: project.logoDetails || {},
           });
           
           logger.lifecycle('useProjectForm', 'Project loaded successfully', { 
@@ -160,6 +162,8 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
           isDayMode: true,
           conversionComplete: {}
         },
+        // Dados das instruções do logo (apenas para projetos tipo logo)
+        logoDetails: formData.logoDetails || {},
       };
       
       // Log detalhado das zonas incluídas na criação

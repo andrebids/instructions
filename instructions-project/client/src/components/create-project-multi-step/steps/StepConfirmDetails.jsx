@@ -212,6 +212,93 @@ export function StepConfirmDetails({ formData, error }) {
                 </div>
               </div>
 
+              {/* Composition */}
+              {formData.logoDetails.composition && (
+                <div>
+                  <h4 className="font-medium text-sm text-default-700 mb-2">Composition</h4>
+                  
+                  {/* Componentes */}
+                  {formData.logoDetails.composition.componentes && 
+                   formData.logoDetails.composition.componentes.length > 0 && (
+                    <div className="mb-4">
+                      <h5 className="text-xs font-semibold text-default-600 mb-2 uppercase tracking-wider">
+                        Componentes ({formData.logoDetails.composition.componentes.length})
+                      </h5>
+                      <div className="space-y-2">
+                        {formData.logoDetails.composition.componentes.map((comp, index) => (
+                          <div key={index} className="text-sm bg-default-50 p-2 rounded border border-default-200">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                <p className="font-medium text-default-900">
+                                  {comp.componenteNome || `Componente ${index + 1}`}
+                                </p>
+                                {comp.corNome && (
+                                  <p className="text-xs text-default-600 mt-1">
+                                    Cor: {comp.corNome}
+                                  </p>
+                                )}
+                                {comp.referencia && (
+                                  <p className="text-xs text-default-500 mt-1">
+                                    Ref: {comp.referencia}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bolas */}
+                  {formData.logoDetails.composition.bolas && 
+                   formData.logoDetails.composition.bolas.length > 0 && (
+                    <div>
+                      <h5 className="text-xs font-semibold text-default-600 mb-2 uppercase tracking-wider">
+                        Bolas ({formData.logoDetails.composition.bolas.length})
+                      </h5>
+                      <div className="space-y-2">
+                        {formData.logoDetails.composition.bolas.map((bola, index) => (
+                          <div key={index} className="text-sm bg-default-50 p-2 rounded border border-default-200">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                <p className="font-medium text-default-900">
+                                  Bola {index + 1}
+                                </p>
+                                <div className="text-xs text-default-600 mt-1 space-y-0.5">
+                                  {bola.corNome && (
+                                    <p>Cor: {bola.corNome}</p>
+                                  )}
+                                  {bola.acabamentoNome && (
+                                    <p>Acabamento: {bola.acabamentoNome}</p>
+                                  )}
+                                  {bola.tamanhoNome && (
+                                    <p>Tamanho: {bola.tamanhoNome}</p>
+                                  )}
+                                </div>
+                                {bola.referencia && (
+                                  <p className="text-xs text-default-500 mt-1">
+                                    Ref: {bola.referencia}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mensagem se não houver componentes nem bolas */}
+                  {(!formData.logoDetails.composition.componentes || 
+                    formData.logoDetails.composition.componentes.length === 0) &&
+                   (!formData.logoDetails.composition.bolas || 
+                    formData.logoDetails.composition.bolas.length === 0) && (
+                    <p className="text-sm text-default-400 italic">Nenhum material adicionado</p>
+                  )}
+                </div>
+              )}
+
               {/* Description */}
               {formData.logoDetails.description && (
                 <div>
