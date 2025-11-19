@@ -97,6 +97,17 @@ export async function create(req, res) {
     const userId = auth?.userId || null;
     
     if (!userId) {
+      logError('POST /api/projects - Autenticação falhou', {
+        hasAuth: !!auth,
+        authSource: auth?.source,
+        hasCookies: !!req.headers.cookie,
+        host: req.get('host'),
+        protocol: req.protocol,
+        secure: req.secure,
+        forwardedProto: req.get('x-forwarded-proto'),
+        userAgent: req.get('user-agent')
+      });
+      
       return res.status(401).json({ 
         error: 'Não autenticado',
         message: 'É necessário estar autenticado para criar projetos'

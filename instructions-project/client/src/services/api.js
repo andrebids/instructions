@@ -537,6 +537,12 @@ export const usersAPI = {
     return response.data;
   },
 
+  // PUT /api/users/profile/password - Atualizar senha do perfil
+  updateProfilePassword: async (password) => {
+    const response = await api.put('/users/profile/password', { password });
+    return response.data;
+  },
+
   // POST /api/users/profile/avatar - Upload de imagem de perfil
   uploadAvatar: async (file) => {
     const formData = new FormData();

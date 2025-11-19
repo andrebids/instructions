@@ -109,6 +109,7 @@ if (process.env.DATABASE_URL) {
         dialect: 'postgres',
         protocol: 'postgres',
         logging: false,
+        timezone: '+00:00', // UTC - evita consultas desnecessárias a pg_timezone_names
         dialectOptions: {
           ssl: {
             require: true,
@@ -129,6 +130,7 @@ if (process.env.DATABASE_URL) {
         dialect: 'postgres',
         protocol: 'postgres',
         logging: false,
+        timezone: '+00:00', // UTC - evita consultas desnecessárias a pg_timezone_names
         dialectOptions: urlIsSupabase ? {
           ssl: {
             require: true,
@@ -150,6 +152,7 @@ if (process.env.DATABASE_URL) {
       dialect: 'postgres',
       protocol: 'postgres',
       logging: false,
+      timezone: '+00:00', // UTC - evita consultas desnecessárias a pg_timezone_names
       dialectOptions: urlIsSupabase ? {
         ssl: {
           require: true,
@@ -177,6 +180,7 @@ if (process.env.DATABASE_URL) {
       dialect: 'postgres',
       protocol: 'postgres', // Especificar protocolo explicitamente
       logging: false,
+      timezone: '+00:00', // UTC - evita consultas desnecessárias a pg_timezone_names
       dialectOptions: isSupabase ? {
         ssl: {
           require: true,
