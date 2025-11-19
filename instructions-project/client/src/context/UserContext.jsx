@@ -55,8 +55,13 @@ export function UserProvider({ children }) {
   );
 }
 
-export function useUser() {
+// Hook compatível com Fast Refresh
+// Deve ser uma função nomeada exportada diretamente
+function useUser() {
   return React.useContext(UserContext);
 }
+
+// Exportar como named export para compatibilidade com Fast Refresh
+export { useUser };
 
 
