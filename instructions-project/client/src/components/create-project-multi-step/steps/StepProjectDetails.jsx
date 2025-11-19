@@ -3,26 +3,11 @@ import { Input, DatePicker } from "@heroui/react";
 import { today, getLocalTimeZone } from "@internationalized/date";
 import { Icon } from "@iconify/react";
 import * as Yup from "yup";
+import { useTranslation } from "react-i18next";
 import { useFormikStep } from "../hooks/useFormikStep";
 import { ClientAutocomplete } from "../components/ClientAutocomplete";
-import { ProjectFormVoiceWizard } from "../components/ProjectFormVoiceWizard";
+import { useProjectFormVoiceLogic } from "../hooks/useProjectFormVoiceLogic";
 import { parseDate } from "@internationalized/date";
-
-// Schema de validação para este step
-const validationSchema = Yup.object({
-  name: Yup.string()
-    .required("Project name is required")
-    .min(3, "Project name must be at least 3 characters"),
-  budget: Yup.string()
-    .required("Budget is required")
-    .test("is-positive", "Budget must be greater than 0", (value) => {
-      const num = parseFloat(value);
-      return !isNaN(num) && num > 0;
-    }),
-  endDate: Yup.mixed()
-    .required("Delivery date is required")
-    .nullable(),
-});
 
 export function StepProjectDetails({
   formData,
@@ -33,6 +18,24 @@ export function StepProjectDetails({
   onAddNewClient,
   onNext,
 }) {
+  const { t } = useTranslation();
+
+  // Schema de validação para este step (criado dentro do componente para ter acesso às traduções)
+  const validationSchema = React.useMemo(() => Yup.object({
+    name: Yup.string()
+      .required(t('pages.projectDetails.validation.projectNameRequired'))
+      .min(3, t('pages.projectDetails.validation.projectNameMinLength')),
+    budget: Yup.string()
+      .required(t('pages.projectDetails.validation.budgetRequired'))
+      .test("is-positive", t('pages.projectDetails.validation.budgetMustBePositive'), (value) => {
+        const num = parseFloat(value);
+        return !isNaN(num) && num > 0;
+      }),
+    endDate: Yup.mixed()
+      .required(t('pages.projectDetails.validation.deliveryDateRequired'))
+      .nullable(),
+  }), [t]);
+
   // Usar Formik para gerenciar estado e validação deste step
   const formik = useFormikStep({
     initialValues: {
@@ -45,43 +48,47 @@ export function StepProjectDetails({
     formData,
   });
 
+  // Integrate Voice Assistant Logic
+  useProjectFormVoiceLogic({
+    onUpdateField: (field, value) => {
+      // Handle special cases if needed
+      if (field === 'endDate' && typeof value === 'string') {
+         try {
+           formik.updateField(field, parseDate(value));
+         } catch (e) {
+           console.error("Date parse error", e);
+         }
+      } else {
+         formik.updateField(field, value);
+      }
+    },
+    clients,
+    onAddNewClient,
+    onClientSelect,
+    onNext
+  });
+
   return (
     <div className="flex justify-center">
       <div className="w-full max-w-lg space-y-6">
         <div className="text-center">
-          <h2 className="text-xl sm:text-2xl font-bold">Project Details</h2>
+          <h2 className="text-xl sm:text-2xl font-bold">{t('pages.projectDetails.title')}</h2>
           <p className="text-sm sm:text-base text-default-500 mt-2">
-            Let's start with the basic information about your project.
+            {t('pages.projectDetails.subtitle')}
           </p>
         </div>
         
-        <ProjectFormVoiceWizard 
-          onUpdateField={(field, value) => {
-            // Handle special cases if needed
-            if (field === 'endDate' && typeof value === 'string') {
-               try {
-                 formik.updateField(field, parseDate(value));
-               } catch (e) {
-                 console.error("Date parse error", e);
-               }
-            } else {
-               formik.updateField(field, value);
-            }
-          }}
-          clients={clients}
-          onAddNewClient={onAddNewClient}
-          onNext={onNext}
-        />
+
 
         <div className="space-y-5">
           {/* Project Name */}
           <div className="max-w-md mx-auto">
             <label className="block text-sm font-semibold mb-2 text-primary-700 dark:text-primary-400">
-              Project Name *
+              {t('pages.projectDetails.projectName')} {t('pages.projectDetails.projectNameRequired')}
             </label>
             <Input
               isRequired
-              placeholder="Enter the project name"
+              placeholder={t('pages.projectDetails.projectNamePlaceholder')}
               value={formik.values.name}
               onChange={(e) => formik.updateField("name", e.target.value)}
               onBlur={formik.handleBlur}
@@ -118,7 +125,7 @@ export function StepProjectDetails({
             <div>
               <DatePicker
                 labelPlacement="outside"
-                label="Delivery Date"
+                label={t('pages.projectDetails.deliveryDate')}
                 isRequired
                 value={formik.values.endDate}
                 onChange={(value) => formik.updateField("endDate", value)}
@@ -140,11 +147,11 @@ export function StepProjectDetails({
 
             <div>
               <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">
-                Budget (EUR) *
+                {t('pages.projectDetails.budget')} {t('pages.projectDetails.budgetRequired')}
               </label>
               <Input
                 type="number"
-                placeholder="Enter the budget amount"
+                placeholder={t('pages.projectDetails.budgetPlaceholder')}
                 value={formik.values.budget}
                 onChange={(e) => formik.updateField("budget", e.target.value)}
                 onBlur={formik.handleBlur}

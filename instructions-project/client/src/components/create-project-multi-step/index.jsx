@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from "react";
 import { Card, Button, DatePicker } from "@heroui/react";
 import { today, getLocalTimeZone } from "@internationalized/date";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
 
 // Hooks
 import { useProjectForm } from "./hooks/useProjectForm";
@@ -33,6 +34,7 @@ const TEST_BREAKPOINT_5 = false;
 
 export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
   // Initialize hooks
+  const { t } = useTranslation();
   const saveStatus = useSaveStatus();
   const formState = useProjectForm(onClose, projectId, saveStatus);
   const clientState = useClientManagement(formState.setFormData);
@@ -171,7 +173,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
                   as="a"
                   href="/"
                 >
-                  Back to dashboard
+                  {t('pages.createProject.backToDashboard')}
                 </Button>
 
                 <StepIndicator

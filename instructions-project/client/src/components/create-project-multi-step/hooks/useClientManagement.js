@@ -4,10 +4,9 @@ import { MOCK_CLIENTS } from "../utils/mockData";
 export const useClientManagement = (setFormData) => {
   const [clients, setClients] = useState([]);
   const [newClientModal, setNewClientModal] = useState(false);
-  const [newClientData, setNewClientData] = useState({ 
-    name: "", 
-    email: "", 
-    phone: "" 
+  const [newClientData, setNewClientData] = useState({
+    name: "",
+    email: ""
   });
 
   // Carregar clientes
@@ -55,9 +54,8 @@ export const useClientManagement = (setFormData) => {
       id: Date.now(),
       name: newClientData.name,
       email: newClientData.email,
-      phone: newClientData.phone,
     };
-    
+
     setClients(prev => [...prev, newClient]);
     setFormData(prev => ({
       ...prev,
@@ -65,11 +63,10 @@ export const useClientManagement = (setFormData) => {
       clientId: newClient.id,
       clientName: newClient.name,
       clientEmail: newClient.email,
-      clientPhone: newClient.phone,
     }));
-    
+
     setNewClientModal(false);
-    setNewClientData({ name: "", email: "", phone: "" });
+    setNewClientData({ name: "", email: "" });
   };
 
   return {

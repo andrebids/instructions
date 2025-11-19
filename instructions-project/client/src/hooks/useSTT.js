@@ -16,6 +16,17 @@ export const useSTT = (defaultLang = 'en-US') => {
                 recognitionRef.current.interimResults = false;
                 recognitionRef.current.maxAlternatives = 1;
             }
+
+            // Request microphone permission explicitly for Firefox
+            const requestMic = async () => {
+                try {
+                    await navigator.mediaDevices.getUserMedia({ audio: true });
+                    console.log("Microphone permission granted");
+                } catch (err) {
+                    console.error("Microphone permission denied:", err);
+                }
+            };
+            requestMic();
         }
     }, []);
 
@@ -79,10 +90,15 @@ export const useSTT = (defaultLang = 'en-US') => {
         }
     }, [supported]);
 
+    const resetTranscript = useCallback(() => {
+        setTranscript('');
+    }, []);
+
     return {
         start,
         stop,
         abort,
+        resetTranscript,
         listening,
         transcript,
         supported

@@ -1,6 +1,7 @@
 import React from "react";
 import { Autocomplete, AutocompleteItem, Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
 
 export function ClientAutocomplete({
   clients,
@@ -10,11 +11,13 @@ export function ClientAutocomplete({
   onInputChange,
   onAddNewClick,
 }) {
+  const { t } = useTranslation();
+
   return (
     <div>
       <Autocomplete
-        label="Client"
-        placeholder="Search for a client"
+        label={t('pages.projectDetails.clientAutocomplete.label')}
+        placeholder={t('pages.projectDetails.clientAutocomplete.placeholder')}
         isRequired
         onSelectionChange={onSelectionChange}
         className="w-full"
@@ -51,7 +54,7 @@ export function ClientAutocomplete({
         onPress={onAddNewClick}
         startContent={<Icon icon="lucide:plus" />}
       >
-        Add New Client
+        {t('pages.projectDetails.clientAutocomplete.addNewClient')}
       </Button>
     </div>
   );

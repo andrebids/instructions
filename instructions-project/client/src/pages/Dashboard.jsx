@@ -7,12 +7,13 @@ import {ProjectTable} from "../components/features/project-table";
 import {CreateProjectMultiStep} from "../components/create-project-multi-step";
 import {projectsAPI} from "../services/api";
 import {PageTitle} from "../components/layout/page-title";
-import {AIAssistantChat} from "../components/features/ai-assistant-chat";
+import {DashboardVoiceAssistant} from "../components/features/DashboardVoiceAssistant";
 import {motion, AnimatePresence} from "framer-motion";
 import { useUser } from "../context/UserContext";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 import { Scroller } from "../components/ui/scroller";
 import { useTranslation } from "react-i18next";
+import { VoiceAssistantProvider } from "../context/VoiceAssistantContext";
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -184,6 +185,14 @@ export default function Dashboard() {
   const handleCreateProject = () => {
     setShowCreateProject(true);
   };
+
+  // Expose to global window for Voice Assistant Context
+  React.useEffect(() => {
+    window.handleCreateProjectGlobal = handleCreateProject;
+    return () => {
+      delete window.handleCreateProjectGlobal;
+    };
+  }, []);
   
   const handleCloseCreateProject = () => {
     setShowCreateProject(false);
@@ -254,6 +263,7 @@ export default function Dashboard() {
 
   return (
     <>
+    <VoiceAssistantProvider>
       {/* Dashboard Content */}
       {showCreateProject ? (
         <div className="flex-1 min-h-0 overflow-hidden">
@@ -393,34 +403,10 @@ export default function Dashboard() {
         </Scroller>
       )}
 
-      {/* Floating AI Assistant Button */}
-      <Button 
-        isIconOnly
-        color="primary" 
-        className="fixed bottom-6 right-6 shadow-lg w-14 h-14 rounded-full transition-transform duration-200 hover:scale-105 z-50"
-        onPress={() => setIsOpen(!isOpen)}
-        aria-label={isOpen ? "Close AI Assistant" : "Open AI Assistant"}
-      >
-        <Icon 
-          icon={isOpen ? "lucide:x" : "lucide:bot"}
-          className="text-2xl" 
-        />
-      </Button>
-      
-      {/* AI Assistant Chat Window */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="fixed bottom-24 right-6 z-40 w-96 shadow-2xl rounded-2xl overflow-hidden border border-divider bg-background"
-          >
-            <AIAssistantChat onClose={() => setIsOpen(false)} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Voice AI Assistant */}
+      <DashboardVoiceAssistant />
+    </VoiceAssistantProvider>
     </>
   );
 }
+

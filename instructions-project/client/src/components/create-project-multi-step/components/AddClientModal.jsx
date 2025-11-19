@@ -69,18 +69,6 @@ export function AddClientModal({
                     label: "text-primary-700 dark:text-primary-400"
                   }}
                 />
-                <Input
-                  label="Phone"
-                  labelPlacement="outside"
-                  placeholder="+351 123 456 789"
-                  value={clientData.phone}
-                  onChange={(e) => setClientData(prev => ({ ...prev, phone: e.target.value }))}
-                  variant="bordered"
-                  startContent={<Icon icon="lucide:phone" className="text-default-400" />}
-                  classNames={{
-                    label: "text-primary-700 dark:text-primary-400"
-                  }}
-                />
               </div>
             </ModalBody>
             <ModalFooter>
