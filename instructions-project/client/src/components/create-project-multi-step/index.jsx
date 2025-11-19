@@ -97,7 +97,14 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
             onInputChange={formState.handleInputChange}
             onClientSelect={clientState.handleClientSelection}
             onClientInputChange={clientState.handleClientInputChange}
-            onAddNewClient={() => clientState.setNewClientModal(true)}
+            onAddNewClient={(data) => {
+               // If data is provided (from Voice Wizard), set it
+               if (data) {
+                 clientState.setNewClientData(prev => ({ ...prev, ...data }));
+               }
+               clientState.setNewClientModal(true);
+            }}
+            onNext={navigation.nextStep}
           />
         );
 
