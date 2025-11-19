@@ -6,7 +6,9 @@
     "loading": "Carregando...",
     "name": "Nome",
     "email": "Email",
-    "role": "Função"
+    "role": "Função",
+    "cancel": "Cancelar",
+    "save": "Salvar"
   },
   "pages": {
     "landing": {
@@ -210,7 +212,11 @@
             "role": "Role",
             "save": "Salvar",
             "cancel": "Cancelar",
-            "saving": "Salvando..."
+            "saving": "Salvando...",
+            "newPasswordOptional": "Nova Senha (Opcional)",
+            "passwordPlaceholder": "Deixe em branco para manter a atual",
+            "passwordDescription": "Mínimo de 6 caracteres",
+            "changePhoto": "Alterar Foto"
           },
           "editRole": {
             "title": "Editar Role",
@@ -267,7 +273,8 @@
           "updateRoleFailed": "Erro ao atualizar role",
           "deleteFailed": "Erro ao remover utilizador",
           "cannotRemoveSelf": "Não pode remover a si mesmo",
-          "cannotChangeOwnRole": "Não pode alterar seu próprio role"
+          "cannotChangeOwnRole": "Não pode alterar seu próprio role",
+          "passwordTooShort": "A senha deve ter pelo menos 6 caracteres"
         }
       }
     }

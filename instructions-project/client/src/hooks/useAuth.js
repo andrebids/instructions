@@ -13,7 +13,7 @@ export function useAuth() {
       // Usar caminho relativo em produção para evitar problemas de CSP
       const isDev = import.meta.env.DEV;
       let sessionUrl;
-      
+
       if (isDev && import.meta.env.VITE_API_URL) {
         const apiUrl = import.meta.env.VITE_API_URL;
         const baseUrl = apiUrl.replace('/api', ''); // Remover /api para obter base URL
@@ -22,16 +22,23 @@ export function useAuth() {
         // Em produção, usar caminho relativo (mesma origem)
         sessionUrl = '/auth/session';
       }
-      
+
       const response = await fetch(sessionUrl, {
         credentials: 'include',
       });
-      
+
       if (response.ok) {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
           const data = await response.json();
           setSession(data);
+
+          // Salvar sessão no localStorage para fallback offline
+          if (data?.user) {
+            localStorage.setItem('auth_session_backup', JSON.stringify(data));
+          } else {
+            localStorage.removeItem('auth_session_backup');
+          }
         } else {
           // Se não for JSON, pode ser HTML (erro 404 ou página de erro)
           const text = await response.text();
@@ -43,7 +50,20 @@ export function useAuth() {
       }
     } catch (error) {
       console.error('Erro ao buscar sessão Auth.js:', error);
-      setSession(null);
+
+      // Fallback para localStorage se estiver offline ou erro de rede
+      try {
+        const cachedSession = localStorage.getItem('auth_session_backup');
+        if (cachedSession) {
+          console.log('🔌 [Offline] Usando sessão em cache do localStorage');
+          setSession(JSON.parse(cachedSession));
+        } else {
+          setSession(null);
+        }
+      } catch (e) {
+        console.error('Erro ao recuperar sessão do cache:', e);
+        setSession(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -63,7 +83,7 @@ export function useAuth() {
       // Usar caminho relativo em produção para evitar problemas de CSP
       const isDev = import.meta.env.DEV;
       let baseUrl;
-      
+
       if (isDev && import.meta.env.VITE_API_URL) {
         const apiUrl = import.meta.env.VITE_API_URL;
         baseUrl = apiUrl.replace('/api', '');
@@ -71,7 +91,7 @@ export function useAuth() {
         // Em produção, usar caminho relativo (mesma origem)
         baseUrl = '';
       }
-      
+
       // Auth.js Credentials provider usa /auth/callback/credentials
       const response = await fetch(`${baseUrl}/auth/callback/credentials`, {
         method: 'POST',
@@ -97,7 +117,7 @@ export function useAuth() {
           }
         };
         await fetchSession();
-        
+
         // Redirecionar se especificado
         if (options.callbackUrl) {
           window.location.href = options.callbackUrl;
@@ -116,7 +136,7 @@ export function useAuth() {
       // Usar caminho relativo em produção para evitar problemas de CSP
       const isDev = import.meta.env.DEV;
       let baseUrl;
-      
+
       if (isDev && import.meta.env.VITE_API_URL) {
         const apiUrl = import.meta.env.VITE_API_URL;
         baseUrl = apiUrl.replace('/api', '');
@@ -124,12 +144,24 @@ export function useAuth() {
         // Em produção, usar caminho relativo (mesma origem)
         baseUrl = '';
       }
-      
+
+      // Obter token CSRF antes de fazer logout
+      const csrfResponse = await fetch(`${baseUrl}/auth/csrf`, { credentials: 'include' });
+      const { csrfToken } = await csrfResponse.json();
+
       await fetch(`${baseUrl}/auth/signout`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          csrfToken: csrfToken,
+          callbackUrl: window.location.origin,
+        }),
         credentials: 'include',
       });
       setSession(null);
+      localStorage.removeItem('auth_session_backup'); // Limpar backup local
       window.location.href = '/';
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
