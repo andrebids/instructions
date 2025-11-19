@@ -65,7 +65,7 @@ const validationSchema = Yup.object({
   }).nullable(),
 });
 
-export function StepLogoInstructions({ formData, onInputChange }) {
+export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
   const logoDetails = formData.logoDetails || {};
   const composition = logoDetails.composition || { componentes: [], bolas: [] };
   
@@ -425,7 +425,8 @@ export function StepLogoInstructions({ formData, onInputChange }) {
   useLogoPersistence({
     logoDetails: logoDetails,
     formData: formData,
-    onInputChange: onInputChange
+    onInputChange: onInputChange,
+    saveStatus: saveStatus
   });
 
   return (
