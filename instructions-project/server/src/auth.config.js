@@ -143,13 +143,51 @@ export function getAuthConfig() {
     // Criar ExpressAuth com o adapter
     // IMPORTANTE: O provider Credentials requer strategy: "jwt" mesmo quando usando adapter
     // O adapter será usado para armazenar sessões, mas a estratégia deve ser JWT
+    const isProduction = process.env.NODE_ENV === 'production';
     const authConfig = ExpressAuth({
       trustHost: true, // Necessário quando servido através de proxy
       secret: process.env.AUTH_SECRET,
       adapter: adapter,
+      // Configurar URL base para produção (importante para cookies)
+      basePath: '/auth',
+      ...(process.env.AUTH_URL && { baseURL: process.env.AUTH_URL }),
       session: {
         strategy: "jwt", // Credentials provider requer JWT strategy, mesmo com adapter
+        // Configuração de cookies para produção
+        ...(isProduction && {
+          maxAge: 30 * 24 * 60 * 60, // 30 dias
+        }),
       },
+      // Configuração de cookies para produção HTTPS
+      cookies: isProduction ? {
+        sessionToken: {
+          name: isProduction ? '__Secure-authjs.session-token' : 'authjs.session-token',
+          options: {
+            httpOnly: true,
+            sameSite: 'lax',
+            path: '/',
+            secure: true, // Apenas HTTPS em produção
+          },
+        },
+        callbackUrl: {
+          name: isProduction ? '__Secure-authjs.callback-url' : 'authjs.callback-url',
+          options: {
+            httpOnly: true,
+            sameSite: 'lax',
+            path: '/',
+            secure: true,
+          },
+        },
+        csrfToken: {
+          name: isProduction ? '__Host-authjs.csrf-token' : 'authjs.csrf-token',
+          options: {
+            httpOnly: true,
+            sameSite: 'lax',
+            path: '/',
+            secure: true,
+          },
+        },
+      } : undefined,
       providers: providers,
       callbacks: {
         async session({ session, token }) {

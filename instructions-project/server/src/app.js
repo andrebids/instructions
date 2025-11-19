@@ -79,6 +79,8 @@ app.use(cors({
     'http://thecore.dsproject.pt',
     'https://test2.dsproject.pt',
     'http://test2.dsproject.pt',
+    'https://thecore.blachere-illumination.ai',
+    'http://thecore.blachere-illumination.ai',
   ],
   credentials: true
 }));
