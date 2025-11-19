@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   ModalContent,
@@ -12,6 +12,7 @@ import {
 } from '@heroui/react';
 import { useTranslation } from 'react-i18next';
 import { PasswordField } from '../PasswordField';
+import { generateSecurePassword } from '../../../utils/passwordUtils';
 
 /**
  * Modal para criar novo usuário
@@ -35,6 +36,17 @@ export function CreateUserModal({
     password: '',
     role: 'comercial',
   });
+
+  // Gerar senha automaticamente quando o modal abre
+  useEffect(() => {
+    if (isOpen) {
+      const generatedPassword = generateSecurePassword(12);
+      setFormData(prev => ({
+        ...prev,
+        password: generatedPassword,
+      }));
+    }
+  }, [isOpen]);
 
   const handleSubmit = async () => {
     if (!formData.email || !formData.password) {

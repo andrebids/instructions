@@ -2,6 +2,8 @@ import sequelize from '../config/database.js';
 import { getAuth } from '../middleware/auth.js';
 import { logError, logInfo } from '../utils/projectLogger.js';
 import { uploadFile, isSupabaseConfigured } from '../services/supabaseStorage.js';
+import { validatePassword } from '../validators/userValidator.js';
+import { updateUserPassword } from '../services/userService.js';
 import multer from 'multer';
 import path from 'path';
 
@@ -350,6 +352,87 @@ export async function uploadAvatarImage(req, res) {
     logError('Erro ao fazer upload de avatar', error);
     res.status(500).json({
       error: 'Erro ao fazer upload de avatar',
+      message: error.message || 'Erro desconhecido'
+    });
+  }
+}
+
+// PUT /api/users/profile/password - Atualizar senha do próprio perfil
+export async function updatePassword(req, res) {
+  try {
+    const auth = await getAuth(req);
+    
+    if (!auth || !auth.userId) {
+      return res.status(401).json({
+        error: 'Não autenticado',
+        message: 'É necessário estar autenticado para atualizar a senha'
+      });
+    }
+
+    const { password } = req.body;
+    const userId = auth.userId;
+
+    logInfo(`PUT /api/users/profile/password - Atualizando senha do perfil`, { 
+      userId,
+      passwordProvided: !!password
+    });
+
+    // Validar userId
+    if (!userId) {
+      return res.status(400).json({
+        error: 'ID de usuário inválido',
+        message: 'Não foi possível identificar o usuário'
+      });
+    }
+
+    // Validar senha
+    if (!password) {
+      return res.status(400).json({
+        error: 'Senha não fornecida',
+        message: 'É necessário fornecer uma nova senha'
+      });
+    }
+
+    // Validar senha usando o mesmo validador do EditUserModal
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({
+        error: 'Password não cumpre os requisitos de segurança',
+        message: passwordValidation.errors.join('. '),
+        details: passwordValidation.errors
+      });
+    }
+
+    // Usar o serviço de atualização de senha (mesma lógica do admin)
+    const updatedUser = await updateUserPassword(userId, password);
+
+    logInfo('Senha do perfil atualizada com sucesso', { userId });
+
+    res.json({
+      success: true,
+      message: 'Senha atualizada com sucesso',
+      user: updatedUser
+    });
+  } catch (error) {
+    logError('Erro ao atualizar senha do perfil', error);
+
+    if (error.message?.includes('não encontrado')) {
+      return res.status(404).json({ 
+        error: error.message,
+        message: 'Usuário não encontrado'
+      });
+    }
+
+    if (error.message?.includes('não cumpre') || error.message?.includes('obrigatório')) {
+      return res.status(400).json({
+        error: 'Password não cumpre os requisitos de segurança',
+        message: error.message,
+        details: error.details
+      });
+    }
+
+    res.status(500).json({
+      error: 'Erro ao atualizar senha',
       message: error.message || 'Erro desconhecido'
     });
   }
