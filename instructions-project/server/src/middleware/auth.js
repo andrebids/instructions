@@ -5,7 +5,6 @@
 import { getSession } from '@auth/express';
 import { getAuthConfig } from '../auth.config.js';
 import http from 'http';
-import https from 'https';
 
 const useAuthJs = process.env.USE_AUTH_JS === 'true';
 
@@ -61,53 +60,42 @@ export async function getAuth(req) {
       
       try {
         // Fazer requisição HTTP interna para /auth/session
-        // Esta é a forma mais confiável já que sabemos que a rota funciona
+        // IMPORTANTE: Para requisições internas, sempre usar localhost e HTTP
+        // mesmo que o request original seja HTTPS (o proxy já tratou isso)
+        // Isso evita problemas com certificados SSL e conexões HTTPS internas
         
-        // Detectar HTTPS corretamente (importante para produção atrás de proxy)
-        // Verificar req.secure primeiro (configurado pelo Express quando trust proxy está ativo)
-        // Depois verificar X-Forwarded-Proto header (comum em proxies reversos)
-        // Por último usar req.protocol como fallback
-        let protocol = 'http';
-        if (req.secure) {
-          protocol = 'https';
-        } else if (req.get('x-forwarded-proto') === 'https') {
-          protocol = 'https';
-        } else if (req.protocol === 'https') {
-          protocol = 'https';
-        }
-        
-        const host = req.get('host') || 'localhost:5000';
-        const sessionUrl = `${protocol}://${host}/auth/session`;
+        // Obter a porta do servidor (padrão 5000) ou da variável de ambiente
+        const serverPort = process.env.PORT || process.env.SERVER_PORT || 5000;
+        const sessionUrl = `http://localhost:${serverPort}/auth/session`;
         
         console.debug('🔍 [Auth Middleware] Fazendo requisição HTTP interna para:', sessionUrl, {
           secure: req.secure,
           forwardedProto: req.get('x-forwarded-proto'),
           protocol: req.protocol,
-          hasCookies: !!req.headers.cookie
+          hasCookies: !!req.headers.cookie,
+          cookieCount: req.headers.cookie ? req.headers.cookie.split(';').length : 0
         });
         
-        // Fazer requisição HTTP/HTTPS usando o módulo apropriado do Node.js
+        // Fazer requisição HTTP interna usando localhost
         const sessionData = await new Promise((resolve, reject) => {
           const url = new URL(sessionUrl);
           const options = {
-            hostname: url.hostname,
-            port: url.port || (protocol === 'https' ? 443 : 80),
+            hostname: 'localhost',
+            port: serverPort,
             path: url.pathname,
             method: 'GET',
             headers: {
               'Cookie': req.headers.cookie || '',
               'Accept': 'application/json',
               'User-Agent': req.headers['user-agent'] || 'Node.js',
-              // Preservar headers importantes do request original
-              'X-Forwarded-For': req.get('x-forwarded-for') || '',
-              'X-Forwarded-Proto': protocol,
+              // Preservar headers importantes do request original para que o Auth.js funcione corretamente
+              'X-Forwarded-For': req.get('x-forwarded-for') || req.ip || '',
+              'X-Forwarded-Proto': req.get('x-forwarded-proto') || req.protocol || 'https',
+              'Host': req.get('host') || `localhost:${serverPort}`,
             }
           };
           
-          // Usar módulo https para HTTPS, http para HTTP
-          const httpModule = protocol === 'https' ? https : http;
-          
-          const httpReq = httpModule.request(options, (httpRes) => {
+          const httpReq = http.request(options, (httpRes) => {
             let data = '';
             
             httpRes.on('data', (chunk) => {
@@ -122,14 +110,16 @@ export async function getAuth(req) {
                 } catch (e) {
                   console.error('❌ [Auth Middleware] Erro ao fazer parse da resposta JSON:', e.message, {
                     statusCode: httpRes.statusCode,
-                    dataPreview: data.substring(0, 200)
+                    dataPreview: data.substring(0, 200),
+                    contentType: httpRes.headers['content-type']
                   });
                   reject(new Error('Invalid JSON response'));
                 }
               } else {
                 console.debug(`⚠️  [Auth Middleware] Requisição HTTP retornou status ${httpRes.statusCode}`, {
                   url: sessionUrl,
-                  hasCookies: !!req.headers.cookie
+                  hasCookies: !!req.headers.cookie,
+                  cookieHeader: req.headers.cookie ? req.headers.cookie.substring(0, 100) : 'none'
                 });
                 reject(new Error(`HTTP ${httpRes.statusCode}`));
               }
@@ -141,7 +131,7 @@ export async function getAuth(req) {
               message: error.message,
               code: error.code,
               url: sessionUrl,
-              protocol: protocol
+              port: serverPort
             });
             reject(error);
           });
