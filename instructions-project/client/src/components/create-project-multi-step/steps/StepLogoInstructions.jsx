@@ -36,10 +36,11 @@ import {
 } from "../utils/materialsUtils.js";
 
 // Componente para texto em movimento quando truncado
-const MarqueeText = ({ children, className = "" }) => {
+const MarqueeText = ({ children, className = "", hoverOnly = false }) => {
   const containerRef = React.useRef(null);
   const textRef = React.useRef(null);
   const [needsMarquee, setNeedsMarquee] = React.useState(false);
+  const [isHovered, setIsHovered] = React.useState(false);
 
   React.useEffect(() => {
     const checkOverflow = () => {
@@ -67,6 +68,8 @@ const MarqueeText = ({ children, className = "" }) => {
     };
   }, [children]);
 
+  const shouldAnimate = needsMarquee && (!hoverOnly || isHovered);
+
   return (
     <>
       {needsMarquee && (
@@ -77,12 +80,18 @@ const MarqueeText = ({ children, className = "" }) => {
           }
         `}</style>
       )}
-      <div ref={containerRef} className={`overflow-hidden ${className}`} style={{ maxWidth: "100%", width: "100%" }}>
-        {needsMarquee ? (
+      <div 
+        ref={containerRef} 
+        className={`overflow-hidden ${className}`} 
+        style={{ maxWidth: "100%", width: "100%" }}
+        onMouseEnter={() => hoverOnly && setIsHovered(true)}
+        onMouseLeave={() => hoverOnly && setIsHovered(false)}
+      >
+        {shouldAnimate ? (
           <div
             className="inline-block whitespace-nowrap"
             style={{
-              animation: "marquee 10s linear infinite",
+              animation: shouldAnimate ? "marquee 10s linear infinite" : "none",
               paddingRight: "2rem",
             }}
           >
@@ -97,6 +106,143 @@ const MarqueeText = ({ children, className = "" }) => {
     </>
   );
 };
+
+// Componente Select com suporte a marquee no valor selecionado
+const SelectWithMarquee = React.forwardRef((props, ref) => {
+  const triggerRef = React.useRef(null);
+  const combinedRef = React.useCallback((node) => {
+    triggerRef.current = node;
+    if (typeof ref === 'function') {
+      ref(node);
+    } else if (ref) {
+      ref.current = node;
+    }
+  }, [ref]);
+
+  React.useEffect(() => {
+    if (!triggerRef.current) return;
+
+    const trigger = triggerRef.current;
+    let cleanup = null;
+
+    const checkAndApplyMarquee = () => {
+      const valueSlot = trigger.querySelector('[data-slot="value"]');
+      if (!valueSlot) return;
+
+      const isOverflowing = valueSlot.scrollWidth > valueSlot.clientWidth;
+      
+      const handleMouseEnter = () => {
+        if (isOverflowing) {
+          valueSlot.style.overflow = 'visible';
+          valueSlot.style.animation = 'marquee 10s linear infinite';
+          valueSlot.style.paddingRight = '2rem';
+          valueSlot.style.whiteSpace = 'nowrap';
+        }
+      };
+
+      const handleMouseLeave = () => {
+        valueSlot.style.overflow = 'hidden';
+        valueSlot.style.animation = 'none';
+        valueSlot.style.paddingRight = '0';
+      };
+
+      trigger.addEventListener('mouseenter', handleMouseEnter);
+      trigger.addEventListener('mouseleave', handleMouseLeave);
+
+      cleanup = () => {
+        trigger.removeEventListener('mouseenter', handleMouseEnter);
+        trigger.removeEventListener('mouseleave', handleMouseLeave);
+      };
+    };
+
+    // Verificar após um delay para garantir que o DOM está pronto
+    const timeout = setTimeout(checkAndApplyMarquee, 100);
+    
+    // Observar mudanças no DOM
+    const observer = new MutationObserver(checkAndApplyMarquee);
+    observer.observe(trigger, { childList: true, subtree: true, attributes: true });
+
+    return () => {
+      clearTimeout(timeout);
+      observer.disconnect();
+      if (cleanup) cleanup();
+    };
+  }, [props.selectedKeys, props.children]);
+
+  return <Select {...props} ref={combinedRef} />;
+});
+
+SelectWithMarquee.displayName = 'SelectWithMarquee';
+
+// Componente Autocomplete com suporte a marquee no valor selecionado
+const AutocompleteWithMarquee = React.forwardRef((props, ref) => {
+  const triggerRef = React.useRef(null);
+  const combinedRef = React.useCallback((node) => {
+    triggerRef.current = node;
+    if (typeof ref === 'function') {
+      ref(node);
+    } else if (ref) {
+      ref.current = node;
+    }
+  }, [ref]);
+
+  React.useEffect(() => {
+    if (!triggerRef.current) return;
+
+    const trigger = triggerRef.current;
+    let cleanup = null;
+
+    const checkAndApplyMarquee = () => {
+      const input = trigger.querySelector('input');
+      if (!input) return;
+
+      // Verificar se o texto está truncado
+      const isOverflowing = input.scrollWidth > input.clientWidth;
+      
+      const handleMouseEnter = () => {
+        if (isOverflowing && input) {
+          input.style.overflow = 'visible';
+          input.style.animation = 'marquee 10s linear infinite';
+          input.style.paddingRight = '2rem';
+          input.style.whiteSpace = 'nowrap';
+        }
+      };
+
+      const handleMouseLeave = () => {
+        if (input) {
+          input.style.overflow = 'hidden';
+          input.style.animation = 'none';
+          input.style.paddingRight = '0';
+        }
+      };
+
+      trigger.addEventListener('mouseenter', handleMouseEnter);
+      trigger.addEventListener('mouseleave', handleMouseLeave);
+
+      cleanup = () => {
+        trigger.removeEventListener('mouseenter', handleMouseEnter);
+        trigger.removeEventListener('mouseleave', handleMouseLeave);
+      };
+    };
+
+    // Verificar após um delay para garantir que o DOM está pronto
+    const timeout = setTimeout(checkAndApplyMarquee, 100);
+    
+    // Observar mudanças no DOM
+    const observer = new MutationObserver(checkAndApplyMarquee);
+    observer.observe(trigger, { childList: true, subtree: true, attributes: true });
+
+    return () => {
+      clearTimeout(timeout);
+      observer.disconnect();
+      if (cleanup) cleanup();
+    };
+  }, [props.selectedKey, props.inputValue, props.children]);
+
+  return <Autocomplete {...props} ref={combinedRef} />;
+});
+
+AutocompleteWithMarquee.displayName = 'AutocompleteWithMarquee';
 
 // Schema de validação para Logo Instructions
 const validationSchema = Yup.object({
@@ -799,18 +945,20 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                       // Se está completo e não editando, mostrar apenas referência
                       if (mostrarApenasReferencia) {
                         return (
-                          <div key={index} className="p-3 border border-default-200 rounded-lg bg-default-50">
-                            <div className="text-sm font-semibold text-default-900 mb-2">
-                              {componente?.nome || "Componente"}
-                            </div>
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex-1 min-w-0 text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden">
-                                <span className="font-semibold">Referência: </span>
-                                <MarqueeText className="inline-block">
-                                  {comp.referencia}
-                                </MarqueeText>
+                          <div key={index} className="p-3 border border-default-200 rounded-lg bg-default-50 overflow-hidden">
+                            <div className="flex items-start justify-between gap-2 min-w-0">
+                              <div className="flex-1 min-w-0 space-y-2">
+                                <div className="text-sm font-semibold text-default-900">
+                                  {componente?.nome || "Componente"}
+                                </div>
+                                <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden">
+                                  <span className="font-semibold">Referência: </span>
+                                  <MarqueeText hoverOnly={true} className="inline-block">
+                                    {comp.referencia}
+                                  </MarqueeText>
+                                </div>
                               </div>
-                              <div className="flex gap-1">
+                              <div className="flex gap-1 flex-shrink-0">
                                 <Button
                                   size="sm"
                                   variant="light"
@@ -841,78 +989,99 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                       
                       // Modo de edição: mostrar todos os campos
                       return (
-                        <div key={index} className="p-3 border border-default-200 rounded-lg space-y-3 bg-default-50">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 space-y-3">
-                              <Autocomplete
-                                label="Componente"
-                                placeholder="Pesquise ou selecione um componente"
-                                size="sm"
-                                selectedKey={comp.componenteId ? String(comp.componenteId) : null}
-                                inputValue={componenteSearchValues[index] || displayValue || ""}
-                                onSelectionChange={(key) => {
-                                  const selectedId = key ? Number(key) : null;
-                                  handleCompositionUpdate("componentes", index, "componenteId", selectedId);
-                                  // Limpar busca após seleção
-                                  setComponenteSearchValues(prev => {
-                                    const newValues = { ...prev };
-                                    delete newValues[index];
-                                    return newValues;
-                                  });
-                                }}
-                                onInputChange={(value) => {
-                                  setComponenteSearchValues(prev => ({
-                                    ...prev,
-                                    [index]: value
-                                  }));
-                                }}
-                                defaultItems={componentesFiltrados}
-                                menuTrigger="input"
-                                startContent={<Icon icon="lucide:search" className="text-default-400 w-4 h-4" />}
-                                allowsCustomValue={false}
-                              >
+                        <div key={index} className="p-3 border border-default-200 rounded-lg space-y-3 bg-default-50 overflow-hidden">
+                          <div className="flex items-start justify-between gap-2 min-w-0">
+                            <div className="flex-1 min-w-0 space-y-3">
+                              <div className="min-w-0">
+                                <AutocompleteWithMarquee
+                                  label="Componente"
+                                  placeholder="Pesquise ou selecione um componente"
+                                  size="sm"
+                                  selectedKey={comp.componenteId ? String(comp.componenteId) : null}
+                                  inputValue={componenteSearchValues[index] || displayValue || ""}
+                                  onSelectionChange={(key) => {
+                                    const selectedId = key ? Number(key) : null;
+                                    handleCompositionUpdate("componentes", index, "componenteId", selectedId);
+                                    // Limpar busca após seleção
+                                    setComponenteSearchValues(prev => {
+                                      const newValues = { ...prev };
+                                      delete newValues[index];
+                                      return newValues;
+                                    });
+                                  }}
+                                  onInputChange={(value) => {
+                                    setComponenteSearchValues(prev => ({
+                                      ...prev,
+                                      [index]: value
+                                    }));
+                                  }}
+                                  defaultItems={componentesFiltrados}
+                                  menuTrigger="input"
+                                  startContent={<Icon icon="lucide:search" className="text-default-400 w-4 h-4" />}
+                                  allowsCustomValue={false}
+                                  classNames={{
+                                    base: "w-full min-w-0",
+                                    trigger: "min-w-0",
+                                    inputWrapper: "min-w-0",
+                                    input: "min-w-0"
+                                  }}
+                                >
                                 {(c) => (
                                   <AutocompleteItem key={String(c.id)} textValue={`${c.nome} ${c.referencia || ""}`}>
-                                    <div className="flex flex-col">
-                                      <span className="font-medium">{c.nome}</span>
+                                    <div className="flex flex-col min-w-0">
+                                      <MarqueeText hoverOnly={true} className="font-medium">
+                                        {c.nome}
+                                      </MarqueeText>
                                       {c.referencia && (
-                                        <span className="text-xs text-default-500">Ref: {c.referencia}</span>
+                                        <MarqueeText hoverOnly={true} className="text-xs text-default-500">
+                                          Ref: {c.referencia}
+                                        </MarqueeText>
                                       )}
                                     </div>
                                   </AutocompleteItem>
                                 )}
-                              </Autocomplete>
+                                </AutocompleteWithMarquee>
+                              </div>
                               
                               {componente && !componente.semCor && (
-                                <Select
-                                  label="Cor"
-                                  placeholder="Selecione uma cor"
-                                  size="sm"
-                                  selectedKeys={comp.corId ? [String(comp.corId)] : []}
-                                  onSelectionChange={(keys) => {
-                                    const selectedId = Array.from(keys)[0];
-                                    handleCompositionUpdate("componentes", index, "corId", selectedId ? Number(selectedId) : null);
-                                  }}
-                                >
-                                  {coresDisponiveis.map((cor) => (
-                                    <SelectItem key={String(cor.id)} value={String(cor.id)}>
-                                      {cor.nome}
-                                    </SelectItem>
-                                  ))}
-                                </Select>
+                                <div className="min-w-0">
+                                  <SelectWithMarquee
+                                    label="Cor"
+                                    placeholder="Selecione uma cor"
+                                    size="sm"
+                                    selectedKeys={comp.corId ? new Set([String(comp.corId)]) : new Set()}
+                                    onSelectionChange={(keys) => {
+                                      const selectedId = Array.from(keys)[0];
+                                      handleCompositionUpdate("componentes", index, "corId", selectedId ? Number(selectedId) : null);
+                                    }}
+                                    classNames={{
+                                      base: "w-full",
+                                      trigger: "min-w-0",
+                                      value: "overflow-hidden"
+                                    }}
+                                  >
+                                    {coresDisponiveis.map((cor) => (
+                                      <SelectItem key={String(cor.id)} value={String(cor.id)} textValue={cor.nome}>
+                                        <MarqueeText hoverOnly={true}>
+                                          {cor.nome}
+                                        </MarqueeText>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectWithMarquee>
+                                </div>
                               )}
                               
                               {comp.referencia && (
                                 <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden min-w-0">
                                   <span className="font-semibold">Referência: </span>
-                                  <MarqueeText className="inline-block">
+                                  <MarqueeText hoverOnly={true} className="inline-block">
                                     {comp.referencia}
                                   </MarqueeText>
                                 </div>
                               )}
                             </div>
                             
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-1 flex-shrink-0">
                               {completo && (
                                 <Button
                                   size="sm"
@@ -1036,7 +1205,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                               {bola.referencia && (
                                 <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden min-w-0">
                                   <span className="font-semibold">Referência: </span>
-                                  <MarqueeText className="inline-block">
+                                  <MarqueeText hoverOnly={true} className="inline-block">
                                     {bola.referencia}
                                   </MarqueeText>
                                 </div>

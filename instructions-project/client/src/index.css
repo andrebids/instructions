@@ -201,3 +201,63 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
     margin: 0.5rem 0;
   }
 }
+
+/* Marquee animation for long text in Selects and Autocompletes */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(calc(-100% - 1rem)); }
+}
+
+/* Ensure Select and Autocomplete values don't overflow */
+[data-slot="trigger"] {
+  min-width: 0;
+  overflow: hidden;
+}
+
+[data-slot="value"] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Marquee for long text in Select and Autocomplete values on hover */
+[data-slot="value"] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  position: relative;
+}
+
+/* Apply marquee on hover for truncated text in Select/Autocomplete values */
+[data-slot="trigger"]:hover [data-slot="value"] {
+  overflow: visible;
+}
+
+[data-slot="trigger"]:hover [data-slot="value"]::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  white-space: nowrap;
+  animation: marquee 10s linear infinite;
+  padding-right: 2rem;
+}
+
+/* Alternative approach: use a wrapper div for marquee effect */
+.select-value-marquee {
+  display: inline-block;
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-slot="trigger"]:hover .select-value-marquee {
+  overflow: visible;
+  animation: marquee 10s linear infinite;
+  padding-right: 2rem;
+  text-overflow: clip;
+}
