@@ -12,10 +12,6 @@ const STEPS = {
   ASK_CLIENT: 'ASK_CLIENT',
   LISTEN_CLIENT: 'LISTEN_CLIENT',
   CONFIRM_CLIENT_CREATE: 'CONFIRM_CLIENT_CREATE',
-  ASK_CLIENT_EMAIL: 'ASK_CLIENT_EMAIL',
-  LISTEN_CLIENT_EMAIL: 'LISTEN_CLIENT_EMAIL',
-  ASK_CLIENT_PHONE: 'ASK_CLIENT_PHONE',
-  LISTEN_CLIENT_PHONE: 'LISTEN_CLIENT_PHONE',
   ASK_DATE: 'ASK_DATE',
   LISTEN_DATE: 'LISTEN_DATE',
   ASK_BUDGET: 'ASK_BUDGET',
@@ -34,13 +30,12 @@ export function ProjectFormVoiceWizard({
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language || 'pt'; 
   
-  // Force pt-PT if language is generic 'pt', otherwise use current
   const speechLang = currentLang === 'pt' ? 'pt-PT' : 
                      currentLang === 'fr' ? 'fr-FR' : 'en-US';
 
   const [step, setStep] = useState(STEPS.IDLE);
   const [message, setMessage] = useState('');
-  const [tempClient, setTempClient] = useState({ name: '', email: '', phone: '' });
+  const [tempClientName, setTempClientName] = useState('');
 
   const { speak, speaking, cancel: cancelTTS } = useTTS(speechLang);
   const { start: startSTT, stop: stopSTT, transcript, listening } = useSTT(speechLang);
@@ -65,45 +60,40 @@ export function ProjectFormVoiceWizard({
         break;
 
       case STEPS.LISTEN_CLIENT:
-        const clientName = text; // Keep original case for display
-        const foundClient = clients.find(c => c.name.toLowerCase().includes(lowerText));
+        const clientName = text; 
+        // Improved search: check for inclusion
+        const foundClients = clients.filter(c => c.name.toLowerCase().includes(lowerText));
         
-        if (foundClient) {
-          onUpdateField('selectedClientKey', foundClient.id);
-          onUpdateField('clientName', foundClient.name);
+        if (foundClients.length > 0) {
+          // If multiple, pick first for now (or could ask to clarify)
+          // Ideally we should handle ambiguity, but for MVP picking first match is better than nothing
+          const bestMatch = foundClients[0];
+          console.log(`[VoiceWizard] Client found: ${bestMatch.name}`);
+          
+          // CRITICAL: Ensure these updates happen
+          onUpdateField('selectedClientKey', bestMatch.id);
+          onUpdateField('clientName', bestMatch.name);
+          
           setStep(STEPS.ASK_DATE);
         } else {
-          setTempClient(prev => ({ ...prev, name: clientName }));
-          onUpdateField('clientName', clientName);
+          console.log(`[VoiceWizard] Client not found, asking to create: ${clientName}`);
+          setTempClientName(clientName);
+          onUpdateField('clientName', clientName); // Set text anyway so user sees it
           setStep(STEPS.CONFIRM_CLIENT_CREATE);
         }
         break;
 
       case STEPS.CONFIRM_CLIENT_CREATE:
         if (lowerText.includes('create') || lowerText.includes('criar') || lowerText.includes('sim') || lowerText.includes('yes')) {
-          setStep(STEPS.ASK_CLIENT_EMAIL);
+          // Immediately open modal with the name we have
+          onAddNewClient({ name: tempClientName });
+          // Continue wizard flow? Or maybe pause? 
+          // Let's move to next step so when they close modal they are ready for date
+          setStep(STEPS.ASK_DATE);
         } else {
           // Retry client name
           setStep(STEPS.ASK_CLIENT); 
         }
-        break;
-
-      case STEPS.LISTEN_CLIENT_EMAIL:
-        // Basic cleanup for email if spoken (e.g. "at" -> "@") - simple heuristic
-        let email = text.toLowerCase().replace(/ at /g, '@').replace(/ ponto /g, '.').replace(/ dot /g, '.').replace(/\s+/g, '');
-        setTempClient(prev => ({ ...prev, email }));
-        setStep(STEPS.ASK_CLIENT_PHONE);
-        break;
-
-      case STEPS.LISTEN_CLIENT_PHONE:
-        setTempClient(prev => ({ ...prev, phone: text }));
-        // Now trigger the add new client modal with collected data
-        onAddNewClient({ 
-            name: tempClient.name, 
-            email: tempClient.email, 
-            phone: text 
-        });
-        setStep(STEPS.ASK_DATE);
         break;
 
       case STEPS.LISTEN_DATE:
@@ -142,10 +132,6 @@ export function ProjectFormVoiceWizard({
             if (onNext) onNext();
             setStep(STEPS.FINISHED);
         } else {
-            // Maybe they want to correct something? For now, just finish or stay here.
-            // Let's just finish if they say something else to avoid loop, or ask again?
-            // Let's stay in confirmation loop but stop listening after one try if not matched?
-            // No, let's just finish.
             setStep(STEPS.FINISHED);
         }
         break;
@@ -161,9 +147,7 @@ export function ProjectFormVoiceWizard({
       ready: isPt ? "Pronto. Clique no microfone." : "Ready. Click mic.",
       askName: isPt ? "Qual é o nome do projeto?" : "What is the project name?",
       askClient: isPt ? "Quem é o cliente?" : "Who is the client?",
-      confirmClient: isPt ? "Cliente novo. Diga 'Criar' para adicionar dados, ou repita o nome." : "New client. Say 'Create' to add details, or repeat name.",
-      askEmail: isPt ? "Qual o email do cliente?" : "What is the client's email?",
-      askPhone: isPt ? "Qual o telefone do cliente?" : "What is the client's phone?",
+      confirmClient: isPt ? "Cliente novo. Diga 'Criar' para abrir ficha, ou repita o nome." : "New client. Say 'Create' to open form, or repeat name.",
       askDate: isPt ? "Qual a data de entrega?" : "What is the delivery date?",
       askBudget: isPt ? "Qual é o orçamento?" : "What is the budget?",
       askConfirm: isPt ? "Dados preenchidos. Diga 'Continuar' para avançar." : "Data filled. Say 'Continue' to proceed.",
@@ -192,14 +176,6 @@ export function ProjectFormVoiceWizard({
         case STEPS.CONFIRM_CLIENT_CREATE:
           setMessage(prompts.confirmClient);
           speak(prompts.confirmClient, speechLang);
-          break;
-        case STEPS.ASK_CLIENT_EMAIL:
-          setMessage(prompts.askEmail);
-          speak(prompts.askEmail, speechLang);
-          break;
-        case STEPS.ASK_CLIENT_PHONE:
-          setMessage(prompts.askPhone);
-          speak(prompts.askPhone, speechLang);
           break;
         case STEPS.ASK_DATE:
           setMessage(prompts.askDate);
@@ -230,8 +206,6 @@ export function ProjectFormVoiceWizard({
         [STEPS.ASK_NAME]: STEPS.LISTEN_NAME,
         [STEPS.ASK_CLIENT]: STEPS.LISTEN_CLIENT,
         [STEPS.CONFIRM_CLIENT_CREATE]: STEPS.CONFIRM_CLIENT_CREATE, 
-        [STEPS.ASK_CLIENT_EMAIL]: STEPS.LISTEN_CLIENT_EMAIL,
-        [STEPS.ASK_CLIENT_PHONE]: STEPS.LISTEN_CLIENT_PHONE,
         [STEPS.ASK_DATE]: STEPS.LISTEN_DATE,
         [STEPS.ASK_BUDGET]: STEPS.LISTEN_BUDGET,
         [STEPS.ASK_CONFIRMATION]: STEPS.LISTEN_CONFIRMATION,
@@ -246,7 +220,6 @@ export function ProjectFormVoiceWizard({
   useEffect(() => {
     const listenSteps = [
         STEPS.LISTEN_NAME, STEPS.LISTEN_CLIENT, STEPS.CONFIRM_CLIENT_CREATE,
-        STEPS.LISTEN_CLIENT_EMAIL, STEPS.LISTEN_CLIENT_PHONE,
         STEPS.LISTEN_DATE, STEPS.LISTEN_BUDGET, STEPS.LISTEN_CONFIRMATION
     ];
 
@@ -327,12 +300,10 @@ export function ProjectFormVoiceWizard({
           value={
             step === STEPS.FINISHED ? 100 :
             step === STEPS.ASK_NAME ? 10 :
-            step === STEPS.ASK_CLIENT ? 25 :
-            step === STEPS.ASK_CLIENT_EMAIL ? 40 :
-            step === STEPS.ASK_CLIENT_PHONE ? 50 :
-            step === STEPS.ASK_DATE ? 70 :
-            step === STEPS.ASK_BUDGET ? 85 : 
-            step === STEPS.ASK_CONFIRMATION ? 95 : 0
+            step === STEPS.ASK_CLIENT ? 30 :
+            step === STEPS.ASK_DATE ? 60 :
+            step === STEPS.ASK_BUDGET ? 80 : 
+            step === STEPS.ASK_CONFIRMATION ? 90 : 0
           }
           className="max-w-full" 
           color={listening ? "danger" : "primary"}

@@ -276,6 +276,54 @@
           "cannotChangeOwnRole": "Não pode alterar seu próprio role",
           "passwordTooShort": "A senha deve ter pelo menos 6 caracteres"
         }
+      },
+      "projectDetails": {
+        "title": "Detalhes do Projeto",
+        "subtitle": "Vamos começar com as informações básicas do seu projeto.",
+        "projectName": "Nome do Projeto",
+        "projectNameRequired": "*",
+        "projectNamePlaceholder": "Digite o nome do projeto",
+        "deliveryDate": "Data de Entrega",
+        "budget": "Orçamento (EUR)",
+        "budgetRequired": "*",
+        "budgetPlaceholder": "Digite o valor do orçamento",
+        "client": "Cliente",
+        "location": "Localização",
+        "type": "Tipo",
+        "status": "Status",
+        "name": "Nome",
+        "projectInformation": "Informações do Projeto",
+        "validation": {
+          "projectNameRequired": "O nome do projeto é obrigatório",
+          "projectNameMinLength": "O nome do projeto deve ter pelo menos 3 caracteres",
+          "budgetRequired": "O orçamento é obrigatório",
+          "budgetMustBePositive": "O orçamento deve ser maior que 0",
+          "deliveryDateRequired": "A data de entrega é obrigatória"
+        }
+      },
+      "projectNotes": {
+        "title": "Notas: {{name}}",
+        "subtitle": "Cliente: {{clientName}}",
+        "loading": "A carregar projeto...",
+        "errorTitle": "Erro ao carregar projeto",
+        "errorMessage": "Erro ao carregar projeto. Verifique se o projeto existe.",
+        "projectNotFound": "Projeto não encontrado",
+        "backToDashboard": "Voltar ao Dashboard",
+        "back": "Voltar",
+        "editProject": "Editar Projeto",
+        "projectInformation": "Informações do Projeto",
+        "projectNotesTitle": "Notas do Projeto",
+        "notesEditor": "Editor de Notas",
+        "createProjectFirst": "Criar projeto primeiro",
+        "createProjectFirstDescription": "Complete os detalhes do projeto para começar a adicionar notas.",
+        "addNotesDescription": "Adicione notas e observações sobre este projeto. As alterações são salvas automaticamente a cada 2 segundos.",
+        "fields": {
+          "name": "Nome",
+          "client": "Cliente",
+          "location": "Localização",
+          "type": "Tipo",
+          "status": "Status"
+        }
       }
     }
   },
