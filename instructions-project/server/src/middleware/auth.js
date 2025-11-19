@@ -68,12 +68,18 @@ export async function getAuth(req) {
         const serverPort = process.env.PORT || process.env.SERVER_PORT || 5000;
         const sessionUrl = `http://localhost:${serverPort}/auth/session`;
         
-        console.debug('🔍 [Auth Middleware] Fazendo requisição HTTP interna para:', sessionUrl, {
+        // Log detalhado para diagnóstico
+        const cookieHeader = req.headers.cookie || '';
+        const cookieNames = cookieHeader ? cookieHeader.split(';').map(c => c.trim().split('=')[0]).filter(Boolean) : [];
+        
+        console.log('🔍 [Auth Middleware] Fazendo requisição HTTP interna para:', sessionUrl, {
           secure: req.secure,
           forwardedProto: req.get('x-forwarded-proto'),
           protocol: req.protocol,
-          hasCookies: !!req.headers.cookie,
-          cookieCount: req.headers.cookie ? req.headers.cookie.split(';').length : 0
+          hasCookies: !!cookieHeader,
+          cookieCount: cookieNames.length,
+          cookieNames: cookieNames.slice(0, 5), // Mostrar primeiros 5 nomes de cookies
+          serverPort: serverPort
         });
         
         // Fazer requisição HTTP interna usando localhost
@@ -89,9 +95,12 @@ export async function getAuth(req) {
               'Accept': 'application/json',
               'User-Agent': req.headers['user-agent'] || 'Node.js',
               // Preservar headers importantes do request original para que o Auth.js funcione corretamente
-              'X-Forwarded-For': req.get('x-forwarded-for') || req.ip || '',
-              'X-Forwarded-Proto': req.get('x-forwarded-proto') || req.protocol || 'https',
+              // IMPORTANTE: Manter o Host original para que o Auth.js possa validar corretamente
               'Host': req.get('host') || `localhost:${serverPort}`,
+              'X-Forwarded-For': req.get('x-forwarded-for') || req.ip || '',
+              'X-Forwarded-Proto': req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http'),
+              'X-Forwarded-Host': req.get('host') || `localhost:${serverPort}`,
+              'X-Real-IP': req.ip || '',
             }
           };
           
@@ -116,12 +125,15 @@ export async function getAuth(req) {
                   reject(new Error('Invalid JSON response'));
                 }
               } else {
-                console.debug(`⚠️  [Auth Middleware] Requisição HTTP retornou status ${httpRes.statusCode}`, {
+                // Log detalhado quando a requisição falha
+                console.error(`❌ [Auth Middleware] Requisição HTTP retornou status ${httpRes.statusCode}`, {
                   url: sessionUrl,
                   hasCookies: !!req.headers.cookie,
-                  cookieHeader: req.headers.cookie ? req.headers.cookie.substring(0, 100) : 'none'
+                  cookieHeader: req.headers.cookie ? req.headers.cookie.substring(0, 200) : 'none',
+                  responseHeaders: httpRes.headers,
+                  responseData: data.substring(0, 500)
                 });
-                reject(new Error(`HTTP ${httpRes.statusCode}`));
+                reject(new Error(`HTTP ${httpRes.statusCode}: ${data.substring(0, 100)}`));
               }
             });
           });
