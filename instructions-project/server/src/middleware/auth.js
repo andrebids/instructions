@@ -25,9 +25,25 @@ export async function getAuth(req) {
   // Usar Auth.js
   if (useAuthJs && authHandler) {
     // Primeiro, tentar getSession diretamente (mais eficiente)
-    // Nota: getSession pode falhar se req.authOptions não estiver configurado
-    // Nesse caso, usamos o fallback HTTP que sempre funciona
+    // Configurar req.authOptions se não estiver configurado
+    // Isso permite que getSession funcione mesmo quando chamado fora do contexto do handler
     try {
+      // Se req.authOptions não estiver configurado, tentar obter do handler
+      if (!req.authOptions && authHandler) {
+        // O ExpressAuth handler tem uma propriedade que contém as opções
+        // Tentar acessar através do handler
+        try {
+          // Criar um objeto de opções básico baseado na configuração
+          req.authOptions = {
+            basePath: '/auth',
+            baseURL: process.env.AUTH_URL || undefined,
+            trustHost: true,
+          };
+        } catch (e) {
+          // Ignorar erro ao configurar authOptions
+        }
+      }
+      
       const session = await getSession(req);
       if (session?.user) {
         const authData = {
@@ -47,13 +63,14 @@ export async function getAuth(req) {
         console.debug('🔍 [Auth Middleware] getSession retornou sessão sem usuário');
       }
     } catch (sessionError) {
-      // getSession pode falhar se req.authOptions não estiver configurado
+      // getSession pode falhar se req.authOptions não estiver configurado corretamente
       // Isso é esperado quando chamado fora do contexto do handler do Auth.js
       // Usar requisição HTTP interna como fallback (sempre funciona)
-      const isBasePathError = sessionError.message?.includes('basePath');
+      const isBasePathError = sessionError.message?.includes('basePath') || 
+                              sessionError.message?.includes('authOptions');
       if (isBasePathError) {
-        // Erro esperado - getSession precisa do handler do Auth.js
-        // Silenciosamente usar fallback HTTP
+        // Erro esperado - getSession precisa do handler do Auth.js configurado corretamente
+        console.debug('🔍 [Auth Middleware] getSession falhou (erro esperado), usando fallback HTTP:', sessionError.message);
       } else {
         console.debug('⚠️  [Auth Middleware] getSession falhou, tentando requisição HTTP interna:', sessionError.message);
       }
@@ -66,99 +83,125 @@ export async function getAuth(req) {
         
         // Obter a porta do servidor (padrão 5000) ou da variável de ambiente
         const serverPort = process.env.PORT || process.env.SERVER_PORT || 5000;
-        const sessionUrl = `http://localhost:${serverPort}/auth/session`;
+        
+        // Tentar usar 127.0.0.1 primeiro (mais confiável em alguns ambientes)
+        // Se falhar, tentar localhost
+        const hostnames = ['127.0.0.1', 'localhost'];
         
         // Log detalhado para diagnóstico
         const cookieHeader = req.headers.cookie || '';
         const cookieNames = cookieHeader ? cookieHeader.split(';').map(c => c.trim().split('=')[0]).filter(Boolean) : [];
         
-        console.log('🔍 [Auth Middleware] Fazendo requisição HTTP interna para:', sessionUrl, {
+        console.log('🔍 [Auth Middleware] Tentando obter sessão via requisição HTTP interna', {
           secure: req.secure,
           forwardedProto: req.get('x-forwarded-proto'),
           protocol: req.protocol,
           hasCookies: !!cookieHeader,
           cookieCount: cookieNames.length,
           cookieNames: cookieNames.slice(0, 5), // Mostrar primeiros 5 nomes de cookies
-          serverPort: serverPort
+          serverPort: serverPort,
+          hostnames: hostnames
         });
         
-        // Fazer requisição HTTP interna usando localhost
-        const sessionData = await new Promise((resolve, reject) => {
-          const url = new URL(sessionUrl);
-          const options = {
-            hostname: 'localhost',
-            port: serverPort,
-            path: url.pathname,
-            method: 'GET',
-            headers: {
-              'Cookie': req.headers.cookie || '',
-              'Accept': 'application/json',
-              'User-Agent': req.headers['user-agent'] || 'Node.js',
-              // Preservar headers importantes do request original para que o Auth.js funcione corretamente
-              // IMPORTANTE: Manter o Host original para que o Auth.js possa validar corretamente
-              'Host': req.get('host') || `localhost:${serverPort}`,
-              'X-Forwarded-For': req.get('x-forwarded-for') || req.ip || '',
-              'X-Forwarded-Proto': req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http'),
-              'X-Forwarded-Host': req.get('host') || `localhost:${serverPort}`,
-              'X-Real-IP': req.ip || '',
-            }
-          };
-          
-          const httpReq = http.request(options, (httpRes) => {
-            let data = '';
+        // Tentar cada hostname até um funcionar
+        let lastError = null;
+        let sessionData = null;
+        for (const hostname of hostnames) {
+          try {
+            const sessionUrl = `http://${hostname}:${serverPort}/auth/session`;
+            console.debug(`🔍 [Auth Middleware] Tentando ${hostname}:${serverPort}/auth/session`);
             
-            httpRes.on('data', (chunk) => {
-              data += chunk;
-            });
-            
-            httpRes.on('end', () => {
-              if (httpRes.statusCode === 200) {
-                try {
-                  const parsed = JSON.parse(data);
-                  resolve(parsed);
-                } catch (e) {
-                  console.error('❌ [Auth Middleware] Erro ao fazer parse da resposta JSON:', e.message, {
-                    statusCode: httpRes.statusCode,
-                    dataPreview: data.substring(0, 200),
-                    contentType: httpRes.headers['content-type']
-                  });
-                  reject(new Error('Invalid JSON response'));
+            // Fazer requisição HTTP interna
+            sessionData = await new Promise((resolve, reject) => {
+              const options = {
+                hostname: hostname,
+                port: serverPort,
+                path: '/auth/session',
+                method: 'GET',
+                headers: {
+                  'Cookie': req.headers.cookie || '',
+                  'Accept': 'application/json',
+                  'User-Agent': req.headers['user-agent'] || 'Node.js',
+                  // Preservar headers importantes do request original para que o Auth.js funcione corretamente
+                  // IMPORTANTE: Manter o Host original para que o Auth.js possa validar corretamente
+                  'Host': req.get('host') || `${hostname}:${serverPort}`,
+                  'X-Forwarded-For': req.get('x-forwarded-for') || req.ip || '',
+                  'X-Forwarded-Proto': req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http'),
+                  'X-Forwarded-Host': req.get('host') || `${hostname}:${serverPort}`,
+                  'X-Real-IP': req.ip || '',
                 }
-              } else {
-                // Log detalhado quando a requisição falha
-                console.error(`❌ [Auth Middleware] Requisição HTTP retornou status ${httpRes.statusCode}`, {
-                  url: sessionUrl,
-                  hasCookies: !!req.headers.cookie,
-                  cookieHeader: req.headers.cookie ? req.headers.cookie.substring(0, 200) : 'none',
-                  responseHeaders: httpRes.headers,
-                  responseData: data.substring(0, 500)
+              };
+          
+              const httpReq = http.request(options, (httpRes) => {
+                let data = '';
+                
+                httpRes.on('data', (chunk) => {
+                  data += chunk;
                 });
-                reject(new Error(`HTTP ${httpRes.statusCode}: ${data.substring(0, 100)}`));
-              }
+                
+                httpRes.on('end', () => {
+                  if (httpRes.statusCode === 200) {
+                    try {
+                      const parsed = JSON.parse(data);
+                      resolve(parsed);
+                    } catch (e) {
+                      console.error('❌ [Auth Middleware] Erro ao fazer parse da resposta JSON:', e.message, {
+                        statusCode: httpRes.statusCode,
+                        dataPreview: data.substring(0, 200),
+                        contentType: httpRes.headers['content-type']
+                      });
+                      reject(new Error('Invalid JSON response'));
+                    }
+                  } else {
+                    // Log detalhado quando a requisição falha
+                    console.error(`❌ [Auth Middleware] Requisição HTTP retornou status ${httpRes.statusCode}`, {
+                      hostname: hostname,
+                      port: serverPort,
+                      hasCookies: !!req.headers.cookie,
+                      cookieHeader: req.headers.cookie ? req.headers.cookie.substring(0, 200) : 'none',
+                      responseHeaders: httpRes.headers,
+                      responseData: data.substring(0, 500)
+                    });
+                    reject(new Error(`HTTP ${httpRes.statusCode}: ${data.substring(0, 100)}`));
+                  }
+                });
+              });
+              
+              httpReq.on('error', (error) => {
+                console.debug(`⚠️  [Auth Middleware] Erro na requisição HTTP interna para ${hostname}:`, {
+                  message: error.message,
+                  code: error.code,
+                  port: serverPort
+                });
+                reject(error);
+              });
+              
+              httpReq.setTimeout(3000, () => {
+                httpReq.destroy();
+                console.debug(`⏱️  [Auth Middleware] Timeout na requisição HTTP interna para ${hostname}`);
+                reject(new Error('Timeout'));
+              });
+              
+              httpReq.end();
             });
-          });
-          
-          httpReq.on('error', (error) => {
-            console.error('❌ [Auth Middleware] Erro na requisição HTTP interna:', {
-              message: error.message,
-              code: error.code,
-              url: sessionUrl,
-              port: serverPort
-            });
-            reject(error);
-          });
-          
-          httpReq.setTimeout(5000, () => {
-            httpReq.destroy();
-            console.debug('⏱️  [Auth Middleware] Timeout na requisição HTTP interna', {
-              url: sessionUrl,
-              timeout: 5000
-            });
-            reject(new Error('Timeout'));
-          });
-          
-          httpReq.end();
-        });
+            
+            // Se chegou aqui, a requisição foi bem-sucedida
+            break;
+          } catch (error) {
+            lastError = error;
+            console.debug(`⚠️  [Auth Middleware] Falha ao conectar em ${hostname}, tentando próximo...`);
+            // Continuar para o próximo hostname
+          }
+        }
+        
+        // Se todas as tentativas falharam, lançar o último erro
+        if (lastError || !sessionData) {
+          if (lastError) {
+            throw lastError;
+          } else {
+            throw new Error('Nenhuma requisição HTTP interna retornou dados válidos');
+          }
+        }
         
         if (sessionData?.user) {
           const authData = {
