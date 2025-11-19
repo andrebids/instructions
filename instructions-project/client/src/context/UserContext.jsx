@@ -8,7 +8,19 @@ const UserContext = React.createContext({
 
 export function UserProvider({ children }) {
   // Usar sempre AuthContext (que gerencia Auth.js)
-  const authContext = useAuthContext();
+  // Usar try-catch para lidar com hot reload
+  let authContext;
+  try {
+    authContext = useAuthContext();
+  } catch (error) {
+    // Durante hot reload, pode haver erros temporários
+    if (import.meta.env.DEV) {
+      console.warn('⚠️ [UserContext] Erro ao obter AuthContext durante hot reload:', error.message);
+      authContext = null;
+    } else {
+      throw error;
+    }
+  }
   const authUser = authContext?.user;
   
   // Get user name from AuthContext
