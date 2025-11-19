@@ -299,6 +299,29 @@
           "budgetRequired": "Budget is required",
           "budgetMustBePositive": "Budget must be greater than 0",
           "deliveryDateRequired": "Delivery date is required"
+        },
+        "clientAutocomplete": {
+          "label": "Client",
+          "placeholder": "Search for a client",
+          "addNewClient": "Add New Client"
+        },
+        "voiceAssistant": {
+          "title": "Voice Assistant",
+          "ready": "Ready. Click mic.",
+          "clickToStart": "Click mic to start...",
+          "speaking": "Speaking...",
+          "listening": "Listening...",
+          "prompts": {
+            "askName": "What is the project name?",
+            "askClient": "Who is the client?",
+            "confirmClient": "New client. Say 'Create' to fill form.",
+            "askEmail": "What is the client's email?",
+            "askPhone": "What is the client's phone?",
+            "askDate": "What is the delivery date?",
+            "askBudget": "What is the budget?",
+            "askConfirm": "Data filled. Say 'Continue' to proceed.",
+            "finished": "Assistant finished."
+          }
         }
       },
       "projectNotes": {
