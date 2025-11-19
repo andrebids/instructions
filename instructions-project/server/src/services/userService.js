@@ -756,9 +756,14 @@ export async function sendUserInvitation(email, role = 'comercial') {
     }
 
     // Criar convite via Supabase
+    // O Supabase inviteUserByEmail cria o usuário em estado "invited" (sem senha definida)
+    // e permite que o usuário defina a senha ao clicar no link de convite
+    // NOTA: O Supabase envia automaticamente um email padrão ao usar inviteUserByEmail
     const inviteData = await supabaseAuthService.inviteUserByEmail(email, { role });
 
-    // Enviar email de convite (não-bloqueante)
+    // Se EMAIL_ENABLED=true, enviar também nosso email personalizado
+    // Isso resultará em dois emails: um do Supabase (padrão) e um nosso (personalizado)
+    // O email personalizado tem melhor controle sobre o design e conteúdo
     if (process.env.EMAIL_ENABLED === 'true') {
       try {
         const frontendUrl = process.env.FRONTEND_URL ||
@@ -767,20 +772,24 @@ export async function sendUserInvitation(email, role = 'comercial') {
 
         const invitationLink = `${frontendUrl}/signin?email=${encodeURIComponent(email)}&invited=true`;
 
+        // Enviar email personalizado de forma não-bloqueante
+        // Se falhar, o email do Supabase já foi enviado, então o usuário ainda receberá o convite
         sendInvitationEmail(email, role, invitationLink)
           .then((result) => {
             if (result.success) {
-              logInfo('Service: Email de convite enviado', { email, messageId: result.messageId });
+              logInfo('Service: Email de convite personalizado enviado', { email, messageId: result.messageId });
             } else {
-              logError('Service: Falha ao enviar email de convite', { email, error: result.message });
+              logError('Service: Falha ao enviar email de convite personalizado', { email, error: result.message });
             }
           })
           .catch((error) => {
-            logError('Service: Erro ao enviar email de convite', error);
+            logError('Service: Erro ao enviar email de convite personalizado', error);
           });
       } catch (emailError) {
-        logError('Service: Erro ao tentar enviar email de convite', emailError);
+        logError('Service: Erro ao tentar enviar email de convite personalizado', emailError);
       }
+    } else {
+      logInfo('Service: Apenas email do Supabase será enviado (EMAIL_ENABLED=false)', { email });
     }
 
     return {
