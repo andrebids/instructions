@@ -720,6 +720,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
                 radius="full"
                 className="bg-white/20 text-white border border-white/20"
                 size="lg"
+                aria-label="Play video"
               >
                 <Icon icon="lucide:play" className="text-4xl ml-1" />
               </Button>
