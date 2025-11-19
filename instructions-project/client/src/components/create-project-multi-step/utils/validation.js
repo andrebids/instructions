@@ -73,16 +73,33 @@ export const validateStepAIDesigner = (formData) => {
 // Validação do Step: Logo Instructions (apenas para projetos Logo)
 export const validateStepLogoInstructions = (formData) => {
   const logoDetails = formData.logoDetails || {};
+  const dimensions = logoDetails.dimensions || {};
+  
+  // Verificar se pelo menos um campo de dimensões está preenchido
+  const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
+  const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
+  const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
+  const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
+  const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
+  
   const isValid = (
     logoDetails.logoNumber?.trim() !== "" &&
     logoDetails.logoName?.trim() !== "" &&
-    logoDetails.requestedBy?.trim() !== ""
+    logoDetails.requestedBy?.trim() !== "" &&
+    hasAtLeastOneDimension
   );
 
   logger.validation("logo-instructions", isValid, {
     hasLogoNumber: !!logoDetails.logoNumber,
     hasLogoName: !!logoDetails.logoName,
-    hasRequestedBy: !!logoDetails.requestedBy
+    hasRequestedBy: !!logoDetails.requestedBy,
+    hasAtLeastOneDimension: hasAtLeastOneDimension,
+    dimensions: {
+      height: hasHeight,
+      length: hasLength,
+      width: hasWidth,
+      diameter: hasDiameter
+    }
   });
 
   return isValid;

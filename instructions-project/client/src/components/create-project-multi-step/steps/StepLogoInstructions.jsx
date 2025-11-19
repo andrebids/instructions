@@ -271,7 +271,19 @@ const validationSchema = Yup.object({
       value: Yup.number().nullable().positive("Diameter must be positive"),
       imperative: Yup.boolean(),
     }).nullable(),
-  }).nullable(),
+  }).nullable().test(
+    "at-least-one-dimension",
+    "At least one dimension (Height, Length, Width, or Diameter) must be filled",
+    function (value) {
+      // Se dimensions for null ou undefined, retornar false (inválido)
+      if (!value) return false;
+      const hasHeight = value.height?.value != null && value.height.value !== "";
+      const hasLength = value.length?.value != null && value.length.value !== "";
+      const hasWidth = value.width?.value != null && value.width.value !== "";
+      const hasDiameter = value.diameter?.value != null && value.diameter.value !== "";
+      return hasHeight || hasLength || hasWidth || hasDiameter;
+    }
+  ),
 });
 
 export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
@@ -774,6 +786,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                     </div>
                   );
                 })}
+                {formik.errors.dimensions && typeof formik.errors.dimensions === 'string' && (
+                  <div className="text-danger text-xs mt-1">
+                    {formik.errors.dimensions}
+                  </div>
+                )}
               </CardBody>
             </Card>
 
