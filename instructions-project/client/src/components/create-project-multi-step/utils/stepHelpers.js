@@ -2,17 +2,22 @@
 export const getVisibleSteps = (formData, allSteps) => {
   return allSteps.filter(step => {
     if (!step.conditional) return true;
-    
+
     // Steps condicionais apenas para projectos Simu
     if (step.condition === "isSimu") {
       return formData.projectType === "simu" && formData.simuWorkflow !== null;
     }
-    
+
     // Step condicional para AI Designer
     if (step.condition === "isAIDesigner") {
       return formData.projectType === "simu" && formData.simuWorkflow === "ai";
     }
-    
+
+    // Step condicional para Logo Instructions
+    if (step.condition === "isLogo") {
+      return formData.projectType === "logo";
+    }
+
     return true;
   });
 };

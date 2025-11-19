@@ -37,10 +37,11 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     },
     cols === 1 && products.length > 1 
       ? [AutoScroll({ 
-          speed: 2.5, 
+          speed: 1.8, 
           stopOnInteraction: false, 
           stopOnMouseEnter: true,
-          stopOnFocusIn: false
+          stopOnFocusIn: false,
+          startDelay: 0
         })]
       : []
   );
@@ -48,7 +49,6 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [cardSize, setCardSize] = useState(400);
   const [cardHeight, setCardHeight] = useState(600);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [slideOpacities, setSlideOpacities] = useState({});
 
   // Update selected index
@@ -57,28 +57,30 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     setSelectedIndex(emblaApi.selectedScrollSnap());
   }, [emblaApi]);
 
-  // Calcular opacidade dos slides baseado nas margens da página (50px de cada lado)
+  // Calcular opacidade dos slides baseado nas margens da página (25px de cada lado)
   const updateSlideOpacities = useCallback(() => {
     if (!emblaApi || cols !== 1) return;
     
-    const container = emblaApi.containerNode();
-    if (!container) return;
-    
     const slides = emblaApi.slideNodes();
-    const marginZone = 50; // 50px a partir de cada margem
+    if (!slides.length) return;
+    
+    const marginZone = 25; // 25px a partir de cada margem
     const viewportWidth = window.innerWidth;
     const opacities = {};
     
+    // Batch getBoundingClientRect calls
+    const rects = slides.map(slide => slide.getBoundingClientRect());
+    
     slides.forEach((slide, index) => {
-      const slideRect = slide.getBoundingClientRect();
+      const slideRect = rects[index];
       
-      // Verificar se o slide está nas zonas de margem (50px da esquerda ou direita da viewport)
+      // Verificar se o slide está nas zonas de margem (25px da esquerda ou direita da viewport)
       const slideLeft = slideRect.left;
       const slideRight = slideRect.right;
       
-      // Zona esquerda: 0 a 50px
+      // Zona esquerda: 0 a 25px
       const inLeftZone = slideRight > 0 && slideLeft < marginZone;
-      // Zona direita: viewportWidth - 50px a viewportWidth
+      // Zona direita: viewportWidth - 25px a viewportWidth
       const inRightZone = slideLeft < viewportWidth && slideRight > (viewportWidth - marginZone);
       
       if (inLeftZone || inRightZone) {
@@ -86,30 +88,25 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
         let minOpacity = 1;
         
         if (inLeftZone) {
-          // Slide está na zona esquerda - calcular distância do ponto mais próximo da margem esquerda
-          // O ponto mais próximo do slide à margem esquerda (x=0) é slideLeft
           const distanceFromLeftMargin = Math.max(0, slideLeft);
-          // Normalizar: 0 na margem (0px), 1 a 50px da margem
           const normalizedDistance = Math.min(1, distanceFromLeftMargin / marginZone);
-          // Opacidade: 0.3 na margem (0px), 1.0 a 50px da margem
-          const opacity = 0.3 + (normalizedDistance * 0.7);
+          // Curva extremamente suave usando ease-out quintic: opacity mínima 0.6, máxima 1.0
+          const easedDistance = 1 - Math.pow(1 - normalizedDistance, 5); // Ease-out quintic
+          const opacity = 0.6 + (easedDistance * 0.4);
           minOpacity = Math.min(minOpacity, opacity);
         }
         
         if (inRightZone) {
-          // Slide está na zona direita - calcular distância do ponto mais próximo da margem direita
-          // O ponto mais próximo do slide à margem direita (x=viewportWidth) é viewportWidth - slideRight
           const distanceFromRightMargin = Math.max(0, viewportWidth - slideRight);
-          // Normalizar: 0 na margem (0px), 1 a 50px da margem
           const normalizedDistance = Math.min(1, distanceFromRightMargin / marginZone);
-          // Opacidade: 0.3 na margem (0px), 1.0 a 50px da margem
-          const opacity = 0.3 + (normalizedDistance * 0.7);
+          // Curva extremamente suave usando ease-out quintic: opacity mínima 0.6, máxima 1.0
+          const easedDistance = 1 - Math.pow(1 - normalizedDistance, 5); // Ease-out quintic
+          const opacity = 0.6 + (easedDistance * 0.4);
           minOpacity = Math.min(minOpacity, opacity);
         }
         
         opacities[index] = minOpacity;
       } else {
-        // Slide fora das zonas de margem, opacidade máxima
         opacities[index] = 1;
       }
     });
@@ -121,7 +118,7 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     if (!emblaApi || cols !== 1) return;
     
     let rafId = null;
-    let scrollRafId = null;
+    let isUpdating = false;
     
     const onScroll = () => {
       // Cancelar frame anterior se existir
@@ -129,30 +126,19 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
         cancelAnimationFrame(rafId);
       }
       
-      // Agendar atualização no próximo frame
-      rafId = requestAnimationFrame(() => {
-        setScrollProgress(emblaApi.scrollProgress());
-        updateSlideOpacities();
-        rafId = null;
-      });
-      
-      // Se não há loop contínuo, iniciar um durante o scroll
-      if (!scrollRafId) {
-        const continuousUpdate = () => {
+      // Agendar atualização no próximo frame apenas se não estiver atualizando
+      if (!isUpdating) {
+        rafId = requestAnimationFrame(() => {
+          isUpdating = true;
           updateSlideOpacities();
-          scrollRafId = requestAnimationFrame(continuousUpdate);
-        };
-        scrollRafId = requestAnimationFrame(continuousUpdate);
+          isUpdating = false;
+          rafId = null;
+        });
       }
     };
     
     const onSettle = () => {
-      // Parar loop contínuo
-      if (scrollRafId) {
-        cancelAnimationFrame(scrollRafId);
-        scrollRafId = null;
-      }
-      // Última atualização
+      // Parar atualizações pendentes
       if (rafId) {
         cancelAnimationFrame(rafId);
         rafId = null;
@@ -182,7 +168,6 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
-      if (scrollRafId) cancelAnimationFrame(scrollRafId);
       emblaApi.off('select', onSelect);
       emblaApi.off('reInit', onSelect);
       emblaApi.off('scroll', onScroll);
@@ -297,8 +282,8 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
         className="relative w-full overflow-hidden"
         onWheel={handleWheel}
       >
-        <div ref={emblaRef} className="overflow-hidden" style={{ transform: 'translateZ(0)' }}>
-          <div className="flex" style={{ willChange: 'transform', backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
+        <div ref={emblaRef} className="overflow-hidden" style={{ transform: 'translateZ(0)', contain: 'layout style paint' }}>
+          <div className="flex" style={{ willChange: 'transform', backfaceVisibility: 'hidden', transform: 'translateZ(0)', contain: 'layout style' }}>
             {products.map((p, index) => {
               const opacity = slideOpacities[index] !== undefined ? slideOpacities[index] : 1;
               
@@ -312,7 +297,7 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
                     marginRight: '24px',
                     transform: 'translateZ(0)',
                     opacity: opacity,
-                    transition: 'opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transition: 'opacity 0.45s cubic-bezier(0.19, 1, 0.22, 1)',
                     willChange: 'opacity'
                   }}
                 >
