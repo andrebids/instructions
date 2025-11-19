@@ -26,7 +26,6 @@ import {
   Spinner,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import generatePassword from "generate-password";
 import { usersAPI } from "../services/api";
 import { PageTitle } from "../components/layout/page-title";
 import { useUser } from "../context/UserContext";
@@ -89,6 +88,13 @@ export default function AdminUsers() {
   
   const [actionLoading, setActionLoading] = React.useState(false);
   const fileInputRef = React.useRef(null);
+  
+  // Estados para mostrar/ocultar senha
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = React.useState(false);
+  
+  // Estado para força da senha
+  const [passwordStrength, setPasswordStrength] = React.useState('');
   
   // Verificação de role
   React.useEffect(() => {
@@ -173,6 +179,10 @@ export default function AdminUsers() {
       avatarFile: null,
       avatarPreview: user.imageUrl || null
     });
+    // Resetar estados de visibilidade e força ao abrir modal
+    setShowPassword(false);
+    setShowPasswordConfirm(false);
+    setPasswordStrength('');
     onEditOpen();
   };
 
@@ -187,23 +197,126 @@ export default function AdminUsers() {
     }
   };
 
-  // Gerar senha segura que cumpre todos os requisitos
-  const generateSecurePassword = () => {
-    const newPassword = generatePassword.generate({
-      length: 12,
-      uppercase: true,
-      lowercase: true,
-      numbers: true,
-      symbols: true,
-      strict: true, // Garante que todos os critérios sejam atendidos
-    });
+  // Avaliar força da senha (baseado no exemplo fornecido)
+  const evaluatePasswordStrength = (password) => {
+    if (!password) return '';
     
-    // Preencher ambos os campos com a senha gerada
+    let score = 0;
+    
+    // Check password length (mínimo 8 caracteres)
+    if (password.length >= 8) score += 1;
+    
+    // Contains lowercase
+    if (/[a-z]/.test(password)) score += 1;
+    
+    // Contains uppercase
+    if (/[A-Z]/.test(password)) score += 1;
+    
+    // Contains numbers
+    if (/\d/.test(password)) score += 1;
+    
+    // Contains special characters
+    if (/[^A-Za-z0-9]/.test(password)) score += 1;
+    
+    // Determinar força baseada no score
+    switch (score) {
+      case 0:
+      case 1:
+      case 2:
+        return 'Weak';
+      case 3:
+        return 'Medium';
+      case 4:
+      case 5:
+        return 'Strong';
+      default:
+        return '';
+    }
+  };
+  
+  // Obter cor baseada na força da senha
+  const getStrengthColor = (strength) => {
+    switch (strength) {
+      case 'Weak':
+        return 'danger'; // Vermelho
+      case 'Medium':
+        return 'warning'; // Laranja/Amarelo
+      case 'Strong':
+        return 'success'; // Verde
+      default:
+        return 'default';
+    }
+  };
+  
+  // Obter label traduzido para força da senha
+  const getStrengthLabel = (strength) => {
+    switch (strength) {
+      case 'Weak':
+        return 'Fraca';
+      case 'Medium':
+        return 'Média';
+      case 'Strong':
+        return 'Forte';
+      default:
+        return '';
+    }
+  };
+
+  // Gerar senha segura usando Web Crypto API (compatível com browser)
+  const generateSecurePassword = () => {
+    const length = 12;
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const symbols = '!@#$%^&*(),.?":{}|<>_\\-+=[\\]\\/\'`~;';
+    const allChars = uppercase + lowercase + numbers + symbols;
+    
+    // Garantir que a senha tenha pelo menos um de cada tipo
+    let password = '';
+    
+    // Usar Web Crypto API para seleção aleatória segura
+    const randomArray = new Uint32Array(4);
+    crypto.getRandomValues(randomArray);
+    
+    // Adicionar pelo menos um de cada tipo usando valores criptograficamente seguros
+    password += uppercase[randomArray[0] % uppercase.length];
+    password += lowercase[randomArray[1] % lowercase.length];
+    password += numbers[randomArray[2] % numbers.length];
+    password += symbols[randomArray[3] % symbols.length];
+    
+    // Preencher o resto com caracteres aleatórios usando Web Crypto API
+    const array = new Uint32Array(length - 4);
+    crypto.getRandomValues(array);
+    
+    for (let i = 0; i < length - 4; i++) {
+      password += allChars[array[i] % allChars.length];
+    }
+    
+    // Embaralhar a senha usando Web Crypto API (Fisher-Yates shuffle)
+    const passwordArray = password.split('');
+    const shuffleArray = new Uint32Array(passwordArray.length - 1);
+    crypto.getRandomValues(shuffleArray);
+    
+    for (let i = passwordArray.length - 1; i > 0; i--) {
+      const j = shuffleArray[i - 1] % (i + 1);
+      [passwordArray[i], passwordArray[j]] = [passwordArray[j], passwordArray[i]];
+    }
+    
+    const newPassword = passwordArray.join('');
+    
+    // Preencher ambos os campos com a senha gerada e mostrar inicialmente
     setEditFormData({
       ...editFormData,
       password: newPassword,
       passwordConfirm: newPassword
     });
+    
+    // Mostrar senha inicialmente quando gerada
+    setShowPassword(true);
+    setShowPasswordConfirm(true);
+    
+    // Atualizar força da senha
+    setPasswordStrength(evaluatePasswordStrength(newPassword));
   };
 
   const handleSaveChanges = async () => {
@@ -662,19 +775,42 @@ export default function AdminUsers() {
                   <Input
                     label={t('pages.dashboard.adminUsers.modals.editUser.newPasswordOptional')}
                     placeholder={t('pages.dashboard.adminUsers.modals.editUser.passwordPlaceholder')}
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={editFormData.password}
-                    onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
+                    onChange={(e) => {
+                      const newPassword = e.target.value;
+                      setEditFormData({ ...editFormData, password: newPassword });
+                      setPasswordStrength(evaluatePasswordStrength(newPassword));
+                    }}
+                    size="md"
+                    color={passwordStrength ? getStrengthColor(passwordStrength) : 'default'}
+                    description={passwordStrength ? `Força: ${getStrengthLabel(passwordStrength)}` : ''}
                     endContent={
-                      <Button
-                        isIconOnly
-                        variant="light"
-                        size="sm"
-                        onPress={generateSecurePassword}
-                        aria-label="Gerar senha segura"
-                      >
-                        <Icon icon="lucide:refresh-cw" className="text-default-400" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        {editFormData.password && (
+                          <Button
+                            isIconOnly
+                            variant="light"
+                            size="sm"
+                            onPress={() => setShowPassword(!showPassword)}
+                            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                          >
+                            <Icon 
+                              icon={showPassword ? "lucide:eye-off" : "lucide:eye"} 
+                              className="text-default-400" 
+                            />
+                          </Button>
+                        )}
+                        <Button
+                          isIconOnly
+                          variant="light"
+                          size="sm"
+                          onPress={generateSecurePassword}
+                          aria-label="Gerar senha segura"
+                        >
+                          <Icon icon="lucide:refresh-cw" className="text-default-400" />
+                        </Button>
+                      </div>
                     }
                   />
                   
@@ -683,13 +819,28 @@ export default function AdminUsers() {
                       <Input
                         label="Confirmar Nova Password"
                         placeholder="Digite a password novamente"
-                        type="password"
+                        type={showPasswordConfirm ? "text" : "password"}
                         value={editFormData.passwordConfirm}
                         onChange={(e) => setEditFormData({ ...editFormData, passwordConfirm: e.target.value })}
-                        color={editFormData.password === editFormData.passwordConfirm ? 'success' : 'danger'}
-                        description={editFormData.password === editFormData.passwordConfirm ? '✓ Passwords coincidem' : '✗ Passwords não coincidem'}
+                        size="md"
+                        color={editFormData.password && editFormData.passwordConfirm && editFormData.password === editFormData.passwordConfirm ? 'success' : editFormData.passwordConfirm ? 'danger' : 'default'}
+                        description={editFormData.password && editFormData.passwordConfirm ? (editFormData.password === editFormData.passwordConfirm ? '✓ Passwords coincidem' : '✗ Passwords não coincidem') : ''}
+                        endContent={
+                          <Button
+                            isIconOnly
+                            variant="light"
+                            size="sm"
+                            onPress={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                            aria-label={showPasswordConfirm ? "Ocultar senha" : "Mostrar senha"}
+                          >
+                            <Icon 
+                              icon={showPasswordConfirm ? "lucide:eye-off" : "lucide:eye"} 
+                              className="text-default-400" 
+                            />
+                          </Button>
+                        }
                       />
-                      <p className="text-tiny text-default-500 -mt-2">Mínimo 8 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais</p>
+                      <p className="text-small text-default-500 mt-1">Mínimo 8 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais</p>
                     </>
                   )}
                 </div>

@@ -33,7 +33,9 @@ export function AuthProvider({ children }) {
   );
 }
 
-export function useAuthContext() {
+// Hook compatível com Fast Refresh
+// Deve ser uma função nomeada exportada diretamente
+function useAuthContext() {
   const context = useContext(AuthContext);
   
   // Durante hot reload, o contexto pode estar temporariamente null
@@ -50,4 +52,7 @@ export function useAuthContext() {
   
   return context;
 }
+
+// Exportar como named export para compatibilidade com Fast Refresh
+export { useAuthContext };
 
