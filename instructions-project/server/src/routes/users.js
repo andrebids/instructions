@@ -13,15 +13,24 @@ router.use(async (req, res, next) => {
   const auth = await getAuth(req);
   console.log(`📋 [Users Route] ${req.method} ${req.path}`, {
     query: req.query,
-    body: req.body,
+    body: req.body ? {
+      ...req.body,
+      password: req.body.password ? `[${req.body.password.length} caracteres]` : undefined
+    } : req.body,
     userId: auth?.userId || 'not authenticated',
-    fullPath: req.originalUrl
+    userRole: auth?.role || 'not authenticated',
+    fullPath: req.originalUrl,
+    headers: {
+      authorization: req.headers.authorization ? 'present' : 'missing',
+      'content-type': req.headers['content-type']
+    }
   });
   next();
 });
 
 // Rotas de perfil (não requerem admin, apenas autenticação)
 router.put('/profile', requireAuth(), profileController.updateProfile);
+router.put('/profile/password', requireAuth(), passwordUpdateLimiter, profileController.updatePassword);
 router.post('/profile/avatar', requireAuth(), profileController.uploadAvatar, profileController.uploadAvatarImage);
 
 // Todas as outras rotas requerem role admin

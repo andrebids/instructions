@@ -192,7 +192,10 @@ console.warn = function(...args) {
 
 // Configurar Iconify para usar proxy do servidor (resolve problemas CORS)
 // IMPORTANTE: Configuração executada imediatamente para garantir que esteja pronta antes dos componentes
-if (typeof window !== 'undefined') {
+// Prevenir reconfiguração múltipla durante hot reload
+if (typeof window !== 'undefined' && !window.__iconifyConfigured) {
+  window.__iconifyConfigured = true;
+  
   // Interceptar requisições fetch do Iconify para redirecionar ao proxy
   // Isso garante que TODAS as requisições do Iconify passem pelo nosso proxy
   const originalFetch = window.fetch;
@@ -516,6 +519,12 @@ if ('serviceWorker' in navigator && !isDev) {
 
 const rootElement = document.getElementById('root')
 
+// Prevenir múltiplas inicializações durante hot reload
+// Usar propriedade no elemento para persistir entre hot reloads
+if (!rootElement._reactRoot) {
+  rootElement._reactRoot = createRoot(rootElement);
+}
+
 // Componente raiz usando Auth.js
 function RootApp() {
   if (!useAuthJs) {
@@ -545,7 +554,8 @@ function RootApp() {
   )
 }
 
-createRoot(rootElement).render(
+// Renderizar usando o root persistente
+rootElement._reactRoot.render(
   <React.StrictMode>
     <RootApp />
   </React.StrictMode>
