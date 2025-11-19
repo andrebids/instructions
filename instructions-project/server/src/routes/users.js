@@ -13,9 +13,17 @@ router.use(async (req, res, next) => {
   const auth = await getAuth(req);
   console.log(`📋 [Users Route] ${req.method} ${req.path}`, {
     query: req.query,
-    body: req.body,
+    body: req.body ? {
+      ...req.body,
+      password: req.body.password ? `[${req.body.password.length} caracteres]` : undefined
+    } : req.body,
     userId: auth?.userId || 'not authenticated',
-    fullPath: req.originalUrl
+    userRole: auth?.role || 'not authenticated',
+    fullPath: req.originalUrl,
+    headers: {
+      authorization: req.headers.authorization ? 'present' : 'missing',
+      'content-type': req.headers['content-type']
+    }
   });
   next();
 });
