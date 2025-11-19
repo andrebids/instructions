@@ -26,6 +26,7 @@ import {
   Spinner,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import generatePassword from "generate-password";
 import { usersAPI } from "../services/api";
 import { PageTitle } from "../components/layout/page-title";
 import { useUser } from "../context/UserContext";
@@ -81,6 +82,7 @@ export default function AdminUsers() {
     email: "",
     role: "comercial",
     password: "",
+    passwordConfirm: "",
     avatarFile: null,
     avatarPreview: null
   });
@@ -167,6 +169,7 @@ export default function AdminUsers() {
       email: user.email || "",
       role: user.role || "comercial",
       password: "",
+      passwordConfirm: "",
       avatarFile: null,
       avatarPreview: user.imageUrl || null
     });
@@ -182,6 +185,25 @@ export default function AdminUsers() {
         avatarPreview: URL.createObjectURL(file)
       });
     }
+  };
+
+  // Gerar senha segura que cumpre todos os requisitos
+  const generateSecurePassword = () => {
+    const newPassword = generatePassword.generate({
+      length: 12,
+      uppercase: true,
+      lowercase: true,
+      numbers: true,
+      symbols: true,
+      strict: true, // Garante que todos os critérios sejam atendidos
+    });
+    
+    // Preencher ambos os campos com a senha gerada
+    setEditFormData({
+      ...editFormData,
+      password: newPassword,
+      passwordConfirm: newPassword
+    });
   };
 
   const handleSaveChanges = async () => {
@@ -204,12 +226,22 @@ export default function AdminUsers() {
         imageUrl: imageUrl
       };
 
+      // 3. Validate password if provided
       if (editFormData.password) {
-        if (editFormData.password.length < 6) {
-            alert(t('pages.dashboard.adminUsers.errors.passwordTooShort'));
-            setActionLoading(false);
-            return;
+        // Verificar se passwords coincidem
+        if (editFormData.password !== editFormData.passwordConfirm) {
+          alert('As passwords não coincidem. Por favor, verifique.');
+          setActionLoading(false);
+          return;
         }
+        
+        // Validação básica de comprimento (servidor fará validação completa)
+        if (editFormData.password.length < 8) {
+          alert('A password deve ter pelo menos 8 caracteres.');
+          setActionLoading(false);
+          return;
+        }
+        
         updateData.password = editFormData.password;
       }
 
@@ -220,7 +252,15 @@ export default function AdminUsers() {
       loadUsers();
     } catch (err) {
       console.error('Erro ao atualizar utilizador:', err);
-      alert(err.response?.data?.message || err.response?.data?.error || 'Erro ao atualizar utilizador');
+      // Mostrar mensagem de erro detalhada do servidor
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Erro ao atualizar utilizador';
+      const errorDetails = err.response?.data?.details;
+      
+      if (errorDetails && Array.isArray(errorDetails)) {
+        alert(`${errorMessage}\n\n${errorDetails.join('\n')}`);
+      } else {
+        alert(errorMessage);
+      }
     } finally {
       setActionLoading(false);
     }
@@ -625,8 +665,33 @@ export default function AdminUsers() {
                     type="password"
                     value={editFormData.password}
                     onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
-                    description={t('pages.dashboard.adminUsers.modals.editUser.passwordDescription')}
+                    endContent={
+                      <Button
+                        isIconOnly
+                        variant="light"
+                        size="sm"
+                        onPress={generateSecurePassword}
+                        aria-label="Gerar senha segura"
+                      >
+                        <Icon icon="lucide:refresh-cw" className="text-default-400" />
+                      </Button>
+                    }
                   />
+                  
+                  {editFormData.password && (
+                    <>
+                      <Input
+                        label="Confirmar Nova Password"
+                        placeholder="Digite a password novamente"
+                        type="password"
+                        value={editFormData.passwordConfirm}
+                        onChange={(e) => setEditFormData({ ...editFormData, passwordConfirm: e.target.value })}
+                        color={editFormData.password === editFormData.passwordConfirm ? 'success' : 'danger'}
+                        description={editFormData.password === editFormData.passwordConfirm ? '✓ Passwords coincidem' : '✗ Passwords não coincidem'}
+                      />
+                      <p className="text-tiny text-default-500 -mt-2">Mínimo 8 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais</p>
+                    </>
+                  )}
                 </div>
               </ModalBody>
               <ModalFooter className="justify-between">

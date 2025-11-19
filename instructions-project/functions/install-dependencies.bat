@@ -18,7 +18,7 @@ echo    INSTALAR DEPENDÊNCIAS
 echo ========================================
 echo.
 echo Logs sendo salvos em: %LOG_FILE%
-echo ======================================== >> "%LOG_FILE%"
+echo ======================================== > "%LOG_FILE%"
 echo [%DATE% %TIME%] INSTALANDO DEPENDÊNCIAS >> "%LOG_FILE%"
 echo ======================================== >> "%LOG_FILE%"
 echo.
