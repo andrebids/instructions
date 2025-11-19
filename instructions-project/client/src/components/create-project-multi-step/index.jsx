@@ -132,6 +132,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
           <StepLogoInstructions
             formData={formState.formData}
             onInputChange={formState.handleInputChange}
+            saveStatus={saveStatus}
           />
         );
 
