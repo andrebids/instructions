@@ -69,16 +69,43 @@ export function useUsersManagement(isAdmin) {
       setActionLoading(true);
       console.log('[useUsersManagement] Criando usuário:', { email: userData.email });
       await usersAPI.create(userData);
-      console.log('[useUsersManagement] Usuário criado com sucesso, recarregando lista...');
-      await loadUsers();
-      console.log('[useUsersManagement] Lista recarregada após criar usuário');
+      console.log('[useUsersManagement] Usuário criado com sucesso');
+      
+      // Limpar filtros para garantir que o novo usuário apareça na lista
+      console.log('[useUsersManagement] Limpando filtros após criar usuário');
+      setSearchQuery('');
+      setRoleFilter('all');
+      
+      // Aguardar um tick para garantir que os filtros foram atualizados
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      // Recarregar lista sem filtros
+      console.log('[useUsersManagement] Recarregando lista sem filtros...');
+      setLoading(true);
+      setError(null);
+      
+      const data = await usersAPI.getAll({});
+      console.log('[useUsersManagement] Usuários recebidos da API após criar:', {
+        count: Array.isArray(data) ? data.length : 0,
+        userIds: Array.isArray(data) ? data.map(u => u.id) : [],
+        emails: Array.isArray(data) ? data.map(u => u.email) : []
+      });
+      
+      if (!Array.isArray(data)) {
+        console.error('[useUsersManagement] Dados recebidos não são um array:', data);
+        setUsers([]);
+      } else {
+        setUsers(data);
+        console.log('[useUsersManagement] Lista recarregada após criar usuário');
+      }
     } catch (err) {
       console.error('[useUsersManagement] Erro ao criar utilizador:', err);
       throw err;
     } finally {
       setActionLoading(false);
+      setLoading(false);
     }
-  }, [loadUsers]);
+  }, [setSearchQuery, setRoleFilter]);
 
   /**
    * Atualiza um usuário

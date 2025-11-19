@@ -83,9 +83,6 @@ export default function AdminUsers() {
       await createUser(userData);
       console.log('[AdminUsers] Usuário criado, fechando modal');
       onCreateClose();
-      // Recarregar lista após criar para garantir que aparece
-      console.log('[AdminUsers] Recarregando lista após criar usuário');
-      await loadUsers();
     } catch (err) {
       console.error('[AdminUsers] Erro ao criar usuário:', err);
       alert(err.response?.data?.message || t('pages.dashboard.adminUsers.errors.createFailed'));
@@ -95,6 +92,8 @@ export default function AdminUsers() {
 
   // Handler para editar usuário
   const handleEditClick = (user) => {
+    // Limpar campo de busca ao abrir modal de edição
+    setSearchQuery('');
     setSelectedUser(user);
     onEditOpen();
   };
@@ -182,6 +181,10 @@ export default function AdminUsers() {
           onChange={(e) => setSearchQuery(e.target.value)}
           startContent={<Icon icon="lucide:search" className="text-default-400" />}
           className="flex-1"
+          autoComplete="off"
+          autoFocus={false}
+          name="user-search"
+          id="user-search-input"
         />
         <Select
           label={t('pages.dashboard.adminUsers.filterByRole')}
@@ -197,7 +200,11 @@ export default function AdminUsers() {
         <Button
           color="primary"
           startContent={<Icon icon="lucide:user-plus" />}
-          onPress={onCreateOpen}
+          onPress={() => {
+            // Limpar campo de busca ao abrir modal de criação
+            setSearchQuery('');
+            onCreateOpen();
+          }}
         >
           {t('pages.dashboard.adminUsers.addUser')}
         </Button>
@@ -205,7 +212,11 @@ export default function AdminUsers() {
           color="secondary"
           variant="flat"
           startContent={<Icon icon="lucide:mail" />}
-          onPress={onInviteOpen}
+          onPress={() => {
+            // Limpar campo de busca ao abrir modal de convite
+            setSearchQuery('');
+            onInviteOpen();
+          }}
         >
           {t('pages.dashboard.adminUsers.sendInvite')}
         </Button>
@@ -224,14 +235,22 @@ export default function AdminUsers() {
       {/* Modais */}
       <CreateUserModal
         isOpen={isCreateOpen}
-        onClose={onCreateClose}
+        onClose={() => {
+          // Limpar campo de busca ao fechar modal de criação
+          setSearchQuery('');
+          onCreateClose();
+        }}
         onCreate={handleCreateUser}
         isLoading={actionLoading}
       />
       
       <InviteUserModal
         isOpen={isInviteOpen}
-        onClose={onInviteClose}
+        onClose={() => {
+          // Limpar campo de busca ao fechar modal de convite
+          setSearchQuery('');
+          onInviteClose();
+        }}
         onInvite={handleSendInvite}
         isLoading={actionLoading}
       />
@@ -240,6 +259,8 @@ export default function AdminUsers() {
         isOpen={isEditOpen}
         onClose={async () => {
           console.log('[AdminUsers] Fechando modal de edição, recarregando lista');
+          // Limpar campo de busca ao fechar modal de edição
+          setSearchQuery('');
           setSelectedUser(null);
           onEditClose();
           // Recarregar lista quando modal fecha para garantir dados atualizados
