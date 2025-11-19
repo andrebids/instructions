@@ -151,9 +151,19 @@ export async function createUser(userData) {
     });
 
     // Criar também na tabela next_auth.users
+    let dbErrorOccurred = false;
     try {
       const passwordHash = await bcrypt.hash(password, 10);
       const fullName = buildFullName(firstName, lastName, email);
+
+      logInfo('Service: Preparando dados para inserir na tabela next_auth.users', {
+        userId: supabaseUser.id,
+        email: email,
+        fullName: fullName,
+        role: role,
+        hasPasswordHash: !!passwordHash,
+        passwordHashLength: passwordHash ? passwordHash.length : 0,
+      });
 
       await userRepository.create({
         id: supabaseUser.id,
@@ -163,28 +173,72 @@ export async function createUser(userData) {
         role,
         emailVerified: new Date(),
       });
-    } catch (dbError) {
-      logError('Service: Erro ao criar usuário na tabela next_auth.users', {
-        error: dbError.message,
+
+      logInfo('Service: Usuário criado com sucesso na tabela next_auth.users', {
         userId: supabaseUser.id,
-        email,
+        email: email,
       });
-      // Não falhar a criação se houver erro na tabela
+    } catch (dbError) {
+      dbErrorOccurred = true;
+      // Logar o erro completo (agora logError trata erros do Sequelize)
+      logError('Service: Erro ao criar usuário na tabela next_auth.users', dbError);
+      
+      // Log adicional com contexto
+      logInfo('Service: Contexto do erro ao criar na tabela', {
+        userId: supabaseUser.id,
+        email: email,
+        firstName: firstName,
+        lastName: lastName,
+        role: role,
+        supabaseUserCreated: true,
+        errorName: dbError?.name,
+        errorMessage: dbError?.message,
+        hasOriginalError: !!dbError?.original,
+      });
+      
+      // Não falhar a criação se houver erro na tabela (usuário já existe no Supabase)
+      // Mas vamos verificar se o usuário foi criado mesmo assim
     }
 
     // Buscar usuário criado da tabela next_auth.users
+    logInfo('Service: Buscando usuário criado na tabela next_auth.users', {
+      userId: supabaseUser.id,
+      dbErrorOccurred: dbErrorOccurred,
+    });
+
     const createdUser = await userRepository.findById(supabaseUser.id);
     
     if (createdUser) {
+      logInfo('Service: Usuário encontrado na tabela next_auth.users', {
+        userId: supabaseUser.id,
+        email: createdUser.email,
+        name: createdUser.name,
+        role: createdUser.role,
+      });
       return transformUserFromNextAuth(createdUser);
     } else {
       // Fallback: usar dados do Supabase
+      logInfo('Service: Usuário não encontrado na tabela, usando dados do Supabase como fallback', {
+        userId: supabaseUser.id,
+        email: supabaseUser.email,
+        dbErrorOccurred: dbErrorOccurred,
+      });
       return transformUserFromSupabase(supabaseUser);
     }
   } catch (error) {
-    logError('Service: Erro ao criar usuário', {
-      error: error.message,
-      email: userData.email,
+    // Logar o erro completo (agora logError trata erros do Sequelize)
+    logError('Service: Erro ao criar usuário', error);
+    
+    // Log adicional com contexto
+    logInfo('Service: Contexto do erro ao criar usuário', {
+      email: userData?.email,
+      firstName: userData?.firstName,
+      lastName: userData?.lastName,
+      role: userData?.role,
+      hasPassword: !!userData?.password,
+      errorName: error?.name,
+      errorMessage: error?.message,
+      hasOriginalError: !!error?.original,
     });
 
     // Tratar erros específicos

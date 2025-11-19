@@ -135,13 +135,42 @@ export async function checkEmailExists(email, excludeId = null) {
  */
 export async function create(userData) {
   try {
+    // Validar dados antes de inserir
+    if (!userData.id) {
+      throw new Error('ID do usuário é obrigatório');
+    }
+    if (!userData.email) {
+      throw new Error('Email do usuário é obrigatório');
+    }
+    if (!userData.name) {
+      throw new Error('Nome do usuário é obrigatório');
+    }
+    if (!userData.role) {
+      throw new Error('Role do usuário é obrigatório');
+    }
+
     logInfo('Repository: Criando usuário na tabela next_auth.users', {
       userId: userData.id,
       email: userData.email,
+      name: userData.name,
+      role: userData.role,
+      hasPassword: !!userData.password,
+      passwordLength: userData.password ? userData.password.length : 0,
+      emailVerified: userData.emailVerified ? userData.emailVerified.toString() : 'null',
     });
 
-    const insertResult = await sequelize.query(
-      `INSERT INTO next_auth.users (id, name, email, password, role, "emailVerified", created_at, updated_at)
+    // Preparar dados para a query (sem senha nos logs)
+    const replacements = {
+      id: userData.id,
+      name: userData.name,
+      email: userData.email,
+      password: userData.password,
+      role: userData.role,
+      emailVerified: userData.emailVerified,
+    };
+
+    // Log da query SQL e parâmetros (sem senha)
+    const sqlQuery = `INSERT INTO next_auth.users (id, name, email, password, role, "emailVerified", created_at, updated_at)
        VALUES (:id, :name, :email, :password, :role, :emailVerified, NOW(), NOW())
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
@@ -149,16 +178,24 @@ export async function create(userData) {
          password = EXCLUDED.password,
          role = EXCLUDED.role,
          "emailVerified" = EXCLUDED."emailVerified",
-         updated_at = NOW()`,
+         updated_at = NOW()`;
+
+    logInfo('Repository: Executando INSERT na tabela next_auth.users', {
+      sql: sqlQuery,
+      parameters: {
+        id: replacements.id,
+        name: replacements.name,
+        email: replacements.email,
+        password: '[HIDDEN]',
+        role: replacements.role,
+        emailVerified: replacements.emailVerified,
+      },
+    });
+
+    const insertResult = await sequelize.query(
+      sqlQuery,
       {
-        replacements: {
-          id: userData.id,
-          name: userData.name,
-          email: userData.email,
-          password: userData.password,
-          role: userData.role,
-          emailVerified: userData.emailVerified,
-        },
+        replacements: replacements,
         type: sequelize.QueryTypes.INSERT
       }
     );
@@ -166,9 +203,16 @@ export async function create(userData) {
     logInfo('Repository: INSERT executado na tabela next_auth.users', {
       userId: userData.id,
       email: userData.email,
+      insertResult: insertResult ? 'sucesso' : 'sem resultado',
+      insertResultType: Array.isArray(insertResult) ? 'array' : typeof insertResult,
+      insertResultLength: Array.isArray(insertResult) ? insertResult.length : 'N/A',
     });
 
     // Verificar se o usuário foi realmente inserido
+    logInfo('Repository: Verificando se usuário foi criado', {
+      userId: userData.id,
+    });
+
     const verifyUsers = await sequelize.query(
       `SELECT id, name, email, role FROM next_auth.users WHERE id = :userId LIMIT 1`,
       {
@@ -181,22 +225,33 @@ export async function create(userData) {
       logInfo('Repository: Usuário criado com sucesso (verificado)', {
         userId: userData.id,
         email: userData.email,
+        name: verifyUsers[0].name,
+        role: verifyUsers[0].role,
       });
       return verifyUsers[0];
     } else {
       logError('Repository: Usuário não encontrado após INSERT', {
         userId: userData.id,
         email: userData.email,
+        verifyUsersResult: verifyUsers,
+        verifyUsersLength: verifyUsers ? verifyUsers.length : 'null',
       });
       throw new Error('Falha ao criar usuário na tabela');
     }
   } catch (error) {
-    logError('Repository: Erro ao criar usuário', {
-      error: error.message,
-      stack: error.stack,
+    // Passar o erro completo para logError (que agora trata erros do Sequelize)
+    logError('Repository: Erro ao criar usuário', error);
+    
+    // Log adicional com contexto
+    logInfo('Repository: Contexto do erro ao criar usuário', {
       userId: userData?.id,
       email: userData?.email,
+      name: userData?.name,
+      role: userData?.role,
+      hasPassword: !!userData?.password,
+      emailVerified: userData?.emailVerified,
     });
+    
     throw error;
   }
 }
