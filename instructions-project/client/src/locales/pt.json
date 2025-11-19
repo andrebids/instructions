@@ -36,7 +36,9 @@
           "Olá! Diga-me, o que precisa?",
           "Bom dia! Como posso ser útil?"
         ],
-        "openingProject": "A abrir novo projeto..."
+        "openingProject": "A abrir novo projeto...",
+        "listening": "A ouvir...",
+        "clickToRestart": "Clique no microfone para reiniciar"
       },
       "stats": {
         "totalProjects": "Total de Projetos",

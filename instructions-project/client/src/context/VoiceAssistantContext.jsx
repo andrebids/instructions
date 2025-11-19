@@ -63,6 +63,7 @@ export const VoiceAssistantProvider = ({ children }) => {
         returnObjects: true,
         defaultValue: ["Olá, onde posso ser útil?"] 
       });
+      
       const randomGreeting = Array.isArray(greetings) 
         ? greetings[Math.floor(Math.random() * greetings.length)]
         : greetings;

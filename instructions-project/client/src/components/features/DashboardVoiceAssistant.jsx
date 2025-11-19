@@ -3,8 +3,10 @@ import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useVoiceAssistant } from "../../context/VoiceAssistantContext";
+import { useTranslation } from "react-i18next";
 
 export const DashboardVoiceAssistant = () => {
+  const { t } = useTranslation();
   const { 
     isOpen, 
     openAssistant, 
@@ -105,7 +107,10 @@ export const DashboardVoiceAssistant = () => {
 
             {/* Footer / Status */}
             <div className="p-3 bg-content2/50 text-center text-xs text-default-400 border-t border-divider">
-              {listening ? "Fale agora..." : "Clique no microfone para reiniciar"}
+              {listening 
+                ? t('dashboard.voiceAssistant.listening', { defaultValue: 'Listening...' })
+                : t('dashboard.voiceAssistant.clickToRestart', { defaultValue: 'Click microphone to restart' })
+              }
             </div>
           </motion.div>
         )}

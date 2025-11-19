@@ -34,7 +34,9 @@
           "Salut! De quoi avez-vous besoin?",
           "Bonjour! En quoi puis-je vous assister?"
         ],
-        "openingProject": "Ouverture d'un nouveau projet..."
+        "openingProject": "Ouverture d'un nouveau projet...",
+        "listening": "Écoute...",
+        "clickToRestart": "Cliquez sur le microphone pour redémarrer"
       },
       "stats": {
         "totalProjects": "Total des projets",
