@@ -158,36 +158,9 @@ export function getAuthConfig() {
           maxAge: 30 * 24 * 60 * 60, // 30 dias
         }),
       },
-      // Configuração de cookies para produção HTTPS
-      cookies: isProduction ? {
-        sessionToken: {
-          name: isProduction ? '__Secure-authjs.session-token' : 'authjs.session-token',
-          options: {
-            httpOnly: true,
-            sameSite: 'lax',
-            path: '/',
-            secure: true, // Apenas HTTPS em produção
-          },
-        },
-        callbackUrl: {
-          name: isProduction ? '__Secure-authjs.callback-url' : 'authjs.callback-url',
-          options: {
-            httpOnly: true,
-            sameSite: 'lax',
-            path: '/',
-            secure: true,
-          },
-        },
-        csrfToken: {
-          name: isProduction ? '__Host-authjs.csrf-token' : 'authjs.csrf-token',
-          options: {
-            httpOnly: true,
-            sameSite: 'lax',
-            path: '/',
-            secure: true,
-          },
-        },
-      } : undefined,
+      // Configuração de cookies - usar configuração padrão do Auth.js
+      // O Auth.js já configura cookies corretamente baseado no ambiente
+      // Não sobrescrever a menos que seja absolutamente necessário
       providers: providers,
       callbacks: {
         async session({ session, token }) {
