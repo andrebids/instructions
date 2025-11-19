@@ -440,6 +440,7 @@ export default function AdminUsers() {
           <CardBody className="p-0">
             <Table aria-label="Tabela de utilizadores">
               <TableHeader>
+                <TableColumn>{t('pages.dashboard.adminUsers.table.image')}</TableColumn>
                 <TableColumn>{t('pages.dashboard.adminUsers.table.name')}</TableColumn>
                 <TableColumn>{t('pages.dashboard.adminUsers.table.email')}</TableColumn>
                 <TableColumn>{t('pages.dashboard.adminUsers.table.role')}</TableColumn>
@@ -451,16 +452,20 @@ export default function AdminUsers() {
                 {users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        {user.imageUrl && (
-                          <img
-                            src={user.imageUrl}
-                            alt={user.fullName}
-                            className="w-8 h-8 rounded-full"
-                          />
-                        )}
-                        <span>{user.fullName}</span>
-                      </div>
+                      {user.imageUrl ? (
+                        <img
+                          src={user.imageUrl}
+                          alt={user.fullName}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-default-200 flex items-center justify-center">
+                          <Icon icon="lucide:user" className="text-default-400" />
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span>{user.fullName}</span>
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
@@ -485,14 +490,14 @@ export default function AdminUsers() {
                             <Icon icon="lucide:more-vertical" />
                           </Button>
                         </DropdownTrigger>
-                        <DropdownMenu aria-label="Ações do utilizador">
+                        <DropdownMenu aria-label={t('pages.dashboard.adminUsers.table.actions')}>
                           <DropdownItem
                             key="edit"
                             startContent={<Icon icon="lucide:user" />}
                             onPress={() => handleEditUser(user)}
                             isDisabled={isCurrentUser(user.id)}
                           >
-                            Editar Usuário
+                            {t('pages.dashboard.adminUsers.actions.editUser')}
                           </DropdownItem>
                           <DropdownItem
                             key="editRole"
@@ -508,7 +513,7 @@ export default function AdminUsers() {
                             onPress={() => handleEditPassword(user)}
                             isDisabled={isCurrentUser(user.id)}
                           >
-                            Alterar Senha
+                            {t('pages.dashboard.adminUsers.actions.changePassword')}
                           </DropdownItem>
                           <DropdownItem
                             key="editEmail"
@@ -516,7 +521,7 @@ export default function AdminUsers() {
                             onPress={() => handleEditEmail(user)}
                             isDisabled={isCurrentUser(user.id)}
                           >
-                            Alterar Email
+                            {t('pages.dashboard.adminUsers.actions.changeEmail')}
                           </DropdownItem>
                           <DropdownItem
                             key="editImage"
@@ -524,7 +529,7 @@ export default function AdminUsers() {
                             onPress={() => handleEditImage(user)}
                             isDisabled={isCurrentUser(user.id)}
                           >
-                            Alterar Imagem
+                            {t('pages.dashboard.adminUsers.actions.changeImage')}
                           </DropdownItem>
                           <DropdownItem
                             key="delete"
@@ -699,28 +704,28 @@ export default function AdminUsers() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>Editar Usuário</ModalHeader>
+              <ModalHeader>{t('pages.dashboard.adminUsers.modals.editUser.title')}</ModalHeader>
               <ModalBody>
                 <div className="flex flex-col gap-4">
                   <Input
-                    label="Primeiro Nome"
+                    label={t('pages.dashboard.adminUsers.modals.editUser.firstName')}
                     value={editUserData.firstName}
                     onChange={(e) => setEditUserData({ ...editUserData, firstName: e.target.value })}
                   />
                   <Input
-                    label="Último Nome"
+                    label={t('pages.dashboard.adminUsers.modals.editUser.lastName')}
                     value={editUserData.lastName}
                     onChange={(e) => setEditUserData({ ...editUserData, lastName: e.target.value })}
                   />
                   <Input
-                    label="Email"
+                    label={t('pages.dashboard.adminUsers.modals.editUser.email')}
                     type="email"
                     value={editUserData.email}
                     onChange={(e) => setEditUserData({ ...editUserData, email: e.target.value })}
                     isRequired
                   />
                   <Select
-                    label="Role"
+                    label={t('pages.dashboard.adminUsers.modals.editUser.role')}
                     selectedKeys={[editUserData.role]}
                     onSelectionChange={(keys) => setEditUserData({ ...editUserData, role: Array.from(keys)[0] || 'comercial' })}
                   >
@@ -732,7 +737,7 @@ export default function AdminUsers() {
               </ModalBody>
               <ModalFooter>
                 <Button variant="flat" onPress={onClose}>
-                  Cancelar
+                  {t('pages.dashboard.adminUsers.modals.editUser.cancel')}
                 </Button>
                 <Button
                   color="primary"
@@ -740,7 +745,7 @@ export default function AdminUsers() {
                   isLoading={actionLoading}
                   isDisabled={!editUserData.email}
                 >
-                  {actionLoading ? 'Salvando...' : 'Salvar'}
+                  {actionLoading ? t('pages.dashboard.adminUsers.modals.editUser.saving') : t('pages.dashboard.adminUsers.modals.editUser.save')}
                 </Button>
               </ModalFooter>
             </>
@@ -753,25 +758,25 @@ export default function AdminUsers() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>Alterar Senha</ModalHeader>
+              <ModalHeader>{t('pages.dashboard.adminUsers.modals.changePassword.title')}</ModalHeader>
               <ModalBody>
                 <div className="flex flex-col gap-4">
                   <p className="text-sm text-default-500">
-                    Usuário: {selectedUser?.fullName || selectedUser?.email}
+                    {t('pages.dashboard.adminUsers.modals.changePassword.user')}: {selectedUser?.fullName || selectedUser?.email}
                   </p>
                   <Input
-                    label="Nova Senha"
+                    label={t('pages.dashboard.adminUsers.modals.changePassword.newPassword')}
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     isRequired
-                    description="A senha deve ter pelo menos 6 caracteres"
+                    description={t('pages.dashboard.adminUsers.modals.changePassword.passwordDescription')}
                   />
                 </div>
               </ModalBody>
               <ModalFooter>
                 <Button variant="flat" onPress={onClose}>
-                  Cancelar
+                  {t('pages.dashboard.adminUsers.modals.changePassword.cancel')}
                 </Button>
                 <Button
                   color="primary"
@@ -779,7 +784,7 @@ export default function AdminUsers() {
                   isLoading={actionLoading}
                   isDisabled={!newPassword || newPassword.length < 6}
                 >
-                  {actionLoading ? 'Atualizando...' : 'Atualizar Senha'}
+                  {actionLoading ? t('pages.dashboard.adminUsers.modals.changePassword.updating') : t('pages.dashboard.adminUsers.modals.changePassword.update')}
                 </Button>
               </ModalFooter>
             </>
@@ -792,14 +797,14 @@ export default function AdminUsers() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>Alterar Email</ModalHeader>
+              <ModalHeader>{t('pages.dashboard.adminUsers.modals.changeEmail.title')}</ModalHeader>
               <ModalBody>
                 <div className="flex flex-col gap-4">
                   <p className="text-sm text-default-500">
-                    Usuário: {selectedUser?.fullName || selectedUser?.email}
+                    {t('pages.dashboard.adminUsers.modals.changeEmail.user')}: {selectedUser?.fullName || selectedUser?.email}
                   </p>
                   <Input
-                    label="Novo Email"
+                    label={t('pages.dashboard.adminUsers.modals.changeEmail.newEmail')}
                     type="email"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
@@ -809,7 +814,7 @@ export default function AdminUsers() {
               </ModalBody>
               <ModalFooter>
                 <Button variant="flat" onPress={onClose}>
-                  Cancelar
+                  {t('pages.dashboard.adminUsers.modals.changeEmail.cancel')}
                 </Button>
                 <Button
                   color="primary"
@@ -817,7 +822,7 @@ export default function AdminUsers() {
                   isLoading={actionLoading}
                   isDisabled={!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)}
                 >
-                  {actionLoading ? 'Atualizando...' : 'Atualizar Email'}
+                  {actionLoading ? t('pages.dashboard.adminUsers.modals.changeEmail.updating') : t('pages.dashboard.adminUsers.modals.changeEmail.update')}
                 </Button>
               </ModalFooter>
             </>
@@ -830,11 +835,11 @@ export default function AdminUsers() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>Alterar Imagem de Perfil</ModalHeader>
+              <ModalHeader>{t('pages.dashboard.adminUsers.modals.changeImage.title')}</ModalHeader>
               <ModalBody>
                 <div className="flex flex-col gap-4">
                   <p className="text-sm text-default-500">
-                    Usuário: {selectedUser?.fullName || selectedUser?.email}
+                    {t('pages.dashboard.adminUsers.modals.changeImage.user')}: {selectedUser?.fullName || selectedUser?.email}
                   </p>
                   {selectedUser?.imageUrl && (
                     <div className="flex justify-center">
@@ -846,25 +851,25 @@ export default function AdminUsers() {
                     </div>
                   )}
                   <Input
-                    label="URL da Imagem"
+                    label={t('pages.dashboard.adminUsers.modals.changeImage.imageUrl')}
                     type="url"
                     value={newImageUrl}
                     onChange={(e) => setNewImageUrl(e.target.value)}
-                    placeholder="https://exemplo.com/imagem.jpg"
-                    description="Cole a URL da imagem de perfil"
+                    placeholder={t('pages.dashboard.adminUsers.modals.changeImage.imageUrlPlaceholder')}
+                    description={t('pages.dashboard.adminUsers.modals.changeImage.imageUrlDescription')}
                   />
                 </div>
               </ModalBody>
               <ModalFooter>
                 <Button variant="flat" onPress={onClose}>
-                  Cancelar
+                  {t('pages.dashboard.adminUsers.modals.changeImage.cancel')}
                 </Button>
                 <Button
                   color="primary"
                   onPress={handleUpdateImage}
                   isLoading={actionLoading}
                 >
-                  {actionLoading ? 'Atualizando...' : 'Atualizar Imagem'}
+                  {actionLoading ? t('pages.dashboard.adminUsers.modals.changeImage.updating') : t('pages.dashboard.adminUsers.modals.changeImage.update')}
                 </Button>
               </ModalFooter>
             </>
