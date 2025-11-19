@@ -23,9 +23,18 @@ export const VoiceAssistantProvider = ({ children }) => {
   };
   const currentLang = getSpeechLang(i18n.language || 'en-US');
   
-  // Core Hooks
-  const { speak, cancel: cancelSpeech, speaking } = useTTS(currentLang);
-  const { start, stop, listening, transcript, supported, resetTranscript } = useSTT(currentLang);
+  // Core Hooks - now reactive to language changes
+  const { speak: speakBase, cancel: cancelSpeech, speaking } = useTTS(currentLang);
+  const { start: startBase, stop, listening, transcript, supported, resetTranscript } = useSTT(currentLang);
+  
+  // Wrap speak and start to always use current language
+  const speak = useCallback((text) => {
+    speakBase(text, currentLang);
+  }, [speakBase, currentLang]);
+  
+  const start = useCallback(() => {
+    startBase(currentLang);
+  }, [startBase, currentLang]);
 
   // UI State
   const [isOpen, setIsOpen] = useState(false);
@@ -49,11 +58,17 @@ export const VoiceAssistantProvider = ({ children }) => {
     setIsOpen(true);
     // If we are in GLOBAL mode, say greeting
     if (mode === 'GLOBAL') {
-      const greeting = t('dashboard.voiceAssistant.greeting', { 
-        defaultValue: "Olá, onde posso ser útil?" 
+      // Get greetings array and pick a random one
+      const greetings = t('dashboard.voiceAssistant.greetings', { 
+        returnObjects: true,
+        defaultValue: ["Olá, onde posso ser útil?"] 
       });
-      addMessage('bot', greeting);
-      speak(greeting);
+      const randomGreeting = Array.isArray(greetings) 
+        ? greetings[Math.floor(Math.random() * greetings.length)]
+        : greetings;
+      
+      addMessage('bot', randomGreeting);
+      speak(randomGreeting);
       start();
     }
   }, [mode, t, speak, start, addMessage]);
