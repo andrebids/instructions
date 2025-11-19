@@ -3,6 +3,7 @@ import { getAuth } from '../middleware/auth.js';
 import { logError, logInfo } from '../utils/projectLogger.js';
 import sequelize from '../config/database.js';
 import { sendInvitationEmail } from '../services/emailService.js';
+import bcrypt from 'bcryptjs';
 
 /**
  * Controller de utilizadores usando Supabase Admin API e next_auth.users
@@ -459,6 +460,31 @@ export async function updatePassword(req, res) {
       throw new Error(updateError.message);
     }
 
+    // IMPORTANTE: Também atualizar a senha na tabela next_auth.users
+    // porque o login verifica a senha nessa tabela, não no Supabase Auth
+    try {
+      // Gerar hash bcrypt da nova senha
+      const passwordHash = await bcrypt.hash(password, 10);
+      
+      // Atualizar na tabela next_auth.users
+      await sequelize.query(
+        `UPDATE next_auth.users SET password = :passwordHash WHERE id = :userId`,
+        {
+          replacements: {
+            passwordHash: passwordHash,
+            userId: id
+          },
+          type: sequelize.QueryTypes.UPDATE
+        }
+      );
+      
+      logInfo('Senha atualizada na tabela next_auth.users', { id });
+    } catch (nextAuthUpdateError) {
+      logError('Erro ao atualizar senha na tabela next_auth.users', nextAuthUpdateError);
+      // Não falhar a requisição, mas logar o erro
+      // A senha foi atualizada no Supabase Auth, mas pode não funcionar no login
+    }
+
     const user = transformUserFromSupabase(updatedUser.user);
 
     const adminEmail = req.auth?.user?.email || 'Administrador';
@@ -715,6 +741,7 @@ export async function update(req, res) {
 
 
     // Atualizar senha se fornecida
+    let passwordHash = null;
     if (password !== undefined) {
       if (password.length < 6) {
         return res.status(400).json({
@@ -729,9 +756,9 @@ export async function update(req, res) {
         updateData.password = password;
       }
 
-      // Nota: Não atualizamos diretamente na tabela next_auth.users
-      // O Supabase Auth é a fonte de verdade para passwords
-      // A tabela next_auth.users é sincronizada automaticamente pelo Auth.js
+      // IMPORTANTE: Gerar hash bcrypt para atualizar também na tabela next_auth.users
+      // porque o login verifica a senha nessa tabela, não no Supabase Auth
+      passwordHash = await bcrypt.hash(password, 10);
     }
 
 
@@ -801,21 +828,31 @@ export async function update(req, res) {
         nameToUpdate = userEmail;
       }
 
+      // Construir query dinâmica para incluir senha se fornecida
+      const updateFields = [];
+      const replacements = {
+        nameValue: nameToUpdate,
+        emailValue: email !== undefined ? email : userFromNextAuth.email,
+        imageValue: imageUrl !== undefined ? imageUrl : userFromNextAuth.image,
+        roleValue: role !== undefined ? role : userFromNextAuth.role,
+        userIdValue: id
+      };
+
+      updateFields.push('name = :nameValue');
+      updateFields.push('email = :emailValue');
+      updateFields.push('image = :imageValue');
+      updateFields.push('role = :roleValue');
+
+      // Adicionar senha se foi fornecida
+      if (passwordHash) {
+        updateFields.push('password = :passwordHash');
+        replacements.passwordHash = passwordHash;
+      }
+
       await sequelize.query(
-        `UPDATE next_auth.users SET 
-          name = :nameValue,
-          email = :emailValue,
-          image = :imageValue,
-          role = :roleValue
-        WHERE id = :userIdValue`,
+        `UPDATE next_auth.users SET ${updateFields.join(', ')} WHERE id = :userIdValue`,
         {
-          replacements: {
-            nameValue: nameToUpdate,
-            emailValue: email !== undefined ? email : userFromNextAuth.email,
-            imageValue: imageUrl !== undefined ? imageUrl : userFromNextAuth.image,
-            roleValue: role !== undefined ? role : userFromNextAuth.role,
-            userIdValue: id
-          },
+          replacements: replacements,
           type: sequelize.QueryTypes.UPDATE
         }
       );
