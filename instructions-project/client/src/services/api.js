@@ -10,7 +10,7 @@ let API_BASE_URL;
 if (isDev) {
   // Em desenvolvimento, usar VITE_API_URL se disponível, senão usar caminho relativo
   API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
-  
+
   // Garantir que baseURL sempre termina sem barra e começa com /api se não especificado
   if (!API_BASE_URL) {
     API_BASE_URL = '/api';
@@ -50,10 +50,10 @@ const api = axios.create({
 
 // Função auxiliar para validar AbortSignal
 const isValidAbortSignal = (signal) => {
-  return signal && 
-         typeof signal === 'object' && 
-         typeof signal.addEventListener === 'function' &&
-         typeof signal.abort === 'function';
+  return signal &&
+    typeof signal === 'object' &&
+    typeof signal.addEventListener === 'function' &&
+    typeof signal.abort === 'function';
 };
 
 // Attach authentication token to requests (Auth.js)
@@ -63,7 +63,7 @@ api.interceptors.request.use(async (config) => {
     // Em dev, usar VITE_API_URL se disponível, senão usar caminho relativo
     const isDev = import.meta.env.DEV;
     let sessionUrl;
-    
+
     if (isDev && import.meta.env.VITE_API_URL) {
       // Em desenvolvimento, usar VITE_API_URL se configurado
       const apiUrl = import.meta.env.VITE_API_URL;
@@ -74,11 +74,11 @@ api.interceptors.request.use(async (config) => {
       // Isso garante que funcione com a mesma origem (evita problemas de CSP)
       sessionUrl = '/auth/session';
     }
-    
+
     const response = await fetch(sessionUrl, {
       credentials: 'include',
     });
-    
+
     if (response.ok) {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
@@ -97,15 +97,15 @@ api.interceptors.request.use(async (config) => {
   } catch (e) {
     // silent
   }
-  
+
   // Validar signal antes de fazer a requisição
   if (config.signal && !isValidAbortSignal(config.signal)) {
     console.warn('⚠️ Invalid AbortSignal detected, removing from config:', config.signal);
     delete config.signal;
   }
-  
+
   // Debug: Log da URL final para verificar se baseURL está sendo aplicado
-  const finalURL = config.baseURL && config.url 
+  const finalURL = config.baseURL && config.url
     ? `${config.baseURL}${config.url.startsWith('/') ? '' : '/'}${config.url}`
     : config.url;
   if (config.url?.includes('/users')) {
@@ -116,7 +116,7 @@ api.interceptors.request.use(async (config) => {
       method: config.method
     });
   }
-  
+
   return config;
 });
 
@@ -128,21 +128,21 @@ api.interceptors.response.use(
   },
   (error) => {
     // Ignorar logs de requisições abortadas/canceladas (não são erros reais)
-    const isCanceled = 
-      error.code === 'ECONNABORTED' || 
+    const isCanceled =
+      error.code === 'ECONNABORTED' ||
       error.code === 'ERR_CANCELED' ||
       error.name === 'AbortError' ||
       error.name === 'CanceledError' ||
-      error.message === 'Request aborted' || 
+      error.message === 'Request aborted' ||
       error.message === 'canceled' ||
       error.message?.includes('aborted') ||
       error.message?.includes('canceled');
-    
+
     if (!isCanceled) {
       const status = error.response?.status;
       const url = error.config?.url;
       const method = error.config?.method?.toUpperCase();
-      
+
       // Tratamento especial para erro 403 (Forbidden)
       if (status === 403) {
         const errorData = error.response?.data;
@@ -151,7 +151,7 @@ api.interceptors.response.use(
           error: errorData?.error,
           path: url
         });
-        
+
         // Se for erro de autenticação, adicionar informação útil
         if (errorData?.message?.includes('autenticado') || errorData?.error === 'Não autenticado') {
           console.warn('💡 Dica: Verifique se está autenticado e se os cookies estão sendo enviados');
@@ -215,7 +215,7 @@ export const projectsAPI = {
   // POST /api/projects/:id/images/upload - Upload de imagens para projeto
   uploadImages: async (projectId, files, cartoucheData = null) => {
     const formData = new FormData();
-    
+
     // Adicionar arquivos
     if (Array.isArray(files)) {
       files.forEach((file) => {
@@ -224,12 +224,12 @@ export const projectsAPI = {
     } else {
       formData.append('images', files);
     }
-    
+
     // Adicionar metadados do cartouche se fornecidos
     if (cartoucheData) {
       formData.append('cartouche', JSON.stringify(cartoucheData));
     }
-    
+
     const response = await api.post(`/projects/${projectId}/images/upload`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -333,7 +333,7 @@ export const productsAPI = {
   // POST /api/products
   create: async (data) => {
     var formData = new FormData();
-    
+
     // Adicionar campos de texto
     for (var key in data) {
       if (data.hasOwnProperty(key)) {
@@ -341,12 +341,12 @@ export const productsAPI = {
         if (key === 'dayImage' || key === 'nightImage' || key === 'animation' || key === 'animationSimulation' || key === 'thumbnail' || key === 'colorImages') {
           continue;
         }
-        
+
         // Ignorar valores null ou undefined (não adicionar ao FormData)
         if (data[key] === null || data[key] === undefined) {
           continue;
         }
-        
+
         // Adicionar campo ao FormData
         if (typeof data[key] === 'object' && data[key] !== null) {
           formData.append(key, JSON.stringify(data[key]));
@@ -355,7 +355,7 @@ export const productsAPI = {
         }
       }
     }
-    
+
     // Adicionar ficheiros se existirem
     if (data.dayImage) formData.append('dayImage', data.dayImage);
     if (data.nightImage) formData.append('nightImage', data.nightImage);
@@ -367,7 +367,7 @@ export const productsAPI = {
         formData.append('colorImages', data.colorImages[i]);
       }
     }
-    
+
     const response = await api.post('/products', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -379,7 +379,7 @@ export const productsAPI = {
   // PUT /api/products/:id
   update: async (id, data) => {
     var formData = new FormData();
-    
+
     // Adicionar campos de texto
     for (var key in data) {
       if (data.hasOwnProperty(key)) {
@@ -387,12 +387,12 @@ export const productsAPI = {
         if (key === 'dayImage' || key === 'nightImage' || key === 'animation' || key === 'animationSimulation' || key === 'thumbnail' || key === 'colorImages') {
           continue;
         }
-        
+
         // Ignorar valores null ou undefined (não adicionar ao FormData)
         if (data[key] === null || data[key] === undefined) {
           continue;
         }
-        
+
         // Adicionar campo ao FormData
         if (typeof data[key] === 'object' && data[key] !== null) {
           formData.append(key, JSON.stringify(data[key]));
@@ -401,7 +401,7 @@ export const productsAPI = {
         }
       }
     }
-    
+
     // Adicionar ficheiros se existirem
     if (data.dayImage) formData.append('dayImage', data.dayImage);
     if (data.nightImage) formData.append('nightImage', data.nightImage);
@@ -413,7 +413,7 @@ export const productsAPI = {
         formData.append('colorImages', data.colorImages[i]);
       }
     }
-    
+
     const response = await api.put(`/products/${id}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -542,6 +542,18 @@ export const usersAPI = {
     const formData = new FormData();
     formData.append('avatar', file);
     const response = await api.post('/users/profile/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // POST /api/users/:id/avatar - Upload de avatar de usuário (admin)
+  uploadUserAvatar: async (id, file) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await api.post(`/users/${id}/avatar`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

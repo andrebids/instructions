@@ -301,6 +301,65 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/upload', editorUploadRoutes);
 app.use('/api/users', userRoutes);
 
+// Rota de teste de email (requer autenticação admin)
+app.post('/api/email/test', requireAuth(), async (req, res) => {
+  try {
+    const { getAuth } = await import('./middleware/auth.js');
+    const auth = await getAuth(req);
+    
+    // Verificar se é admin
+    if (auth?.role !== 'admin') {
+      return res.status(403).json({ error: 'Acesso negado. Apenas administradores podem testar emails.' });
+    }
+    
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email é obrigatório' });
+    }
+    
+    // Importar serviço de email
+    const { sendNotificationEmail } = await import('./services/emailService.js');
+    const { verifyEmailConfig } = await import('./config/email.js');
+    
+    // Verificar configuração primeiro
+    const configValid = await verifyEmailConfig();
+    if (!configValid) {
+      return res.status(500).json({ 
+        error: 'Configuração de email inválida',
+        message: 'Verifique as variáveis de ambiente de email'
+      });
+    }
+    
+    // Enviar email de teste
+    const result = await sendNotificationEmail(
+      email,
+      'Teste de Email - TheCore',
+      'Este é um email de teste do sistema TheCore.\n\nSe você recebeu este email, a configuração de email está funcionando corretamente.'
+    );
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Email de teste enviado com sucesso',
+        messageId: result.messageId,
+        previewUrl: result.previewUrl
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Falha ao enviar email de teste',
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Erro ao testar email:', error);
+    res.status(500).json({
+      error: 'Erro ao testar email',
+      message: error.message
+    });
+  }
+});
+
 // Example protected route to inspect auth context
 app.get('/api/me', async (req, res) => {
   // Usar middleware dual que suporta ambos os sistemas

@@ -47,13 +47,13 @@ try {
 // IMPORTANTE: Deve haver apenas UMA referência a self.__WB_MANIFEST para o Workbox substituir
 try {
   console.log('📋 [SW] Checking manifest...');
-  
+
   // Esta é a única referência a self.__WB_MANIFEST que o Workbox substituirá
   // O Workbox procura por exatamente uma ocorrência e substitui pelo array de manifest
   const manifest = self.__WB_MANIFEST;
-  
+
   console.log('📋 [SW] Manifest entries count:', manifest ? manifest.length : 0);
-  
+
   if (!manifest || manifest.length === 0) {
     console.error('❌ [SW] CRITICAL: Manifest is empty or undefined!');
     console.error('❌ [SW] The Service Worker was not processed by VitePWA during build');
@@ -61,7 +61,7 @@ try {
     console.error('❌ [SW] The sw.js file should be in dist/ and processed, not served from public/');
     throw new Error('Service Worker manifest not injected - build may have failed or sw.js is being served from wrong location');
   }
-  
+
   console.log('📋 [SW] First 3 manifest entries:', manifest.slice(0, 3));
   console.log('📦 [SW] Starting precache and route...');
   precacheAndRoute(manifest);
@@ -94,9 +94,29 @@ self.addEventListener('activate', (event) => {
 // Don't claim clients immediately - wait for user confirmation
 // clientsClaim(); // Removed for manual update control
 
+// AuthJS Session cache - Critical for offline access
+registerRoute(
+  ({ url }) => url.pathname.includes('/auth/session'),
+  new NetworkFirst({
+    cacheName: 'auth-session-cache',
+    networkTimeoutSeconds: 5,
+    plugins: [
+      {
+        cacheableResponse: {
+          statuses: [0, 200]
+        },
+        expiration: {
+          maxEntries: 1,
+          maxAgeSeconds: 60 * 60 * 24 // 24 hours
+        }
+      }
+    ]
+  })
+);
+
 // API cache with NetworkFirst strategy
 registerRoute(
-  ({ url }) => url.pathname.startsWith('/api/'),
+  ({ url }) => url.pathname.startsWith('/api/') && !url.pathname.includes('/auth/session'),
   new NetworkFirst({
     cacheName: 'api-cache',
     networkTimeoutSeconds: 10,
@@ -126,11 +146,11 @@ registerRoute(
     const isImage = request.destination === 'image';
     const isSameOrigin = url.origin === self.location.origin;
     // Excluir domínios externos conhecidos
-    const isExternalImage = url.origin.includes('unsplash.com') || 
-                           url.origin.includes('images.unsplash.com') ||
-                           url.origin.includes('fonts.googleapis.com') ||
-                           url.origin.includes('fonts.gstatic.com');
-    
+    const isExternalImage = url.origin.includes('unsplash.com') ||
+      url.origin.includes('images.unsplash.com') ||
+      url.origin.includes('fonts.googleapis.com') ||
+      url.origin.includes('fonts.gstatic.com');
+
     return isImage && isSameOrigin && !isExternalImage;
   },
   new CacheFirst({
@@ -154,7 +174,7 @@ self.addEventListener('sync', (event) => {
   if (event.tag.startsWith('sync-project-')) {
     const projectId = event.tag.replace('sync-project-', '');
     console.log(`🔄 [SW] Background Sync started for project ${projectId}`);
-    
+
     event.waitUntil(
       syncProjectData(projectId)
     );
@@ -166,14 +186,14 @@ async function syncProjectData(projectId) {
   try {
     // Get all clients (open tabs/windows)
     const clients = await self.clients.matchAll({ includeUncontrolled: true });
-    
+
     if (clients.length > 0) {
       // Send message to the first client to trigger sync
       clients[0].postMessage({
         type: 'SYNC_PROJECT',
         projectId: projectId
       });
-      
+
       // Notify all clients about sync status
       clients.forEach(client => {
         client.postMessage({
@@ -185,7 +205,7 @@ async function syncProjectData(projectId) {
     }
   } catch (error) {
     console.error(`❌ [SW] Error processing sync for project ${projectId}:`, error);
-    
+
     // Notify clients about sync failure
     try {
       const clients = await self.clients.matchAll({ includeUncontrolled: true });
@@ -200,7 +220,7 @@ async function syncProjectData(projectId) {
     } catch (notifyError) {
       console.error(`❌ [SW] Failed to notify clients about error:`, notifyError);
     }
-    
+
     throw error; // Re-throw so browser will retry
   }
 }
@@ -224,7 +244,7 @@ self.addEventListener('message', (event) => {
       });
     });
   }
-  
+
   // Handle update check request
   if (event.data && event.data.type === 'CHECK_UPDATE') {
     // Check if there's a waiting service worker
@@ -243,12 +263,12 @@ self.addEventListener('message', (event) => {
       console.error('❌ [SW] Error checking for updates:', error);
     });
   }
-  
+
   // Handle sync completion notification
   if (event.data && event.data.type === 'SYNC_COMPLETE') {
     const { projectId, success } = event.data;
     console.log(`✅ [SW] Sync ${success ? 'completed' : 'failed'} for project ${projectId}`);
-    
+
     // Notify all clients about sync completion
     self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
       clients.forEach(client => {
@@ -287,7 +307,7 @@ self.addEventListener('error', (event) => {
     colno: event.colno,
     error: event.error
   });
-  
+
   // Try to notify clients about the error
   self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
     clients.forEach(client => {
@@ -310,26 +330,26 @@ self.addEventListener('error', (event) => {
 self.addEventListener('unhandledrejection', (event) => {
   const reason = event.reason?.toString() || '';
   const reasonStr = String(reason);
-  
+
   // Filtrar erros conhecidos de recursos externos que não devem ser reportados
-  const isExternalResourceError = 
+  const isExternalResourceError =
     reasonStr.includes('unsplash.com') ||
     reasonStr.includes('fonts.googleapis.com') ||
     reasonStr.includes('fonts.gstatic.com') ||
     (reasonStr.includes('NetworkError') && reasonStr.includes('FetchEvent.respondWith'));
-  
+
   if (isExternalResourceError) {
     // Silenciosamente ignorar erros de recursos externos
     // Esses recursos não são interceptados pelo Service Worker
     event.preventDefault(); // Previne que o erro seja logado no console
     return;
   }
-  
+
   console.error('❌ [SW] Unhandled promise rejection:', {
     reason: event.reason,
     promise: event.promise
   });
-  
+
   // Try to notify clients about the rejection (apenas para erros reais)
   self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
     clients.forEach(client => {
