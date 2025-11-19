@@ -20,6 +20,7 @@ import { StepProjectDetails } from "./steps/StepProjectDetails";
 import { StepNotes } from "./steps/StepNotes";
 import { StepProjectType } from "./steps/StepProjectType";
 import { StepAIDesigner } from "./steps/StepAIDesigner";
+import { StepLogoInstructions } from "./steps/StepLogoInstructions";
 import { StepConfirmDetails } from "./steps/StepConfirmDetails";
 
 // Utils & Constants
@@ -35,11 +36,11 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
   const saveStatus = useSaveStatus();
   const formState = useProjectForm(onClose, projectId, saveStatus);
   const clientState = useClientManagement(formState.setFormData);
-  
+
   // Get visible steps based on project type
   const visibleSteps = getVisibleSteps(formState.formData, STEPS);
   const navigation = useStepNavigation(formState.formData, visibleSteps, formState.createTempProject);
-  
+
   // 🔄 Lifecycle logging
   useEffect(() => {
     logger.lifecycle('CreateProjectMultiStep', 'Component mounted', {
@@ -47,14 +48,14 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
       totalSteps: STEPS.length,
       visibleSteps: visibleSteps.length
     });
-    
+
     // Logs de teste removidos
-    
+
     return () => {
       logger.lifecycle('CreateProjectMultiStep', 'Component unmounting');
     };
   }, []);
-  
+
   // Log quando steps visíveis mudam
   useEffect(() => {
     logger.lifecycle('CreateProjectMultiStep', 'Visible steps changed', {
@@ -81,9 +82,9 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
   // Render current step
   const renderStepContent = () => {
     const currentVisibleStep = visibleSteps[navigation.currentStep - 1];
-    
+
     // Logs de teste removidos
-    
+
     switch (currentVisibleStep?.id) {
       case "project-details":
         return (
@@ -96,7 +97,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
             onAddNewClient={() => clientState.setNewClientModal(true)}
           />
         );
-      
+
       case "notes":
         return (
           <StepNotes
@@ -105,7 +106,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
             saveStatus={saveStatus}
           />
         );
-      
+
       case "project-type":
         return (
           <StepProjectType
@@ -113,7 +114,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
             onInputChange={formState.handleInputChange}
           />
         );
-      
+
       case "ai-designer":
         return (
           <StepAIDesigner
@@ -122,7 +123,15 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
             selectedImage={selectedImage}
           />
         );
-      
+
+      case "logo-instructions":
+        return (
+          <StepLogoInstructions
+            formData={formState.formData}
+            onInputChange={formState.handleInputChange}
+          />
+        );
+
       case "confirm-details":
         return (
           <StepConfirmDetails
@@ -130,7 +139,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
             error={formState.error}
           />
         );
-      
+
       default:
         return null;
     }
@@ -154,30 +163,29 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
                   Back to dashboard
                 </Button>
 
-                <StepIndicator 
+                <StepIndicator
                   steps={visibleSteps}
-                  currentStep={navigation.currentStep} 
+                  currentStep={navigation.currentStep}
                 />
               </div>
-              
+
               {/* Status de salvamento à direita */}
               <div className="shrink-0">
                 <SaveStatus status={saveStatus.status} />
               </div>
             </div>
           </div>
-          
+
           {/* Main content */}
-          <div className={`flex-1 min-h-0 bg-default-100 ${
-            isAIDesignerStep() 
-              ? 'overflow-hidden' 
+          <div className={`flex-1 min-h-0 bg-default-100 ${isAIDesignerStep()
+              ? 'overflow-hidden'
               : 'px-4 py-6 sm:px-6 sm:py-8 lg:px-8 overflow-y-auto'
-          }`}>
+            }`}>
             <div className={isAIDesignerStep() ? 'h-full' : 'max-w-6xl mx-auto'}>
               {renderStepContent()}
             </div>
           </div>
-          
+
           {/* Navigation Footer */}
           <div className="flex-shrink-0">
             <NavigationFooter
@@ -193,7 +201,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
           </div>
         </div>
       </Card>
-      
+
       {/* Add Client Modal */}
       <AddClientModal
         isOpen={clientState.newClientModal}
