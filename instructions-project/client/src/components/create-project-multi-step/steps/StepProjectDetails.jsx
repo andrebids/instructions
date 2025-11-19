@@ -6,7 +6,7 @@ import * as Yup from "yup";
 import { useTranslation } from "react-i18next";
 import { useFormikStep } from "../hooks/useFormikStep";
 import { ClientAutocomplete } from "../components/ClientAutocomplete";
-import { ProjectFormVoiceWizard } from "../components/ProjectFormVoiceWizard";
+import { useProjectFormVoiceLogic } from "../hooks/useProjectFormVoiceLogic";
 import { parseDate } from "@internationalized/date";
 
 export function StepProjectDetails({
@@ -48,6 +48,26 @@ export function StepProjectDetails({
     formData,
   });
 
+  // Integrate Voice Assistant Logic
+  useProjectFormVoiceLogic({
+    onUpdateField: (field, value) => {
+      // Handle special cases if needed
+      if (field === 'endDate' && typeof value === 'string') {
+         try {
+           formik.updateField(field, parseDate(value));
+         } catch (e) {
+           console.error("Date parse error", e);
+         }
+      } else {
+         formik.updateField(field, value);
+      }
+    },
+    clients,
+    onAddNewClient,
+    onClientSelect,
+    onNext
+  });
+
   return (
     <div className="flex justify-center">
       <div className="w-full max-w-lg space-y-6">
@@ -58,24 +78,7 @@ export function StepProjectDetails({
           </p>
         </div>
         
-        <ProjectFormVoiceWizard 
-          onUpdateField={(field, value) => {
-            // Handle special cases if needed
-            if (field === 'endDate' && typeof value === 'string') {
-               try {
-                 formik.updateField(field, parseDate(value));
-               } catch (e) {
-                 console.error("Date parse error", e);
-               }
-            } else {
-               formik.updateField(field, value);
-            }
-          }}
-          clients={clients}
-          onAddNewClient={onAddNewClient}
-          onClientSelect={onClientSelect}
-          onNext={onNext}
-        />
+
 
         <div className="space-y-5">
           {/* Project Name */}
