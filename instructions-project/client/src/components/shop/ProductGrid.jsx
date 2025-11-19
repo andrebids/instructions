@@ -31,11 +31,13 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
       loop: true, 
       align: 'start',
       containScroll: 'trimSnaps',
-      slidesToScroll: 2
+      slidesToScroll: 2,
+      dragFree: true,
+      watchDrag: true
     },
     cols === 1 && products.length > 1 
       ? [AutoScroll({ 
-          speed: 2, 
+          speed: 2.5, 
           stopOnInteraction: false, 
           stopOnMouseEnter: true,
           stopOnFocusIn: false
@@ -46,6 +48,8 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [cardSize, setCardSize] = useState(400);
   const [cardHeight, setCardHeight] = useState(600);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [slideOpacities, setSlideOpacities] = useState({});
 
   // Update selected index
   const onSelect = useCallback(() => {
@@ -53,17 +57,141 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     setSelectedIndex(emblaApi.selectedScrollSnap());
   }, [emblaApi]);
 
+  // Calcular opacidade dos slides baseado nas margens da página (50px de cada lado)
+  const updateSlideOpacities = useCallback(() => {
+    if (!emblaApi || cols !== 1) return;
+    
+    const container = emblaApi.containerNode();
+    if (!container) return;
+    
+    const slides = emblaApi.slideNodes();
+    const marginZone = 50; // 50px a partir de cada margem
+    const viewportWidth = window.innerWidth;
+    const opacities = {};
+    
+    slides.forEach((slide, index) => {
+      const slideRect = slide.getBoundingClientRect();
+      
+      // Verificar se o slide está nas zonas de margem (50px da esquerda ou direita da viewport)
+      const slideLeft = slideRect.left;
+      const slideRight = slideRect.right;
+      
+      // Zona esquerda: 0 a 50px
+      const inLeftZone = slideRight > 0 && slideLeft < marginZone;
+      // Zona direita: viewportWidth - 50px a viewportWidth
+      const inRightZone = slideLeft < viewportWidth && slideRight > (viewportWidth - marginZone);
+      
+      if (inLeftZone || inRightZone) {
+        // Calcular opacidade baseada na proximidade da margem
+        let minOpacity = 1;
+        
+        if (inLeftZone) {
+          // Slide está na zona esquerda - calcular distância do ponto mais próximo da margem esquerda
+          // O ponto mais próximo do slide à margem esquerda (x=0) é slideLeft
+          const distanceFromLeftMargin = Math.max(0, slideLeft);
+          // Normalizar: 0 na margem (0px), 1 a 50px da margem
+          const normalizedDistance = Math.min(1, distanceFromLeftMargin / marginZone);
+          // Opacidade: 0.3 na margem (0px), 1.0 a 50px da margem
+          const opacity = 0.3 + (normalizedDistance * 0.7);
+          minOpacity = Math.min(minOpacity, opacity);
+        }
+        
+        if (inRightZone) {
+          // Slide está na zona direita - calcular distância do ponto mais próximo da margem direita
+          // O ponto mais próximo do slide à margem direita (x=viewportWidth) é viewportWidth - slideRight
+          const distanceFromRightMargin = Math.max(0, viewportWidth - slideRight);
+          // Normalizar: 0 na margem (0px), 1 a 50px da margem
+          const normalizedDistance = Math.min(1, distanceFromRightMargin / marginZone);
+          // Opacidade: 0.3 na margem (0px), 1.0 a 50px da margem
+          const opacity = 0.3 + (normalizedDistance * 0.7);
+          minOpacity = Math.min(minOpacity, opacity);
+        }
+        
+        opacities[index] = minOpacity;
+      } else {
+        // Slide fora das zonas de margem, opacidade máxima
+        opacities[index] = 1;
+      }
+    });
+    
+    setSlideOpacities(opacities);
+  }, [emblaApi, cols]);
+
   useEffect(() => {
     if (!emblaApi || cols !== 1) return;
+    
+    let rafId = null;
+    let scrollRafId = null;
+    
+    const onScroll = () => {
+      // Cancelar frame anterior se existir
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+      
+      // Agendar atualização no próximo frame
+      rafId = requestAnimationFrame(() => {
+        setScrollProgress(emblaApi.scrollProgress());
+        updateSlideOpacities();
+        rafId = null;
+      });
+      
+      // Se não há loop contínuo, iniciar um durante o scroll
+      if (!scrollRafId) {
+        const continuousUpdate = () => {
+          updateSlideOpacities();
+          scrollRafId = requestAnimationFrame(continuousUpdate);
+        };
+        scrollRafId = requestAnimationFrame(continuousUpdate);
+      }
+    };
+    
+    const onSettle = () => {
+      // Parar loop contínuo
+      if (scrollRafId) {
+        cancelAnimationFrame(scrollRafId);
+        scrollRafId = null;
+      }
+      // Última atualização
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      updateSlideOpacities();
+    };
+    
+    const onResize = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        updateSlideOpacities();
+        rafId = null;
+      });
+    };
+    
     onSelect();
+    updateSlideOpacities();
+    
     emblaApi.on('select', onSelect);
     emblaApi.on('reInit', onSelect);
+    emblaApi.on('scroll', onScroll);
+    emblaApi.on('settle', onSettle);
+    emblaApi.on('reInit', updateSlideOpacities);
+    emblaApi.on('resize', onResize);
+    
+    window.addEventListener('resize', onResize);
     
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      if (scrollRafId) cancelAnimationFrame(scrollRafId);
       emblaApi.off('select', onSelect);
       emblaApi.off('reInit', onSelect);
+      emblaApi.off('scroll', onScroll);
+      emblaApi.off('settle', onSettle);
+      emblaApi.off('reInit', updateSlideOpacities);
+      emblaApi.off('resize', onResize);
+      window.removeEventListener('resize', onResize);
     };
-  }, [emblaApi, onSelect, cols]);
+  }, [emblaApi, onSelect, updateSlideOpacities, cols]);
 
   // Handle mouse wheel scroll
   const handleWheel = useCallback((e) => {
@@ -169,30 +297,38 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
         className="relative w-full overflow-hidden"
         onWheel={handleWheel}
       >
-        <div ref={emblaRef} className="overflow-hidden">
-          <div className="flex">
-            {products.map((p, index) => (
-              <div
-                key={p.id}
-                className="flex-[0_0_auto] min-w-0"
-                style={{ 
-                  width: `${cardSize}px`,
-                  height: `${cardHeight}px`,
-                  marginRight: '24px'
-                }}
-              >
-                <div className="w-full h-full">
-                  <ProductCard
-                    product={p}
-                    onOrder={onOrder}
-                    glass={glass}
-                    allowQty={allowQty}
-                    isSquare={true}
-                    {...cardProps}
-                  />
+        <div ref={emblaRef} className="overflow-hidden" style={{ transform: 'translateZ(0)' }}>
+          <div className="flex" style={{ willChange: 'transform', backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
+            {products.map((p, index) => {
+              const opacity = slideOpacities[index] !== undefined ? slideOpacities[index] : 1;
+              
+              return (
+                <div
+                  key={p.id}
+                  className="flex-[0_0_auto] min-w-0"
+                  style={{ 
+                    width: `${cardSize}px`,
+                    height: `${cardHeight}px`,
+                    marginRight: '24px',
+                    transform: 'translateZ(0)',
+                    opacity: opacity,
+                    transition: 'opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    willChange: 'opacity'
+                  }}
+                >
+                  <div className="w-full h-full">
+                    <ProductCard
+                      product={p}
+                      onOrder={onOrder}
+                      glass={glass}
+                      allowQty={allowQty}
+                      isSquare={true}
+                      {...cardProps}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
