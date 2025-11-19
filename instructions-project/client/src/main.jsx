@@ -359,22 +359,31 @@ if ('serviceWorker' in navigator && !isDev) {
         console.warn('⚠️ [Main] SW file does NOT contain Workbox imports - this may be the problem!');
       }
       
-      // Verificar se contém o manifest (importante: se contém __WB_MANIFEST, não foi processado)
-      if (text.includes('__WB_MANIFEST') && !text.includes('self.__WB_MANIFEST = [')) {
+      // Verificar se contém o manifest
+      // O VitePWA substitui 'self.__WB_MANIFEST' pelo manifest real durante o build
+      // Se ainda contém o placeholder, não foi processado
+      if (text.includes('self.__WB_MANIFEST') && text.includes('const manifest = self.__WB_MANIFEST')) {
+        // Se contém a referência mas não foi substituída, o build falhou
         console.warn('⚠️ [Main] SW file contains __WB_MANIFEST PLACEHOLDER - manifest was NOT injected by VitePWA!');
         console.warn('⚠️ [Main] This means the build did not process the Service Worker correctly');
-        console.warn('⚠️ [Main] The SW file should contain: self.__WB_MANIFEST = [array of entries]');
-      } else if (text.includes('self.__WB_MANIFEST = [')) {
+      } else if (text.includes('self.__WB_MANIFEST = [') || text.match(/self\.__WB_MANIFEST\s*=\s*\[/)) {
+        // Manifest foi injetado como array literal
         console.log('✅ [Main] SW file contains injected manifest (self.__WB_MANIFEST = [...])');
-        // Tentar extrair uma amostra do manifest
         const manifestMatch = text.match(/self\.__WB_MANIFEST\s*=\s*\[(.*?)\]/s);
         if (manifestMatch) {
           console.log('📋 [Main] Manifest found in SW file');
         }
-      } else if (text.includes('self.__WB_MANIFEST')) {
-        console.log('✅ [Main] SW file contains self.__WB_MANIFEST reference');
+      } else if (text.includes('precacheAndRoute') && text.includes('workbox-precaching')) {
+        // Se contém precacheAndRoute e workbox-precaching, o SW foi processado
+        // O manifest pode estar em uma variável ou ter sido processado de outra forma
+        console.log('✅ [Main] SW file contains Workbox precaching - manifest was likely injected');
+        console.log('📋 [Main] SW file appears to be processed correctly by VitePWA');
+      } else if (text.includes('__WB_MANIFEST')) {
+        // Ainda contém o placeholder - build pode ter falhado
+        console.warn('⚠️ [Main] SW file may contain __WB_MANIFEST placeholder - verify build process');
       } else {
-        console.warn('⚠️ [Main] SW file does NOT contain manifest - may not be processed by VitePWA');
+        // Não encontrou manifest, mas pode estar funcionando de outra forma
+        console.debug('🔍 [Main] SW file manifest check: No explicit manifest pattern found, but SW may still be functional');
       }
       
       // Verificar se há erros de sintaxe óbvios
