@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Card, Button, DatePicker } from "@heroui/react";
 import { today, getLocalTimeZone } from "@internationalized/date";
 import { Icon } from "@iconify/react";
@@ -38,7 +38,10 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
   const clientState = useClientManagement(formState.setFormData);
 
   // Get visible steps based on project type
-  const visibleSteps = getVisibleSteps(formState.formData, STEPS);
+  const visibleSteps = useMemo(() =>
+    getVisibleSteps(formState.formData, STEPS),
+    [formState.formData.projectType, formState.formData.simuWorkflow]
+  );
   const navigation = useStepNavigation(formState.formData, visibleSteps, formState.createTempProject);
 
   // 🔄 Lifecycle logging
@@ -213,4 +216,3 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
     </div>
   );
 }
-

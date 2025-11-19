@@ -17,7 +17,7 @@ export const useStepNavigation = (formData, visibleSteps, onCreateTempProject) =
   const isRestoringRef = useRef(false); // Flag para evitar salvar durante restauração
   const hasRestoredRef = useRef(false); // Flag para evitar múltiplas restaurações
   const lastProjectIdRef = useRef(null); // Rastrear último projectId restaurado
-  
+
   // Atualizar projectId ref quando mudar
   useEffect(() => {
     projectIdRef.current = formData.id || formData.tempProjectId;
@@ -26,7 +26,7 @@ export const useStepNavigation = (formData, visibleSteps, onCreateTempProject) =
   // Restaurar step salvo ao carregar projeto existente
   useEffect(() => {
     const projectId = formData.id || formData.tempProjectId;
-    
+
     // Se não há projectId ou já foi restaurado para este projectId, não fazer nada
     if (!projectId || (hasRestoredRef.current && lastProjectIdRef.current === projectId)) {
       return;
@@ -46,7 +46,7 @@ export const useStepNavigation = (formData, visibleSteps, onCreateTempProject) =
     const restoreStep = async () => {
       try {
         isRestoringRef.current = true; // Marcar que estamos restaurando
-        
+
         // Tentar carregar do IndexedDB primeiro (mais rápido)
         const editorState = await getEditorState(projectId);
         let stepToRestore = editorState?.lastEditedStep;
@@ -93,13 +93,13 @@ export const useStepNavigation = (formData, visibleSteps, onCreateTempProject) =
     };
 
     restoreStep();
-  }, [formData.id, formData.tempProjectId]); // Removido visibleSteps das dependências
+  }, [formData.id, formData.tempProjectId, visibleSteps]); // Added visibleSteps back since it's used in the effect
 
   // Persistir step atual quando mudar (mas não durante restauração)
   useEffect(() => {
     const projectId = projectIdRef.current;
     if (!projectId) return;
-    
+
     // Não salvar se estiver restaurando
     if (isRestoringRef.current) {
       return;
@@ -112,7 +112,7 @@ export const useStepNavigation = (formData, visibleSteps, onCreateTempProject) =
     logger.navigation(
       currentStep - 1,
       currentStep,
-      { 
+      {
         stepId,
         totalSteps: visibleSteps.length
       }
@@ -154,16 +154,16 @@ export const useStepNavigation = (formData, visibleSteps, onCreateTempProject) =
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [currentStep, visibleSteps]);
+  }, [currentStep]); // Removed visibleSteps to prevent infinite loop
 
   // Avançar para próximo step
   const nextStep = async () => {
     const currentStepId = visibleSteps[currentStep - 1]?.id;
     const nextStepId = visibleSteps[currentStep]?.id;
-    
+
     if (currentStep < visibleSteps.length && isStepValid(currentStepId, formData)) {
       setIsNavigating(true);
-      
+
       try {
         // Se estamos a sair de "project-details" e vamos para "notes", criar projeto primeiro
         if (currentStepId === 'project-details' && nextStepId === 'notes' && onCreateTempProject) {
@@ -174,7 +174,7 @@ export const useStepNavigation = (formData, visibleSteps, onCreateTempProject) =
             // Continuar mesmo assim - o step Notes vai mostrar mensagem
           }
         }
-        
+
         setCurrentStep(currentStep + 1);
         window.scrollTo(0, 0);
         logger.userAction('Next Step', currentStepId, currentStep + 1);
