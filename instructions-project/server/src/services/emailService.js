@@ -73,23 +73,23 @@ export async function sendEmail({ to, subject, text, html }) {
       }
     }
 
-    logInfo('Email enviado com sucesso', { 
-      to: recipients.join(', '), 
+    logInfo('Email enviado com sucesso', {
+      to: recipients.join(', '),
       subject,
-      messageId: info.messageId 
+      messageId: info.messageId
     });
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       messageId: info.messageId,
       previewUrl: process.env.EMAIL_TEST_MODE === 'true' ? nodemailer.getTestMessageUrl(info) : null
     };
   } catch (error) {
     logError('Erro ao enviar email', error);
-    return { 
-      success: false, 
+    return {
+      success: false,
       message: 'Erro ao enviar email',
-      error: error.message 
+      error: error.message
     };
   }
 }
@@ -425,6 +425,145 @@ function getNotificationEmailTemplate(subject, message) {
 export async function sendNotificationEmail(email, subject, message) {
   const text = message;
   const html = getNotificationEmailTemplate(subject, message);
+
+  return await sendEmail({
+    to: email,
+    subject: subject,
+    text: text,
+    html: html
+  });
+}
+
+/**
+ * Template HTML para email de notificação de mudança de password
+ */
+function getPasswordChangedEmailTemplate(changedBy, timestamp) {
+  const formattedDate = new Date(timestamp).toLocaleString('pt-PT', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 30px;
+      border: 1px solid #ddd;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: #2c3e50;
+      margin: 0;
+    }
+    .content {
+      background-color: white;
+      padding: 20px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .warning {
+      background-color: #fff3cd;
+      border: 1px solid #ffc107;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+    }
+    .info-box {
+      background-color: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .footer {
+      text-align: center;
+      color: #777;
+      font-size: 12px;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Alteração de Password</h1>
+    </div>
+    <div class="content">
+      <p>Olá,</p>
+      <p>A password da sua conta no TheCore foi alterada por um administrador.</p>
+      <div class="info-box">
+        <p><strong>Detalhes da alteração:</strong></p>
+        <p>📅 <strong>Data:</strong> ${formattedDate}</p>
+        <p>👤 <strong>Alterado por:</strong> ${changedBy}</p>
+      </div>
+      <div class="warning">
+        <p><strong>⚠️ Importante:</strong></p>
+        <p>Se você não autorizou esta alteração, contacte imediatamente o administrador do sistema.</p>
+        <p>Por segurança, recomendamos que altere a sua password após o próximo login.</p>
+      </div>
+    </div>
+    <div class="footer">
+      <p>Este é um email automático, por favor não responda.</p>
+      <p>&copy; ${new Date().getFullYear()} TheCore System</p>
+    </div>
+  </div>
+</body>
+</html>
+  `.trim();
+}
+
+/**
+ * Envia email de notificação de mudança de password
+ * @param {string} email - Email do utilizador
+ * @param {string} changedBy - Email do admin que fez a alteração
+ * @param {Date} timestamp - Data/hora da alteração
+ * @returns {Promise<Object>} Resultado do envio
+ */
+export async function sendPasswordChangedEmail(email, changedBy, timestamp = new Date()) {
+  const formattedDate = new Date(timestamp).toLocaleString('pt-PT', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const subject = 'Alteração de Password - TheCore';
+  const text = `
+Alteração de Password
+
+A password da sua conta no TheCore foi alterada por um administrador.
+
+Detalhes da alteração:
+Data: ${formattedDate}
+Alterado por: ${changedBy}
+
+⚠️ IMPORTANTE:
+Se você não autorizou esta alteração, contacte imediatamente o administrador do sistema.
+Por segurança, recomendamos que altere a sua password após o próximo login.
+
+Este é um email automático, por favor não responda.
+  `.trim();
+
+  const html = getPasswordChangedEmailTemplate(changedBy, timestamp);
 
   return await sendEmail({
     to: email,

@@ -426,15 +426,29 @@ export async function updatePassword(req, res) {
       });
     }
 
-    // Validar força da senha (mínimo 6 caracteres)
-    if (password.length < 6) {
+    // Validar força da senha usando validador robusto
+    const { validatePasswordStrength } = await import('../utils/passwordValidator.js');
+    const validation = validatePasswordStrength(password);
+
+    if (!validation.isValid) {
+      logInfo(`Validação de password falhou para usuário ${id}:`, validation.errors);
       return res.status(400).json({
-        error: 'Password muito curto',
-        message: 'A senha deve ter pelo menos 6 caracteres'
+        error: 'Password não cumpre os requisitos de segurança',
+        message: validation.errors.join('. '),
+        details: validation.errors,
+        strength: validation.strength
       });
     }
 
     const supabase = getSupabaseAdmin();
+
+    // Buscar dados do usuário antes de atualizar (para enviar email)
+    const { data: currentUserData, error: getUserError } = await supabase.auth.admin.getUserById(id);
+    if (getUserError || !currentUserData.user) {
+      return res.status(404).json({ error: 'Utilizador não encontrado' });
+    }
+
+    const userEmail = currentUserData.user.email;
 
     // Atualizar senha usando Admin API
     const { data: updatedUser, error: updateError } = await supabase.auth.admin.updateUserById(id, {
@@ -447,7 +461,41 @@ export async function updatePassword(req, res) {
 
     const user = transformUserFromSupabase(updatedUser.user);
 
-    logInfo('Senha atualizada com sucesso', { id });
+    const adminEmail = req.auth?.user?.email || 'Administrador';
+
+    logInfo('Senha atualizada com sucesso', {
+      id,
+      passwordStrength: validation.strength,
+      updatedBy: adminEmail
+    });
+
+    // Enviar email de notificação (não-bloqueante)
+    if (process.env.EMAIL_ENABLED === 'true' && userEmail) {
+      try {
+        const { sendPasswordChangedEmail } = await import('../services/emailService.js');
+        sendPasswordChangedEmail(userEmail, adminEmail, new Date())
+          .then((result) => {
+            if (result.success) {
+              logInfo('Email de notificação de mudança de password enviado', {
+                email: userEmail,
+                messageId: result.messageId
+              });
+            } else {
+              logError('Falha ao enviar email de notificação', {
+                email: userEmail,
+                error: result.message
+              });
+            }
+          })
+          .catch((error) => {
+            logError('Erro ao enviar email de notificação', error);
+          });
+      } catch (emailError) {
+        // Não falhar a atualização se o email falhar
+        logError('Erro ao tentar enviar email de notificação', emailError);
+      }
+    }
+
     res.json(user);
   } catch (error) {
     logError('Erro ao atualizar senha', error);
@@ -665,6 +713,7 @@ export async function update(req, res) {
       updateData.email_confirm = true;
     }
 
+
     // Atualizar senha se fornecida
     if (password !== undefined) {
       if (password.length < 6) {
@@ -675,21 +724,16 @@ export async function update(req, res) {
       }
 
       // Se o usuário existe no Supabase, atualizar lá também
+      // O Supabase faz o hashing automaticamente
       if (supabaseUserExists) {
         updateData.password = password;
       }
 
-      // Sempre atualizar na tabela next_auth.users (usar bcrypt)
-      const bcrypt = await import('bcrypt');
-      const hashedPassword = await bcrypt.default.hash(password, 10);
-      await sequelize.query(
-        `UPDATE next_auth.users SET password = :passwordValue WHERE id = :userIdValue`,
-        {
-          replacements: { passwordValue: hashedPassword, userIdValue: id },
-          type: sequelize.QueryTypes.UPDATE
-        }
-      );
+      // Nota: Não atualizamos diretamente na tabela next_auth.users
+      // O Supabase Auth é a fonte de verdade para passwords
+      // A tabela next_auth.users é sincronizada automaticamente pelo Auth.js
     }
+
 
     // Atualizar user_metadata
     const newUserMeta = { ...currentUserMeta };
