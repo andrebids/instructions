@@ -5,6 +5,7 @@
 import { getSession } from '@auth/express';
 import { getAuthConfig } from '../auth.config.js';
 import http from 'http';
+import https from 'https';
 
 const useAuthJs = process.env.USE_AUTH_JS === 'true';
 
@@ -61,13 +62,31 @@ export async function getAuth(req) {
       try {
         // Fazer requisição HTTP interna para /auth/session
         // Esta é a forma mais confiável já que sabemos que a rota funciona
+        
+        // Detectar HTTPS corretamente (importante para produção atrás de proxy)
+        // Verificar req.secure primeiro (configurado pelo Express quando trust proxy está ativo)
+        // Depois verificar X-Forwarded-Proto header (comum em proxies reversos)
+        // Por último usar req.protocol como fallback
+        let protocol = 'http';
+        if (req.secure) {
+          protocol = 'https';
+        } else if (req.get('x-forwarded-proto') === 'https') {
+          protocol = 'https';
+        } else if (req.protocol === 'https') {
+          protocol = 'https';
+        }
+        
         const host = req.get('host') || 'localhost:5000';
-        const protocol = req.protocol || 'http';
         const sessionUrl = `${protocol}://${host}/auth/session`;
         
-        console.debug('🔍 [Auth Middleware] Fazendo requisição HTTP interna para:', sessionUrl);
+        console.debug('🔍 [Auth Middleware] Fazendo requisição HTTP interna para:', sessionUrl, {
+          secure: req.secure,
+          forwardedProto: req.get('x-forwarded-proto'),
+          protocol: req.protocol,
+          hasCookies: !!req.headers.cookie
+        });
         
-        // Fazer requisição HTTP usando o módulo http do Node.js
+        // Fazer requisição HTTP/HTTPS usando o módulo apropriado do Node.js
         const sessionData = await new Promise((resolve, reject) => {
           const url = new URL(sessionUrl);
           const options = {
@@ -79,10 +98,16 @@ export async function getAuth(req) {
               'Cookie': req.headers.cookie || '',
               'Accept': 'application/json',
               'User-Agent': req.headers['user-agent'] || 'Node.js',
+              // Preservar headers importantes do request original
+              'X-Forwarded-For': req.get('x-forwarded-for') || '',
+              'X-Forwarded-Proto': protocol,
             }
           };
           
-          const httpReq = http.request(options, (httpRes) => {
+          // Usar módulo https para HTTPS, http para HTTP
+          const httpModule = protocol === 'https' ? https : http;
+          
+          const httpReq = httpModule.request(options, (httpRes) => {
             let data = '';
             
             httpRes.on('data', (chunk) => {
@@ -95,24 +120,38 @@ export async function getAuth(req) {
                   const parsed = JSON.parse(data);
                   resolve(parsed);
                 } catch (e) {
-                  console.error('❌ [Auth Middleware] Erro ao fazer parse da resposta JSON:', e.message);
+                  console.error('❌ [Auth Middleware] Erro ao fazer parse da resposta JSON:', e.message, {
+                    statusCode: httpRes.statusCode,
+                    dataPreview: data.substring(0, 200)
+                  });
                   reject(new Error('Invalid JSON response'));
                 }
               } else {
-                console.debug(`⚠️  [Auth Middleware] Requisição HTTP retornou status ${httpRes.statusCode}`);
+                console.debug(`⚠️  [Auth Middleware] Requisição HTTP retornou status ${httpRes.statusCode}`, {
+                  url: sessionUrl,
+                  hasCookies: !!req.headers.cookie
+                });
                 reject(new Error(`HTTP ${httpRes.statusCode}`));
               }
             });
           });
           
           httpReq.on('error', (error) => {
-            console.error('❌ [Auth Middleware] Erro na requisição HTTP interna:', error.message);
+            console.error('❌ [Auth Middleware] Erro na requisição HTTP interna:', {
+              message: error.message,
+              code: error.code,
+              url: sessionUrl,
+              protocol: protocol
+            });
             reject(error);
           });
           
-          httpReq.setTimeout(2000, () => {
+          httpReq.setTimeout(5000, () => {
             httpReq.destroy();
-            console.debug('⏱️  [Auth Middleware] Timeout na requisição HTTP interna');
+            console.debug('⏱️  [Auth Middleware] Timeout na requisição HTTP interna', {
+              url: sessionUrl,
+              timeout: 5000
+            });
             reject(new Error('Timeout'));
           });
           
@@ -136,15 +175,24 @@ export async function getAuth(req) {
         } else {
           console.debug('🔍 [Auth Middleware] Requisição HTTP retornou sessão sem usuário');
         }
-        } catch (httpError) {
-        // Não logar erros comuns (timeout, basePath, etc)
+      } catch (httpError) {
+        // Não logar erros comuns (timeout, basePath, etc) em modo debug
         const isCommonError = 
           httpError.message?.includes('Timeout') ||
           httpError.message?.includes('basePath') ||
           httpError.message?.includes('ECONNREFUSED');
         
         if (!isCommonError) {
-          console.error('❌ [Auth Middleware] Erro ao obter sessão via requisição HTTP:', httpError.message);
+          console.error('❌ [Auth Middleware] Erro ao obter sessão via requisição HTTP:', {
+            message: httpError.message,
+            code: httpError.code,
+            stack: httpError.stack,
+            hasCookies: !!req.headers.cookie,
+            host: req.get('host'),
+            protocol: req.protocol,
+            secure: req.secure,
+            forwardedProto: req.get('x-forwarded-proto')
+          });
         } else {
           console.debug('🔍 [Auth Middleware] Erro comum ignorado:', httpError.message);
         }
@@ -152,6 +200,13 @@ export async function getAuth(req) {
     }
   }
 
+  // Se chegou aqui, não há sessão válida
+  console.debug('🔍 [Auth Middleware] Nenhuma sessão encontrada', {
+    useAuthJs,
+    hasAuthHandler: !!authHandler,
+    hasCookies: typeof req !== 'undefined' && !!req.headers?.cookie
+  });
+  
   return null;
 }
 

@@ -368,11 +368,15 @@ export function Header() {
           onClose={()=>setShowSettings(false)} 
           placement="center" 
           backdrop="blur"
-          size="5xl"
-          scrollBehavior="outside"
+          size="2xl"
+          scrollBehavior="inside"
           hideCloseButton
+          classNames={{
+            base: "max-w-[600px]",
+            wrapper: "p-4"
+          }}
         >
-          <ModalContent className="p-0 max-w-[900px]">
+          <ModalContent className="p-0">
             {(onClose) => (
               <>
                 <ModalHeader className="flex items-center justify-between p-4 border-b border-divider">
@@ -386,190 +390,199 @@ export function Header() {
                     <Icon icon="lucide:x" className="text-lg" />
                   </Button>
                 </ModalHeader>
-                <ModalBody className="p-0 overflow-hidden">
-                  <div className="w-full max-h-[calc(80vh-80px)] overflow-auto">
-                    <div className="p-6">
-                      <div className="space-y-8">
-                        {/* Seção: Informações da Conta */}
-                        <div>
-                          <h3 className="text-lg font-semibold mb-4">{t('components.header.accountInfo')}</h3>
-                          
-                          {/* Informações não editáveis */}
-                          <div className="space-y-2 mb-6 p-4 bg-default-50 dark:bg-default-100/30 rounded-lg">
-                            <p className="text-sm">
-                              <span className="font-medium text-default-600 dark:text-default-400">{t('common.email')}:</span>{' '}
-                              <span className="text-default-700 dark:text-default-300">{activeUser?.email || '-'}</span>
+                <ModalBody className="p-0">
+                  <div className="p-4 md:p-6">
+                    <div className="space-y-5">
+                      {/* Seção: Informações da Conta */}
+                      <div>
+                        <h3 className="text-base font-semibold mb-3">{t('components.header.accountInfo')}</h3>
+                        
+                        {/* Informações não editáveis - Compacto */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-default-50 dark:bg-default-100/30 rounded-lg">
+                          <p className="text-xs sm:text-sm">
+                            <span className="font-medium text-default-600 dark:text-default-400">{t('common.email')}:</span>{' '}
+                            <span className="text-default-700 dark:text-default-300 break-all">{activeUser?.email || '-'}</span>
+                          </p>
+                          {activeUser?.role && (
+                            <p className="text-xs sm:text-sm">
+                              <span className="font-medium text-default-600 dark:text-default-400">{t('common.role')}:</span>{' '}
+                              <span className="text-default-700 dark:text-default-300">{activeUser.role}</span>
                             </p>
-                            {activeUser?.role && (
-                              <p className="text-sm">
-                                <span className="font-medium text-default-600 dark:text-default-400">{t('common.role')}:</span>{' '}
-                                <span className="text-default-700 dark:text-default-300">{activeUser.role}</span>
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Campo de nome */}
-                          <div>
-                            <label className="block text-sm font-medium mb-2">{t('common.name')}</label>
-                            <Input
-                              value={editingName}
-                              onChange={(e) => setEditingName(e.target.value)}
-                              placeholder={t('common.name')}
-                              variant="bordered"
-                              size="md"
-                              maxLength={100}
-                            />
-                          </div>
+                          )}
                         </div>
-
-                        {/* Separador visual */}
-                        <div className="h-px bg-divider my-2" />
-
-                        {/* Seção: Imagem de Perfil */}
-                        <div>
-                          <h3 className="text-lg font-semibold mb-4">Imagem de Perfil</h3>
-                          <div className="flex items-start gap-4">
-                            {/* Preview da imagem */}
-                            <div className="flex-shrink-0">
-                              <Avatar
-                                src={imagePreview}
-                                name={editingName || activeUser?.name || activeUser?.email}
-                                size="lg"
-                                isBordered
-                                className="ring-2 ring-default-200"
-                              />
-                            </div>
-                            
-                            {/* Botão de upload */}
-                            <div className="flex-1">
-                              <input
-                                type="file"
-                                accept="image/jpeg,image/jpg,image/png,image/webp"
-                                onChange={handleImageSelect}
-                                className="hidden"
-                                id="avatar-upload"
-                              />
-                              <label htmlFor="avatar-upload">
-                                <Button
-                                  as="span"
-                                  variant="bordered"
-                                  size="sm"
-                                  startContent={<Icon icon="lucide:upload" />}
-                                >
-                                  Selecionar Imagem
-                                </Button>
-                              </label>
-                              <p className="text-xs text-default-500 mt-2">
-                                Formatos: JPEG, PNG, WebP. Máximo: 5MB
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Separador visual */}
-                        <div className="h-px bg-divider my-2" />
-
-                        {/* Seção: Alterar Senha */}
-                        <div>
-                          <h3 className="text-lg font-semibold mb-4">Alterar Senha</h3>
-                          <div className="space-y-4">
-                            <PasswordField
-                              label="Nova Senha (opcional)"
-                              placeholder="Digite a nova senha"
-                              value={password}
-                              onChange={(e) => {
-                                const newPassword = e.target.value;
-                                setPassword(newPassword);
-                                passwordGenerator.updatePasswordStrength(newPassword);
-                              }}
-                              onPasswordGenerated={(newPassword) => {
-                                setPassword(newPassword);
-                                setPasswordConfirm(newPassword);
-                              }}
-                            />
-
-                            {password && (
-                              <>
-                                <Input
-                                  label="Confirmar Nova Senha"
-                                  placeholder="Digite a senha novamente"
-                                  type={showPasswordConfirm ? 'text' : 'password'}
-                                  value={passwordConfirm}
-                                  onChange={(e) => {
-                                    setPasswordConfirm(e.target.value);
-                                  }}
-                                  size="md"
-                                  variant="bordered"
-                                  color={
-                                    password &&
-                                    passwordConfirm &&
-                                    password === passwordConfirm
-                                      ? 'success'
-                                      : passwordConfirm
-                                      ? 'danger'
-                                      : 'default'
-                                  }
-                                  description={
-                                    password && passwordConfirm
-                                      ? password === passwordConfirm
-                                        ? '✓ Senhas coincidem'
-                                        : '✗ Senhas não coincidem'
-                                      : ''
-                                  }
-                                  endContent={
-                                    <Button
-                                      isIconOnly
-                                      variant="light"
-                                      size="sm"
-                                      onPress={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                                      aria-label={showPasswordConfirm ? 'Ocultar senha' : 'Mostrar senha'}
-                                    >
-                                      <Icon
-                                        icon={showPasswordConfirm ? 'lucide:eye-off' : 'lucide:eye'}
-                                        className="text-default-400"
-                                      />
-                                    </Button>
-                                  }
-                                />
-                                <p className="text-xs text-default-500">
-                                  Mínimo 8 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais
-                                </p>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Mensagens de erro/sucesso */}
-                        {saveError && (
-                          <div className="p-3 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg">
-                            <p className="text-sm text-danger whitespace-pre-line">{saveError}</p>
-                          </div>
-                        )}
-                        {saveSuccess && (
-                          <div className="p-3 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-lg">
-                            <p className="text-sm text-success">Perfil atualizado com sucesso!</p>
-                          </div>
-                        )}
                       </div>
+
+                      {/* Separador visual */}
+                      <div className="h-px bg-divider" />
+
+                      {/* Seção: Imagem de Perfil - Compacto */}
+                      <div>
+                        <h3 className="text-base font-semibold mb-3">Imagem de Perfil</h3>
+                        <div className="flex flex-col sm:flex-row items-start gap-3">
+                          {/* Preview da imagem */}
+                          <div className="flex-shrink-0">
+                            <Avatar
+                              src={imagePreview}
+                              name={editingName || activeUser?.name || activeUser?.email}
+                              size="md"
+                              className="sm:size-16"
+                              isBordered
+                            />
+                          </div>
+                          
+                          {/* Botão de upload */}
+                          <div className="flex-1 w-full sm:w-auto">
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/jpg,image/png,image/webp"
+                              onChange={handleImageSelect}
+                              className="hidden"
+                              id="avatar-upload"
+                            />
+                            <label htmlFor="avatar-upload" className="block">
+                              <Button
+                                as="span"
+                                variant="bordered"
+                                size="sm"
+                                className="w-full sm:w-auto"
+                                startContent={<Icon icon="lucide:upload" className="text-sm" />}
+                              >
+                                <span className="text-xs sm:text-sm">Selecionar Imagem</span>
+                              </Button>
+                            </label>
+                            <p className="text-xs text-default-500 mt-1.5">
+                              JPEG, PNG, WebP • Máx. 5MB
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Separador visual */}
+                      <div className="h-px bg-divider" />
+
+                      {/* Campo de nome */}
+                      <div>
+                        <Input
+                          label={t('common.name')}
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          placeholder={t('common.name')}
+                          variant="bordered"
+                          size="sm"
+                          maxLength={100}
+                        />
+                      </div>
+
+                      {/* Separador visual */}
+                      <div className="h-px bg-divider" />
+
+                      {/* Seção: Alterar Senha */}
+                      <div>
+                        <h3 className="text-base font-semibold mb-3">Alterar Senha</h3>
+                        <div className="space-y-3">
+                          <PasswordField
+                            label="Nova Senha (opcional)"
+                            placeholder="Digite a nova senha"
+                            value={password}
+                            onChange={(e) => {
+                              const newPassword = e.target.value;
+                              setPassword(newPassword);
+                              passwordGenerator.updatePasswordStrength(newPassword);
+                            }}
+                            onPasswordGenerated={(newPassword) => {
+                              setPassword(newPassword);
+                              setPasswordConfirm(newPassword);
+                            }}
+                            size="sm"
+                          />
+
+                          {password && (
+                            <>
+                              <Input
+                                label="Confirmar Nova Senha"
+                                placeholder="Digite a senha novamente"
+                                type={showPasswordConfirm ? 'text' : 'password'}
+                                value={passwordConfirm}
+                                onChange={(e) => {
+                                  setPasswordConfirm(e.target.value);
+                                }}
+                                size="sm"
+                                variant="bordered"
+                                color={
+                                  password &&
+                                  passwordConfirm &&
+                                  password === passwordConfirm
+                                    ? 'success'
+                                    : passwordConfirm
+                                    ? 'danger'
+                                    : 'default'
+                                }
+                                description={
+                                  password && passwordConfirm
+                                    ? password === passwordConfirm
+                                      ? '✓ Senhas coincidem'
+                                      : '✗ Senhas não coincidem'
+                                    : ''
+                                }
+                                endContent={
+                                  <Button
+                                    isIconOnly
+                                    variant="light"
+                                    size="sm"
+                                    onPress={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                                    aria-label={showPasswordConfirm ? 'Ocultar senha' : 'Mostrar senha'}
+                                  >
+                                    <Icon
+                                      icon={showPasswordConfirm ? 'lucide:eye-off' : 'lucide:eye'}
+                                      className="text-default-400 text-sm"
+                                    />
+                                  </Button>
+                                }
+                              />
+                              <p className="text-xs text-default-500 leading-tight">
+                                Mín. 8 caracteres: maiúsculas, minúsculas, números e especiais
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Mensagens de erro/sucesso */}
+                      {saveError && (
+                        <div className="p-2.5 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg">
+                          <p className="text-xs sm:text-sm text-danger whitespace-pre-line">{saveError}</p>
+                        </div>
+                      )}
+                      {saveSuccess && (
+                        <div className="p-2.5 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-lg">
+                          <p className="text-xs sm:text-sm text-success">Perfil atualizado com sucesso!</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </ModalBody>
-                <ModalFooter className="border-t border-divider">
-                  <Button
-                    variant="light"
-                    onPress={() => setShowSettings(false)}
-                    isDisabled={isSaving}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    color="primary"
-                    onPress={handleSaveProfile}
-                    isLoading={isSaving}
-                    startContent={!isSaving && <Icon icon="lucide:save" />}
-                  >
-                    Salvar
-                  </Button>
+                <ModalFooter className="border-t border-divider p-3 md:p-4">
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button
+                      variant="light"
+                      onPress={() => setShowSettings(false)}
+                      isDisabled={isSaving}
+                      size="sm"
+                      className="flex-1 sm:flex-initial"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      color="primary"
+                      onPress={handleSaveProfile}
+                      isLoading={isSaving}
+                      size="sm"
+                      startContent={!isSaving && <Icon icon="lucide:save" className="text-sm" />}
+                      className="flex-1 sm:flex-initial"
+                    >
+                      Salvar
+                    </Button>
+                  </div>
                 </ModalFooter>
               </>
             )}
