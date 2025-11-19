@@ -16,13 +16,24 @@ export async function getAll(req, res) {
     logInfo('GET /api/projects - Iniciando busca');
     
     // Verificar se a tabela existe primeiro
-    const tableExists = await projectService.checkTableExists();
+    // Se a verificação falhar, tentar consultar diretamente (fallback)
+    let tableExists = await projectService.checkTableExists();
     if (!tableExists) {
-      logError('Tabela "projects" não existe!');
-      return res.status(500).json({ 
-        error: 'Tabela projects não existe. Execute: npm run setup',
-        details: 'A tabela de projetos não foi criada. Execute o setup da base de dados.'
-      });
+      logError('Tabela "projects" não encontrada na verificação inicial');
+      // Tentar uma consulta direta como fallback (pode ser problema de cache)
+      try {
+        await projectService.findAllProjects({});
+        // Se chegou aqui, a tabela existe mas a verificação falhou
+        logInfo('Tabela projects existe (verificado por consulta direta)');
+        tableExists = true;
+      } catch (directQueryError) {
+        logError('Tabela "projects" não existe ou não pode ser acessada!', directQueryError);
+        return res.status(500).json({ 
+          error: 'Tabela projects não existe. Execute: npm run setup',
+          details: 'A tabela de projetos não foi criada. Execute o setup da base de dados.',
+          hint: 'Se executou o setup recentemente, reinicie o servidor.'
+        });
+      }
     }
     
     // Obter informações do usuário para filtrar projetos
@@ -53,10 +64,22 @@ export async function getAll(req, res) {
     res.json(projects);
   } catch (error) {
     logError('Erro ao buscar projetos', error);
+    console.error('❌ [ProjectController] Erro completo:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      code: error.code,
+      original: error.original?.message
+    });
     res.status(500).json({ 
       error: formatErrorMessage(error),
       details: error.message,
-      hint: 'Verifique se executou: npm run setup'
+      hint: 'Verifique se executou: npm run setup',
+      ...(process.env.NODE_ENV === 'development' && {
+        stack: error.stack,
+        name: error.name,
+        code: error.code
+      })
     });
   }
 }

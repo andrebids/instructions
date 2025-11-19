@@ -126,6 +126,7 @@ export function UserTable({
                     variant="light"
                     onPress={() => onEdit(user)}
                     isDisabled={isCurrentUser && isCurrentUser(user.id)}
+                    aria-label="Edit user"
                   >
                     <Icon icon="lucide:pencil" className="text-default-400" />
                   </Button>
