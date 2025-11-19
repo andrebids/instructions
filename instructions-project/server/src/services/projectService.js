@@ -11,14 +11,42 @@ import { logInfo, logSuccess, logError, logServerOperation, logStats, logDelete,
  */
 export async function checkTableExists() {
   try {
-    const tableExists = await sequelize.query(
-      "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'projects')",
+    // Primeiro, verificar se a conexão está ativa
+    await sequelize.authenticate();
+    
+    // Verificar se a tabela existe usando query mais robusta
+    const result = await sequelize.query(
+      "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'projects') as exists",
       { type: QueryTypes.SELECT }
     );
-    return tableExists && tableExists[0] && tableExists[0].exists;
+    
+    const exists = result && result[0] && (result[0].exists === true || result[0].exists === 'true');
+    
+    if (!exists) {
+      logError('Tabela projects não encontrada na verificação');
+      // Tentar verificar diretamente se a tabela pode ser consultada
+      try {
+        await sequelize.query('SELECT 1 FROM projects LIMIT 1', { type: QueryTypes.SELECT });
+        // Se chegou aqui, a tabela existe mas a query de verificação falhou
+        logInfo('Tabela projects existe (verificado por consulta direta)');
+        return true;
+      } catch (directQueryError) {
+        logError('Tabela projects não pode ser consultada:', directQueryError.message);
+        return false;
+      }
+    }
+    
+    return exists;
   } catch (error) {
     logError('Erro ao verificar tabela', error);
-    return false;
+    // Em caso de erro de conexão, tentar verificar diretamente
+    try {
+      await sequelize.query('SELECT 1 FROM projects LIMIT 1', { type: QueryTypes.SELECT });
+      logInfo('Tabela projects existe (verificado após erro de verificação)');
+      return true;
+    } catch (directQueryError) {
+      return false;
+    }
   }
 }
 
@@ -34,52 +62,58 @@ export async function checkTableExists() {
  * @param {string} filters.userId - ID do usuário (para filtrar automaticamente se comercial)
  */
 export async function findAllProjects(filters = {}) {
-  const { status, projectType, favorite, includeElements, createdBy, userRole, userId } = filters;
-  const where = {};
-  
-  if (status) where.status = status;
-  if (projectType) where.projectType = projectType;
-  if (favorite) where.isFavorite = favorite === 'true';
-  
-  // Se for comercial, filtrar apenas projetos criados por ele
-  // Se createdBy for explicitamente passado, usar esse valor
-  if (createdBy) {
-    where.created_by = createdBy;
-  } else if (userRole === 'comercial' && userId) {
-    // Comercial só vê seus próprios projetos
-    where.created_by = userId;
-  }
-  // Admin vê todos os projetos (não adiciona filtro createdBy)
-  
-  // Só carregar elementos se explicitamente solicitado (para melhor performance)
-  const includeOptions = includeElements === 'true' ? [
-    {
-      model: ProjectElement,
-      as: 'elements',
-      required: false,
-      include: [
-        {
-          model: Decoration,
-          as: 'decoration',
-          required: false,
-        },
-      ],
-    },
-  ] : [];
-  
-  const projects = await Project.findAll({
-    where,
-    include: includeOptions,
-    order: [['createdAt', 'DESC']],
-  });
-  
-  // Garantir que cartoucheByImage sempre tem valor padrão para projetos antigos
-  return projects.map(project => {
-    if (!project.cartoucheByImage) {
-      project.cartoucheByImage = {};
+  try {
+    const { status, projectType, favorite, includeElements, createdBy, userRole, userId } = filters;
+    const where = {};
+    
+    if (status) where.status = status;
+    if (projectType) where.projectType = projectType;
+    if (favorite) where.isFavorite = favorite === 'true';
+    
+    // Se for comercial, filtrar apenas projetos criados por ele
+    // Se createdBy for explicitamente passado, usar esse valor
+    if (createdBy) {
+      where.created_by = createdBy;
+    } else if (userRole === 'comercial' && userId) {
+      // Comercial só vê seus próprios projetos
+      where.created_by = userId;
     }
-    return project;
-  });
+    // Admin vê todos os projetos (não adiciona filtro createdBy)
+    
+    // Só carregar elementos se explicitamente solicitado (para melhor performance)
+    const includeOptions = includeElements === 'true' ? [
+      {
+        model: ProjectElement,
+        as: 'elements',
+        required: false,
+        include: [
+          {
+            model: Decoration,
+            as: 'decoration',
+            required: false,
+          },
+        ],
+      },
+    ] : [];
+    
+    const projects = await Project.findAll({
+      where,
+      include: includeOptions,
+      order: [['createdAt', 'DESC']],
+    });
+    
+    // Garantir que cartoucheByImage sempre tem valor padrão para projetos antigos
+    return projects.map(project => {
+      if (!project.cartoucheByImage) {
+        project.cartoucheByImage = {};
+      }
+      return project;
+    });
+  } catch (error) {
+    logError('Erro em findAllProjects', error);
+    // Re-lançar o erro para ser tratado no controller
+    throw error;
+  }
 }
 
 /**
