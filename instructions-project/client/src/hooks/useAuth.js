@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import i18n from '../i18n';
 
 /**
  * Hook para gerenciar autenticação com Auth.js
@@ -162,6 +163,12 @@ export function useAuth() {
       });
       setSession(null);
       localStorage.removeItem('auth_session_backup'); // Limpar backup local
+      
+      // Definir idioma como inglês antes de redirecionar
+      // Isso garante que as páginas de login e landing page sempre apareçam em inglês após logout
+      localStorage.setItem('i18nextLng', 'en');
+      i18n.changeLanguage('en');
+      
       window.location.href = '/';
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
