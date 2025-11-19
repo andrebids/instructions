@@ -31,6 +31,7 @@ router.get('/', userController.getAll);
 router.get('/:id', userController.getById);
 router.post('/', userController.create);
 router.post('/invite', userController.sendInvitation);
+router.post('/:id/avatar', profileController.uploadAvatar, userController.uploadUserAvatar);
 // Rotas de atualização (específicas primeiro)
 router.put('/:id/password', userController.updatePassword);
 router.put('/:id/email', userController.updateEmail);

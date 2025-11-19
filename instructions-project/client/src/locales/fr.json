@@ -210,7 +210,11 @@
             "role": "Rôle",
             "save": "Enregistrer",
             "cancel": "Annuler",
-            "saving": "Enregistrement en cours..."
+            "saving": "Enregistrement en cours...",
+            "newPasswordOptional": "Nouveau mot de passe (Optionnel)",
+            "passwordPlaceholder": "Laisser vide pour conserver l'actuel",
+            "passwordDescription": "Minimum 6 caractères",
+            "changePhoto": "Changer la photo"
           },
           "editRole": {
             "title": "Modifier le Rôle",
@@ -267,7 +271,8 @@
           "updateRoleFailed": "Erreur lors de la mise à jour du rôle",
           "deleteFailed": "Erreur lors de la suppression de l'utilisateur",
           "cannotRemoveSelf": "Impossible de vous supprimer vous-même",
-          "cannotChangeOwnRole": "Impossible de modifier votre propre rôle"
+          "cannotChangeOwnRole": "Impossible de modifier votre propre rôle",
+          "passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères"
         }
       }
     }
