@@ -204,12 +204,95 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
             <NavigationFooter
               currentStep={navigation.currentStep}
               totalSteps={visibleSteps.length}
+              currentStepId={visibleSteps[navigation.currentStep - 1]?.id}
               onNext={navigation.nextStep}
               onPrev={navigation.prevStep}
               onSubmit={formState.handleSubmit}
               isValid={navigation.canProceed()}
               loading={formState.loading}
               isNavigating={navigation.isNavigating}
+              onResetLogo={() => {
+                // Get current logoDetails structure
+                const currentLogoDetails = formState.formData.logoDetails || {};
+                const currentLogo = currentLogoDetails.currentLogo || currentLogoDetails; // Support both old and new structure
+                const savedLogos = currentLogoDetails.logos || [];
+                
+                // Check if current logo is valid (has required fields)
+                const hasLogoNumber = currentLogo.logoNumber?.trim() !== "";
+                const hasLogoName = currentLogo.logoName?.trim() !== "";
+                const hasRequestedBy = currentLogo.requestedBy?.trim() !== "";
+                const dimensions = currentLogo.dimensions || {};
+                const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
+                const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
+                const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
+                const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
+                const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
+                
+                const isCurrentLogoValid = hasLogoNumber && hasLogoName && hasRequestedBy && hasAtLeastOneDimension;
+                
+                // If current logo is valid, save it to the array
+                if (isCurrentLogoValid) {
+                  const logoToSave = {
+                    ...currentLogo,
+                    id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    savedAt: new Date().toISOString()
+                  };
+                  
+                  // Update logoDetails with saved logos and new empty currentLogo
+                  formState.handleInputChange("logoDetails", {
+                    logos: [...savedLogos, logoToSave],
+                    currentLogo: {
+                      logoNumber: "",
+                      logoName: "",
+                      requestedBy: "",
+                      dimensions: {},
+                      usageOutdoor: false,
+                      usageIndoor: true,
+                      fixationType: "",
+                      lacqueredStructure: false,
+                      lacquerColor: "",
+                      mastDiameter: "",
+                      maxWeightConstraint: false,
+                      maxWeight: "",
+                      ballast: false,
+                      controlReport: false,
+                      criteria: "",
+                      description: "",
+                      composition: {
+                        componentes: [],
+                        bolas: []
+                      }
+                    }
+                  });
+                } else {
+                  // If current logo is not valid, just reset it
+                  formState.handleInputChange("logoDetails", {
+                    ...currentLogoDetails,
+                    currentLogo: {
+                      logoNumber: "",
+                      logoName: "",
+                      requestedBy: "",
+                      dimensions: {},
+                      usageOutdoor: false,
+                      usageIndoor: true,
+                      fixationType: "",
+                      lacqueredStructure: false,
+                      lacquerColor: "",
+                      mastDiameter: "",
+                      maxWeightConstraint: false,
+                      maxWeight: "",
+                      ballast: false,
+                      controlReport: false,
+                      criteria: "",
+                      description: "",
+                      composition: {
+                        componentes: [],
+                        bolas: []
+                      }
+                    }
+                  });
+                }
+              }}
             />
           </div>
         </div>

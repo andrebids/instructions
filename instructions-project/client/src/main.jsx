@@ -6,6 +6,7 @@ import { ThemeProvider } from './components/features/ThemeProvider'
 import { ShopProvider } from './context/ShopContext'
 import { UserProvider } from './context/UserContext'
 import { AuthProvider } from './context/AuthContext'
+import { VoiceAssistantProvider } from './context/VoiceAssistantContext'
 import App from './App'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
@@ -552,9 +553,11 @@ function RootApp() {
         <ThemeProvider>
           <ShopProvider>
             <UserProvider>
-              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-                <App />
-              </BrowserRouter>
+              <VoiceAssistantProvider>
+                <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                  <App />
+                </BrowserRouter>
+              </VoiceAssistantProvider>
             </UserProvider>
           </ShopProvider>
         </ThemeProvider>

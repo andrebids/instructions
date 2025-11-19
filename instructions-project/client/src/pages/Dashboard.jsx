@@ -13,7 +13,6 @@ import { useUser } from "../context/UserContext";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 import { Scroller } from "../components/ui/scroller";
 import { useTranslation } from "react-i18next";
-import { VoiceAssistantProvider } from "../context/VoiceAssistantContext";
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -263,7 +262,6 @@ export default function Dashboard() {
 
   return (
     <>
-    <VoiceAssistantProvider>
       {/* Dashboard Content */}
       {showCreateProject ? (
         <div className="flex-1 min-h-0 overflow-hidden">
@@ -405,7 +403,6 @@ export default function Dashboard() {
 
       {/* Voice AI Assistant */}
       <DashboardVoiceAssistant />
-    </VoiceAssistantProvider>
     </>
   );
 }

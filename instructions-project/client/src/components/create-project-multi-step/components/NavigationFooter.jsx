@@ -5,13 +5,17 @@ import { Icon } from "@iconify/react";
 export function NavigationFooter({
   currentStep,
   totalSteps,
+  currentStepId,
   onNext,
   onPrev,
   onSubmit,
   isValid,
   loading,
   isNavigating,
+  onResetLogo,
 }) {
+  const isLogoInstructionsStep = currentStepId === "logo-instructions";
+
   return (
     <div className="w-full bg-content1 border-t border-divider px-4 py-4 sm:px-6 sm:py-6 flex-shrink-0">
       <div className="max-w-6xl mx-auto flex justify-between items-center gap-4">
@@ -26,7 +30,28 @@ export function NavigationFooter({
         </Button>
         
         <div className="flex gap-2">
-          {currentStep < totalSteps ? (
+          {isLogoInstructionsStep ? (
+            <>
+              <Button
+                color="secondary"
+                variant="flat"
+                onPress={onResetLogo}
+                isDisabled={loading || isNavigating}
+                startContent={<Icon icon="lucide:plus" />}
+              >
+                New Logo
+              </Button>
+              <Button
+                color="primary"
+                onPress={onNext}
+                isLoading={isNavigating}
+                isDisabled={!isValid || loading || isNavigating}
+                endContent={<Icon icon="lucide:check" />}
+              >
+                {isNavigating ? "Creating..." : "Finish"}
+              </Button>
+            </>
+          ) : currentStep < totalSteps ? (
             <Button
               color="primary"
               onPress={onNext}

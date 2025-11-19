@@ -117,208 +117,242 @@ export function StepConfirmDetails({ formData, error }) {
         )}
 
         {/* Logo Instructions Summary - apenas se for projeto Logo */}
-        {formData.projectType === "logo" && formData.logoDetails && (
-          <Card className="p-4">
-            <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-              <Icon icon="lucide:package" className="text-primary" />
-              Logo Specifications
-            </h3>
-            <div className="space-y-4">
-              {/* Identity */}
-              <div>
-                <h4 className="font-medium text-sm text-default-700 mb-2">Project Identity</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                  <div>
-                    <span className="text-default-500">Logo Number:</span>
-                    <p className="font-medium">{formData.logoDetails.logoNumber || "—"}</p>
-                  </div>
-                  <div>
-                    <span className="text-default-500">Logo Name:</span>
-                    <p className="font-medium">{formData.logoDetails.logoName || "—"}</p>
-                  </div>
-                  <div>
-                    <span className="text-default-500">Requested By:</span>
-                    <p className="font-medium">{formData.logoDetails.requestedBy || "—"}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Dimensions */}
-              {(formData.logoDetails.dimensions?.height?.value ||
-                formData.logoDetails.dimensions?.length?.value ||
-                formData.logoDetails.dimensions?.width?.value ||
-                formData.logoDetails.dimensions?.diameter?.value) && (
-                  <div>
-                    <h4 className="font-medium text-sm text-default-700 mb-2">Dimensions</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                      {formData.logoDetails.dimensions?.height?.value && (
-                        <div>
-                          <span className="text-default-500">Height:</span>
-                          <p className="font-medium">
-                            {formData.logoDetails.dimensions.height.value}m
-                            {formData.logoDetails.dimensions.height.imperative && " (!)"}
-                          </p>
-                        </div>
-                      )}
-                      {formData.logoDetails.dimensions?.length?.value && (
-                        <div>
-                          <span className="text-default-500">Length:</span>
-                          <p className="font-medium">
-                            {formData.logoDetails.dimensions.length.value}m
-                            {formData.logoDetails.dimensions.length.imperative && " (!)"}
-                          </p>
-                        </div>
-                      )}
-                      {formData.logoDetails.dimensions?.width?.value && (
-                        <div>
-                          <span className="text-default-500">Width:</span>
-                          <p className="font-medium">
-                            {formData.logoDetails.dimensions.width.value}m
-                            {formData.logoDetails.dimensions.width.imperative && " (!)"}
-                          </p>
-                        </div>
-                      )}
-                      {formData.logoDetails.dimensions?.diameter?.value && (
-                        <div>
-                          <span className="text-default-500">Diameter:</span>
-                          <p className="font-medium">
-                            {formData.logoDetails.dimensions.diameter.value}m
-                            {formData.logoDetails.dimensions.diameter.imperative && " (!)"}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-              {/* Fixation & Usage */}
-              <div>
-                <h4 className="font-medium text-sm text-default-700 mb-2">Fixation & Usage</h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="text-default-500">Usage:</span>
-                    <p className="font-medium">
-                      {formData.logoDetails.usageOutdoor ? "Outdoor" : "Indoor"}
-                    </p>
-                  </div>
-                  {formData.logoDetails.fixationType && (
-                    <div>
-                      <span className="text-default-500">Fixation:</span>
-                      <p className="font-medium capitalize">
-                        {formData.logoDetails.fixationType.replace(/_/g, ' ')}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Composition */}
-              {formData.logoDetails.composition && (
-                <div>
-                  <h4 className="font-medium text-sm text-default-700 mb-2">Composition</h4>
-                  
-                  {/* Componentes */}
-                  {formData.logoDetails.composition.componentes && 
-                   formData.logoDetails.composition.componentes.length > 0 && (
-                    <div className="mb-4">
-                      <h5 className="text-xs font-semibold text-default-600 mb-2 uppercase tracking-wider">
-                        Componentes ({formData.logoDetails.composition.componentes.length})
-                      </h5>
-                      <div className="space-y-2">
-                        {formData.logoDetails.composition.componentes.map((comp, index) => (
-                          <div key={index} className="text-sm bg-default-50 p-2 rounded border border-default-200">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1">
-                                <p className="font-medium text-default-900">
-                                  {comp.componenteNome || `Componente ${index + 1}`}
-                                </p>
-                                {comp.corNome && (
-                                  <p className="text-xs text-default-600 mt-1">
-                                    Cor: {comp.corNome}
-                                  </p>
-                                )}
-                                {comp.referencia && (
-                                  <p className="text-xs text-default-500 mt-1">
-                                    Ref: {comp.referencia}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
+        {formData.projectType === "logo" && formData.logoDetails && (() => {
+          const logoDetails = formData.logoDetails || {};
+          const savedLogos = logoDetails.logos || [];
+          const currentLogo = logoDetails.currentLogo || logoDetails;
+          
+          // Check if current logo is valid
+          const hasLogoNumber = currentLogo.logoNumber?.trim() !== "";
+          const hasLogoName = currentLogo.logoName?.trim() !== "";
+          const hasRequestedBy = currentLogo.requestedBy?.trim() !== "";
+          const dimensions = currentLogo.dimensions || {};
+          const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
+          const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
+          const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
+          const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
+          const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
+          const isCurrentLogoValid = hasLogoNumber && hasLogoName && hasRequestedBy && hasAtLeastOneDimension;
+          
+          // Combine saved logos with current logo if valid
+          const allLogos = isCurrentLogoValid ? [...savedLogos, currentLogo] : savedLogos;
+          
+          if (allLogos.length === 0) return null;
+          
+          return (
+            <Card className="p-4">
+              <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                <Icon icon="lucide:package" className="text-primary" />
+                Logo Specifications {allLogos.length > 1 && `(${allLogos.length} logos)`}
+              </h3>
+              <div className="space-y-6">
+                {allLogos.map((logo, logoIndex) => (
+                  <div key={logo.id || logoIndex} className={logoIndex > 0 ? "border-t border-default-200 pt-4" : ""}>
+                    {allLogos.length > 1 && (
+                      <h4 className="font-medium text-base mb-3 text-primary">
+                        Logo {logoIndex + 1} {logo.logoName && `- ${logo.logoName}`}
+                      </h4>
+                    )}
+                    <div className="space-y-4">
+                      {/* Identity */}
+                      <div>
+                        <h4 className="font-medium text-sm text-default-700 mb-2">Project Identity</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                          <div>
+                            <span className="text-default-500">Logo Number:</span>
+                            <p className="font-medium">{logo.logoNumber || "—"}</p>
                           </div>
-                        ))}
+                          <div>
+                            <span className="text-default-500">Logo Name:</span>
+                            <p className="font-medium">{logo.logoName || "—"}</p>
+                          </div>
+                          <div>
+                            <span className="text-default-500">Requested By:</span>
+                            <p className="font-medium">{logo.requestedBy || "—"}</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Bolas */}
-                  {formData.logoDetails.composition.bolas && 
-                   formData.logoDetails.composition.bolas.length > 0 && (
-                    <div>
-                      <h5 className="text-xs font-semibold text-default-600 mb-2 uppercase tracking-wider">
-                        Bolas ({formData.logoDetails.composition.bolas.length})
-                      </h5>
-                      <div className="space-y-2">
-                        {formData.logoDetails.composition.bolas.map((bola, index) => (
-                          <div key={index} className="text-sm bg-default-50 p-2 rounded border border-default-200">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1">
-                                <p className="font-medium text-default-900">
-                                  Bola {index + 1}
-                                </p>
-                                <div className="text-xs text-default-600 mt-1 space-y-0.5">
-                                  {bola.corNome && (
-                                    <p>Cor: {bola.corNome}</p>
-                                  )}
-                                  {bola.acabamentoNome && (
-                                    <p>Acabamento: {bola.acabamentoNome}</p>
-                                  )}
-                                  {bola.tamanhoNome && (
-                                    <p>Tamanho: {bola.tamanhoNome}</p>
-                                  )}
+                      {/* Dimensions */}
+                      {(logo.dimensions?.height?.value ||
+                        logo.dimensions?.length?.value ||
+                        logo.dimensions?.width?.value ||
+                        logo.dimensions?.diameter?.value) && (
+                          <div>
+                            <h4 className="font-medium text-sm text-default-700 mb-2">Dimensions</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                              {logo.dimensions?.height?.value && (
+                                <div>
+                                  <span className="text-default-500">Height:</span>
+                                  <p className="font-medium">
+                                    {logo.dimensions.height.value}m
+                                    {logo.dimensions.height.imperative && " (!)"}
+                                  </p>
                                 </div>
-                                {bola.referencia && (
-                                  <p className="text-xs text-default-500 mt-1">
-                                    Ref: {bola.referencia}
+                              )}
+                              {logo.dimensions?.length?.value && (
+                                <div>
+                                  <span className="text-default-500">Length:</span>
+                                  <p className="font-medium">
+                                    {logo.dimensions.length.value}m
+                                    {logo.dimensions.length.imperative && " (!)"}
                                   </p>
-                                )}
-                              </div>
+                                </div>
+                              )}
+                              {logo.dimensions?.width?.value && (
+                                <div>
+                                  <span className="text-default-500">Width:</span>
+                                  <p className="font-medium">
+                                    {logo.dimensions.width.value}m
+                                    {logo.dimensions.width.imperative && " (!)"}
+                                  </p>
+                                </div>
+                              )}
+                              {logo.dimensions?.diameter?.value && (
+                                <div>
+                                  <span className="text-default-500">Diameter:</span>
+                                  <p className="font-medium">
+                                    {logo.dimensions.diameter.value}m
+                                    {logo.dimensions.diameter.imperative && " (!)"}
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           </div>
-                        ))}
+                        )}
+
+                      {/* Fixation & Usage */}
+                      <div>
+                        <h4 className="font-medium text-sm text-default-700 mb-2">Fixation & Usage</h4>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <span className="text-default-500">Usage:</span>
+                            <p className="font-medium">
+                              {logo.usageOutdoor ? "Outdoor" : "Indoor"}
+                            </p>
+                          </div>
+                          {logo.fixationType && (
+                            <div>
+                              <span className="text-default-500">Fixation:</span>
+                              <p className="font-medium capitalize">
+                                {logo.fixationType.replace(/_/g, ' ')}
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Composition */}
+                      {logo.composition && (
+                        <div>
+                          <h4 className="font-medium text-sm text-default-700 mb-2">Composition</h4>
+                          
+                          {/* Componentes */}
+                          {logo.composition.componentes && 
+                           logo.composition.componentes.length > 0 && (
+                            <div className="mb-4">
+                              <h5 className="text-xs font-semibold text-default-600 mb-2 uppercase tracking-wider">
+                                Componentes ({logo.composition.componentes.length})
+                              </h5>
+                              <div className="space-y-2">
+                                {logo.composition.componentes.map((comp, index) => (
+                                  <div key={index} className="text-sm bg-default-50 p-2 rounded border border-default-200">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1">
+                                        <p className="font-medium text-default-900">
+                                          {comp.componenteNome || `Componente ${index + 1}`}
+                                        </p>
+                                        {comp.corNome && (
+                                          <p className="text-xs text-default-600 mt-1">
+                                            Cor: {comp.corNome}
+                                          </p>
+                                        )}
+                                        {comp.referencia && (
+                                          <p className="text-xs text-default-500 mt-1">
+                                            Ref: {comp.referencia}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Bolas */}
+                          {logo.composition.bolas && 
+                           logo.composition.bolas.length > 0 && (
+                            <div>
+                              <h5 className="text-xs font-semibold text-default-600 mb-2 uppercase tracking-wider">
+                                Bolas ({logo.composition.bolas.length})
+                              </h5>
+                              <div className="space-y-2">
+                                {logo.composition.bolas.map((bola, index) => (
+                                  <div key={index} className="text-sm bg-default-50 p-2 rounded border border-default-200">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1">
+                                        <p className="font-medium text-default-900">
+                                          Bola {index + 1}
+                                        </p>
+                                        <div className="text-xs text-default-600 mt-1 space-y-0.5">
+                                          {bola.corNome && (
+                                            <p>Cor: {bola.corNome}</p>
+                                          )}
+                                          {bola.acabamentoNome && (
+                                            <p>Acabamento: {bola.acabamentoNome}</p>
+                                          )}
+                                          {bola.tamanhoNome && (
+                                            <p>Tamanho: {bola.tamanhoNome}</p>
+                                          )}
+                                        </div>
+                                        {bola.referencia && (
+                                          <p className="text-xs text-default-500 mt-1">
+                                            Ref: {bola.referencia}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Mensagem se não houver componentes nem bolas */}
+                          {(!logo.composition.componentes || 
+                            logo.composition.componentes.length === 0) &&
+                           (!logo.composition.bolas || 
+                            logo.composition.bolas.length === 0) && (
+                            <p className="text-sm text-default-400 italic">Nenhum material adicionado</p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Description */}
+                      {logo.description && (
+                        <div>
+                          <h4 className="font-medium text-sm text-default-700 mb-2">Description</h4>
+                          <p className="text-sm text-default-600">{logo.description}</p>
+                        </div>
+                      )}
+
+                      {/* Attachments */}
+                      {logo.attachmentFiles && logo.attachmentFiles.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-sm text-default-700 mb-2">Attachments</h4>
+                          <p className="text-sm text-default-600">
+                            {logo.attachmentFiles.length} file(s) attached
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  )}
-
-                  {/* Mensagem se não houver componentes nem bolas */}
-                  {(!formData.logoDetails.composition.componentes || 
-                    formData.logoDetails.composition.componentes.length === 0) &&
-                   (!formData.logoDetails.composition.bolas || 
-                    formData.logoDetails.composition.bolas.length === 0) && (
-                    <p className="text-sm text-default-400 italic">Nenhum material adicionado</p>
-                  )}
-                </div>
-              )}
-
-              {/* Description */}
-              {formData.logoDetails.description && (
-                <div>
-                  <h4 className="font-medium text-sm text-default-700 mb-2">Description</h4>
-                  <p className="text-sm text-default-600">{formData.logoDetails.description}</p>
-                </div>
-              )}
-
-              {/* Attachments */}
-              {formData.logoDetails.attachmentFiles && formData.logoDetails.attachmentFiles.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-sm text-default-700 mb-2">Attachments</h4>
-                  <p className="text-sm text-default-600">
-                    {formData.logoDetails.attachmentFiles.length} file(s) attached
-                  </p>
-                </div>
-              )}
-            </div>
-          </Card>
-        )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          );
+        })()}
 
         {/* Export Options Card */}
         {formData.projectType === "simu" && formData.simuWorkflow === "ai" && (

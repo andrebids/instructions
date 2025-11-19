@@ -288,7 +288,10 @@ const validationSchema = Yup.object({
 
 export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
   const logoDetails = formData.logoDetails || {};
-  const composition = logoDetails.composition || { componentes: [], bolas: [] };
+  // Support both old structure (direct logoDetails) and new structure (with currentLogo)
+  const currentLogo = logoDetails.currentLogo || logoDetails;
+  const savedLogos = logoDetails.logos || [];
+  const composition = currentLogo.composition || { componentes: [], bolas: [] };
   
   // Estado para controlar a busca nos componentes
   const [componenteSearchValues, setComponenteSearchValues] = React.useState({});
@@ -325,42 +328,54 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
   // Usar Formik para gerenciar estado e validação
   const formik = useFormikStep({
     initialValues: {
-      logoNumber: logoDetails.logoNumber || "",
-      logoName: logoDetails.logoName || "",
-      requestedBy: logoDetails.requestedBy || "",
-      dimensions: logoDetails.dimensions || {},
+      logoNumber: currentLogo.logoNumber || "",
+      logoName: currentLogo.logoName || "",
+      requestedBy: currentLogo.requestedBy || "",
+      dimensions: currentLogo.dimensions || {},
       // Manter outros campos para compatibilidade
-      usageOutdoor: logoDetails.usageOutdoor || false,
-      usageIndoor: logoDetails.usageIndoor !== undefined ? logoDetails.usageIndoor : true,
-      fixationType: logoDetails.fixationType || "",
-      lacqueredStructure: logoDetails.lacqueredStructure || false,
-      lacquerColor: logoDetails.lacquerColor || "",
-      mastDiameter: logoDetails.mastDiameter || "",
-      maxWeightConstraint: logoDetails.maxWeightConstraint || false,
-      maxWeight: logoDetails.maxWeight || "",
-      ballast: logoDetails.ballast || false,
-      controlReport: logoDetails.controlReport || false,
-      criteria: logoDetails.criteria || "",
-      description: logoDetails.description || "",
+      usageOutdoor: currentLogo.usageOutdoor || false,
+      usageIndoor: currentLogo.usageIndoor !== undefined ? currentLogo.usageIndoor : true,
+      fixationType: currentLogo.fixationType || "",
+      lacqueredStructure: currentLogo.lacqueredStructure || false,
+      lacquerColor: currentLogo.lacquerColor || "",
+      mastDiameter: currentLogo.mastDiameter || "",
+      maxWeightConstraint: currentLogo.maxWeightConstraint || false,
+      maxWeight: currentLogo.maxWeight || "",
+      ballast: currentLogo.ballast || false,
+      controlReport: currentLogo.controlReport || false,
+      criteria: currentLogo.criteria || "",
+      description: currentLogo.description || "",
     },
     validationSchema,
     onChange: (field, value) => {
-      // Sincronizar com formData global através de logoDetails
+      // Sincronizar com formData global através de currentLogo
+      const updatedCurrentLogo = {
+        ...currentLogo,
+        [field]: value,
+      };
+      // Update logoDetails with new structure (preserving saved logos)
       const updatedLogoDetails = {
         ...logoDetails,
-        [field]: value,
+        currentLogo: updatedCurrentLogo,
+        logos: savedLogos, // Preserve saved logos
       };
       onInputChange("logoDetails", updatedLogoDetails);
     },
-    formData: logoDetails,
+    formData: currentLogo,
   });
 
   // Helper para atualizar logoDetails completo (mantém compatibilidade)
   const handleUpdate = (key, value) => {
-    onInputChange("logoDetails", {
-      ...logoDetails,
+    const updatedCurrentLogo = {
+      ...currentLogo,
       [key]: value
-    });
+    };
+    const updatedLogoDetails = {
+      ...logoDetails,
+      currentLogo: updatedCurrentLogo,
+      logos: savedLogos, // Preserve saved logos
+    };
+    onInputChange("logoDetails", updatedLogoDetails);
     // Sincronizar com Formik
     if (formik.values[key] !== undefined) {
       formik.setFieldValue(key, value);
@@ -544,6 +559,15 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         return newValues;
       });
     }
+  };
+
+  const handleClearAllComponentes = () => {
+    const newComposition = { ...composition };
+    newComposition.componentes = [];
+    handleUpdate("composition", newComposition);
+    // Limpar todos os estados de busca e edição
+    setComponenteSearchValues({});
+    setComponentesEditando({});
   };
   
   const handleToggleEditComponente = (index) => {
@@ -926,15 +950,30 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-sm font-bold text-default-900 uppercase tracking-wider">Componentes</p>
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    color="primary"
-                    startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
-                    onPress={handleAddComponente}
-                  >
-                    Adicionar
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {composition.componentes && composition.componentes.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        color="danger"
+                        startContent={<Icon icon="lucide:trash-2" className="w-4 h-4" />}
+                        onPress={handleClearAllComponentes}
+                        className="min-w-0 px-2"
+                      >
+                        Limpar Tudo
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="primary"
+                      startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
+                      onPress={handleAddComponente}
+                      className="min-w-0 px-2"
+                    >
+                      Adicionar
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className="space-y-4">

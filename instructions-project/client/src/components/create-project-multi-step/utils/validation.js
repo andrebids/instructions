@@ -73,7 +73,10 @@ export const validateStepAIDesigner = (formData) => {
 // Validação do Step: Logo Instructions (apenas para projetos Logo)
 export const validateStepLogoInstructions = (formData) => {
   const logoDetails = formData.logoDetails || {};
-  const dimensions = logoDetails.dimensions || {};
+  // Support both old structure (direct logoDetails) and new structure (with currentLogo)
+  const currentLogo = logoDetails.currentLogo || logoDetails;
+  const savedLogos = logoDetails.logos || [];
+  const dimensions = currentLogo.dimensions || {};
   
   // Verificar se pelo menos um campo de dimensões está preenchido
   const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
@@ -82,18 +85,23 @@ export const validateStepLogoInstructions = (formData) => {
   const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
   const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
   
-  const isValid = (
-    logoDetails.logoNumber?.trim() !== "" &&
-    logoDetails.logoName?.trim() !== "" &&
-    logoDetails.requestedBy?.trim() !== "" &&
+  // Step is valid if current logo is valid OR if there are saved logos (user can proceed with saved logos)
+  const isCurrentLogoValid = (
+    currentLogo.logoNumber?.trim() !== "" &&
+    currentLogo.logoName?.trim() !== "" &&
+    currentLogo.requestedBy?.trim() !== "" &&
     hasAtLeastOneDimension
   );
+  
+  const isValid = isCurrentLogoValid || savedLogos.length > 0;
 
   logger.validation("logo-instructions", isValid, {
-    hasLogoNumber: !!logoDetails.logoNumber,
-    hasLogoName: !!logoDetails.logoName,
-    hasRequestedBy: !!logoDetails.requestedBy,
+    hasLogoNumber: !!currentLogo.logoNumber,
+    hasLogoName: !!currentLogo.logoName,
+    hasRequestedBy: !!currentLogo.requestedBy,
     hasAtLeastOneDimension: hasAtLeastOneDimension,
+    savedLogosCount: savedLogos.length,
+    isCurrentLogoValid: isCurrentLogoValid,
     dimensions: {
       height: hasHeight,
       length: hasLength,
