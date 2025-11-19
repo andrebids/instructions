@@ -134,7 +134,8 @@ export default defineConfig({
     allowedHosts: [
       'test2.dsproject.pt',
       'localhost',
-      '.dsproject.pt' // Permite todos os subdomínios de dsproject.pt
+      '.dsproject.pt', // Permite todos os subdomínios de dsproject.pt
+      'thecore.blachere-illumination.ai'
     ],
     proxy: {
       '/api': {
