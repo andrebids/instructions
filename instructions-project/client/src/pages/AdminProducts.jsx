@@ -33,6 +33,7 @@ import {
 import { Scroller } from "../components/ui/scroller";
 import { useTranslation } from "react-i18next";
 import { useUserRole } from "../hooks/useUserRole";
+import { useProductForm } from "./hooks/useProductForm";
 
 export default function AdminProducts() {
   const { t } = useTranslation();
@@ -228,45 +229,67 @@ export default function AdminProducts() {
       color: colorData.text,
     };
   };
-  var [formData, setFormData] = React.useState({
-    name: "",
-    stock: "",
-    usedStock: "",
-    prices: {
-      new: {
-        price: "",
-        oldPrice: "",
-        rentalPrice: "",
+  // Estado inicial do formulário
+  var getInitialFormData = function() {
+    return {
+      name: "",
+      stock: "",
+      usedStock: "",
+      prices: {
+        new: {
+          price: "",
+          oldPrice: "",
+          rentalPrice: "",
+        },
+        used: {
+          price: "",
+          rentalPrice: "",
+        },
       },
-      used: {
-        price: "",
-        rentalPrice: "",
+      type: "",
+      location: "",
+      mount: "",
+      tags: [],
+      isActive: true,
+      specs: {
+        descricao: "",
+        tecnicas: "",
+        weight: "",
+        effects: "",
+        materiais: "",
+        stockPolicy: "",
+        printType: "",
+        printColor: "",
+        aluminium: "",
+        softXLED: "",
+        sparkle: "",
+        sparkles: "",
       },
-    },
-    type: "",
-    location: "",
-    mount: "",
-    tags: [],
-    isActive: true,
-    specs: {
-      descricao: "",
-      tecnicas: "",
-      weight: "",
-      effects: "",
-      materiais: "",
-      stockPolicy: "",
-      printType: "",
-      printColor: "",
-      aluminium: "",
-      softXLED: "",
-      sparkle: "",
-      sparkles: "",
-    },
-    availableColors: {},
-    videoFile: "",
-    releaseYear: "",
-    season: "",
+      availableColors: {},
+      videoFile: "",
+      releaseYear: "",
+      season: "",
+      height: "",
+      width: "",
+      depth: "",
+      diameter: "",
+    };
+  };
+
+  var [formData, setFormData] = React.useState(getInitialFormData());
+  
+  // Usar Formik para validação e gerenciamento de estado
+  var formik = useProductForm(formData, function(values) {
+    // Este onSubmit será chamado quando o formulário for válido
+    // Mas mantemos handleSubmit original para compatibilidade
   });
+  
+  // Sincronizar formData com Formik quando formData mudar externamente (apenas se diferente)
+  React.useEffect(function() {
+    if (formData && JSON.stringify(formData) !== JSON.stringify(formik.values)) {
+      formik.setValues(formData);
+    }
+  }, [formData]);
   
   var [imageFiles, setImageFiles] = React.useState({
     dayImage: null,
@@ -554,51 +577,9 @@ export default function AdminProducts() {
   // Abrir modal para criar novo produto
   var handleCreateNew = function() {
     setEditingProduct(null);
-    setFormData({
-      name: "",
-      stock: "",
-      usedStock: "",
-      prices: {
-        new: {
-          price: "",
-          oldPrice: "",
-          rentalPrice: "",
-        },
-        used: {
-          price: "",
-          rentalPrice: "",
-        },
-      },
-      type: "",
-      usage: "",
-      location: "",
-      mount: "",
-      tags: [],
-      isActive: true,
-      specs: {
-        descricao: "",
-        tecnicas: "",
-        dimensoes: "",
-        weight: "",
-        effects: "",
-        materiais: "",
-        stockPolicy: "",
-        printType: "",
-        printColor: "",
-        aluminium: "",
-        softXLED: "",
-        sparkle: "",
-        sparkles: "",
-      },
-      availableColors: {},
-      videoFile: "",
-      releaseYear: "",
-      season: "",
-      height: "",
-      width: "",
-      depth: "",
-      diameter: "",
-    });
+    var initialData = getInitialFormData();
+    setFormData(initialData);
+    formik.resetForm({ values: initialData });
     setImageFiles({
       dayImage: null,
       nightImage: null,
@@ -1058,11 +1039,31 @@ export default function AdminProducts() {
 
   // Submeter formulário
   var handleSubmit = function() {
-    // Validar campos obrigatórios
-    if (!formData.name || formData.name.trim() === '') {
-      setError("The 'Name' field is required");
-      return;
-    }
+    // Validar usando Formik
+    formik.validateForm().then(function(errors) {
+      if (Object.keys(errors).length > 0) {
+        // Se houver erros, mostrar o primeiro
+        var firstError = Object.values(errors)[0];
+        if (typeof firstError === 'string') {
+          setError(firstError);
+        } else {
+          setError("Please fix the form errors before submitting");
+        }
+        // Marcar todos os campos como touched para mostrar erros
+        formik.setTouched({
+          name: true,
+          stock: true,
+          'prices.new.price': true,
+          'prices.new.oldPrice': true,
+        });
+        return;
+      }
+      
+      // Validar campos obrigatórios manualmente também (compatibilidade)
+      if (!formData.name || formData.name.trim() === '') {
+        setError("The 'Name' field is required");
+        return;
+      }
     
     // Função auxiliar para converter strings vazias ou "null" para null
     var toNullIfEmpty = function(value) {
@@ -1278,6 +1279,7 @@ export default function AdminProducts() {
         setError(errorMessage);
         setLoading(false);
       });
+    });
   };
 
   // Filtrar produtos
@@ -1776,15 +1778,22 @@ export default function AdminProducts() {
                       <Input
                         label="Name"
                         placeholder="Ex: IPL317R"
-                        value={formData.name}
+                        value={formik.values.name}
                         onValueChange={function(val) {
+                          formik.setFieldValue("name", val);
                           setFormData(function(prev) {
                             return Object.assign({}, prev, { name: val });
                           });
                         }}
+                        onBlur={formik.handleBlur}
                         isRequired
+                        isInvalid={formik.touched.name && !!formik.errors.name}
+                        errorMessage={formik.touched.name && formik.errors.name}
                         classNames={{
-                          label: "text-primary-700 dark:text-primary-400"
+                          label: "text-primary-700 dark:text-primary-400",
+                          inputWrapper: formik.touched.name && formik.errors.name
+                            ? "border-danger"
+                            : ""
                         }}
                       />
                       <div></div>
@@ -1792,28 +1801,42 @@ export default function AdminProducts() {
                         label="Stock"
                         type="number"
                         placeholder="32"
-                        value={formData.stock}
+                        value={formik.values.stock}
                         onValueChange={function(val) {
+                          formik.setFieldValue("stock", val);
                           setFormData(function(prev) {
                             return Object.assign({}, prev, { stock: val });
                           });
                         }}
+                        onBlur={formik.handleBlur}
+                        isInvalid={formik.touched.stock && !!formik.errors.stock}
+                        errorMessage={formik.touched.stock && formik.errors.stock}
                         classNames={{
-                          label: "text-primary-700 dark:text-primary-400"
+                          label: "text-primary-700 dark:text-primary-400",
+                          inputWrapper: formik.touched.stock && formik.errors.stock
+                            ? "border-danger"
+                            : ""
                         }}
                       />
                       <Input
                         label="Used Stock"
                         type="number"
                         placeholder="10"
-                        value={formData.usedStock}
+                        value={formik.values.usedStock}
                         onValueChange={function(val) {
+                          formik.setFieldValue("usedStock", val);
                           setFormData(function(prev) {
                             return Object.assign({}, prev, { usedStock: val });
                           });
                         }}
+                        onBlur={formik.handleBlur}
+                        isInvalid={formik.touched.usedStock && !!formik.errors.usedStock}
+                        errorMessage={formik.touched.usedStock && formik.errors.usedStock}
                         classNames={{
-                          label: "text-primary-700 dark:text-primary-400"
+                          label: "text-primary-700 dark:text-primary-400",
+                          inputWrapper: formik.touched.usedStock && formik.errors.usedStock
+                            ? "border-danger"
+                            : ""
                         }}
                       />
                     </div>
@@ -1830,61 +1853,63 @@ export default function AdminProducts() {
                                 label="Price (€)"
                                 type="number"
                                 placeholder="1299"
-                                value={formData.prices.new.price}
+                                value={formik.values.prices.new.price}
                                 onValueChange={function(val) {
+                                  var newPrices = { ...formik.values.prices };
+                                  var newPrice = parseFloat(val) || 0;
+                                  var currentOldPrice = parseFloat(newPrices.new.oldPrice) || 0;
+                                  
+                                  // Se o novo Price for maior que o Old Price existente, limpar o Old Price
+                                  if (newPrices.new.oldPrice && currentOldPrice > 0 && newPrice > currentOldPrice) {
+                                    newPrices.new = { ...newPrices.new, price: val, oldPrice: "" };
+                                  } else {
+                                    newPrices.new = { ...newPrices.new, price: val };
+                                  }
+                                  
+                                  formik.setFieldValue("prices", newPrices);
                                   setFormData(function(prev) {
-                                    var newPrices = Object.assign({}, prev.prices);
-                                    var newPrice = parseFloat(val) || 0;
-                                    var currentOldPrice = parseFloat(prev.prices.new.oldPrice) || 0;
-                                    
-                                    // Se o novo Price for maior que o Old Price existente, limpar o Old Price
-                                    if (prev.prices.new.oldPrice && currentOldPrice > 0 && newPrice > currentOldPrice) {
-                                      newPrices.new = Object.assign({}, newPrices.new, { price: val, oldPrice: "" });
-                                    } else {
-                                      newPrices.new = Object.assign({}, newPrices.new, { price: val });
-                                    }
                                     return Object.assign({}, prev, { prices: newPrices });
                                   });
                                 }}
+                                onBlur={() => formik.setFieldTouched("prices.new.price", true)}
+                                isInvalid={formik.isNestedTouched("prices.new.price") && !!formik.getNestedError("prices.new.price")}
+                                errorMessage={formik.isNestedTouched("prices.new.price") && formik.getNestedError("prices.new.price")}
                                 classNames={{
-                                  label: "text-primary-700 dark:text-primary-400"
+                                  label: "text-primary-700 dark:text-primary-400",
+                                  inputWrapper: formik.isNestedTouched("prices.new.price") && formik.getNestedError("prices.new.price")
+                                    ? "border-danger"
+                                    : ""
                                 }}
                               />
                               <Input
                                 label="Old Price (€)"
                                 type="number"
                                 placeholder="Optional"
-                                value={formData.prices.new.oldPrice}
+                                value={formik.values.prices.new.oldPrice}
                                 onValueChange={function(val) {
+                                  var newPrices = { ...formik.values.prices };
+                                  var currentPrice = parseFloat(newPrices.new.price) || 0;
+                                  var newOldPrice = parseFloat(val) || 0;
+                                  
+                                  // Se o Old Price for menor que o Price, não permitir
+                                  if (val && newOldPrice > 0 && newOldPrice < currentPrice) {
+                                    return; // Não atualizar se inválido
+                                  }
+                                  
+                                  newPrices.new = { ...newPrices.new, oldPrice: val };
+                                  formik.setFieldValue("prices", newPrices);
                                   setFormData(function(prev) {
-                                    var newPrices = Object.assign({}, prev.prices);
-                                    var currentPrice = parseFloat(prev.prices.new.price) || 0;
-                                    var newOldPrice = parseFloat(val) || 0;
-                                    
-                                    // Se o Old Price for menor que o Price, não permitir
-                                    if (val && newOldPrice > 0 && newOldPrice < currentPrice) {
-                                      return prev; // Não atualizar se inválido
-                                    }
-                                    
-                                    newPrices.new = Object.assign({}, newPrices.new, { oldPrice: val });
                                     return Object.assign({}, prev, { prices: newPrices });
                                   });
                                 }}
-                                isInvalid={function() {
-                                  var currentPrice = parseFloat(formData.prices.new.price) || 0;
-                                  var oldPrice = parseFloat(formData.prices.new.oldPrice) || 0;
-                                  return formData.prices.new.oldPrice && oldPrice > 0 && oldPrice < currentPrice;
-                                }()}
-                                errorMessage={function() {
-                                  var currentPrice = parseFloat(formData.prices.new.price) || 0;
-                                  var oldPrice = parseFloat(formData.prices.new.oldPrice) || 0;
-                                  if (formData.prices.new.oldPrice && oldPrice > 0 && oldPrice < currentPrice) {
-                                    return "Old Price must be greater than or equal to Price";
-                                  }
-                                  return "";
-                                }()}
+                                onBlur={() => formik.setFieldTouched("prices.new.oldPrice", true)}
+                                isInvalid={formik.isNestedTouched("prices.new.oldPrice") && !!formik.getNestedError("prices.new.oldPrice")}
+                                errorMessage={formik.isNestedTouched("prices.new.oldPrice") && formik.getNestedError("prices.new.oldPrice")}
                                 classNames={{
-                                  label: "text-primary-700 dark:text-primary-400"
+                                  label: "text-primary-700 dark:text-primary-400",
+                                  inputWrapper: formik.isNestedTouched("prices.new.oldPrice") && formik.getNestedError("prices.new.oldPrice")
+                                    ? "border-danger"
+                                    : ""
                                 }}
                               />
                               <Input

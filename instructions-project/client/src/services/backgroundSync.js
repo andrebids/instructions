@@ -264,10 +264,15 @@ export async function syncProject(projectId) {
       canvasImages: editorState.canvasImages,
       snapZonesByImage: editorState.snapZonesByImage,
       decorationsByImage: editorState.decorationsByImage,
+      logoDetails: editorState.logoDetails,
     };
 
-    // Try to sync with backend
-    await projectsAPI.update(projectId, updateData);
+    // Try to sync with backend - use updateCanvas for logoDetails if it exists
+    if (editorState.logoDetails && Object.keys(editorState.logoDetails).length > 0) {
+      await projectsAPI.updateCanvas(projectId, updateData);
+    } else {
+      await projectsAPI.update(projectId, updateData);
+    }
 
     // Mark as synced
     await markAsSynced(projectId);

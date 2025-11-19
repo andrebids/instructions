@@ -59,6 +59,7 @@ export async function saveEditorState(projectId, state) {
       canvasImages: state.canvasImages || [],
       snapZonesByImage: state.snapZonesByImage || {},
       decorationsByImage: state.decorationsByImage || {},
+      logoDetails: state.logoDetails || {},
       lastModified: new Date().toISOString(),
       pendingSync: state.pendingSync || false,
     };
@@ -124,6 +125,7 @@ export async function saveLastStep(projectId, stepId) {
       canvasImages: existingState?.canvasImages || [],
       snapZonesByImage: existingState?.snapZonesByImage || {},
       decorationsByImage: existingState?.decorationsByImage || {},
+      logoDetails: existingState?.logoDetails || {},
     });
   } catch (error) {
     console.error('❌ [IndexedDB] Erro ao salvar step:', error);

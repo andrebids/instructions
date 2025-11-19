@@ -324,7 +324,8 @@ export async function updateProjectCanvas(id, canvasData) {
       temCanvasImages: canvasData.canvasImages !== undefined,
       temDecorationsByImage: canvasData.decorationsByImage !== undefined,
       temUploadedImages: canvasData.uploadedImages !== undefined,
-      temSimulationState: canvasData.simulationState !== undefined
+      temSimulationState: canvasData.simulationState !== undefined,
+      temLogoDetails: canvasData.logoDetails !== undefined
     }
   });
   
@@ -373,6 +374,10 @@ export async function updateProjectCanvas(id, canvasData) {
   if (canvasData.simulationState !== undefined) {
     updateData.simulationState = canvasData.simulationState;
     logInfo('SimulationState recebido:', canvasData.simulationState);
+  }
+  if (canvasData.logoDetails !== undefined) {
+    updateData.logoDetails = canvasData.logoDetails;
+    logInfo('LogoDetails recebido:', Object.keys(canvasData.logoDetails || {}).length, 'campos');
   }
   
   logInfo('Dados a atualizar:', Object.keys(updateData));

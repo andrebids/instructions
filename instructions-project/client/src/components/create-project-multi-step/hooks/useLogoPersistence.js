@@ -1,0 +1,100 @@
+import { useEffect, useRef } from 'react';
+import { projectsAPI } from '../../../services/api';
+import { saveEditorState } from '../../../services/indexedDB';
+import { registerSyncTag, isBackgroundSyncAvailable } from '../../../services/backgroundSync';
+
+/**
+ * Hook para gerenciar salvamento automático dos dados do logo
+ * Salva em formData, localStorage e API (se projeto existe)
+ * Similar ao useCanvasPersistence mas para projetos tipo logo
+ * 
+ * @param {Object} params
+ * @param {Object} params.logoDetails - Dados das instruções do logo
+ * @param {Object} params.formData - Dados do formulário
+ * @param {Function} params.onInputChange - Callback para atualizar formData
+ */
+export const useLogoPersistence = ({
+  logoDetails,
+  formData,
+  onInputChange
+}) => {
+  // Ref para rastrear valores anteriores e evitar atualizações desnecessárias
+  const prevValuesRef = useRef({
+    logoDetails: null
+  });
+  
+  useEffect(() => {
+    // Verificar se realmente há mudanças antes de atualizar (evitar loops infinitos)
+    const logoDetailsStr = JSON.stringify(logoDetails);
+    
+    const hasChanges = 
+      prevValuesRef.current.logoDetails !== logoDetailsStr;
+    
+    if (!hasChanges) {
+      return; // Não há mudanças, não atualizar
+    }
+    
+    // Atualizar valores anteriores
+    prevValuesRef.current = {
+      logoDetails: logoDetailsStr
+    };
+    
+    // Salvar no formData
+    onInputChange("logoDetails", logoDetails);
+    
+    // Salvar também no localStorage como backup
+    try {
+      const projectId = formData?.id || 'temp';
+      localStorage.setItem(`logoDetails_${projectId}`, logoDetailsStr);
+    } catch (e) {
+      console.error('⚠️ Erro ao salvar no localStorage:', e);
+    }
+    
+    // Se projeto já existe (tem ID), salvar automaticamente na base de dados
+    const temProjectId = !!formData?.id;
+    
+    if (temProjectId) {
+      const timeoutId = setTimeout(async function() {
+        const dadosParaSalvar = {
+          logoDetails: logoDetails || {},
+          lastEditedStep: 'logo-instructions', // Logo instructions step
+        };
+        
+        // Salvar no IndexedDB também (robusto para mobile)
+        try {
+          await saveEditorState(formData.id, {
+            lastEditedStep: 'logo-instructions',
+            logoDetails: logoDetails || {},
+            pendingSync: !navigator.onLine
+          });
+        } catch (idxError) {
+          console.warn('⚠️ Erro ao salvar no IndexedDB:', idxError);
+        }
+        
+        // Salvar no localStorage também
+        try {
+          localStorage.setItem(`project_${formData.id}_lastStep`, 'logo-instructions');
+          localStorage.setItem(`project_${formData.id}_lastStepTime`, new Date().toISOString());
+        } catch (lsError) {
+          console.warn('⚠️ Erro ao salvar no localStorage:', lsError);
+        }
+        
+        // Salvar na API usando updateCanvas (que suporta logoDetails)
+        projectsAPI.updateCanvas(formData.id, dadosParaSalvar)
+          .catch(function(err) {
+            console.error('❌ Erro ao salvar logoDetails na API:', err.message);
+            
+            // Se offline, registar para sync quando voltar online
+            if (!navigator.onLine && isBackgroundSyncAvailable()) {
+              registerSyncTag(formData.id);
+            }
+          });
+      }, 500); // Debounce de 500ms para evitar muitas chamadas
+      
+      return function() {
+        clearTimeout(timeoutId);
+      };
+    }
+  }, [logoDetails, formData?.id]); // Removido onInputChange das dependências para evitar loop infinito
+};
+

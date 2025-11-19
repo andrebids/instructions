@@ -52,6 +52,7 @@
     "embla-carousel": "^8.6.0",
     "embla-carousel-auto-scroll": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
+    "formik": "^2.4.9",
     "framer-motion": "^12.23.22",
     "generate-password": "^1.7.1",
     "gsap": "^3.13.0",
@@ -67,7 +68,8 @@
     "recharts": "^3.2.1",
     "tailwindcss": "^4.0.0",
     "three": "^0.180.0",
-    "use-image": "^1.1.4"
+    "use-image": "^1.1.4",
+    "yup": "^1.7.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.14",
