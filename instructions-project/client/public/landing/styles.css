@@ -1,64 +1,123 @@
-/* Custom Animations & Overrides */
+/**
+ * Hero Section Styles
+ * Liquid Glass & Depth Aesthetic
+ */
 
-@keyframes pulse-slow {
-    0%, 100% { opacity: 0.3; transform: scale(1); }
-    50% { opacity: 0.15; transform: scale(1.1); }
+/* ============================================
+   GRADIENT TEXT EFFECTS
+   ============================================ */
+.hero-text-line-1,
+.hero-text-line-2 {
+    background: linear-gradient(135deg, #A19AFE 0%, #F9D7A0 50%, #A19AFE 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    background-size: 200% auto;
+    animation: gradientShift 8s ease infinite;
 }
 
-.animate-pulse-slow {
-    animation: pulse-slow 8s infinite ease-in-out;
+@keyframes gradientShift {
+
+    0%,
+    100% {
+        background-position: 0% center;
+    }
+
+    50% {
+        background-position: 100% center;
+    }
+}
+
+/* ============================================
+   3D PERSPECTIVE & TRANSFORMS
+   ============================================ */
+.perspective-container {
+    perspective: 2000px;
+}
+
+.mockup-3d {
+    transform: rotateX(8deg) rotateY(0deg) rotateZ(0deg);
+    transform-style: preserve-3d;
+    transition: transform 0.3s ease-out;
+    will-change: transform;
+}
+
+/* ============================================
+   GLASS EFFECTS
+   ============================================ */
+.aurora-text {
+    background: linear-gradient(to right, #A19AFE, #F9D7A0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(161, 154, 254, 0.15);
+}
+
+.glass-nav {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================
+   FLOATING ANIMATIONS
+   ============================================ */
+.blob {
+    position: absolute;
+    filter: blur(80px);
+    z-index: -1;
+    opacity: 0.6;
+    animation: float 10s infinite ease-in-out;
 }
 
 @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
-}
-
-.animate-float {
-    animation: float 6s ease-in-out infinite;
-}
-
-@keyframes fade-in-up {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
+    0% {
+        transform: translate(0px, 0px) scale(1);
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+
+    33% {
+        transform: translate(30px, -50px) scale(1.1);
+    }
+
+    66% {
+        transform: translate(-20px, 20px) scale(0.9);
+    }
+
+    100% {
+        transform: translate(0px, 0px) scale(1);
     }
 }
 
-.animate-fade-in-up {
-    animation: fade-in-up 0.8s ease-out forwards;
-    opacity: 0; /* Start hidden */
+/* ============================================
+   HOLOGRAPHIC BORDERS
+   ============================================ */
+.holographic-border {
+    position: relative;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 1.5rem;
+    z-index: 1;
 }
 
-.delay-100 { animation-delay: 0.1s; }
-.delay-200 { animation-delay: 0.2s; }
-.delay-300 { animation-delay: 0.3s; }
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-    width: 8px;
+.holographic-border::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 1.6rem;
+    background: linear-gradient(45deg, #A19AFE, #F9D7A0);
+    z-index: -1;
+    filter: blur(2px);
 }
 
-::-webkit-scrollbar-track {
-    background: #020617;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #1e293b;
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #334155;
-}
-
-/* Glassmorphism Utilities */
-.glass {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+/* ============================================
+   CANVAS BACKGROUND
+   ============================================ */
+#aurora-canvas {
+    z-index: 0;
 }
