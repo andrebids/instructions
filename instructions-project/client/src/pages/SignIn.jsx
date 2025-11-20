@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 import GlassSurface from '../components/ui/GlassSurface';
 import { Input, Button } from '@heroui/react';
 
+import LoginSnippet from '../components/LoginSnippet';
+
 export default function SignIn() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -270,7 +272,8 @@ export default function SignIn() {
   };
 
   return (
-    <main className="bg-background text-foreground flex flex-1 items-center justify-center p-8">
+    <main className="bg-background text-foreground flex flex-1 items-center justify-center p-8 relative">
+      <LoginSnippet />
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">{t('pages.landing.signIn')}</h1>

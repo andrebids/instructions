@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Core | Intelligent Lighting Projects</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Urbanist', 'sans-serif'],
+                    },
+                    colors: {
+                        navy: {
+                            900: '#020617', // Deepest Navy/Black
+                            800: '#0f172a',
+                        },
+                        gold: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            glow: 'rgba(251, 191, 36, 0.5)',
+                        },
+                        neon: {
+                            400: '#a3e635', // Lime green
+                            500: '#84cc16',
+                            glow: 'rgba(163, 230, 53, 0.5)',
+                        }
+                    },
+                    backgroundImage: {
+                        'hero-gradient': 'linear-gradient(to bottom, #020617, #0f172a)',
+                        'card-gradient': 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)',
+                        'glow-conic': 'conic-gradient(from 180deg at 50% 50%, #2a8af6 0deg, #a853ba 180deg, #e92a67 360deg)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body
+    class="bg-navy-900 text-white font-sans antialiased overflow-x-hidden selection:bg-gold-500 selection:text-navy-900">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 transition-all duration-300" id="navbar">
+        <div class="absolute inset-0 bg-navy-900/80 backdrop-blur-md border-b border-white/5"></div>
+        <div class="container mx-auto px-6 py-4 relative flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div
+                    class="w-8 h-8 rounded bg-gradient-to-br from-gold-400 to-orange-500 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.3)]">
+                    <span class="font-bold text-navy-900 text-lg">C</span>
+                </div>
+                <span class="text-xl font-bold tracking-tight text-white">The Core</span>
+            </div>
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
+                <a href="#features" class="hover:text-gold-400 transition-colors">Capabilities</a>
+                <a href="#comparison" class="hover:text-gold-400 transition-colors">Why Switch?</a>
+                <a href="#costs" class="hover:text-gold-400 transition-colors">AI Costs</a>
+                <a href="/sign-in"
+                    class="px-5 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all border border-white/10 hover:border-gold-400/50">
+                    Agent Login
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+        <!-- Background Effects -->
+        <div class="absolute inset-0 z-0">
+            <div
+                class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] opacity-30 animate-pulse-slow">
+            </div>
+            <div
+                class="absolute bottom-0 right-0 w-[600px] h-[600px] bg-gold-500/10 rounded-full blur-[100px] opacity-20">
+            </div>
+            <!-- Grid Pattern -->
+            <div
+                class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImEiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTAgNDBWMGg0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjYSkiLz48L3N2Zz4=')] opacity-30">
+            </div>
+        </div>
+
+        <div class="container mx-auto px-6 relative z-10 text-center">
+            <div
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm animate-fade-in-up">
+                <span class="w-2 h-2 rounded-full bg-neon-400 animate-pulse"></span>
+                <span class="text-xs font-semibold tracking-wider uppercase text-gray-300">For Professional Agents
+                    Only</span>
+            </div>
+
+            <h1
+                class="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight tracking-tight animate-fade-in-up delay-100">
+                Close the Deal <br>
+                <span
+                    class="text-transparent bg-clip-text bg-gradient-to-r from-gold-400 via-yellow-200 to-gold-500 drop-shadow-[0_0_25px_rgba(251,191,36,0.3)]">
+                    on the First Visit.
+                </span>
+            </h1>
+
+            <p
+                class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up delay-200">
+                The ultimate mobile studio for lighting professionals. Simulate decorations, verify stock, and quote
+                instantly—all in front of your client.
+            </p>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up delay-300">
+                <a href="/sign-in"
+                    class="group relative px-8 py-4 bg-gold-500 text-navy-900 font-bold rounded-full overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(251,191,36,0.4)]">
+                    <div
+                        class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                    </div>
+                    <span class="relative flex items-center gap-2">
+                        Enter The Core
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14" />
+                            <path d="m12 5 7 7-7 7" />
+                        </svg>
+                    </span>
+                </a>
+                <a href="#features"
+                    class="px-8 py-4 rounded-full border border-white/10 hover:bg-white/5 text-white font-medium transition-all">
+                    Explore Features
+                </a>
+            </div>
+
+            <!-- Floating UI Mockup -->
+            <div class="mt-20 relative max-w-5xl mx-auto animate-float">
+                <div class="absolute -inset-1 bg-gradient-to-r from-gold-400 to-neon-400 rounded-xl blur opacity-20">
+                </div>
+                <div
+                    class="relative rounded-xl border border-white/10 bg-navy-800/80 backdrop-blur-xl overflow-hidden shadow-2xl">
+                    <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto=format&fit=crop"
+                        alt="App Interface" class="w-full h-auto opacity-80 mix-blend-overlay">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="bg-black/60 backdrop-blur-md p-8 rounded-2xl border border-white/10 text-center">
+                            <p class="text-gold-400 font-mono text-sm mb-2">SYSTEM STATUS</p>
+                            <p class="text-2xl font-bold text-white">Ready to Design</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Value Proposition -->
+    <section class="py-24 bg-navy-900 relative">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Why The Core?</h2>
+                <p class="text-gray-400 max-w-xl mx-auto">Dealing with Municipalities and Malls requires speed and
+                    visual impact. We solved the bottlenecks.</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Benefit 1 -->
+                <div
+                    class="group p-8 rounded-2xl bg-card-gradient border border-white/5 hover:border-gold-400/30 transition-all duration-300 hover:-translate-y-1">
+                    <div
+                        class="w-14 h-14 rounded-xl bg-gold-500/10 flex items-center justify-center mb-6 group-hover:bg-gold-500/20 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-gold-400" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <path
+                                d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+                            <path d="M9 18h6" />
+                            <path d="M10 22h4" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-white">Visuals that Sell</h3>
+                    <p class="text-gray-400 leading-relaxed">
+                        Transform a dull photo of a town square into a winter wonderland in seconds using the <span
+                            class="text-white font-medium">Pocket Designer</span>.
+                    </p>
+                </div>
+
+                <!-- Benefit 2 -->
+                <div
+                    class="group p-8 rounded-2xl bg-card-gradient border border-white/5 hover:border-neon-400/30 transition-all duration-300 hover:-translate-y-1">
+                    <div
+                        class="w-14 h-14 rounded-xl bg-neon-400/10 flex items-center justify-center mb-6 group-hover:bg-neon-400/20 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-neon-400" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-white">Stock You Can Trust</h3>
+                    <p class="text-gray-400 leading-relaxed">
+                        Never sell a ghost product again. The system only lets you place items that are <span
+                            class="text-white font-medium">physically in the warehouse</span>.
+                    </p>
+                </div>
+
+                <!-- Benefit 3 -->
+                <div
+                    class="group p-8 rounded-2xl bg-card-gradient border border-white/5 hover:border-blue-400/30 transition-all duration-300 hover:-translate-y-1">
+                    <div
+                        class="w-14 h-14 rounded-xl bg-blue-400/10 flex items-center justify-center mb-6 group-hover:bg-blue-400/20 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-blue-400" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <path d="M12 2v20" />
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-white">Budget Safe</h3>
+                    <p class="text-gray-400 leading-relaxed">
+                        The AI monitors the project cost in real-time, suggesting <span
+                            class="text-white font-medium">Eco-friendly alternatives</span> to stay within the client's
+                        limit.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature Deep Dive -->
+    <section id="features" class="py-24 bg-navy-800 relative overflow-hidden">
+        <!-- Decorative Elements -->
+        <div
+            class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-navy-900/50 to-transparent pointer-events-none">
+        </div>
+
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="mb-20">
+                <span class="text-gold-400 font-mono text-sm tracking-widest uppercase">The Toolkit</span>
+                <h2 class="text-4xl md:text-5xl font-bold mt-2">Built for the Field</h2>
+            </div>
+
+            <div class="space-y-24">
+                <!-- Feature A -->
+                <div class="flex flex-col lg:flex-row items-center gap-12 feature-item">
+                    <div class="lg:w-1/2">
+                        <div class="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl group">
+                            <div
+                                class="absolute inset-0 bg-gradient-to-t from-navy-900 via-transparent to-transparent opacity-60 z-10">
+                            </div>
+                            <img src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=2070&auto=format&fit=crop"
+                                alt="Pocket Designer"
+                                class="w-full h-[400px] object-cover transition-transform duration-700 group-hover:scale-110">
+                            <!-- UI Overlay -->
+                            <div class="absolute bottom-6 left-6 z-20 flex gap-3">
+                                <div
+                                    class="px-3 py-1 rounded bg-black/50 backdrop-blur border border-white/20 text-xs font-mono text-gold-400">
+                                    DRAG & DROP</div>
+                                <div
+                                    class="px-3 py-1 rounded bg-black/50 backdrop-blur border border-white/20 text-xs font-mono text-white">
+                                    NIGHT MODE</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lg:w-1/2">
+                        <h3 class="text-3xl font-bold mb-4 text-white">The Pocket Designer</h3>
+                        <p class="text-gray-400 text-lg mb-6 leading-relaxed">
+                            Forget waiting 3 days for a render. Open the canvas, drag decorations directly onto your
+                            client's building photo, and toggle <span class="text-gold-400">Night Mode</span> to show
+                            them the magic instantly.
+                        </p>
+                        <ul class="space-y-3 text-gray-300">
+                            <li class="flex items-center gap-3">
+                                <span class="w-1.5 h-1.5 rounded-full bg-gold-400"></span>
+                                Custom Cartouches & Logo Integration
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <span class="w-1.5 h-1.5 rounded-full bg-gold-400"></span>
+                                Real-time Lighting Simulation
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <span class="w-1.5 h-1.5 rounded-full bg-gold-400"></span>
+                                Instant Quote Generation
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Feature B -->
+                <div class="flex flex-col lg:flex-row-reverse items-center gap-12 feature-item">
+                    <div class="lg:w-1/2">
+                        <div class="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl group">
+                            <div
+                                class="absolute inset-0 bg-gradient-to-t from-navy-900 via-transparent to-transparent opacity-60 z-10">
+                            </div>
+                            <img src="https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?q=80&w=2070&auto=format&fit=crop"
+                                alt="Voice Command"
+                                class="w-full h-[400px] object-cover transition-transform duration-700 group-hover:scale-110">
+                            <div class="absolute bottom-6 right-6 z-20">
+                                <div
+                                    class="w-12 h-12 rounded-full bg-gold-500 flex items-center justify-center animate-pulse">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" class="text-navy-900">
+                                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                                        <path d="M12 19v4" />
+                                        <path d="M8 23h8" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lg:w-1/2">
+                        <h3 class="text-3xl font-bold mb-4 text-white">Voice Command</h3>
+                        <p class="text-gray-400 text-lg mb-6 leading-relaxed">
+                            On a ladder? Hands full? Just tell the AI what you need. "Add 50 meters of warm white
+                            garland to the balcony." Done.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature C -->
+                <div class="flex flex-col lg:flex-row items-center gap-12 feature-item">
+                    <div class="lg:w-1/2">
+                        <div class="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl group">
+                            <div
+                                class="absolute inset-0 bg-gradient-to-t from-navy-900 via-transparent to-transparent opacity-60 z-10">
+                            </div>
+                            <img src="https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?q=80&w=2070&auto=format&fit=crop"
+                                alt="Eco Smart"
+                                class="w-full h-[400px] object-cover transition-transform duration-700 group-hover:scale-110">
+                            <div class="absolute top-6 left-6 z-20">
+                                <div
+                                    class="px-3 py-1 rounded-full bg-neon-400/20 border border-neon-400/50 text-neon-400 text-xs font-bold uppercase tracking-wider">
+                                    Eco-Certified</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lg:w-1/2">
+                        <h3 class="text-3xl font-bold mb-4 text-white">Eco-Smart Filtering</h3>
+                        <p class="text-gray-400 text-lg mb-6 leading-relaxed">
+                            Win more municipal tenders. The system automatically prioritizes <span
+                                class="text-neon-400">low-consumption LEDs</span> and Bioprint materials to meet green
+                            energy requirements.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Battle -->
+    <section id="comparison" class="py-24 bg-navy-900 relative">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold mb-4">The Choice is Yours</h2>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                <!-- The Old Way -->
+                <div
+                    class="relative p-10 rounded-3xl bg-gray-900/50 border border-white/5 grayscale opacity-70 hover:opacity-100 transition-all duration-500">
+                    <div
+                        class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-6 py-2 bg-gray-800 rounded-full border border-gray-700 text-gray-400 font-bold tracking-widest text-sm uppercase">
+                        The Old Way
+                    </div>
+                    <ul class="space-y-6 mt-6">
+                        <li class="flex items-center gap-4 text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-500/50" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                            <span class="text-xl">3-Day Turnaround</span>
+                        </li>
+                        <li class="flex items-center gap-4 text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-500/50" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                            <span class="text-xl">Excel Spreadsheets</span>
+                        </li>
+                        <li class="flex items-center gap-4 text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-500/50" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                            <span class="text-xl">Stock Uncertainty</span>
+                        </li>
+                        <li class="flex items-center gap-4 text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-500/50" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                            <span class="text-xl">Static PDFs</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- The Core Way -->
+                <div
+                    class="relative p-10 rounded-3xl bg-navy-800 border border-gold-500/30 shadow-[0_0_50px_rgba(251,191,36,0.1)] transform md:scale-105 z-10">
+                    <div
+                        class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-6 py-2 bg-gold-500 rounded-full text-navy-900 font-bold tracking-widest text-sm uppercase shadow-lg shadow-gold-500/20">
+                        The Core Way
+                    </div>
+                    <div
+                        class="absolute inset-0 bg-gradient-to-b from-gold-500/5 to-transparent rounded-3xl pointer-events-none">
+                    </div>
+
+                    <ul class="space-y-6 mt-6 relative z-10">
+                        <li class="flex items-center gap-4 text-white">
+                            <div
+                                class="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M20 6 9 17l-5-5" />
+                                </svg>
+                            </div>
+                            <span class="text-xl font-bold">10-Minute Turnaround</span>
+                        </li>
+                        <li class="flex items-center gap-4 text-white">
+                            <div
+                                class="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M20 6 9 17l-5-5" />
+                                </svg>
+                            </div>
+                            <span class="text-xl font-bold">Real-Time Database</span>
+                        </li>
+                        <li class="flex items-center gap-4 text-white">
+                            <div
+                                class="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M20 6 9 17l-5-5" />
+                                </svg>
+                            </div>
+                            <span class="text-xl font-bold">Guaranteed Delivery</span>
+                        </li>
+                        <li class="flex items-center gap-4 text-white">
+                            <div
+                                class="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M20 6 9 17l-5-5" />
+                                </svg>
+                            </div>
+                            <span class="text-xl font-bold">Interactive Night Simulations</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-20 text-center">
+                <a href="/sign-in"
+                    class="inline-flex items-center gap-3 px-10 py-5 bg-gold-500 text-navy-900 text-lg font-bold rounded-full hover:scale-105 hover:shadow-[0_0_40px_rgba(251,191,36,0.5)] transition-all duration-300">
+                    Start Your First Project
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14" />
+                        <path d="m12 5 7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Costs Section -->
+    <section id="costs" class="py-24 bg-navy-800 relative border-t border-white/5">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Cost Structure</h2>
+                <p class="text-gray-400 max-w-xl mx-auto">Transparent breakdown by User License and Project Consumption.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <!-- Card 1: Per User -->
+                <div
+                    class="p-8 rounded-2xl bg-navy-900 border border-white/10 hover:border-gold-400/30 transition-all group flex flex-col">
+                    <div class="mb-4">
+                        <span
+                            class="px-3 py-1 rounded-full bg-gold-500/10 text-gold-400 text-xs font-bold uppercase tracking-wider">Per
+                            User</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">Agent License</h3>
+                    <div class="text-4xl font-bold text-white mb-6">€49<span
+                            class="text-lg text-gray-500 font-normal">/mo</span></div>
+                    <p class="text-gray-400 text-sm mb-6 flex-grow">Fixed monthly access for one sales representative.
+                        Includes full inventory access and CRM tools.</p>
+                    <ul class="space-y-3 text-gray-400 text-sm border-t border-white/5 pt-4">
+                        <li class="flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gold-400" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Unlimited Projects
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gold-400" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Real-time Stock Sync
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gold-400" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Client Management
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Card 2: AI Unit Costs -->
+                <div
+                    class="p-8 rounded-2xl bg-navy-900 border border-white/10 hover:border-neon-400/30 transition-all group flex flex-col relative overflow-hidden">
+                    <div class="mb-4">
+                        <span
+                            class="px-3 py-1 rounded-full bg-neon-400/10 text-neon-400 text-xs font-bold uppercase tracking-wider">AI
+                            Usage Rates</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">Intelligence Costs</h3>
+                    <div class="text-lg text-gray-400 mb-6">Pay-as-you-go resources</div>
+
+                    <div class="space-y-4 flex-grow">
+                        <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                            <div>
+                                <div class="text-white font-medium">Neural Rendering</div>
+                                <div class="text-xs text-gray-500">Night Mode Generation</div>
+                            </div>
+                            <div class="text-neon-400 font-mono">€0.15</div>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                            <div>
+                                <div class="text-white font-medium">Voice Commands</div>
+                                <div class="text-xs text-gray-500">NLP Processing</div>
+                            </div>
+                            <div class="text-neon-400 font-mono">€0.02</div>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                            <div>
+                                <div class="text-white font-medium">Smart Budgeting</div>
+                                <div class="text-xs text-gray-500">Optimization Algo</div>
+                            </div>
+                            <div class="text-neon-400 font-mono">€0.05</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Per Project Example -->
+                <div
+                    class="p-8 rounded-2xl bg-gradient-to-br from-navy-900 to-navy-800 border border-blue-500/30 hover:border-blue-500/60 transition-all group flex flex-col shadow-[0_0_30px_rgba(59,130,246,0.05)]">
+                    <div class="mb-4">
+                        <span
+                            class="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-bold uppercase tracking-wider">Per
+                            Project</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">Typical Project</h3>
+                    <div class="text-4xl font-bold text-white mb-6">~€2.00<span
+                            class="text-lg text-gray-500 font-normal">/avg</span></div>
+                    <p class="text-gray-400 text-sm mb-6">Estimated AI cost for a standard commercial proposal.</p>
+
+                    <div class="bg-black/20 rounded-lg p-4 space-y-2 text-sm mb-4">
+                        <div class="flex justify-between text-gray-400">
+                            <span>10x Renders</span>
+                            <span>€1.50</span>
+                        </div>
+                        <div class="flex justify-between text-gray-400">
+                            <span>20x Voice Cmds</span>
+                            <span>€0.40</span>
+                        </div>
+                        <div class="flex justify-between text-gray-400">
+                            <span>2x Budget Opt</span>
+                            <span>€0.10</span>
+                        </div>
+                        <div class="border-t border-white/10 pt-2 flex justify-between text-white font-bold">
+                            <span>Total AI Cost</span>
+                            <span>€2.00</span>
+                        </div>
+                    </div>
+                    <div class="text-xs text-center text-gray-500 mt-auto">
+                        *Small fraction of project margin
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 bg-navy-950 border-t border-white/5 text-center text-gray-500 text-sm">
+        <div class="container mx-auto px-6">
+            <p>&copy; 2025 The Core. All rights reserved. Internal Tool for Authorized Agents.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
