@@ -45,42 +45,12 @@ class HeroAnimations {
             filter: "blur(20px)",
             duration: 1.5,
             ease: "power2.out",
-            onComplete: () => this.enableMockupParallax()
+            duration: 1.5,
+            ease: "power2.out"
         }, "-=0.6");
     }
 
-    enableMockupParallax() {
-        const mockup = document.getElementById('mockup-3d');
-        const heroSection = document.getElementById('hero-section');
 
-        if (!mockup || !heroSection) return;
-
-        heroSection.addEventListener('mousemove', (e) => {
-            const rect = heroSection.getBoundingClientRect();
-            this.mouseX = (e.clientX - rect.left) / rect.width - 0.5;
-            this.mouseY = (e.clientY - rect.top) / rect.height - 0.5;
-        });
-
-        this.animateParallax(mockup);
-    }
-
-    animateParallax(mockup) {
-        // Dampen the movement (lerp)
-        this.currentX += (this.mouseX - this.currentX) * 0.05;
-        this.currentY += (this.mouseY - this.currentY) * 0.05;
-
-        // Apply 3D transform with subtle tilt
-        const rotateY = this.currentX * 15;
-        const rotateX = -this.currentY * 10;
-
-        mockup.style.transform = `
-            rotateX(${8 + rotateX}deg) 
-            rotateY(${rotateY}deg) 
-            rotateZ(0deg)
-        `;
-
-        requestAnimationFrame(() => this.animateParallax(mockup));
-    }
 
     setupScrollAnimations() {
         gsap.utils.toArray(".glass-card").forEach(card => {

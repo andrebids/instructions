@@ -37,16 +37,16 @@ document.addEventListener('DOMContentLoaded', () => {
             currentY += (mouseY - currentY) * 0.1;
 
             // Calculate rotation based on mouse position
-            const rotateY = currentX * 15; // Max 15 degrees rotation on Y axis
-            const rotateX = -currentY * 10; // Max 10 degrees rotation on X axis (inverted)
+            const rotateY = currentX * 25; // Increased rotation on Y axis
+            const rotateX = -currentY * 15; // Increased rotation on X axis
 
             // Apply transform with enhanced 3D effect
             mockup3D.style.transform = `
                 rotateX(${12 + rotateX}deg) 
                 rotateY(${-2 + rotateY}deg) 
                 rotateZ(0deg) 
-                scale(0.85)
-                translateZ(20px)
+                scale(1.1)
+                translateZ(40px)
             `;
 
             requestAnimationFrame(animate);
