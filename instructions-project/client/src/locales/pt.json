@@ -336,6 +336,18 @@
           "askBudget": "Qual é o orçamento?",
           "askConfirm": "Dados preenchidos. Diga 'Continuar' para avançar.",
           "finished": "Assistente finalizado."
+        },
+        "responses": {
+          "nameReceived": "Entendido, nome do projeto é {{name}}.",
+          "clientFound": "Cliente {{client}} selecionado.",
+          "clientNotFound": "Não encontrei o cliente {{client}}. Deseja criar um novo?",
+          "newClient": "Ok, vamos criar um novo cliente.",
+          "retryClient": "Ok, qual é o nome do cliente então?",
+          "dateReceived": "Data de entrega definida para {{date}}.",
+          "budgetReceived": "Orçamento de {{budget}} euros registado.",
+          "budgetInvalid": "Não percebi o valor. Pode repetir?",
+          "finished": "Projeto criado com sucesso!",
+          "cancelled": "Cancelado."
         }
       }
     },

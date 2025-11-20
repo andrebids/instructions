@@ -17,7 +17,19 @@ export const validateStepProjectDetails = (formData) => {
   return isValid;
 };
 
-// Validação do Step 2: Project Type (agora opcional - pode ser null)
+// Validação do Step 2: Notes (sempre válido - notas são opcionais)
+export const validateStepNotes = (formData) => {
+  // Notes are always valid since they are optional
+  const isValid = true;
+
+  logger.validation("notes", isValid, {
+    hasNotes: !!formData.notes
+  });
+
+  return isValid;
+};
+
+// Validação do Step 3: Project Type (agora opcional - pode ser null)
 export const validateStepProjectType = (formData) => {
   // Se projectType for null, é válido (pode fazer skip)
   // Se projectType for "simu", precisa ter simuWorkflow definido
@@ -77,14 +89,14 @@ export const validateStepLogoInstructions = (formData) => {
   const currentLogo = logoDetails.currentLogo || logoDetails;
   const savedLogos = logoDetails.logos || [];
   const dimensions = currentLogo.dimensions || {};
-  
+
   // Verificar se pelo menos um campo de dimensões está preenchido
   const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
   const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
   const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
   const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
   const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
-  
+
   // Step is valid if current logo is valid OR if there are saved logos (user can proceed with saved logos)
   const isCurrentLogoValid = (
     currentLogo.logoNumber?.trim() !== "" &&
@@ -92,7 +104,7 @@ export const validateStepLogoInstructions = (formData) => {
     currentLogo.requestedBy?.trim() !== "" &&
     hasAtLeastOneDimension
   );
-  
+
   const isValid = isCurrentLogoValid || savedLogos.length > 0;
 
   logger.validation("logo-instructions", isValid, {
@@ -129,6 +141,9 @@ export const isStepValid = (stepId, formData) => {
     case "project-details":
       isValid = validateStepProjectDetails(formData);
       break;
+    case "notes":
+      isValid = validateStepNotes(formData);
+      break;
     case "project-type":
       isValid = validateStepProjectType(formData);
       break;
@@ -143,10 +158,6 @@ export const isStepValid = (stepId, formData) => {
       break;
     case "logo-instructions":
       isValid = validateStepLogoInstructions(formData);
-      break;
-    case "notes":
-      // Notes step sempre é válido (opcional)
-      isValid = true;
       break;
     case "confirm-details":
       isValid = validateStepConfirmDetails(formData);

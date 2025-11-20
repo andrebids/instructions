@@ -108,8 +108,8 @@ export const DashboardVoiceAssistant = () => {
             {/* Footer / Status */}
             <div className="p-3 bg-content2/50 text-center text-xs text-default-400 border-t border-divider">
               {listening 
-                ? t('dashboard.voiceAssistant.listening', { defaultValue: 'Listening...' })
-                : t('dashboard.voiceAssistant.clickToRestart', { defaultValue: 'Click microphone to restart' })
+                ? t('pages.dashboard.voiceAssistant.listening', { defaultValue: 'Listening...' })
+                : t('pages.dashboard.voiceAssistant.clickToRestart', { defaultValue: 'Click microphone to restart' })
               }
             </div>
           </motion.div>

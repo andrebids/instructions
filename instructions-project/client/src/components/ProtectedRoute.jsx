@@ -16,7 +16,7 @@ export default function ProtectedRoute({
   requireRole, 
   redirectTo = '/' 
 }) {
-  const { role, isLoaded, hasAnyRole } = useUserRole();
+  const { role, isLoaded, hasAnyRole, isAdmin } = useUserRole();
   
   // Mostrar loading enquanto carrega dados do usuário
   if (!isLoaded) {
@@ -37,6 +37,11 @@ export default function ProtectedRoute({
         </div>
       </div>
     );
+  }
+  
+  // Admins têm acesso a todas as páginas
+  if (isAdmin) {
+    return children;
   }
   
   // Se requireRole foi especificado, verificar se o usuário tem o role necessário

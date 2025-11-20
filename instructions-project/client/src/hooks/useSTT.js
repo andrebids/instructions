@@ -41,34 +41,60 @@ export const useSTT = (defaultLang = 'en-US') => {
 
         try {
             // Ensure we are stopped before starting to avoid InvalidStateError
-            // However, 'listening' state might be out of sync with actual recognition object
-            // So we wrap start in try/catch specifically for this error
-
             recognitionRef.current.lang = lang;
+            recognitionRef.current.continuous = true;
+            recognitionRef.current.interimResults = true;
             recognitionRef.current.start();
             setListening(true);
             setTranscript('');
 
+            let silenceTimer = null;
+
             recognitionRef.current.onresult = (event) => {
-                const last = event.results.length - 1;
-                const text = event.results[last][0].transcript;
-                setTranscript(text);
+                let finalTranscript = '';
+                let interimTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                // Join all results for the current session
+                const allText = Array.from(event.results)
+                    .map(result => result[0].transcript)
+                    .join('');
+
+                setTranscript(allText);
+
+                // Reset silence timer on every result (speech detected)
+                if (silenceTimer) clearTimeout(silenceTimer);
+
+                // Set new timer to stop listening after 1 second of silence
+                silenceTimer = setTimeout(() => {
+                    if (recognitionRef.current) {
+                        recognitionRef.current.stop();
+                    }
+                }, 1000);
             };
 
             recognitionRef.current.onend = () => {
                 setListening(false);
+                if (silenceTimer) clearTimeout(silenceTimer);
             };
 
             recognitionRef.current.onerror = (event) => {
                 console.error('STT Error:', event.error);
-                // If error is 'no-speech', we might want to just stop listening
                 setListening(false);
+                if (silenceTimer) clearTimeout(silenceTimer);
             };
 
         } catch (error) {
             if (error.name === 'InvalidStateError') {
                 console.warn("STT already started (InvalidStateError), syncing state");
-                setListening(true); // Sync state if it was actually running
+                setListening(true);
             } else {
                 console.error('Failed to start STT:', error);
                 setListening(false);

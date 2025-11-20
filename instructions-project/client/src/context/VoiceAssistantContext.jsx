@@ -59,7 +59,7 @@ export const VoiceAssistantProvider = ({ children }) => {
     // If we are in GLOBAL mode, say greeting
     if (mode === 'GLOBAL') {
       // Get greetings array and pick a random one
-      const greetings = t('dashboard.voiceAssistant.greetings', { 
+      const greetings = t('pages.dashboard.voiceAssistant.greetings', { 
         returnObjects: true,
         defaultValue: ["Olá, onde posso ser útil?"] 
       });
@@ -107,7 +107,7 @@ export const VoiceAssistantProvider = ({ children }) => {
     if (createKeywords.some(k => lower.includes(k))) {
       stop();
       resetTranscript(); // Clear the command so it doesn't persist
-      const response = t('dashboard.voiceAssistant.openingProject', { defaultValue: "A abrir novo projeto..." });
+      const response = t('pages.dashboard.voiceAssistant.openingProject', { defaultValue: "A abrir novo projeto..." });
       addMessage('user', transcript);
       addMessage('bot', response);
       speak(response);
@@ -146,6 +146,7 @@ export const VoiceAssistantProvider = ({ children }) => {
       mode,
       registerWizard,
       unregisterWizard,
+      cancelSpeech, // Expose cancelSpeech
       currentLang // Expose the calculated speech lang
     }}>
       {children}
