@@ -18,7 +18,9 @@ import {
   useDisclosure,
   Accordion,
   AccordionItem,
+  Skeleton,
 } from "@heroui/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { productsAPI } from "../services/api";
 import { PageTitle } from "../components/layout/page-title";
@@ -39,7 +41,7 @@ export default function AdminProducts() {
   const { t } = useTranslation();
   var { userName } = useUser();
   const { isAdmin, isEditorStock, isLoaded } = useUserRole();
-  
+
   // Verificação adicional de role (a rota já está protegida, mas esta é uma camada extra)
   React.useEffect(() => {
     if (isLoaded && !isAdmin && !isEditorStock) {
@@ -47,7 +49,7 @@ export default function AdminProducts() {
       window.location.href = '/';
     }
   }, [isLoaded, isAdmin, isEditorStock]);
-  
+
   // Função helper para traduzir tags
   const getTranslatedTag = React.useCallback((tag) => {
     if (!tag) return tag;
@@ -62,15 +64,15 @@ export default function AdminProducts() {
       "christmas": t('pages.dashboard.adminProducts.tags.christmas'),
       "xmas": t('pages.dashboard.adminProducts.tags.christmas'),
     };
-    
+
     // Verificar correspondência exata primeiro
     if (tagMap[tagLower]) return tagMap[tagLower];
-    
+
     // Verificar correspondência parcial
     for (const [key, value] of Object.entries(tagMap)) {
       if (tagLower.indexOf(key) >= 0) return value;
     }
-    
+
     // Se não encontrar, retornar o tag original
     return String(tag).toUpperCase();
   }, [t]);
@@ -81,9 +83,9 @@ export default function AdminProducts() {
   var [showArchived, setShowArchived] = React.useState(false);
   var [searchQuery, setSearchQuery] = React.useState("");
   var [availableColorsList, setAvailableColorsList] = React.useState({});
-  
+
   // Função para inicializar anos automaticamente (ano atual até 2020)
-  var initializeYears = function() {
+  var initializeYears = function () {
     var currentYear = new Date().getFullYear();
     var years = [];
     // Criar lista de anos do ano atual até 2020
@@ -92,22 +94,22 @@ export default function AdminProducts() {
     }
     return years;
   };
-  
+
   var [availableYears, setAvailableYears] = React.useState(initializeYears());
   var { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
   var [editingProduct, setEditingProduct] = React.useState(null);
   const { isHandheld } = useResponsiveProfile();
   var [selectedProducts, setSelectedProducts] = React.useState(new Set());
   var [isSelectionMode, setIsSelectionMode] = React.useState(false);
-  
+
   // Função helper para filtrar valores válidos de printColor
-  var getValidPrintColors = function(printColor) {
+  var getValidPrintColors = function (printColor) {
     var validColors = ["WHITE", "DARK BLUE", "ICE BLUE", "GREY", "YELLOW", "BLACK", "GOLD", "ORANGE", "PINK", "RED", "LIGHT GREEN", "DARK GREEN", "PASTEL GREEN", "PURPLE"];
     if (!printColor) {
       return new Set();
     }
     var selectedColors = Array.isArray(printColor) ? printColor : [printColor];
-    var validSelectedColors = selectedColors.filter(function(color) {
+    var validSelectedColors = selectedColors.filter(function (color) {
       if (!color || typeof color !== 'string') {
         return false;
       }
@@ -121,15 +123,15 @@ export default function AdminProducts() {
     });
     return new Set(validSelectedColors);
   };
-  
+
   // Função helper para filtrar valores válidos de effects (LED)
-  var getValidLEDEffects = function(effects) {
+  var getValidLEDEffects = function (effects) {
     var validEffects = ["LED AMBER", "LED WARM WHITE", "LED WARM WHITE + WARM WHITE FLASH", "LED WARM WHITE + PURE WHITE FLASH", "LED WARM WHITE + PURE WHITE SLOW FLASH", "LED PURE WHITE", "LED PURE WHITE + PURE WHITE FLASH", "LED PURE WHITE + WARM WHITE SLOW FLASH", "LED PURE WHITE + PURE WHITE SLOW FLASH", "LED BLUE", "LED BLUE + PURE WHITE FLASH", "LED BLUE + PURE WHITE SLOW FLASH", "LED PINK", "LED PINK + PURE WHITE FLASH", "LED RED", "LED RED + PURE WHITE FLASH", "LED RED + PURE WHITE SLOW FLASH", "LED GREEN", "LED GREEN + PURE WHITE FLASH", "RGB"];
     if (!effects) {
       return new Set();
     }
     var selectedEffects = Array.isArray(effects) ? effects : [effects];
-    var validSelectedEffects = selectedEffects.filter(function(effect) {
+    var validSelectedEffects = selectedEffects.filter(function (effect) {
       if (!effect || typeof effect !== 'string') {
         return false;
       }
@@ -141,15 +143,15 @@ export default function AdminProducts() {
     });
     return new Set(validSelectedEffects);
   };
-  
+
   // Função helper para filtrar valores válidos de sparkles (ANIMATED SPARKLES)
-  var getValidSparkles = function(sparkles) {
+  var getValidSparkles = function (sparkles) {
     var validSparkles = ["WARM WHITE", "WARM WHITE/PURE WHITE", "PURE WHITE", "RGB"];
     if (!sparkles) {
       return new Set();
     }
     var selectedSparkles = Array.isArray(sparkles) ? sparkles : [sparkles];
-    var validSelectedSparkles = selectedSparkles.filter(function(sparkle) {
+    var validSelectedSparkles = selectedSparkles.filter(function (sparkle) {
       if (!sparkle || typeof sparkle !== 'string') {
         return false;
       }
@@ -161,15 +163,15 @@ export default function AdminProducts() {
     });
     return new Set(validSelectedSparkles);
   };
-  
+
   // Função helper para filtrar valores válidos de aluminium (mesmas cores do Print Color)
-  var getValidAluminiumColors = function(aluminium) {
+  var getValidAluminiumColors = function (aluminium) {
     var validColors = ["WHITE", "DARK BLUE", "ICE BLUE", "GREY", "YELLOW", "BLACK", "GOLD", "ORANGE", "PINK", "RED", "LIGHT GREEN", "DARK GREEN", "PASTEL GREEN", "PURPLE"];
     if (!aluminium) {
       return new Set();
     }
     var selectedColors = Array.isArray(aluminium) ? aluminium : [aluminium];
-    var validSelectedColors = selectedColors.filter(function(color) {
+    var validSelectedColors = selectedColors.filter(function (color) {
       if (!color || typeof color !== 'string') {
         return false;
       }
@@ -181,15 +183,15 @@ export default function AdminProducts() {
     });
     return new Set(validSelectedColors);
   };
-  
+
   // Função helper para filtrar valores válidos de SOFT XLED
-  var getValidSoftXLED = function(softXLED) {
+  var getValidSoftXLED = function (softXLED) {
     var validOptions = ["PURE WHITE"];
     if (!softXLED) {
       return new Set();
     }
     var selectedOptions = Array.isArray(softXLED) ? softXLED : [softXLED];
-    var validSelectedOptions = selectedOptions.filter(function(option) {
+    var validSelectedOptions = selectedOptions.filter(function (option) {
       if (!option || typeof option !== 'string') {
         return false;
       }
@@ -201,10 +203,10 @@ export default function AdminProducts() {
     });
     return new Set(validSelectedOptions);
   };
-  
-  
+
+
   // Mapeamento de cores para valores hexadecimais (versão escura com tom suave)
-  var getPrintColorStyle = function(colorName, isSelected) {
+  var getPrintColorStyle = function (colorName, isSelected) {
     var colorMap = {
       "WHITE": { bg: "#8C8780", text: "#FFF9E6" },
       "DARK BLUE": { bg: "#2C4466", text: "#6BAAFF" },
@@ -230,7 +232,7 @@ export default function AdminProducts() {
     };
   };
   // Estado inicial do formulário
-  var getInitialFormData = function() {
+  var getInitialFormData = function () {
     return {
       name: "",
       stock: "",
@@ -277,34 +279,34 @@ export default function AdminProducts() {
   };
 
   var [formData, setFormData] = React.useState(getInitialFormData());
-  
+
   // Usar Formik para validação e gerenciamento de estado
-  var formik = useProductForm(formData, function(values) {
+  var formik = useProductForm(formData, function (values) {
     // Este onSubmit será chamado quando o formulário for válido
     // Mas mantemos handleSubmit original para compatibilidade
   });
-  
+
   // Sincronizar formData com Formik quando formData mudar externamente (apenas se diferente)
-  React.useEffect(function() {
+  React.useEffect(function () {
     if (formData && JSON.stringify(formData) !== JSON.stringify(formik.values)) {
       formik.setValues(formData);
     }
   }, [formData]);
-  
+
   var [imageFiles, setImageFiles] = React.useState({
     dayImage: null,
     nightImage: null,
     animation: null,
     animationSimulation: null,
   });
-  
+
   var [imagePreviews, setImagePreviews] = React.useState({
     dayImage: null,
     nightImage: null,
     animation: null,
     animationSimulation: null,
   });
-  
+
   // Referências para inputs de ficheiro escondidos
   var dayImageInputRef = React.useRef(null);
   var nightImageInputRef = React.useRef(null);
@@ -312,10 +314,10 @@ export default function AdminProducts() {
   var animationSimulationInputRef = React.useRef(null);
 
   // Carregar produtos
-  var loadProducts = React.useCallback(function() {
+  var loadProducts = React.useCallback(function () {
     console.log('🔄 [AdminProducts] loadProducts chamado');
     console.log('🔄 [AdminProducts] Filtros originais:', filters);
-    
+
     // Remover filtros vazios antes de enviar
     var cleanedFilters = {};
     for (var key in filters) {
@@ -327,32 +329,32 @@ export default function AdminProducts() {
         }
       }
     }
-    
+
     // Adicionar filtro de arquivados
     if (showArchived) {
       cleanedFilters.showArchived = 'true';
     }
-    
+
     console.log('🔄 [AdminProducts] Filtros limpos:', cleanedFilters);
     setLoading(true);
     setError(null);
-    
+
     console.log('🔄 [AdminProducts] Chamando productsAPI.getAll com filtros limpos:', cleanedFilters);
     productsAPI.getAll(cleanedFilters)
-      .then(function(data) {
+      .then(function (data) {
         console.log('✅ [AdminProducts] Produtos recebidos da API:', data.length);
         console.log('✅ [AdminProducts] Primeiros produtos:', data.slice(0, 3));
         setProducts(data);
-        
+
         // Atualizar lista de anos disponíveis com anos dos produtos e ano atual
         var currentYear = new Date().getFullYear();
         var yearsSet = {};
-        
+
         // Adicionar anos do ano atual até 2020
         for (var year = currentYear; year >= 2020; year--) {
           yearsSet[year] = true;
         }
-        
+
         // Adicionar anos dos produtos (mesmo que estejam fora do range padrão)
         for (var i = 0; i < data.length; i++) {
           var productYear = data[i].releaseYear;
@@ -364,7 +366,7 @@ export default function AdminProducts() {
             }
           }
         }
-        
+
         // Criar array de anos ordenado decrescente
         var updatedYears = [];
         var allYears = [];
@@ -373,7 +375,7 @@ export default function AdminProducts() {
             allYears.push(parseInt(key, 10));
           }
         }
-        
+
         // Ordenar decrescente
         for (var j = 0; j < allYears.length; j++) {
           for (var k = j + 1; k < allYears.length; k++) {
@@ -384,11 +386,11 @@ export default function AdminProducts() {
             }
           }
         }
-        
+
         setAvailableYears(allYears);
         setLoading(false);
       })
-      .catch(function(err) {
+      .catch(function (err) {
         console.error("❌ [AdminProducts] Erro ao carregar produtos:", err);
         console.error("❌ [AdminProducts] Erro completo:", JSON.stringify(err, null, 2));
         console.error("❌ [AdminProducts] Mensagem:", err.message);
@@ -398,72 +400,72 @@ export default function AdminProducts() {
       });
   }, [filters, showArchived]);
 
-  React.useEffect(function() {
+  React.useEffect(function () {
     console.log('🔄 [AdminProducts] useEffect inicial - carregando produtos');
     loadProducts();
   }, [loadProducts]);
-  
+
   // Limpar seleção de produtos que não estão mais na lista filtrada
   // Só limpa se o modo de seleção estiver ativo
-  React.useEffect(function() {
+  React.useEffect(function () {
     if (!isSelectionMode) {
       return;
     }
-    
-    setSelectedProducts(function(prevSelected) {
+
+    setSelectedProducts(function (prevSelected) {
       if (prevSelected.size === 0 || products.length === 0) {
         return prevSelected;
       }
-      
+
       // Recalcular produtos filtrados
       var filtered = Array.isArray(products) ? products.slice() : [];
-      
+
       if (searchQuery) {
-        filtered = filtered.filter(function(p) {
+        filtered = filtered.filter(function (p) {
           return p.name.toLowerCase().indexOf(searchQuery.toLowerCase()) >= 0;
         });
       }
-      
+
       if (filters.type) {
-        filtered = filtered.filter(function(p) {
+        filtered = filtered.filter(function (p) {
           return p.type === filters.type;
         });
       }
-      
+
       if (filters.location) {
-        filtered = filtered.filter(function(p) {
+        filtered = filtered.filter(function (p) {
           return p.location === filters.location;
         });
       }
-      
+
       if (filters.tag) {
         var rawTagFilter = String(filters.tag).trim().toLowerCase();
         var normalizedFilter = normalizeTag(filters.tag);
-        filtered = filtered.filter(function(p) {
+        filtered = filtered.filter(function (p) {
           var normalizedTags = getNormalizedProductTags(p);
           if (normalizedFilter && normalizedTags.includes(normalizedFilter)) {
             return true;
           }
           if (!rawTagFilter) return false;
-          return normalizedTags.some(function(tag) {
+          return normalizedTags.some(function (tag) {
             return tag.indexOf(rawTagFilter) >= 0;
           });
         });
       }
-      
-      var filteredIds = new Set(filtered.map(function(p) { return p.id; }));
+
+      var filteredIds = new Set(filtered.map(function (p) { return p.id; }));
       var validSelected = new Set();
-      prevSelected.forEach(function(id) {
+      prevSelected.forEach(function (id) {
         if (filteredIds.has(id)) {
           validSelected.add(id);
         }
       });
-      
+
       return validSelected.size !== prevSelected.size ? validSelected : prevSelected;
     });
   }, [products, searchQuery, filters, showArchived, isSelectionMode]);
 
-  React.useEffect(function() {
+  React.useEffect(function () {
     console.log('🔄 [AdminProducts] Estado atualizado:', {
       loading: loading,
       error: error,
@@ -473,19 +475,19 @@ export default function AdminProducts() {
   }, [loading, error, products, filters]);
 
   // Pesquisar produtos
-  var handleSearch = React.useCallback(function() {
+  var handleSearch = React.useCallback(function () {
     if (!searchQuery.trim()) {
       loadProducts();
       return;
     }
-    
+
     setLoading(true);
     productsAPI.search(searchQuery)
-      .then(function(data) {
+      .then(function (data) {
         setProducts(data);
         setLoading(false);
       })
-      .catch(function(err) {
+      .catch(function (err) {
         console.error("Erro ao pesquisar produtos:", err);
         setError(err.message || "Error searching products");
         setLoading(false);
@@ -493,9 +495,9 @@ export default function AdminProducts() {
   }, [searchQuery, loadProducts]);
 
   // Carregar cores disponíveis
-  var loadAvailableColors = React.useCallback(function() {
+  var loadAvailableColors = React.useCallback(function () {
     productsAPI.getAvailableColors()
-      .then(function(colors) {
+      .then(function (colors) {
         // Cores padrão do shop/trending na ordem correta
         var defaultColorsOrder = [
           'brancoQuente',
@@ -505,7 +507,7 @@ export default function AdminProducts() {
           'verde',
           'azul'
         ];
-        
+
         var defaultColors = {
           brancoQuente: "#f4e1a1",
           brancoPuro: "#ffffff",
@@ -514,10 +516,10 @@ export default function AdminProducts() {
           verde: "#10b981",
           azul: "#3b82f6"
         };
-        
+
         // Combinar cores padrão com cores da base de dados (cores da BD têm prioridade)
         var mergedColors = Object.assign({}, defaultColors, colors || {});
-        
+
         // Criar objeto ordenado mantendo ordem padrão primeiro, depois outras cores
         var orderedColors = {};
         for (var i = 0; i < defaultColorsOrder.length; i++) {
@@ -532,10 +534,10 @@ export default function AdminProducts() {
             orderedColors[key] = mergedColors[key];
           }
         }
-        
+
         setAvailableColorsList(orderedColors);
       })
-      .catch(function(err) {
+      .catch(function (err) {
         console.error("Erro ao carregar cores disponíveis:", err);
         // Mesmo em caso de erro, usar cores padrão
         setAvailableColorsList({
@@ -550,7 +552,7 @@ export default function AdminProducts() {
   }, []);
 
   // Função helper para obter cor hex baseada no nome da cor
-  var getColorHex = function(colorName) {
+  var getColorHex = function (colorName) {
     if (!colorName) return '#cccccc';
     var nameLower = colorName.toLowerCase();
     if (nameLower.indexOf('brancopuro') >= 0 || nameLower === 'brancopuro') {
@@ -575,7 +577,7 @@ export default function AdminProducts() {
   };
 
   // Abrir modal para criar novo produto
-  var handleCreateNew = function() {
+  var handleCreateNew = function () {
     setEditingProduct(null);
     var initialData = getInitialFormData();
     setFormData(initialData);
@@ -597,14 +599,14 @@ export default function AdminProducts() {
   };
 
   // Abrir modal para editar produto
-  var handleEdit = function(product) {
+  var handleEdit = function (product) {
     setEditingProduct(product);
-    
+
     // Verificar se o ano do produto está na lista disponível e adicionar se necessário
     var productYear = product.releaseYear;
     var releaseYearStr = "";
     var updatedYears = availableYears.slice();
-    
+
     if (productYear !== null && productYear !== undefined && productYear !== "") {
       // Garantir que é um número (pode vir como number ou string)
       var yearValue = typeof productYear === 'number' ? productYear : parseInt(productYear, 10);
@@ -617,19 +619,19 @@ export default function AdminProducts() {
             break;
           }
         }
-        
+
         if (!yearExists) {
           updatedYears.push(yearValue);
-          updatedYears.sort(function(a, b) {
+          updatedYears.sort(function (a, b) {
             return b - a;
           });
         }
       }
     }
-    
+
     // Atualizar anos disponíveis ANTES de abrir o modal
     setAvailableYears(updatedYears);
-    
+
     // Filtrar printColor para remover valores inválidos
     var productSpecs = product.specs || {};
     var filteredPrintColor = null;
@@ -638,7 +640,7 @@ export default function AdminProducts() {
       var validColors = Array.from(validSet);
       filteredPrintColor = validColors.length > 0 ? (validColors.length === 1 ? validColors[0] : validColors) : null;
     }
-    
+
     // Filtrar effects (LED) para remover valores inválidos
     var filteredEffects = null;
     if (productSpecs.effects) {
@@ -646,7 +648,7 @@ export default function AdminProducts() {
       var validEffects = Array.from(validSet);
       filteredEffects = validEffects.length > 0 ? (validEffects.length === 1 ? validEffects[0] : validEffects) : null;
     }
-    
+
     // Filtrar aluminium para remover valores inválidos
     var filteredAluminium = null;
     if (productSpecs.aluminium) {
@@ -654,7 +656,7 @@ export default function AdminProducts() {
       var validColors = Array.from(validSet);
       filteredAluminium = validColors.length > 0 ? (validColors.length === 1 ? validColors[0] : validColors) : null;
     }
-    
+
     // Filtrar SOFT XLED para remover valores inválidos
     var filteredSoftXLED = null;
     if (productSpecs.softXLED) {
@@ -662,7 +664,7 @@ export default function AdminProducts() {
       var validOptions = Array.from(validSet);
       filteredSoftXLED = validOptions.length > 0 ? (validOptions.length === 1 ? validOptions[0] : validOptions) : null;
     }
-    
+
     // Filtrar sparkles (ANIMATED SPARKLES) para remover valores inválidos
     var filteredSparkles = null;
     if (productSpecs.sparkles) {
@@ -670,12 +672,12 @@ export default function AdminProducts() {
       var validSparkles = Array.from(validSet);
       filteredSparkles = validSparkles.length > 0 ? (validSparkles.length === 1 ? validSparkles[0] : validSparkles) : null;
     }
-    
+
     // Sincronizar materiais: garantir que effects e sparkles estejam no campo materiais
     var syncedMateriais = productSpecs.materiais || "";
     if (filteredEffects) {
       var effectsArray = Array.isArray(filteredEffects) ? filteredEffects : [filteredEffects];
-      effectsArray.forEach(function(effect) {
+      effectsArray.forEach(function (effect) {
         if (effect && syncedMateriais.indexOf(effect) === -1) {
           syncedMateriais = syncedMateriais.trim();
           if (syncedMateriais) {
@@ -689,7 +691,7 @@ export default function AdminProducts() {
     if (filteredSparkles) {
       var sparklesArray = Array.isArray(filteredSparkles) ? filteredSparkles : [filteredSparkles];
       var validSparklesList = ["WARM WHITE", "WARM WHITE/PURE WHITE", "PURE WHITE", "RGB"];
-      sparklesArray.forEach(function(sparkle) {
+      sparklesArray.forEach(function (sparkle) {
         if (sparkle && validSparklesList.includes(sparkle)) {
           var pattern = "ANIMATED SPARKLES " + sparkle;
           if (syncedMateriais.indexOf(pattern) === -1) {
@@ -703,21 +705,21 @@ export default function AdminProducts() {
         }
       });
     }
-    
+
     // Extrair preços: price e oldPrice são para produtos novos
     // usedPrice, usedStock e rental prices podem estar em specs
     var usedPrice = productSpecs.usedPrice || "";
     var usedStock = productSpecs.usedStock || "";
     var newRentalPrice = productSpecs.newRentalPrice || "";
     var usedRentalPrice = productSpecs.usedRentalPrice || "";
-    
+
     // Criar specs sem campos de preços usados e rental (para não duplicar, já que estão em prices)
     var specsWithoutUsed = Object.assign({}, productSpecs);
     delete specsWithoutUsed.usedPrice;
     delete specsWithoutUsed.usedStock;
     delete specsWithoutUsed.newRentalPrice;
     delete specsWithoutUsed.usedRentalPrice;
-    
+
     setFormData({
       name: product.name || "",
       stock: product.stock || "",
@@ -736,7 +738,7 @@ export default function AdminProducts() {
       type: product.type || "",
       location: product.location || "",
       mount: product.mount || "",
-      tags: (function() {
+      tags: (function () {
         // Normalizar tags: converter para lowercase e mapear variações
         var productTags = product.tags || [];
         var normalizedTags = [];
@@ -750,7 +752,7 @@ export default function AdminProducts() {
           "christmas": "christmas",
           "xmas": "christmas"
         };
-        
+
         for (var i = 0; i < productTags.length; i++) {
           var tag = String(productTags[i]).toLowerCase().trim();
           // Verificar se é uma tag conhecida
@@ -773,7 +775,7 @@ export default function AdminProducts() {
             normalizedTags.push(tag);
           }
         }
-        
+
         // Remover duplicados
         return Array.from(new Set(normalizedTags));
       })(),
@@ -812,52 +814,52 @@ export default function AdminProducts() {
   };
 
   // Arquivar produto
-  var handleArchive = function(productId) {
+  var handleArchive = function (productId) {
     if (!window.confirm("Are you sure you want to archive this product? It will not be visible.")) {
       return;
     }
-    
+
     productsAPI.archive(productId)
-      .then(function() {
+      .then(function () {
         loadProducts();
       })
-      .catch(function(err) {
+      .catch(function (err) {
         console.error("Error archiving product:", err);
         alert("Error archiving product: " + (err.message || "Unknown error"));
       });
   };
-  
+
   // Desarquivar produto
-  var handleUnarchive = function(productId) {
+  var handleUnarchive = function (productId) {
     productsAPI.unarchive(productId)
-      .then(function() {
+      .then(function () {
         loadProducts();
       })
-      .catch(function(err) {
+      .catch(function (err) {
         console.error("Error unarchiving product:", err);
         alert("Error unarchiving product: " + (err.message || "Unknown error"));
       });
   };
-  
+
   // Deletar produto permanentemente (hard delete)
-  var handleDelete = function(productId) {
+  var handleDelete = function (productId) {
     if (!window.confirm("⚠️ WARNING: This action is PERMANENT and cannot be undone!\n\nAre you sure you want to PERMANENTLY DELETE this product from the database?")) {
       return;
     }
-    
+
     productsAPI.delete(productId)
-      .then(function() {
+      .then(function () {
         loadProducts();
       })
-      .catch(function(err) {
+      .catch(function (err) {
         console.error("Error deleting product:", err);
         alert("Error deleting product: " + (err.message || "Unknown error"));
       });
   };
 
   // Funções para seleção múltipla
-  var toggleProductSelection = function(productId) {
-    setSelectedProducts(function(prev) {
+  var toggleProductSelection = function (productId) {
+    setSelectedProducts(function (prev) {
       var newSet = new Set(prev);
       if (newSet.has(productId)) {
         newSet.delete(productId);
@@ -868,21 +870,21 @@ export default function AdminProducts() {
     });
   };
 
-  var toggleSelectAll = function(filteredProductsList) {
+  var toggleSelectAll = function (filteredProductsList) {
     if (selectedProducts.size === filteredProductsList.length && filteredProductsList.length > 0) {
       setSelectedProducts(new Set());
     } else {
-      var allIds = new Set(filteredProductsList.map(function(p) { return p.id; }));
+      var allIds = new Set(filteredProductsList.map(function (p) { return p.id; }));
       setSelectedProducts(allIds);
     }
   };
 
-  var clearSelection = function() {
+  var clearSelection = function () {
     setSelectedProducts(new Set());
     setIsSelectionMode(false);
   };
 
-  var toggleSelectionMode = function() {
+  var toggleSelectionMode = function () {
     if (isSelectionMode) {
       // Desativar modo de seleção e limpar seleção
       setIsSelectionMode(false);
@@ -894,122 +896,122 @@ export default function AdminProducts() {
   };
 
   // Arquivar múltiplos produtos
-  var handleBulkArchive = function() {
+  var handleBulkArchive = function () {
     var selectedIds = Array.from(selectedProducts);
     if (selectedIds.length === 0) {
       alert("Please select at least one product to archive.");
       return;
     }
-    
-    var message = selectedIds.length === 1 
+
+    var message = selectedIds.length === 1
       ? "Are you sure you want to archive this product? It will not be visible."
       : "Are you sure you want to archive " + selectedIds.length + " products? They will not be visible.";
-    
+
     if (!window.confirm(message)) {
       return;
     }
-    
-    var promises = selectedIds.map(function(id) {
+
+    var promises = selectedIds.map(function (id) {
       return productsAPI.archive(id);
     });
-    
+
     Promise.all(promises)
-      .then(function() {
+      .then(function () {
         setSelectedProducts(new Set());
         setIsSelectionMode(false);
         loadProducts();
       })
-      .catch(function(err) {
+      .catch(function (err) {
         console.error("Error archiving products:", err);
         alert("Error archiving products: " + (err.message || "Unknown error"));
       });
   };
 
   // Desarquivar múltiplos produtos
-  var handleBulkUnarchive = function() {
+  var handleBulkUnarchive = function () {
     var selectedIds = Array.from(selectedProducts);
     if (selectedIds.length === 0) {
       alert("Please select at least one product to unarchive.");
       return;
     }
-    
-    var message = selectedIds.length === 1 
+
+    var message = selectedIds.length === 1
       ? "Are you sure you want to unarchive this product?"
       : "Are you sure you want to unarchive " + selectedIds.length + " products?";
-    
+
     if (!window.confirm(message)) {
       return;
     }
-    
-    var promises = selectedIds.map(function(id) {
+
+    var promises = selectedIds.map(function (id) {
       return productsAPI.unarchive(id);
     });
-    
+
     Promise.all(promises)
-      .then(function() {
+      .then(function () {
         setSelectedProducts(new Set());
         setIsSelectionMode(false);
         loadProducts();
       })
-      .catch(function(err) {
+      .catch(function (err) {
         console.error("Error unarchiving products:", err);
         alert("Error unarchiving products: " + (err.message || "Unknown error"));
       });
   };
 
   // Deletar múltiplos produtos
-  var handleBulkDelete = function() {
+  var handleBulkDelete = function () {
     var selectedIds = Array.from(selectedProducts);
     if (selectedIds.length === 0) {
       alert("Please select at least one product to delete.");
       return;
     }
-    
-    var message = selectedIds.length === 1 
+
+    var message = selectedIds.length === 1
       ? "⚠️ WARNING: This action is PERMANENT and cannot be undone!\n\nAre you sure you want to PERMANENTLY DELETE this product from the database?"
       : "⚠️ WARNING: This action is PERMANENT and cannot be undone!\n\nAre you sure you want to PERMANENTLY DELETE " + selectedIds.length + " products from the database?";
-    
+
     if (!window.confirm(message)) {
       return;
     }
-    
-    var promises = selectedIds.map(function(id) {
+
+    var promises = selectedIds.map(function (id) {
       return productsAPI.delete(id);
     });
-    
+
     Promise.all(promises)
-      .then(function() {
+      .then(function () {
         setSelectedProducts(new Set());
         setIsSelectionMode(false);
         loadProducts();
       })
-      .catch(function(err) {
+      .catch(function (err) {
         console.error("Error deleting products:", err);
         alert("Error deleting products: " + (err.message || "Unknown error"));
       });
   };
 
   // Handler para upload de imagens
-  var handleImageChange = function(field, file) {
+  var handleImageChange = function (field, file) {
     if (!file) {
       console.warn('⚠️ [AdminProducts] handleImageChange: arquivo não fornecido para', field);
       return;
     }
-    
+
     console.log('📸 [AdminProducts] handleImageChange:', field, file.name, file.type, file.size);
-    
+
     var reader = new FileReader();
-    reader.onerror = function(error) {
+    reader.onerror = function (error) {
       console.error('❌ [AdminProducts] Erro ao ler arquivo:', error);
     };
-    reader.onload = function(e) {
+    reader.onload = function (e) {
       var newPreviews = Object.assign({}, imagePreviews);
       newPreviews[field] = e.target.result;
       setImagePreviews(newPreviews);
       console.log('✅ [AdminProducts] Preview atualizado para', field);
     };
     reader.readAsDataURL(file);
-    
+
     var newFiles = Object.assign({}, imageFiles);
     newFiles[field] = file;
     setImageFiles(newFiles);
@@ -1017,30 +1019,30 @@ export default function AdminProducts() {
   };
 
   // Handler para adicionar cor (selecionar de cores disponíveis)
-  var handleAddColor = function(colorName) {
+  var handleAddColor = function (colorName) {
     if (!availableColorsList.hasOwnProperty(colorName)) {
       return;
     }
     var newColors = Object.assign({}, formData.availableColors);
     newColors[colorName] = availableColorsList[colorName];
-    setFormData(function(prev) {
+    setFormData(function (prev) {
       return Object.assign({}, prev, { availableColors: newColors });
     });
   };
-  
+
   // Handler para remover cor
-  var handleRemoveColor = function(colorName) {
+  var handleRemoveColor = function (colorName) {
     var newColors = Object.assign({}, formData.availableColors);
     delete newColors[colorName];
-    setFormData(function(prev) {
+    setFormData(function (prev) {
       return Object.assign({}, prev, { availableColors: newColors });
     });
   };
 
   // Submeter formulário
-  var handleSubmit = function() {
+  var handleSubmit = function () {
     // Validar usando Formik
-    formik.validateForm().then(function(errors) {
+    formik.validateForm().then(function (errors) {
       if (Object.keys(errors).length > 0) {
         // Se houver erros, mostrar o primeiro
         var firstError = Object.values(errors)[0];
@@ -1058,271 +1060,271 @@ export default function AdminProducts() {
         });
         return;
       }
-      
+
       // Validar campos obrigatórios manualmente também (compatibilidade)
       if (!formData.name || formData.name.trim() === '') {
         setError("The 'Name' field is required");
         return;
       }
-    
-    // Função auxiliar para converter strings vazias ou "null" para null
-    var toNullIfEmpty = function(value) {
-      if (value === null || value === undefined || value === '' || value === 'null' || value === 'undefined') {
-        return null;
-      }
-      return value;
-    };
-    
-    // Processar tags e adicionar/remover tag "sale" automaticamente baseado em oldPrice (apenas para produtos novos)
-    var finalTags = formData.tags || [];
-    var newPrice = formData.prices.new.price || "";
-    var newOldPrice = formData.prices.new.oldPrice || "";
-    var hasOldPrice = newOldPrice && parseFloat(newOldPrice) > 0;
-    var hasPrice = newPrice && parseFloat(newPrice) > 0;
-    var isOnSale = hasOldPrice && hasPrice && parseFloat(newOldPrice) > parseFloat(newPrice);
-    
-    // Normalizar tags existentes para IDs padrão
-    var normalizedFinalTags = [];
-    for (var i = 0; i < finalTags.length; i++) {
-      var tag = String(finalTags[i]).toLowerCase().trim();
-      if (tag === "sale" || tag.indexOf("sale") >= 0) {
-        if (normalizedFinalTags.indexOf("sale") === -1) normalizedFinalTags.push("sale");
-      } else if (tag === "priority" || tag.indexOf("priority") >= 0 || tag.indexOf("priori") >= 0) {
-        if (normalizedFinalTags.indexOf("priority") === -1) normalizedFinalTags.push("priority");
-      } else if (tag === "new") {
-        if (normalizedFinalTags.indexOf("new") === -1) normalizedFinalTags.push("new");
-      } else if (tag === "trending" || tag.indexOf("trending") >= 0) {
-        if (normalizedFinalTags.indexOf("trending") === -1) normalizedFinalTags.push("trending");
-      } else if (tag === "summer" || tag.indexOf("summer") >= 0) {
-        if (normalizedFinalTags.indexOf("summer") === -1) normalizedFinalTags.push("summer");
-      } else if (tag === "christmas" || tag.indexOf("christmas") >= 0 || tag.indexOf("xmas") >= 0) {
-        if (normalizedFinalTags.indexOf("christmas") === -1) normalizedFinalTags.push("christmas");
-      } else {
-        // Manter outras tags que não são as principais
-        if (normalizedFinalTags.indexOf(tag) === -1) normalizedFinalTags.push(tag);
-      }
-    }
-    finalTags = normalizedFinalTags;
-    
-    // Verificar se tag "sale" já existe
-    var hasSaleTag = finalTags.indexOf("sale") !== -1;
-    
-    // Adicionar tag "sale" se houver desconto, remover se não houver
-    if (isOnSale && !hasSaleTag) {
-      finalTags.push("sale");
-    } else if (!isOnSale && hasSaleTag) {
-      // Remover tag "sale"
-      var newTags = [];
-      for (var j = 0; j < finalTags.length; j++) {
-        if (finalTags[j] !== "sale") {
-          newTags.push(finalTags[j]);
+
+      // Função auxiliar para converter strings vazias ou "null" para null
+      var toNullIfEmpty = function (value) {
+        if (value === null || value === undefined || value === '' || value === 'null' || value === 'undefined') {
+          return null;
+        }
+        return value;
+      };
+
+      // Processar tags e adicionar/remover tag "sale" automaticamente baseado em oldPrice (apenas para produtos novos)
+      var finalTags = formData.tags || [];
+      var newPrice = formData.prices.new.price || "";
+      var newOldPrice = formData.prices.new.oldPrice || "";
+      var hasOldPrice = newOldPrice && parseFloat(newOldPrice) > 0;
+      var hasPrice = newPrice && parseFloat(newPrice) > 0;
+      var isOnSale = hasOldPrice && hasPrice && parseFloat(newOldPrice) > parseFloat(newPrice);
+
+      // Normalizar tags existentes para IDs padrão
+      var normalizedFinalTags = [];
+      for (var i = 0; i < finalTags.length; i++) {
+        var tag = String(finalTags[i]).toLowerCase().trim();
+        if (tag === "sale" || tag.indexOf("sale") >= 0) {
+          if (normalizedFinalTags.indexOf("sale") === -1) normalizedFinalTags.push("sale");
+        } else if (tag === "priority" || tag.indexOf("priority") >= 0 || tag.indexOf("priori") >= 0) {
+          if (normalizedFinalTags.indexOf("priority") === -1) normalizedFinalTags.push("priority");
+        } else if (tag === "new") {
+          if (normalizedFinalTags.indexOf("new") === -1) normalizedFinalTags.push("new");
+        } else if (tag === "trending" || tag.indexOf("trending") >= 0) {
+          if (normalizedFinalTags.indexOf("trending") === -1) normalizedFinalTags.push("trending");
+        } else if (tag === "summer" || tag.indexOf("summer") >= 0) {
+          if (normalizedFinalTags.indexOf("summer") === -1) normalizedFinalTags.push("summer");
+        } else if (tag === "christmas" || tag.indexOf("christmas") >= 0 || tag.indexOf("xmas") >= 0) {
+          if (normalizedFinalTags.indexOf("christmas") === -1) normalizedFinalTags.push("christmas");
+        } else {
+          // Manter outras tags que não são as principais
+          if (normalizedFinalTags.indexOf(tag) === -1) normalizedFinalTags.push(tag);
         }
       }
-      finalTags = newTags;
-    }
-    
-    // Filtrar specs para remover campos vazios
-    var cleanedSpecs = {};
-    if (formData.specs) {
-      Object.keys(formData.specs).forEach(function(key) {
-        var value = formData.specs[key];
-        // Manter apenas valores não vazios
-        // Para strings, verificar se não está vazia após trim
-        if (typeof value === 'string') {
-          if (value.trim() !== '') {
-            cleanedSpecs[key] = value;
+      finalTags = normalizedFinalTags;
+
+      // Verificar se tag "sale" já existe
+      var hasSaleTag = finalTags.indexOf("sale") !== -1;
+
+      // Adicionar tag "sale" se houver desconto, remover se não houver
+      if (isOnSale && !hasSaleTag) {
+        finalTags.push("sale");
+      } else if (!isOnSale && hasSaleTag) {
+        // Remover tag "sale"
+        var newTags = [];
+        for (var j = 0; j < finalTags.length; j++) {
+          if (finalTags[j] !== "sale") {
+            newTags.push(finalTags[j]);
           }
-        } else if (value !== "" && value !== null && value !== undefined) {
-          // Para arrays, verificar se não estão vazios
-          if (Array.isArray(value)) {
-            if (value.length > 0) {
+        }
+        finalTags = newTags;
+      }
+
+      // Filtrar specs para remover campos vazios
+      var cleanedSpecs = {};
+      if (formData.specs) {
+        Object.keys(formData.specs).forEach(function (key) {
+          var value = formData.specs[key];
+          // Manter apenas valores não vazios
+          // Para strings, verificar se não está vazia após trim
+          if (typeof value === 'string') {
+            if (value.trim() !== '') {
               cleanedSpecs[key] = value;
             }
-          } else {
-            cleanedSpecs[key] = value;
+          } else if (value !== "" && value !== null && value !== undefined) {
+            // Para arrays, verificar se não estão vazios
+            if (Array.isArray(value)) {
+              if (value.length > 0) {
+                cleanedSpecs[key] = value;
+              }
+            } else {
+              cleanedSpecs[key] = value;
+            }
           }
-        }
-      });
-    }
-    
-    // Debug: verificar specs antes de enviar
-    console.log('📦 [AdminProducts] Specs limpos a enviar:', JSON.stringify(cleanedSpecs, null, 2));
-    if (cleanedSpecs.materiais !== undefined) {
-      console.log('📦 [AdminProducts] Materiais a enviar:', cleanedSpecs.materiais);
-    }
-    if (cleanedSpecs.softXLED !== undefined) {
-      console.log('📦 [AdminProducts] SOFT XLED a enviar:', cleanedSpecs.softXLED);
-    }
-    if (cleanedSpecs.sparkles !== undefined) {
-      console.log('📦 [AdminProducts] Sparkles a enviar:', cleanedSpecs.sparkles);
-    }
-    if (cleanedSpecs.effects !== undefined) {
-      console.log('📦 [AdminProducts] Effects a enviar:', cleanedSpecs.effects);
-    }
-    if (cleanedSpecs.printType !== undefined) {
-      console.log('📦 [AdminProducts] Print Type a enviar:', cleanedSpecs.printType);
-    }
-    
-    // Criar objeto com os dados (productsAPI.create cria o FormData internamente)
-    // Preços novos: usar price e oldPrice
-    // Preço usado, stock usado e rental prices: armazenar em specs
-    var newPriceValue = formData.prices.new.price || "";
-    var newOldPriceValue = formData.prices.new.oldPrice || "";
-    var usedPriceValue = formData.prices.used.price || "";
-    var usedStockValue = formData.usedStock || "";
-    var newRentalPriceValue = formData.prices.new.rentalPrice || "";
-    var usedRentalPriceValue = formData.prices.used.rentalPrice || "";
-    
-    // Adicionar campos aos specs apenas se existirem valores
-    // Se não existirem, garantir que sejam removidos (não incluir no cleanedSpecs)
-    if (usedPriceValue && usedPriceValue.trim() !== "") {
-      cleanedSpecs.usedPrice = usedPriceValue;
-    } else {
-      delete cleanedSpecs.usedPrice;
-    }
-    
-    if (usedStockValue && usedStockValue.trim() !== "") {
-      cleanedSpecs.usedStock = usedStockValue;
-    } else {
-      delete cleanedSpecs.usedStock;
-    }
-    
-    if (newRentalPriceValue && newRentalPriceValue.trim() !== "") {
-      cleanedSpecs.newRentalPrice = newRentalPriceValue;
-    } else {
-      delete cleanedSpecs.newRentalPrice;
-    }
-    
-    if (usedRentalPriceValue && usedRentalPriceValue.trim() !== "") {
-      cleanedSpecs.usedRentalPrice = usedRentalPriceValue;
-    } else {
-      delete cleanedSpecs.usedRentalPrice;
-    }
-    
-    var data = {
-      name: formData.name,
-      price: newPriceValue || 0,
-      stock: formData.stock || 0,
-      oldPrice: toNullIfEmpty(newOldPriceValue),
-      type: toNullIfEmpty(formData.type),
-      location: toNullIfEmpty(formData.location),
-      mount: toNullIfEmpty(formData.mount),
-      videoFile: toNullIfEmpty(formData.videoFile),
-      tags: finalTags,
-      specs: Object.keys(cleanedSpecs).length > 0 ? cleanedSpecs : null,
-      availableColors: formData.availableColors || {},
-      variantProductByColor: formData.variantProductByColor || null,
-      isActive: formData.isActive !== undefined ? formData.isActive : true,
-      season: toNullIfEmpty(formData.season),
-      isTrending: formData.isTrending || false,
-      releaseYear: formData.releaseYear ? parseInt(formData.releaseYear, 10) : null,
-      isOnSale: isOnSale,
-      height: formData.height ? parseFloat(formData.height) : null,
-      width: formData.width ? parseFloat(formData.width) : null,
-      depth: formData.depth ? parseFloat(formData.depth) : null,
-      diameter: formData.diameter ? parseFloat(formData.diameter) : null,
-    };
-    
-    // Adicionar ficheiros se existirem
-    if (imageFiles.dayImage) data.dayImage = imageFiles.dayImage;
-    if (imageFiles.nightImage) data.nightImage = imageFiles.nightImage;
-    if (imageFiles.animation) data.animation = imageFiles.animation;
-    if (imageFiles.animationSimulation) data.animationSimulation = imageFiles.animationSimulation;
-    if (imageFiles.thumbnail) data.thumbnail = imageFiles.thumbnail;
-    
-    console.log('📦 [AdminProducts] Enviando dados:', {
-      name: data.name,
-      price: data.price,
-      stock: data.stock,
-      hasDayImage: !!data.dayImage,
-      hasNightImage: !!data.nightImage,
-      hasAnimation: !!data.animation,
-      fileNames: {
-        day: imageFiles?.dayImage?.name || null,
-        night: imageFiles?.nightImage?.name || null,
-        animation: imageFiles?.animation?.name || null,
-      },
-      urlsPreview: {
-        day: formData?.imagesDayUrl || null,
-        night: formData?.imagesNightUrl || null,
-        thumb: formData?.thumbnailUrl || null,
+        });
       }
-    });
-    
-    setLoading(true);
-    setError(null);
-    
-    var promise = editingProduct
-      ? productsAPI.update(editingProduct.id, data)
-      : productsAPI.create(data);
-    
-    promise
-      .then(function(saved) {
-        try {
-          console.log('🟢 [AdminProducts] Produto salvo/atualizado com sucesso:', {
-            id: saved?.id || editingProduct?.id || null,
-            imagesDayUrl: saved?.imagesDayUrl,
-            imagesNightUrl: saved?.imagesNightUrl,
-            thumbnailUrl: saved?.thumbnailUrl,
-          });
-        } catch(_) {}
-        setLoading(false);
-        onModalClose();
-        loadProducts();
-      })
-      .catch(function(err) {
-        console.error("Erro ao salvar produto:", err);
-        var errorMessage = err.response?.data?.error || err.message || "Error saving product";
-        if (err.response?.data?.details) {
-          errorMessage += ": " + err.response.data.details;
+
+      // Debug: verificar specs antes de enviar
+      console.log('📦 [AdminProducts] Specs limpos a enviar:', JSON.stringify(cleanedSpecs, null, 2));
+      if (cleanedSpecs.materiais !== undefined) {
+        console.log('📦 [AdminProducts] Materiais a enviar:', cleanedSpecs.materiais);
+      }
+      if (cleanedSpecs.softXLED !== undefined) {
+        console.log('📦 [AdminProducts] SOFT XLED a enviar:', cleanedSpecs.softXLED);
+      }
+      if (cleanedSpecs.sparkles !== undefined) {
+        console.log('📦 [AdminProducts] Sparkles a enviar:', cleanedSpecs.sparkles);
+      }
+      if (cleanedSpecs.effects !== undefined) {
+        console.log('📦 [AdminProducts] Effects a enviar:', cleanedSpecs.effects);
+      }
+      if (cleanedSpecs.printType !== undefined) {
+        console.log('📦 [AdminProducts] Print Type a enviar:', cleanedSpecs.printType);
+      }
+
+      // Criar objeto com os dados (productsAPI.create cria o FormData internamente)
+      // Preços novos: usar price e oldPrice
+      // Preço usado, stock usado e rental prices: armazenar em specs
+      var newPriceValue = formData.prices.new.price || "";
+      var newOldPriceValue = formData.prices.new.oldPrice || "";
+      var usedPriceValue = formData.prices.used.price || "";
+      var usedStockValue = formData.usedStock || "";
+      var newRentalPriceValue = formData.prices.new.rentalPrice || "";
+      var usedRentalPriceValue = formData.prices.used.rentalPrice || "";
+
+      // Adicionar campos aos specs apenas se existirem valores
+      // Se não existirem, garantir que sejam removidos (não incluir no cleanedSpecs)
+      if (usedPriceValue && usedPriceValue.trim() !== "") {
+        cleanedSpecs.usedPrice = usedPriceValue;
+      } else {
+        delete cleanedSpecs.usedPrice;
+      }
+
+      if (usedStockValue && usedStockValue.trim() !== "") {
+        cleanedSpecs.usedStock = usedStockValue;
+      } else {
+        delete cleanedSpecs.usedStock;
+      }
+
+      if (newRentalPriceValue && newRentalPriceValue.trim() !== "") {
+        cleanedSpecs.newRentalPrice = newRentalPriceValue;
+      } else {
+        delete cleanedSpecs.newRentalPrice;
+      }
+
+      if (usedRentalPriceValue && usedRentalPriceValue.trim() !== "") {
+        cleanedSpecs.usedRentalPrice = usedRentalPriceValue;
+      } else {
+        delete cleanedSpecs.usedRentalPrice;
+      }
+
+      var data = {
+        name: formData.name,
+        price: newPriceValue || 0,
+        stock: formData.stock || 0,
+        oldPrice: toNullIfEmpty(newOldPriceValue),
+        type: toNullIfEmpty(formData.type),
+        location: toNullIfEmpty(formData.location),
+        mount: toNullIfEmpty(formData.mount),
+        videoFile: toNullIfEmpty(formData.videoFile),
+        tags: finalTags,
+        specs: Object.keys(cleanedSpecs).length > 0 ? cleanedSpecs : null,
+        availableColors: formData.availableColors || {},
+        variantProductByColor: formData.variantProductByColor || null,
+        isActive: formData.isActive !== undefined ? formData.isActive : true,
+        season: toNullIfEmpty(formData.season),
+        isTrending: formData.isTrending || false,
+        releaseYear: formData.releaseYear ? parseInt(formData.releaseYear, 10) : null,
+        isOnSale: isOnSale,
+        height: formData.height ? parseFloat(formData.height) : null,
+        width: formData.width ? parseFloat(formData.width) : null,
+        depth: formData.depth ? parseFloat(formData.depth) : null,
+        diameter: formData.diameter ? parseFloat(formData.diameter) : null,
+      };
+
+      // Adicionar ficheiros se existirem
+      if (imageFiles.dayImage) data.dayImage = imageFiles.dayImage;
+      if (imageFiles.nightImage) data.nightImage = imageFiles.nightImage;
+      if (imageFiles.animation) data.animation = imageFiles.animation;
+      if (imageFiles.animationSimulation) data.animationSimulation = imageFiles.animationSimulation;
+      if (imageFiles.thumbnail) data.thumbnail = imageFiles.thumbnail;
+
+      console.log('📦 [AdminProducts] Enviando dados:', {
+        name: data.name,
+        price: data.price,
+        stock: data.stock,
+        hasDayImage: !!data.dayImage,
+        hasNightImage: !!data.nightImage,
+        hasAnimation: !!data.animation,
+        fileNames: {
+          day: imageFiles?.dayImage?.name || null,
+          night: imageFiles?.nightImage?.name || null,
+          animation: imageFiles?.animation?.name || null,
+        },
+        urlsPreview: {
+          day: formData?.imagesDayUrl || null,
+          night: formData?.imagesNightUrl || null,
+          thumb: formData?.thumbnailUrl || null,
         }
-        setError(errorMessage);
-        setLoading(false);
       });
+
+      setLoading(true);
+      setError(null);
+
+      var promise = editingProduct
+        ? productsAPI.update(editingProduct.id, data)
+        : productsAPI.create(data);
+
+      promise
+        .then(function (saved) {
+          try {
+            console.log('🟢 [AdminProducts] Produto salvo/atualizado com sucesso:', {
+              id: saved?.id || editingProduct?.id || null,
+              imagesDayUrl: saved?.imagesDayUrl,
+              imagesNightUrl: saved?.imagesNightUrl,
+              thumbnailUrl: saved?.thumbnailUrl,
+            });
+          } catch (_) { }
+          setLoading(false);
+          onModalClose();
+          loadProducts();
+        })
+        .catch(function (err) {
+          console.error("Erro ao salvar produto:", err);
+          var errorMessage = err.response?.data?.error || err.message || "Error saving product";
+          if (err.response?.data?.details) {
+            errorMessage += ": " + err.response.data.details;
+          }
+          setError(errorMessage);
+          setLoading(false);
+        });
     });
   };
 
   // Filtrar produtos
   var filteredProducts = Array.isArray(products) ? products.slice() : [];
-  
+
   // Aplicar filtro de pesquisa
   if (searchQuery) {
-    filteredProducts = filteredProducts.filter(function(p) {
+    filteredProducts = filteredProducts.filter(function (p) {
       return p.name.toLowerCase().indexOf(searchQuery.toLowerCase()) >= 0;
     });
   }
-  
+
   // Aplicar filtro de tipo
   if (filters.type) {
-    filteredProducts = filteredProducts.filter(function(p) {
+    filteredProducts = filteredProducts.filter(function (p) {
       return p.type === filters.type;
     });
   }
-  
+
   // Aplicar filtro de localização
   if (filters.location) {
-    filteredProducts = filteredProducts.filter(function(p) {
+    filteredProducts = filteredProducts.filter(function (p) {
       return p.location === filters.location;
     });
   }
-  
+
   // Aplicar filtro de tag
   if (filters.tag) {
     var rawTagFilter = String(filters.tag).trim().toLowerCase();
     var normalizedFilter = normalizeTag(filters.tag);
-    filteredProducts = filteredProducts.filter(function(p) {
+    filteredProducts = filteredProducts.filter(function (p) {
       var normalizedTags = getNormalizedProductTags(p);
       if (normalizedFilter && normalizedTags.includes(normalizedFilter)) {
         return true;
       }
       if (!rawTagFilter) return false;
-      return normalizedTags.some(function(tag) {
+      return normalizedTags.some(function (tag) {
         return tag.indexOf(rawTagFilter) >= 0;
       });
     });
   }
 
-  var getOtherTagsCount = function(product) {
+  var getOtherTagsCount = function (product) {
     var normalizedTags = getNormalizedProductTags(product);
     if (!Array.isArray(normalizedTags) || normalizedTags.length === 0) return 0;
     var count = 0;
@@ -1332,7 +1334,7 @@ export default function AdminProducts() {
     return count;
   };
 
-  var getStock = function(product) {
+  var getStock = function (product) {
     if (typeof product.stock === "number" && Number.isFinite(product.stock)) return product.stock;
     try {
       var sum = 0;
@@ -1346,7 +1348,7 @@ export default function AdminProducts() {
     }
   };
 
-  filteredProducts = filteredProducts.sort(function(a, b) {
+  filteredProducts = filteredProducts.sort(function (a, b) {
     var hierarchyComparison = compareProductsByTagHierarchy(a, b);
     if (hierarchyComparison !== 0) return hierarchyComparison;
 
@@ -1379,13 +1381,13 @@ export default function AdminProducts() {
 
   return (
     <div className={`flex-1 min-h-0 overflow-hidden p-6 flex flex-col ${isHandheld ? "pb-24" : "pb-6"}`}>
-      <PageTitle 
-        title={t('pages.dashboard.adminProducts.title')} 
-        userName={userName} 
-        lead={t('pages.dashboard.adminProducts.lead')} 
-        subtitle={t('pages.dashboard.adminProducts.subtitle')} 
+      <PageTitle
+        title={t('pages.dashboard.adminProducts.title')}
+        userName={userName}
+        lead={t('pages.dashboard.adminProducts.lead')}
+        subtitle={t('pages.dashboard.adminProducts.subtitle')}
       />
-      
+
       {/* Barra de ações e filtros */}
       <div className="mb-5 flex flex-col gap-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -1399,24 +1401,24 @@ export default function AdminProducts() {
             />
             <Button onPress={handleSearch} color="primary">{t('pages.dashboard.adminProducts.search')}</Button>
           </div>
-          <Button 
-            color="primary" 
+          <Button
+            color="primary"
             onPress={handleCreateNew}
             startContent={<Icon icon="lucide:plus" />}
           >
             {t('pages.dashboard.adminProducts.createNewProduct')}
           </Button>
         </div>
-        
+
         {/* Filtros */}
         <div className="flex gap-2 flex-wrap">
           <Select
             placeholder={t('pages.dashboard.adminProducts.filters.type')}
             aria-label={t('pages.dashboard.adminProducts.filters.ariaLabels.filterByType')}
             selectedKeys={filters.type ? new Set([filters.type]) : new Set()}
-            onSelectionChange={function(keys) {
+            onSelectionChange={function (keys) {
               var selected = Array.from(keys)[0] || "";
-              setFilters(function(prev) {
+              setFilters(function (prev) {
                 return Object.assign({}, prev, { type: selected });
               });
             }}
@@ -1425,14 +1427,14 @@ export default function AdminProducts() {
             <SelectItem key="2D" textValue="2D">2D</SelectItem>
             <SelectItem key="3D" textValue="3D">3D</SelectItem>
           </Select>
-          
+
           <Select
             placeholder={t('pages.dashboard.adminProducts.filters.location')}
             aria-label={t('pages.dashboard.adminProducts.filters.ariaLabels.filterByLocation')}
             selectedKeys={filters.location ? new Set([filters.location]) : new Set()}
-            onSelectionChange={function(keys) {
+            onSelectionChange={function (keys) {
               var selected = Array.from(keys)[0] || "";
-              setFilters(function(prev) {
+              setFilters(function (prev) {
                 return Object.assign({}, prev, { location: selected });
               });
             }}
@@ -1441,14 +1443,14 @@ export default function AdminProducts() {
             <SelectItem key="Exterior" textValue="Exterior">Exterior</SelectItem>
             <SelectItem key="Interior" textValue="Interior">Interior</SelectItem>
           </Select>
-          
+
           <Select
             placeholder={t('pages.dashboard.adminProducts.filters.tag')}
             aria-label={t('pages.dashboard.adminProducts.filters.ariaLabels.filterByTag')}
             selectedKeys={filters.tag ? new Set([filters.tag]) : new Set()}
-            onSelectionChange={function(keys) {
+            onSelectionChange={function (keys) {
               var selected = Array.from(keys)[0] || "";
-              setFilters(function(prev) {
+              setFilters(function (prev) {
                 return Object.assign({}, prev, { tag: selected });
               });
             }}
@@ -1461,17 +1463,17 @@ export default function AdminProducts() {
             <SelectItem key="summer" textValue="Summer">{t('pages.dashboard.adminProducts.tags.summer')}</SelectItem>
             <SelectItem key="christmas" textValue="Christmas">{t('pages.dashboard.adminProducts.tags.christmas')}</SelectItem>
           </Select>
-          
+
           <Button
             variant="flat"
-            onPress={function() {
+            onPress={function () {
               setFilters({});
               setSearchQuery("");
             }}
           >
             {t('pages.dashboard.adminProducts.filters.clearFilters')}
           </Button>
-          
+
           <Checkbox
             isSelected={showArchived}
             onValueChange={setShowArchived}
@@ -1479,7 +1481,7 @@ export default function AdminProducts() {
             {t('pages.dashboard.adminProducts.filters.showArchived')}
           </Checkbox>
         </div>
-        
+
         {/* Bulk Actions */}
         {filteredProducts.length > 0 && (
           <div className="flex items-center gap-4 mt-4 p-4 bg-content2 rounded-lg border border-default-200 w-fit self-start">
@@ -1498,7 +1500,7 @@ export default function AdminProducts() {
                   size="sm"
                   variant="flat"
                   color="primary"
-                  onPress={function() { toggleSelectAll(filteredProducts); }}
+                  onPress={function () { toggleSelectAll(filteredProducts); }}
                   startContent={<Icon icon={selectedProducts.size === filteredProducts.length ? "lucide:square" : "lucide:check-square"} />}
                 >
                   {selectedProducts.size === filteredProducts.length ? t('pages.dashboard.adminProducts.bulkActions.deselectAll') : t('pages.dashboard.adminProducts.bulkActions.selectAll')}
@@ -1506,7 +1508,7 @@ export default function AdminProducts() {
                 <span className="text-sm text-default-500">
                   ({selectedProducts.size} {selectedProducts.size === 1 ? t('pages.dashboard.adminProducts.bulkActions.selected') : t('pages.dashboard.adminProducts.bulkActions.selectedPlural')})
                 </span>
-                
+
                 {selectedProducts.size > 0 && (
                   <>
                     <div className="flex-1" />
@@ -1516,8 +1518,8 @@ export default function AdminProducts() {
                       color="warning"
                       onPress={handleBulkArchive}
                       startContent={<Icon icon="lucide:archive" />}
-                      isDisabled={Array.from(selectedProducts).every(function(id) {
-                        var product = filteredProducts.find(function(p) { return p.id === id; });
+                      isDisabled={Array.from(selectedProducts).every(function (id) {
+                        var product = filteredProducts.find(function (p) { return p.id === id; });
                         return product && !product.isActive;
                       })}
                     >
@@ -1529,8 +1531,8 @@ export default function AdminProducts() {
                       color="success"
                       onPress={handleBulkUnarchive}
                       startContent={<Icon icon="lucide:archive-restore" />}
-                      isDisabled={Array.from(selectedProducts).every(function(id) {
-                        var product = filteredProducts.find(function(p) { return p.id === id; });
+                      isDisabled={Array.from(selectedProducts).every(function (id) {
+                        var product = filteredProducts.find(function (p) { return p.id === id; });
                         return product && product.isActive;
                       })}
                     >
@@ -1563,12 +1565,43 @@ export default function AdminProducts() {
 
       {/* Lista de produtos */}
       {loading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Icon icon="lucide:loader-2" className="text-4xl animate-spin mx-auto mb-2" />
-            <p>{t('pages.dashboard.adminProducts.status.loading')}</p>
+        <Scroller className={`flex-1 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Card key={i} className="h-full" radius="lg">
+                <CardBody className="p-0 overflow-hidden">
+                  <Skeleton className="rounded-none">
+                    <div className="h-48 bg-default-300"></div>
+                  </Skeleton>
+                  <div className="p-4 space-y-3">
+                    <Skeleton className="w-3/4 rounded-lg">
+                      <div className="h-6 w-3/4 rounded-lg bg-default-200"></div>
+                    </Skeleton>
+                    <div className="flex gap-2">
+                      <Skeleton className="w-16 rounded-lg">
+                        <div className="h-6 w-16 rounded-lg bg-default-200"></div>
+                      </Skeleton>
+                      <Skeleton className="w-16 rounded-lg">
+                        <div className="h-6 w-16 rounded-lg bg-default-200"></div>
+                      </Skeleton>
+                    </div>
+                    <Skeleton className="w-1/2 rounded-lg">
+                      <div className="h-4 w-1/2 rounded-lg bg-default-200"></div>
+                    </Skeleton>
+                    <div className="flex gap-2 mt-4">
+                      <Skeleton className="w-20 rounded-lg">
+                        <div className="h-8 w-20 rounded-lg bg-default-200"></div>
+                      </Skeleton>
+                      <Skeleton className="w-20 rounded-lg">
+                        <div className="h-8 w-20 rounded-lg bg-default-200"></div>
+                      </Skeleton>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+            ))}
           </div>
-        </div>
+        </Scroller>
       ) : error ? (
         <Card className="p-6">
           <CardBody>
@@ -1581,8 +1614,8 @@ export default function AdminProducts() {
           <CardBody>
             <p className="text-center text-default-500">{t('pages.dashboard.adminProducts.status.noProductsFound')}</p>
             <p className="text-center text-default-400 text-sm mt-2">
-              Total products loaded: {products.length} | 
-              Search query: "{searchQuery}" | 
+              Total products loaded: {products.length} |
+              Search query: "{searchQuery}" |
               Active filters: {JSON.stringify(filters)}
             </p>
           </CardBody>
@@ -1590,174 +1623,185 @@ export default function AdminProducts() {
       ) : (
         <Scroller className={`flex-1 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredProducts.map(function(product) {
-              return (
-                <Card key={product.id} className="h-full">
-                  <CardBody className="p-0">
-                    <div className="relative h-48 bg-content2">
-                      {/* Checkbox de seleção - só aparece quando o modo de seleção está ativo */}
-                      {isSelectionMode && (
-                        <div className="absolute top-2 left-2 z-10">
-                          <Checkbox
-                            isSelected={selectedProducts.has(product.id)}
-                            onValueChange={function() { toggleProductSelection(product.id); }}
-                            classNames={{
-                              base: "bg-white/90 dark:bg-black/90 rounded-md p-1"
-                            }}
-                          />
+            <AnimatePresence mode="popLayout">
+              {filteredProducts.map(function (product) {
+                return (
+                  <motion.div
+                    key={product.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Card className="h-full hover:scale-[1.02] transition-transform duration-200 shadow-sm hover:shadow-md">
+                      <CardBody className="p-0">
+                        <div className="relative h-48 bg-content2">
+                          {/* Checkbox de seleção - só aparece quando o modo de seleção está ativo */}
+                          {isSelectionMode && (
+                            <div className="absolute top-2 left-2 z-10">
+                              <Checkbox
+                                isSelected={selectedProducts.has(product.id)}
+                                onValueChange={function () { toggleProductSelection(product.id); }}
+                                classNames={{
+                                  base: "bg-white/90 dark:bg-black/90 rounded-md p-1"
+                                }}
+                              />
+                            </div>
+                          )}
+                          {function () {
+                            var baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
+                            // Preferir imagem da noite, depois dia, depois thumbnail
+                            var choose = product.imagesNightUrl || product.imagesDayUrl || product.thumbnailUrl || "/demo-images/placeholder.png";
+                            var abs;
+                            if (choose && choose.indexOf('/uploads/') === 0) {
+                              abs = baseApi ? (baseApi + choose) : ('/api' + choose);
+                            } else {
+                              abs = choose;
+                            }
+                            var src = abs + (abs.indexOf('/demo-images/') === 0 ? '' : ('?v=' + encodeURIComponent(String(product.updatedAt || product.id || '1'))));
+                            return (
+                              <img
+                                src={src}
+                                alt={product.name}
+                                className="w-full h-full object-contain"
+                                decoding="async"
+                                loading="lazy"
+                                onLoad={function () { try { console.log('🖼️ [AdminProducts] grid imagem OK', { id: product.id, src: src }); } catch (_) { } }}
+                                onError={function (e) {
+                                  if (e.target.dataset.fb === '1') return;
+                                  e.target.dataset.fb = '1';
+                                  var day = product.imagesDayUrl;
+                                  var alt = day ? ((day.indexOf('/uploads/') === 0 ? ((baseApi ? baseApi : '/api') + day) : day) + '?v=' + encodeURIComponent(String(product.updatedAt || product.id || '1'))) : null;
+                                  console.warn('⚠️ [AdminProducts] grid imagem ERRO', { id: product.id, tried: src, fallback: alt });
+                                  e.target.src = alt || "/demo-images/placeholder.png";
+                                }}
+                              />
+                            );
+                          }()}
+                          {!product.isActive && (
+                            <Chip size="sm" color="warning" className="absolute top-2 right-2">
+                              {t('pages.dashboard.adminProducts.status.archived')}
+                            </Chip>
+                          )}
                         </div>
-                      )}
-                      {function(){
-                        var baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
-                        // Preferir imagem da noite, depois dia, depois thumbnail
-                        var choose = product.imagesNightUrl || product.imagesDayUrl || product.thumbnailUrl || "/demo-images/placeholder.png";
-                        var abs;
-                        if (choose && choose.indexOf('/uploads/') === 0) {
-                          abs = baseApi ? (baseApi + choose) : ('/api' + choose);
-                        } else {
-                          abs = choose;
-                        }
-                        var src = abs + (abs.indexOf('/demo-images/') === 0 ? '' : ('?v=' + encodeURIComponent(String(product.updatedAt || product.id || '1'))));
-                        return (
-                          <img
-                            src={src}
-                            alt={product.name}
-                            className="w-full h-full object-contain"
-                            decoding="async"
-                            loading="lazy"
-                            onLoad={function(){ try { console.log('🖼️ [AdminProducts] grid imagem OK', { id: product.id, src: src }); } catch(_) {} }}
-                            onError={function(e){
-                              if (e.target.dataset.fb === '1') return;
-                              e.target.dataset.fb = '1';
-                              var day = product.imagesDayUrl;
-                              var alt = day ? ((day.indexOf('/uploads/') === 0 ? ((baseApi ? baseApi : '/api') + day) : day) + '?v=' + encodeURIComponent(String(product.updatedAt || product.id || '1'))) : null;
-                              console.warn('⚠️ [AdminProducts] grid imagem ERRO', { id: product.id, tried: src, fallback: alt });
-                              e.target.src = alt || "/demo-images/placeholder.png";
-                            }}
-                          />
-                        );
-                      }()}
-                      {!product.isActive && (
-                        <Chip size="sm" color="warning" className="absolute top-2 right-2">
-                          {t('pages.dashboard.adminProducts.status.archived')}
-                        </Chip>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-lg mb-1">{product.name}</h3>
-                      {/* Tags */}
-                      {product.tags && Array.isArray(product.tags) && product.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-2">
-                          {(function() {
-                            // Helper function to get tag priority for sorting (lower number = higher priority)
-                            var getTagPriority = function(tag) {
-                              var tagLower = String(tag).toLowerCase();
-                              if (tagLower === "priority" || tagLower.indexOf("priority") >= 0 || tagLower.indexOf("priori") >= 0) return 1;
-                              if (tagLower === "sale" || tagLower.indexOf("sale") >= 0) return 2;
-                              if (tagLower === "new") return 3;
-                              if (tagLower === "trending" || tagLower.indexOf("trending") >= 0) return 4;
-                              if (tagLower === "summer" || tagLower.indexOf("summer") >= 0) return 4;
-                              if (tagLower === "christmas" || tagLower.indexOf("christmas") >= 0 || tagLower.indexOf("xmas") >= 0) return 4;
-                              return 5; // Other tags
-                            };
-                            
-                            // Sort tags by priority
-                            var sortedTags = product.tags.slice().sort(function(a, b) {
-                              return getTagPriority(a) - getTagPriority(b);
-                            });
-                            
-                            return sortedTags.map(function(tag) {
-                              var tagLower = String(tag).toLowerCase();
-                              var tagConfig = null;
-                              
-                              if (tagLower === "sale" || tagLower.indexOf("sale") >= 0) {
-                                tagConfig = { label: getTranslatedTag("sale"), color: "#ef4444", bgColor: "#ef444420" };
-                              } else if (tagLower === "priority" || tagLower.indexOf("priority") >= 0 || tagLower.indexOf("priori") >= 0) {
-                                tagConfig = { label: getTranslatedTag("priority"), color: "#f59e0b", bgColor: "#f59e0b20" };
-                              } else if (tagLower === "new") {
-                                tagConfig = { label: getTranslatedTag("new"), color: "#10b981", bgColor: "#10b98120" };
-                              } else if (tagLower === "trending" || tagLower.indexOf("trending") >= 0) {
-                                tagConfig = { label: getTranslatedTag("trending"), color: "#8b5cf6", bgColor: "#8b5cf620" };
-                              } else if (tagLower === "summer" || tagLower.indexOf("summer") >= 0) {
-                                tagConfig = { label: getTranslatedTag("summer"), color: "#f59e0b", bgColor: "#f59e0b20" };
-                              } else if (tagLower === "christmas" || tagLower.indexOf("christmas") >= 0 || tagLower.indexOf("xmas") >= 0) {
-                                tagConfig = { label: getTranslatedTag("christmas"), color: "#ef4444", bgColor: "#ef444420" };
-                              } else {
-                                tagConfig = { label: getTranslatedTag(tag) || String(tag), color: "#6b7280", bgColor: "#6b728020" };
-                              }
-                              
-                              return (
-                                <Chip
-                                  key={tag}
-                                  size="sm"
-                                  style={{
-                                    backgroundColor: tagConfig.bgColor,
-                                    color: tagConfig.color,
-                                    borderColor: tagConfig.color,
-                                    borderWidth: "1px",
-                                    borderStyle: "solid"
-                                  }}
-                                  className="text-xs font-medium"
-                                >
-                                  {tagConfig.label}
-                                </Chip>
-                              );
-                            });
-                          })()}
+                        <div className="p-4">
+                          <h3 className="font-semibold text-lg mb-1">{product.name}</h3>
+                          {/* Tags */}
+                          {product.tags && Array.isArray(product.tags) && product.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {(function () {
+                                // Helper function to get tag priority for sorting (lower number = higher priority)
+                                var getTagPriority = function (tag) {
+                                  var tagLower = String(tag).toLowerCase();
+                                  if (tagLower === "priority" || tagLower.indexOf("priority") >= 0 || tagLower.indexOf("priori") >= 0) return 1;
+                                  if (tagLower === "sale" || tagLower.indexOf("sale") >= 0) return 2;
+                                  if (tagLower === "new") return 3;
+                                  if (tagLower === "trending" || tagLower.indexOf("trending") >= 0) return 4;
+                                  if (tagLower === "summer" || tagLower.indexOf("summer") >= 0) return 4;
+                                  if (tagLower === "christmas" || tagLower.indexOf("christmas") >= 0 || tagLower.indexOf("xmas") >= 0) return 4;
+                                  return 5; // Other tags
+                                };
+
+                                // Sort tags by priority
+                                var sortedTags = product.tags.slice().sort(function (a, b) {
+                                  return getTagPriority(a) - getTagPriority(b);
+                                });
+
+                                return sortedTags.map(function (tag) {
+                                  var tagLower = String(tag).toLowerCase();
+                                  var tagConfig = null;
+
+                                  if (tagLower === "sale" || tagLower.indexOf("sale") >= 0) {
+                                    tagConfig = { label: getTranslatedTag("sale"), color: "#ef4444", bgColor: "#ef444420" };
+                                  } else if (tagLower === "priority" || tagLower.indexOf("priority") >= 0 || tagLower.indexOf("priori") >= 0) {
+                                    tagConfig = { label: getTranslatedTag("priority"), color: "#f59e0b", bgColor: "#f59e0b20" };
+                                  } else if (tagLower === "new") {
+                                    tagConfig = { label: getTranslatedTag("new"), color: "#10b981", bgColor: "#10b98120" };
+                                  } else if (tagLower === "trending" || tagLower.indexOf("trending") >= 0) {
+                                    tagConfig = { label: getTranslatedTag("trending"), color: "#8b5cf6", bgColor: "#8b5cf620" };
+                                  } else if (tagLower === "summer" || tagLower.indexOf("summer") >= 0) {
+                                    tagConfig = { label: getTranslatedTag("summer"), color: "#f59e0b", bgColor: "#f59e0b20" };
+                                  } else if (tagLower === "christmas" || tagLower.indexOf("christmas") >= 0 || tagLower.indexOf("xmas") >= 0) {
+                                    tagConfig = { label: getTranslatedTag("christmas"), color: "#ef4444", bgColor: "#ef444420" };
+                                  } else {
+                                    tagConfig = { label: getTranslatedTag(tag) || String(tag), color: "#6b7280", bgColor: "#6b728020" };
+                                  }
+
+                                  return (
+                                    <Chip
+                                      key={tag}
+                                      size="sm"
+                                      style={{
+                                        backgroundColor: tagConfig.bgColor,
+                                        color: tagConfig.color,
+                                        borderColor: tagConfig.color,
+                                        borderWidth: "1px",
+                                        borderStyle: "solid"
+                                      }}
+                                      className="text-xs font-medium"
+                                    >
+                                      {tagConfig.label}
+                                    </Chip>
+                                  );
+                                });
+                              })()}
+                            </div>
+                          )}
+                          <p className="text-default-500 text-sm mb-2">
+                            €{product.price}
+                            {product.oldPrice && (
+                              <span className="line-through text-default-400 ml-2">€{product.oldPrice}</span>
+                            )}
+                          </p>
+                          <p className="text-default-400 text-xs mb-2">{t('pages.dashboard.adminProducts.status.stock')} {product.stock}</p>
+                          <div className="flex gap-2 mt-4 flex-wrap">
+                            <Button
+                              size="sm"
+                              variant="flat"
+                              onPress={function () { handleEdit(product); }}
+                              startContent={<Icon icon="lucide:edit" />}
+                            >
+                              {t('pages.dashboard.adminProducts.actions.edit')}
+                            </Button>
+                            {product.isActive ? (
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                color="warning"
+                                onPress={function () { handleArchive(product.id); }}
+                                startContent={<Icon icon="lucide:archive" />}
+                              >
+                                {t('pages.dashboard.adminProducts.actions.archive')}
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                color="success"
+                                onPress={function () { handleUnarchive(product.id); }}
+                                startContent={<Icon icon="lucide:archive-restore" />}
+                              >
+                                {t('pages.dashboard.adminProducts.actions.unarchive')}
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="flat"
+                              color="danger"
+                              onPress={function () { handleDelete(product.id); }}
+                              startContent={<Icon icon="lucide:trash-2" />}
+                            >
+                              {t('pages.dashboard.adminProducts.actions.delete')}
+                            </Button>
+                          </div>
                         </div>
-                      )}
-                      <p className="text-default-500 text-sm mb-2">
-                        €{product.price}
-                        {product.oldPrice && (
-                          <span className="line-through text-default-400 ml-2">€{product.oldPrice}</span>
-                        )}
-                      </p>
-                      <p className="text-default-400 text-xs mb-2">{t('pages.dashboard.adminProducts.status.stock')} {product.stock}</p>
-                      <div className="flex gap-2 mt-4 flex-wrap">
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          onPress={function() { handleEdit(product); }}
-                          startContent={<Icon icon="lucide:edit" />}
-                        >
-                          {t('pages.dashboard.adminProducts.actions.edit')}
-                        </Button>
-                        {product.isActive ? (
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            color="warning"
-                            onPress={function() { handleArchive(product.id); }}
-                            startContent={<Icon icon="lucide:archive" />}
-                          >
-                            {t('pages.dashboard.adminProducts.actions.archive')}
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            color="success"
-                            onPress={function() { handleUnarchive(product.id); }}
-                            startContent={<Icon icon="lucide:archive-restore" />}
-                          >
-                            {t('pages.dashboard.adminProducts.actions.unarchive')}
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          color="danger"
-                          onPress={function() { handleDelete(product.id); }}
-                          startContent={<Icon icon="lucide:trash-2" />}
-                        >
-                          {t('pages.dashboard.adminProducts.actions.delete')}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardBody>
-                </Card>
-              );
-            })}
+                      </CardBody>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         </Scroller>
       )}
@@ -1765,7 +1809,7 @@ export default function AdminProducts() {
       {/* Modal de criação/edição */}
       <Modal isOpen={isModalOpen} onClose={onModalClose} size="5xl" scrollBehavior="inside">
         <ModalContent>
-          {function(onClose) {
+          {function (onClose) {
             return (
               <>
                 <ModalHeader>
@@ -1779,9 +1823,9 @@ export default function AdminProducts() {
                         label="Name"
                         placeholder="Ex: IPL317R"
                         value={formik.values.name}
-                        onValueChange={function(val) {
+                        onValueChange={function (val) {
                           formik.setFieldValue("name", val);
-                          setFormData(function(prev) {
+                          setFormData(function (prev) {
                             return Object.assign({}, prev, { name: val });
                           });
                         }}
@@ -1802,9 +1846,9 @@ export default function AdminProducts() {
                         type="number"
                         placeholder="32"
                         value={formik.values.stock}
-                        onValueChange={function(val) {
+                        onValueChange={function (val) {
                           formik.setFieldValue("stock", val);
-                          setFormData(function(prev) {
+                          setFormData(function (prev) {
                             return Object.assign({}, prev, { stock: val });
                           });
                         }}
@@ -1823,9 +1867,9 @@ export default function AdminProducts() {
                         type="number"
                         placeholder="10"
                         value={formik.values.usedStock}
-                        onValueChange={function(val) {
+                        onValueChange={function (val) {
                           formik.setFieldValue("usedStock", val);
-                          setFormData(function(prev) {
+                          setFormData(function (prev) {
                             return Object.assign({}, prev, { usedStock: val });
                           });
                         }}
@@ -1854,20 +1898,20 @@ export default function AdminProducts() {
                                 type="number"
                                 placeholder="1299"
                                 value={formik.values.prices.new.price}
-                                onValueChange={function(val) {
+                                onValueChange={function (val) {
                                   var newPrices = { ...formik.values.prices };
                                   var newPrice = parseFloat(val) || 0;
                                   var currentOldPrice = parseFloat(newPrices.new.oldPrice) || 0;
-                                  
+
                                   // Se o novo Price for maior que o Old Price existente, limpar o Old Price
                                   if (newPrices.new.oldPrice && currentOldPrice > 0 && newPrice > currentOldPrice) {
                                     newPrices.new = { ...newPrices.new, price: val, oldPrice: "" };
                                   } else {
                                     newPrices.new = { ...newPrices.new, price: val };
                                   }
-                                  
+
                                   formik.setFieldValue("prices", newPrices);
-                                  setFormData(function(prev) {
+                                  setFormData(function (prev) {
                                     return Object.assign({}, prev, { prices: newPrices });
                                   });
                                 }}
@@ -1886,19 +1930,19 @@ export default function AdminProducts() {
                                 type="number"
                                 placeholder="Optional"
                                 value={formik.values.prices.new.oldPrice}
-                                onValueChange={function(val) {
+                                onValueChange={function (val) {
                                   var newPrices = { ...formik.values.prices };
                                   var currentPrice = parseFloat(newPrices.new.price) || 0;
                                   var newOldPrice = parseFloat(val) || 0;
-                                  
+
                                   // Se o Old Price for menor que o Price, não permitir
                                   if (val && newOldPrice > 0 && newOldPrice < currentPrice) {
                                     return; // Não atualizar se inválido
                                   }
-                                  
+
                                   newPrices.new = { ...newPrices.new, oldPrice: val };
                                   formik.setFieldValue("prices", newPrices);
-                                  setFormData(function(prev) {
+                                  setFormData(function (prev) {
                                     return Object.assign({}, prev, { prices: newPrices });
                                   });
                                 }}
@@ -1917,8 +1961,8 @@ export default function AdminProducts() {
                                 type="number"
                                 placeholder="299"
                                 value={formData.prices.new.rentalPrice}
-                                onValueChange={function(val) {
-                                  setFormData(function(prev) {
+                                onValueChange={function (val) {
+                                  setFormData(function (prev) {
                                     var newPrices = Object.assign({}, prev.prices);
                                     newPrices.new = Object.assign({}, newPrices.new, { rentalPrice: val });
                                     return Object.assign({}, prev, { prices: newPrices });
@@ -1940,8 +1984,8 @@ export default function AdminProducts() {
                                 type="number"
                                 placeholder="899"
                                 value={formData.prices.used.price}
-                                onValueChange={function(val) {
-                                  setFormData(function(prev) {
+                                onValueChange={function (val) {
+                                  setFormData(function (prev) {
                                     var newPrices = Object.assign({}, prev.prices);
                                     newPrices.used = Object.assign({}, newPrices.used, { price: val });
                                     return Object.assign({}, prev, { prices: newPrices });
@@ -1956,8 +2000,8 @@ export default function AdminProducts() {
                                 type="number"
                                 placeholder="199"
                                 value={formData.prices.used.rentalPrice}
-                                onValueChange={function(val) {
-                                  setFormData(function(prev) {
+                                onValueChange={function (val) {
+                                  setFormData(function (prev) {
                                     var newPrices = Object.assign({}, prev.prices);
                                     newPrices.used = Object.assign({}, newPrices.used, { rentalPrice: val });
                                     return Object.assign({}, prev, { prices: newPrices });
@@ -1979,9 +2023,9 @@ export default function AdminProducts() {
                         label="Type"
                         placeholder="Select type"
                         selectedKeys={formData.type ? new Set([formData.type]) : new Set()}
-                        onSelectionChange={function(keys) {
+                        onSelectionChange={function (keys) {
                           var selected = Array.from(keys)[0] || "";
-                          setFormData(function(prev) {
+                          setFormData(function (prev) {
                             return Object.assign({}, prev, { type: selected });
                           });
                         }}
@@ -1992,14 +2036,14 @@ export default function AdminProducts() {
                         <SelectItem key="2D" textValue="2D">2D</SelectItem>
                         <SelectItem key="3D" textValue="3D">3D</SelectItem>
                       </Select>
-                      
+
                       <Select
                         label="Location"
                         placeholder="Select location"
                         selectedKeys={formData.location ? new Set([formData.location]) : new Set()}
-                        onSelectionChange={function(keys) {
+                        onSelectionChange={function (keys) {
                           var selected = Array.from(keys)[0] || "";
-                          setFormData(function(prev) {
+                          setFormData(function (prev) {
                             return Object.assign({}, prev, { location: selected });
                           });
                         }}
@@ -2010,14 +2054,14 @@ export default function AdminProducts() {
                         <SelectItem key="Exterior" textValue="Exterior">Exterior</SelectItem>
                         <SelectItem key="Interior" textValue="Interior">Interior</SelectItem>
                       </Select>
-                      
+
                       <Select
                         label="Mount"
                         placeholder="Select mount"
                         selectedKeys={formData.mount ? new Set([formData.mount]) : new Set()}
-                        onSelectionChange={function(keys) {
+                        onSelectionChange={function (keys) {
                           var selected = Array.from(keys)[0] || "";
-                          setFormData(function(prev) {
+                          setFormData(function (prev) {
                             return Object.assign({}, prev, { mount: selected });
                           });
                         }}
@@ -2029,15 +2073,15 @@ export default function AdminProducts() {
                         <SelectItem key="Chão" textValue="Floor">Floor</SelectItem>
                         <SelectItem key="Transversal" textValue="Transversal">Transversal</SelectItem>
                       </Select>
-                      
+
                       <Select
                         label="Collection Year"
                         placeholder="Select year"
                         selectedKeys={formData.releaseYear ? new Set([String(formData.releaseYear)]) : new Set()}
-                        onSelectionChange={function(keys) {
+                        onSelectionChange={function (keys) {
                           var keysArray = Array.from(keys);
                           var selected = keysArray.length > 0 ? String(keysArray[0]) : "";
-                          setFormData(function(prev) {
+                          setFormData(function (prev) {
                             return Object.assign({}, prev, { releaseYear: selected });
                           });
                         }}
@@ -2045,7 +2089,7 @@ export default function AdminProducts() {
                           label: "text-primary-700 dark:text-primary-400"
                         }}
                       >
-                        {function() {
+                        {function () {
                           var yearItems = [];
                           for (var i = 0; i < availableYears.length; i++) {
                             var year = availableYears[i];
@@ -2059,14 +2103,14 @@ export default function AdminProducts() {
                           return yearItems;
                         }()}
                       </Select>
-                      
+
                       <Select
                         label="Season"
                         placeholder="Select season"
                         selectedKeys={formData.season ? new Set([formData.season]) : new Set()}
-                        onSelectionChange={function(keys) {
+                        onSelectionChange={function (keys) {
                           var selected = Array.from(keys)[0] || "";
-                          setFormData(function(prev) {
+                          setFormData(function (prev) {
                             return Object.assign({}, prev, { season: selected });
                           });
                         }}
@@ -2088,7 +2132,7 @@ export default function AdminProducts() {
                           ref={dayImageInputRef}
                           type="file"
                           accept="image/*"
-                          onChange={function(e) {
+                          onChange={function (e) {
                             var file = e.target.files && e.target.files[0];
                             if (file) {
                               handleImageChange("dayImage", file);
@@ -2100,7 +2144,7 @@ export default function AdminProducts() {
                         <Button
                           variant="bordered"
                           className="w-full"
-                          onPress={function() {
+                          onPress={function () {
                             dayImageInputRef.current?.click();
                           }}
                           startContent={<Icon icon="lucide:upload" />}
@@ -2126,7 +2170,7 @@ export default function AdminProducts() {
                         )}
                         <p className="text-xs text-default-500 mt-1">Thumbnail will be generated automatically</p>
                       </div>
-                      
+
                       {/* Imagem Noite */}
                       <div>
                         <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">Night Image</label>
@@ -2134,7 +2178,7 @@ export default function AdminProducts() {
                           ref={nightImageInputRef}
                           type="file"
                           accept="image/*"
-                          onChange={function(e) {
+                          onChange={function (e) {
                             var file = e.target.files && e.target.files[0];
                             if (file) {
                               handleImageChange("nightImage", file);
@@ -2146,7 +2190,7 @@ export default function AdminProducts() {
                         <Button
                           variant="bordered"
                           className="w-full"
-                          onPress={function() {
+                          onPress={function () {
                             nightImageInputRef.current?.click();
                           }}
                           startContent={<Icon icon="lucide:upload" />}
@@ -2171,7 +2215,7 @@ export default function AdminProducts() {
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Animação/Vídeo */}
                       <div>
                         <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">Animation/Video</label>
@@ -2179,7 +2223,7 @@ export default function AdminProducts() {
                           ref={animationInputRef}
                           type="file"
                           accept="video/*"
-                          onChange={function(e) {
+                          onChange={function (e) {
                             var file = e.target.files && e.target.files[0];
                             if (file) {
                               handleImageChange("animation", file);
@@ -2191,7 +2235,7 @@ export default function AdminProducts() {
                         <Button
                           variant="bordered"
                           className="w-full"
-                          onPress={function() {
+                          onPress={function () {
                             animationInputRef.current?.click();
                           }}
                           startContent={<Icon icon="lucide:video" />}
@@ -2199,7 +2243,7 @@ export default function AdminProducts() {
                           {imageFiles.animation ? imageFiles.animation.name : "Select Video"}
                         </Button>
                       </div>
-                      
+
                       {/* Vídeo Simulação Animada */}
                       <div>
                         <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">Animation Simulation Video</label>
@@ -2207,7 +2251,7 @@ export default function AdminProducts() {
                           ref={animationSimulationInputRef}
                           type="file"
                           accept="video/*"
-                          onChange={function(e) {
+                          onChange={function (e) {
                             var file = e.target.files && e.target.files[0];
                             if (file) {
                               handleImageChange("animationSimulation", file);
@@ -2219,7 +2263,7 @@ export default function AdminProducts() {
                         <Button
                           variant="bordered"
                           className="w-full"
-                          onPress={function() {
+                          onPress={function () {
                             animationSimulationInputRef.current?.click();
                           }}
                           startContent={<Icon icon="lucide:play-circle" />}
@@ -2253,34 +2297,34 @@ export default function AdminProducts() {
                         {Object.keys(availableColorsList).length === 0 ? (
                           <p className="text-sm text-default-500">No colors available in database</p>
                         ) : (
-                            Object.keys(availableColorsList).map(function(colorName) {
-                              var colorValue = availableColorsList[colorName];
-                              var isHex = colorValue && typeof colorValue === 'string' && colorValue.indexOf('#') === 0;
-                              var isGradient = colorValue && typeof colorValue === 'string' && colorValue.indexOf('linear-gradient') === 0;
-                              var isSelected = formData.availableColors.hasOwnProperty(colorName);
-                              // Se não for hex nem gradiente, usar função helper para obter cor hex baseada no nome
-                              var displayColor = isHex || isGradient ? colorValue : getColorHex(colorName);
-                              
-                              return (
-                                <button
-                                  key={colorName}
-                                  type="button"
-                                  onClick={function() {
-                                    if (isSelected) {
-                                      handleRemoveColor(colorName);
-                                    } else {
-                                      handleAddColor(colorName);
-                                    }
-                                  }}
-                                  title={colorName}
-                                  className={isSelected 
-                                    ? "w-10 h-10 rounded-full border-4 border-primary-500 shadow-md hover:scale-110 transition-transform cursor-pointer overflow-hidden" 
-                                    : "w-10 h-10 rounded-full border-2 border-default-300 hover:border-primary-400 hover:scale-110 transition-transform cursor-pointer overflow-hidden"}
-                                  style={isGradient ? { background: displayColor } : { backgroundColor: displayColor }}
-                                >
-                                </button>
-                              );
-                            })
+                          Object.keys(availableColorsList).map(function (colorName) {
+                            var colorValue = availableColorsList[colorName];
+                            var isHex = colorValue && typeof colorValue === 'string' && colorValue.indexOf('#') === 0;
+                            var isGradient = colorValue && typeof colorValue === 'string' && colorValue.indexOf('linear-gradient') === 0;
+                            var isSelected = formData.availableColors.hasOwnProperty(colorName);
+                            // Se não for hex nem gradiente, usar função helper para obter cor hex baseada no nome
+                            var displayColor = isHex || isGradient ? colorValue : getColorHex(colorName);
+
+                            return (
+                              <button
+                                key={colorName}
+                                type="button"
+                                onClick={function () {
+                                  if (isSelected) {
+                                    handleRemoveColor(colorName);
+                                  } else {
+                                    handleAddColor(colorName);
+                                  }
+                                }}
+                                title={colorName}
+                                className={isSelected
+                                  ? "w-10 h-10 rounded-full border-4 border-primary-500 shadow-md hover:scale-110 transition-transform cursor-pointer overflow-hidden"
+                                  : "w-10 h-10 rounded-full border-2 border-default-300 hover:border-primary-400 hover:scale-110 transition-transform cursor-pointer overflow-hidden"}
+                                style={isGradient ? { background: displayColor } : { backgroundColor: displayColor }}
+                              >
+                              </button>
+                            );
+                          })
                         )}
                       </div>
                     </div>
@@ -2292,16 +2336,16 @@ export default function AdminProducts() {
                         placeholder="Select tags"
                         selectionMode="multiple"
                         selectedKeys={new Set(formData.tags || [])}
-                        onSelectionChange={function(keys) {
+                        onSelectionChange={function (keys) {
                           var selectedTags = Array.from(keys);
-                          setFormData(function(prev) {
+                          setFormData(function (prev) {
                             return Object.assign({}, prev, { tags: selectedTags });
                           });
                         }}
                         classNames={{
                           label: "text-primary-700 dark:text-primary-400"
                         }}
-                        renderValue={function(items) {
+                        renderValue={function (items) {
                           if (items.length === 0) {
                             return "No tags selected";
                           }
@@ -2313,7 +2357,7 @@ export default function AdminProducts() {
                             "summer": { label: "Summer", color: "#f59e0b" },
                             "christmas": { label: "Christmas", color: "#ef4444" }
                           };
-                          return items.map(function(item) {
+                          return items.map(function (item) {
                             var config = tagConfigs[item.key] || { label: item.key, color: "#6b7280" };
                             return (
                               <Chip
@@ -2404,8 +2448,8 @@ export default function AdminProducts() {
                         label="Description"
                         placeholder="Product description"
                         value={formData.specs.descricao}
-                        onValueChange={function(val) {
-                          setFormData(function(prev) {
+                        onValueChange={function (val) {
+                          setFormData(function (prev) {
                             var newSpecs = Object.assign({}, prev.specs, { descricao: val });
                             return Object.assign({}, prev, { specs: newSpecs });
                           });
@@ -2420,8 +2464,8 @@ export default function AdminProducts() {
                           label="Technical"
                           placeholder="Ex: 230V AC, IP65, 48W"
                           value={formData.specs.tecnicas}
-                          onValueChange={function(val) {
-                            setFormData(function(prev) {
+                          onValueChange={function (val) {
+                            setFormData(function (prev) {
                               var newSpecs = Object.assign({}, prev.specs, { tecnicas: val });
                               return Object.assign({}, prev, { specs: newSpecs });
                             });
@@ -2434,8 +2478,8 @@ export default function AdminProducts() {
                           label="Weight (kg)"
                           placeholder="Ex: 11"
                           value={formData.specs.weight}
-                          onValueChange={function(val) {
-                            setFormData(function(prev) {
+                          onValueChange={function (val) {
+                            setFormData(function (prev) {
                               var newSpecs = Object.assign({}, prev.specs, { weight: val });
                               return Object.assign({}, prev, { specs: newSpecs });
                             });
@@ -2445,7 +2489,7 @@ export default function AdminProducts() {
                           }}
                         />
                       </div>
-                      
+
                       {/* Dimensions */}
                       <div className="grid grid-cols-2 gap-2">
                         <h4 className="font-medium col-span-2">Dimensions (in meters)</h4>
@@ -2455,8 +2499,8 @@ export default function AdminProducts() {
                           step="0.01"
                           placeholder="Ex: 2.4"
                           value={formData.height}
-                          onValueChange={function(val) {
-                            setFormData(function(prev) {
+                          onValueChange={function (val) {
+                            setFormData(function (prev) {
                               return Object.assign({}, prev, { height: val });
                             });
                           }}
@@ -2470,8 +2514,8 @@ export default function AdminProducts() {
                           step="0.01"
                           placeholder="Ex: 2.0"
                           value={formData.width}
-                          onValueChange={function(val) {
-                            setFormData(function(prev) {
+                          onValueChange={function (val) {
+                            setFormData(function (prev) {
                               return Object.assign({}, prev, { width: val });
                             });
                           }}
@@ -2485,8 +2529,8 @@ export default function AdminProducts() {
                           step="0.01"
                           placeholder="Ex: 0.5"
                           value={formData.depth}
-                          onValueChange={function(val) {
-                            setFormData(function(prev) {
+                          onValueChange={function (val) {
+                            setFormData(function (prev) {
                               return Object.assign({}, prev, { depth: val });
                             });
                           }}
@@ -2500,8 +2544,8 @@ export default function AdminProducts() {
                           step="0.01"
                           placeholder="Ex: 1.2"
                           value={formData.diameter}
-                          onValueChange={function(val) {
-                            setFormData(function(prev) {
+                          onValueChange={function (val) {
+                            setFormData(function (prev) {
                               return Object.assign({}, prev, { diameter: val });
                             });
                           }}
@@ -2510,7 +2554,7 @@ export default function AdminProducts() {
                           }}
                         />
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Accordion>
                           <AccordionItem key="materials" title="Materials">
@@ -2520,9 +2564,9 @@ export default function AdminProducts() {
                                   label="Print Type"
                                   placeholder="Select print type"
                                   selectedKeys={formData.specs.printType ? new Set([formData.specs.printType]) : new Set()}
-                                  onSelectionChange={function(keys) {
+                                  onSelectionChange={function (keys) {
                                     var selected = Array.from(keys)[0] || "";
-                                    setFormData(function(prev) {
+                                    setFormData(function (prev) {
                                       var newSpecs = Object.assign({}, prev.specs, { printType: selected, printColor: "" });
                                       return Object.assign({}, prev, { specs: newSpecs });
                                     });
@@ -2542,7 +2586,7 @@ export default function AdminProducts() {
                                   placeholder="Select color(s)"
                                   isDisabled={!formData.specs.printType}
                                   selectionMode="multiple"
-                                  selectedKeys={(function() {
+                                  selectedKeys={(function () {
                                     try {
                                       return getValidPrintColors(formData.specs?.printColor);
                                     } catch (e) {
@@ -2550,9 +2594,9 @@ export default function AdminProducts() {
                                       return new Set();
                                     }
                                   })()}
-                                  onSelectionChange={function(keys) {
+                                  onSelectionChange={function (keys) {
                                     var selected = Array.from(keys);
-                                    setFormData(function(prev) {
+                                    setFormData(function (prev) {
                                       var newSpecs = Object.assign({}, prev.specs, { printColor: selected });
                                       return Object.assign({}, prev, { specs: newSpecs });
                                     });
@@ -2561,14 +2605,14 @@ export default function AdminProducts() {
                                     label: "text-primary-700 dark:text-primary-400"
                                   }}
                                 >
-                                  {function() {
+                                  {function () {
                                     var colors = ["WHITE", "DARK BLUE", "ICE BLUE", "GREY", "YELLOW", "BLACK", "GOLD", "ORANGE", "PINK", "RED", "LIGHT GREEN", "DARK GREEN", "PASTEL GREEN", "PURPLE"];
                                     var selectedColors = formData.specs.printColor ? (Array.isArray(formData.specs.printColor) ? formData.specs.printColor : [formData.specs.printColor]) : [];
-                                    return colors.map(function(colorName) {
+                                    return colors.map(function (colorName) {
                                       var isSelected = selectedColors.includes(colorName);
                                       var colorStyle = getPrintColorStyle(colorName, isSelected);
                                       return (
-                                        <SelectItem 
+                                        <SelectItem
                                           key={colorName}
                                           textValue={colorName}
                                           style={colorStyle}
@@ -2584,7 +2628,7 @@ export default function AdminProducts() {
                                 label="LED"
                                 placeholder="Select LED type(s)"
                                 selectionMode="multiple"
-                                selectedKeys={(function() {
+                                selectedKeys={(function () {
                                   try {
                                     return getValidLEDEffects(formData.specs?.effects);
                                   } catch (e) {
@@ -2592,22 +2636,22 @@ export default function AdminProducts() {
                                     return new Set();
                                   }
                                 })()}
-                                onSelectionChange={function(keys) {
+                                onSelectionChange={function (keys) {
                                   var selected = Array.from(keys);
-                                  setFormData(function(prev) {
+                                  setFormData(function (prev) {
                                     var currentMateriais = prev.specs.materiais || "";
                                     var currentEffects = prev.specs.effects;
-                                    
+
                                     // Obter lista de todas as opções LED válidas
                                     var validLEDEffects = ["LED AMBER", "LED WARM WHITE", "LED WARM WHITE + WARM WHITE FLASH", "LED WARM WHITE + PURE WHITE FLASH", "LED WARM WHITE + PURE WHITE SLOW FLASH", "LED PURE WHITE", "LED PURE WHITE + PURE WHITE FLASH", "LED PURE WHITE + WARM WHITE SLOW FLASH", "LED PURE WHITE + PURE WHITE SLOW FLASH", "LED BLUE", "LED BLUE + PURE WHITE FLASH", "LED BLUE + PURE WHITE SLOW FLASH", "LED PINK", "LED PINK + PURE WHITE FLASH", "LED RED", "LED RED + PURE WHITE FLASH", "LED RED + PURE WHITE SLOW FLASH", "LED GREEN", "LED GREEN + PURE WHITE FLASH", "RGB"];
-                                    
+
                                     // Remover todos os LED existentes do campo materiais
-                                    var newMateriais = validLEDEffects.reduce(function(acc, effect) {
+                                    var newMateriais = validLEDEffects.reduce(function (acc, effect) {
                                       return acc
                                         .replace(new RegExp(",\\s*" + effect.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "g"), "")
                                         .replace(new RegExp(effect.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b\\s*,?", "g"), "");
                                     }, currentMateriais);
-                                    
+
                                     // Adicionar os selecionados ao campo materiais
                                     if (selected.length > 0) {
                                       newMateriais = newMateriais.trim();
@@ -2617,13 +2661,13 @@ export default function AdminProducts() {
                                         newMateriais = selected.join(", ");
                                       }
                                     }
-                                    
+
                                     // Limpar vírgulas duplas e espaços extras
                                     newMateriais = newMateriais
                                       .replace(/,\s*,/g, ",")
                                       .replace(/^\s*,\s*|\s*,\s*$/g, "")
                                       .trim();
-                                    
+
                                     var newSpecs = Object.assign({}, prev.specs, {
                                       effects: selected.length > 0 ? (selected.length === 1 ? selected[0] : selected) : null,
                                       materiais: newMateriais
@@ -2660,16 +2704,16 @@ export default function AdminProducts() {
                               <Select
                                 label="COMET STRING"
                                 placeholder="Select option"
-                                selectedKeys={(function() {
+                                selectedKeys={(function () {
                                   var m = formData.specs?.materiais || "";
                                   return m.includes("COMET STRING LED PURE WHITE") ? new Set(["COMET STRING LED PURE WHITE"]) : new Set();
                                 })()}
-                                onSelectionChange={function(keys) {
+                                onSelectionChange={function (keys) {
                                   var selected = Array.from(keys)[0] || "";
-                                  setFormData(function(prev) {
+                                  setFormData(function (prev) {
                                     var currentMateriais = prev.specs.materiais || "";
                                     var newMateriais = "";
-                                    
+
                                     if (selected === "COMET STRING LED PURE WHITE") {
                                       if (!currentMateriais.includes("COMET STRING LED PURE WHITE")) {
                                         newMateriais = currentMateriais.trim();
@@ -2688,7 +2732,7 @@ export default function AdminProducts() {
                                         .replace(/^\s*,\s*|\s*,\s*$/g, "")
                                         .trim();
                                     }
-                                    
+
                                     var newSpecs = Object.assign({}, prev.specs, { materiais: newMateriais });
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
@@ -2703,31 +2747,31 @@ export default function AdminProducts() {
                                 label="LIGHT STRING"
                                 placeholder="Select color(s)"
                                 selectionMode="multiple"
-                                selectedKeys={(function() {
+                                selectedKeys={(function () {
                                   var m = formData.specs?.materiais || "";
                                   var colors = ["WARM WHITE", "PURE WHITE", "BLUE", "YELLOW", "ORANGE", "PINK", "RED", "GREEN"];
-                                  var selected = colors.filter(function(color) {
+                                  var selected = colors.filter(function (color) {
                                     return m.includes("LIGHT STRING " + color);
                                   });
                                   return new Set(selected);
                                 })()}
-                                onSelectionChange={function(keys) {
+                                onSelectionChange={function (keys) {
                                   var selected = Array.from(keys);
-                                  setFormData(function(prev) {
+                                  setFormData(function (prev) {
                                     var currentMateriais = prev.specs.materiais || "";
                                     var colors = ["WARM WHITE", "PURE WHITE", "BLUE", "YELLOW", "ORANGE", "PINK", "RED", "GREEN"];
-                                    
+
                                     // Remover todos os LIGHT STRING existentes
-                                    var newMateriais = colors.reduce(function(acc, color) {
+                                    var newMateriais = colors.reduce(function (acc, color) {
                                       var pattern = "LIGHT STRING " + color;
                                       return acc
                                         .replace(new RegExp(",\\s*" + pattern.replace(/\s+/g, "\\s+") + "\\b", "g"), "")
                                         .replace(new RegExp(pattern.replace(/\s+/g, "\\s+") + "\\b\\s*,?", "g"), "");
                                     }, currentMateriais);
-                                    
+
                                     // Adicionar os selecionados
                                     if (selected.length > 0) {
-                                      var toAdd = selected.map(function(color) {
+                                      var toAdd = selected.map(function (color) {
                                         return "LIGHT STRING " + color;
                                       });
                                       newMateriais = newMateriais.trim();
@@ -2737,13 +2781,13 @@ export default function AdminProducts() {
                                         newMateriais = toAdd.join(", ");
                                       }
                                     }
-                                    
+
                                     // Limpar vírgulas duplas e espaços extras
                                     newMateriais = newMateriais
                                       .replace(/,\s*,/g, ",")
                                       .replace(/^\s*,\s*|\s*,\s*$/g, "")
                                       .trim();
-                                    
+
                                     var newSpecs = Object.assign({}, prev.specs, { materiais: newMateriais });
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
@@ -2765,7 +2809,7 @@ export default function AdminProducts() {
                                 label="Aluminium"
                                 placeholder="Select color(s)"
                                 selectionMode="multiple"
-                                selectedKeys={(function() {
+                                selectedKeys={(function () {
                                   try {
                                     return getValidAluminiumColors(formData.specs?.aluminium);
                                   } catch (e) {
@@ -2773,9 +2817,9 @@ export default function AdminProducts() {
                                     return new Set();
                                   }
                                 })()}
-                                onSelectionChange={function(keys) {
+                                onSelectionChange={function (keys) {
                                   var selected = Array.from(keys);
-                                  setFormData(function(prev) {
+                                  setFormData(function (prev) {
                                     var newSpecs = Object.assign({}, prev.specs, { aluminium: selected.length > 0 ? (selected.length === 1 ? selected[0] : selected) : null });
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
@@ -2784,14 +2828,14 @@ export default function AdminProducts() {
                                   label: "text-primary-700 dark:text-primary-400"
                                 }}
                               >
-                                {function() {
+                                {function () {
                                   var colors = ["WHITE", "DARK BLUE", "ICE BLUE", "GREY", "YELLOW", "BLACK", "GOLD", "ORANGE", "PINK", "RED", "LIGHT GREEN", "DARK GREEN", "PASTEL GREEN", "PURPLE"];
                                   var selectedColors = formData.specs.aluminium ? (Array.isArray(formData.specs.aluminium) ? formData.specs.aluminium : [formData.specs.aluminium]) : [];
-                                  return colors.map(function(colorName) {
+                                  return colors.map(function (colorName) {
                                     var isSelected = selectedColors.includes(colorName);
                                     var colorStyle = getPrintColorStyle(colorName, isSelected);
                                     return (
-                                      <SelectItem 
+                                      <SelectItem
                                         key={colorName}
                                         textValue={colorName}
                                         style={colorStyle}
@@ -2805,7 +2849,7 @@ export default function AdminProducts() {
                               <Select
                                 label="SOFT XLED"
                                 placeholder="Select color"
-                                selectedKeys={(function() {
+                                selectedKeys={(function () {
                                   try {
                                     return getValidSoftXLED(formData.specs?.softXLED);
                                   } catch (e) {
@@ -2813,9 +2857,9 @@ export default function AdminProducts() {
                                     return new Set();
                                   }
                                 })()}
-                                onSelectionChange={function(keys) {
+                                onSelectionChange={function (keys) {
                                   var selected = Array.from(keys)[0] || "";
-                                  setFormData(function(prev) {
+                                  setFormData(function (prev) {
                                     var newSpecs = Object.assign({}, prev.specs, { softXLED: selected || null });
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
@@ -2830,9 +2874,9 @@ export default function AdminProducts() {
                                 label="ANIMATED SPARKLE"
                                 placeholder="Select sparkle color"
                                 selectedKeys={formData.specs.sparkle ? new Set([formData.specs.sparkle]) : new Set()}
-                                onSelectionChange={function(keys) {
+                                onSelectionChange={function (keys) {
                                   var selected = Array.from(keys)[0] || "";
-                                  setFormData(function(prev) {
+                                  setFormData(function (prev) {
                                     var newSpecs = Object.assign({}, prev.specs, { sparkle: selected });
                                     return Object.assign({}, prev, { specs: newSpecs });
                                   });
@@ -2848,7 +2892,7 @@ export default function AdminProducts() {
                                 label="ANIMATED SPARKLES"
                                 placeholder="Select sparkles color(s)"
                                 selectionMode="multiple"
-                                selectedKeys={(function() {
+                                selectedKeys={(function () {
                                   try {
                                     return getValidSparkles(formData.specs?.sparkles);
                                   } catch (e) {
@@ -2856,23 +2900,23 @@ export default function AdminProducts() {
                                     return new Set();
                                   }
                                 })()}
-                                onSelectionChange={function(keys) {
+                                onSelectionChange={function (keys) {
                                   var selected = Array.from(keys);
-                                  setFormData(function(prev) {
+                                  setFormData(function (prev) {
                                     var currentMateriais = prev.specs.materiais || "";
                                     var validSparkles = ["WARM WHITE", "WARM WHITE/PURE WHITE", "PURE WHITE", "RGB"];
-                                    
+
                                     // Remover todos os ANIMATED SPARKLES existentes do campo materiais
-                                    var newMateriais = validSparkles.reduce(function(acc, sparkle) {
+                                    var newMateriais = validSparkles.reduce(function (acc, sparkle) {
                                       var pattern = "ANIMATED SPARKLES " + sparkle;
                                       return acc
                                         .replace(new RegExp(",\\s*" + pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "g"), "")
                                         .replace(new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b\\s*,?", "g"), "");
                                     }, currentMateriais);
-                                    
+
                                     // Adicionar os selecionados ao campo materiais
                                     if (selected.length > 0) {
-                                      var toAdd = selected.map(function(sparkle) {
+                                      var toAdd = selected.map(function (sparkle) {
                                         return "ANIMATED SPARKLES " + sparkle;
                                       });
                                       newMateriais = newMateriais.trim();
@@ -2882,13 +2926,13 @@ export default function AdminProducts() {
                                         newMateriais = toAdd.join(", ");
                                       }
                                     }
-                                    
+
                                     // Limpar vírgulas duplas e espaços extras
                                     newMateriais = newMateriais
                                       .replace(/,\s*,/g, ",")
                                       .replace(/^\s*,\s*|\s*,\s*$/g, "")
                                       .trim();
-                                    
+
                                     var newSpecs = Object.assign({}, prev.specs, {
                                       sparkles: selected.length > 0 ? (selected.length === 1 ? selected[0] : selected) : null,
                                       materiais: newMateriais
@@ -2912,8 +2956,8 @@ export default function AdminProducts() {
                           label="Stock Policy"
                           placeholder="Ex: Made to order"
                           value={formData.specs.stockPolicy}
-                          onValueChange={function(val) {
-                            setFormData(function(prev) {
+                          onValueChange={function (val) {
+                            setFormData(function (prev) {
                               var newSpecs = Object.assign({}, prev.specs, { stockPolicy: val });
                               return Object.assign({}, prev, { specs: newSpecs });
                             });
@@ -2929,8 +2973,8 @@ export default function AdminProducts() {
                     <div className="flex gap-4">
                       <Checkbox
                         isSelected={formData.isActive}
-                        onValueChange={function(val) {
-                          setFormData(function(prev) {
+                        onValueChange={function (val) {
+                          setFormData(function (prev) {
                             return Object.assign({}, prev, { isActive: val });
                           });
                         }}
@@ -2941,8 +2985,8 @@ export default function AdminProducts() {
                   </div>
                 </ModalBody>
                 <ModalFooter>
-                  <Button 
-                    variant="flat" 
+                  <Button
+                    variant="flat"
                     onPress={onClose}
                     className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-sm"
                   >

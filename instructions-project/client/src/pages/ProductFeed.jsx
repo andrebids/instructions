@@ -10,6 +10,7 @@ import { compareProductsByTagHierarchy } from '../utils/tagHierarchy';
 import { navigationItems } from '../constants/navigation';
 import { MobileBottomNav } from '../components/layout/mobile-bottom-nav';
 import { useResponsiveProfile } from '../hooks/useResponsiveProfile';
+import { Scroller } from '../components/ui/scroller';
 
 /**
  * Página de feed de produtos estilo TikTok
@@ -30,7 +31,7 @@ export default function ProductFeed() {
   // Filtrar apenas produtos com stock disponível e ordenar pela hierarquia de tags
   const products = useMemo(() => {
     if (!allProducts || !Array.isArray(allProducts)) return [];
-    
+
     return allProducts
       .filter(product => {
         const availableStock = getAvailableStock?.(product) ?? 0;
@@ -97,38 +98,38 @@ export default function ProductFeed() {
           [productId]: startWithAnimation
         }));
       }
-      
+
       // Se está navegando em modo simulação animada e veio de outro produto, guardar o produto original
       if (startWithAnimation && fromProductId && fromProductId !== productId) {
         setOriginalProductId(fromProductId);
       }
-      
+
       // Atualizar o índice ativo
       setActiveIndex(index);
-      
+
       // Fazer scroll instantâneo apenas se o produto não estiver visível
       // Remover temporariamente scroll-smooth para evitar animação
       setTimeout(() => {
         const cardElement = cardRefs.current[productId];
         const container = scrollContainerRef.current;
-        
+
         if (cardElement && container) {
           // Verificar se o produto já está visível na viewport
           const rect = cardElement.getBoundingClientRect();
           const containerRect = container.getBoundingClientRect();
           const isVisible = rect.top >= containerRect.top && rect.bottom <= containerRect.bottom;
-          
+
           // Apenas fazer scroll se o produto não estiver visível
           if (!isVisible) {
             // Remover classe scroll-smooth temporariamente
             container.classList.remove('scroll-smooth');
-            
+
             // Calcular a posição exata do elemento
             const elementTop = cardElement.offsetTop;
-            
+
             // Usar scrollTop diretamente - é instantâneo, sem animação
             container.scrollTop = elementTop;
-            
+
             // Restaurar scroll-smooth após um pequeno delay
             setTimeout(() => {
               container.classList.add('scroll-smooth');
@@ -176,60 +177,59 @@ export default function ProductFeed() {
 
   return (
     <div className="w-full h-screen overflow-hidden bg-black relative">
-        {/* Vídeo de fundo em loop */}
-        {isSnowEnabled && (
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="fixed inset-0 w-full h-full object-cover z-30 opacity-20"
-            style={{ pointerEvents: 'none' }}
-          >
-            <source src="/snooooow.webm" type="video/webm" />
-          </video>
-        )}
+      {/* Vídeo de fundo em loop */}
+      {isSnowEnabled && (
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="fixed inset-0 w-full h-full object-cover z-30 opacity-20"
+          style={{ pointerEvents: 'none' }}
+        >
+          <source src="/snooooow.webm" type="video/webm" />
+        </video>
+      )}
 
-        {/* Botão Hambúrguer - Fixo no canto superior esquerdo */}
-        {isHandheld && (
-          <Button
-            isIconOnly
-            radius="full"
-            className="fixed top-4 left-4 z-50 bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80 shadow-lg"
-            size="lg"
-            onPress={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            <Icon 
-              icon={isMenuOpen ? "lucide:x" : "lucide:menu"} 
-              className="text-2xl"
-            />
-          </Button>
-        )}
+      {/* Botão Hambúrguer - Fixo no canto superior esquerdo */}
+      {isHandheld && (
+        <Button
+          isIconOnly
+          radius="full"
+          className="fixed top-4 left-4 z-50 bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80 shadow-lg"
+          size="lg"
+          onPress={() => setIsMenuOpen(!isMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          <Icon
+            icon={isMenuOpen ? "lucide:x" : "lucide:menu"}
+            className="text-2xl"
+          />
+        </Button>
+      )}
 
-        {/* Container para botões do lado esquerdo - visível apenas em desktop */}
-        {!isHandheld && (
-          <div className="fixed left-4 top-20 z-50 flex flex-col gap-4">
+      {/* Container para botões do lado esquerdo - visível apenas em desktop */}
+      {!isHandheld && (
+        <div className="fixed left-4 top-20 z-50 flex flex-col gap-4">
           {/* Botão para desligar/ligar efeito da neve */}
           <Tooltip content={isSnowEnabled ? "Desligar neve" : "Ligar neve"} placement="right">
             <Button
               isIconOnly
               radius="full"
-              className={`backdrop-blur-md text-white border border-white/20 shadow-lg ${
-                  isSnowEnabled 
-                    ? 'bg-blue-400/60 hover:bg-blue-400/80' 
-                    : 'bg-black/60 hover:bg-black/80'
+              className={`backdrop-blur-md text-white border border-white/20 shadow-lg ${isSnowEnabled
+                ? 'bg-blue-400/60 hover:bg-blue-400/80'
+                : 'bg-black/60 hover:bg-black/80'
                 }`}
-                size="lg"
-                onPress={() => setIsSnowEnabled(!isSnowEnabled)}
-                aria-label={isSnowEnabled ? "Desligar neve" : "Ligar neve"}
-              >
-                <Icon 
-                  icon="lucide:snowflake" 
-                  className="text-2xl"
-                />
-              </Button>
-            </Tooltip>
+              size="lg"
+              onPress={() => setIsSnowEnabled(!isSnowEnabled)}
+              aria-label={isSnowEnabled ? "Desligar neve" : "Ligar neve"}
+            >
+              <Icon
+                icon="lucide:snowflake"
+                className="text-2xl"
+              />
+            </Button>
+          </Tooltip>
 
           {/* Botão de simulação animada - aparece se o produto tiver animationSimulationUrl */}
           {(() => {
@@ -237,21 +237,20 @@ export default function ProductFeed() {
             // Verificar se o produto tem animationSimulationUrl
             const hasAnimationSimulation = Boolean(activeProduct?.animationSimulationUrl);
             const isAnimationMode = productAnimationStates[activeProduct?.id] || false;
-            
+
             if (hasAnimationSimulation) {
               return (
-                <Tooltip 
-                  content={isAnimationMode ? "Ver vídeo normal" : "Ver simulação animada"} 
+                <Tooltip
+                  content={isAnimationMode ? "Ver vídeo normal" : "Ver simulação animada"}
                   placement="right"
                 >
                   <Button
                     isIconOnly
                     radius="full"
-                    className={`backdrop-blur-md text-white border border-white/20 shadow-lg ${
-                      isAnimationMode 
-                        ? 'bg-blue-400/60 hover:bg-blue-400/80' 
-                        : 'bg-black/60 hover:bg-black/80'
-                    }`}
+                    className={`backdrop-blur-md text-white border border-white/20 shadow-lg ${isAnimationMode
+                      ? 'bg-blue-400/60 hover:bg-blue-400/80'
+                      : 'bg-black/60 hover:bg-black/80'
+                      }`}
                     size="lg"
                     onPress={() => {
                       if (activeProduct?.id) {
@@ -267,8 +266,8 @@ export default function ProductFeed() {
                     }}
                     aria-label={isAnimationMode ? "Ver vídeo normal" : "Ver simulação animada"}
                   >
-                    <Icon 
-                      icon="lucide:film" 
+                    <Icon
+                      icon="lucide:film"
                       className="text-2xl"
                     />
                   </Button>
@@ -277,8 +276,8 @@ export default function ProductFeed() {
             }
             return null;
           })()}
-          </div>
-        )}
+        </div>
+      )}
 
       {/* Overlay escuro quando menu aberto */}
       {isHandheld && (
@@ -364,8 +363,9 @@ export default function ProductFeed() {
       <MobileBottomNav onLinkClick={() => setIsMenuOpen(false)} />
 
       {/* Conteúdo do feed */}
-      <div
+      <Scroller
         ref={scrollContainerRef}
+        hideScrollbar
         className={`h-full overflow-y-auto snap-y snap-mandatory scroll-smooth relative z-20 ${isHandheld ? "pb-24" : "pb-0"}`}
       >
         {products.map((product, index) => (
@@ -377,7 +377,7 @@ export default function ProductFeed() {
             data-product-id={product.id}
             className="snap-start"
             initial={{ opacity: 0 }}
-            whileInView={{ 
+            whileInView={{
               opacity: 1,
               transition: {
                 duration: 0.4,
@@ -413,7 +413,7 @@ export default function ProductFeed() {
               onClearOriginalProduct={() => {
                 const currentProductId = product.id;
                 console.log('🧹 [ProductFeed] onClearOriginalProduct chamado para produto:', currentProductId);
-                
+
                 // Limpar o estado de simulação animada para este produto PRIMEIRO
                 if (currentProductId) {
                   setProductAnimationStates(prev => {
@@ -423,14 +423,14 @@ export default function ProductFeed() {
                     return updated;
                   });
                 }
-                
+
                 // Limpar o originalProductId depois
                 setOriginalProductId(null);
               }}
             />
           </motion.div>
         ))}
-      </div>
+      </Scroller>
     </div>
   );
 }

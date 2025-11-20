@@ -1,21 +1,24 @@
 import React from "react";
 
-export function Scroller({ 
-  children, 
-  className = "", 
+export const Scroller = React.forwardRef(({
+  children,
+  className = "",
   hideScrollbar = false,
-  ...props 
-}) {
+  ...props
+}, ref) => {
   const scrollbarClass = hideScrollbar ? "scrollbar-hide" : "";
   const combinedClassName = `overflow-auto ${scrollbarClass} ${className}`.trim();
-  
+
   return (
     <div
+      ref={ref}
       className={combinedClassName}
       {...props}
     >
       {children}
     </div>
   );
-}
+});
+
+Scroller.displayName = "Scroller";
 
