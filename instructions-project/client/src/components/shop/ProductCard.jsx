@@ -7,7 +7,7 @@ import RequestInfoModal from "./RequestInfoModal";
 import CompareSuggestModal from "./CompareSuggestModal";
 import FavoriteFolderModal from "./FavoriteFolderModal";
 
-function ProductCard({ product, onOrder, glass = false, allowQty = false, removable = false, isSquare = false, onModalOpenChange }) {
+function ProductCard({ product, onOrder, glass = false, allowQty = false, removable = false, isSquare = false }) {
   const [open, setOpen] = React.useState(false);
   const [activeColor, setActiveColor] = React.useState(null);
   const { addToProject, projects, favorites, compare, toggleFavorite, toggleCompare, products, getAvailableStock } = useShop();
@@ -48,7 +48,9 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
   return (
     <>
       <div
-        onClick={() => { setOpen(true); onModalOpenChange?.(true); }}
+        onClick={() => {
+          setOpen(true);
+        }}
         className={`group cursor-pointer select-none rounded-2xl overflow-hidden ${isSquare ? 'h-full flex flex-col' : ''}`}
         style={glass ? {
           WebkitMaskImage: "radial-gradient(100% 100% at 50% 50%, black calc(100% - 16px), rgba(0,0,0,0) 100%)",
@@ -117,7 +119,6 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
                   onPress={() => {
                     if (isOutOfStock) {
                       setInfoOpen(true);
-                      onModalOpenChange?.(true);
                     } else {
                       onOrder?.(product, { color: activeColor || "brancoPuro", mode: "day" });
                     }
@@ -137,7 +138,7 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
                   radius="full"
                   className="bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/70 shadow-medium"
                   aria-label="Add to favorites"
-                  onPress={() => { setFavModalOpen(true); onModalOpenChange?.(true); }}
+                  onPress={() => { setFavModalOpen(true); }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Icon
@@ -174,7 +175,7 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
                   radius="full"
                   className="bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/70 shadow-medium"
                   aria-label="Add to compare"
-                  onPress={() => { if (!compare?.includes(product.id)) toggleCompare(product.id); setCompareOpen(true); onModalOpenChange?.(true); }}
+                  onPress={() => { if (!compare?.includes(product.id)) toggleCompare(product.id); setCompareOpen(true); }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Icon icon="lucide:shuffle" className="text-white text-xl" />
@@ -220,19 +221,19 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
       </div>
       <ProductModal
         isOpen={open}
-        onOpenChange={(isOpen) => { setOpen(isOpen); onModalOpenChange?.(isOpen); }}
+        onOpenChange={setOpen}
         product={product}
         onOrder={onOrder}
         enableQuantity={allowQty}
       />
-      <RequestInfoModal isOpen={infoOpen} onOpenChange={(open) => { setInfoOpen(open); onModalOpenChange?.(open); }} product={product} />
+      <RequestInfoModal isOpen={infoOpen} onOpenChange={setInfoOpen} product={product} />
       <CompareSuggestModal
         isOpen={compareOpen}
-        onOpenChange={(open) => { setCompareOpen(open); onModalOpenChange?.(open); }}
+        onOpenChange={setCompareOpen}
         baseProduct={product}
         onAdd={(p) => { toggleCompare(p.id); }}
       />
-      <FavoriteFolderModal isOpen={favModalOpen} onOpenChange={(open) => { setFavModalOpen(open); onModalOpenChange?.(open); }} productId={product.id} />
+      <FavoriteFolderModal isOpen={favModalOpen} onOpenChange={setFavModalOpen} productId={product.id} />
     </>
   );
 }
