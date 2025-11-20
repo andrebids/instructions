@@ -31,14 +31,13 @@ export function useProjectFormVoiceLogic({
     onNext,
     formData
 }) {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const {
         registerWizard,
         unregisterWizard,
         speak,
         addMessage,
         startListening,
-        stopListening,
         listening,
         speaking: isSpeaking,
         languageCode,
@@ -51,6 +50,7 @@ export function useProjectFormVoiceLogic({
     const [parsedData, setParsedData] = useState(null);
     const tempClientDataRef = useRef({ name: '' });
 
+    // Keep track of step in ref for effects if needed, though mostly we use state
     const stepRef = useRef(step);
     useEffect(() => { stepRef.current = step; }, [step]);
 
@@ -268,14 +268,7 @@ export function useProjectFormVoiceLogic({
                 }, 500);
             }
         }
-    }, [isSpeaking, step, startListening]);
-
-    // Process transcript when it changes
-    useEffect(() => {
-        if (transcript && !listening && !isSpeaking) {
-            handleTranscript(transcript);
-        }
-    }, [transcript, listening, isSpeaking, handleTranscript]);
+    }, [step, isSpeaking, startListening]);
 
     return {
         step,
@@ -284,3 +277,4 @@ export function useProjectFormVoiceLogic({
         parsedData
     };
 }
+

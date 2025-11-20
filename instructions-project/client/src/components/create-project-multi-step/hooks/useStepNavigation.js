@@ -165,13 +165,13 @@ export const useStepNavigation = (formData, visibleSteps, onCreateTempProject) =
       setIsNavigating(true);
 
       try {
-        // Se estamos a sair de "project-details" e vamos para "notes", criar projeto primeiro
-        if (currentStepId === 'project-details' && nextStepId === 'notes' && onCreateTempProject) {
+        // Se estamos a sair de "project-details", criar projeto temporário primeiro
+        if (currentStepId === 'project-details' && onCreateTempProject) {
           try {
             await onCreateTempProject();
           } catch (error) {
             logger.error('useStepNavigation', 'Failed to create temp project', error);
-            // Continuar mesmo assim - o step Notes vai mostrar mensagem
+            // Continuar mesmo assim
           }
         }
 

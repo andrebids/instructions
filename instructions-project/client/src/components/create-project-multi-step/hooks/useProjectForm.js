@@ -141,7 +141,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
         clientName: formData.clientName,
         // Se projectType for null (skip), usar 'decor' como padrão (compatibilidade com BD)
         projectType: formData.projectType || 'decor',
-        status: formData.status,
+        status: "created", // Status definido como "created" ao finalizar o projeto
         location: formData.location,
         description: formData.description,
         budget: formData.budget ? parseFloat(formData.budget) : null,
@@ -225,11 +225,12 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
         tempProjectId: finalProject.id
       }));
       
-      // Redirecionar para página de notas do projeto
-      if (finalProject?.id) {
-        navigate(`/projects/${finalProject.id}/notes`);
+      // Fechar modal e redirecionar para o dashboard (não redirecionar para notas)
+      if (onClose) {
+        onClose();  // Fecha modal e recarrega dados
       } else {
-        onClose?.();  // Fallback: fecha modal e recarrega dados
+        // Se não há onClose, redirecionar para o dashboard
+        navigate('/');
       }
     } catch (err) {
       logger.error('useProjectForm.handleSubmit', err);

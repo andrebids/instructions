@@ -102,29 +102,29 @@ export const VoiceAssistantProvider = ({ children }) => {
   // Actions
   const openAssistant = useCallback(() => {
     setIsOpen(true);
-    // If we are in GLOBAL mode, say greeting
-    if (mode === 'GLOBAL') {
-      let greeting;
+      // If we are in GLOBAL mode, say greeting
+      if (mode === 'GLOBAL') {
+        let greeting;
 
-      // Use smart greeting if we have dashboard context
-      if (dashboardContext) {
-        greeting = generateSmartGreeting(dashboardContext, languageCode);
-      } else {
-        // Fallback to random greeting
-        const greetings = t('pages.dashboard.voiceAssistant.greetings', {
-          returnObjects: true,
-          defaultValue: ["Olá, onde posso ser útil?"]
-        });
-        greeting = Array.isArray(greetings)
-          ? greetings[Math.floor(Math.random() * greetings.length)]
-          : greetings;
+        // Use smart greeting if we have dashboard context
+        if (dashboardContext) {
+          greeting = generateSmartGreeting(dashboardContext, languageCode);
+        } else {
+          // Fallback to random greeting
+          const greetings = t('pages.dashboard.voiceAssistant.greetings', {
+            returnObjects: true,
+            defaultValue: ["Olá, onde posso ser útil?"]
+          });
+          greeting = Array.isArray(greetings)
+            ? greetings[Math.floor(Math.random() * greetings.length)]
+            : greetings;
+        }
+
+        addMessage('bot', greeting);
+        speak(greeting);
+
+        // Note: We'll start listening after speech finishes (handled by useEffect below)
       }
-
-      addMessage('bot', greeting);
-      speak(greeting);
-
-      // Note: We'll start listening after speech finishes (handled by useEffect below)
-    }
   }, [mode, t, speak, addMessage, dashboardContext, languageCode]);
 
   const closeAssistant = useCallback(() => {
@@ -229,6 +229,7 @@ export const VoiceAssistantProvider = ({ children }) => {
       mode,
       registerWizard,
       unregisterWizard,
+      cancelSpeech, // Expose cancelSpeech
       currentLang, // Expose the calculated speech lang
       languageCode, // Expose language code for utilities
       // Context and memory

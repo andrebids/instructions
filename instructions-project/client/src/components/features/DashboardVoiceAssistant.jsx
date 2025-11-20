@@ -109,7 +109,7 @@ export const DashboardVoiceAssistant = () => {
             {/* Footer / Status */}
             <div className="p-3 bg-content2/50 border-t border-divider flex items-center justify-center">
               <div className="text-xs text-default-400">
-                {listening ? t('pages.dashboard.voiceAssistant.footer.listening') : t('pages.dashboard.voiceAssistant.status.idle')}
+                {listening ? t('pages.dashboard.voiceAssistant.footer.listening') : t('pages.dashboard.voiceAssistant.footer.clickToSpeak')}
               </div>
             </div>
           </motion.div>

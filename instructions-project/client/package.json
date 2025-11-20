@@ -25,6 +25,7 @@
     "@heroui/use-theme": "^2.1.10",
     "@hocuspocus/provider": "^2.10.0",
     "@iconify/react": "^6.0.2",
+    "@lobehub/tts": "^2.0.1",
     "@lottiefiles/react-lottie-player": "^3.6.0",
     "@mui/material": "^7.3.4",
     "@mui/x-charts": "^8.14.1",

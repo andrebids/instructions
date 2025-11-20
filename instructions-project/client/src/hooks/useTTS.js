@@ -1,23 +1,38 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { EdgeSpeechTTS } from '@lobehub/tts';
 import { detectLanguage } from '../utils/nlp/languageDetector';
 import { determineSpeechLanguage, selectBestVoice, getCachedVoices, clearVoiceCache } from '../utils/voiceAssistant/speechLanguageMapper';
 
+const VOICE_MAPPING = {
+    'pt-PT': ['pt-PT-DuarteNeural', 'pt-PT-RaquelNeural'],
+    'fr-FR': ['fr-FR-HenriNeural', 'fr-FR-DeniseNeural'],
+    'en-US': ['en-US-ChristopherNeural', 'en-US-JennyNeural']
+};
+
 export const useTTS = (defaultLang = 'en-US') => {
     const [speaking, setSpeaking] = useState(false);
-    const [supported, setSupported] = useState(false);
+    const [supported, setSupported] = useState(true); // Assumed true for EdgeTTS
     const [voices, setVoices] = useState([]);
+    const audioRef = useRef(null);
+    const ttsRef = useRef(null);
 
+    // Initialize TTS instance
     useEffect(() => {
+        try {
+            ttsRef.current = new EdgeSpeechTTS({ locale: defaultLang });
+        } catch (error) {
+            console.error("Failed to initialize EdgeSpeechTTS:", error);
+            // Fallback to browser TTS if initialization fails
+        }
+
+        // Also initialize browser TTS voices for fallback
         if (typeof window !== 'undefined' && window.speechSynthesis) {
             setSupported(true);
 
             const loadVoices = () => {
-                const voices = window.speechSynthesis.getVoices();
-                setVoices(voices);
+                const availableVoices = window.speechSynthesis.getVoices();
+                setVoices(availableVoices);
                 clearVoiceCache(); // Clear cache when voices change
-
-                // Uncomment for debugging:
-                // console.log("TTS Available Voices:", voices.map(v => `${v.name} (${v.lang})`));
             };
 
             loadVoices();
@@ -32,11 +47,16 @@ export const useTTS = (defaultLang = 'en-US') => {
      *   - If string: explicit language override (e.g., 'pt-PT')
      *   - If object: { lang, autoDetect, confidenceThreshold }
      */
-    const speak = useCallback((text, langOrOptions = null) => {
+    const speak = useCallback(async (text, langOrOptions = null) => {
         if (!supported || !text) return;
 
         // Cancel any current speech
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
         window.speechSynthesis.cancel();
+        setSpeaking(true);
 
         // Parse options
         let finalLang = defaultLang;
@@ -71,39 +91,86 @@ export const useTTS = (defaultLang = 'en-US') => {
             }
         }
 
+        try {
+            // 1. Try Edge Speech TTS first
+            const voiceOptions = VOICE_MAPPING[finalLang] || VOICE_MAPPING['en-US'];
+            const voice = voiceOptions[0]; // Default to first voice (Male) for now
+
+            const payload = {
+                input: text,
+                options: {
+                    voice: voice,
+                },
+            };
+
+            const response = await ttsRef.current.create(payload);
+            const arrayBuffer = await response.arrayBuffer();
+            const blob = new Blob([arrayBuffer], { type: 'audio/mp3' });
+            const url = URL.createObjectURL(blob);
+
+            const audio = new Audio(url);
+            audioRef.current = audio;
+
+            audio.onended = () => {
+                setSpeaking(false);
+                URL.revokeObjectURL(url); // Cleanup
+                audioRef.current = null;
+            };
+
+            audio.onerror = (e) => {
+                console.error("Audio Playback Error:", e);
+                setSpeaking(false);
+                // Fallback to browser TTS on audio error
+                speakBrowserFallback(text, finalLang);
+            };
+
+            await audio.play();
+
+        } catch (error) {
+            console.error("Edge TTS Error, falling back to browser:", error);
+            speakBrowserFallback(text, finalLang);
+        }
+    }, [defaultLang, supported]);
+
+    const speakBrowserFallback = (text, lang) => {
+        if (!window.speechSynthesis) {
+            setSpeaking(false);
+            return;
+        }
+
         // Create utterance
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = finalLang;
+        utterance.lang = lang;
 
         // Select best voice for the language
         const availableVoices = getCachedVoices();
-        const selectedVoice = selectBestVoice(finalLang, availableVoices);
+        const selectedVoice = selectBestVoice(lang, availableVoices);
 
         if (selectedVoice) {
             utterance.voice = selectedVoice;
-            // console.log(`[TTS] Using voice: ${selectedVoice.name} (${selectedVoice.lang})`);
         } else {
-            console.warn(`[TTS] No suitable voice found for ${finalLang}`);
+            console.warn(`[TTS] No suitable voice found for ${lang}`);
         }
 
         // Event handlers
         utterance.onstart = () => setSpeaking(true);
         utterance.onend = () => setSpeaking(false);
-        utterance.onerror = (e) => {
-            console.error("TTS Error:", e);
-            setSpeaking(false);
-        };
+        utterance.onerror = () => setSpeaking(false);
 
         // Speak
         window.speechSynthesis.speak(utterance);
-    }, [supported, defaultLang]);
+    };
 
     const cancel = useCallback(() => {
-        if (supported) {
-            window.speechSynthesis.cancel();
-            setSpeaking(false);
+        // Stop Audio
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
         }
-    }, [supported]);
+        // Stop Browser TTS
+        window.speechSynthesis.cancel();
+        setSpeaking(false);
+    }, []);
 
     return {
         speak,
