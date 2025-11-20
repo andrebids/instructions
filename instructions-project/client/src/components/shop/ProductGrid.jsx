@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import useEmblaCarousel from 'embla-carousel-react';
-import AutoScroll from 'embla-carousel-auto-scroll';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Autoplay, FreeMode, Mousewheel, Keyboard } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/free-mode';
 import ProductCard from "./ProductCard";
 
 export default function ProductGrid({ products, onOrder, cols = 4, glass = false, allowQty = false, cardProps = {}, filtersVisible = true }) {
@@ -24,118 +26,22 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4";
   }, [cols, filtersVisible]);
 
-  // Embla Carousel setup for cols === 1
+  // Swiper setup for cols === 1
   const carouselRef = useRef(null);
-  const [isPaused, setIsPaused] = useState(false);
-  const [emblaRef, emblaApi] = useEmblaCarousel(
-    {
-      loop: true,
-      align: 'center', // Center alignment to ensure the active card is centered
-      containScroll: false, // Allow scrolling past the edges for loop
-      slidesToScroll: 1, // Scroll one by one for better control
-      dragFree: true,
-      watchDrag: true
-    },
-    cols === 1 && products.length > 1 && !isPaused
-      ? [AutoScroll({
-        speed: 1, // Slower speed for smoother auto-scroll
-        stopOnInteraction: false,
-        stopOnMouseEnter: true,
-        stopOnFocusIn: false,
-        startDelay: 0
-      })]
-      : []
-  );
-
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const swiperRef = useRef(null);
   const [cardSize, setCardSize] = useState(400);
   const [cardHeight, setCardHeight] = useState(600);
 
-  // Update selected index
-  const onSelect = useCallback(() => {
-    if (!emblaApi) return;
-    setSelectedIndex(emblaApi.selectedScrollSnap());
-  }, [emblaApi]);
 
-  const handleModalChange = useCallback((isOpen) => {
-    console.log('🎠 [ProductGrid] Modal state changed:', isOpen);
-    setIsPaused(isOpen);
-  }, []);
-
-  // IntersectionObserver for performance and precise "fully visible" detection
-  useEffect(() => {
-    if (!emblaApi || cols !== 1) return;
-
-    const options = {
-      root: emblaApi.rootNode(),
-      threshold: 0.95, // 95% visible to be considered "fully visible"
-    };
-
-    const callback = (entries) => {
-      entries.forEach((entry) => {
-        const target = entry.target;
-        if (entry.isIntersecting) {
-          target.classList.add('is-fully-visible');
-        } else {
-          target.classList.remove('is-fully-visible');
-        }
-      });
-    };
-
-    const observer = new IntersectionObserver(callback, options);
-    const slides = emblaApi.slideNodes();
-
-    slides.forEach((slide) => observer.observe(slide));
-
-    emblaApi.on('select', onSelect);
-    emblaApi.on('reInit', onSelect);
-
-    return () => {
-      observer.disconnect();
-      emblaApi.off('select', onSelect);
-      emblaApi.off('reInit', onSelect);
-    };
-  }, [emblaApi, cols, onSelect]);
-
-  // Handle mouse wheel scroll
-  const handleWheel = useCallback((e) => {
-    if (cols !== 1 || !emblaApi || products.length === 0) return;
-    e.preventDefault();
-    if (e.deltaY < 0) {
-      emblaApi.scrollPrev();
-    } else {
-      emblaApi.scrollNext();
-    }
-  }, [cols, emblaApi, products.length]);
-
-  // Handle keyboard navigation
-  useEffect(() => {
-    if (cols !== 1) return;
-
-    const handleKeyDown = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      if (!emblaApi) return;
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        emblaApi.scrollPrev();
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        emblaApi.scrollNext();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cols, emblaApi]);
 
   // Calculate card size based on container width and height to show 2 cards at a time
-  // and fit within viewport without vertical scroll
   useEffect(() => {
     if (cols !== 1) return;
 
     const updateCardSize = () => {
-      if (emblaApi && carouselRef.current) {
-        const containerNode = emblaApi.containerNode();
+      if (swiperRef.current && carouselRef.current) {
+        const swiper = swiperRef.current;
+        const containerNode = swiper.el;
         if (containerNode) {
           const containerWidth = containerNode.offsetWidth || containerNode.clientWidth;
           if (containerWidth > 0) {
@@ -170,8 +76,8 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     }, 100);
 
     let resizeObserver = null;
-    if (emblaApi) {
-      const container = emblaApi.containerNode();
+    if (swiperRef.current) {
+      const container = swiperRef.current.el;
       if (container) {
         resizeObserver = new ResizeObserver(() => {
           updateCardSize();
@@ -191,7 +97,7 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
       window.removeEventListener('resize', updateCardSize);
       window.removeEventListener('scroll', updateCardSize);
     };
-  }, [cols, emblaApi]);
+  }, [cols, swiperRef.current]);
 
   // Render carousel when cols === 1
   if (cols === 1) {
@@ -199,50 +105,71 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
       <div
         ref={carouselRef}
         className="relative w-full overflow-hidden"
-        onWheel={handleWheel}
       >
-        <style>{`
-          .carousel-slide {
-            opacity: 0.5;
-            transform: scale(0.92);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            will-change: opacity, transform;
-          }
-          .carousel-slide.is-fully-visible {
-            opacity: 1;
-            transform: scale(1);
-          }
-        `}</style>
-        <div ref={emblaRef} className="overflow-hidden" style={{ transform: 'translateZ(0)', contain: 'layout style paint' }}>
-          <div className="flex" style={{ willChange: 'transform', backfaceVisibility: 'hidden', transform: 'translateZ(0)', contain: 'layout style' }}>
-            {products.map((p, index) => {
-              return (
-                <div
-                  key={p.id}
-                  className="carousel-slide flex-[0_0_auto] min-w-0"
-                  style={{
-                    width: `${cardSize}px`,
-                    height: `${cardHeight}px`,
-                    marginRight: '24px',
-                    transform: 'translateZ(0)',
-                  }}
-                >
-                  <div className="w-full h-full">
-                    <ProductCard
-                      product={p}
-                      onOrder={onOrder}
-                      glass={glass}
-                      allowQty={allowQty}
-                      isSquare={true}
-                      onModalOpenChange={handleModalChange}
-                      {...cardProps}
-                    />
-                  </div>
+        <Swiper
+          modules={[Autoplay, Mousewheel, Keyboard]}
+          onSwiper={(swiper) => {
+            swiperRef.current = swiper;
+          }}
+          loop={true}
+          loopAdditionalSlides={3}
+          centeredSlides={true}
+          slidesPerView="auto"
+          spaceBetween={24}
+          autoplay={{
+            delay: 0,
+            disableOnInteraction: false,
+            pauseOnMouseEnter: false,
+          }}
+          speed={1600}
+          allowTouchMove={true}
+          mousewheel={{
+            forceToAxis: true,
+            sensitivity: 1,
+          }}
+          keyboard={{
+            enabled: true,
+            onlyInViewport: true,
+          }}
+          style={{
+            transform: 'translateZ(0)',
+            contain: 'layout style paint'
+          }}
+        >
+          {products.map((p) => {
+            return (
+              <SwiperSlide
+                key={p.id}
+                onMouseEnter={() => {
+                  if (swiperRef.current?.autoplay) {
+                    swiperRef.current.autoplay.stop();
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (swiperRef.current?.autoplay) {
+                    swiperRef.current.autoplay.start();
+                  }
+                }}
+                style={{
+                  width: `${cardSize}px`,
+                  height: `${cardHeight}px`,
+                  transform: 'translateZ(0)',
+                }}
+              >
+                <div className="w-full h-full">
+                  <ProductCard
+                    product={p}
+                    onOrder={onOrder}
+                    glass={glass}
+                    allowQty={allowQty}
+                    isSquare={true}
+                    {...cardProps}
+                  />
                 </div>
-              );
-            })}
-          </div>
-        </div>
+              </SwiperSlide>
+            );
+          })}
+        </Swiper>
       </div>
     );
   }
@@ -256,5 +183,3 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     </div>
   );
 }
-
-
