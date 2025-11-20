@@ -1,4 +1,4 @@
-import {heroui} from "@heroui/react";
+import { heroui } from "@heroui/react";
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -33,7 +33,17 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Urbanist", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Arial", "Noto Sans", "sans-serif"],
+        sans: ["Outfit", "Urbanist", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Arial", "Noto Sans", "sans-serif"],
+      },
+      colors: {
+        'brand-violet': '#A19AFE',
+        'brand-peach': '#F9D7AO',
+        'brand-black': '#242424',
+        'brand-gray': '#4B5563',
+      },
+      backgroundImage: {
+        'aurora-gradient': 'linear-gradient(135deg, #A19AFE 0%, #F9D7AO 100%)',
+        'glass-gradient': 'linear-gradient(145deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.1) 100%)',
       },
     },
   },

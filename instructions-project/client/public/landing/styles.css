@@ -1,0 +1,151 @@
+/**
+ * Hero Section Styles
+ * Liquid Glass & Depth Aesthetic
+ */
+
+/* ============================================
+   GRADIENT TEXT EFFECTS
+   ============================================ */
+.hero-text-line-1,
+.hero-text-line-2 {
+    background: linear-gradient(135deg, #A19AFE 0%, #F9D7A0 50%, #A19AFE 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    background-size: 200% auto;
+    animation: gradientShift 8s ease infinite;
+}
+
+@keyframes gradientShift {
+
+    0%,
+    100% {
+        background-position: 0% center;
+    }
+
+    50% {
+        background-position: 100% center;
+    }
+}
+
+/* Hero headline positioning */
+.hero-headline {
+    position: relative;
+    z-index: 30;
+}
+
+/* ============================================
+   3D PERSPECTIVE & TRANSFORMS
+   ============================================ */
+.perspective-container {
+    perspective: 1200px;
+}
+
+.mockup-3d {
+    transform: rotateX(12deg) rotateY(-2deg) rotateZ(0deg) scale(0.9);
+    transform-style: preserve-3d;
+    transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: transform;
+}
+
+/* Responsive 3D Adjustments */
+@media (max-width: 1024px) {
+    .mockup-3d {
+        transform: rotateX(10deg) rotateY(0deg) scale(0.85);
+    }
+
+    .perspective-container {
+        perspective: 1500px;
+    }
+}
+
+@media (max-width: 768px) {
+    .mockup-3d {
+        transform: rotateX(5deg) rotateY(0deg) scale(0.8);
+    }
+
+    .perspective-container {
+        perspective: none;
+        /* Flatten on mobile for performance */
+    }
+}
+
+/* ============================================
+   GLASS EFFECTS
+   ============================================ */
+.aurora-text {
+    background: linear-gradient(to right, #A19AFE, #F9D7A0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(161, 154, 254, 0.15);
+}
+
+.glass-nav {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================
+   FLOATING ANIMATIONS
+   ============================================ */
+.blob {
+    position: absolute;
+    filter: blur(80px);
+    z-index: -1;
+    opacity: 0.6;
+    animation: float 10s infinite ease-in-out;
+}
+
+@keyframes float {
+    0% {
+        transform: translate(0px, 0px) scale(1);
+    }
+
+    33% {
+        transform: translate(30px, -50px) scale(1.1);
+    }
+
+    66% {
+        transform: translate(-20px, 20px) scale(0.9);
+    }
+
+    100% {
+        transform: translate(0px, 0px) scale(1);
+    }
+}
+
+/* ============================================
+   HOLOGRAPHIC BORDERS
+   ============================================ */
+.holographic-border {
+    position: relative;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 1.5rem;
+    z-index: 1;
+}
+
+.holographic-border::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 1.6rem;
+    background: linear-gradient(45deg, #A19AFE, #F9D7A0);
+    z-index: -1;
+    filter: blur(2px);
+}
+
+/* ============================================
+   CANVAS BACKGROUND
+   ============================================ */
+#aurora-canvas {
+    z-index: 0;
+}
