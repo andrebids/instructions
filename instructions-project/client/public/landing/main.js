@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 rotateX(${12 + rotateX}deg) 
                 rotateY(${-2 + rotateY}deg) 
                 rotateZ(0deg) 
-                scale(1.1)
+                scale(0.9)
                 translateZ(40px)
             `;
 

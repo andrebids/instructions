@@ -42,7 +42,7 @@
 }
 
 .mockup-3d {
-    transform: rotateX(12deg) rotateY(-2deg) rotateZ(0deg) scale(1.1);
+    transform: rotateX(12deg) rotateY(-2deg) rotateZ(0deg) scale(0.9);
     transform-style: preserve-3d;
     transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1);
     will-change: transform;
@@ -51,7 +51,7 @@
 /* Responsive 3D Adjustments */
 @media (max-width: 1024px) {
     .mockup-3d {
-        transform: rotateX(10deg) rotateY(0deg) scale(0.95);
+        transform: rotateX(10deg) rotateY(0deg) scale(0.85);
     }
 
     .perspective-container {
@@ -61,7 +61,7 @@
 
 @media (max-width: 768px) {
     .mockup-3d {
-        transform: rotateX(5deg) rotateY(0deg) scale(0.9);
+        transform: rotateX(5deg) rotateY(0deg) scale(0.8);
     }
 
     .perspective-container {
