@@ -36,7 +36,16 @@
           "Hi there! What do you need?",
           "Greetings! How can I be of service?"
         ],
-        "openingProject": "Opening new project..."
+        "openingProject": "Opening new project...",
+        "title": "AI Assistant",
+        "status": {
+          "listening": "Listening...",
+          "idle": "Idle"
+        },
+        "footer": {
+          "listening": "Listening...",
+          "clickToSpeak": "Click to speak"
+        }
       },
       "stats": {
         "totalProjects": "Total Projects",
