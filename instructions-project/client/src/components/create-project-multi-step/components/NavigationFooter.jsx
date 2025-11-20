@@ -13,6 +13,7 @@ export function NavigationFooter({
   loading,
   isNavigating,
   onResetLogo,
+  isCurrentLogoValid,
 }) {
   const isLogoInstructionsStep = currentStepId === "logo-instructions";
 
@@ -36,7 +37,7 @@ export function NavigationFooter({
                 color="secondary"
                 variant="flat"
                 onPress={onResetLogo}
-                isDisabled={loading || isNavigating}
+                isDisabled={loading || isNavigating || !isCurrentLogoValid}
                 startContent={<Icon icon="lucide:plus" />}
               >
                 New Logo

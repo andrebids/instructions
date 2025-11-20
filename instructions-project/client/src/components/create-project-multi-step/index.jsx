@@ -91,13 +91,14 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
     const hasLogoNumber = logo.logoNumber?.trim() !== "";
     const hasLogoName = logo.logoName?.trim() !== "";
     const hasRequestedBy = logo.requestedBy?.trim() !== "";
+    const hasFixationType = logo.fixationType?.trim() !== "";
     const dimensions = logo.dimensions || {};
     const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
     const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
     const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
     const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
     const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
-    return hasLogoNumber && hasLogoName && hasRequestedBy && hasAtLeastOneDimension;
+    return hasLogoNumber && hasLogoName && hasRequestedBy && hasFixationType && hasAtLeastOneDimension;
   };
 
   const handleDeleteLogo = (index, isCurrent) => {
@@ -323,20 +324,10 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
                 const currentLogo = currentLogoDetails.currentLogo || currentLogoDetails; // Support both old and new structure
                 const savedLogos = currentLogoDetails.logos || [];
 
-                // Check if current logo is valid (has required fields)
-                const hasLogoNumber = currentLogo.logoNumber?.trim() !== "";
-                const hasLogoName = currentLogo.logoName?.trim() !== "";
-                const hasRequestedBy = currentLogo.requestedBy?.trim() !== "";
-                const dimensions = currentLogo.dimensions || {};
-                const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
-                const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
-                const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
-                const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
-                const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
+                // Check if current logo is valid using the helper function
+                const isCurrentLogoValid = isLogoValid(currentLogo);
 
-                const isCurrentLogoValid = hasLogoNumber && hasLogoName && hasRequestedBy && hasAtLeastOneDimension;
-
-                // If current logo is valid, save it to the array
+                // Only save if logo is valid - button should be disabled if not valid
                 if (isCurrentLogoValid) {
                   const logoToSave = {
                     ...currentLogo,
@@ -346,6 +337,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
 
                   // Update logoDetails with saved logos and new empty currentLogo
                   formState.handleInputChange("logoDetails", {
+                    ...currentLogoDetails,
                     logos: [...savedLogos, logoToSave],
                     currentLogo: {
                       logoNumber: "",
@@ -370,35 +362,14 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
                       }
                     }
                   });
-                } else {
-                  // If current logo is not valid, just reset it
-                  formState.handleInputChange("logoDetails", {
-                    ...currentLogoDetails,
-                    currentLogo: {
-                      logoNumber: "",
-                      logoName: "",
-                      requestedBy: "",
-                      dimensions: {},
-                      usageOutdoor: false,
-                      usageIndoor: true,
-                      fixationType: "",
-                      lacqueredStructure: false,
-                      lacquerColor: "",
-                      mastDiameter: "",
-                      maxWeightConstraint: false,
-                      maxWeight: "",
-                      ballast: false,
-                      controlReport: false,
-                      criteria: "",
-                      description: "",
-                      composition: {
-                        componentes: [],
-                        bolas: []
-                      }
-                    }
-                  });
                 }
+                // If logo is not valid, do nothing - button should be disabled
               }}
+              isCurrentLogoValid={(() => {
+                const currentLogoDetails = formState.formData.logoDetails || {};
+                const currentLogo = currentLogoDetails.currentLogo || currentLogoDetails;
+                return isLogoValid(currentLogo);
+              })()}
             />
           </div>
         </div>

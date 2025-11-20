@@ -22,6 +22,7 @@ import { useFormikStep } from "../hooks/useFormikStep";
 import { useLogoPersistence } from "../hooks/useLogoPersistence";
 import { updateNestedField, getNestedValue } from "../utils/formikHelpers";
 import { materialsData } from "../data/materialsData.js";
+import { useUser } from "../../../context/UserContext";
 import {
   getComponenteById,
   getCorById,
@@ -254,6 +255,8 @@ const validationSchema = Yup.object({
     .min(3, "Logo name must be at least 3 characters"),
   requestedBy: Yup.string()
     .required("Requested by is required"),
+  fixationType: Yup.string()
+    .required("Fixation type is required"),
   dimensions: Yup.object().shape({
     height: Yup.object().shape({
       value: Yup.number().nullable().positive("Height must be positive"),
@@ -293,11 +296,96 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
   const savedLogos = logoDetails.logos || [];
   const composition = currentLogo.composition || { componentes: [], bolas: [] };
   
+  // Obter nome do usuário atual
+  const { userName } = useUser();
+  
+  // Refs para preservar valores preenchidos automaticamente
+  const preservedRequestedByRef = React.useRef(null);
+  const preservedLogoNumberRef = React.useRef(null);
+  
   // Estado para controlar a busca nos componentes
   const [componenteSearchValues, setComponenteSearchValues] = React.useState({});
   
   // Estado para controlar quais componentes estão em modo de edição
   const [componentesEditando, setComponentesEditando] = React.useState({});
+  
+  // Ref para rastrear se o campo "Requested By" já foi preenchido automaticamente
+  const requestedByAutoFilled = React.useRef(false);
+  
+  // Ref para rastrear se o Logo Number já foi gerado inicialmente
+  const logoNumberInitialized = React.useRef(false);
+  
+  // Ref para rastrear o último nome do projeto usado para gerar o Logo Number
+  const lastProjectNameRef = React.useRef("");
+  
+  // Ref para rastrear o ID do logo atual para detectar quando um novo logo é criado
+  const currentLogoIdRef = React.useRef(currentLogo.id || null);
+  
+  // Resetar refs quando um novo logo é criado (quando o ID muda ou quando o logo está vazio)
+  React.useEffect(() => {
+    const currentLogoId = currentLogo.id || null;
+    const isLogoEmpty = !currentLogo.logoNumber && !currentLogo.logoName;
+    
+    // Se o ID mudou ou o logo está vazio (novo logo), resetar refs
+    if (currentLogoId !== currentLogoIdRef.current || (isLogoEmpty && currentLogoIdRef.current !== null)) {
+      requestedByAutoFilled.current = false;
+      logoNumberInitialized.current = false;
+      preservedRequestedByRef.current = null;
+      preservedLogoNumberRef.current = null;
+      currentLogoIdRef.current = currentLogoId;
+    }
+  }, [currentLogo.id, currentLogo.logoNumber, currentLogo.logoName, savedLogos.length]);
+  
+  // Função para gerar o Logo Number automaticamente baseado no nome do projeto
+  const generateLogoNumber = React.useCallback((projectName, currentLogoNumber = "") => {
+    if (!projectName || projectName.trim() === "") {
+      return "";
+    }
+    
+    // Usar o nome do projeto como base
+    const baseName = projectName.trim();
+    let maxNumber = 0;
+    const usedNumbers = new Set();
+    
+    // Verificar nos logos salvos - contar todos os logos que começam com o nome do projeto
+    savedLogos.forEach((logo) => {
+      if (logo.logoNumber && logo.logoNumber.startsWith(`${baseName}-L`)) {
+        // Extrair o número do formato "NomeProjeto-L1", "NomeProjeto-L2", etc.
+        const match = logo.logoNumber.match(/-L(\d+)$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          usedNumbers.add(num);
+          if (num > maxNumber) {
+            maxNumber = num;
+          }
+        }
+      }
+    });
+    
+    // Se o logo atual já tem um número válido, não contar ele mesmo (estamos editando)
+    // Mas se não tem número ou tem um número diferente, precisamos gerar um novo
+    if (currentLogoNumber && currentLogoNumber.startsWith(`${baseName}-L`)) {
+      const match = currentLogoNumber.match(/-L(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        // Se este número já está nos logos salvos, significa que estamos editando este logo
+        // Nesse caso, não devemos gerar um novo número, devemos manter o atual
+        if (usedNumbers.has(num)) {
+          return currentLogoNumber; // Retornar o número atual se já existe
+        }
+        // Se não está nos salvos mas tem um número, considerar para o máximo
+        if (num > maxNumber) {
+          maxNumber = num;
+        }
+      }
+    }
+    
+    // Gerar o próximo número sequencial
+    // Se maxNumber é 0, significa que não há logos, então começar com L1
+    // Se maxNumber é 2, significa que há L1 e L2, então o próximo é L3
+    const nextNumber = maxNumber + 1;
+    return `${baseName}-L${nextNumber}`;
+  }, [savedLogos]);
   
   // Função helper para filtrar componentes (não pode ser hook pois é usada dentro de map)
   const filterComponentes = React.useCallback((searchTerm) => {
@@ -349,9 +437,13 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
     validationSchema,
     onChange: (field, value) => {
       // Sincronizar com formData global através de currentLogo
+      // Sempre incluir valores preservados para garantir que não sejam perdidos
       const updatedCurrentLogo = {
         ...currentLogo,
         [field]: value,
+        // Garantir que valores preservados sejam sempre incluídos se o campo atual estiver vazio
+        ...(preservedRequestedByRef.current && (!currentLogo.requestedBy || currentLogo.requestedBy.trim() === "") ? { requestedBy: preservedRequestedByRef.current } : {}),
+        ...(preservedLogoNumberRef.current && (!currentLogo.logoNumber || currentLogo.logoNumber.trim() === "") ? { logoNumber: preservedLogoNumberRef.current } : {}),
       };
       // Update logoDetails with new structure (preserving saved logos)
       const updatedLogoDetails = {
@@ -363,6 +455,147 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
     },
     formData: currentLogo,
   });
+
+  // Preencher automaticamente o campo "Requested By" com o nome do usuário (apenas uma vez)
+  React.useEffect(() => {
+    // Preencher apenas se ainda não foi preenchido e userName estiver disponível
+    if (userName && !requestedByAutoFilled.current) {
+      const currentRequestedBy = currentLogo.requestedBy?.trim() || formik.values.requestedBy?.trim() || "";
+      // Se o campo está vazio, preencher com o nome do usuário
+      if (!currentRequestedBy) {
+        preservedRequestedByRef.current = userName;
+        requestedByAutoFilled.current = true;
+        // Atualizar tanto no formik quanto no currentLogo diretamente
+        formik.updateField("requestedBy", userName);
+        // Garantir que seja salvo no currentLogo
+        const updatedCurrentLogo = {
+          ...currentLogo,
+          requestedBy: userName,
+        };
+        const updatedLogoDetails = {
+          ...logoDetails,
+          currentLogo: updatedCurrentLogo,
+          logos: savedLogos,
+        };
+        onInputChange("logoDetails", updatedLogoDetails);
+      } else {
+        // Se já tem valor, preservar e marcar como preenchido
+        preservedRequestedByRef.current = currentRequestedBy;
+        requestedByAutoFilled.current = true;
+      }
+    } else if (currentLogo.requestedBy && !preservedRequestedByRef.current) {
+      // Preservar valor do currentLogo se ainda não foi preservado
+      preservedRequestedByRef.current = currentLogo.requestedBy;
+      requestedByAutoFilled.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userName, currentLogo.requestedBy]); // Executar quando userName ou currentLogo.requestedBy mudar
+
+  // Ref para rastrear o número anterior de logos salvos
+  const prevSavedLogosLengthRef = React.useRef(savedLogos.length);
+  
+  // Gerar automaticamente o Logo Number baseado no nome do projeto
+  React.useEffect(() => {
+    const projectName = formData.name?.trim() || "";
+    const currentLogoNumber = currentLogo.logoNumber || formik.values.logoNumber || "";
+    
+    // Se o nome do projeto mudou, resetar a flag de inicialização
+    if (projectName && projectName !== lastProjectNameRef.current) {
+      logoNumberInitialized.current = false;
+      lastProjectNameRef.current = projectName;
+      preservedLogoNumberRef.current = null;
+    }
+    
+    // Se o número de logos salvos mudou e o logo atual está vazio, resetar para recalcular
+    if (savedLogos.length !== prevSavedLogosLengthRef.current) {
+      prevSavedLogosLengthRef.current = savedLogos.length;
+      // Se o logo atual está vazio (novo logo criado), resetar para gerar novo número
+      if (!currentLogoNumber || currentLogoNumber.trim() === "") {
+        logoNumberInitialized.current = false;
+        preservedLogoNumberRef.current = null;
+      }
+    }
+    
+    if (projectName) {
+      // Verificar se o logo atual já existe nos logos salvos (estamos editando)
+      const isEditingExistingLogo = savedLogos.some(logo => 
+        logo.logoNumber === currentLogoNumber && currentLogoNumber
+      );
+      
+      // Se não estamos editando e o logo number não foi inicializado, gerar novo
+      if (!isEditingExistingLogo && !logoNumberInitialized.current) {
+        const generatedLogoNumber = generateLogoNumber(projectName, currentLogoNumber);
+        if (generatedLogoNumber) {
+          const isEmpty = !currentLogoNumber || currentLogoNumber.trim() === "";
+          const doesNotMatchPattern = currentLogoNumber && !currentLogoNumber.startsWith(`${projectName}-L`);
+          
+          if (isEmpty || doesNotMatchPattern) {
+            preservedLogoNumberRef.current = generatedLogoNumber;
+            logoNumberInitialized.current = true;
+            // Atualizar tanto no formik quanto no currentLogo diretamente
+            formik.updateField("logoNumber", generatedLogoNumber);
+            // Garantir que seja salvo no currentLogo
+            const updatedCurrentLogo = {
+              ...currentLogo,
+              logoNumber: generatedLogoNumber,
+            };
+            const updatedLogoDetails = {
+              ...logoDetails,
+              currentLogo: updatedCurrentLogo,
+              logos: savedLogos,
+            };
+            onInputChange("logoDetails", updatedLogoDetails);
+          } else {
+            // Se já tem um número válido, preservar e marcar como inicializado
+            preservedLogoNumberRef.current = currentLogoNumber;
+            logoNumberInitialized.current = true;
+          }
+        }
+      } else if (isEditingExistingLogo) {
+        // Se estamos editando, manter o número atual
+        preservedLogoNumberRef.current = currentLogoNumber;
+        logoNumberInitialized.current = true;
+      }
+    } else if (currentLogo.logoNumber && !preservedLogoNumberRef.current) {
+      // Preservar valor do currentLogo se ainda não foi preservado
+      preservedLogoNumberRef.current = currentLogo.logoNumber;
+      logoNumberInitialized.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.name, currentLogo.logoNumber, savedLogos.length, savedLogos]); // Executar quando o nome do projeto, currentLogo.logoNumber ou logos salvos mudarem
+
+  // Garantir que valores preservados sejam salvos no currentLogo quando outros campos mudarem
+  React.useEffect(() => {
+    const needsUpdate = {};
+    let shouldUpdate = false;
+
+    // Verificar se requestedBy precisa ser atualizado
+    if (preservedRequestedByRef.current && (!currentLogo.requestedBy || currentLogo.requestedBy.trim() === "")) {
+      needsUpdate.requestedBy = preservedRequestedByRef.current;
+      shouldUpdate = true;
+    }
+
+    // Verificar se logoNumber precisa ser atualizado
+    if (preservedLogoNumberRef.current && (!currentLogo.logoNumber || currentLogo.logoNumber.trim() === "")) {
+      needsUpdate.logoNumber = preservedLogoNumberRef.current;
+      shouldUpdate = true;
+    }
+
+    // Atualizar currentLogo se necessário
+    if (shouldUpdate) {
+      const updatedCurrentLogo = {
+        ...currentLogo,
+        ...needsUpdate,
+      };
+      const updatedLogoDetails = {
+        ...logoDetails,
+        currentLogo: updatedCurrentLogo,
+        logos: savedLogos,
+      };
+      onInputChange("logoDetails", updatedLogoDetails);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLogo]); // Executar quando currentLogo mudar
 
   // Helper para atualizar logoDetails completo (mantém compatibilidade)
   const handleUpdate = (key, value) => {
@@ -731,9 +964,10 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
             <CardBody className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
                 label="Logo Number"
-                placeholder="142STE..."
+                placeholder="Auto-generated"
                 variant="bordered"
                 isRequired
+                isReadOnly
                 value={formik.values.logoNumber}
                 onValueChange={(v) => formik.updateField("logoNumber", v)}
                 onBlur={formik.handleBlur}
@@ -742,7 +976,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
               />
               <Input
                 label="Logo Name"
-                placeholder="Project Name"
+                placeholder="Name of the logo"
                 variant="bordered"
                 isRequired
                 value={formik.values.logoName}
@@ -756,6 +990,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                 placeholder="Name"
                 variant="bordered"
                 isRequired
+                isReadOnly
                 value={formik.values.requestedBy}
                 onValueChange={(v) => formik.updateField("requestedBy", v)}
                 onBlur={formik.handleBlur}
@@ -858,11 +1093,16 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                   <Select
                     label="Fixation Type"
                     placeholder="Select fixation"
+                    isRequired
                     selectedKeys={formik.values.fixationType ? [formik.values.fixationType] : []}
                     onSelectionChange={(keys) => {
                       const selected = Array.from(keys)[0] || "";
+                      formik.setFieldTouched("fixationType", true);
                       formik.updateField("fixationType", selected);
                     }}
+                    onBlur={() => formik.setFieldTouched("fixationType", true)}
+                    isInvalid={formik.touched.fixationType && !!formik.errors.fixationType}
+                    errorMessage={formik.touched.fixationType && formik.errors.fixationType}
                   >
                     <SelectItem key="ground">Ground</SelectItem>
                     <SelectItem key="wall">Wall</SelectItem>
@@ -872,18 +1112,6 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                     <SelectItem key="pole_central">Pole (Central)</SelectItem>
                     <SelectItem key="special">Special</SelectItem>
                   </Select>
-
-                  {(formik.values.fixationType === "pole_central" || formik.values.fixationType === "pole_side") && (
-                    <Input
-                      label="Mast Diameter"
-                      size="sm"
-                      endContent="mm"
-                      className="mt-3"
-                      variant="bordered"
-                      value={formik.values.mastDiameter}
-                      onValueChange={(v) => formik.updateField("mastDiameter", v)}
-                    />
-                  )}
                 </div>
 
                 <Divider />
