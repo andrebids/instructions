@@ -1,14 +1,19 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useVoiceAssistant } from '../../../context/VoiceAssistantContext';
+import { parseProjectInput, getMissingFields, generateParsingSummary } from '../../../utils/nlp/parseProjectInput';
+import { extractDate } from '../../../utils/nlp/dateParser';
+import { findBestClientMatch } from '../../../utils/nlp/fuzzyClientMatch';
+import { parseDate } from "@internationalized/date";
 
 const STEPS = {
     IDLE: 'IDLE',
+    PARSE_INITIAL: 'PARSE_INITIAL', // Try to parse everything from first input
     ASK_NAME: 'ASK_NAME',
     LISTEN_NAME: 'LISTEN_NAME',
     ASK_CLIENT: 'ASK_CLIENT',
     LISTEN_CLIENT: 'LISTEN_CLIENT',
-    CONFIRM_CLIENT_CREATE: 'CONFIRM_CLIENT_CREATE',
+    CONFIRM_CLIENT: 'CONFIRM_CLIENT',
     ASK_DATE: 'ASK_DATE',
     LISTEN_DATE: 'LISTEN_DATE',
     ASK_BUDGET: 'ASK_BUDGET',
@@ -23,7 +28,8 @@ export function useProjectFormVoiceLogic({
     clients,
     onAddNewClient,
     onClientSelect,
-    onNext
+    onNext,
+    formData
 }) {
     const { t } = useTranslation();
     const {
@@ -34,12 +40,14 @@ export function useProjectFormVoiceLogic({
         startListening,
         listening,
         speaking: isSpeaking,
-        currentLang,
-        isOpen,
-        cancelSpeech // Destructure cancelSpeech
+        languageCode,
+        conversationMemory,
+        resetTranscript,
+        transcript
     } = useVoiceAssistant();
 
     const [step, setStep] = useState(STEPS.IDLE);
+    const [parsedData, setParsedData] = useState(null);
     const tempClientDataRef = useRef({ name: '' });
 
     // Keep track of step in ref for effects if needed, though mostly we use state
@@ -57,250 +65,216 @@ export function useProjectFormVoiceLogic({
         finished: t('pages.projectDetails.voiceAssistant.prompts.finished')
     }), [t]);
 
-    // Handle Transcript Logic
-    const handleTranscript = (text) => {
-        const lower = text.toLowerCase();
+    // Check what fields are already filled
+    const getFilledFields = useCallback(() => {
+        return {
+            name: !!formData?.name,
+            client: !!formData?.selectedClientKey || !!formData?.clientName,
+            budget: !!formData?.budget,
+            endDate: !!formData?.endDate
+        };
+    }, [formData]);
 
-        // --- STEP: NAME ---
-        if (step === STEPS.LISTEN_NAME) {
-            let name = text.replace(/^(o nome é|chama-se|o projeto é|é|it is|the name is|my project is)\s+/i, '').trim();
+    // Start wizard
+    const startWizard = useCallback(() => {
+        const filled = getFilledFields();
 
-            if (!name) {
-                const response = t('pages.projectDetails.voiceAssistant.responses.nameInvalid', { defaultValue: "Não percebi o nome. Pode repetir?" });
-                addMessage('bot', response);
-                speak(response);
-                // Stay in LISTEN_NAME, but maybe we need to re-trigger listening? 
-                // The effect depends on step change or completion. 
-                // If we don't change step, listening might not restart automatically if it just stopped.
-                // Actually, the effect in useProjectFormVoiceLogic depends on [step]. 
-                // If step doesn't change, it won't re-run startListening.
-                // But wait, listening stopped (that's why we are here).
-                // We need to restart listening.
-                setTimeout(() => startListening(), 1500);
-                return;
-            }
-
-            name = name.charAt(0).toUpperCase() + name.slice(1);
-
-            cancelSpeech(); // Stop speaking if user answers
-            onUpdateField('name', name);
-
-            const response = t('pages.projectDetails.voiceAssistant.responses.nameReceived', { name });
-            addMessage('bot', response);
-            speak(response);
-
-            setTimeout(() => setStep(STEPS.ASK_CLIENT), 1500);
+        // If all fields are filled, ask for confirmation
+        if (filled.name && filled.client && filled.budget && filled.endDate) {
+            setStep(STEPS.ASK_CONFIRMATION);
+            const message = prompts.askConfirm;
+            addMessage('bot', message);
+            speak(message);
+            return;
         }
 
-        // --- STEP: CLIENT ---
-        else if (step === STEPS.LISTEN_CLIENT) {
-            let clientName = text.replace(/^(o cliente é|é|it is|the client is)\s+/i, '').trim();
+        // Otherwise, start with parsing attempt
+        setStep(STEPS.PARSE_INITIAL);
+        const message = prompts.ready;
+        addMessage('bot', message);
+        speak(message);
+    }, [getFilledFields, prompts, addMessage, speak]);
 
-            if (!clientName) {
-                const response = t('pages.projectDetails.voiceAssistant.responses.clientInvalid', { defaultValue: "Não percebi o nome do cliente. Pode repetir?" });
-                addMessage('bot', response);
-                speak(response);
-                setTimeout(() => startListening(), 1500);
-                return;
-            }
+    // Handle transcript when it changes
+    const handleTranscript = useCallback((transcriptText) => {
+        if (!transcriptText || isSpeaking) return;
 
-            // Fix: Add optional chaining or check for label existence
-            const foundClient = clients.find(c => c.label && c.label.toLowerCase().includes(clientName.toLowerCase()));
+        const currentStep = stepRef.current;
+        console.log('Handling transcript:', transcriptText, 'Step:', currentStep);
 
-            if (foundClient) {
-                cancelSpeech(); // Stop speaking
-                onClientSelect(foundClient.key);
-                onUpdateField('clientName', foundClient.label);
+        switch (currentStep) {
+            case STEPS.PARSE_INITIAL:
+            case STEPS.LISTEN_NAME:
+            case STEPS.LISTEN_CLIENT:
+            case STEPS.LISTEN_DATE:
+            case STEPS.LISTEN_BUDGET: {
+                // Try to parse the input
+                const lastProject = conversationMemory.getLastClient();
+                const parsed = parseProjectInput(transcriptText, {
+                    clients,
+                    lastProject,
+                    language: languageCode
+                });
 
-                const response = t('pages.projectDetails.voiceAssistant.responses.clientFound', { client: foundClient.label, defaultValue: `Cliente ${foundClient.label} selecionado.` });
-                addMessage('bot', response);
-                speak(response);
+                setParsedData(parsed);
+                addMessage('user', transcriptText);
 
-                setTimeout(() => setStep(STEPS.ASK_DATE), 1500);
-            } else {
-                cancelSpeech(); // Stop speaking
-                tempClientDataRef.current.clientName = clientName;
-                onUpdateField('clientName', clientName);
-
-                const response = t('pages.projectDetails.voiceAssistant.responses.clientNotFound', { client: clientName, defaultValue: `Não encontrei o cliente ${clientName}. Deseja criar um novo?` });
-                addMessage('bot', response);
-                speak(response);
-
-                setTimeout(() => setStep(STEPS.CONFIRM_CLIENT_CREATE), 1500);
-            }
-        }
-
-        // --- STEP: CONFIRM NEW CLIENT ---
-        else if (step === STEPS.CONFIRM_CLIENT_CREATE) {
-            if (lower.includes('sim') || lower.includes('yes') || lower.includes('ok') || lower.includes('pode ser')) {
-                cancelSpeech();
-                onAddNewClient();
-
-                const response = t('pages.projectDetails.voiceAssistant.responses.newClient', { defaultValue: "Ok, vamos continuar." });
-                addMessage('bot', response);
-                speak(response);
-                setTimeout(() => setStep(STEPS.ASK_DATE), 1500);
-            } else {
-                cancelSpeech();
-                const response = t('pages.projectDetails.voiceAssistant.responses.retryClient', { defaultValue: "Ok, qual é o nome do cliente então?" });
-                addMessage('bot', response);
-                speak(response);
-                setTimeout(() => setStep(STEPS.ASK_CLIENT), 1500);
-            }
-        }
-
-        // --- STEP: DATE ---
-        else if (step === STEPS.LISTEN_DATE) {
-            let date = new Date();
-            if (lower.includes('amanhã') || lower.includes('tomorrow')) {
-                date.setDate(date.getDate() + 1);
-            } else if (lower.includes('semana que vem') || lower.includes('next week')) {
-                date.setDate(date.getDate() + 7);
-            } else if (lower.includes('hoje') || lower.includes('today')) {
-                // keep today
-            } else {
-                date.setMonth(date.getMonth() + 1);
-            }
-
-            const dateStr = date.toISOString().split('T')[0];
-            cancelSpeech();
-            onUpdateField('endDate', dateStr);
-
-            const response = t('pages.projectDetails.voiceAssistant.responses.dateReceived', { date: date.toLocaleDateString() });
-            addMessage('bot', response);
-            speak(response);
-
-            setTimeout(() => setStep(STEPS.ASK_BUDGET), 1500);
-        }
-
-        // --- STEP: BUDGET ---
-        else if (step === STEPS.LISTEN_BUDGET) {
-            const numbers = text.match(/\d+/g);
-            if (numbers) {
-                const budget = numbers.join('');
-                cancelSpeech();
-                onUpdateField('budget', budget);
-
-                const response = t('pages.projectDetails.voiceAssistant.responses.budgetReceived', { budget });
-                addMessage('bot', response);
-                speak(response);
-
-                setTimeout(() => setStep(STEPS.ASK_CONFIRMATION), 1500);
-            } else {
-                const response = t('pages.projectDetails.voiceAssistant.responses.budgetInvalid', { defaultValue: "Não percebi o valor. Pode repetir?" });
-                addMessage('bot', response);
-                speak(response);
-                setTimeout(() => speak(prompts.askBudget), 1500);
-            }
-        }
-
-        // --- STEP: CONFIRMATION ---
-        else if (step === STEPS.LISTEN_CONFIRMATION) {
-            if (lower.includes('sim') || lower.includes('yes') || lower.includes('ok') || lower.includes('confirmar')) {
-                cancelSpeech();
-                const response = t('pages.projectDetails.voiceAssistant.responses.finished', { defaultValue: "Projeto criado com sucesso!" });
-                addMessage('bot', response);
-                speak(response);
-
-                onNext();
-                setStep(STEPS.FINISHED);
-            } else {
-                cancelSpeech();
-                const response = t('pages.projectDetails.voiceAssistant.responses.cancelled', { defaultValue: "Cancelado." });
-                addMessage('bot', response);
-                speak(response);
-                setStep(STEPS.FINISHED);
-            }
-        }
-    };
-
-    // Keep ref to latest handleTranscript to avoid re-registering wizard
-    const handleTranscriptRef = useRef(handleTranscript);
-    useEffect(() => {
-        handleTranscriptRef.current = handleTranscript;
-    });
-
-    // Register Wizard Logic
-    useEffect(() => {
-        if (isOpen) {
-            registerWizard({
-                onTranscript: (text) => {
-                    addMessage('user', text);
-                    if (handleTranscriptRef.current) {
-                        handleTranscriptRef.current(text);
+                // Apply parsed data to form
+                if (parsed.projectName && !formData?.name) {
+                    onUpdateField('name', parsed.projectName);
+                }
+                if (parsed.budget && !formData?.budget) {
+                    onUpdateField('budget', parsed.budget);
+                }
+                if (parsed.endDate && !formData?.endDate) {
+                    try {
+                        const calendarDate = parseDate(`${parsed.endDate.year}-${String(parsed.endDate.month).padStart(2, '0')}-${String(parsed.endDate.day).padStart(2, '0')}`);
+                        onUpdateField('endDate', calendarDate);
+                    } catch (e) {
+                        console.error('Date parse error:', e);
                     }
                 }
-            });
+                if (parsed.clientId && !formData?.selectedClientKey) {
+                    onClientSelect(parsed.clientId);
+                } else if (parsed.clientName && !parsed.clientId && !formData?.clientName) {
+                    onUpdateField('clientName', parsed.clientName);
+                }
+
+                // Generate summary of what was understood
+                if (parsed.projectName || parsed.clientName || parsed.budget || parsed.endDate) {
+                    const summary = generateParsingSummary(parsed, languageCode);
+                    const confirmMessages = {
+                        pt: `Entendi: ${summary}`,
+                        en: `I understood: ${summary}`,
+                        fr: `J'ai compris: ${summary}`
+                    };
+                    const confirmMessage = confirmMessages[languageCode] || confirmMessages.pt;
+                    addMessage('bot', confirmMessage);
+                    speak(confirmMessage);
+                }
+
+                // Determine next step based on what's missing
+                const missing = getMissingFields(parsed);
+
+                if (missing.length === 0) {
+                    // Everything filled, ask for confirmation
+                    setStep(STEPS.ASK_CONFIRMATION);
+                    setTimeout(() => {
+                        const message = prompts.askConfirm;
+                        addMessage('bot', message);
+                        speak(message);
+                    }, 2000);
+                } else if (missing.includes('projectName')) {
+                    setStep(STEPS.ASK_NAME);
+                    setTimeout(() => {
+                        const message = prompts.askName;
+                        addMessage('bot', message);
+                        speak(message);
+                    }, 2000);
+                } else if (missing.includes('client')) {
+                    setStep(STEPS.ASK_CLIENT);
+                    setTimeout(() => {
+                        const message = prompts.askClient;
+                        addMessage('bot', message);
+                        speak(message);
+                    }, 2000);
+                } else if (missing.includes('endDate')) {
+                    setStep(STEPS.ASK_DATE);
+                    setTimeout(() => {
+                        const message = prompts.askDate;
+                        addMessage('bot', message);
+                        speak(message);
+                    }, 2000);
+                } else if (missing.includes('budget')) {
+                    setStep(STEPS.ASK_BUDGET);
+                    setTimeout(() => {
+                        const message = prompts.askBudget;
+                        addMessage('bot', message);
+                        speak(message);
+                    }, 2000);
+                }
+
+                resetTranscript();
+                break;
+            }
+
+            case STEPS.LISTEN_CONFIRMATION: {
+                addMessage('user', transcriptText);
+                const lowerText = transcriptText.toLowerCase();
+
+                // Check for affirmative responses
+                const affirmatives = ['sim', 'yes', 'oui', 'continuar', 'continue', 'continuer', 'ok', 'confirmar', 'confirm'];
+                const isAffirmative = affirmatives.some(word => lowerText.includes(word));
+
+                if (isAffirmative) {
+                    setStep(STEPS.FINISHED);
+                    const message = prompts.finished;
+                    addMessage('bot', message);
+                    speak(message);
+
+                    // Proceed to next step
+                    setTimeout(() => {
+                        onNext();
+                    }, 1500);
+                } else {
+                    // User wants to change something, go back to parsing
+                    setStep(STEPS.PARSE_INITIAL);
+                    const changeMessages = {
+                        pt: 'O que quer alterar?',
+                        en: 'What would you like to change?',
+                        fr: 'Que voulez-vous changer?'
+                    };
+                    const message = changeMessages[languageCode] || changeMessages.pt;
+                    addMessage('bot', message);
+                    speak(message);
+                }
+
+                resetTranscript();
+                break;
+            }
+
+            default:
+                break;
         }
+    }, [isSpeaking, clients, languageCode, conversationMemory, formData, onUpdateField, onClientSelect, onNext, prompts, addMessage, speak, resetTranscript]);
+
+    // Register wizard with voice assistant
+    useEffect(() => {
+        const wizardLogic = {
+            onTranscript: handleTranscript
+        };
+        registerWizard(wizardLogic);
+
         return () => {
             unregisterWizard();
         };
-    }, [isOpen, registerWizard, unregisterWizard, addMessage]);
+    }, [registerWizard, unregisterWizard, handleTranscript]);
 
-    // Auto-start conversation if assistant is open
+    // Auto-transition to listening after speaking
     useEffect(() => {
-        if (isOpen && step === STEPS.IDLE) {
-            const timer = setTimeout(() => {
-                setStep(STEPS.ASK_NAME);
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [isOpen, step]);
+        if (!isSpeaking && step !== STEPS.IDLE && step !== STEPS.FINISHED) {
+            const listenSteps = [
+                STEPS.PARSE_INITIAL,
+                STEPS.LISTEN_NAME,
+                STEPS.LISTEN_CLIENT,
+                STEPS.LISTEN_DATE,
+                STEPS.LISTEN_BUDGET,
+                STEPS.LISTEN_CONFIRMATION
+            ];
 
-    // Speak prompts when entering ASK steps
-    useEffect(() => {
-        if (!isOpen) return;
-
-        const stepPrompts = {
-            [STEPS.ASK_NAME]: prompts.askName,
-            [STEPS.ASK_CLIENT]: prompts.askClient,
-            [STEPS.CONFIRM_CLIENT_CREATE]: prompts.confirmClient,
-            [STEPS.ASK_DATE]: prompts.askDate,
-            [STEPS.ASK_BUDGET]: prompts.askBudget,
-            [STEPS.ASK_CONFIRMATION]: prompts.askConfirm,
-            [STEPS.FINISHED]: prompts.finished
-        };
-
-        const textToSpeak = stepPrompts[step];
-        if (textToSpeak) {
-            addMessage('bot', textToSpeak);
-            speak(textToSpeak);
-        }
-    }, [step, isOpen, speak, prompts, addMessage]);
-
-    // Handle listening state transitions
-    // Handle listening state transitions
-    useEffect(() => {
-        let timeoutId;
-
-        // Removed !isSpeaking check to allow barge-in
-        if (isOpen && step !== STEPS.IDLE && step !== STEPS.FINISHED) {
-
-            const nextListenStep = {
-                [STEPS.ASK_NAME]: STEPS.LISTEN_NAME,
-                [STEPS.ASK_CLIENT]: STEPS.LISTEN_CLIENT,
-                [STEPS.CONFIRM_CLIENT_CREATE]: STEPS.CONFIRM_CLIENT_CREATE,
-                [STEPS.ASK_DATE]: STEPS.LISTEN_DATE,
-                [STEPS.ASK_BUDGET]: STEPS.LISTEN_BUDGET,
-                [STEPS.ASK_CONFIRMATION]: STEPS.LISTEN_CONFIRMATION,
-            }[step];
-
-            if (nextListenStep) {
-                // Start listening almost immediately (small delay to ensure state update)
-                // We want to listen WHILE speaking (barge-in)
-                timeoutId = setTimeout(() => {
-                    if (nextListenStep !== step) {
-                        setStep(nextListenStep);
-                    }
+            if (listenSteps.includes(step)) {
+                setTimeout(() => {
                     startListening();
-                }, 100); // Reduced delay from 1000ms to 100ms
+                }, 500);
             }
         }
+    }, [step, isSpeaking, startListening]);
 
-        return () => {
-            if (timeoutId) clearTimeout(timeoutId);
-        };
-    }, [step, startListening, isOpen]); // Removed isSpeaking dependency
-
-    return { step };
+    return {
+        step,
+        listening,
+        startWizard,
+        parsedData
+    };
 }
+

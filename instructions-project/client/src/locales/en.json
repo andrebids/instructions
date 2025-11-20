@@ -37,8 +37,15 @@
           "Greetings! How can I be of service?"
         ],
         "openingProject": "Opening new project...",
-        "listening": "Listening...",
-        "clickToRestart": "Click microphone to restart"
+        "title": "AI Assistant",
+        "status": {
+          "listening": "Listening...",
+          "idle": "Idle"
+        },
+        "footer": {
+          "listening": "Listening...",
+          "clickToSpeak": "Click to speak"
+        }
       },
       "stats": {
         "totalProjects": "Total Projects",

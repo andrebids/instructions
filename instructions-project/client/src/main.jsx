@@ -16,18 +16,18 @@ import './i18n' // Inicializar i18next
 
 // Interceptar e silenciar erros do cliente Vite HMR ANTES de qualquer outro código
 // Isso precisa ser executado o mais cedo possível para capturar erros do cliente Vite
-(function() {
+(function () {
   // Interceptar console.error/warn/info/log especificamente para o cliente Vite
   const originalConsoleError = console.error;
   const originalConsoleWarn = console.warn;
   const originalConsoleInfo = console.info;
   const originalConsoleLog = console.log;
-  
+
   // Função para verificar se é um erro do cliente Vite
   const isViteClientError = (...args) => {
     const message = args.join(' ');
     const firstArg = String(args[0] || '');
-    
+
     return (
       message.includes('WebSocket') ||
       message.includes('server connection lost') ||
@@ -40,23 +40,23 @@ import './i18n' // Inicializar i18next
       (message.includes('localhost') && (message.includes('failed') || message.includes('Failed to load resource')))
     );
   };
-  
-  console.error = function(...args) {
+
+  console.error = function (...args) {
     if (isViteClientError(...args)) return;
     originalConsoleError.apply(console, args);
   };
-  
-  console.warn = function(...args) {
+
+  console.warn = function (...args) {
     if (isViteClientError(...args)) return;
     originalConsoleWarn.apply(console, args);
   };
-  
-  console.info = function(...args) {
+
+  console.info = function (...args) {
     if (isViteClientError(...args)) return;
     originalConsoleInfo.apply(console, args);
   };
-  
-  console.log = function(...args) {
+
+  console.log = function (...args) {
     if (isViteClientError(...args)) return;
     originalConsoleLog.apply(console, args);
   };
@@ -70,7 +70,7 @@ if (typeof window !== 'undefined') {
     const url = event.filename || event.target?.src || event.target?.href || '';
     const message = event.message || '';
     const source = event.filename || '';
-    
+
     // Filtrar erros do Iconify (serão tratados pelo proxy abaixo)
     if (typeof url === 'string' && (
       url.includes('api.iconify.design') ||
@@ -82,30 +82,30 @@ if (typeof window !== 'undefined') {
       event.stopPropagation();
       return false;
     }
-    
+
     // Filtrar erros do cliente Vite (HMR) - aparecem como client:536, client:560, etc.
     if (source.includes('client:') || source.includes('@vite/client')) {
       // Silenciar todos os erros do cliente Vite relacionados a WebSocket e conexões
-      if (message.includes('WebSocket') || 
-          message.includes('ERR_CONNECTION_REFUSED') ||
-          url.includes('localhost') ||
-          url.includes('wss://localhost')) {
+      if (message.includes('WebSocket') ||
+        message.includes('ERR_CONNECTION_REFUSED') ||
+        url.includes('localhost') ||
+        url.includes('wss://localhost')) {
         event.preventDefault();
         event.stopPropagation();
         return false;
       }
     }
-    
+
     // Filtrar erros de WebSocket do Vite HMR
     if (message.includes('WebSocket') && message.includes('failed')) {
       event.preventDefault();
       event.stopPropagation();
       return false;
     }
-    
+
     // Filtrar erros de conexão com localhost do Vite
     if ((url.includes('localhost') || message.includes('ERR_CONNECTION_REFUSED')) &&
-        (url.includes('client:') || url.includes('wss://localhost') || url.includes('@vite'))) {
+      (url.includes('client:') || url.includes('wss://localhost') || url.includes('@vite'))) {
       event.preventDefault();
       event.stopPropagation();
       return false;
@@ -116,7 +116,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('unhandledrejection', (event) => {
     const reason = event.reason;
     const message = reason?.message || reason?.toString() || '';
-    
+
     // Filtrar erros de CORS do Iconify (serão tratados pelo proxy abaixo)
     if (message.includes('CORS') && (
       message.includes('api.iconify.design') ||
@@ -127,11 +127,11 @@ if (typeof window !== 'undefined') {
       event.preventDefault();
       return false;
     }
-    
+
     // Filtrar erros de WebSocket do Vite HMR
-    if (message.includes('WebSocket') || 
-        message.includes('ERR_CONNECTION_REFUSED') ||
-        message.includes('localhost')) {
+    if (message.includes('WebSocket') ||
+      message.includes('ERR_CONNECTION_REFUSED') ||
+      message.includes('localhost')) {
       event.preventDefault();
       return false;
     }
@@ -142,10 +142,10 @@ if (typeof window !== 'undefined') {
 const originalError = console.error;
 const originalWarn = console.warn;
 
-console.error = function(...args) {
+console.error = function (...args) {
   const message = args.join(' ');
   const firstArg = args[0] || '';
-  
+
   // Filtrar erros de CORS do Iconify (serão tratados pelo proxy abaixo)
   if ((message.includes('CORS') || message.includes('Failed to load resource')) && (
     message.includes('api.iconify.design') ||
@@ -155,33 +155,33 @@ console.error = function(...args) {
   )) {
     return;
   }
-  
+
   // Filtrar erros de WebSocket do Vite HMR (normais em desenvolvimento)
-  if (message.includes('WebSocket connection') || 
-      message.includes('WebSocket') && message.includes('failed')) {
+  if (message.includes('WebSocket connection') ||
+    message.includes('WebSocket') && message.includes('failed')) {
     return;
   }
-  
+
   // Filtrar erros de conexão com localhost do Vite (incluindo client:536, client:560, etc.)
-  if (message.includes('Failed to load resource') || 
-      message.includes('GET https://localhost/') ||
-      message.includes('ERR_CONNECTION_REFUSED')) {
-    if (message.includes('localhost') || 
-        message.includes('wss://localhost') ||
-        String(firstArg).includes('client:') ||
-        String(firstArg).includes('@vite')) {
+  if (message.includes('Failed to load resource') ||
+    message.includes('GET https://localhost/') ||
+    message.includes('ERR_CONNECTION_REFUSED')) {
+    if (message.includes('localhost') ||
+      message.includes('wss://localhost') ||
+      String(firstArg).includes('client:') ||
+      String(firstArg).includes('@vite')) {
       return;
     }
   }
-  
+
   originalError.apply(console, args);
 };
 
-console.warn = function(...args) {
+console.warn = function (...args) {
   const message = args.join(' ');
   // Filtrar avisos do Vite HMR (normais em desenvolvimento)
-  if (message.includes('[vite] server connection lost') || 
-      message.includes('Polling for restart')) {
+  if (message.includes('[vite] server connection lost') ||
+    message.includes('Polling for restart')) {
     return;
   }
   // Filtrar aviso de tag meta deprecada (não crítico)
@@ -196,7 +196,7 @@ console.warn = function(...args) {
 // Prevenir reconfiguração múltipla durante hot reload
 if (typeof window !== 'undefined' && !window.__iconifyConfigured) {
   window.__iconifyConfigured = true;
-  
+
   // Interceptar requisições fetch do Iconify para redirecionar ao proxy
   // Isso garante que TODAS as requisições do Iconify passem pelo nosso proxy
   const originalFetch = window.fetch;
@@ -205,14 +205,14 @@ if (typeof window !== 'undefined' && !window.__iconifyConfigured) {
     'https://api.simplesvg.com',
     'https://api.unisvg.com'
   ];
-  
+
   // Construir URL do proxy
   const isDev = import.meta.env.DEV;
   let proxyBaseUrl;
-  
+
   if (isDev) {
     // Em desenvolvimento, usar localhost se VITE_API_URL não estiver definido
-    proxyBaseUrl = import.meta.env.VITE_API_URL 
+    proxyBaseUrl = import.meta.env.VITE_API_URL
       ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') + '/api/icons'
       : 'http://localhost:5000/api/icons';
   } else {
@@ -220,60 +220,60 @@ if (typeof window !== 'undefined' && !window.__iconifyConfigured) {
     // Isso garante que funcione com a mesma origem
     proxyBaseUrl = '/api/icons';
   }
-  
-  window.fetch = function(input, init) {
+
+  window.fetch = function (input, init) {
     const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : input?.url || '');
-    
+
     // NÃO interceptar requisições internas (Vite, localhost, etc)
     // Apenas interceptar requisições HTTPS para as APIs externas do Iconify
     if (!url || typeof url !== 'string') {
       return originalFetch.call(this, input, init);
     }
-    
+
     // Ignorar requisições locais, relativas, ou do Vite
-    if (url.startsWith('/') || 
-        url.startsWith('http://localhost') || 
-        url.startsWith('http://127.0.0.1') ||
-        url.startsWith('ws://') ||
-        url.startsWith('wss://') ||
-        url.includes('@vite') ||
-        url.includes('@react-refresh') ||
-        url.includes('node_modules') ||
-        !url.startsWith('https://')) {
+    if (url.startsWith('/') ||
+      url.startsWith('http://localhost') ||
+      url.startsWith('http://127.0.0.1') ||
+      url.startsWith('ws://') ||
+      url.startsWith('wss://') ||
+      url.includes('@vite') ||
+      url.includes('@react-refresh') ||
+      url.includes('node_modules') ||
+      !url.startsWith('https://')) {
       return originalFetch.call(this, input, init);
     }
-    
+
     // Verificar se é uma requisição para as APIs do Iconify
     const isIconifyRequest = iconifyAPIs.some(api => url.startsWith(api));
-    
+
     if (isIconifyRequest) {
       // Extrair o path após o domínio da API
       const apiMatch = iconifyAPIs.find(api => url.startsWith(api));
       if (apiMatch) {
         const path = url.substring(apiMatch.length);
         const proxyUrl = proxyBaseUrl + path;
-        
+
         console.log('🔄 [Icon Proxy] Interceptando requisição:', url);
         console.log('🔄 [Icon Proxy] Redirecionando para:', proxyUrl);
-        
+
         // Fazer requisição para o proxy em vez da API externa
         return originalFetch.call(this, proxyUrl, init);
       }
     }
-    
+
     // Para outras requisições, usar fetch original
     return originalFetch.call(this, input, init);
   };
-  
+
   console.log('✅ [Main] Interceptação de fetch configurada para Iconify');
   console.log('✅ [Main] Proxy URL:', proxyBaseUrl);
-  
+
   // Também configurar addAPIProvider como fallback
   (async () => {
     try {
       const iconifyModule = await import('@iconify/react');
       const { addAPIProvider } = iconifyModule;
-      
+
       // Configurar providers com URL do proxy
       const providers = ['iconify', 'simplesvg', 'unisvg'];
       providers.forEach(provider => {
@@ -292,7 +292,7 @@ if (typeof window !== 'undefined' && !window.__iconifyConfigured) {
   })();
 }
 
-const useAuthJs = import.meta.env.VITE_USE_AUTH_JS === 'true'
+const useAuthJs = true // import.meta.env.VITE_USE_AUTH_JS === 'true'
 
 // Register service worker with prompt mode (no auto-update)
 // Service Worker está habilitado APENAS em produção
@@ -339,7 +339,7 @@ if ('serviceWorker' in navigator && !isDev) {
   console.log(`📋 [Main] Environment: ${import.meta.env.MODE}`);
   console.log(`📋 [Main] Service Worker URL: ${window.location.origin}/sw.js`);
   console.log(`📋 [Main] Navigator serviceWorker available:`, 'serviceWorker' in navigator);
-  
+
   // Diagnostic: Tentar buscar o Service Worker para verificar se está acessível
   fetch(`${window.location.origin}/sw.js`)
     .then(response => {
@@ -352,14 +352,14 @@ if ('serviceWorker' in navigator && !isDev) {
       console.log('✅ [Main] Service Worker file is accessible');
       console.log('📋 [Main] SW file size:', text.length, 'bytes');
       console.log('📋 [Main] SW file starts with:', text.substring(0, 300));
-      
+
       // Verificar se contém imports do Workbox
       if (text.includes('workbox-precaching') || text.includes('cleanupOutdatedCaches')) {
         console.log('✅ [Main] SW file contains Workbox imports');
       } else {
         console.warn('⚠️ [Main] SW file does NOT contain Workbox imports - this may be the problem!');
       }
-      
+
       // Verificar se contém o manifest
       // O VitePWA substitui 'self.__WB_MANIFEST' pelo manifest real durante o build
       // Se ainda contém o placeholder, não foi processado
@@ -386,12 +386,12 @@ if ('serviceWorker' in navigator && !isDev) {
         // Não encontrou manifest, mas pode estar funcionando de outra forma
         console.debug('🔍 [Main] SW file manifest check: No explicit manifest pattern found, but SW may still be functional');
       }
-      
+
       // Verificar se há erros de sintaxe óbvios
       if (text.includes('import(') && !text.includes('import ')) {
         console.warn('⚠️ [Main] SW file may have dynamic imports which might cause issues');
       }
-      
+
       // Verificar se há IIFE ou outros wrappers que possam causar problemas
       if (text.trim().startsWith('(function')) {
         console.warn('⚠️ [Main] SW file starts with IIFE - this might cause issues with ES modules');
@@ -401,114 +401,114 @@ if ('serviceWorker' in navigator && !isDev) {
       console.error('❌ [Main] Failed to fetch Service Worker file:', error);
       console.error('❌ [Main] This may indicate the SW file is not being served correctly');
     });
-  
+
   // Store updateSW function globally so UpdateNotification can use it
   try {
     updateSW = registerSW({
-    immediate: false, // Don't update immediately - wait for user confirmation
-    onOfflineReady() {
-      console.log('✅ [Main] App ready to work offline');
-      // Dispatch custom event to notify OfflineReadyNotification component
-      // The component will show a prompt with "OK" button
-      window.dispatchEvent(new CustomEvent('sw-offline-ready'));
-    },
-    onNeedRefresh() {
-      // This is called when a new service worker is available
-      // The UpdateNotification component will detect this and show the prompt
-      // with "Refresh" and "Cancel" buttons
-      console.log('🔄 [Main] New content available - UpdateNotification will show prompt');
-      // Dispatch custom event to notify UpdateNotification component
-      window.dispatchEvent(new CustomEvent('sw-update-available'));
-    },
-    onRegistered(registration) {
-      console.log('✅ [Main] Service Worker registered successfully');
-      console.log('📋 [Main] Registration object:', {
-        scope: registration.scope,
-        active: registration.active?.scriptURL || 'none',
-        installing: registration.installing?.scriptURL || 'none',
-        waiting: registration.waiting?.scriptURL || 'none',
-        updateViaCache: registration.updateViaCache
-      });
-      
-      // Monitor service worker state changes
-      if (registration.installing) {
-        console.log('📦 [Main] Service Worker installing...');
-        registration.installing.addEventListener('statechange', (event) => {
-          console.log(`📦 [Main] SW state changed to: ${event.target.state}`);
-          if (event.target.state === 'installed') {
-            console.log('✅ [Main] Service Worker installed successfully');
-          }
+      immediate: false, // Don't update immediately - wait for user confirmation
+      onOfflineReady() {
+        console.log('✅ [Main] App ready to work offline');
+        // Dispatch custom event to notify OfflineReadyNotification component
+        // The component will show a prompt with "OK" button
+        window.dispatchEvent(new CustomEvent('sw-offline-ready'));
+      },
+      onNeedRefresh() {
+        // This is called when a new service worker is available
+        // The UpdateNotification component will detect this and show the prompt
+        // with "Refresh" and "Cancel" buttons
+        console.log('🔄 [Main] New content available - UpdateNotification will show prompt');
+        // Dispatch custom event to notify UpdateNotification component
+        window.dispatchEvent(new CustomEvent('sw-update-available'));
+      },
+      onRegistered(registration) {
+        console.log('✅ [Main] Service Worker registered successfully');
+        console.log('📋 [Main] Registration object:', {
+          scope: registration.scope,
+          active: registration.active?.scriptURL || 'none',
+          installing: registration.installing?.scriptURL || 'none',
+          waiting: registration.waiting?.scriptURL || 'none',
+          updateViaCache: registration.updateViaCache
         });
-      }
-      
-      if (registration.waiting) {
-        console.log('⏳ [Main] Service Worker waiting for activation');
-      }
-      
-      if (registration.active) {
-        console.log('✅ [Main] Service Worker is active');
-      }
-      
-      // Check Background Sync availability
-      try {
-        isBackgroundSyncAvailable();
-        console.log('✅ [Main] Background Sync availability checked');
-      } catch (error) {
-        console.error('❌ [Main] Error checking Background Sync:', error);
-      }
-      
-      // Setup push notification click listener when SW is ready
-      try {
-        setupNotificationClickListener();
-        console.log('✅ [Main] Push notification click listener setup');
-      } catch (error) {
-        console.error('❌ [Main] Error setting up push notification listener:', error);
-      }
-      
-      // Listener for messages from service worker (Background Sync and Updates)
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('message', async (event) => {
-          console.log('📨 [Main] Message received from Service Worker:', event.data);
-          
-          // Handle Service Worker errors
-          if (event.data && event.data.type === 'SW_ERROR') {
-            console.error('❌ [Main] Service Worker reported an error:', event.data.error);
-            return;
-          }
-          
-          // Handle Background Sync
-          if (event.data && event.data.type === 'SYNC_PROJECT') {
-            const { projectId } = event.data;
-            try {
-              const { syncProject } = await import('./services/backgroundSync.js');
-              await syncProject(projectId);
-            } catch (error) {
-              console.error(`❌ [Main] Error syncing project ${projectId}:`, error);
+
+        // Monitor service worker state changes
+        if (registration.installing) {
+          console.log('📦 [Main] Service Worker installing...');
+          registration.installing.addEventListener('statechange', (event) => {
+            console.log(`📦 [Main] SW state changed to: ${event.target.state}`);
+            if (event.target.state === 'installed') {
+              console.log('✅ [Main] Service Worker installed successfully');
             }
-          }
-        });
-        console.log('✅ [Main] Message listener from Service Worker registered');
+          });
+        }
+
+        if (registration.waiting) {
+          console.log('⏳ [Main] Service Worker waiting for activation');
+        }
+
+        if (registration.active) {
+          console.log('✅ [Main] Service Worker is active');
+        }
+
+        // Check Background Sync availability
+        try {
+          isBackgroundSyncAvailable();
+          console.log('✅ [Main] Background Sync availability checked');
+        } catch (error) {
+          console.error('❌ [Main] Error checking Background Sync:', error);
+        }
+
+        // Setup push notification click listener when SW is ready
+        try {
+          setupNotificationClickListener();
+          console.log('✅ [Main] Push notification click listener setup');
+        } catch (error) {
+          console.error('❌ [Main] Error setting up push notification listener:', error);
+        }
+
+        // Listener for messages from service worker (Background Sync and Updates)
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.addEventListener('message', async (event) => {
+            console.log('📨 [Main] Message received from Service Worker:', event.data);
+
+            // Handle Service Worker errors
+            if (event.data && event.data.type === 'SW_ERROR') {
+              console.error('❌ [Main] Service Worker reported an error:', event.data.error);
+              return;
+            }
+
+            // Handle Background Sync
+            if (event.data && event.data.type === 'SYNC_PROJECT') {
+              const { projectId } = event.data;
+              try {
+                const { syncProject } = await import('./services/backgroundSync.js');
+                await syncProject(projectId);
+              } catch (error) {
+                console.error(`❌ [Main] Error syncing project ${projectId}:`, error);
+              }
+            }
+          });
+          console.log('✅ [Main] Message listener from Service Worker registered');
+        }
+      },
+      onRegisterError(error) {
+        console.error('❌ [Main] Service Worker registration error:', error);
+        console.error('❌ [Main] Error type:', error?.constructor?.name);
+        console.error('❌ [Main] Error message:', error?.message);
+        console.error('❌ [Main] Error stack:', error?.stack);
+        console.error('❌ [Main] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+
+        // Tentar obter mais informações sobre o erro
+        if (error?.message?.includes('threw an exception')) {
+          console.error('❌ [Main] Service Worker script evaluation failed');
+          console.error('❌ [Main] This usually means there is a syntax error or import issue in sw.js');
+          console.error('❌ [Main] Check the Service Worker script at:', window.location.origin + '/sw.js');
+        }
       }
-    },
-    onRegisterError(error) {
-      console.error('❌ [Main] Service Worker registration error:', error);
-      console.error('❌ [Main] Error type:', error?.constructor?.name);
-      console.error('❌ [Main] Error message:', error?.message);
-      console.error('❌ [Main] Error stack:', error?.stack);
-      console.error('❌ [Main] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-      
-      // Tentar obter mais informações sobre o erro
-      if (error?.message?.includes('threw an exception')) {
-        console.error('❌ [Main] Service Worker script evaluation failed');
-        console.error('❌ [Main] This usually means there is a syntax error or import issue in sw.js');
-        console.error('❌ [Main] Check the Service Worker script at:', window.location.origin + '/sw.js');
-      }
-    }
     });
-    
+
     console.log('✅ [Main] registerSW called successfully');
     console.log('📋 [Main] updateSW function:', typeof updateSW);
-    
+
     // Make updateSW available globally for UpdateNotification component
     window.updateSW = updateSW;
     console.log('✅ [Main] updateSW made available globally');

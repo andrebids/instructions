@@ -28,6 +28,7 @@ import { StepConfirmDetails } from "./steps/StepConfirmDetails";
 import { STEPS } from "./constants";
 import { getVisibleSteps } from "./utils/stepHelpers";
 import { logger } from "./utils/logger";
+import { Scroller } from "../ui/scroller";
 
 // 🧪 Breakpoint de Teste 5 (Componente Principal)
 const TEST_BREAKPOINT_5 = false;
@@ -84,6 +85,106 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
     return currentVisibleStep?.id === "ai-designer";
   };
 
+  // Helper to check if a logo is valid
+  const isLogoValid = (logo) => {
+    if (!logo) return false;
+    const hasLogoNumber = logo.logoNumber?.trim() !== "";
+    const hasLogoName = logo.logoName?.trim() !== "";
+    const hasRequestedBy = logo.requestedBy?.trim() !== "";
+    const dimensions = logo.dimensions || {};
+    const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
+    const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
+    const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
+    const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
+    const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
+    return hasLogoNumber && hasLogoName && hasRequestedBy && hasAtLeastOneDimension;
+  };
+
+  const handleDeleteLogo = (index, isCurrent) => {
+    const logoDetails = formState.formData.logoDetails || {};
+    const savedLogos = logoDetails.logos || [];
+
+    if (isCurrent) {
+      // Reset current logo
+      formState.handleInputChange("logoDetails", {
+        ...logoDetails,
+        currentLogo: {
+          logoNumber: "",
+          logoName: "",
+          requestedBy: "",
+          dimensions: {},
+          usageOutdoor: false,
+          usageIndoor: true,
+          fixationType: "",
+          lacqueredStructure: false,
+          lacquerColor: "",
+          mastDiameter: "",
+          maxWeightConstraint: false,
+          maxWeight: "",
+          ballast: false,
+          controlReport: false,
+          criteria: "",
+          description: "",
+          composition: {
+            componentes: [],
+            bolas: []
+          }
+        }
+      });
+    } else {
+      // Remove from saved logos
+      const newSavedLogos = savedLogos.filter((_, i) => i !== index);
+      formState.handleInputChange("logoDetails", {
+        ...logoDetails,
+        logos: newSavedLogos
+      });
+    }
+  };
+
+  const handleEditLogo = (index, isCurrent) => {
+    const logoDetails = formState.formData.logoDetails || {};
+    const savedLogos = logoDetails.logos || [];
+    const currentLogo = logoDetails.currentLogo || logoDetails; // Fallback for structure
+
+    if (isCurrent) {
+      // Already in currentLogo, just navigate
+      const logoStepIndex = visibleSteps.findIndex(s => s.id === 'logo-instructions');
+      if (logoStepIndex >= 0) {
+        navigation.setCurrentStep(logoStepIndex + 1);
+      }
+    } else {
+      // It's a saved logo. We need to swap it into currentLogo.
+      let newSavedLogos = [...savedLogos];
+      const logoToEdit = savedLogos[index];
+
+      // Remove logoToEdit from newSavedLogos
+      newSavedLogos = newSavedLogos.filter((_, i) => i !== index);
+
+      // If currentLogo is valid, add it to newSavedLogos so we don't lose it
+      if (isLogoValid(currentLogo)) {
+        const logoToSave = {
+          ...currentLogo,
+          id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          savedAt: new Date().toISOString()
+        };
+        newSavedLogos.push(logoToSave);
+      }
+
+      // Update state
+      formState.handleInputChange("logoDetails", {
+        ...logoDetails,
+        logos: newSavedLogos,
+        currentLogo: logoToEdit
+      });
+
+      // Navigate
+      const logoStepIndex = visibleSteps.findIndex(s => s.id === 'logo-instructions');
+      if (logoStepIndex >= 0) {
+        navigation.setCurrentStep(logoStepIndex + 1);
+      }
+    }
+  };
+
   // Render current step
   const renderStepContent = () => {
     const currentVisibleStep = visibleSteps[navigation.currentStep - 1];
@@ -100,11 +201,11 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
             onClientSelect={clientState.handleClientSelection}
             onClientInputChange={clientState.handleClientInputChange}
             onAddNewClient={(data) => {
-               // If data is provided (from Voice Wizard), set it
-               if (data) {
-                 clientState.setNewClientData(prev => ({ ...prev, ...data }));
-               }
-               clientState.setNewClientModal(true);
+              // If data is provided (from Voice Wizard), set it
+              if (data) {
+                clientState.setNewClientData(prev => ({ ...prev, ...data }));
+              }
+              clientState.setNewClientModal(true);
             }}
             onNext={navigation.nextStep}
           />
@@ -150,6 +251,8 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
           <StepConfirmDetails
             formData={formState.formData}
             error={formState.error}
+            onEditLogo={handleEditLogo}
+            onDeleteLogo={handleDeleteLogo}
           />
         );
 
@@ -190,14 +293,17 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
           </div>
 
           {/* Main content */}
-          <div className={`flex-1 min-h-0 bg-default-100 ${isAIDesignerStep()
+          <Scroller
+            hideScrollbar
+            className={`flex-1 min-h-0 bg-default-100 ${isAIDesignerStep()
               ? 'overflow-hidden'
               : 'px-4 py-6 sm:px-6 sm:py-8 lg:px-8 overflow-y-auto'
-            }`}>
+              }`}
+          >
             <div className={isAIDesignerStep() ? 'h-full' : 'max-w-6xl mx-auto'}>
               {renderStepContent()}
             </div>
-          </div>
+          </Scroller>
 
           {/* Navigation Footer */}
           <div className="flex-shrink-0">
@@ -216,7 +322,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
                 const currentLogoDetails = formState.formData.logoDetails || {};
                 const currentLogo = currentLogoDetails.currentLogo || currentLogoDetails; // Support both old and new structure
                 const savedLogos = currentLogoDetails.logos || [];
-                
+
                 // Check if current logo is valid (has required fields)
                 const hasLogoNumber = currentLogo.logoNumber?.trim() !== "";
                 const hasLogoName = currentLogo.logoName?.trim() !== "";
@@ -227,9 +333,9 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
                 const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
                 const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
                 const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
-                
+
                 const isCurrentLogoValid = hasLogoNumber && hasLogoName && hasRequestedBy && hasAtLeastOneDimension;
-                
+
                 // If current logo is valid, save it to the array
                 if (isCurrentLogoValid) {
                   const logoToSave = {
@@ -237,7 +343,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
                     id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     savedAt: new Date().toISOString()
                   };
-                  
+
                   // Update logoDetails with saved logos and new empty currentLogo
                   formState.handleInputChange("logoDetails", {
                     logos: [...savedLogos, logoToSave],

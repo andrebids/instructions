@@ -37,8 +37,15 @@
           "Bom dia! Como posso ser útil?"
         ],
         "openingProject": "A abrir novo projeto...",
-        "listening": "A ouvir...",
-        "clickToRestart": "Clique no microfone para reiniciar"
+        "title": "Assistente IA",
+        "status": {
+          "listening": "A ouvir...",
+          "idle": "Inativo"
+        },
+        "footer": {
+          "listening": "A ouvir...",
+          "clickToSpeak": "Clique para falar"
+        }
       },
       "stats": {
         "totalProjects": "Total de Projetos",

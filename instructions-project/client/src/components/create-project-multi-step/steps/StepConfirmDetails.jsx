@@ -1,10 +1,10 @@
 import React from "react";
-import { Card, Button } from "@heroui/react";
+import { Card, Button, Accordion, AccordionItem } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { getLocalTimeZone } from "@internationalized/date";
 import { SimulationCarousel } from "./SimulationCarousel";
 
-export function StepConfirmDetails({ formData, error }) {
+export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }) {
   const hasSimulations = formData.canvasImages && formData.canvasImages.length > 0;
   const simulationCount = formData.canvasImages?.length || 0;
 
@@ -121,7 +121,7 @@ export function StepConfirmDetails({ formData, error }) {
           const logoDetails = formData.logoDetails || {};
           const savedLogos = logoDetails.logos || [];
           const currentLogo = logoDetails.currentLogo || logoDetails;
-          
+
           // Check if current logo is valid
           const hasLogoNumber = currentLogo.logoNumber?.trim() !== "";
           const hasLogoName = currentLogo.logoName?.trim() !== "";
@@ -133,27 +133,53 @@ export function StepConfirmDetails({ formData, error }) {
           const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
           const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
           const isCurrentLogoValid = hasLogoNumber && hasLogoName && hasRequestedBy && hasAtLeastOneDimension;
-          
+
           // Combine saved logos with current logo if valid
           const allLogos = isCurrentLogoValid ? [...savedLogos, currentLogo] : savedLogos;
-          
+
           if (allLogos.length === 0) return null;
-          
+
           return (
             <Card className="p-4">
               <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
                 <Icon icon="lucide:package" className="text-primary" />
                 Logo Specifications {allLogos.length > 1 && `(${allLogos.length} logos)`}
               </h3>
-              <div className="space-y-6">
+              <Accordion selectionMode="multiple" variant="splitted" className="px-0">
                 {allLogos.map((logo, logoIndex) => (
-                  <div key={logo.id || logoIndex} className={logoIndex > 0 ? "border-t border-default-200 pt-4" : ""}>
-                    {allLogos.length > 1 && (
-                      <h4 className="font-medium text-base mb-3 text-primary">
-                        Logo {logoIndex + 1} {logo.logoName && `- ${logo.logoName}`}
-                      </h4>
-                    )}
-                    <div className="space-y-4">
+                  <AccordionItem
+                    key={logo.id || logoIndex}
+                    aria-label={`Logo ${logoIndex + 1}`}
+                    title={
+                      <div className="flex justify-between items-center flex-1 mr-4">
+                        <span className="font-medium text-base text-primary">
+                          Logo {logoIndex + 1} {logo.logoName && `- ${logo.logoName}`}
+                        </span>
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            onPress={() => onEditLogo && onEditLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1)}
+                            title="Edit Logo"
+                          >
+                            <Icon icon="lucide:pencil" className="text-default-500" />
+                          </Button>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            color="danger"
+                            onPress={() => onDeleteLogo && onDeleteLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1)}
+                            title="Delete Logo"
+                          >
+                            <Icon icon="lucide:trash" />
+                          </Button>
+                        </div>
+                      </div>
+                    }
+                  >
+                    <div className="space-y-4 pb-2">
                       {/* Identity */}
                       <div>
                         <h4 className="font-medium text-sm text-default-700 mb-2">Project Identity</h4>
@@ -246,86 +272,86 @@ export function StepConfirmDetails({ formData, error }) {
                       {logo.composition && (
                         <div>
                           <h4 className="font-medium text-sm text-default-700 mb-2">Composition</h4>
-                          
-                          {/* Componentes */}
-                          {logo.composition.componentes && 
-                           logo.composition.componentes.length > 0 && (
-                            <div className="mb-4">
-                              <h5 className="text-xs font-semibold text-default-600 mb-2 uppercase tracking-wider">
-                                Componentes ({logo.composition.componentes.length})
-                              </h5>
-                              <div className="space-y-2">
-                                {logo.composition.componentes.map((comp, index) => (
-                                  <div key={index} className="text-sm bg-default-50 p-2 rounded border border-default-200">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <div className="flex-1">
-                                        <p className="font-medium text-default-900">
-                                          {comp.componenteNome || `Componente ${index + 1}`}
-                                        </p>
-                                        {comp.corNome && (
-                                          <p className="text-xs text-default-600 mt-1">
-                                            Cor: {comp.corNome}
-                                          </p>
-                                        )}
-                                        {comp.referencia && (
-                                          <p className="text-xs text-default-500 mt-1">
-                                            Ref: {comp.referencia}
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
 
-                          {/* Bolas */}
-                          {logo.composition.bolas && 
-                           logo.composition.bolas.length > 0 && (
-                            <div>
-                              <h5 className="text-xs font-semibold text-default-600 mb-2 uppercase tracking-wider">
-                                Bolas ({logo.composition.bolas.length})
-                              </h5>
-                              <div className="space-y-2">
-                                {logo.composition.bolas.map((bola, index) => (
-                                  <div key={index} className="text-sm bg-default-50 p-2 rounded border border-default-200">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <div className="flex-1">
-                                        <p className="font-medium text-default-900">
-                                          Bola {index + 1}
-                                        </p>
-                                        <div className="text-xs text-default-600 mt-1 space-y-0.5">
-                                          {bola.corNome && (
-                                            <p>Cor: {bola.corNome}</p>
+                          {/* Componentes */}
+                          {logo.composition.componentes &&
+                            logo.composition.componentes.length > 0 && (
+                              <div className="mb-4">
+                                <h5 className="text-xs font-semibold text-default-600 mb-2 uppercase tracking-wider">
+                                  Componentes ({logo.composition.componentes.length})
+                                </h5>
+                                <div className="space-y-2">
+                                  {logo.composition.componentes.map((comp, index) => (
+                                    <div key={index} className="text-sm bg-default-50 p-2 rounded border border-default-200">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1">
+                                          <p className="font-medium text-default-900">
+                                            {comp.componenteNome || `Componente ${index + 1}`}
+                                          </p>
+                                          {comp.corNome && (
+                                            <p className="text-xs text-default-600 mt-1">
+                                              Cor: {comp.corNome}
+                                            </p>
                                           )}
-                                          {bola.acabamentoNome && (
-                                            <p>Acabamento: {bola.acabamentoNome}</p>
-                                          )}
-                                          {bola.tamanhoNome && (
-                                            <p>Tamanho: {bola.tamanhoNome}</p>
+                                          {comp.referencia && (
+                                            <p className="text-xs text-default-500 mt-1">
+                                              Ref: {comp.referencia}
+                                            </p>
                                           )}
                                         </div>
-                                        {bola.referencia && (
-                                          <p className="text-xs text-default-500 mt-1">
-                                            Ref: {bola.referencia}
-                                          </p>
-                                        )}
                                       </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
+
+                          {/* Bolas */}
+                          {logo.composition.bolas &&
+                            logo.composition.bolas.length > 0 && (
+                              <div>
+                                <h5 className="text-xs font-semibold text-default-600 mb-2 uppercase tracking-wider">
+                                  Bolas ({logo.composition.bolas.length})
+                                </h5>
+                                <div className="space-y-2">
+                                  {logo.composition.bolas.map((bola, index) => (
+                                    <div key={index} className="text-sm bg-default-50 p-2 rounded border border-default-200">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1">
+                                          <p className="font-medium text-default-900">
+                                            Bola {index + 1}
+                                          </p>
+                                          <div className="text-xs text-default-600 mt-1 space-y-0.5">
+                                            {bola.corNome && (
+                                              <p>Cor: {bola.corNome}</p>
+                                            )}
+                                            {bola.acabamentoNome && (
+                                              <p>Acabamento: {bola.acabamentoNome}</p>
+                                            )}
+                                            {bola.tamanhoNome && (
+                                              <p>Tamanho: {bola.tamanhoNome}</p>
+                                            )}
+                                          </div>
+                                          {bola.referencia && (
+                                            <p className="text-xs text-default-500 mt-1">
+                                              Ref: {bola.referencia}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
 
                           {/* Mensagem se não houver componentes nem bolas */}
-                          {(!logo.composition.componentes || 
+                          {(!logo.composition.componentes ||
                             logo.composition.componentes.length === 0) &&
-                           (!logo.composition.bolas || 
-                            logo.composition.bolas.length === 0) && (
-                            <p className="text-sm text-default-400 italic">Nenhum material adicionado</p>
-                          )}
+                            (!logo.composition.bolas ||
+                              logo.composition.bolas.length === 0) && (
+                              <p className="text-sm text-default-400 italic">Nenhum material adicionado</p>
+                            )}
                         </div>
                       )}
 
@@ -347,9 +373,9 @@ export function StepConfirmDetails({ formData, error }) {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </AccordionItem>
                 ))}
-              </div>
+              </Accordion>
             </Card>
           );
         })()}
