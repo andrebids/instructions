@@ -28,6 +28,12 @@
     }
 }
 
+/* Hero headline positioning */
+.hero-headline {
+    position: relative;
+    z-index: 30;
+}
+
 /* ============================================
    3D PERSPECTIVE & TRANSFORMS
    ============================================ */
@@ -36,10 +42,14 @@
 }
 
 .mockup-3d {
-    transform: rotateX(8deg) rotateY(0deg) rotateZ(0deg);
+    transform: rotateX(12deg) rotateY(-2deg) rotateZ(0deg) scale(0.85);
     transform-style: preserve-3d;
     transition: transform 0.3s ease-out;
     will-change: transform;
+}
+
+.mockup-3d:hover {
+    transform: rotateX(8deg) rotateY(0deg) rotateZ(0deg) scale(0.88);
 }
 
 /* ============================================
