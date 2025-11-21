@@ -313,6 +313,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
   // Estado para controlar a visibilidade do chat
   const [isChatOpen, setIsChatOpen] = React.useState(false);
 
+  // Estado para controlar drag and drop de arquivos
+  const [isDraggingFile, setIsDraggingFile] = React.useState(false);
+
   // Ref para rastrear se o campo "Requested By" já foi preenchido automaticamente
   const requestedByAutoFilled = React.useRef(false);
 
@@ -1534,55 +1537,205 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
           </h3>
         </CardHeader>
         <CardBody className="p-6 space-y-4">
-          <Textarea
-            label="Specific Criteria"
-            placeholder="Enter any specific requirements or criteria..."
-            minRows={2}
-            variant="bordered"
-            value={formik.values.criteria}
-            onValueChange={(v) => formik.updateField("criteria", v)}
-          />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Textarea
+              label="Specific Criteria"
+              placeholder="Enter any specific requirements or criteria..."
+              minRows={4}
+              variant="bordered"
+              value={formik.values.criteria}
+              onValueChange={(v) => formik.updateField("criteria", v)}
+            />
             <Textarea
               label="Full Description"
               placeholder="Detailed description of the logo..."
               minRows={4}
-              className="lg:col-span-2"
               variant="bordered"
               value={formik.values.description}
               onValueChange={(v) => formik.updateField("description", v)}
             />
-            <div className="flex flex-col gap-3">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-default-700">Attachments</p>
-                <Button
-                  color="primary"
-                  variant="flat"
-                  size="sm"
-                  startContent={<Icon icon="lucide:paperclip" />}
-                  onPress={() => document.getElementById('logo-file-input').click()}
-                  className="w-full"
-                >
-                  Upload Files
-                </Button>
-                <input
-                  id="logo-file-input"
-                  type="file"
-                  multiple
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ai,.eps"
-                  className="hidden"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files);
-                    handleUpdate("attachmentFiles", files);
-                    console.log("Files selected:", files);
-                  }}
-                />
-                {logoDetails.attachmentFiles && logoDetails.attachmentFiles.length > 0 && (
-                  <div className="text-xs text-default-500">
-                    {logoDetails.attachmentFiles.length} file(s) selected
-                  </div>
-                )}
-              </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-default-700">Attachments</p>
+              <Button
+                color="primary"
+                variant="flat"
+                size="sm"
+                startContent={<Icon icon="lucide:paperclip" />}
+                onPress={() => document.getElementById('logo-file-input').click()}
+              >
+                Upload Files
+              </Button>
+            </div>
+
+            <input
+              id="logo-file-input"
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ai,.eps"
+              className="hidden"
+              onChange={(e) => {
+                const newFiles = Array.from(e.target.files);
+                const existingFiles = logoDetails.attachmentFiles || [];
+                const allFiles = [...existingFiles, ...newFiles];
+
+                // Save directly to logoDetails, not currentLogo
+                const updatedLogoDetails = {
+                  ...logoDetails,
+                  attachmentFiles: allFiles,
+                  currentLogo: currentLogo,
+                  logos: savedLogos,
+                };
+                onInputChange("logoDetails", updatedLogoDetails);
+                console.log("Files selected:", newFiles);
+                console.log("All files:", allFiles);
+              }}
+            />
+
+            {/* Drag and Drop Area / Image Preview Grid */}
+            <div
+              className={`transition-colors rounded-lg ${isDraggingFile
+                ? 'border-2 border-dashed border-primary bg-primary-50'
+                : ''
+                }`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                console.log("Drag over detected");
+                setIsDraggingFile(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                console.log("Drag leave detected");
+                setIsDraggingFile(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDraggingFile(false);
+                console.log("Drop event triggered");
+                console.log("DataTransfer files:", e.dataTransfer.files);
+
+                const newFiles = Array.from(e.dataTransfer.files);
+                console.log("New files array:", newFiles);
+                console.log("Existing files:", logoDetails.attachmentFiles);
+
+                if (newFiles.length > 0) {
+                  const existingFiles = logoDetails.attachmentFiles || [];
+                  const allFiles = [...existingFiles, ...newFiles];
+                  console.log("All files to save:", allFiles);
+
+                  // Save directly to logoDetails, not currentLogo
+                  const updatedLogoDetails = {
+                    ...logoDetails,
+                    attachmentFiles: allFiles,
+                    currentLogo: currentLogo,
+                    logos: savedLogos,
+                  };
+                  onInputChange("logoDetails", updatedLogoDetails);
+                }
+              }}
+            >
+              {(() => {
+                console.log("Render check - currentLogo.generatedImage:", currentLogo.generatedImage);
+                console.log("Render check - logoDetails.attachmentFiles:", logoDetails.attachmentFiles);
+                console.log("Render check - attachmentFiles length:", logoDetails.attachmentFiles?.length);
+                return (currentLogo.generatedImage || (logoDetails.attachmentFiles && logoDetails.attachmentFiles.length > 0));
+              })() ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-3">
+                  {/* AI Generated Image */}
+                  {currentLogo.generatedImage && (
+                    <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-primary group">
+                      <img
+                        src={currentLogo.generatedImage}
+                        alt="AI Generated"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
+                        AI Generated
+                      </div>
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Button
+                          isIconOnly
+                          color="danger"
+                          variant="flat"
+                          size="sm"
+                          onPress={() => {
+                            const updatedCurrentLogo = { ...currentLogo, generatedImage: null };
+                            const updatedLogoDetails = {
+                              ...logoDetails,
+                              currentLogo: updatedCurrentLogo,
+                              logos: savedLogos,
+                            };
+                            onInputChange("logoDetails", updatedLogoDetails);
+                          }}
+                        >
+                          <Icon icon="solar:trash-bin-trash-linear" width={20} />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Uploaded Files */}
+                  {logoDetails.attachmentFiles && logoDetails.attachmentFiles.map((file, index) => {
+                    const isImage = file.type?.startsWith('image/');
+                    const fileUrl = URL.createObjectURL(file);
+
+                    return (
+                      <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-default-200 group">
+                        {isImage ? (
+                          <img
+                            src={fileUrl}
+                            alt={file.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-default-100 p-2">
+                            <Icon icon="lucide:file" className="w-8 h-8 text-default-400 mb-2" />
+                            <p className="text-xs text-center text-default-600 truncate w-full px-2">
+                              {file.name}
+                            </p>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button
+                            isIconOnly
+                            color="danger"
+                            variant="flat"
+                            size="sm"
+                            onPress={() => {
+                              const updatedFiles = logoDetails.attachmentFiles.filter((_, i) => i !== index);
+                              const updatedLogoDetails = {
+                                ...logoDetails,
+                                attachmentFiles: updatedFiles,
+                                currentLogo: currentLogo,
+                                logos: savedLogos,
+                              };
+                              onInputChange("logoDetails", updatedLogoDetails);
+                            }}
+                          >
+                            <Icon icon="solar:trash-bin-trash-linear" width={20} />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={`text-center py-8 border-2 border-dashed rounded-lg transition-colors ${isDraggingFile
+                  ? 'border-primary bg-primary-50'
+                  : 'border-default-200'
+                  }`}>
+                  <Icon icon="lucide:image-plus" className={`w-12 h-12 mx-auto mb-2 ${isDraggingFile ? 'text-primary' : 'text-default-300'
+                    }`} />
+                  <p className={`text-sm ${isDraggingFile ? 'text-primary font-medium' : 'text-default-400'}`}>
+                    {isDraggingFile ? 'Drop files here' : 'No attachments yet'}
+                  </p>
+                  <p className="text-xs text-default-300 mt-1">
+                    {isDraggingFile ? 'Release to upload' : 'Upload files, drag & drop, or generate images with AI'}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </CardBody>
