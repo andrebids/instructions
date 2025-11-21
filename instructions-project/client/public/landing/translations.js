@@ -180,7 +180,7 @@ const translations = {
                 }
             },
             card2: {
-                title: "Adicional dev member",
+                title: "Additional dev member",
                 names: "External Expansion",
                 tag: "Native Stores",
                 price: "€3720",
