@@ -17,8 +17,8 @@ const translations = {
                 darkmode: "The Core — Dark Mode",
                 live: "LIVE",
                 realtime: "Catalogue Stock",
-                stock: "STOCK VERIFIED",
-                items: "Items Available"
+                stock: "AI DESIGNER",
+                items: "Available 24/7"
             }
         },
         why: {
@@ -222,8 +222,8 @@ const translations = {
                 darkmode: "The Core — Mode Sombre",
                 live: "EN DIRECT",
                 realtime: "Catalogue Stock",
-                stock: "STOCK VÉRIFIÉ",
-                items: "Articles Disponibles"
+                stock: "DESIGNER IA",
+                items: "Disponible 24/7"
             }
         },
         why: {
