@@ -16,9 +16,9 @@ const translations = {
             mockup: {
                 darkmode: "The Core — Dark Mode",
                 live: "LIVE",
-                realtime: "Real-time Rendering",
+                realtime: "Rendering",
                 stock: "STOCK VERIFIED",
-                items: "247 Items Available"
+                items: "Items Available"
             }
         },
         why: {
@@ -221,9 +221,9 @@ const translations = {
             mockup: {
                 darkmode: "The Core — Mode Sombre",
                 live: "EN DIRECT",
-                realtime: "Rendu Temps Réel",
+                realtime: "Rendu",
                 stock: "STOCK VÉRIFIÉ",
-                items: "247 Articles Disponibles"
+                items: "Articles Disponibles"
             }
         },
         why: {
