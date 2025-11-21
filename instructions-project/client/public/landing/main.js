@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Animations
     const heroAnimations = new HeroAnimations();
 
+    // Initialize Compare Slider
+    initCompareSlider();
+
     // 3D Mouse Tracking Effect for Mockup
     const mockup3D = document.getElementById('mockup-3d');
     const heroSection = document.getElementById('hero-section');
@@ -61,3 +64,57 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+/**
+ * Compare Slider Logic
+ */
+function initCompareSlider() {
+    const container = document.getElementById('compare-container');
+    const beforeImage = document.getElementById('before-image');
+    const beforeImageImg = beforeImage ? beforeImage.querySelector('img') : null;
+    const sliderHandle = document.getElementById('slider-handle');
+
+    if (!container || !beforeImage || !sliderHandle) return;
+
+    let isDragging = false;
+
+    const onMove = (e) => {
+        if (!isDragging) return;
+
+        const rect = container.getBoundingClientRect();
+        let x = (e.clientX || e.touches[0].clientX) - rect.left;
+
+        // Clamp values
+        if (x < 0) x = 0;
+        if (x > rect.width) x = rect.width;
+
+        const percentage = (x / rect.width) * 100;
+
+        // Update DOM
+        beforeImage.style.width = `${percentage}%`;
+        sliderHandle.style.left = `${percentage}%`;
+
+        // Counter-scale the image to prevent squishing
+        if (beforeImageImg) {
+            beforeImageImg.style.width = `${100 / (percentage / 100)}%`;
+        }
+    };
+
+    const onStart = () => {
+        isDragging = true;
+    };
+
+    const onEnd = () => {
+        isDragging = false;
+    };
+
+    // Mouse Events
+    container.addEventListener('mousedown', onStart);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onEnd);
+
+    // Touch Events
+    container.addEventListener('touchstart', onStart);
+    window.addEventListener('touchmove', onMove);
+    window.addEventListener('touchend', onEnd);
+}
