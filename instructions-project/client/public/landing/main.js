@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Animations
     const heroAnimations = new HeroAnimations();
 
+    // Initialize Compare Slider
+    initCompareSlider();
+
     // 3D Mouse Tracking Effect for Mockup
     const mockup3D = document.getElementById('mockup-3d');
     const heroSection = document.getElementById('hero-section');
@@ -60,4 +63,108 @@ document.addEventListener('DOMContentLoaded', () => {
             mouseY = 0;
         });
     }
+    // Initialize Translations
+    initTranslations();
 });
+
+/**
+ * Translation Logic
+ */
+function initTranslations() {
+    const langToggle = document.getElementById('lang-toggle');
+    const savedLang = localStorage.getItem('preferredLanguage') || 'en';
+    let currentLang = savedLang;
+
+    // Function to update all text elements
+    const updateLanguage = (lang) => {
+        // Update all elements with data-i18n attribute
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            // Traverse the translations object using the key (e.g., 'nav.capabilities')
+            const translation = key.split('.').reduce((obj, k) => obj && obj[k], translations[lang]);
+
+            if (translation) {
+                // Handle HTML content if needed, otherwise textContent
+                if (element.tagName === 'STRONG' || element.innerHTML.includes('<')) {
+                    element.innerHTML = translation;
+                } else {
+                    element.textContent = translation;
+                }
+            }
+        });
+
+        // Update toggle button text
+        if (langToggle) {
+            langToggle.textContent = lang === 'en' ? 'FR' : 'EN';
+        }
+
+        // Save preference
+        localStorage.setItem('preferredLanguage', lang);
+        currentLang = lang;
+    };
+
+    // Initial update
+    updateLanguage(currentLang);
+
+    // Event listener for toggle button
+    if (langToggle) {
+        langToggle.addEventListener('click', () => {
+            const newLang = currentLang === 'en' ? 'fr' : 'en';
+            updateLanguage(newLang);
+        });
+    }
+}
+
+/**
+ * Compare Slider Logic
+ */
+function initCompareSlider() {
+    const container = document.getElementById('compare-container');
+    const beforeImage = document.getElementById('before-image');
+    const beforeImageImg = beforeImage ? beforeImage.querySelector('img') : null;
+    const sliderHandle = document.getElementById('slider-handle');
+
+    if (!container || !beforeImage || !sliderHandle) return;
+
+    let isDragging = false;
+
+    const onMove = (e) => {
+        if (!isDragging) return;
+
+        const rect = container.getBoundingClientRect();
+        let x = (e.clientX || e.touches[0].clientX) - rect.left;
+
+        // Clamp values
+        if (x < 0) x = 0;
+        if (x > rect.width) x = rect.width;
+
+        const percentage = (x / rect.width) * 100;
+
+        // Update DOM
+        beforeImage.style.width = `${percentage}%`;
+        sliderHandle.style.left = `${percentage}%`;
+
+        // Counter-scale the image to prevent squishing
+        if (beforeImageImg) {
+            beforeImageImg.style.width = `${100 / (percentage / 100)}%`;
+        }
+    };
+
+    const onStart = () => {
+        isDragging = true;
+    };
+
+    const onEnd = () => {
+        isDragging = false;
+    };
+
+    // Mouse Events
+    container.addEventListener('mousedown', onStart);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onEnd);
+
+    // Touch Events
+    container.addEventListener('touchstart', onStart);
+    window.addEventListener('touchmove', onMove);
+    window.addEventListener('touchend', onEnd);
+}
