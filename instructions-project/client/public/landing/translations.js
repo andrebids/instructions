@@ -159,7 +159,7 @@ const translations = {
                 title: "In-House Agile",
                 names: "Leandro & André",
                 tag: "Fastest to Market",
-                price: "€120",
+                price: "€180",
                 cost_desc: "Total Operational Costs",
                 strat: {
                     title: "Platform Strategy",
