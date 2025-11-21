@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Compare Slider
     initCompareSlider();
 
+    // Initialize Translations
+    initTranslations();
+
     // 3D Mouse Tracking Effect for Mockup
     const mockup3D = document.getElementById('mockup-3d');
     const heroSection = document.getElementById('hero-section');
@@ -63,15 +66,17 @@ document.addEventListener('DOMContentLoaded', () => {
             mouseY = 0;
         });
     }
-    // Initialize Translations
-    initTranslations();
 });
 
 /**
  * Translation Logic
  */
 function initTranslations() {
-    const langToggle = document.getElementById('lang-toggle');
+    const langBtn = document.getElementById('lang-btn');
+    const langDropdown = document.getElementById('lang-dropdown');
+    const currentFlag = document.getElementById('current-flag');
+    const currentLangText = document.getElementById('current-lang-text');
+
     const savedLang = localStorage.getItem('preferredLanguage') || 'en';
     let currentLang = savedLang;
 
@@ -93,31 +98,47 @@ function initTranslations() {
             }
         });
 
-        // Update toggle button text
-        if (langToggle) {
-            // Show the option to switch TO the other language
+        // Update current state display
+        if (currentFlag && currentLangText) {
             if (lang === 'en') {
-                langToggle.innerHTML = '<span class="mr-1">🇫🇷</span> FR';
+                currentFlag.textContent = '🇬🇧';
+                currentLangText.textContent = 'EN';
             } else {
-                langToggle.innerHTML = '<span class="mr-1">🇬🇧</span> EN';
+                currentFlag.textContent = '🇫🇷';
+                currentLangText.textContent = 'FR';
             }
         }
 
         // Save preference
         localStorage.setItem('preferredLanguage', lang);
         currentLang = lang;
+
+        // Close dropdown if open
+        if (langDropdown) {
+            langDropdown.classList.remove('dropdown-open');
+        }
     };
 
     // Initial update
     updateLanguage(currentLang);
 
-    // Event listener for toggle button
-    if (langToggle) {
-        langToggle.addEventListener('click', () => {
-            const newLang = currentLang === 'en' ? 'fr' : 'en';
-            updateLanguage(newLang);
+    // Dropdown Toggle
+    if (langBtn && langDropdown) {
+        langBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            langDropdown.classList.toggle('dropdown-open');
+        });
+
+        // Close on click outside
+        document.addEventListener('click', () => {
+            langDropdown.classList.remove('dropdown-open');
         });
     }
+
+    // Expose switch function globally for onclick handlers
+    window.switchLanguage = (lang) => {
+        updateLanguage(lang);
+    };
 }
 
 /**
