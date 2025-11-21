@@ -1,7 +1,7 @@
-import {Avatar, Button, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Badge, Popover, PopoverTrigger, PopoverContent, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter} from "@heroui/react";
-import {Icon} from "@iconify/react";
+import { Avatar, Button, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Badge, Popover, PopoverTrigger, PopoverContent, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+import { Icon } from "@iconify/react";
 import React from "react";
-import {useTheme} from "@heroui/use-theme";
+import { useTheme } from "@heroui/use-theme";
 import { useUser } from "../../context/UserContext";
 import { useAuthContext } from "../../context/AuthContext";
 import { GlobalSyncStatus } from "../features/SyncStatus";
@@ -10,16 +10,17 @@ import { useTranslation } from "react-i18next";
 import { usersAPI } from "../../services/api";
 import { PasswordField } from "../admin/PasswordField";
 import { usePasswordGenerator } from "../../hooks/usePasswordGenerator";
+import { DragAndDropZone } from "../ui/DragAndDropZone";
 
 export function Header() {
   const { t } = useTranslation();
-  const {theme, setTheme} = useTheme();
+  const { theme, setTheme } = useTheme();
   const [showSearch, setShowSearch] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [showSettings, setShowSettings] = React.useState(false);
   const { userName, setUserName } = useUser();
   const [tempName, setTempName] = React.useState("");
-  
+
   // Estados para edição de perfil
   const [editingName, setEditingName] = React.useState("");
   const [editingImage, setEditingImage] = React.useState(null);
@@ -36,7 +37,7 @@ export function Header() {
     setPassword(newPassword);
     setPasswordConfirm(newPassword);
   });
-  
+
   const authContext = useAuthContext();
   const activeUser = authContext?.user;
   const handleSignOut = async () => {
@@ -44,7 +45,7 @@ export function Header() {
       await authContext.signOut();
     }
   };
-  
+
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
   };
@@ -69,29 +70,40 @@ export function Header() {
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validar tipo de arquivo
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
-        setSaveError('Apenas imagens (JPEG, PNG, WebP) são permitidas');
-        return;
-      }
-
-      // Validar tamanho (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setSaveError('A imagem deve ter no máximo 5MB');
-        return;
-      }
-
-      setEditingImage(file);
-      setSaveError(null);
-
-      // Criar preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+      validateAndSetImage(file);
     }
+  };
+
+  const handleFilesSelected = (files) => {
+    const file = files[0];
+    if (file) {
+      validateAndSetImage(file);
+    }
+  };
+
+  const validateAndSetImage = (file) => {
+    // Validar tipo de arquivo
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setSaveError('Apenas imagens (JPEG, PNG, WebP) são permitidas');
+      return;
+    }
+
+    // Validar tamanho (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setSaveError('A imagem deve ter no máximo 5MB');
+      return;
+    }
+
+    setEditingImage(file);
+    setSaveError(null);
+
+    // Criar preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   // Função para salvar perfil
@@ -150,7 +162,7 @@ export function Header() {
         } catch (passwordError) {
           const errorMessage = passwordError.response?.data?.message || passwordError.response?.data?.error || 'Erro ao atualizar senha';
           const errorDetails = passwordError.response?.data?.details;
-          
+
           if (errorDetails && Array.isArray(errorDetails)) {
             setSaveError(`${errorMessage}\n\n${errorDetails.join('\n')}`);
           } else {
@@ -177,7 +189,7 @@ export function Header() {
 
       // Atualizar estado local
       setSaveSuccess(true);
-      
+
       // Aguardar um pouco para garantir que o banco processou a atualização
       // e então forçar atualização da sessão para refletir as mudanças
       setTimeout(async () => {
@@ -191,7 +203,7 @@ export function Header() {
           }
         }
       }, 300); // Pequeno delay para garantir que o banco processou
-      
+
       // Fechar modal após 1 segundo
       setTimeout(() => {
         setShowSettings(false);
@@ -211,19 +223,19 @@ export function Header() {
       </div>
       <div className="flex items-center gap-3">
         <GlobalSyncStatus />
-        
+
         <LocaleSelector />
-        
-        <Button 
-          isIconOnly 
-          variant="light" 
+
+        <Button
+          isIconOnly
+          variant="light"
           onClick={toggleTheme}
           className="bg-default-100/50 hover:bg-default-200/50"
           aria-label={t('components.header.ariaLabels.toggleTheme')}
         >
-          <Icon 
-            icon={theme === "light" ? "lucide:moon" : "lucide:sun"} 
-            className="text-xl" 
+          <Icon
+            icon={theme === "light" ? "lucide:moon" : "lucide:sun"}
+            className="text-xl"
           />
         </Button>
 
@@ -248,16 +260,16 @@ export function Header() {
           </Button>
         )}
 
-        <Popover 
+        <Popover
           placement="bottom-end"
           isOpen={showNotifications}
           onOpenChange={setShowNotifications}
         >
           <PopoverTrigger>
             <Badge content="3" color="danger" shape="circle" placement="top-right">
-              <Button 
-                isIconOnly 
-                variant="light" 
+              <Button
+                isIconOnly
+                variant="light"
                 aria-label={t('components.header.ariaLabels.notifications')}
                 className="bg-default-100/50 hover:bg-default-200/50"
                 onPress={() => {
@@ -273,9 +285,9 @@ export function Header() {
             <div className="p-4 border-b border-divider/50">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-lg">{t('components.header.recentUpdates')}</h3>
-                <Button 
-                  size="sm" 
-                  variant="light" 
+                <Button
+                  size="sm"
+                  variant="light"
                   isIconOnly
                   onPress={() => setShowNotifications(false)}
                   className="mr-0"
@@ -295,7 +307,7 @@ export function Header() {
                     <div className="text-xs text-default-400 mt-1">{t('components.header.notifications.hoursAgo', { count: 2 })}</div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-default-100/30 transition-colors cursor-pointer">
                   <div className="flex-shrink-0 w-2 h-2 bg-warning rounded-full mt-2"></div>
                   <div className="flex-1">
@@ -304,7 +316,7 @@ export function Header() {
                     <div className="text-xs text-default-400 mt-1">{t('components.header.notifications.hoursAgo', { count: 4 })}</div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-default-100/30 transition-colors cursor-pointer">
                   <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></div>
                   <div className="flex-1">
@@ -313,7 +325,7 @@ export function Header() {
                     <div className="text-xs text-default-400 mt-1">{t('components.header.notifications.dayAgo')}</div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-default-100/30 transition-colors cursor-pointer opacity-60">
                   <div className="flex-shrink-0 w-2 h-2 bg-default-300 rounded-full mt-2"></div>
                   <div className="flex-1">
@@ -325,9 +337,9 @@ export function Header() {
               </div>
             </div>
             <div className="p-3 border-t border-divider/50">
-              <Button 
-                size="sm" 
-                variant="light" 
+              <Button
+                size="sm"
+                variant="light"
                 className="w-full"
                 onPress={() => console.log("📋 View all projects clicked")}
               >
@@ -347,7 +359,7 @@ export function Header() {
               className="transition-transform"
             />
           </DropdownTrigger>
-          <DropdownMenu aria-label="Profile Actions" variant="flat" onAction={(key)=>{
+          <DropdownMenu aria-label="Profile Actions" variant="flat" onAction={(key) => {
             if (key === 'settings') {
               setTempName(userName || "Christopher");
               setShowSettings(true);
@@ -363,10 +375,10 @@ export function Header() {
         </Dropdown>
 
         {/* My Settings Modal */}
-        <Modal 
-          isOpen={showSettings} 
-          onClose={()=>setShowSettings(false)} 
-          placement="center" 
+        <Modal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          placement="center"
           backdrop="blur"
           size="2xl"
           scrollBehavior="inside"
@@ -396,7 +408,7 @@ export function Header() {
                       {/* Seção: Informações da Conta */}
                       <div>
                         <h3 className="text-base font-semibold mb-3">{t('components.header.accountInfo')}</h3>
-                        
+
                         {/* Informações não editáveis - Compacto */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-default-50 dark:bg-default-100/30 rounded-lg">
                           <p className="text-xs sm:text-sm">
@@ -420,16 +432,24 @@ export function Header() {
                         <h3 className="text-base font-semibold mb-3">Imagem de Perfil</h3>
                         <div className="flex flex-col sm:flex-row items-start gap-3">
                           {/* Preview da imagem */}
+                          {/* Preview da imagem */}
                           <div className="flex-shrink-0">
-                            <Avatar
-                              src={imagePreview}
-                              name={editingName || activeUser?.name || activeUser?.email}
-                              size="md"
-                              className="sm:size-16"
-                              isBordered
-                            />
+                            <DragAndDropZone
+                              onFilesSelected={handleFilesSelected}
+                              accept="image/jpeg,image/jpg,image/png,image/webp"
+                              className="relative group flex-shrink-0 rounded-full overflow-hidden w-10 h-10 sm:w-16 sm:h-16 border-2 border-default-200"
+                            >
+                              <Avatar
+                                src={imagePreview}
+                                name={editingName || activeUser?.name || activeUser?.email}
+                                className="w-full h-full"
+                              />
+                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                <Icon icon="lucide:camera" className="text-white" />
+                              </div>
+                            </DragAndDropZone>
                           </div>
-                          
+
                           {/* Botão de upload */}
                           <div className="flex-1 w-full sm:w-auto">
                             <input
@@ -510,12 +530,12 @@ export function Header() {
                                 variant="bordered"
                                 color={
                                   password &&
-                                  passwordConfirm &&
-                                  password === passwordConfirm
+                                    passwordConfirm &&
+                                    password === passwordConfirm
                                     ? 'success'
                                     : passwordConfirm
-                                    ? 'danger'
-                                    : 'default'
+                                      ? 'danger'
+                                      : 'default'
                                 }
                                 description={
                                   password && passwordConfirm

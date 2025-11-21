@@ -22,7 +22,8 @@ import {
 } from "@heroui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@iconify/react";
-import { productsAPI } from "../services/api";
+import { DragAndDropZone } from "../components/ui/DragAndDropZone";
+import { usersAPI, productsAPI } from "../services/api";
 import { PageTitle } from "../components/layout/page-title";
 import { useUser } from "../context/UserContext";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
@@ -306,12 +307,6 @@ export default function AdminProducts() {
     animation: null,
     animationSimulation: null,
   });
-
-  // Referências para inputs de ficheiro escondidos
-  var dayImageInputRef = React.useRef(null);
-  var nightImageInputRef = React.useRef(null);
-  var animationInputRef = React.useRef(null);
-  var animationSimulationInputRef = React.useRef(null);
 
   // Carregar produtos
   var loadProducts = React.useCallback(function () {
@@ -2123,170 +2118,151 @@ export default function AdminProducts() {
                       </Select>
                     </div>
 
-                    {/* Upload de imagens */}
+                    {/* Imagens (Day/Night) */}
                     <div className="grid grid-cols-2 gap-4">
-                      {/* Imagem Dia */}
                       <div>
                         <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">Day Image</label>
-                        <input
-                          ref={dayImageInputRef}
-                          type="file"
+                        <DragAndDropZone
                           accept="image/*"
-                          onChange={function (e) {
-                            var file = e.target.files && e.target.files[0];
-                            if (file) {
-                              handleImageChange("dayImage", file);
-                            }
-                          }}
-                          className="hidden"
-                          aria-label="Selecionar imagem do dia"
-                        />
-                        <Button
-                          variant="bordered"
+                          onFilesSelected={(files) => handleImageChange("dayImage", files[0])}
                           className="w-full"
-                          onPress={function () {
-                            dayImageInputRef.current?.click();
-                          }}
-                          startContent={<Icon icon="lucide:upload" />}
                         >
-                          {imageFiles.dayImage ? imageFiles.dayImage.name : "Select Day Image"}
-                        </Button>
-                        {imagePreviews.dayImage && (
-                          <div className="mt-2">
-                            <Image
-                              src={imagePreviews.dayImage}
-                              alt="Day preview"
-                              className="max-h-32 object-contain rounded-lg"
-                              onError={(e) => {
-                                console.warn('⚠️ [AdminProducts] Erro ao carregar preview de dayImage, limpando preview');
-                                setImagePreviews((prev) => {
-                                  const newPreviews = { ...prev };
-                                  delete newPreviews.dayImage;
-                                  return newPreviews;
-                                });
-                              }}
-                            />
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="bordered"
+                              className="w-full pointer-events-none"
+                              startContent={<Icon icon="lucide:sun" />}
+                            >
+                              {imageFiles.dayImage ? imageFiles.dayImage.name : "Select Image"}
+                            </Button>
+                            {imagePreviews.dayImage && (
+                              <div className="mt-2 relative group">
+                                <Image
+                                  src={imagePreviews.dayImage}
+                                  alt="Day preview"
+                                  className="max-h-32 object-contain rounded-lg"
+                                  onError={(e) => {
+                                    console.warn('⚠️ [AdminProducts] Erro ao carregar preview de dayImage, limpando preview');
+                                    setImagePreviews((prev) => {
+                                      const newPreviews = { ...prev };
+                                      delete newPreviews.dayImage;
+                                      return newPreviews;
+                                    });
+                                  }}
+                                />
+                              </div>
+                            )}
                           </div>
-                        )}
-                        <p className="text-xs text-default-500 mt-1">Thumbnail will be generated automatically</p>
+                        </DragAndDropZone>
                       </div>
-
-                      {/* Imagem Noite */}
                       <div>
                         <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">Night Image</label>
-                        <input
-                          ref={nightImageInputRef}
-                          type="file"
+                        <DragAndDropZone
                           accept="image/*"
-                          onChange={function (e) {
-                            var file = e.target.files && e.target.files[0];
-                            if (file) {
-                              handleImageChange("nightImage", file);
-                            }
-                          }}
-                          className="hidden"
-                          aria-label="Selecionar imagem da noite"
-                        />
-                        <Button
-                          variant="bordered"
+                          onFilesSelected={(files) => handleImageChange("nightImage", files[0])}
                           className="w-full"
-                          onPress={function () {
-                            nightImageInputRef.current?.click();
-                          }}
-                          startContent={<Icon icon="lucide:upload" />}
                         >
-                          {imageFiles.nightImage ? imageFiles.nightImage.name : "Select Night Image"}
-                        </Button>
-                        {imagePreviews.nightImage && (
-                          <div className="mt-2">
-                            <Image
-                              src={imagePreviews.nightImage}
-                              alt="Night preview"
-                              className="max-h-32 object-contain rounded-lg"
-                              onError={(e) => {
-                                console.warn('⚠️ [AdminProducts] Erro ao carregar preview de nightImage, limpando preview');
-                                setImagePreviews((prev) => {
-                                  const newPreviews = { ...prev };
-                                  delete newPreviews.nightImage;
-                                  return newPreviews;
-                                });
-                              }}
-                            />
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="bordered"
+                              className="w-full pointer-events-none"
+                              startContent={<Icon icon="lucide:moon" />}
+                            >
+                              {imageFiles.nightImage ? imageFiles.nightImage.name : "Select Image"}
+                            </Button>
+                            {imagePreviews.nightImage && (
+                              <div className="mt-2 relative group">
+                                <Image
+                                  src={imagePreviews.nightImage}
+                                  alt="Night preview"
+                                  className="max-h-32 object-contain rounded-lg"
+                                  onError={(e) => {
+                                    console.warn('⚠️ [AdminProducts] Erro ao carregar preview de nightImage, limpando preview');
+                                    setImagePreviews((prev) => {
+                                      const newPreviews = { ...prev };
+                                      delete newPreviews.nightImage;
+                                      return newPreviews;
+                                    });
+                                  }}
+                                />
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </DragAndDropZone>
                       </div>
 
-                      {/* Animação/Vídeo */}
+                      {/* Animation Video */}
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">Animation/Video</label>
-                        <input
-                          ref={animationInputRef}
-                          type="file"
+                        <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">Animation Video</label>
+                        <DragAndDropZone
                           accept="video/*"
-                          onChange={function (e) {
-                            var file = e.target.files && e.target.files[0];
-                            if (file) {
-                              handleImageChange("animation", file);
-                            }
-                          }}
-                          className="hidden"
-                          aria-label="Selecionar animação ou vídeo"
-                        />
-                        <Button
-                          variant="bordered"
+                          onFilesSelected={(files) => handleImageChange("animation", files[0])}
                           className="w-full"
-                          onPress={function () {
-                            animationInputRef.current?.click();
-                          }}
-                          startContent={<Icon icon="lucide:video" />}
                         >
-                          {imageFiles.animation ? imageFiles.animation.name : "Select Video"}
-                        </Button>
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="bordered"
+                              className="w-full pointer-events-none"
+                              startContent={<Icon icon="lucide:video" />}
+                            >
+                              {imageFiles.animation ? imageFiles.animation.name : "Select Video"}
+                            </Button>
+                            {imagePreviews.animation && (
+                              <div className="mt-2">
+                                <video
+                                  src={imagePreviews.animation}
+                                  controls
+                                  className="max-h-32 w-full object-contain rounded-lg"
+                                  onError={(e) => {
+                                    console.warn('⚠️ [AdminProducts] Erro ao carregar preview de animation, limpando preview');
+                                    setImagePreviews((prev) => {
+                                      const newPreviews = { ...prev };
+                                      delete newPreviews.animation;
+                                      return newPreviews;
+                                    });
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </DragAndDropZone>
                       </div>
 
                       {/* Vídeo Simulação Animada */}
                       <div>
                         <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">Animation Simulation Video</label>
-                        <input
-                          ref={animationSimulationInputRef}
-                          type="file"
+                        <DragAndDropZone
                           accept="video/*"
-                          onChange={function (e) {
-                            var file = e.target.files && e.target.files[0];
-                            if (file) {
-                              handleImageChange("animationSimulation", file);
-                            }
-                          }}
-                          className="hidden"
-                          aria-label="Selecionar vídeo de simulação animada"
-                        />
-                        <Button
-                          variant="bordered"
+                          onFilesSelected={(files) => handleImageChange("animationSimulation", files[0])}
                           className="w-full"
-                          onPress={function () {
-                            animationSimulationInputRef.current?.click();
-                          }}
-                          startContent={<Icon icon="lucide:play-circle" />}
                         >
-                          {imageFiles.animationSimulation ? imageFiles.animationSimulation.name : "Select Simulation Video"}
-                        </Button>
-                        {imagePreviews.animationSimulation && (
-                          <div className="mt-2">
-                            <video
-                              src={imagePreviews.animationSimulation}
-                              controls
-                              className="max-h-32 w-full object-contain rounded-lg"
-                              onError={(e) => {
-                                console.warn('⚠️ [AdminProducts] Erro ao carregar preview de animationSimulation, limpando preview');
-                                setImagePreviews((prev) => {
-                                  const newPreviews = { ...prev };
-                                  delete newPreviews.animationSimulation;
-                                  return newPreviews;
-                                });
-                              }}
-                            />
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="bordered"
+                              className="w-full pointer-events-none"
+                              startContent={<Icon icon="lucide:play-circle" />}
+                            >
+                              {imageFiles.animationSimulation ? imageFiles.animationSimulation.name : "Select Simulation Video"}
+                            </Button>
+                            {imagePreviews.animationSimulation && (
+                              <div className="mt-2">
+                                <video
+                                  src={imagePreviews.animationSimulation}
+                                  controls
+                                  className="max-h-32 w-full object-contain rounded-lg"
+                                  onError={(e) => {
+                                    console.warn('⚠️ [AdminProducts] Erro ao carregar preview de animationSimulation, limpando preview');
+                                    setImagePreviews((prev) => {
+                                      const newPreviews = { ...prev };
+                                      delete newPreviews.animationSimulation;
+                                      return newPreviews;
+                                    });
+                                  }}
+                                />
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </DragAndDropZone>
                       </div>
                     </div>
 
@@ -2983,7 +2959,7 @@ export default function AdminProducts() {
                       </Checkbox>
                     </div>
                   </div>
-                </ModalBody>
+                </ModalBody >
                 <ModalFooter>
                   <Button
                     variant="flat"
@@ -3001,7 +2977,7 @@ export default function AdminProducts() {
           }}
         </ModalContent>
       </Modal>
-    </div>
+    </div >
   );
 }
 

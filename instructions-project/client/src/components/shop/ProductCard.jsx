@@ -15,13 +15,13 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
   const previewSrc = React.useMemo(() => {
     if (activeColor && product.images?.colors?.[activeColor]) {
       const colorImg = product.images.colors[activeColor];
-      // Filtrar URLs temporárias
-      if (colorImg && !colorImg.includes('temp_')) return colorImg;
+      // Filtrar URLs temporárias - REMOVIDO
+      if (colorImg) return colorImg;
     }
-    if (product.images?.night && !product.images.night.includes('temp_')) {
+    if (product.images?.night) {
       return product.images.night; // prefer night on cards
     }
-    if (product.images?.day && !product.images.day.includes('temp_')) {
+    if (product.images?.day) {
       return product.images.day;
     }
     return null; // Retornar null para usar placeholder
