@@ -1588,7 +1588,23 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         </CardBody>
       </Card>
 
-      <AIAssistantChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      <AIAssistantChat
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        onSaveImage={(imageUrl) => {
+          const updatedCurrentLogo = {
+            ...currentLogo,
+            generatedImage: imageUrl
+          };
+          const updatedLogoDetails = {
+            ...logoDetails,
+            currentLogo: updatedCurrentLogo,
+            logos: savedLogos,
+          };
+          onInputChange("logoDetails", updatedLogoDetails);
+          setIsChatOpen(false);
+        }}
+      />
     </div>
   );
 }

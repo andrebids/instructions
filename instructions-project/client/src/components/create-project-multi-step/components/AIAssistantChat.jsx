@@ -1,171 +1,177 @@
 import React from "react";
 import {
-    Card,
-    CardHeader,
-    CardBody,
-    CardFooter,
-    Input,
-    Button,
-    Avatar,
-    ScrollShadow,
+    Modal,
+    ModalContent,
+    ModalBody,
+    ModalHeader,
+    Button
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
-export function AIAssistantChat({ isOpen, onClose }) {
-    const [messages, setMessages] = React.useState([
-        {
-            id: 1,
-            role: "assistant",
-            content: "Olá! Em que posso ajudar?",
-            timestamp: new Date(),
-        },
-    ]);
-    const [inputValue, setInputValue] = React.useState("");
-    const messagesEndRef = React.useRef(null);
+import PlaygroundSidebar from "./PlaygroundSidebar";
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
+export function AIAssistantChat({ isOpen, onClose, onSaveImage }) {
+    const [generationStatus, setGenerationStatus] = React.useState('idle'); // 'idle', 'generating', 'complete'
+    const [generatedImageUrl, setGeneratedImageUrl] = React.useState(null);
+    const [generationType, setGenerationType] = React.useState(null); // 'video' or 'reveal'
+    const [revealProgress, setRevealProgress] = React.useState(0);
+    const [clearPromptTrigger, setClearPromptTrigger] = React.useState(0);
+    const videoRef = React.useRef(null);
 
-    React.useEffect(() => {
-        if (isOpen) {
-            scrollToBottom();
+    const handleGenerate = (prompt, referenceImage) => {
+        const normalizedPrompt = prompt?.trim().toLowerCase() || '';
+
+        // Check which fake generation to use based on prompt
+        if (normalizedPrompt === 'coelho azul') {
+            setGenerationType('video');
+            setGenerationStatus('generating');
+            setGeneratedImageUrl('/AIGENERATOR/coelho.webp');
+
+            // Fallback timeout if video doesn't trigger
+            setTimeout(() => {
+                setGenerationStatus('complete');
+            }, 3000);
+        } else if (normalizedPrompt === 'pai natal') {
+            setGenerationType('reveal');
+            setGenerationStatus('generating');
+            setGeneratedImageUrl('/AIGENERATOR/PAINATAL.webp');
+            setRevealProgress(0);
+
+            // Progressive reveal animation
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 2;
+                setRevealProgress(progress);
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        setGenerationStatus('complete');
+                    }, 200);
+                }
+            }, 30); // Update every 30ms for smooth animation
+        } else {
+            // For other prompts, show a message or do nothing
+            console.log('No fake generation available for this prompt:', prompt);
         }
-    }, [messages, isOpen]);
-
-    const handleSendMessage = (e) => {
-        e.preventDefault();
-        if (!inputValue.trim()) return;
-
-        const newMessage = {
-            id: Date.now(),
-            role: "user",
-            content: inputValue,
-            timestamp: new Date(),
-        };
-
-        setMessages((prev) => [...prev, newMessage]);
-        setInputValue("");
-
-        // Simulate AI response (placeholder for now)
-        // setTimeout(() => {
-        //   setMessages((prev) => [
-        //     ...prev,
-        //     {
-        //       id: Date.now() + 1,
-        //       role: "assistant",
-        //       content: "I'm just a demo for now, but I'm listening!",
-        //       timestamp: new Date(),
-        //     },
-        //   ]);
-        // }, 1000);
     };
 
-    if (!isOpen) return null;
+    const handleVideoEnded = () => {
+        setGenerationStatus('complete');
+    };
+
+    const handleReset = () => {
+        setGenerationStatus('idle');
+        setGeneratedImageUrl(null);
+        setGenerationType(null);
+        setRevealProgress(0);
+        setClearPromptTrigger(prev => prev + 1); // Trigger prompt clear in sidebar
+    };
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-48px)] shadow-2xl">
-            <Card className="h-[500px] max-h-[80vh] flex flex-col border border-default-200">
-                <CardHeader className="flex justify-between items-center px-4 py-3 border-b border-default-100 bg-default-50">
-                    <div className="flex items-center gap-3">
-                        <div className="p-1.5 bg-gradient-to-tr from-primary-500 to-secondary-500 rounded-lg">
-                            <Icon icon="lucide:sparkles" className="text-white w-5 h-5" />
-                        </div>
-                        <div>
-                            <h3 className="font-semibold text-default-900">AI Assistant</h3>
-                            <p className="text-xs text-default-500">Logo Design Helper</p>
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            size="5xl"
+            scrollBehavior="inside"
+            classNames={{
+                base: "max-h-[90vh]",
+                body: "p-0"
+            }}
+            backdrop="blur"
+        >
+            <ModalContent>
+                {(onClose) => (
+                    <div className="flex h-[85vh] w-full overflow-hidden">
+                        <PlaygroundSidebar onGenerate={handleGenerate} clearPromptTrigger={clearPromptTrigger} />
+                        <div className="flex flex-1 flex-col">
+                            <ModalHeader className="flex flex-col gap-1 px-6 py-4 border-b border-default-100">
+                                <div className="flex items-center justify-between w-full">
+                                    <div className="flex items-center gap-2">
+                                        <Icon icon="lucide:sparkles" className="w-5 h-5 text-default-500" />
+                                        <span className="text-medium font-medium">Image Generation</span>
+                                    </div>
+                                </div>
+                            </ModalHeader>
+                            <ModalBody className="p-6 flex-1 overflow-hidden bg-default-50/50">
+                                {generationStatus === 'idle' && (
+                                    <div className="flex h-full w-full items-center justify-center">
+                                        <div className="flex flex-col items-center justify-center gap-4 text-center max-w-md">
+                                            <div className="w-24 h-24 rounded-full bg-default-100 flex items-center justify-center mb-4">
+                                                <Icon icon="solar:gallery-wide-bold" className="w-10 h-10 text-default-400" />
+                                            </div>
+                                            <h1 className="text-default-900 text-2xl font-bold">No images generated yet</h1>
+                                            <p className="text-default-500">
+                                                Enter a prompt in the sidebar and click Generate to see your results here.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {generationStatus === 'generating' && generationType === 'video' && (
+                                    <div className="flex h-full w-full items-center justify-center">
+                                        <video
+                                            ref={videoRef}
+                                            autoPlay
+                                            muted
+                                            onEnded={handleVideoEnded}
+                                            className="max-w-full max-h-full object-contain"
+                                        >
+                                            <source src="/AIGENERATOR/coelho.webm" type="video/webm" />
+                                        </video>
+                                    </div>
+                                )}
+
+                                {generationStatus === 'generating' && generationType === 'reveal' && generatedImageUrl && (
+                                    <div className="flex h-full w-full items-center justify-center">
+                                        <div className="relative max-w-full max-h-full">
+                                            <img
+                                                src={generatedImageUrl}
+                                                alt="Generating"
+                                                className="max-w-full max-h-full object-contain"
+                                                style={{
+                                                    filter: `blur(${20 - (revealProgress * 0.2)}px)`,
+                                                    clipPath: `inset(0 0 ${100 - revealProgress}% 0)`
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {generationStatus === 'complete' && generatedImageUrl && (
+                                    <div className="flex h-full w-full flex-col gap-4">
+                                        <div className="flex-1 flex items-center justify-center overflow-hidden">
+                                            <img
+                                                src={generatedImageUrl}
+                                                alt="Generated"
+                                                className="max-w-full max-h-full object-contain rounded-lg"
+                                            />
+                                        </div>
+                                        <div className="flex justify-center gap-2">
+                                            <Button
+                                                color="primary"
+                                                variant="solid"
+                                                startContent={<Icon icon="solar:download-linear" width={20} />}
+                                                onPress={() => onSaveImage?.(generatedImageUrl)}
+                                            >
+                                                Save
+                                            </Button>
+                                            <Button
+                                                color="primary"
+                                                variant="flat"
+                                                onPress={handleReset}
+                                                startContent={<Icon icon="solar:restart-bold" width={20} />}
+                                            >
+                                                Generate New
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </ModalBody>
                         </div>
                     </div>
-                    <Button
-                        isIconOnly
-                        variant="light"
-                        size="sm"
-                        onPress={onClose}
-                        className="text-default-500 hover:text-default-900"
-                    >
-                        <Icon icon="lucide:x" className="w-5 h-5" />
-                    </Button>
-                </CardHeader>
-
-                <CardBody className="p-0 overflow-hidden flex-1 relative">
-                    <ScrollShadow className="h-full p-4 space-y-4">
-                        {messages.map((msg) => (
-                            <div
-                                key={msg.id}
-                                className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"
-                                    }`}
-                            >
-                                <Avatar
-                                    size="sm"
-                                    src={msg.role === "assistant" ? undefined : undefined} // Add user avatar if available
-                                    icon={
-                                        msg.role === "assistant" ? (
-                                            <Icon icon="lucide:sparkles" className="text-white w-4 h-4" />
-                                        ) : (
-                                            <Icon icon="lucide:user" className="text-default-500 w-4 h-4" />
-                                        )
-                                    }
-                                    classNames={{
-                                        base: msg.role === "assistant"
-                                            ? "bg-gradient-to-tr from-primary-500 to-secondary-500"
-                                            : "bg-default-200",
-                                    }}
-                                />
-                                <div
-                                    className={`flex flex-col max-w-[80%] ${msg.role === "user" ? "items-end" : "items-start"
-                                        }`}
-                                >
-                                    <div
-                                        className={`px-4 py-2 rounded-2xl text-sm ${msg.role === "user"
-                                                ? "bg-primary text-white rounded-tr-none"
-                                                : "bg-default-100 text-default-900 rounded-tl-none"
-                                            }`}
-                                    >
-                                        {msg.content}
-                                    </div>
-                                    <span className="text-[10px] text-default-400 mt-1 px-1">
-                                        {msg.timestamp.toLocaleTimeString([], {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                        })}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
-                        <div ref={messagesEndRef} />
-                    </ScrollShadow>
-                </CardBody>
-
-                <CardFooter className="p-3 border-t border-default-100 bg-white">
-                    <form
-                        className="flex w-full gap-2 items-center"
-                        onSubmit={handleSendMessage}
-                    >
-                        <Input
-                            placeholder="Type a message..."
-                            size="sm"
-                            variant="faded"
-                            radius="full"
-                            value={inputValue}
-                            onValueChange={setInputValue}
-                            classNames={{
-                                inputWrapper: "bg-default-100 hover:bg-default-200",
-                            }}
-                        />
-                        <Button
-                            isIconOnly
-                            color="primary"
-                            size="sm"
-                            radius="full"
-                            type="submit"
-                            isDisabled={!inputValue.trim()}
-                            className="bg-gradient-to-tr from-primary-500 to-secondary-500 shadow-md"
-                        >
-                            <Icon icon="lucide:send" className="w-4 h-4 text-white" />
-                        </Button>
-                    </form>
-                </CardFooter>
-            </Card>
-        </div>
+                )}
+            </ModalContent>
+        </Modal>
     );
 }
