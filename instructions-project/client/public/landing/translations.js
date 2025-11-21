@@ -357,7 +357,244 @@ const translations = {
                         desc: "Simulations Entièrement Automatiques."
                     }
                 }
+            },
+            card2: {
+                title: "Membre dev additionnel",
+                names: "Expansion Externe",
+                tag: "Stores Natifs",
+                price: "3720 €",
+                cost_desc: "Salaires + 220 €/mois Ops",
+                strat: {
+                    title: "Stratégie Plateforme",
+                    desc: "<strong>Applications Natives Officielles</strong> pour iOS & Android. Nécessite un recrutement spécialisé (Junior à Lead) et des processus d'approbation des stores.",
+                    extra: "<span class=\"text-brand-violet font-bold\">Impact Global :</span> Ce développeur supplémentaire accélère les progrès sur d'autres initiatives IA en dehors de la portée de ce projet."
+                },
+                timeline: {
+                    title: "Calendrier de Livraison",
+                    note: "* Calendriers valides si embauché mi-janvier.",
+                    p1: {
+                        date: "Juillet 2026",
+                        tag: "Phase 1",
+                        desc: "Parité des fonctionnalités avec Phase 1 Interne."
+                    },
+                    p2: {
+                        date: "Décembre 2026",
+                        tag: "Phase 2",
+                        desc: "Simulations Automatiques Complètes."
+                    }
+                }
             }
+        },
+        footer: {
+            rights: "© 2025 The Core. Tous droits réservés. Outil Interne pour Agents Autorisés."
+        }
+    }
+};
+        nav: {
+            capabilities: "Fonctionnalités",
+            why_switch: "Pourquoi Changer ?",
+            ai_costs: "Coûts IA",
+            roadmap: "Feuille de Route",
+            cta: "Voir en action"
+        },
+        hero: {
+            headline_1: "Concluez l'Affaire",
+            headline_2: "dès la Première Visite.",
+            mockup: {
+                darkmode: "The Core — Mode Sombre",
+                live: "EN DIRECT",
+                realtime: "Rendu Temps Réel",
+                stock: "STOCK VÉRIFIÉ",
+                items: "247 Articles Disponibles"
+            }
+        },
+        why: {
+            title: "Pourquoi The Core ?",
+            subtitle: "Traiter avec les municipalités et les centres commerciaux exige rapidité et impact visuel. Nous avons résolu les goulots d'étranglement.",
+            benefit1: {
+                title: "Concluez Plus Vite",
+                desc: "N'attendez plus les équipes de design. Créez et présentez des visuels percutants immédiatement pendant votre <span class=\"text-brand-violet font-medium\">réunion client</span>."
+            },
+            benefit2: {
+                title: "Livraison Garantie",
+                desc: "Éliminez l'anxiété liée à la chaîne d'approvisionnement. L'intégration en temps réel des entrepôts signifie <span class=\"text-orange-400 font-medium\">100% de précision</span> pour vos projets."
+            },
+            benefit3: {
+                title: "Maîtrise du Budget",
+                desc: "Concevez librement pendant que l'IA surveille le budget. Des alertes instantanées et des <span class=\"text-blue-500 font-medium\">échanges intelligents</span> gardent votre projet rentable."
+            }
+        },
+        smart: {
+            tag: "Découverte & Création Intelligente",
+            title: "Création de Projet Sans Effort.",
+            subtitle: "D'une simple commande vocale à une présentation client complète.",
+            desc: "Nous avons réimaginé le début des projets.",
+            list1: "<strong>Parlez ou Cliquez :</strong> Créez des projets via des formulaires simples ou des commandes vocales.",
+            list2: "<strong>Assistant IA :</strong> Dictez vos notes ; l'IA les résume pour suggérer le décor parfait.",
+            list3: "<strong>Contexte Visuel :</strong> Localisez les lieux sans effort avec des cartes de zone intuitives.",
+            list4: "<strong>Prêt à Présenter :</strong> Générez des présentations professionnelles d'un simple clic.",
+            badge1: "Contrôle Vocal",
+            badge2: "Cartographie Intelligente",
+            badge3: "Présentations Instantanées",
+            phone: {
+                creatingProject: "Création d'un projet pour Place du Village",
+                processing: "Traitement...",
+                suggested: "Suggéré pour Place de la Mairie",
+                units: "13+ Unités Disponibles"
+            }
+        },
+        visual: {
+            tag: "Visualisation & Design IA",
+            title: "Le Hub de Design Ultime.",
+            subtitle: "Votre studio de design de poche, synchronisé en temps réel.",
+            desc: "Simplifiez la façon dont vous visualisez les projets.",
+            list1: "<strong>Simulation Flexible :</strong> Créez des simulations vous-même instantanément, ou envoyez-les à un designer pro en un clic.",
+            list2: "<strong>Feedback Centralisé :</strong> Demandez des modifications et suivez les progrès du designer directement dans l'application. Adieu la confusion des emails.",
+            list3: "<strong>Vérifications Intelligentes :</strong> Chaque demande est vérifiée par l'IA pour la disponibilité des stocks et la qualité des références avant l'envoi.",
+            badge1: "Collaboration en Direct",
+            badge2: "Envoi Designer",
+            badge3: "Auto-Vérification",
+            compare: {
+                ai: "RENDU IA",
+                raw: "PHOTO BRUTE"
+            }
+        },
+        control: {
+            tag: "Hub de Contrôle & Performance",
+            title: "Opérations Imparables.",
+            subtitle: "Maîtrisez votre budget et gérez les commandes, même sans signal.",
+            desc: "Tout ce dont vous avez besoin pour garder le contrôle, intégré dans une plateforme robuste.",
+            list1: "<strong>Gestion Totale des Commandes :</strong> Suivez les budgets, surveillez les progrès et modifiez les quantités de produits instantanément.",
+            list2: "<strong>Fiabilité Permanente :</strong> Travaillez n'importe où avec le Mode Hors Ligne. Les données se synchronisent automatiquement à la reconnexion.",
+            list3: "<strong>Accessibilité Globale :</strong> Reconnaissance vocale en Anglais, Français et Portugais, plus modes Clair/Sombre pour s'adapter à votre environnement.",
+            list4: "<strong>Technologie Transparente :</strong> Mises à jour OTA automatiques et intégration API avec l'écosystème Blachere pour rester connecté.",
+            badge1: "Mode Hors Ligne",
+            badge2: "Multi-Langue",
+            badge3: "API Blachere",
+            mockup: {
+                title: "Contrôle Projet",
+                budget: "Budget Utilisé",
+                status: "Statut",
+                online: "En Ligne",
+                update: "MISE À JOUR OTA",
+                installed: "v2.4.0 Installée",
+                offline: "MODE HORS LIGNE",
+                synced: "Données Synchronisées"
+            }
+        },
+        comparison: {
+            title: "Le Choix Vous Appartient",
+            old: {
+                tag: "L'Ancienne Méthode",
+                item1: "Délai de 7 Jours",
+                item2: "Feuilles Excel",
+                item3: "Incertitude des Stocks"
+            },
+            core: {
+                tag: "La Méthode Core",
+                item1: "Délai de 10 Minutes",
+                item2: "Base de Données Temps Réel",
+                item3: "Livraison Garantie"
+            }
+        },
+        costs: {
+            title: "Structure des Coûts",
+            subtitle: "Répartition transparente par Licence Utilisateur et Consommation Projet.",
+            card1: {
+                tag: "Par Utilisateur",
+                title: "Licence Agent",
+                price: "40 €",
+                unit: "/mois",
+                desc: "Moyenne estimée basée sur le volume annuel de projets. Varie considérablement car les agents peuvent avoir des mois sans activité.",
+                list1: "Projets Illimités",
+                list2: "Sync Stock Temps Réel"
+            },
+            card2: {
+                tag: "Tarifs Usage IA",
+                title: "Coûts Intelligence",
+                subtitle: "Ressources alimentées par IA",
+                item1: {
+                    title: "Rendu Neural",
+                    desc: "Génération Mode Nuit"
+                },
+                item2: {
+                    title: "Commandes Vocales",
+                    desc: "Traitement Speech-to-text via Serveur MCP"
+                },
+                item3: {
+                    title: "Décoration Générative",
+                    desc: "Visualisation Texte-vers-Image"
+                }
+            },
+            card3: {
+                tag: "Par Projet",
+                title: "Projet Typique",
+                price: "~4,80 €",
+                unit: "/moy",
+                desc: "Coût IA estimé pour une proposition commerciale standard.",
+                item1: "20x Rendus",
+                item2: "40x Cmds Vocales",
+                item3: "10x Déco Gen.",
+                total: "Coût Total IA",
+                note: "*Une petite fraction de la marge du projet"
+            }
+        },
+        roadmap: {
+            title: "Feuille de Route",
+            subtitle: "Options stratégiques pour l'évolution et la mise à l'échelle de la plateforme.",
+            card1: {
+                title: "Agile en Interne",
+                names: "Leandro & André",
+                tag: "Le Plus Rapide",
+                price: "180 €",
+                cost_desc: "Coûts Opérationnels Totaux",
+                strat: {
+                    title: "Stratégie Plateforme",
+                    desc: "<strong>App Web Universelle (PWA)</strong> avec installation sans friction via navigateur. Contourne les délais des stores pour des mises à jour immédiates."
+                },
+                timeline: {
+                    title: "Calendrier de Livraison",
+                    p1: {
+                        date: "Février 2026",
+                        tag: "Phase 1",
+                        desc: "Notes Résumé IA, Suggestions Décor, Moteur Jour-Nuit, Présentations IA."
+                    },
+                    p2: {
+                        date: "Décembre 2026",
+                        tag: "Phase 2",
+                        desc: "Simulations Entièrement Automatiques."
+                    }
+                }
+            },
+            card2: {
+                title: "Membre dev additionnel",
+                names: "Expansion Externe",
+                tag: "Stores Natifs",
+                price: "3720 €",
+                cost_desc: "Salaires + 220 €/mois Ops",
+                strat: {
+                    title: "Stratégie Plateforme",
+                    desc: "Applications Natives Officielles pour iOS & Android. Nécessite un recrutement spécialisé (Junior à Lead) et des processus d'approbation des stores.",
+                    extra: "<span class=\"text-brand-violet font-bold\">Impact Global :</span> Ce développeur supplémentaire accélère les progrès sur d'autres initiatives IA en dehors de la portée de ce projet."
+                },
+                timeline: {
+                    title: "Calendrier de Livraison",
+                    note: "* Calendriers valides si embauché mi-janvier.",
+                    p1: {
+                        date: "Juillet 2026",
+                        tag: "Phase 1",
+                        desc: "Parité des fonctionnalités avec Phase 1 Interne."
+                    },
+                    p2: {
+                        date: "Décembre 2026",
+                        tag: "Phase 2",
+                        desc: "Simulations Automatiques Complètes."
+                    }
+                }
+            }
+        },
+        footer: {
+            rights: "© 2025 The Core. Tous droits réservés. Outil Interne pour Agents Autorisés."
         }
     }
 };
