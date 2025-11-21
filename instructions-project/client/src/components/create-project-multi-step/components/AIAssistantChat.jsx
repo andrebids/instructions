@@ -31,7 +31,7 @@ export function AIAssistantChat({ isOpen, onClose, onSaveImage }) {
             setTimeout(() => {
                 setGenerationStatus('complete');
             }, 3000);
-        } else if (normalizedPrompt === 'pai natal') {
+        } else if (['pai natal', 'santa claus', 'pere noel', 'santa', 'noel'].includes(normalizedPrompt)) {
             setGenerationType('reveal');
             setGenerationStatus('generating');
             setGeneratedImageUrl('/AIGENERATOR/PAINATAL.webp');
