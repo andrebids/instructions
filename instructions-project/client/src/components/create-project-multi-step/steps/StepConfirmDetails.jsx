@@ -364,12 +364,49 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
                       )}
 
                       {/* Attachments */}
-                      {logo.attachmentFiles && logo.attachmentFiles.length > 0 && (
+                      {((logo.generatedImage) || (formData.logoDetails?.attachmentFiles && formData.logoDetails.attachmentFiles.length > 0)) && (
                         <div>
                           <h4 className="font-medium text-sm text-default-700 mb-2">Attachments</h4>
-                          <p className="text-sm text-default-600">
-                            {logo.attachmentFiles.length} file(s) attached
-                          </p>
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {/* AI Generated Image */}
+                            {logo.generatedImage && (
+                              <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-primary">
+                                <img
+                                  src={logo.generatedImage}
+                                  alt="AI Generated"
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
+                                  AI Generated
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Uploaded Files */}
+                            {formData.logoDetails?.attachmentFiles && formData.logoDetails.attachmentFiles.map((file, index) => {
+                              const isImage = file.type?.startsWith('image/');
+                              const fileUrl = URL.createObjectURL(file);
+
+                              return (
+                                <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-default-200">
+                                  {isImage ? (
+                                    <img
+                                      src={fileUrl}
+                                      alt={file.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex flex-col items-center justify-center bg-default-100 p-2">
+                                      <Icon icon="lucide:file" className="w-8 h-8 text-default-400 mb-2" />
+                                      <p className="text-xs text-center text-default-600 truncate w-full px-2">
+                                        {file.name}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
                     </div>
