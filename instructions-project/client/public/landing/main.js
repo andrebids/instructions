@@ -63,7 +63,57 @@ document.addEventListener('DOMContentLoaded', () => {
             mouseY = 0;
         });
     }
+    // Initialize Translations
+    initTranslations();
 });
+
+/**
+ * Translation Logic
+ */
+function initTranslations() {
+    const langToggle = document.getElementById('lang-toggle');
+    const savedLang = localStorage.getItem('preferredLanguage') || 'en';
+    let currentLang = savedLang;
+
+    // Function to update all text elements
+    const updateLanguage = (lang) => {
+        // Update all elements with data-i18n attribute
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            // Traverse the translations object using the key (e.g., 'nav.capabilities')
+            const translation = key.split('.').reduce((obj, k) => obj && obj[k], translations[lang]);
+
+            if (translation) {
+                // Handle HTML content if needed, otherwise textContent
+                if (element.tagName === 'STRONG' || element.innerHTML.includes('<')) {
+                    element.innerHTML = translation;
+                } else {
+                    element.textContent = translation;
+                }
+            }
+        });
+
+        // Update toggle button text
+        if (langToggle) {
+            langToggle.textContent = lang === 'en' ? 'FR' : 'EN';
+        }
+
+        // Save preference
+        localStorage.setItem('preferredLanguage', lang);
+        currentLang = lang;
+    };
+
+    // Initial update
+    updateLanguage(currentLang);
+
+    // Event listener for toggle button
+    if (langToggle) {
+        langToggle.addEventListener('click', () => {
+            const newLang = currentLang === 'en' ? 'fr' : 'en';
+            updateLanguage(newLang);
+        });
+    }
+}
 
 /**
  * Compare Slider Logic
