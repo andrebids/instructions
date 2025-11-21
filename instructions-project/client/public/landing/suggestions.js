@@ -24,6 +24,7 @@ class SuggestionCycler {
         this.image = document.getElementById('suggestion-image');
         this.name = document.getElementById('suggestion-name');
         this.stock = document.getElementById('suggestion-stock');
+        this.timer = document.getElementById('suggestion-timer');
 
         if (this.card) {
             this.startCycling();
@@ -31,9 +32,25 @@ class SuggestionCycler {
     }
 
     startCycling() {
+        // Initial progress bar animation
+        this.resetTimer();
+
         setInterval(() => {
             this.cycle();
         }, this.interval);
+    }
+
+    resetTimer() {
+        if (this.timer) {
+            this.timer.style.transition = 'none';
+            this.timer.style.width = '0%';
+
+            // Force reflow
+            void this.timer.offsetWidth;
+
+            this.timer.style.transition = `width ${this.interval}ms linear`;
+            this.timer.style.width = '100%';
+        }
     }
 
     cycle() {
@@ -52,6 +69,9 @@ class SuggestionCycler {
 
             // Fade in content
             this.card.style.opacity = '1';
+
+            // Restart timer
+            this.resetTimer();
         }, 500); // Wait for fade out (matches CSS transition duration)
     }
 }
