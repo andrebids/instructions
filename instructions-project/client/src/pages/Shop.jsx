@@ -27,7 +27,7 @@ export default function Shop() {
   const [assignOpen, setAssignOpen] = React.useState(false);
   const [selected, setSelected] = React.useState({ product: null, variant: null });
   const [filtersOpen, setFiltersOpen] = React.useState(false);
-  const [filtersVisible, setFiltersVisible] = React.useState(true);
+  const [filtersVisible, setFiltersVisible] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [sort, setSort] = React.useState("relevance");
   const [cols, setCols] = React.useState(4);

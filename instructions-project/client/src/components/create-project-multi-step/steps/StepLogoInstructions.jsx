@@ -35,6 +35,7 @@ import {
   getAcabamentosByCorBola,
   getTamanhosByCorEAcabamentoBola,
 } from "../utils/materialsUtils.js";
+import { AIAssistantChat } from "../components/AIAssistantChat";
 
 // Componente para texto em movimento quando truncado
 const MarqueeText = ({ children, className = "", hoverOnly = false }) => {
@@ -56,13 +57,13 @@ const MarqueeText = ({ children, className = "", hoverOnly = false }) => {
 
     // Verificar após renderização
     checkOverflow();
-    
+
     // Verificar também após um pequeno delay para garantir que o layout está completo
     const timeout = setTimeout(checkOverflow, 100);
-    
+
     // Verificar quando a janela é redimensionada
     window.addEventListener('resize', checkOverflow);
-    
+
     return () => {
       clearTimeout(timeout);
       window.removeEventListener('resize', checkOverflow);
@@ -81,9 +82,9 @@ const MarqueeText = ({ children, className = "", hoverOnly = false }) => {
           }
         `}</style>
       )}
-      <div 
-        ref={containerRef} 
-        className={`overflow-hidden ${className}`} 
+      <div
+        ref={containerRef}
+        className={`overflow-hidden ${className}`}
         style={{ maxWidth: "100%", width: "100%" }}
         onMouseEnter={() => hoverOnly && setIsHovered(true)}
         onMouseLeave={() => hoverOnly && setIsHovered(false)}
@@ -131,7 +132,7 @@ const SelectWithMarquee = React.forwardRef((props, ref) => {
       if (!valueSlot) return;
 
       const isOverflowing = valueSlot.scrollWidth > valueSlot.clientWidth;
-      
+
       const handleMouseEnter = () => {
         if (isOverflowing) {
           valueSlot.style.overflow = 'visible';
@@ -158,7 +159,7 @@ const SelectWithMarquee = React.forwardRef((props, ref) => {
 
     // Verificar após um delay para garantir que o DOM está pronto
     const timeout = setTimeout(checkAndApplyMarquee, 100);
-    
+
     // Observar mudanças no DOM
     const observer = new MutationObserver(checkAndApplyMarquee);
     observer.observe(trigger, { childList: true, subtree: true, attributes: true });
@@ -199,7 +200,7 @@ const AutocompleteWithMarquee = React.forwardRef((props, ref) => {
 
       // Verificar se o texto está truncado
       const isOverflowing = input.scrollWidth > input.clientWidth;
-      
+
       const handleMouseEnter = () => {
         if (isOverflowing && input) {
           input.style.overflow = 'visible';
@@ -228,7 +229,7 @@ const AutocompleteWithMarquee = React.forwardRef((props, ref) => {
 
     // Verificar após um delay para garantir que o DOM está pronto
     const timeout = setTimeout(checkAndApplyMarquee, 100);
-    
+
     // Observar mudanças no DOM
     const observer = new MutationObserver(checkAndApplyMarquee);
     observer.observe(trigger, { childList: true, subtree: true, attributes: true });
@@ -295,37 +296,40 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
   const currentLogo = logoDetails.currentLogo || logoDetails;
   const savedLogos = logoDetails.logos || [];
   const composition = currentLogo.composition || { componentes: [], bolas: [] };
-  
+
   // Obter nome do usuário atual
   const { userName } = useUser();
-  
+
   // Refs para preservar valores preenchidos automaticamente
   const preservedRequestedByRef = React.useRef(null);
   const preservedLogoNumberRef = React.useRef(null);
-  
+
   // Estado para controlar a busca nos componentes
   const [componenteSearchValues, setComponenteSearchValues] = React.useState({});
-  
+
   // Estado para controlar quais componentes estão em modo de edição
   const [componentesEditando, setComponentesEditando] = React.useState({});
-  
+
+  // Estado para controlar a visibilidade do chat
+  const [isChatOpen, setIsChatOpen] = React.useState(false);
+
   // Ref para rastrear se o campo "Requested By" já foi preenchido automaticamente
   const requestedByAutoFilled = React.useRef(false);
-  
+
   // Ref para rastrear se o Logo Number já foi gerado inicialmente
   const logoNumberInitialized = React.useRef(false);
-  
+
   // Ref para rastrear o último nome do projeto usado para gerar o Logo Number
   const lastProjectNameRef = React.useRef("");
-  
+
   // Ref para rastrear o ID do logo atual para detectar quando um novo logo é criado
   const currentLogoIdRef = React.useRef(currentLogo.id || null);
-  
+
   // Resetar refs quando um novo logo é criado (quando o ID muda ou quando o logo está vazio)
   React.useEffect(() => {
     const currentLogoId = currentLogo.id || null;
     const isLogoEmpty = !currentLogo.logoNumber && !currentLogo.logoName;
-    
+
     // Se o ID mudou ou o logo está vazio (novo logo), resetar refs
     if (currentLogoId !== currentLogoIdRef.current || (isLogoEmpty && currentLogoIdRef.current !== null)) {
       requestedByAutoFilled.current = false;
@@ -335,18 +339,18 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
       currentLogoIdRef.current = currentLogoId;
     }
   }, [currentLogo.id, currentLogo.logoNumber, currentLogo.logoName, savedLogos.length]);
-  
+
   // Função para gerar o Logo Number automaticamente baseado no nome do projeto
   const generateLogoNumber = React.useCallback((projectName, currentLogoNumber = "") => {
     if (!projectName || projectName.trim() === "") {
       return "";
     }
-    
+
     // Usar o nome do projeto como base
     const baseName = projectName.trim();
     let maxNumber = 0;
     const usedNumbers = new Set();
-    
+
     // Verificar nos logos salvos - contar todos os logos que começam com o nome do projeto
     savedLogos.forEach((logo) => {
       if (logo.logoNumber && logo.logoNumber.startsWith(`${baseName}-L`)) {
@@ -361,7 +365,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         }
       }
     });
-    
+
     // Se o logo atual já tem um número válido, não contar ele mesmo (estamos editando)
     // Mas se não tem número ou tem um número diferente, precisamos gerar um novo
     if (currentLogoNumber && currentLogoNumber.startsWith(`${baseName}-L`)) {
@@ -379,14 +383,14 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         }
       }
     }
-    
+
     // Gerar o próximo número sequencial
     // Se maxNumber é 0, significa que não há logos, então começar com L1
     // Se maxNumber é 2, significa que há L1 e L2, então o próximo é L3
     const nextNumber = maxNumber + 1;
     return `${baseName}-L${nextNumber}`;
   }, [savedLogos]);
-  
+
   // Função helper para filtrar componentes (não pode ser hook pois é usada dentro de map)
   const filterComponentes = React.useCallback((searchTerm) => {
     if (!searchTerm) return materialsData.componentes;
@@ -397,18 +401,18 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
       return nome.includes(term) || referencia.includes(term);
     });
   }, []);
-  
+
   // Verificar se um componente está completo (tem referência)
   const isComponenteCompleto = React.useCallback((comp) => {
     if (!comp.componenteId) return false;
     const componente = getComponenteById(comp.componenteId);
     if (!componente) return false;
-    
+
     // Se o componente não precisa de cor, só precisa do componenteId
     if (componente.semCor) {
       return true;
     }
-    
+
     // Se precisa de cor, precisa ter corId e referência
     return comp.corId && comp.referencia;
   }, []);
@@ -493,19 +497,19 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
   // Ref para rastrear o número anterior de logos salvos
   const prevSavedLogosLengthRef = React.useRef(savedLogos.length);
-  
+
   // Gerar automaticamente o Logo Number baseado no nome do projeto
   React.useEffect(() => {
     const projectName = formData.name?.trim() || "";
     const currentLogoNumber = currentLogo.logoNumber || formik.values.logoNumber || "";
-    
+
     // Se o nome do projeto mudou, resetar a flag de inicialização
     if (projectName && projectName !== lastProjectNameRef.current) {
       logoNumberInitialized.current = false;
       lastProjectNameRef.current = projectName;
       preservedLogoNumberRef.current = null;
     }
-    
+
     // Se o número de logos salvos mudou e o logo atual está vazio, resetar para recalcular
     if (savedLogos.length !== prevSavedLogosLengthRef.current) {
       prevSavedLogosLengthRef.current = savedLogos.length;
@@ -515,20 +519,20 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         preservedLogoNumberRef.current = null;
       }
     }
-    
+
     if (projectName) {
       // Verificar se o logo atual já existe nos logos salvos (estamos editando)
-      const isEditingExistingLogo = savedLogos.some(logo => 
+      const isEditingExistingLogo = savedLogos.some(logo =>
         logo.logoNumber === currentLogoNumber && currentLogoNumber
       );
-      
+
       // Se não estamos editando e o logo number não foi inicializado, gerar novo
       if (!isEditingExistingLogo && !logoNumberInitialized.current) {
         const generatedLogoNumber = generateLogoNumber(projectName, currentLogoNumber);
         if (generatedLogoNumber) {
           const isEmpty = !currentLogoNumber || currentLogoNumber.trim() === "";
           const doesNotMatchPattern = currentLogoNumber && !currentLogoNumber.startsWith(`${projectName}-L`);
-          
+
           if (isEmpty || doesNotMatchPattern) {
             preservedLogoNumberRef.current = generatedLogoNumber;
             logoNumberInitialized.current = true;
@@ -637,36 +641,36 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
       newComposition[type] = [];
     }
     const newArray = [...newComposition[type]];
-    
+
     if (!newArray[index]) {
       newArray[index] = {};
     }
-    
+
     // Guardar estado anterior para verificar se ficou completo
     const estadoAnterior = { ...newArray[index] };
-    
+
     newArray[index] = {
       ...newArray[index],
       [field]: value
     };
-    
+
     // Se estamos atualizando componenteId, resetar cor e combinação
     if (field === "componenteId") {
       const componente = getComponenteById(value);
       if (componente) {
         newArray[index].componenteNome = componente.nome;
         newArray[index].componenteReferencia = componente.referencia;
-        
+
         // Se semCor === true, verificar se há apenas uma combinação disponível
         if (componente.semCor) {
           // Verificar se há apenas uma cor/combinação disponível para este componente
           const coresDisponiveis = getCoresByComponente(value);
-          
+
           if (coresDisponiveis.length === 1) {
             // Se há apenas uma cor disponível, usar automaticamente
             const corUnica = coresDisponiveis[0];
             const combinacao = getCombinacaoByComponenteECor(value, corUnica.id);
-            
+
             if (combinacao) {
               newArray[index].corId = corUnica.id;
               newArray[index].corNome = corUnica.nome;
@@ -697,7 +701,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         }
       }
     }
-    
+
     // Se estamos atualizando corId, atualizar combinação
     if (field === "corId" && newArray[index].componenteId) {
       if (value) {
@@ -716,15 +720,15 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         newArray[index].referencia = null;
       }
     }
-    
+
     newComposition[type] = newArray;
-    
+
     // Verificar se o componente acabou de ficar completo (só para componentes)
     if (type === "componentes") {
       const componenteAtual = newArray[index];
       const estavaCompleto = isComponenteCompleto(estadoAnterior);
       const ficouCompleto = isComponenteCompleto(componenteAtual);
-      
+
       // Se acabou de ficar completo e não estava completo antes, adicionar novo componente
       if (ficouCompleto && !estavaCompleto) {
         newComposition.componentes.push({
@@ -738,7 +742,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         });
       }
     }
-    
+
     handleUpdate("composition", newComposition);
   };
 
@@ -802,7 +806,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
     setComponenteSearchValues({});
     setComponentesEditando({});
   };
-  
+
   const handleToggleEditComponente = (index) => {
     setComponentesEditando(prev => ({
       ...prev,
@@ -848,16 +852,16 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
       newComposition.bolas = [];
     }
     const newArray = [...newComposition.bolas];
-    
+
     if (!newArray[index]) {
       newArray[index] = {};
     }
-    
+
     newArray[index] = {
       ...newArray[index],
       [field]: value
     };
-    
+
     // Atualizar nomes quando IDs mudam
     if (field === "corId") {
       if (value) {
@@ -874,7 +878,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         newArray[index].referencia = null;
       }
     }
-    
+
     if (field === "acabamentoId") {
       if (value) {
         const acabamento = getAcabamentoById(value);
@@ -888,7 +892,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         newArray[index].referencia = null;
       }
     }
-    
+
     if (field === "tamanhoId") {
       if (value) {
         const tamanho = getTamanhoById(value);
@@ -900,7 +904,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         newArray[index].referencia = null;
       }
     }
-    
+
     // Quando todos os três estão selecionados, buscar a bola
     if (newArray[index].corId && newArray[index].acabamentoId && newArray[index].tamanhoId) {
       const bola = getBolaBySelecao(
@@ -916,7 +920,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
       newArray[index].bolaId = null;
       newArray[index].referencia = null;
     }
-    
+
     newComposition.bolas = newArray;
     handleUpdate("composition", newComposition);
   };
@@ -942,7 +946,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
           variant="shadow"
           className="bg-gradient-to-tr from-primary-500 to-secondary-500 text-white"
           startContent={<Icon icon="lucide:sparkles" className="w-5 h-5" />}
-          onPress={() => console.log("Open Chatbot")}
+          onPress={() => setIsChatOpen(true)}
         >
           AI Assistant
         </Button>
@@ -1016,7 +1020,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                   const dimensionValue = formik.values.dimensions?.[key]?.value || "";
                   const dimensionError = formik.errors.dimensions?.[key]?.value;
                   const isTouched = formik.touched.dimensions?.[key]?.value;
-                  
+
                   return (
                     <div key={key} className="flex items-end gap-3">
                       <Input
@@ -1173,7 +1177,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
               </h3>
             </CardHeader>
             <CardBody className="p-6 space-y-6 max-h-[calc(100vh-300px)] overflow-y-auto">
-              
+
               {/* Componentes Section */}
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -1203,29 +1207,29 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="space-y-4">
                   {composition.componentes && composition.componentes.length > 0 ? (
                     composition.componentes.map((comp, index) => {
                       const componente = comp.componenteId ? getComponenteById(comp.componenteId) : null;
-                      const coresDisponiveis = componente && !componente.semCor 
-                        ? getCoresByComponente(comp.componenteId) 
+                      const coresDisponiveis = componente && !componente.semCor
+                        ? getCoresByComponente(comp.componenteId)
                         : [];
-                      
+
                       // Verificar se está completo e não está em modo de edição
                       const completo = isComponenteCompleto(comp);
                       const editando = componentesEditando[index];
                       const mostrarApenasReferencia = completo && !editando;
-                      
+
                       // Filtrar componentes baseado na busca (usando função helper, não hook)
                       const searchValue = componenteSearchValues[index] || "";
                       const componentesFiltrados = filterComponentes(searchValue);
-                      
+
                       // Valor de exibição do componente selecionado
-                      const displayValue = componente 
+                      const displayValue = componente
                         ? `${componente.nome}${componente.referencia ? ` (${componente.referencia})` : ""}`
                         : "";
-                      
+
                       // Se está completo e não editando, mostrar apenas referência
                       if (mostrarApenasReferencia) {
                         return (
@@ -1270,7 +1274,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                           </div>
                         );
                       }
-                      
+
                       // Modo de edição: mostrar todos os campos
                       return (
                         <div key={index} className="p-3 border border-default-200 rounded-lg space-y-3 bg-default-50 overflow-hidden">
@@ -1310,23 +1314,23 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                                     input: "min-w-0"
                                   }}
                                 >
-                                {(c) => (
-                                  <AutocompleteItem key={String(c.id)} textValue={`${c.nome} ${c.referencia || ""}`}>
-                                    <div className="flex flex-col min-w-0">
-                                      <MarqueeText hoverOnly={true} className="font-medium">
-                                        {c.nome}
-                                      </MarqueeText>
-                                      {c.referencia && (
-                                        <MarqueeText hoverOnly={true} className="text-xs text-default-500">
-                                          Ref: {c.referencia}
+                                  {(c) => (
+                                    <AutocompleteItem key={String(c.id)} textValue={`${c.nome} ${c.referencia || ""}`}>
+                                      <div className="flex flex-col min-w-0">
+                                        <MarqueeText hoverOnly={true} className="font-medium">
+                                          {c.nome}
                                         </MarqueeText>
-                                      )}
-                                    </div>
-                                  </AutocompleteItem>
-                                )}
+                                        {c.referencia && (
+                                          <MarqueeText hoverOnly={true} className="text-xs text-default-500">
+                                            Ref: {c.referencia}
+                                          </MarqueeText>
+                                        )}
+                                      </div>
+                                    </AutocompleteItem>
+                                  )}
                                 </AutocompleteWithMarquee>
                               </div>
-                              
+
                               {componente && !componente.semCor && (
                                 <div className="min-w-0">
                                   <SelectWithMarquee
@@ -1354,7 +1358,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                                   </SelectWithMarquee>
                                 </div>
                               )}
-                              
+
                               {comp.referencia && (
                                 <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden min-w-0">
                                   <span className="font-semibold">Referência: </span>
@@ -1364,7 +1368,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                                 </div>
                               )}
                             </div>
-                            
+
                             <div className="flex flex-col gap-1 flex-shrink-0">
                               {completo && (
                                 <Button
@@ -1417,18 +1421,18 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                     Adicionar
                   </Button>
                 </div>
-                
+
                 <div className="space-y-4">
                   {composition.bolas && composition.bolas.length > 0 ? (
                     composition.bolas.map((bola, index) => {
                       const coresDisponiveis = getCoresDisponiveisBolas();
-                      const acabamentosDisponiveis = bola.corId 
+                      const acabamentosDisponiveis = bola.corId
                         ? getAcabamentosByCorBola(bola.corId)
                         : materialsData.acabamentos;
                       const tamanhosDisponiveis = bola.corId && bola.acabamentoId
                         ? getTamanhosByCorEAcabamentoBola(bola.corId, bola.acabamentoId)
                         : materialsData.tamanhos;
-                      
+
                       return (
                         <div key={index} className="p-3 border border-default-200 rounded-lg space-y-3 bg-default-50">
                           <div className="flex items-start justify-between gap-2">
@@ -1449,7 +1453,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                                   </SelectItem>
                                 ))}
                               </Select>
-                              
+
                               <Select
                                 label="Acabamento"
                                 placeholder="Selecione um acabamento"
@@ -1467,7 +1471,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                                   </SelectItem>
                                 ))}
                               </Select>
-                              
+
                               <Select
                                 label="Tamanho"
                                 placeholder="Selecione um tamanho"
@@ -1485,7 +1489,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                                   </SelectItem>
                                 ))}
                               </Select>
-                              
+
                               {bola.referencia && (
                                 <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden min-w-0">
                                   <span className="font-semibold">Referência: </span>
@@ -1495,7 +1499,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                                 </div>
                               )}
                             </div>
-                            
+
                             <Button
                               size="sm"
                               variant="light"
@@ -1583,6 +1587,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
           </div>
         </CardBody>
       </Card>
+
+      <AIAssistantChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 }
