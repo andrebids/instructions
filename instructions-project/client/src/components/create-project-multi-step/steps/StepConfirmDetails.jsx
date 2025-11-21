@@ -288,11 +288,11 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
                                         <div className="flex items-start justify-between gap-2">
                                           <div className="flex-1">
                                             <p className="font-medium text-default-900">
-                                              {comp.componenteNome || `Componente ${index + 1}`}
+                                              {comp.componenteNome || `Component ${index + 1}`}
                                             </p>
                                             {comp.corNome && (
                                               <p className="text-xs text-default-600 mt-1">
-                                                Cor: {comp.corNome}
+                                                Color: {comp.corNome}
                                               </p>
                                             )}
                                             {comp.referencia && (
@@ -321,17 +321,17 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
                                       <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1">
                                           <p className="font-medium text-default-900">
-                                            Bola {index + 1}
+                                            Ball {index + 1}
                                           </p>
                                           <div className="text-xs text-default-600 mt-1 space-y-0.5">
                                             {bola.corNome && (
-                                              <p>Cor: {bola.corNome}</p>
+                                              <p>Color: {bola.corNome}</p>
                                             )}
                                             {bola.acabamentoNome && (
-                                              <p>Acabamento: {bola.acabamentoNome}</p>
+                                              <p>Finish: {bola.acabamentoNome}</p>
                                             )}
                                             {bola.tamanhoNome && (
-                                              <p>Tamanho: {bola.tamanhoNome}</p>
+                                              <p>Size: {bola.tamanhoNome}</p>
                                             )}
                                           </div>
                                           {bola.referencia && (
@@ -352,7 +352,7 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
                             logo.composition.componentes.length === 0) &&
                             (!logo.composition.bolas ||
                               logo.composition.bolas.length === 0) && (
-                              <p className="text-sm text-default-400 italic">Nenhum material adicionado</p>
+                              <p className="text-sm text-default-400 italic">No materials added</p>
                             )}
                         </div>
                       )}

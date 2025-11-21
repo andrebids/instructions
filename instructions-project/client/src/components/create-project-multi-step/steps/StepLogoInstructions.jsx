@@ -1215,7 +1215,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                         onPress={handleClearAllComponentes}
                         className="min-w-0 px-2"
                       >
-                        Limpar Tudo
+                        Clear All
                       </Button>
                     )}
                     <Button
@@ -1226,7 +1226,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                       onPress={handleAddComponente}
                       className="min-w-0 px-2"
                     >
-                      Adicionar
+                      Add
                     </Button>
                   </div>
                 </div>
@@ -1260,10 +1260,10 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                             <div className="flex items-start justify-between gap-2 min-w-0">
                               <div className="flex-1 min-w-0 space-y-2">
                                 <div className="text-sm font-semibold text-default-900">
-                                  {componente?.nome || "Componente"}
+                                  {componente?.nome || "Component"}
                                 </div>
                                 <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden">
-                                  <span className="font-semibold">Referência: </span>
+                                  <span className="font-semibold">Reference: </span>
                                   <MarqueeText hoverOnly={true} className="inline-block">
                                     {comp.referencia}
                                   </MarqueeText>
@@ -1276,8 +1276,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                                   color="default"
                                   isIconOnly
                                   onPress={() => handleToggleEditComponente(index)}
-                                  title="Editar componente"
-                                  aria-label="Editar componente"
+                                  title="Edit component"
+                                  aria-label="Edit component"
                                 >
                                   <Icon icon="lucide:pencil" className="w-4 h-4" />
                                 </Button>
@@ -1287,8 +1287,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                                   color="danger"
                                   isIconOnly
                                   onPress={() => handleRemoveComponente(index)}
-                                  title="Remover componente"
-                                  aria-label="Remover componente"
+                                  title="Remove component"
+                                  aria-label="Remove component"
                                 >
                                   <Icon icon="lucide:trash-2" className="w-4 h-4" />
                                 </Button>
@@ -1305,8 +1305,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                             <div className="flex-1 min-w-0 space-y-3">
                               <div className="min-w-0">
                                 <AutocompleteWithMarquee
-                                  label="Componente"
-                                  placeholder="Pesquise ou selecione um componente"
+                                  label="Component"
+                                  placeholder="Search or select a component"
                                   size="sm"
                                   selectedKey={comp.componenteId ? String(comp.componenteId) : null}
                                   inputValue={componenteSearchValues[index] || displayValue || ""}
@@ -1357,8 +1357,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                               {componente && !componente.semCor && (
                                 <div className="min-w-0">
                                   <SelectWithMarquee
-                                    label="Cor"
-                                    placeholder="Selecione uma cor"
+                                    label="Color"
+                                    placeholder="Select a color"
                                     size="sm"
                                     selectedKeys={comp.corId ? new Set([String(comp.corId)]) : new Set()}
                                     onSelectionChange={(keys) => {
@@ -1384,7 +1384,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
                               {comp.referencia && (
                                 <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden min-w-0">
-                                  <span className="font-semibold">Referência: </span>
+                                  <span className="font-semibold">Reference: </span>
                                   <MarqueeText hoverOnly={true} className="inline-block">
                                     {comp.referencia}
                                   </MarqueeText>
@@ -1400,8 +1400,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                                   color="default"
                                   isIconOnly
                                   onPress={() => handleToggleEditComponente(index)}
-                                  title="Fechar edição"
-                                  aria-label="Fechar edição"
+                                  title="Close edition"
+                                  aria-label="Close edition"
                                 >
                                   <Icon icon="lucide:check" className="w-4 h-4" />
                                 </Button>
@@ -1412,8 +1412,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                                 color="danger"
                                 isIconOnly
                                 onPress={() => handleRemoveComponente(index)}
-                                title="Remover componente"
-                                aria-label="Remover componente"
+                                title="Remove component"
+                                aria-label="Remove component"
                               >
                                 <Icon icon="lucide:trash-2" className="w-4 h-4" />
                               </Button>
@@ -1423,7 +1423,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                       );
                     })
                   ) : (
-                    <p className="text-sm text-default-400 text-center py-4">Nenhum componente adicionado</p>
+                    <p className="text-sm text-default-400 text-center py-4">No components added</p>
                   )}
                 </div>
               </div>
@@ -1433,7 +1433,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
               {/* Bolas Section */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-bold text-default-900 uppercase tracking-wider">Bolas</p>
+                  <p className="text-sm font-bold text-default-900 uppercase tracking-wider">Balls</p>
                   <Button
                     size="sm"
                     variant="flat"
@@ -1441,7 +1441,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                     startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
                     onPress={handleAddBola}
                   >
-                    Adicionar
+                    Add
                   </Button>
                 </div>
 
@@ -1461,8 +1461,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 space-y-3">
                               <Select
-                                label="Cor"
-                                placeholder="Selecione uma cor"
+                                label="Color"
+                                placeholder="Select a color"
                                 size="sm"
                                 selectedKeys={bola.corId ? [String(bola.corId)] : []}
                                 onSelectionChange={(keys) => {
@@ -1478,8 +1478,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                               </Select>
 
                               <Select
-                                label="Acabamento"
-                                placeholder="Selecione um acabamento"
+                                label="Finish"
+                                placeholder="Select a finish"
                                 size="sm"
                                 selectedKeys={bola.acabamentoId ? [String(bola.acabamentoId)] : []}
                                 onSelectionChange={(keys) => {
@@ -1496,8 +1496,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                               </Select>
 
                               <Select
-                                label="Tamanho"
-                                placeholder="Selecione um tamanho"
+                                label="Size"
+                                placeholder="Select a size"
                                 size="sm"
                                 selectedKeys={bola.tamanhoId ? [String(bola.tamanhoId)] : []}
                                 onSelectionChange={(keys) => {
@@ -1515,7 +1515,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
                               {bola.referencia && (
                                 <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden min-w-0">
-                                  <span className="font-semibold">Referência: </span>
+                                  <span className="font-semibold">Reference: </span>
                                   <MarqueeText hoverOnly={true} className="inline-block">
                                     {bola.referencia}
                                   </MarqueeText>
@@ -1529,7 +1529,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                               color="danger"
                               isIconOnly
                               onPress={() => handleRemoveBola(index)}
-                              aria-label="Remover bola"
+                              aria-label="Remove ball"
                             >
                               <Icon icon="lucide:trash-2" className="w-4 h-4" />
                             </Button>
@@ -1538,7 +1538,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                       );
                     })
                   ) : (
-                    <p className="text-sm text-default-400 text-center py-4">Nenhuma bola adicionada</p>
+                    <p className="text-sm text-default-400 text-center py-4">No balls added</p>
                   )}
                 </div>
               </div>
