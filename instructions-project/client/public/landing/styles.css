@@ -149,3 +149,47 @@
 #aurora-canvas {
     z-index: 0;
 }
+
+/* ============================================
+   CORE CARD STYLES (Enhanced Visibility)
+   ============================================ */
+.core-card {
+    position: relative;
+    /* Lighter, premium glass effect for better contrast */
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 60%, rgba(249, 215, 160, 0.3) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 2rem;
+    box-shadow:
+        0 20px 40px -5px rgba(161, 154, 254, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+}
+
+.core-card:hover {
+    transform: scale(1.02) translateY(-5px);
+    box-shadow:
+        0 30px 60px -10px rgba(161, 154, 254, 0.3),
+        0 0 0 1px rgba(161, 154, 254, 0.3);
+}
+
+/* Subtle internal glow */
+.core-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(161, 154, 254, 0.1), transparent 60%);
+    pointer-events: none;
+}
+
+/* List Item Styling */
+.core-card li {
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    transition: background 0.2s ease;
+}
+
+.core-card li:hover {
+    background: rgba(161, 154, 254, 0.1);
+}
