@@ -186,20 +186,27 @@
                                         class="w-full h-auto rounded-xl opacity-90 shadow-2xl"></video>
 
                                     <!-- Floating UI Elements -->
-                                    <div
-                                        class="absolute top-16 left-8 glass-card px-4 py-2 rounded-lg backdrop-blur-xl border-white/20 shadow-lg">
-                                        <p class="text-brand-violet font-mono text-xs mb-1"
-                                            data-i18n="hero.mockup.live">● LIVE</p>
-                                        <p class="text-sm font-bold text-white" data-i18n="hero.mockup.realtime">
-                                            Real-time Rendering</p>
+                                    <div class="live-badge">
+                                        <div class="live-indicator"></div>
+                                        <div class="live-content">
+                                            <p class="live-label" data-i18n="hero.mockup.live">EN DIRECT</p>
+                                            <p class="live-text" data-i18n="hero.mockup.realtime">Rendu Temps Réel</p>
+                                        </div>
                                     </div>
 
-                                    <div
-                                        class="absolute bottom-16 right-8 glass-card px-4 py-2 rounded-lg backdrop-blur-xl border-white/20 shadow-lg">
-                                        <p class="text-orange-400 font-mono text-xs mb-1" data-i18n="hero.mockup.stock">
-                                            STOCK VERIFIED</p>
-                                        <p class="text-sm font-bold text-white" data-i18n="hero.mockup.items">247 Items
-                                            Available</p>
+                                    <div class="stock-badge">
+                                        <div class="stock-icon">
+                                            <svg class="checkmark" viewBox="0 0 52 52">
+                                                <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none" />
+                                                <path class="checkmark-check" fill="none"
+                                                    d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                                            </svg>
+                                        </div>
+                                        <div class="stock-content">
+                                            <p class="stock-label" data-i18n="hero.mockup.stock">STOCK VÉRIFIÉ</p>
+                                            <p class="stock-count"><span class="count-number">247</span> <span
+                                                    data-i18n="hero.mockup.items"></span></p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -277,3 +277,302 @@
 .flag-icon-sm svg {
     display: block;
 }
+
+/* ============================================
+   LIVE BADGE - EN DIRECT (Enhanced Visibility)
+   ============================================ */
+.live-badge {
+    position: absolute;
+    top: 16px;
+    left: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg,
+            rgba(161, 154, 254, 0.95) 0%,
+            rgba(139, 92, 246, 0.95) 100%);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 12px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow:
+        0 8px 32px rgba(161, 154, 254, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: slideInLeft 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+        glowPulse 3s ease-in-out infinite 1s;
+    z-index: 20;
+}
+
+.live-indicator {
+    width: 10px;
+    height: 10px;
+    background: #ef4444;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    animation: livePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.live-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.live-label {
+    color: #fef3c7;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    line-height: 1;
+}
+
+.live-text {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    line-height: 1.2;
+}
+
+/* ============================================
+   STOCK BADGE - STOCK VÉRIFIÉ (Enhanced Visibility)
+   ============================================ */
+.stock-badge {
+    position: absolute;
+    bottom: 64px;
+    right: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg,
+            rgba(251, 146, 60, 0.95) 0%,
+            rgba(249, 115, 22, 0.95) 100%);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 12px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow:
+        0 8px 32px rgba(251, 146, 60, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: slideInRight 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+        stockPulse 4s ease-in-out infinite 2s;
+    z-index: 20;
+}
+
+.stock-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.checkmark {
+    width: 100%;
+    height: 100%;
+}
+
+.checkmark-circle {
+    stroke: #ffffff;
+    stroke-width: 2;
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    animation: checkmarkCircle 0.6s cubic-bezier(0.65, 0, 0.45, 1) 0.3s forwards;
+}
+
+.checkmark-check {
+    stroke: #ffffff;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: checkmarkCheck 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.6s forwards;
+}
+
+.stock-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.stock-label {
+    color: #fef3c7;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    line-height: 1;
+}
+
+.stock-count {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    line-height: 1.2;
+}
+
+.count-number {
+    font-size: 16px;
+    font-weight: 900;
+    color: #fef3c7;
+}
+
+/* ============================================
+   BADGE ANIMATIONS
+   ============================================ */
+
+/* Live Pulse Animation */
+@keyframes livePulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+}
+
+/* Glow Pulse Animation */
+@keyframes glowPulse {
+
+    0%,
+    100% {
+        box-shadow:
+            0 8px 32px rgba(161, 154, 254, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    50% {
+        box-shadow:
+            0 8px 32px rgba(161, 154, 254, 0.6),
+            0 0 20px rgba(161, 154, 254, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+}
+
+/* Stock Pulse Animation */
+@keyframes stockPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow:
+            0 8px 32px rgba(251, 146, 60, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow:
+            0 8px 32px rgba(251, 146, 60, 0.6),
+            0 0 20px rgba(251, 146, 60, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+}
+
+/* Slide In Animations */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Checkmark Animations */
+@keyframes checkmarkCircle {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes checkmarkCheck {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS FOR BADGES
+   ============================================ */
+@media (max-width: 768px) {
+
+    .live-badge,
+    .stock-badge {
+        padding: 8px 12px;
+        gap: 8px;
+    }
+
+    .live-badge {
+        top: 12px;
+        left: 16px;
+    }
+
+    .stock-badge {
+        bottom: 48px;
+        right: 16px;
+    }
+
+    .live-label,
+    .stock-label {
+        font-size: 9px;
+        letter-spacing: 1px;
+    }
+
+    .live-text {
+        font-size: 11px;
+    }
+
+    .stock-count {
+        font-size: 11px;
+    }
+
+    .count-number {
+        font-size: 13px;
+    }
+
+    .stock-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .live-indicator {
+        width: 8px;
+        height: 8px;
+    }
+}
