@@ -1204,7 +1204,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
               {/* Componentes Section */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-bold text-default-900 uppercase tracking-wider">Componentes</p>
+                  <p className="text-sm font-bold text-default-900 uppercase tracking-wider">Components</p>
                   <div className="flex items-center gap-2">
                     {composition.componentes && composition.componentes.length > 0 && (
                       <Button
