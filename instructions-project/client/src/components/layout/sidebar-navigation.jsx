@@ -73,6 +73,14 @@ export function SidebarNavigation() {
                   >
                     <Icon icon={item.icon} className="text-default-600 text-xl" />
                   </button>
+                ) : item.external ? (
+                  <a
+                    href={item.href}
+                    aria-label={item.name}
+                    className="w-10 h-10 rounded-xl bg-content2/70 dark:bg-content2 hover:bg-content3 shadow-sm flex items-center justify-center transition-all"
+                  >
+                    <Icon icon={item.icon} className="text-default-600 text-xl" />
+                  </a>
                 ) : (
                   <NavLink
                     to={item.href}
