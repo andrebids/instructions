@@ -22,7 +22,7 @@ export function AIAssistantChat({ isOpen, onClose, onSaveImage }) {
         const normalizedPrompt = prompt?.trim().toLowerCase() || '';
 
         // Check which fake generation to use based on prompt
-        if (normalizedPrompt === 'coelho azul') {
+        if (['coelho azul', 'blue rabbit', 'lapin', 'lapin bleu', 'rabbit', 'coelho'].includes(normalizedPrompt)) {
             setGenerationType('video');
             setGenerationStatus('generating');
             setGeneratedImageUrl('/AIGENERATOR/coelho.webp');
@@ -31,7 +31,7 @@ export function AIAssistantChat({ isOpen, onClose, onSaveImage }) {
             setTimeout(() => {
                 setGenerationStatus('complete');
             }, 3000);
-        } else if (normalizedPrompt === 'pai natal') {
+        } else if (['pai natal', 'santa claus', 'pere noel', 'santa', 'noel'].includes(normalizedPrompt)) {
             setGenerationType('reveal');
             setGenerationStatus('generating');
             setGeneratedImageUrl('/AIGENERATOR/PAINATAL.webp');

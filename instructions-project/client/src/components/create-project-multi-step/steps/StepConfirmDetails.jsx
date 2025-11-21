@@ -275,33 +275,35 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
 
                           {/* Componentes */}
                           {logo.composition.componentes &&
-                            logo.composition.componentes.length > 0 && (
+                            logo.composition.componentes.filter(c => c.referencia).length > 0 && (
                               <div className="mb-4">
                                 <h5 className="text-xs font-semibold text-default-600 mb-2 uppercase tracking-wider">
-                                  Componentes ({logo.composition.componentes.length})
+                                  Componentes ({logo.composition.componentes.filter(c => c.referencia).length})
                                 </h5>
                                 <div className="space-y-2">
-                                  {logo.composition.componentes.map((comp, index) => (
-                                    <div key={index} className="text-sm bg-default-50 p-2 rounded border border-default-200">
-                                      <div className="flex items-start justify-between gap-2">
-                                        <div className="flex-1">
-                                          <p className="font-medium text-default-900">
-                                            {comp.componenteNome || `Componente ${index + 1}`}
-                                          </p>
-                                          {comp.corNome && (
-                                            <p className="text-xs text-default-600 mt-1">
-                                              Cor: {comp.corNome}
+                                  {logo.composition.componentes
+                                    .filter(comp => comp.referencia)
+                                    .map((comp, index) => (
+                                      <div key={index} className="text-sm bg-default-50 p-2 rounded border border-default-200">
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="flex-1">
+                                            <p className="font-medium text-default-900">
+                                              {comp.componenteNome || `Componente ${index + 1}`}
                                             </p>
-                                          )}
-                                          {comp.referencia && (
-                                            <p className="text-xs text-default-500 mt-1">
-                                              Ref: {comp.referencia}
-                                            </p>
-                                          )}
+                                            {comp.corNome && (
+                                              <p className="text-xs text-default-600 mt-1">
+                                                Cor: {comp.corNome}
+                                              </p>
+                                            )}
+                                            {comp.referencia && (
+                                              <p className="text-xs text-default-500 mt-1">
+                                                Ref: {comp.referencia}
+                                              </p>
+                                            )}
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
-                                  ))}
+                                    ))}
                                 </div>
                               </div>
                             )}
