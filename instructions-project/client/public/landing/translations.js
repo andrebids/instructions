@@ -338,7 +338,7 @@ const translations = {
                 title: "Agile en Interne",
                 names: "Leandro & André",
                 tag: "Le Plus Rapide",
-                price: "120 €",
+                price: "180 €",
                 cost_desc: "Coûts Opérationnels Totaux",
                 strat: {
                     title: "Stratégie Plateforme",
