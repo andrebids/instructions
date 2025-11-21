@@ -27,6 +27,8 @@ app.use(helmet({
         "'self'",
         "'unsafe-inline'", // Necessário para scripts inline do Vite
         "'unsafe-eval'", // Necessário para alguns scripts do Vite em dev
+        "https://cdn.tailwindcss.com", // Tailwind CSS CDN
+        "https://cdnjs.cloudflare.com", // Cloudflare CDN (GSAP, etc)
       ],
       styleSrc: [
         "'self'",
