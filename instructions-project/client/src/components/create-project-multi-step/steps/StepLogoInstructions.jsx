@@ -36,6 +36,7 @@ import {
   getTamanhosByCorEAcabamentoBola,
 } from "../utils/materialsUtils.js";
 import { AIAssistantChat } from "../components/AIAssistantChat";
+import { DragAndDropZone } from "../../ui/DragAndDropZone";
 
 // Componente para texto em movimento quando truncado
 const MarqueeText = ({ children, className = "", hoverOnly = false }) => {
@@ -312,9 +313,6 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
   // Estado para controlar a visibilidade do chat
   const [isChatOpen, setIsChatOpen] = React.useState(false);
-
-  // Estado para controlar drag and drop de arquivos
-  const [isDraggingFile, setIsDraggingFile] = React.useState(false);
 
   // Ref para rastrear se o campo "Requested By" já foi preenchido automaticamente
   const requestedByAutoFilled = React.useRef(false);
@@ -1607,35 +1605,15 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
             />
 
             {/* Drag and Drop Area / Image Preview Grid */}
-            <div
-              className={`transition-colors rounded-lg ${isDraggingFile
-                ? 'border-2 border-dashed border-primary bg-primary-50'
-                : ''
-                }`}
-              onDragOver={(e) => {
-                e.preventDefault();
-                console.log("Drag over detected");
-                setIsDraggingFile(true);
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                console.log("Drag leave detected");
-                setIsDraggingFile(false);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                setIsDraggingFile(false);
-                console.log("Drop event triggered");
-                console.log("DataTransfer files:", e.dataTransfer.files);
-
-                const newFiles = Array.from(e.dataTransfer.files);
-                console.log("New files array:", newFiles);
-                console.log("Existing files:", logoDetails.attachmentFiles);
-
+            {/* Drag and Drop Area / Image Preview Grid */}
+            <DragAndDropZone
+              className="rounded-lg transition-colors"
+              multiple={true}
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ai,.eps"
+              onFilesSelected={(newFiles) => {
                 if (newFiles.length > 0) {
                   const existingFiles = logoDetails.attachmentFiles || [];
                   const allFiles = [...existingFiles, ...newFiles];
-                  console.log("All files to save:", allFiles);
 
                   // Save directly to logoDetails, not currentLogo
                   const updatedLogoDetails = {
@@ -1649,9 +1627,6 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
               }}
             >
               {(() => {
-                console.log("Render check - currentLogo.generatedImage:", currentLogo.generatedImage);
-                console.log("Render check - logoDetails.attachmentFiles:", logoDetails.attachmentFiles);
-                console.log("Render check - attachmentFiles length:", logoDetails.attachmentFiles?.length);
                 return (currentLogo.generatedImage || (logoDetails.attachmentFiles && logoDetails.attachmentFiles.length > 0));
               })() ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-3">
@@ -1666,7 +1641,10 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                       <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
                         AI Generated
                       </div>
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div
+                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Button
                           isIconOnly
                           color="danger"
@@ -1709,7 +1687,10 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                             </p>
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div
+                          className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Button
                             isIconOnly
                             color="danger"
@@ -1734,21 +1715,17 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                   })}
                 </div>
               ) : (
-                <div className={`text-center py-8 border-2 border-dashed rounded-lg transition-colors ${isDraggingFile
-                  ? 'border-primary bg-primary-50'
-                  : 'border-default-200'
-                  }`}>
-                  <Icon icon="lucide:image-plus" className={`w-12 h-12 mx-auto mb-2 ${isDraggingFile ? 'text-primary' : 'text-default-300'
-                    }`} />
-                  <p className={`text-sm ${isDraggingFile ? 'text-primary font-medium' : 'text-default-400'}`}>
-                    {isDraggingFile ? 'Drop files here' : 'No attachments yet'}
+                <div className="text-center py-8 border-2 border-dashed border-default-200 rounded-lg transition-colors">
+                  <Icon icon="lucide:image-plus" className="w-12 h-12 mx-auto mb-2 text-default-300" />
+                  <p className="text-sm text-default-400">
+                    No attachments yet
                   </p>
                   <p className="text-xs text-default-300 mt-1">
-                    {isDraggingFile ? 'Release to upload' : 'Upload files, drag & drop, or generate images with AI'}
+                    Upload files, drag & drop, or generate images with AI
                   </p>
                 </div>
               )}
-            </div>
+            </DragAndDropZone>
           </div>
         </CardBody>
       </Card>

@@ -14,6 +14,7 @@ import { Icon } from '@iconify/react';
 import { useTranslation } from 'react-i18next';
 import { PasswordField } from '../PasswordField';
 import { usePasswordGenerator } from '../../../hooks/usePasswordGenerator';
+import { DragAndDropZone } from '../../ui/DragAndDropZone';
 
 /**
  * Modal para editar usuário
@@ -35,7 +36,7 @@ export function EditUserModal({
 }) {
   const { t } = useTranslation();
   const fileInputRef = useRef(null);
-  
+
   const [editFormData, setEditFormData] = useState({
     firstName: '',
     lastName: '',
@@ -102,6 +103,17 @@ export function EditUserModal({
     }
   };
 
+  const handleFilesSelected = (files) => {
+    const file = files[0];
+    if (file) {
+      setEditFormData({
+        ...editFormData,
+        avatarFile: file,
+        avatarPreview: URL.createObjectURL(file),
+      });
+    }
+  };
+
   const handleSubmit = async () => {
     if (!user) return;
 
@@ -119,7 +131,7 @@ export function EditUserModal({
         alert('As passwords não coincidem. Por favor, verifique.');
         return;
       }
-      
+
       if (password.length < 8) {
         alert('A password deve ter pelo menos 8 caracteres.');
         return;
@@ -152,7 +164,7 @@ export function EditUserModal({
 
   const handleDelete = async () => {
     if (!user) return;
-    
+
     if (!confirm(t('pages.dashboard.adminUsers.modals.delete.confirm') || 'Tem a certeza que deseja remover este utilizador?')) {
       return;
     }
@@ -195,24 +207,27 @@ export function EditUserModal({
               <div className="flex flex-col gap-6">
                 {/* Avatar Section */}
                 <div className="flex items-center gap-4">
-                  <div className="relative group">
-                    {editFormData.avatarPreview ? (
-                      <img
-                        src={editFormData.avatarPreview}
-                        alt="Avatar Preview"
-                        className="w-20 h-20 rounded-full object-cover border-2 border-default-200"
-                      />
-                    ) : (
-                      <div className="w-20 h-20 rounded-full bg-default-200 flex items-center justify-center border-2 border-default-200">
-                        <Icon icon="lucide:user" className="w-8 h-8 text-default-400" />
-                      </div>
-                    )}
-                    <div
-                      className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                      onClick={() => fileInputRef.current?.click()}
+                  <div className="relative">
+                    <DragAndDropZone
+                      onFilesSelected={handleFilesSelected}
+                      accept="image/*"
+                      className="relative group w-20 h-20 rounded-full overflow-hidden border-2 border-default-200"
                     >
-                      <Icon icon="lucide:camera" className="text-white" />
-                    </div>
+                      {editFormData.avatarPreview ? (
+                        <img
+                          src={editFormData.avatarPreview}
+                          alt="Avatar Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-default-200 flex items-center justify-center">
+                          <Icon icon="lucide:user" className="w-8 h-8 text-default-400" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Icon icon="lucide:camera" className="text-white" />
+                      </div>
+                    </DragAndDropZone>
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -316,12 +331,12 @@ export function EditUserModal({
                       size="md"
                       color={
                         editFormData.password &&
-                        editFormData.passwordConfirm &&
-                        editFormData.password === editFormData.passwordConfirm
+                          editFormData.passwordConfirm &&
+                          editFormData.password === editFormData.passwordConfirm
                           ? 'success'
                           : editFormData.passwordConfirm
-                          ? 'danger'
-                          : 'default'
+                            ? 'danger'
+                            : 'default'
                       }
                       description={
                         editFormData.password && editFormData.passwordConfirm

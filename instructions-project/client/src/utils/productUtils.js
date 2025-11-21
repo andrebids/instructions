@@ -4,7 +4,8 @@ function isValidImageUrl(url) {
   var trimmed = url.trim();
   if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') return false;
   // Filtrar URLs temporárias que não existem mais
-  if (trimmed.includes('temp_nightImage_') || trimmed.includes('temp_') || trimmed.includes('/temp/')) return false;
+  // REMOVIDO: Agora permitimos URLs temporárias pois o upload pode ter gerado nomes com "temp"
+  // if (trimmed.includes('temp_nightImage_') || trimmed.includes('temp_') || trimmed.includes('/temp/')) return false;
   return true;
 }
 
@@ -36,7 +37,7 @@ function getRandomImage(productId, isNight) {
       hash = hash & hash; // Convert to 32bit integer
     }
   }
-  
+
   // Selecionar uma imagem da lista baseada no hash
   var imageList = isNight ? availableNightImages : availableDayImages;
   var index = Math.abs(hash) % imageList.length;
@@ -46,18 +47,18 @@ function getRandomImage(productId, isNight) {
 // Função para transformar dados da API para formato esperado pelo contexto
 export function transformApiProduct(apiProduct) {
   if (!apiProduct) return null;
-  
+
   // Sempre atribuir imagens - verificar se as URLs existentes são válidas
   var dayImage = null;
   var nightImage = null;
-  
+
   // Tentar usar imagens existentes se forem válidas
   if (isValidImageUrl(apiProduct.imagesDayUrl)) {
     dayImage = apiProduct.imagesDayUrl;
   } else if (isValidImageUrl(apiProduct.thumbnailUrl)) {
     dayImage = apiProduct.thumbnailUrl;
   }
-  
+
   if (isValidImageUrl(apiProduct.imagesNightUrl)) {
     nightImage = apiProduct.imagesNightUrl;
   } else if (isValidImageUrl(apiProduct.imagesDayUrl)) {
@@ -65,19 +66,19 @@ export function transformApiProduct(apiProduct) {
   } else if (isValidImageUrl(apiProduct.thumbnailUrl)) {
     nightImage = apiProduct.thumbnailUrl;
   }
-  
+
   // Se ainda não houver imagens válidas, usar imagens aleatórias das pastas locais
+  // REMOVIDO: Fallback de imagem aleatória causava confusão (ex: urso polar em produtos sem foto)
+  // Agora deixamos null para que o componente de UI mostre o placeholder padrão
+  /*
   if (!isValidImageUrl(dayImage)) {
     dayImage = getRandomImage(apiProduct.id, false);
-    // Log silenciado - apenas para debug se necessário
-    // console.log('🖼️ [transformApiProduct] Atribuindo imagem aleatória (dia) para produto:', apiProduct.id, dayImage);
   }
   if (!isValidImageUrl(nightImage)) {
     nightImage = getRandomImage(apiProduct.id, true);
-    // Log silenciado - apenas para debug se necessário
-    // console.log('🖼️ [transformApiProduct] Atribuindo imagem aleatória (noite) para produto:', apiProduct.id, nightImage);
   }
-  
+  */
+
   var transformed = {
     id: apiProduct.id,
     name: apiProduct.name || '',
@@ -96,7 +97,7 @@ export function transformApiProduct(apiProduct) {
     usage: apiProduct.usage || null,
     location: apiProduct.location || null,
     mount: apiProduct.mount || null,
-    specs: (function() {
+    specs: (function () {
       try {
         if (apiProduct.specs) {
           // Criar cópia profunda do specs para evitar referências
@@ -120,7 +121,7 @@ export function transformApiProduct(apiProduct) {
     depth: apiProduct.depth || null,
     diameter: apiProduct.diameter || null,
   };
-  
+
   return transformed;
 }
 
@@ -128,10 +129,10 @@ export function transformApiProduct(apiProduct) {
 export function getProductsByCategory(products, categoryId) {
   if (!products || !Array.isArray(products)) return [];
   if (!categoryId) return products;
-  
+
   var category = String(categoryId).toLowerCase();
   var filtered = [];
-  
+
   // Encontrar ano mais recente para categoria "new"
   var latestYear = null;
   if (category === 'new') {
@@ -144,12 +145,12 @@ export function getProductsByCategory(products, categoryId) {
       }
     }
   }
-  
+
   // Filtrar produtos conforme categoria
   for (var j = 0; j < products.length; j++) {
     var p = products[j];
     var matches = false;
-    
+
     if (category === 'trending') {
       // Tag "trending" OU campo isTrending=true
       var hasTrendingTag = false;
@@ -216,12 +217,12 @@ export function getProductsByCategory(products, categoryId) {
           }
         }
       }
-      
+
       // Verificar season apenas se não for null/undefined/vazio
       var hasSummerSeason = false;
       var hasNonSummerSeason = false;
       var seasonDefined = false;
-      
+
       if (p.season && typeof p.season === 'string' && p.season.trim() !== '') {
         seasonDefined = true;
         var seasonLower = String(p.season).toLowerCase().trim();
@@ -232,7 +233,7 @@ export function getProductsByCategory(products, categoryId) {
           hasNonSummerSeason = true;
         }
       }
-      
+
       // Incluir se:
       // 1. Tem tag "summer" E não tem season definido (ou season está vazio/null)
       // 2. OU tem season="summer"
@@ -244,7 +245,7 @@ export function getProductsByCategory(products, categoryId) {
         // Produto não tem season definido ou tem season="summer" → verificar tag ou season
         matches = hasSummerTag || hasSummerSeason;
       }
-      
+
       // Debug removido
     } else {
       // Fallback: verificar se tem a tag correspondente
@@ -257,12 +258,12 @@ export function getProductsByCategory(products, categoryId) {
         }
       }
     }
-    
+
     if (matches) {
       filtered.push(p);
     }
   }
-  
+
   return filtered;
 }
 
