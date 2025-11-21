@@ -50,6 +50,7 @@ const translations = {
             badge2: "Smart Mapping",
             badge3: "Instant Presentations",
             phone: {
+                creatingProject: "Creating a project for Place du Village",
                 processing: "Processing...",
                 suggested: "Suggested for Place de la Mairie",
                 units: "13+ Units Available"
@@ -228,6 +229,7 @@ const translations = {
             badge2: "Cartographie Intelligente",
             badge3: "Présentations Instantanées",
             phone: {
+                creatingProject: "Création d'un projet pour Place du Village",
                 processing: "Traitement...",
                 suggested: "Suggéré pour Place de la Mairie",
                 units: "13+ Unités Disponibles"
