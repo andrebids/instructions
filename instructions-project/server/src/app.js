@@ -67,6 +67,16 @@ app.use(helmet({
   },
   crossOriginEmbedderPolicy: false, // Desabilitar para permitir recursos externos
 }));
+
+// Middleware para remover CSP do Helmet na landing page (permite meta tag CSP do HTML)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/landing/')) {
+    // Remover headers CSP do Helmet para permitir meta tag CSP do HTML
+    res.removeHeader('Content-Security-Policy');
+  }
+  next();
+});
+
 app.use(cors({
   origin: [
     'http://localhost:3003',
