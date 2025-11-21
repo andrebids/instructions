@@ -278,7 +278,7 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
                             logo.composition.componentes.filter(c => c.referencia).length > 0 && (
                               <div className="mb-4">
                                 <h5 className="text-xs font-semibold text-default-600 mb-2 uppercase tracking-wider">
-                                  Componentes ({logo.composition.componentes.filter(c => c.referencia).length})
+                                  Components ({logo.composition.componentes.filter(c => c.referencia).length})
                                 </h5>
                                 <div className="space-y-2">
                                   {logo.composition.componentes
@@ -297,7 +297,7 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
                                             )}
                                             {comp.referencia && (
                                               <p className="text-xs text-default-500 mt-1">
-                                                Ref: {comp.referencia}
+                                                Reference: {comp.referencia}
                                               </p>
                                             )}
                                           </div>
@@ -313,7 +313,7 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
                             logo.composition.bolas.length > 0 && (
                               <div>
                                 <h5 className="text-xs font-semibold text-default-600 mb-2 uppercase tracking-wider">
-                                  Bolas ({logo.composition.bolas.length})
+                                  Balls ({logo.composition.bolas.length})
                                 </h5>
                                 <div className="space-y-2">
                                   {logo.composition.bolas.map((bola, index) => (
@@ -336,7 +336,7 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
                                           </div>
                                           {bola.referencia && (
                                             <p className="text-xs text-default-500 mt-1">
-                                              Ref: {bola.referencia}
+                                              Reference: {bola.referencia}
                                             </p>
                                           )}
                                         </div>
