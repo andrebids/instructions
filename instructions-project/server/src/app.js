@@ -18,63 +18,61 @@ import { requireAuth } from './middleware/auth.js';
 
 const app = express();
 
-// Middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'", "blob:", "data:"], // Permitir blob e data para Service Worker
-      scriptSrc: [
-        "'self'",
-        "'unsafe-inline'", // Necessário para scripts inline do Vite
-        "'unsafe-eval'", // Necessário para alguns scripts do Vite em dev
-        "https://cdn.tailwindcss.com", // Tailwind CSS CDN
-        "https://cdnjs.cloudflare.com", // Cloudflare CDN (GSAP, etc)
-      ],
-      styleSrc: [
-        "'self'",
-        "'unsafe-inline'", // Necessário para estilos inline
-        "https://fonts.googleapis.com", // Google Fonts
-      ],
-      fontSrc: [
-        "'self'",
-        "https://fonts.gstatic.com", // Google Fonts
-        "data:", // Fontes em base64
-      ],
-      imgSrc: [
-        "'self'",
-        "data:",
-        "blob:",
-        "https:", // Permitir imagens de qualquer origem HTTPS
-      ],
-      connectSrc: [
-        "'self'",
-        "https://api.iconify.design", // Iconify API
-        "https://api.simplesvg.com", // SimpleSVG API
-        "https://api.unisvg.com", // UniSVG API
-      ],
-      frameSrc: [
-        "'self'",
-      ],
-      workerSrc: [
-        "'self'",
-        "blob:", // Service Worker
-      ],
-      scriptSrcAttr: ["'unsafe-inline'"], // Permitir atributos inline em scripts
-      baseUri: ["'self'"],
-      objectSrc: ["'none'"],
-      upgradeInsecureRequests: [],
-    },
-  },
-  crossOriginEmbedderPolicy: false, // Desabilitar para permitir recursos externos
-}));
-
-// Middleware para remover CSP do Helmet na landing page (permite meta tag CSP do HTML)
+// Middleware para aplicar Helmet condicionalmente (não aplicar para /landing/)
 app.use((req, res, next) => {
+  // Se for rota /landing/, pular Helmet completamente
   if (req.path.startsWith('/landing/')) {
-    // Remover headers CSP do Helmet para permitir meta tag CSP do HTML
-    res.removeHeader('Content-Security-Policy');
+    return next();
   }
-  next();
+  // Para outras rotas, aplicar Helmet
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'", "blob:", "data:"], // Permitir blob e data para Service Worker
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'", // Necessário para scripts inline do Vite
+          "'unsafe-eval'", // Necessário para alguns scripts do Vite em dev
+          "https://cdn.tailwindcss.com", // Tailwind CSS CDN
+          "https://cdnjs.cloudflare.com", // Cloudflare CDN (GSAP, etc)
+        ],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'", // Necessário para estilos inline
+          "https://fonts.googleapis.com", // Google Fonts
+        ],
+        fontSrc: [
+          "'self'",
+          "https://fonts.gstatic.com", // Google Fonts
+          "data:", // Fontes em base64
+        ],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "blob:",
+          "https:", // Permitir imagens de qualquer origem HTTPS
+        ],
+        connectSrc: [
+          "'self'",
+          "https://api.iconify.design", // Iconify API
+          "https://api.simplesvg.com", // SimpleSVG API
+          "https://api.unisvg.com", // UniSVG API
+        ],
+        frameSrc: [
+          "'self'",
+        ],
+        workerSrc: [
+          "'self'",
+          "blob:", // Service Worker
+        ],
+        scriptSrcAttr: ["'unsafe-inline'"], // Permitir atributos inline em scripts
+        baseUri: ["'self'"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+    crossOriginEmbedderPolicy: false, // Desabilitar para permitir recursos externos
+  })(req, res, next);
 });
 
 app.use(cors({
@@ -130,7 +128,13 @@ if (fs.existsSync(clientPublicPath)) {
       return next(); // Pular este middleware, deixar dist/ servir
     }
     // Para outros arquivos, servir de public normalmente
-    express.static(clientPublicPath)(req, res, next);
+    express.static(clientPublicPath)(req, res, (err) => {
+      // Remover CSP para rotas /landing/ após servir arquivo
+      if (req.path.startsWith('/landing/')) {
+        res.removeHeader('Content-Security-Policy');
+      }
+      next(err);
+    });
   });
   console.log('📁 Servindo arquivos estáticos do client/public (exceto sw.js)');
 }
