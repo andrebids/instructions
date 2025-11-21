@@ -37,27 +37,27 @@ function AppLayout() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           {/* <Route path="/statistics" element={<Statistics />} /> */}
-          <Route path="/shop" element={<Shop />} />
+          <Route path="/stock-catalogue" element={<Shop />} />
           <Route path="/favorites" element={<Favorites />} />
           {/* <Route path="/projects" element={<Projects />} /> */}
           <Route path="/projects/:id/notes" element={<ProjectNotes />} />
           <Route path="/projects/:id/edit" element={<EditProject />} />
           <Route path="/orders" element={<Projects />} />
-          <Route 
-            path="/admin/products" 
+          <Route
+            path="/admin/products"
             element={
               <ProtectedRoute requireRole={['admin', 'editor_stock']}>
                 <AdminProducts />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/users" 
+          <Route
+            path="/admin/users"
             element={
               <ProtectedRoute requireRole={['admin']}>
                 <AdminUsers />
               </ProtectedRoute>
-            } 
+            }
           />
         </Routes>
       </main>

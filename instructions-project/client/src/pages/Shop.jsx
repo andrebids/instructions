@@ -69,16 +69,16 @@ export default function Shop() {
   }, [stockLimits.min, stockLimits.max]);
 
   // Filtered products - no category filter, all products
-  const filtered = React.useMemo(function() {
+  const filtered = React.useMemo(function () {
     if (!products || !Array.isArray(products)) return [];
-    
+
     var list = [];
-    
+
     // Apply all filters (except category)
     for (var i = 0; i < products.length; i++) {
       var p = products[i];
       var include = true;
-      
+
       if (query && p.name.toLowerCase().indexOf(query.toLowerCase()) === -1) {
         include = false;
       }
@@ -161,29 +161,29 @@ export default function Shop() {
         }
       }
       if (include && Array.isArray(stockRange) && stockRange.length === 2) {
-        var computeStock = function(id) { 
-          try { 
-            var s = 0; 
-            for (var ch_idx = 0; ch_idx < String(id||'').length; ch_idx++) {
-              s += String(id||'').charCodeAt(ch_idx);
+        var computeStock = function (id) {
+          try {
+            var s = 0;
+            for (var ch_idx = 0; ch_idx < String(id || '').length; ch_idx++) {
+              s += String(id || '').charCodeAt(ch_idx);
             }
-            return 5 + (s % 60); 
-          } catch(_) { 
-            return 20; 
-          } 
+            return 5 + (s % 60);
+          } catch (_) {
+            return 20;
+          }
         };
         var stock = typeof p.stock === 'number' ? p.stock : computeStock(p.id);
         if (stock < stockRange[0] || stock > stockRange[1]) {
           include = false;
         }
       }
-      
+
       if (include) {
         list.push(p);
       }
     }
-    
-    var getOtherTagsCount = function(product) {
+
+    var getOtherTagsCount = function (product) {
       var normalizedTags = getNormalizedProductTags(product);
       if (!Array.isArray(normalizedTags) || normalizedTags.length === 0) return 0;
       var count = 0;
@@ -192,8 +192,8 @@ export default function Shop() {
       }
       return count;
     };
-    
-    var getStock = function(product) {
+
+    var getStock = function (product) {
       if (typeof product.stock === 'number' && Number.isFinite(product.stock)) return product.stock;
       try {
         var sum = 0;
@@ -202,39 +202,39 @@ export default function Shop() {
           sum += id.charCodeAt(idx);
         }
         return 5 + (sum % 60);
-      } catch(_) {
+      } catch (_) {
         return 20;
       }
     };
-    
-    list.sort(function(a, b) {
+
+    list.sort(function (a, b) {
       var hierarchyComparison = compareProductsByTagHierarchy(a, b);
       if (hierarchyComparison !== 0) return hierarchyComparison;
-      
+
       var hierarchyIndex = getProductHierarchyIndex(a);
-      
+
       if (hierarchyIndex === 0) {
         var otherTagsA = getOtherTagsCount(a);
         var otherTagsB = getOtherTagsCount(b);
         if (otherTagsA !== otherTagsB) {
           return otherTagsB - otherTagsA;
         }
-        
+
         var stockA = getStock(a);
         var stockB = getStock(b);
         if (stockA !== stockB) {
           return stockB - stockA;
         }
-        
+
         var priceA = typeof a.price === "number" && Number.isFinite(a.price) ? a.price : 0;
         var priceB = typeof b.price === "number" && Number.isFinite(b.price) ? b.price : 0;
         if (priceA !== priceB) {
           return priceB - priceA;
         }
-        
+
         return (a.name || "").localeCompare(b.name || "");
       }
-      
+
       switch (sort) {
         case "price-asc":
           return (typeof a.price === "number" ? a.price : 0) - (typeof b.price === "number" ? b.price : 0);
@@ -248,14 +248,14 @@ export default function Shop() {
           return (a.name || "").localeCompare(b.name || "");
       }
     });
-    
+
     return list;
   }, [products, filters, query, sort, priceRange, stockRange]);
 
   return (
     <Scroller className={`flex-1 min-h-0 p-6 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>
-      <PageTitle title="Shop" userName={userName} lead={`Here's your catalog, ${userName}`} subtitle={mainDescription} />
-      
+      <PageTitle title="Stock Catalogue" userName={userName} lead={`Here's your catalog, ${userName}`} subtitle={mainDescription} />
+
       {/* Mobile filter button */}
       <div className="mt-2 flex items-center justify-end mb-4 md:hidden">
         <Button size="sm" variant="flat" onPress={() => setFiltersOpen(true)}>Filters</Button>
@@ -310,18 +310,18 @@ export default function Shop() {
                 <Icon icon="lucide:filter" className="text-sm mr-1" />
                 Filters
               </Button>
-              {[1,2,3,4].map((n)=> (
+              {[1, 2, 3, 4].map((n) => (
                 <Button
                   key={n}
                   isIconOnly
-                  variant={cols===n? 'solid':'bordered'}
+                  variant={cols === n ? 'solid' : 'bordered'}
                   radius="full"
-                  onPress={()=>setCols(n)}
+                  onPress={() => setCols(n)}
                   aria-label={`Set columns to ${n}`}
                 >
                   <div className="flex items-center gap-0.5">
-                    {Array.from({ length: n }).map((_,i)=> (
-                      <span key={i} className={`block w-0.5 h-3 rounded-sm ${cols===n? 'bg-white':'bg-default-400'}`}></span>
+                    {Array.from({ length: n }).map((_, i) => (
+                      <span key={i} className={`block w-0.5 h-3 rounded-sm ${cols === n ? 'bg-white' : 'bg-default-400'}`}></span>
                     ))}
                   </div>
                 </Button>
@@ -331,14 +331,14 @@ export default function Shop() {
               <Input
                 placeholder="Search products..."
                 value={query}
-                onChange={(e)=>setQuery(e.target.value)}
+                onChange={(e) => setQuery(e.target.value)}
                 size="sm"
                 className="w-56 hidden md:block"
                 aria-label="Search products"
               />
               <Dropdown>
                 <DropdownTrigger>
-                  <Button radius="full" variant="bordered" endContent={<Icon icon="lucide:chevron-down" className="text-sm" />}> 
+                  <Button radius="full" variant="bordered" endContent={<Icon icon="lucide:chevron-down" className="text-sm" />}>
                     {sort === 'relevance' && 'Best Selling'}
                     {sort === 'alpha-asc' && 'Alphabetically, A-Z'}
                     {sort === 'alpha-desc' && 'Alphabetically, Z-A'}
@@ -346,11 +346,11 @@ export default function Shop() {
                     {sort === 'price-desc' && 'Price, high to low'}
                   </Button>
                 </DropdownTrigger>
-                <DropdownMenu 
+                <DropdownMenu
                   aria-label="Sort products"
                   selectedKeys={new Set([sort])}
                   selectionMode="single"
-                  onAction={(key)=>setSort(String(key))}
+                  onAction={(key) => setSort(String(key))}
                 >
                   <DropdownItem key="relevance">Best selling</DropdownItem>
                   <DropdownItem key="alpha-asc">Alphabetically, A-Z</DropdownItem>
@@ -365,10 +365,10 @@ export default function Shop() {
                 variant="bordered"
                 aria-label="Go to favorites"
                 className="border-red-500/40 hover:border-red-500 bg-transparent text-red-500 hover:bg-red-500/5 focus-visible:ring-2 focus-visible:ring-red-500/50"
-                onPress={()=> navigate('/favorites')}
+                onPress={() => navigate('/favorites')}
               >
-                <Icon 
-                  icon="mdi:heart" 
+                <Icon
+                  icon="mdi:heart"
                   className="text-red-500 text-2xl"
                   style={{ fill: '#ef4444' }}
                 />

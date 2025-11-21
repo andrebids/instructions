@@ -65,7 +65,7 @@ export default function ShopCategory() {
   }, [fullTitle]);
 
   const isTrending = category === "trending";
-  const productsInCategory = React.useMemo(function() {
+  const productsInCategory = React.useMemo(function () {
     return getProductsByCategory(products, category);
   }, [products, category]);
 
@@ -103,16 +103,16 @@ export default function ShopCategory() {
     setStockRange([stockLimits.min, stockLimits.max]);
   }, [stockLimits.min, stockLimits.max]);
 
-  const filtered = React.useMemo(function() {
+  const filtered = React.useMemo(function () {
     // Primeiro filtrar por categoria usando getProductsByCategory
     var categoryProducts = getProductsByCategory(products, category);
     var list = [];
-    
+
     // Aplicar filtros adicionais
     for (var i = 0; i < categoryProducts.length; i++) {
       var p = categoryProducts[i];
       var include = true;
-      
+
       if (query && p.name.toLowerCase().indexOf(query.toLowerCase()) === -1) {
         include = false;
       }
@@ -178,45 +178,45 @@ export default function ShopCategory() {
         }
       }
       if (include && Array.isArray(stockRange) && stockRange.length === 2) {
-        var computeStock = function(id) { 
-          try { 
-            var s = 0; 
-            for (var ch_idx = 0; ch_idx < String(id||'').length; ch_idx++) {
-              s += String(id||'').charCodeAt(ch_idx);
+        var computeStock = function (id) {
+          try {
+            var s = 0;
+            for (var ch_idx = 0; ch_idx < String(id || '').length; ch_idx++) {
+              s += String(id || '').charCodeAt(ch_idx);
             }
-            return 5 + (s % 60); 
-          } catch(_) { 
-            return 20; 
-          } 
+            return 5 + (s % 60);
+          } catch (_) {
+            return 20;
+          }
         };
         var stock = typeof p.stock === 'number' ? p.stock : computeStock(p.id);
         if (stock < stockRange[0] || stock > stockRange[1]) {
           include = false;
         }
       }
-      
+
       if (include) {
         list.push(p);
       }
     }
-    
+
     // Aplicar ordenação
     if (sort === "price-asc") {
-      list.sort(function(a, b) { return a.price - b.price; });
+      list.sort(function (a, b) { return a.price - b.price; });
     } else if (sort === "price-desc") {
-      list.sort(function(a, b) { return b.price - a.price; });
+      list.sort(function (a, b) { return b.price - a.price; });
     } else if (sort === "alpha-asc") {
-      list.sort(function(a, b) { return a.name.localeCompare(b.name); });
+      list.sort(function (a, b) { return a.name.localeCompare(b.name); });
     } else if (sort === "alpha-desc") {
-      list.sort(function(a, b) { return b.name.localeCompare(a.name); });
+      list.sort(function (a, b) { return b.name.localeCompare(a.name); });
     }
-    
+
     return list;
   }, [products, category, filters, query, sort, priceRange, stockRange]);
 
   return (
     <Scroller className="flex-1 min-h-0 p-6" hideScrollbar>
-      <PageTitle title="Shop" userName={userName} lead={`Here's your catalog, ${userName}`} subtitle={categoryDescription} />
+      <PageTitle title="Stock Catalogue" userName={userName} lead={`Here's your catalog, ${userName}`} subtitle={categoryDescription} />
       <div className="mb-4">
         <h1 className="text-4xl md:text-6xl font-extrabold uppercase tracking-wider text-foreground mt-6 text-center">
           <span>{typedTitle}</span>
@@ -232,7 +232,7 @@ export default function ShopCategory() {
         <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setFiltersOpen(false)} />
       )}
       <div className="md:flex md:items-start md:gap-4">
-        <div className={`fixed left-0 top-0 bottom-0 z-50 w-80 bg-background border-r border-divider p-4 transition-transform transform ${filtersOpen ? 'translate-x-0' : '-translate-x-full'} md:static md:translate-x-0 md:z-auto md:w-80 md:bg-transparent md:border-0 md:rounded-none md:top-auto md:h-auto md:overflow-visible`}> 
+        <div className={`fixed left-0 top-0 bottom-0 z-50 w-80 bg-background border-r border-divider p-4 transition-transform transform ${filtersOpen ? 'translate-x-0' : '-translate-x-full'} md:static md:translate-x-0 md:z-auto md:w-80 md:bg-transparent md:border-0 md:rounded-none md:top-auto md:h-auto md:overflow-visible`}>
           <div className="flex items-center justify-between mb-3">
             <div className="font-semibold">Filters</div>
             <Button isIconOnly size="sm" variant="light" className="md:hidden" onPress={() => setFiltersOpen(false)} aria-label="Close filters">✕</Button>
@@ -255,7 +255,7 @@ export default function ShopCategory() {
               radius="full"
               className="bg-[#e4e3e8] text-foreground/80 hover:text-foreground dark:bg-content1 shadow-sm"
               startContent={<Icon icon="lucide:rotate-ccw" className="text-sm" />}
-          onPress={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", eco: false, dimKey: "", dimRange: null, releaseYear: "" }); setPriceRange([priceLimits.min, priceLimits.max]); setStockRange([stockLimits.min, stockLimits.max]); setQuery(""); }}
+              onPress={() => { setFilters({ type: "", usage: "", location: "", color: [], mount: "", eco: false, dimKey: "", dimRange: null, releaseYear: "" }); setPriceRange([priceLimits.min, priceLimits.max]); setStockRange([stockLimits.min, stockLimits.max]); setQuery(""); }}
             >
               Clear filters
             </Button>
@@ -264,79 +264,79 @@ export default function ShopCategory() {
         </div>
 
         <div className="flex-1 w-full">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="hidden md:flex items-center gap-2">
-            {[2,3,4].map((n)=> (
-              <Button
-                key={n}
-                isIconOnly
-                variant={cols===n? 'solid':'bordered'}
-                radius="full"
-                onPress={()=>setCols(n)}
-                aria-label={`Set columns to ${n}`}
-              >
-                <div className="flex items-center gap-0.5">
-                  {Array.from({ length: n }).map((_,i)=> (
-                    <span key={i} className={`block w-0.5 h-3 rounded-sm ${cols===n? 'bg-white':'bg-default-400'}`}></span>
-                  ))}
-                </div>
-              </Button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Search products..."
-              value={query}
-              onChange={(e)=>setQuery(e.target.value)}
-              size="sm"
-              className="w-56 hidden md:block"
-              aria-label="Search products"
-            />
-            <Dropdown>
-              <DropdownTrigger>
-                <Button radius="full" variant="bordered" endContent={<Icon icon="lucide:chevron-down" className="text-sm" />}> 
-                  {sort === 'relevance' && 'Best Selling'}
-                  {sort === 'alpha-asc' && 'Alphabetically, A-Z'}
-                  {sort === 'alpha-desc' && 'Alphabetically, Z-A'}
-                  {sort === 'price-asc' && 'Price, low to high'}
-                  {sort === 'price-desc' && 'Price, high to low'}
+          <div className="mb-4 flex items-center justify-between">
+            <div className="hidden md:flex items-center gap-2">
+              {[2, 3, 4].map((n) => (
+                <Button
+                  key={n}
+                  isIconOnly
+                  variant={cols === n ? 'solid' : 'bordered'}
+                  radius="full"
+                  onPress={() => setCols(n)}
+                  aria-label={`Set columns to ${n}`}
+                >
+                  <div className="flex items-center gap-0.5">
+                    {Array.from({ length: n }).map((_, i) => (
+                      <span key={i} className={`block w-0.5 h-3 rounded-sm ${cols === n ? 'bg-white' : 'bg-default-400'}`}></span>
+                    ))}
+                  </div>
                 </Button>
-              </DropdownTrigger>
-              <DropdownMenu 
-                aria-label="Sort products"
-                selectedKeys={new Set([sort])}
-                selectionMode="single"
-                onAction={(key)=>setSort(String(key))}
-              >
-                <DropdownItem key="relevance">Best selling</DropdownItem>
-                <DropdownItem key="alpha-asc">Alphabetically, A-Z</DropdownItem>
-                <DropdownItem key="alpha-desc">Alphabetically, Z-A</DropdownItem>
-                <DropdownItem key="price-asc">Price, low to high</DropdownItem>
-                <DropdownItem key="price-desc">Price, high to low</DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
-            <Button
-              isIconOnly
-              radius="full"
-              variant="bordered"
-              aria-label="Go to favorites"
-              className="border-red-500/40 hover:border-red-500 bg-transparent text-red-500 hover:bg-red-500/5 focus-visible:ring-2 focus-visible:ring-red-500/50"
-              onPress={()=> navigate('/favorites')}
-            >
-              <Icon 
-                icon="mdi:heart" 
-                className="text-red-500 text-2xl"
-                style={{ fill: '#ef4444' }}
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Search products..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                size="sm"
+                className="w-56 hidden md:block"
+                aria-label="Search products"
               />
-            </Button>
+              <Dropdown>
+                <DropdownTrigger>
+                  <Button radius="full" variant="bordered" endContent={<Icon icon="lucide:chevron-down" className="text-sm" />}>
+                    {sort === 'relevance' && 'Best Selling'}
+                    {sort === 'alpha-asc' && 'Alphabetically, A-Z'}
+                    {sort === 'alpha-desc' && 'Alphabetically, Z-A'}
+                    {sort === 'price-asc' && 'Price, low to high'}
+                    {sort === 'price-desc' && 'Price, high to low'}
+                  </Button>
+                </DropdownTrigger>
+                <DropdownMenu
+                  aria-label="Sort products"
+                  selectedKeys={new Set([sort])}
+                  selectionMode="single"
+                  onAction={(key) => setSort(String(key))}
+                >
+                  <DropdownItem key="relevance">Best selling</DropdownItem>
+                  <DropdownItem key="alpha-asc">Alphabetically, A-Z</DropdownItem>
+                  <DropdownItem key="alpha-desc">Alphabetically, Z-A</DropdownItem>
+                  <DropdownItem key="price-asc">Price, low to high</DropdownItem>
+                  <DropdownItem key="price-desc">Price, high to low</DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
+              <Button
+                isIconOnly
+                radius="full"
+                variant="bordered"
+                aria-label="Go to favorites"
+                className="border-red-500/40 hover:border-red-500 bg-transparent text-red-500 hover:bg-red-500/5 focus-visible:ring-2 focus-visible:ring-red-500/50"
+                onPress={() => navigate('/favorites')}
+              >
+                <Icon
+                  icon="mdi:heart"
+                  className="text-red-500 text-2xl"
+                  style={{ fill: '#ef4444' }}
+                />
+              </Button>
+            </div>
           </div>
-        </div>
-        <ProductGrid
-          products={filtered}
-          onOrder={(product, variant) => { setSelected({ product, variant }); setAssignOpen(true); }}
-          cols={cols}
-          glass={isTrending}
-        />
+          <ProductGrid
+            products={filtered}
+            onOrder={(product, variant) => { setSelected({ product, variant }); setAssignOpen(true); }}
+            cols={cols}
+            glass={isTrending}
+          />
         </div>
       </div>
 

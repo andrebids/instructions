@@ -10,25 +10,25 @@ export function SidebarNavigation() {
   // Mantemos o hook (pode ser útil para outras reações ao tema)
   useTheme();
   const { isAdmin, isEditorStock, isComercial } = useUserRole();
-  
+
   // Filtrar itens de navegação baseado no role
   const filteredItems = React.useMemo(() => {
     return navigationItems.filter((item) => {
       // Dashboard e Shop são acessíveis para todos
-      if (item.href === '/' || item.href === '/shop') {
+      if (item.href === '/' || item.href === '/stock-catalogue') {
         return true;
       }
-      
+
       // Admin Products apenas para admin e editor_stock
       if (item.href === '/admin/products') {
         return isAdmin || isEditorStock;
       }
-      
+
       // Users apenas para admin
       if (item.href === '/admin/users') {
         return isAdmin;
       }
-      
+
       // Outros itens (por padrão, mostrar para todos autenticados)
       return true;
     });
