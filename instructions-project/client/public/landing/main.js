@@ -95,7 +95,12 @@ function initTranslations() {
 
         // Update toggle button text
         if (langToggle) {
-            langToggle.textContent = lang === 'en' ? 'FR' : 'EN';
+            // Show the option to switch TO the other language
+            if (lang === 'en') {
+                langToggle.innerHTML = '<span class="mr-1">🇫🇷</span> FR';
+            } else {
+                langToggle.innerHTML = '<span class="mr-1">🇬🇧</span> EN';
+            }
         }
 
         // Save preference
