@@ -1557,17 +1557,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
           </h3>
         </CardHeader>
         <CardBody className="p-6 space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <Textarea
-              label="Specific Criteria"
-              placeholder="Enter any specific requirements or criteria..."
-              minRows={4}
-              variant="bordered"
-              value={formik.values.criteria}
-              onValueChange={(v) => formik.updateField("criteria", v)}
-            />
-            <Textarea
-              label="Full Description"
+              label="Description"
               placeholder="Detailed description of the logo..."
               minRows={4}
               variant="bordered"
