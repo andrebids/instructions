@@ -142,7 +142,7 @@ const translations = {
             card3: {
                 tag: "Per Project",
                 title: "Typical Project",
-                price: "~€4.80",
+                price: "~€6.00",
                 unit: "/avg",
                 desc: "Estimated AI cost for a standard commercial proposal.",
                 item1: "20x Renders",
@@ -347,7 +347,7 @@ const translations = {
             card3: {
                 tag: "Par Projet",
                 title: "Projet Typique",
-                price: "~4,80 €",
+                price: "~6,00 €",
                 unit: "/moy",
                 desc: "Coût IA estimé pour une proposition commerciale standard.",
                 item1: "20x Rendus",
