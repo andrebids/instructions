@@ -9,12 +9,14 @@ class SuggestionCycler {
             {
                 image: 'images/gx350.jpg',
                 name: 'GX350',
-                stock: '13+ Units Available'
+                stock: '13+ Units Available',
+                label: 'Suggested for Place de la Mairie'
             },
             {
                 image: 'images/suggestion-swirl-new.jpg',
                 name: 'PG-2400',
-                stock: '8 Units Available'
+                stock: '8 Units Available',
+                label: 'Suggested for Rue Victor Hugo'
             }
         ];
         this.currentIndex = 0;
@@ -24,6 +26,7 @@ class SuggestionCycler {
         this.image = document.getElementById('suggestion-image');
         this.name = document.getElementById('suggestion-name');
         this.stock = document.getElementById('suggestion-stock');
+        this.label = document.getElementById('suggestion-label');
         this.timer = document.getElementById('suggestion-timer');
 
         if (this.card) {
@@ -66,6 +69,7 @@ class SuggestionCycler {
             this.image.alt = item.name;
             this.name.textContent = item.name;
             this.stock.textContent = item.stock;
+            if (this.label) this.label.textContent = item.label;
 
             // Fade in content
             this.card.style.opacity = '1';
