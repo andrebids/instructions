@@ -240,7 +240,13 @@ export default function Dashboard() {
                         </Button>
                       </div>
                     </div>
-                    <UrgencyWidget />
+                    <Card className="h-full bg-zinc-800/30 border-zinc-700/50 backdrop-blur-md">
+                      <CardBody className="p-6 flex items-center justify-center">
+                        <p className="text-zinc-500 text-sm text-center">
+                          {t('pages.dashboard.main.reservedSpace.placeholder')}
+                        </p>
+                      </CardBody>
+                    </Card>
                   </div>
 
                   {/* Financial KPIs */}
@@ -284,6 +290,10 @@ export default function Dashboard() {
                 <div className="col-span-12 lg:col-span-4 space-y-6">
                   <div className="h-[400px]">
                     <TodoListWidget />
+                  </div>
+                  
+                  <div className="h-[400px]">
+                    <UrgencyWidget />
                   </div>
                   
                   {/* Mini Calendar / Quick Stats / Notifications could go here */}

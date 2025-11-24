@@ -107,6 +107,9 @@
             "title": "Entregas",
             "subtext": "Próximos 7 dias"
           }
+        },
+        "reservedSpace": {
+          "placeholder": "Espaço reservado para conteúdo futuro"
         }
       },
       "urgencyWidget": {
@@ -140,16 +143,14 @@
           "days": "{{days}}d"
         },
         "clearCompleted": {
-          "one": "Limpar 1 tarefa concluída",
-          "other": "Limpar {{count}} tarefas concluídas"
-        },
-        "clearCompletedModal": {
-          "title": "Limpar Tarefas Concluídas",
-          "message": {
-            "one": "Tem certeza que deseja remover 1 tarefa concluída?",
-            "other": "Tem certeza que deseja remover {{count}} tarefas concluídas?"
-          },
-          "warning": "Esta ação não pode ser desfeita."
+          "tooltip": "Limpar {{count}} tarefa(s) concluída(s)",
+          "error": "Erro ao limpar tarefas concluídas",
+          "modal": {
+            "title": "Limpar Tarefas Concluídas",
+            "message": "Tem certeza que deseja remover {{count}} tarefa(s) concluída(s)? Esta ação não pode ser desfeita.",
+            "cancel": "Cancelar",
+            "confirm": "Limpar Tarefas"
+          }
         }
       },
       "smartProjectTable": {

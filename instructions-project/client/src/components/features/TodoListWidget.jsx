@@ -109,9 +109,7 @@ export function TodoListWidget() {
       setTasks(tasks.filter(t => !t.isCompleted));
     } catch (error) {
       console.error("Failed to clear completed tasks:", error);
-      alert(t('pages.dashboard.todoListWidget.clearCompleted.error', {
-        defaultValue: "Erro ao limpar tarefas concluídas"
-      }));
+      alert(t('pages.dashboard.todoListWidget.clearCompleted.error'));
     } finally {
       setClearingCompleted(false);
     }
@@ -171,8 +169,7 @@ export function TodoListWidget() {
               >
                 <Tooltip
                   content={t('pages.dashboard.todoListWidget.clearCompleted.tooltip', {
-                    count: completedCount,
-                    defaultValue: `Limpar ${completedCount} tarefa(s) concluída(s)`
+                    count: completedCount
                   })}
                   placement="left"
                   delay={300}
@@ -430,17 +427,14 @@ export function TodoListWidget() {
                   <Icon icon="lucide:trash-2" className="text-red-400 text-xl" />
                 </div>
                 <h3 className="text-lg font-semibold text-white">
-                  {t('pages.dashboard.todoListWidget.clearCompleted.modal.title', {
-                    defaultValue: 'Limpar Tarefas Concluídas'
-                  })}
+                  {t('pages.dashboard.todoListWidget.clearCompleted.modal.title')}
                 </h3>
               </div>
             </ModalHeader>
             <ModalBody>
               <p className="text-zinc-400 text-sm">
                 {t('pages.dashboard.todoListWidget.clearCompleted.modal.message', {
-                  count: completedCount,
-                  defaultValue: `Tem certeza que deseja remover ${completedCount} tarefa(s) concluída(s)? Esta ação não pode ser desfeita.`
+                  count: completedCount
                 })}
               </p>
             </ModalBody>
@@ -450,9 +444,7 @@ export function TodoListWidget() {
                 onPress={() => setShowConfirmModal(false)}
                 className="text-zinc-400 hover:text-zinc-200"
               >
-                {t('pages.dashboard.todoListWidget.clearCompleted.modal.cancel', {
-                  defaultValue: 'Cancelar'
-                })}
+                {t('pages.dashboard.todoListWidget.clearCompleted.modal.cancel')}
               </Button>
               <Button 
                 color="danger" 
@@ -460,9 +452,7 @@ export function TodoListWidget() {
                 isLoading={clearingCompleted}
                 startContent={!clearingCompleted && <Icon icon="lucide:trash-2" />}
               >
-                {t('pages.dashboard.todoListWidget.clearCompleted.modal.confirm', {
-                  defaultValue: 'Limpar Tarefas'
-                })}
+                {t('pages.dashboard.todoListWidget.clearCompleted.modal.confirm')}
               </Button>
             </ModalFooter>
           </ModalContent>

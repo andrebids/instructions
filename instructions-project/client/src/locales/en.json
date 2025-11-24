@@ -107,6 +107,9 @@
             "title": "Deliveries",
             "subtext": "Next 7 days"
           }
+        },
+        "reservedSpace": {
+          "placeholder": "Reserved space for future content"
         }
       },
       "urgencyWidget": {
@@ -140,16 +143,14 @@
           "days": "{{days}}d"
         },
         "clearCompleted": {
-          "one": "Clear 1 completed task",
-          "other": "Clear {{count}} completed tasks"
-        },
-        "clearCompletedModal": {
-          "title": "Clear Completed Tasks",
-          "message": {
-            "one": "Are you sure you want to remove 1 completed task?",
-            "other": "Are you sure you want to remove {{count}} completed tasks?"
-          },
-          "warning": "This action cannot be undone."
+          "tooltip": "Clear {{count}} completed task(s)",
+          "error": "Error clearing completed tasks",
+          "modal": {
+            "title": "Clear Completed Tasks",
+            "message": "Are you sure you want to remove {{count}} completed task(s)? This action cannot be undone.",
+            "cancel": "Cancel",
+            "confirm": "Clear Tasks"
+          }
         }
       },
       "smartProjectTable": {
