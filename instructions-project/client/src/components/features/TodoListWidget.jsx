@@ -122,11 +122,11 @@ export function TodoListWidget() {
     const diffTime = due - now;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) return { status: 'overdue', color: 'text-red-400', icon: 'lucide:alert-circle' };
-    if (diffDays === 0) return { status: 'today', color: 'text-yellow-400', icon: 'lucide:clock' };
-    if (diffDays === 1) return { status: 'tomorrow', color: 'text-blue-400', icon: 'lucide:calendar' };
-    if (diffDays <= 7) return { status: 'upcoming', color: 'text-green-400', icon: 'lucide:calendar' };
-    return { status: 'future', color: 'text-zinc-400', icon: 'lucide:calendar' };
+    if (diffDays < 0) return { status: 'overdue', color: 'text-danger-400', icon: 'lucide:alert-circle' };
+    if (diffDays === 0) return { status: 'today', color: 'text-warning-400', icon: 'lucide:clock' };
+    if (diffDays === 1) return { status: 'tomorrow', color: 'text-primary-400', icon: 'lucide:calendar' };
+    if (diffDays <= 7) return { status: 'upcoming', color: 'text-success-400', icon: 'lucide:calendar' };
+    return { status: 'future', color: 'text-default-400', icon: 'lucide:calendar' };
   };
 
   const formatDueDate = (dueDate) => {
@@ -147,7 +147,7 @@ export function TodoListWidget() {
   const completedCount = tasks.filter(t => t.isCompleted).length;
 
   return (
-    <Card className="h-full bg-zinc-900/50 border-zinc-800/50 backdrop-blur-md shadow-lg rounded-3xl">
+    <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm rounded-3xl">
       <CardBody className="p-6 flex flex-col h-full">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -155,8 +155,8 @@ export function TodoListWidget() {
                <Icon icon="lucide:check-square" className="text-primary text-xl" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white">{t('pages.dashboard.todoListWidget.title')}</h3>
-              <p className="text-xs text-zinc-500 font-medium">{today}</p>
+              <h3 className="text-xl font-bold text-foreground">{t('pages.dashboard.todoListWidget.title')}</h3>
+              <p className="text-xs text-default-500 font-medium">{today}</p>
             </div>
           </div>
           <AnimatePresence>
@@ -185,7 +185,7 @@ export function TodoListWidget() {
                     onPress={handleClearCompleted}
                     isLoading={clearingCompleted}
                     isDisabled={clearingCompleted}
-                    className="h-8 w-8 min-w-unit-8 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="h-8 w-8 min-w-unit-8 text-default-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                   >
                     <Icon icon="lucide:trash-2" className="text-base" />
                   </Button>
@@ -209,10 +209,10 @@ export function TodoListWidget() {
               isDisabled={creating}
               classNames={{
                 input: "text-sm",
-                inputWrapper: "bg-zinc-800/50 border-zinc-700/50 hover:bg-zinc-800 focus-within:bg-zinc-800 h-11 rounded-xl",
+                inputWrapper: "bg-default-100/50 border-default-200/50 hover:bg-default-200/50 focus-within:bg-default-200/50 h-11 rounded-xl",
               }}
               startContent={
-                <Icon icon="lucide:plus" className="text-zinc-400" />
+                <Icon icon="lucide:plus" className="text-default-400" />
               }
               endContent={
                 <div className="flex items-center gap-2">
@@ -223,7 +223,7 @@ export function TodoListWidget() {
                     onPress={() => setShowDatePicker(!showDatePicker)}
                     className={cn(
                       "min-w-unit-8 w-8 h-8 transition-colors",
-                      newTaskDueDate ? "text-primary" : "text-zinc-400"
+                      newTaskDueDate ? "text-primary" : "text-default-400"
                     )}
                   >
                     <Icon icon="lucide:calendar" className="text-lg" />
@@ -252,7 +252,7 @@ export function TodoListWidget() {
                 transition={{ duration: 0.2, ease: "easeOut" }}
                 className="overflow-hidden"
               >
-                <div className="bg-zinc-800/80 backdrop-blur-sm p-4 rounded-xl border border-zinc-700/50 space-y-3">
+                <div className="bg-content1/80 backdrop-blur-sm p-4 rounded-xl border border-default-200/50 space-y-3 shadow-lg">
                   {/* Quick Date Shortcuts */}
                   <div className="flex gap-2">
                     <Chip
@@ -298,9 +298,9 @@ export function TodoListWidget() {
                       minValue={todayDate()}
                       classNames={{
                         base: "w-full",
-                        label: "text-zinc-400 text-xs",
-                        inputWrapper: "bg-zinc-900/50 border-zinc-700/50 h-10",
-                        input: "text-sm text-zinc-200",
+                        label: "text-default-400 text-xs",
+                        inputWrapper: "bg-default-100/50 border-default-200/50 h-10",
+                        input: "text-sm text-foreground",
                       }}
                     />
                   </I18nProvider>
@@ -337,7 +337,7 @@ export function TodoListWidget() {
               <Spinner size="md" color="primary" />
             </div>
           ) : tasks.length === 0 ? (
-            <div className="text-center py-8 text-zinc-500 text-sm">
+            <div className="text-center py-8 text-default-500 text-sm">
               {t('pages.dashboard.todoListWidget.emptyState')}
             </div>
           ) : (
@@ -357,8 +357,8 @@ export function TodoListWidget() {
                       className={cn(
                         "group flex items-center gap-3 p-3 rounded-2xl transition-all duration-200 border border-transparent",
                         task.isCompleted 
-                          ? "bg-zinc-800/20" 
-                          : "bg-white/5 hover:bg-white/10 hover:border-white/5 hover:shadow-sm"
+                          ? "bg-default-100/50" 
+                          : "bg-default-50 hover:bg-default-100 hover:border-default-200/50 hover:shadow-sm"
                       )}
                     >
                       <div className="relative flex items-center justify-center">
@@ -377,12 +377,12 @@ export function TodoListWidget() {
                       <div className="flex-1 min-w-0">
                         <p className={cn(
                           "text-sm font-medium transition-all duration-300 truncate",
-                          task.isCompleted ? "text-zinc-500 line-through decoration-zinc-600" : "text-zinc-200"
+                          task.isCompleted ? "text-default-400 line-through decoration-default-400" : "text-foreground"
                         )}>
                           {task.title}
                         </p>
                         {task.description && (
-                          <p className="text-xs text-zinc-500 truncate">{task.description}</p>
+                          <p className="text-xs text-default-400 truncate">{task.description}</p>
                         )}
                       </div>
 
@@ -391,7 +391,7 @@ export function TodoListWidget() {
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
                           className={cn(
-                            "flex items-center gap-1 px-2 py-1 rounded-lg bg-zinc-800/50 border border-zinc-700/30",
+                            "flex items-center gap-1 px-2 py-1 rounded-lg bg-default-100/50 border border-default-200/50",
                             dueDateInfo.color
                           )}
                         >
@@ -426,13 +426,13 @@ export function TodoListWidget() {
                 <div className="p-2 bg-red-500/10 rounded-xl">
                   <Icon icon="lucide:trash-2" className="text-red-400 text-xl" />
                 </div>
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-lg font-semibold text-foreground">
                   {t('pages.dashboard.todoListWidget.clearCompleted.modal.title')}
                 </h3>
               </div>
             </ModalHeader>
             <ModalBody>
-              <p className="text-zinc-400 text-sm">
+              <p className="text-default-500 text-sm">
                 {t('pages.dashboard.todoListWidget.clearCompleted.modal.message', {
                   count: completedCount
                 })}
@@ -442,7 +442,7 @@ export function TodoListWidget() {
               <Button 
                 variant="light" 
                 onPress={() => setShowConfirmModal(false)}
-                className="text-zinc-400 hover:text-zinc-200"
+                className="text-default-500 hover:text-foreground"
               >
                 {t('pages.dashboard.todoListWidget.clearCompleted.modal.cancel')}
               </Button>

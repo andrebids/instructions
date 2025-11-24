@@ -161,7 +161,7 @@ export default function Dashboard() {
 
   // KPI Card Component
   const KPICard = ({ title, value, subtext, trend, icon, color }) => (
-    <Card className="bg-zinc-900/50 border-zinc-800/50 backdrop-blur-md">
+    <Card className="bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm">
       <CardBody className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div className={`p-3 rounded-2xl bg-${color}-500/10 text-${color}-500`}>
@@ -175,9 +175,9 @@ export default function Dashboard() {
           )}
         </div>
         <div className="space-y-1">
-          <p className="text-zinc-400 text-sm font-medium">{title}</p>
-          <h4 className="text-3xl font-bold text-white">{value}</h4>
-          <p className="text-zinc-500 text-xs">{subtext}</p>
+          <p className="text-default-500 text-sm font-medium">{title}</p>
+          <h4 className="text-3xl font-bold text-foreground">{value}</h4>
+          <p className="text-default-400 text-xs">{subtext}</p>
         </div>
       </CardBody>
     </Card>
@@ -186,20 +186,20 @@ export default function Dashboard() {
   return (
     <>
       {showCreateProject ? (
-        <div className="flex-1 min-h-0 overflow-hidden bg-zinc-950">
+        <div className="flex-1 min-h-0 overflow-hidden bg-background">
           <CreateProjectMultiStep onClose={handleCloseCreateProject} />
         </div>
       ) : (
-        <Scroller className="flex-1 min-h-0 bg-zinc-950" hideScrollbar>
+        <Scroller className="flex-1 min-h-0 bg-background" hideScrollbar>
           <div className="p-6 max-w-[1920px] mx-auto space-y-6">
             
             {/* Header Section */}
             <div className="flex justify-between items-center">
               <div>
-                <h1 className="text-2xl font-bold text-white">
+                <h1 className="text-2xl font-bold text-foreground">
                   {t('pages.dashboard.main.welcomeBack')} <span className="text-primary">{userName}</span>
                 </h1>
-                <p className="text-zinc-400 text-sm">{t('pages.dashboard.main.subtitle')}</p>
+                <p className="text-default-500 text-sm">{t('pages.dashboard.main.subtitle')}</p>
               </div>
               <Button
                 color="primary"
@@ -222,27 +222,32 @@ export default function Dashboard() {
                 <div className="col-span-12 lg:col-span-8 space-y-6">
                   {/* Hero Widget */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-64">
-                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-900/50 to-zinc-900 border border-white/5 p-8 flex flex-col justify-center group">
-                      <div className="absolute top-0 right-0 p-32 bg-primary-500/20 blur-[100px] rounded-full -mr-16 -mt-16 pointer-events-none" />
+                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50/80 via-white to-orange-50/30 dark:from-primary-900/50 dark:via-primary-900/50 dark:to-zinc-900 border border-amber-100/50 dark:border-white/5 p-8 flex flex-col justify-center group shadow-sm">
+                      {/* Dark Mode Glow */}
+                      <div className="absolute top-0 right-0 p-32 bg-primary-500/20 blur-[100px] rounded-full -mr-16 -mt-16 pointer-events-none hidden dark:block" />
+                      
+                      {/* Light Mode Glow */}
+                      <div className="absolute top-0 right-0 p-40 bg-amber-400/10 blur-[80px] rounded-full -mr-20 -mt-20 pointer-events-none dark:hidden" />
+                      
                       <div className="relative z-10">
-                        <h2 className="text-3xl font-bold text-white mb-2">
+                        <h2 className="text-3xl font-bold text-zinc-900 dark:text-foreground mb-2">
                           {t('pages.dashboard.main.hero.title')} <br/>
-                          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500">{t('pages.dashboard.main.hero.titleHighlight')}</span>
+                          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-500 dark:from-amber-200 dark:to-yellow-500">{t('pages.dashboard.main.hero.titleHighlight')}</span>
                         </h2>
-                        <p className="text-zinc-300 mb-6 max-w-xs">
+                        <p className="text-zinc-600 dark:text-zinc-300 mb-6 max-w-xs font-medium">
                           {t('pages.dashboard.main.hero.draftsMessage', { count: stats.draft })}
                         </p>
                         <Button 
-                          className="bg-white/10 backdrop-blur-md text-white border border-white/20 group-hover:bg-white/20 transition-all"
+                          className="bg-zinc-900 text-white shadow-lg shadow-zinc-900/20 dark:bg-white/10 dark:backdrop-blur-md dark:text-white dark:border dark:border-white/20 dark:shadow-none hover:bg-zinc-800 dark:hover:bg-white/20 transition-all"
                           endContent={<Icon icon="lucide:arrow-right" />}
                         >
                           {t('pages.dashboard.main.hero.continueWorking')}
                         </Button>
                       </div>
                     </div>
-                    <Card className="h-full bg-zinc-800/30 border-zinc-700/50 backdrop-blur-md">
+                    <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm">
                       <CardBody className="p-6 flex items-center justify-center">
-                        <p className="text-zinc-500 text-sm text-center">
+                        <p className="text-default-500 text-sm text-center">
                           {t('pages.dashboard.main.reservedSpace.placeholder')}
                         </p>
                       </CardBody>
@@ -297,47 +302,47 @@ export default function Dashboard() {
                   </div>
                   
                   {/* Mini Calendar / Quick Stats / Notifications could go here */}
-                  <Card className="h-[420px] bg-zinc-900/50 border-zinc-800/50 backdrop-blur-md">
+                  <Card className="h-[420px] bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm">
                     <CardBody className="p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">{t('pages.dashboard.main.quickStats.title')}</h3>
+                      <h3 className="text-lg font-semibold text-foreground mb-4">{t('pages.dashboard.main.quickStats.title')}</h3>
                       <div className="space-y-4">
-                        <div className="flex justify-between items-center p-3 rounded-xl bg-zinc-800/50">
+                        <div className="flex justify-between items-center p-3 rounded-xl bg-default-100/50">
                           <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-blue-500/20 text-blue-400">
+                            <div className="p-2 rounded-lg bg-blue-500/20 text-blue-500 dark:text-blue-400">
                               <Icon icon="lucide:users" />
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-white">{t('pages.dashboard.main.quickStats.activeClients.title')}</p>
-                              <p className="text-xs text-zinc-500">{t('pages.dashboard.main.quickStats.activeClients.subtext')}</p>
+                              <p className="text-sm font-medium text-foreground">{t('pages.dashboard.main.quickStats.activeClients.title')}</p>
+                              <p className="text-xs text-default-500">{t('pages.dashboard.main.quickStats.activeClients.subtext')}</p>
                             </div>
                           </div>
-                          <span className="text-lg font-bold text-white">24</span>
+                          <span className="text-lg font-bold text-foreground">24</span>
                         </div>
                         
-                        <div className="flex justify-between items-center p-3 rounded-xl bg-zinc-800/50">
+                        <div className="flex justify-between items-center p-3 rounded-xl bg-default-100/50">
                           <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400">
+                            <div className="p-2 rounded-lg bg-purple-500/20 text-purple-500 dark:text-purple-400">
                               <Icon icon="lucide:box" />
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-white">{t('pages.dashboard.main.quickStats.stockItems.title')}</p>
-                              <p className="text-xs text-zinc-500">{t('pages.dashboard.main.quickStats.stockItems.subtext')}</p>
+                              <p className="text-sm font-medium text-foreground">{t('pages.dashboard.main.quickStats.stockItems.title')}</p>
+                              <p className="text-xs text-default-500">{t('pages.dashboard.main.quickStats.stockItems.subtext')}</p>
                             </div>
                           </div>
-                          <span className="text-lg font-bold text-white">1,450</span>
+                          <span className="text-lg font-bold text-foreground">1,450</span>
                         </div>
 
-                        <div className="flex justify-between items-center p-3 rounded-xl bg-zinc-800/50">
+                        <div className="flex justify-between items-center p-3 rounded-xl bg-default-100/50">
                           <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-pink-500/20 text-pink-400">
+                            <div className="p-2 rounded-lg bg-pink-500/20 text-pink-500 dark:text-pink-400">
                               <Icon icon="lucide:truck" />
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-white">{t('pages.dashboard.main.quickStats.deliveries.title')}</p>
-                              <p className="text-xs text-zinc-500">{t('pages.dashboard.main.quickStats.deliveries.subtext')}</p>
+                              <p className="text-sm font-medium text-foreground">{t('pages.dashboard.main.quickStats.deliveries.title')}</p>
+                              <p className="text-xs text-default-500">{t('pages.dashboard.main.quickStats.deliveries.subtext')}</p>
                             </div>
                           </div>
-                          <span className="text-lg font-bold text-white">8</span>
+                          <span className="text-lg font-bold text-foreground">8</span>
                         </div>
                       </div>
                     </CardBody>
