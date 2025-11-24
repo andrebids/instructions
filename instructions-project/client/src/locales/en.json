@@ -69,6 +69,109 @@
         "currently": "Currently",
         "thisMonth": "This month"
       },
+      "main": {
+        "welcomeBack": "Welcome back,",
+        "subtitle": "Here's what's happening with your projects today.",
+        "newProject": "New Project",
+        "hero": {
+          "title": "Ready to light up",
+          "titleHighlight": "Christmas 2025?",
+          "draftsMessage": "You have {{count}} drafts waiting to be finalized.",
+          "continueWorking": "Continue Working"
+        },
+        "kpis": {
+          "totalPipeline": {
+            "title": "Total Pipeline",
+            "subtext": "Potential revenue"
+          },
+          "draftsValue": {
+            "title": "Drafts Value",
+            "subtext": "{{count}} projects in draft"
+          },
+          "conversionRate": {
+            "title": "Conversion Rate",
+            "subtext": "Last 30 days"
+          }
+        },
+        "quickStats": {
+          "title": "Quick Stats",
+          "activeClients": {
+            "title": "Active Clients",
+            "subtext": "Active contracts"
+          },
+          "stockItems": {
+            "title": "Stock Items",
+            "subtext": "Reserved units"
+          },
+          "deliveries": {
+            "title": "Deliveries",
+            "subtext": "Next 7 days"
+          }
+        }
+      },
+      "urgencyWidget": {
+        "title": "Urgency Alert",
+        "subtitle": "Stock Reservations Expiring Soon",
+        "project": "Project:",
+        "daysLeft": "{{count}} days left",
+        "dayLeft": "1 day left",
+        "extend": "Extend",
+        "release": "Release"
+      },
+      "todoListWidget": {
+        "title": "To-do list",
+        "addTaskPlaceholder": "Add new task...",
+        "create": "Create",
+        "datePicker": {
+          "label": "Due Date",
+          "selectedDate": "Selected date: {{date}}",
+          "clear": "Clear"
+        },
+        "quickDates": {
+          "today": "Today",
+          "tomorrow": "Tomorrow",
+          "nextWeek": "Next Week"
+        },
+        "emptyState": "No tasks yet. Add one above!",
+        "dateFormatting": {
+          "today": "Today",
+          "tomorrow": "Tomorrow",
+          "overdue": "{{days}}d overdue",
+          "days": "{{days}}d"
+        }
+      },
+      "smartProjectTable": {
+        "columns": {
+          "project": "PROJECT",
+          "status": "STATUS",
+          "contract": "CONTRACT",
+          "design": "DESIGN",
+          "reservation": "RESERVATION",
+          "budget": "BUDGET",
+          "timeline": "TIMELINE"
+        },
+        "emptyState": "No active projects",
+        "tooltip": {
+          "render": "Christmas Light Render"
+        },
+        "reservation": {
+          "daysLeft": "{{count}} days left",
+          "dayLeft": "1 day left"
+        },
+        "dates": {
+          "start": "Start:",
+          "end": "End:"
+        },
+        "contractTypes": {
+          "sale": "Sale",
+          "rent1y": "Rent 1Y",
+          "rent3y": "Rent 3Y"
+        },
+        "designStatus": {
+          "ready": "Ready",
+          "pending": "Pending"
+        }
+      },
       "projectTable": {
         "title": "Project History ({{count}} projects)",
         "titleOne": "Project History (1 project)",

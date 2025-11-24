@@ -1,9 +1,11 @@
 import React from "react";
-import { Card, CardBody, Checkbox, cn, Input, Spinner, DatePicker, Button } from "@heroui/react";
+import { Card, CardBody, Checkbox, cn, Input, Spinner, DatePicker, Button, Chip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { todosAPI } from "../../services/todos";
 import { useTranslation } from "react-i18next";
-import { parseDate, today as todayDate } from "@internationalized/date";
+import { parseDate, today as todayDate, CalendarDate } from "@internationalized/date";
+import { I18nProvider } from "@react-aria/i18n";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function TodoListWidget() {
   const { t } = useTranslation();
@@ -29,25 +31,43 @@ export function TodoListWidget() {
     loadTasks();
   }, []);
 
-  const handleCreateTask = async (e) => {
-    if (e.key === "Enter" && newTaskTitle.trim()) {
-      try {
-        setCreating(true);
-        const taskData = { title: newTaskTitle };
-        if (newTaskDueDate) {
-          taskData.dueDate = new Date(newTaskDueDate.year, newTaskDueDate.month - 1, newTaskDueDate.day).toISOString();
-        }
-        const newTask = await todosAPI.create(taskData);
-        setTasks([newTask, ...tasks]);
-        setNewTaskTitle("");
-        setNewTaskDueDate(null);
-        setShowDatePicker(false);
-      } catch (error) {
-        console.error("Failed to create task:", error);
-      } finally {
-        setCreating(false);
+  const handleCreateTask = async () => {
+    if (!newTaskTitle.trim()) return;
+    
+    try {
+      setCreating(true);
+      const taskData = { title: newTaskTitle };
+      if (newTaskDueDate) {
+        taskData.dueDate = new Date(newTaskDueDate.year, newTaskDueDate.month - 1, newTaskDueDate.day).toISOString();
       }
+      console.log("Creating task with data:", taskData);
+      const newTask = await todosAPI.create(taskData);
+      setTasks([newTask, ...tasks]);
+      setNewTaskTitle("");
+      setNewTaskDueDate(null);
+      setShowDatePicker(false);
+    } catch (error) {
+      console.error("Failed to create task:", error);
+      alert("Erro ao criar task: " + error.message);
+    } finally {
+      setCreating(false);
     }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !showDatePicker) {
+      handleCreateTask();
+    }
+  };
+
+  const setQuickDate = (days) => {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    setNewTaskDueDate(new CalendarDate(
+      date.getFullYear(),
+      date.getMonth() + 1,
+      date.getDate()
+    ));
   };
 
   const toggleTask = async (id, currentStatus) => {
@@ -84,10 +104,10 @@ export function TodoListWidget() {
     const diffTime = due - now;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) return `${Math.abs(diffDays)}d overdue`;
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Tomorrow';
-    if (diffDays <= 7) return `${diffDays}d`;
+    if (diffDays < 0) return t('pages.dashboard.todoListWidget.dateFormatting.overdue', { days: Math.abs(diffDays) });
+    if (diffDays === 0) return t('pages.dashboard.todoListWidget.dateFormatting.today');
+    if (diffDays === 1) return t('pages.dashboard.todoListWidget.dateFormatting.tomorrow');
+    if (diffDays <= 7) return t('pages.dashboard.todoListWidget.dateFormatting.days', { days: diffDays });
     return due.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
   };
 
@@ -98,7 +118,7 @@ export function TodoListWidget() {
       <CardBody className="p-6 flex flex-col h-full">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-bold text-white">To-do list</h3>
+            <h3 className="text-xl font-bold text-white">{t('pages.dashboard.todoListWidget.title')}</h3>
             <p className="text-xs text-zinc-500 font-medium">{today}</p>
           </div>
           <div className="bg-primary-500/10 p-2 rounded-xl">
@@ -106,77 +126,141 @@ export function TodoListWidget() {
           </div>
         </div>
 
-        <div className="mb-4 space-y-2">
+        <motion.div 
+          className="mb-4 space-y-3"
+          initial={false}
+          animate={{ height: "auto" }}
+        >
           <div className="relative">
             <Input
-              placeholder="Add a new task..."
+              placeholder={t('pages.dashboard.todoListWidget.addTaskPlaceholder')}
               value={newTaskTitle}
               onValueChange={setNewTaskTitle}
-              onKeyDown={handleCreateTask}
+              onKeyDown={handleKeyDown}
               isDisabled={creating}
               classNames={{
                 input: "text-sm",
-                inputWrapper: "bg-zinc-800/50 border-zinc-700/50 hover:bg-zinc-800 focus-within:bg-zinc-800 h-10 rounded-xl",
+                inputWrapper: "bg-zinc-800/50 border-zinc-700/50 hover:bg-zinc-800 focus-within:bg-zinc-800 h-11 rounded-xl",
               }}
               startContent={
-                creating ? <Spinner size="sm" color="current" /> : <Icon icon="lucide:plus" className="text-zinc-400" />
+                <Icon icon="lucide:plus" className="text-zinc-400" />
               }
               endContent={
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="light"
-                  onPress={() => setShowDatePicker(!showDatePicker)}
-                  className={cn(
-                    "min-w-unit-8 w-8 h-8",
-                    newTaskDueDate ? "text-primary" : "text-zinc-400"
-                  )}
-                >
-                  <Icon icon="lucide:calendar" className="text-lg" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    onPress={() => setShowDatePicker(!showDatePicker)}
+                    className={cn(
+                      "min-w-unit-8 w-8 h-8 transition-colors",
+                      newTaskDueDate ? "text-primary" : "text-zinc-400"
+                    )}
+                  >
+                    <Icon icon="lucide:calendar" className="text-lg" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    color="primary"
+                    onPress={handleCreateTask}
+                    isLoading={creating}
+                    isDisabled={!newTaskTitle.trim() || creating}
+                    className="h-8 px-4 font-medium"
+                  >
+                    {t('pages.dashboard.todoListWidget.create')}
+                  </Button>
+                </div>
               }
             />
           </div>
           
-          {showDatePicker && (
-            <div className="bg-zinc-800/80 backdrop-blur-sm p-3 rounded-xl border border-zinc-700/50">
-              <DatePicker
-                label="Due Date"
-                value={newTaskDueDate}
-                onChange={setNewTaskDueDate}
-                minValue={todayDate()}
-                classNames={{
-                  base: "w-full",
-                  label: "text-zinc-400 text-xs",
-                  inputWrapper: "bg-zinc-900/50 border-zinc-700/50 h-10",
-                  input: "text-sm text-zinc-200",
-                }}
-              />
-              <div className="flex gap-2 mt-2">
-                <Button
-                  size="sm"
-                  variant="flat"
-                  color="danger"
-                  onPress={() => {
-                    setNewTaskDueDate(null);
-                    setShowDatePicker(false);
-                  }}
-                  className="flex-1"
-                >
-                  Clear
-                </Button>
-                <Button
-                  size="sm"
-                  color="primary"
-                  onPress={() => setShowDatePicker(false)}
-                  className="flex-1"
-                >
-                  Done
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+          <AnimatePresence>
+            {showDatePicker && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, y: -10 }}
+                animate={{ opacity: 1, height: "auto", y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -10 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="overflow-hidden"
+              >
+                <div className="bg-zinc-800/80 backdrop-blur-sm p-4 rounded-xl border border-zinc-700/50 space-y-3">
+                  {/* Quick Date Shortcuts */}
+                  <div className="flex gap-2">
+                    <Chip
+                      size="sm"
+                      variant="flat"
+                      className="cursor-pointer hover:bg-primary/20 transition-colors"
+                      onClick={() => setQuickDate(0)}
+                    >
+                      <div className="flex items-center gap-1">
+                        <Icon icon="lucide:sun" className="text-xs" />
+                        <span className="text-xs">{t('pages.dashboard.todoListWidget.quickDates.today')}</span>
+                      </div>
+                    </Chip>
+                    <Chip
+                      size="sm"
+                      variant="flat"
+                      className="cursor-pointer hover:bg-primary/20 transition-colors"
+                      onClick={() => setQuickDate(1)}
+                    >
+                      <div className="flex items-center gap-1">
+                        <Icon icon="lucide:sunrise" className="text-xs" />
+                        <span className="text-xs">{t('pages.dashboard.todoListWidget.quickDates.tomorrow')}</span>
+                      </div>
+                    </Chip>
+                    <Chip
+                      size="sm"
+                      variant="flat"
+                      className="cursor-pointer hover:bg-primary/20 transition-colors"
+                      onClick={() => setQuickDate(7)}
+                    >
+                      <div className="flex items-center gap-1">
+                        <Icon icon="lucide:calendar-days" className="text-xs" />
+                        <span className="text-xs">{t('pages.dashboard.todoListWidget.quickDates.nextWeek')}</span>
+                      </div>
+                    </Chip>
+                  </div>
+
+                  <I18nProvider locale="pt-PT">
+                    <DatePicker
+                      label={t('pages.dashboard.todoListWidget.datePicker.label')}
+                      value={newTaskDueDate || undefined}
+                      onChange={setNewTaskDueDate}
+                      minValue={todayDate()}
+                      classNames={{
+                        base: "w-full",
+                        label: "text-zinc-400 text-xs",
+                        inputWrapper: "bg-zinc-900/50 border-zinc-700/50 h-10",
+                        input: "text-sm text-zinc-200",
+                      }}
+                    />
+                  </I18nProvider>
+                  
+                  {newTaskDueDate && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex items-center justify-between p-2 bg-primary/10 rounded-lg border border-primary/20"
+                    >
+                      <span className="text-xs text-primary font-medium">
+                        {t('pages.dashboard.todoListWidget.datePicker.selectedDate', { date: formatDueDate(new Date(newTaskDueDate.year, newTaskDueDate.month - 1, newTaskDueDate.day)) })}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="light"
+                        color="danger"
+                        onPress={() => setNewTaskDueDate(null)}
+                        className="h-6 min-w-unit-16"
+                      >
+                        {t('pages.dashboard.todoListWidget.datePicker.clear')}
+                      </Button>
+                    </motion.div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
         <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
           {loading ? (
@@ -185,60 +269,74 @@ export function TodoListWidget() {
             </div>
           ) : tasks.length === 0 ? (
             <div className="text-center py-8 text-zinc-500 text-sm">
-              No tasks yet. Add one above!
+              {t('pages.dashboard.todoListWidget.emptyState')}
             </div>
           ) : (
-            tasks.map((task) => {
-              const dueDateInfo = getDueDateStatus(task.dueDate);
-              return (
-                <div 
-                  key={task.id}
-                  className={cn(
-                    "group flex items-center gap-3 p-3 rounded-2xl transition-all duration-200 border border-transparent",
-                    task.isCompleted 
-                      ? "bg-zinc-800/20" 
-                      : "bg-white/5 hover:bg-white/10 hover:border-white/5 hover:shadow-sm"
-                  )}
-                >
-                  <div className="relative flex items-center justify-center">
-                    <Checkbox 
-                      isSelected={task.isCompleted} 
-                      onValueChange={() => toggleTask(task.id, task.isCompleted)}
-                      color="success"
-                      radius="full"
-                      size="lg"
-                      classNames={{
-                        wrapper: "after:bg-success-500",
-                      }}
-                    />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className={cn(
-                      "text-sm font-medium transition-all duration-300 truncate",
-                      task.isCompleted ? "text-zinc-500 line-through decoration-zinc-600" : "text-zinc-200"
-                    )}>
-                      {task.title}
-                    </p>
-                    {task.description && (
-                      <p className="text-xs text-zinc-500 truncate">{task.description}</p>
-                    )}
-                  </div>
+            <AnimatePresence mode="popLayout">
+              {tasks.map((task) => {
+                const dueDateInfo = getDueDateStatus(task.dueDate);
+                return (
+                  <motion.div
+                    key={task.id}
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: -100, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    layout
+                  >
+                    <div 
+                      className={cn(
+                        "group flex items-center gap-3 p-3 rounded-2xl transition-all duration-200 border border-transparent",
+                        task.isCompleted 
+                          ? "bg-zinc-800/20" 
+                          : "bg-white/5 hover:bg-white/10 hover:border-white/5 hover:shadow-sm"
+                      )}
+                    >
+                      <div className="relative flex items-center justify-center">
+                        <Checkbox 
+                          isSelected={task.isCompleted} 
+                          onValueChange={() => toggleTask(task.id, task.isCompleted)}
+                          color="success"
+                          radius="full"
+                          size="lg"
+                          classNames={{
+                            wrapper: "after:bg-success-500",
+                          }}
+                        />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className={cn(
+                          "text-sm font-medium transition-all duration-300 truncate",
+                          task.isCompleted ? "text-zinc-500 line-through decoration-zinc-600" : "text-zinc-200"
+                        )}>
+                          {task.title}
+                        </p>
+                        {task.description && (
+                          <p className="text-xs text-zinc-500 truncate">{task.description}</p>
+                        )}
+                      </div>
 
-                  {task.dueDate && dueDateInfo && (
-                    <div className={cn(
-                      "flex items-center gap-1 px-2 py-1 rounded-lg bg-zinc-800/50 border border-zinc-700/30",
-                      dueDateInfo.color
-                    )}>
-                      <Icon icon={dueDateInfo.icon} className="text-xs" />
-                      <span className="text-xs font-medium whitespace-nowrap">
-                        {formatDueDate(task.dueDate)}
-                      </span>
+                      {task.dueDate && dueDateInfo && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className={cn(
+                            "flex items-center gap-1 px-2 py-1 rounded-lg bg-zinc-800/50 border border-zinc-700/30",
+                            dueDateInfo.color
+                          )}
+                        >
+                          <Icon icon={dueDateInfo.icon} className="text-xs" />
+                          <span className="text-xs font-medium whitespace-nowrap">
+                            {formatDueDate(task.dueDate)}
+                          </span>
+                        </motion.div>
+                      )}
                     </div>
-                  )}
-                </div>
-              );
-            })
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           )}
         </div>
       </CardBody>

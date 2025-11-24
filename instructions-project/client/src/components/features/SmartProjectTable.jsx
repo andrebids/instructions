@@ -16,6 +16,7 @@ import {
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
 import { projectsAPI } from "../../services/api";
+import { useTranslation } from "react-i18next";
 
 const statusColorMap = {
   "draft": "default",
@@ -30,6 +31,7 @@ const statusColorMap = {
 };
 
 export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDeleted }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [page, setPage] = React.useState(1);
   const rowsPerPage = 5;
@@ -39,7 +41,9 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
     return projects.map((p, index) => ({
       ...p,
       contractType: index % 3 === 0 ? "Sale" : index % 3 === 1 ? "Rent 1Y" : "Rent 3Y",
+      contractTypeKey: index % 3 === 0 ? "sale" : index % 3 === 1 ? "rent1y" : "rent3y",
       designStatus: index % 2 === 0 ? "Ready" : "Pending",
+      designStatusKey: index % 2 === 0 ? "ready" : "pending",
       reservationValidity: index % 4 === 0 ? 3 : Math.floor(Math.random() * 10) + 5, // Mock days
       mockImage: `https://images.unsplash.com/photo-${index % 2 === 0 ? '1576692131261-40e88a446404' : '1512389142660-9c87db076481'}?w=300&h=200&fit=crop`
     }));
@@ -90,7 +94,7 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
                   alt="Preview" 
                   className="w-48 h-32 object-cover rounded-lg mb-2" 
                 />
-                <div className="text-xs font-semibold text-center">Christmas Light Render</div>
+                <div className="text-xs font-semibold text-center">{t('pages.dashboard.smartProjectTable.tooltip.render')}</div>
               </div>
             }
             delay={0}
@@ -121,6 +125,7 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
           "Rent 1Y": "warning",
           "Rent 3Y": "primary"
         };
+        const contractKey = project.contractTypeKey || (project.contractType === "Sale" ? "sale" : project.contractType === "Rent 1Y" ? "rent1y" : "rent3y");
         return (
           <Chip 
             size="sm" 
@@ -128,14 +133,15 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
             variant="dot"
             className="border-none"
           >
-            {project.contractType}
+            {t(`pages.dashboard.smartProjectTable.contractTypes.${contractKey}`)}
           </Chip>
         );
       case "design":
+        const designKey = project.designStatusKey || (project.designStatus === 'Ready' ? "ready" : "pending");
         return (
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${project.designStatus === 'Ready' ? 'bg-green-500' : 'bg-yellow-500'}`} />
-            <span className="text-sm text-zinc-300">{project.designStatus}</span>
+            <span className="text-sm text-zinc-300">{t(`pages.dashboard.smartProjectTable.designStatus.${designKey}`)}</span>
           </div>
         );
       case "reservation":
@@ -143,7 +149,11 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
         return (
           <div className={`flex items-center gap-1 ${isUrgent ? 'text-red-400' : 'text-zinc-400'}`}>
             <Icon icon="lucide:clock" className="text-xs" />
-            <span className="text-sm font-medium">{project.reservationValidity} days left</span>
+            <span className="text-sm font-medium">
+              {project.reservationValidity === 1 
+                ? t('pages.dashboard.smartProjectTable.reservation.dayLeft')
+                : t('pages.dashboard.smartProjectTable.reservation.daysLeft', { count: project.reservationValidity })}
+            </span>
           </div>
         );
       case "budget":
@@ -155,15 +165,15 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
       case "dates":
         return (
           <div className="flex flex-col">
-            <span className="text-xs text-zinc-400">Start: {project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}</span>
-            <span className="text-xs text-zinc-500">End: {project.endDate ? new Date(project.endDate).toLocaleDateString() : '-'}</span>
+            <span className="text-xs text-zinc-400">{t('pages.dashboard.smartProjectTable.dates.start')} {project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}</span>
+            <span className="text-xs text-zinc-500">{t('pages.dashboard.smartProjectTable.dates.end')} {project.endDate ? new Date(project.endDate).toLocaleDateString() : '-'}</span>
           </div>
         );
 
       default:
         return cellValue;
     }
-  }, [navigate, onProjectsUpdate]);
+  }, [navigate, onProjectsUpdate, t]);
 
   return (
     <Card className="h-full bg-zinc-900/50 border-zinc-800/50 backdrop-blur-md">
@@ -193,16 +203,16 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
         >
           <TableHeader>
             <TableColumn key="favorite" width={50}> </TableColumn>
-            <TableColumn key="name">PROJECT</TableColumn>
-            <TableColumn key="status">STATUS</TableColumn>
-            <TableColumn key="contract">CONTRACT</TableColumn>
-            <TableColumn key="design">DESIGN</TableColumn>
-            <TableColumn key="reservation">RESERVATION</TableColumn>
-            <TableColumn key="budget">BUDGET</TableColumn>
-            <TableColumn key="dates">TIMELINE</TableColumn>
+            <TableColumn key="name">{t('pages.dashboard.smartProjectTable.columns.project')}</TableColumn>
+            <TableColumn key="status">{t('pages.dashboard.smartProjectTable.columns.status')}</TableColumn>
+            <TableColumn key="contract">{t('pages.dashboard.smartProjectTable.columns.contract')}</TableColumn>
+            <TableColumn key="design">{t('pages.dashboard.smartProjectTable.columns.design')}</TableColumn>
+            <TableColumn key="reservation">{t('pages.dashboard.smartProjectTable.columns.reservation')}</TableColumn>
+            <TableColumn key="budget">{t('pages.dashboard.smartProjectTable.columns.budget')}</TableColumn>
+            <TableColumn key="dates">{t('pages.dashboard.smartProjectTable.columns.timeline')}</TableColumn>
 
           </TableHeader>
-          <TableBody items={items} emptyContent="No active projects">
+          <TableBody items={items} emptyContent={t('pages.dashboard.smartProjectTable.emptyState')}>
             {(item) => (
               <TableRow key={item.id}>
                 {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}

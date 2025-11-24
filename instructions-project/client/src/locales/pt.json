@@ -69,6 +69,109 @@
         "currently": "Atualmente",
         "thisMonth": "Este mês"
       },
+      "main": {
+        "welcomeBack": "Bem-vindo de volta,",
+        "subtitle": "Aqui está o que está a acontecer com os seus projetos hoje.",
+        "newProject": "Novo Projeto",
+        "hero": {
+          "title": "Pronto para iluminar",
+          "titleHighlight": "Natal 2025?",
+          "draftsMessage": "Tem {{count}} rascunhos à espera de serem finalizados.",
+          "continueWorking": "Continuar a Trabalhar"
+        },
+        "kpis": {
+          "totalPipeline": {
+            "title": "Pipeline Total",
+            "subtext": "Receita potencial"
+          },
+          "draftsValue": {
+            "title": "Valor dos Rascunhos",
+            "subtext": "{{count}} projetos em rascunho"
+          },
+          "conversionRate": {
+            "title": "Taxa de Conversão",
+            "subtext": "Últimos 30 dias"
+          }
+        },
+        "quickStats": {
+          "title": "Estatísticas Rápidas",
+          "activeClients": {
+            "title": "Clientes Ativos",
+            "subtext": "Contratos ativos"
+          },
+          "stockItems": {
+            "title": "Itens em Stock",
+            "subtext": "Unidades reservadas"
+          },
+          "deliveries": {
+            "title": "Entregas",
+            "subtext": "Próximos 7 dias"
+          }
+        }
+      },
+      "urgencyWidget": {
+        "title": "Alerta de Urgência",
+        "subtitle": "Reservas de Stock a Expirar em Breve",
+        "project": "Projeto:",
+        "daysLeft": "{{count}} dias restantes",
+        "dayLeft": "1 dia restante",
+        "extend": "Prolongar",
+        "release": "Libertar"
+      },
+      "todoListWidget": {
+        "title": "Lista de Tarefas",
+        "addTaskPlaceholder": "Adicionar nova task...",
+        "create": "Criar",
+        "datePicker": {
+          "label": "Data Limite",
+          "selectedDate": "Data selecionada: {{date}}",
+          "clear": "Limpar"
+        },
+        "quickDates": {
+          "today": "Hoje",
+          "tomorrow": "Amanhã",
+          "nextWeek": "Próxima Semana"
+        },
+        "emptyState": "Nenhuma task ainda. Adicione uma acima!",
+        "dateFormatting": {
+          "today": "Hoje",
+          "tomorrow": "Amanhã",
+          "overdue": "{{days}}d em atraso",
+          "days": "{{days}}d"
+        }
+      },
+      "smartProjectTable": {
+        "columns": {
+          "project": "PROJETO",
+          "status": "STATUS",
+          "contract": "CONTRATO",
+          "design": "DESIGN",
+          "reservation": "RESERVA",
+          "budget": "ORÇAMENTO",
+          "timeline": "CRONOGRAMA"
+        },
+        "emptyState": "Nenhum projeto ativo",
+        "tooltip": {
+          "render": "Render de Iluminação de Natal"
+        },
+        "reservation": {
+          "daysLeft": "{{count}} dias restantes",
+          "dayLeft": "1 dia restante"
+        },
+        "dates": {
+          "start": "Início:",
+          "end": "Fim:"
+        },
+        "contractTypes": {
+          "sale": "Venda",
+          "rent1y": "Aluguer 1A",
+          "rent3y": "Aluguer 3A"
+        },
+        "designStatus": {
+          "ready": "Pronto",
+          "pending": "Pendente"
+        }
+      },
       "projectTable": {
         "title": "Histórico de Projetos ({{count}} projetos)",
         "titleOne": "Histórico de Projetos (1 projeto)",

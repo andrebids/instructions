@@ -38,6 +38,8 @@ router.post('/', requireAuth(), async (req, res) => {
     try {
         const { title, description, type, dueDate } = req.body;
 
+        console.log('📝 [Todos] Creating task:', { title, dueDate, type });
+
         if (!title) {
             return res.status(400).json({ message: 'Title is required' });
         }
@@ -50,9 +52,10 @@ router.post('/', requireAuth(), async (req, res) => {
             type: type || 'MANUAL',
         });
 
+        console.log('✅ [Todos] Task created successfully:', { id: task.id, title: task.title, dueDate: task.dueDate });
         res.status(201).json(task);
     } catch (error) {
-        console.error('Error creating task:', error);
+        console.error('❌ [Todos] Error creating task:', error);
         res.status(500).json({
             message: 'Failed to create task',
             error: error.message
@@ -65,6 +68,8 @@ router.patch('/:id', requireAuth(), async (req, res) => {
     try {
         const { id } = req.params;
         const { isCompleted, dueDate } = req.body;
+
+        console.log('🔄 [Todos] Updating task:', { id, isCompleted, dueDate });
 
         const task = await Task.findOne({
             where: { id, userId: req.userId }, // requireAuth sets req.userId
@@ -83,9 +88,10 @@ router.patch('/:id', requireAuth(), async (req, res) => {
         }
 
         await task.save();
+        console.log('✅ [Todos] Task updated successfully:', { id: task.id, isCompleted: task.isCompleted, dueDate: task.dueDate });
         res.json(task);
     } catch (error) {
-        console.error('Error updating task:', error);
+        console.error('❌ [Todos] Error updating task:', error);
         res.status(500).json({
             message: 'Failed to update task',
             error: error.message

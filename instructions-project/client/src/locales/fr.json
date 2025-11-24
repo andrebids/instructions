@@ -69,6 +69,109 @@
         "currently": "Actuellement",
         "thisMonth": "Ce mois-ci"
       },
+      "main": {
+        "welcomeBack": "Bon retour,",
+        "subtitle": "Voici ce qui se passe avec vos projets aujourd'hui.",
+        "newProject": "Nouveau Projet",
+        "hero": {
+          "title": "Prêt à illuminer",
+          "titleHighlight": "Noël 2025 ?",
+          "draftsMessage": "Vous avez {{count}} brouillons en attente de finalisation.",
+          "continueWorking": "Continuer à Travailler"
+        },
+        "kpis": {
+          "totalPipeline": {
+            "title": "Pipeline Total",
+            "subtext": "Revenus potentiels"
+          },
+          "draftsValue": {
+            "title": "Valeur des Brouillons",
+            "subtext": "{{count}} projets en brouillon"
+          },
+          "conversionRate": {
+            "title": "Taux de Conversion",
+            "subtext": "30 derniers jours"
+          }
+        },
+        "quickStats": {
+          "title": "Statistiques Rapides",
+          "activeClients": {
+            "title": "Clients Actifs",
+            "subtext": "Contrats actifs"
+          },
+          "stockItems": {
+            "title": "Articles en Stock",
+            "subtext": "Unités réservées"
+          },
+          "deliveries": {
+            "title": "Livraisons",
+            "subtext": "7 prochains jours"
+          }
+        }
+      },
+      "urgencyWidget": {
+        "title": "Alerte d'Urgence",
+        "subtitle": "Réservations de Stock Expirant Bientôt",
+        "project": "Projet :",
+        "daysLeft": "{{count}} jours restants",
+        "dayLeft": "1 jour restant",
+        "extend": "Prolonger",
+        "release": "Libérer"
+      },
+      "todoListWidget": {
+        "title": "Liste de tâches",
+        "addTaskPlaceholder": "Ajouter une nouvelle tâche...",
+        "create": "Créer",
+        "datePicker": {
+          "label": "Date Limite",
+          "selectedDate": "Date sélectionnée : {{date}}",
+          "clear": "Effacer"
+        },
+        "quickDates": {
+          "today": "Aujourd'hui",
+          "tomorrow": "Demain",
+          "nextWeek": "Semaine Prochaine"
+        },
+        "emptyState": "Aucune tâche pour le moment. Ajoutez-en une ci-dessus !",
+        "dateFormatting": {
+          "today": "Aujourd'hui",
+          "tomorrow": "Demain",
+          "overdue": "{{days}}j en retard",
+          "days": "{{days}}j"
+        }
+      },
+      "smartProjectTable": {
+        "columns": {
+          "project": "PROJET",
+          "status": "STATUT",
+          "contract": "CONTRAT",
+          "design": "DESIGN",
+          "reservation": "RÉSERVATION",
+          "budget": "BUDGET",
+          "timeline": "CALENDRIER"
+        },
+        "emptyState": "Aucun projet actif",
+        "tooltip": {
+          "render": "Rendu d'Éclairage de Noël"
+        },
+        "reservation": {
+          "daysLeft": "{{count}} jours restants",
+          "dayLeft": "1 jour restant"
+        },
+        "dates": {
+          "start": "Début :",
+          "end": "Fin :"
+        },
+        "contractTypes": {
+          "sale": "Vente",
+          "rent1y": "Location 1A",
+          "rent3y": "Location 3A"
+        },
+        "designStatus": {
+          "ready": "Prêt",
+          "pending": "En attente"
+        }
+      },
       "projectTable": {
         "title": "Historique des projets ({{count}} projets)",
         "titleOne": "Historique des projets (1 projet)",

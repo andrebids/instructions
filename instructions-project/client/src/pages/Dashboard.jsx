@@ -197,9 +197,9 @@ export default function Dashboard() {
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-2xl font-bold text-white">
-                  Welcome back, <span className="text-primary">{userName}</span>
+                  {t('pages.dashboard.main.welcomeBack')} <span className="text-primary">{userName}</span>
                 </h1>
-                <p className="text-zinc-400 text-sm">Here's what's happening with your projects today.</p>
+                <p className="text-zinc-400 text-sm">{t('pages.dashboard.main.subtitle')}</p>
               </div>
               <Button
                 color="primary"
@@ -207,7 +207,7 @@ export default function Dashboard() {
                 className="font-medium shadow-lg shadow-primary/20"
                 onPress={handleCreateProject}
               >
-                New Project
+                {t('pages.dashboard.main.newProject')}
               </Button>
             </div>
 
@@ -226,17 +226,17 @@ export default function Dashboard() {
                       <div className="absolute top-0 right-0 p-32 bg-primary-500/20 blur-[100px] rounded-full -mr-16 -mt-16 pointer-events-none" />
                       <div className="relative z-10">
                         <h2 className="text-3xl font-bold text-white mb-2">
-                          Ready to light up <br/>
-                          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500">Christmas 2025?</span>
+                          {t('pages.dashboard.main.hero.title')} <br/>
+                          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500">{t('pages.dashboard.main.hero.titleHighlight')}</span>
                         </h2>
                         <p className="text-zinc-300 mb-6 max-w-xs">
-                          You have {stats.draft} drafts waiting to be finalized.
+                          {t('pages.dashboard.main.hero.draftsMessage', { count: stats.draft })}
                         </p>
                         <Button 
                           className="bg-white/10 backdrop-blur-md text-white border border-white/20 group-hover:bg-white/20 transition-all"
                           endContent={<Icon icon="lucide:arrow-right" />}
                         >
-                          Continue Working
+                          {t('pages.dashboard.main.hero.continueWorking')}
                         </Button>
                       </div>
                     </div>
@@ -246,24 +246,24 @@ export default function Dashboard() {
                   {/* Financial KPIs */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <KPICard 
-                      title="Total Pipeline" 
+                      title={t('pages.dashboard.main.kpis.totalPipeline.title')} 
                       value="€ 1.2M" 
-                      subtext="Potential revenue" 
+                      subtext={t('pages.dashboard.main.kpis.totalPipeline.subtext')} 
                       trend="+12%" 
                       icon="lucide:bar-chart-3" 
                       color="primary"
                     />
                     <KPICard 
-                      title="Drafts Value" 
+                      title={t('pages.dashboard.main.kpis.draftsValue.title')} 
                       value="€ 450k" 
-                      subtext={`${stats.draft} projects in draft`} 
+                      subtext={t('pages.dashboard.main.kpis.draftsValue.subtext', { count: stats.draft })} 
                       icon="lucide:file-edit" 
                       color="warning"
                     />
                     <KPICard 
-                      title="Conversion Rate" 
+                      title={t('pages.dashboard.main.kpis.conversionRate.title')} 
                       value="68%" 
-                      subtext="Last 30 days" 
+                      subtext={t('pages.dashboard.main.kpis.conversionRate.subtext')} 
                       trend="+5%" 
                       icon="lucide:pie-chart" 
                       color="success"
@@ -289,7 +289,7 @@ export default function Dashboard() {
                   {/* Mini Calendar / Quick Stats / Notifications could go here */}
                   <Card className="h-[420px] bg-zinc-900/50 border-zinc-800/50 backdrop-blur-md">
                     <CardBody className="p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">Quick Stats</h3>
+                      <h3 className="text-lg font-semibold text-white mb-4">{t('pages.dashboard.main.quickStats.title')}</h3>
                       <div className="space-y-4">
                         <div className="flex justify-between items-center p-3 rounded-xl bg-zinc-800/50">
                           <div className="flex items-center gap-3">
@@ -297,8 +297,8 @@ export default function Dashboard() {
                               <Icon icon="lucide:users" />
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-white">Active Clients</p>
-                              <p className="text-xs text-zinc-500">Active contracts</p>
+                              <p className="text-sm font-medium text-white">{t('pages.dashboard.main.quickStats.activeClients.title')}</p>
+                              <p className="text-xs text-zinc-500">{t('pages.dashboard.main.quickStats.activeClients.subtext')}</p>
                             </div>
                           </div>
                           <span className="text-lg font-bold text-white">24</span>
@@ -310,8 +310,8 @@ export default function Dashboard() {
                               <Icon icon="lucide:box" />
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-white">Stock Items</p>
-                              <p className="text-xs text-zinc-500">Reserved units</p>
+                              <p className="text-sm font-medium text-white">{t('pages.dashboard.main.quickStats.stockItems.title')}</p>
+                              <p className="text-xs text-zinc-500">{t('pages.dashboard.main.quickStats.stockItems.subtext')}</p>
                             </div>
                           </div>
                           <span className="text-lg font-bold text-white">1,450</span>
@@ -323,8 +323,8 @@ export default function Dashboard() {
                               <Icon icon="lucide:truck" />
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-white">Deliveries</p>
-                              <p className="text-xs text-zinc-500">Next 7 days</p>
+                              <p className="text-sm font-medium text-white">{t('pages.dashboard.main.quickStats.deliveries.title')}</p>
+                              <p className="text-xs text-zinc-500">{t('pages.dashboard.main.quickStats.deliveries.subtext')}</p>
                             </div>
                           </div>
                           <span className="text-lg font-bold text-white">8</span>
