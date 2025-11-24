@@ -42,6 +42,7 @@ export function StepProjectDetails({
       name: formData.name || "",
       budget: formData.budget || "",
       endDate: formData.endDate || null,
+      category: formData.category || "normal",
     },
     validationSchema,
     onChange: onInputChange,

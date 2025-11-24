@@ -9,11 +9,14 @@ export function NavigationFooter({
   onNext,
   onPrev,
   onSubmit,
+  onSave,
   isValid,
   loading,
   isNavigating,
   onResetLogo,
   isCurrentLogoValid,
+  projectId,
+  isSaving,
 }) {
   const isLogoInstructionsStep = currentStepId === "logo-instructions";
 
@@ -29,8 +32,22 @@ export function NavigationFooter({
         >
           Back
         </Button>
-        
+
         <div className="flex gap-2">
+          {/* Save button - only show when editing existing project */}
+          {projectId && currentStep < totalSteps && (
+            <Button
+              color="secondary"
+              variant="flat"
+              onPress={onSave}
+              isLoading={isSaving}
+              isDisabled={loading || isNavigating || isSaving}
+              startContent={<Icon icon="lucide:save" />}
+            >
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+          )}
+
           {isLogoInstructionsStep ? (
             <>
               <Button
@@ -78,4 +95,3 @@ export function NavigationFooter({
     </div>
   );
 }
-

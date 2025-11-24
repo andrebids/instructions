@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardBody, CardHeader, Button, Spinner, Tabs, Tab, Chip, Divider, Accordion, AccordionItem } from '@heroui/react';
 import { Icon } from '@iconify/react';
@@ -9,6 +9,7 @@ import { Scroller } from '../components/ui/scroller';
 import { NotesManager } from '../components/project-notes/NotesManager';
 import { ProjectProgress } from '../components/ui/ProjectProgress';
 import { useTranslation } from 'react-i18next';
+import ProjectResultsModal from "../components/projects/ProjectResultsModal";
 
 // Helper component to display a field value
 const InfoField = ({ label, value, icon }) => (
@@ -396,14 +397,17 @@ const LogoDetailsContent = ({ logo }) => {
     );
 };
 
+
 export default function ProjectDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { userName } = useUser();
     const { t } = useTranslation();
-    const [project, setProject] = React.useState(null);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState(null);
+    const [project, setProject] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [isResultsModalOpen, setIsResultsModalOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState("overview");
 
     React.useEffect(() => {
         loadProject();
@@ -591,12 +595,61 @@ export default function ProjectDetails() {
                                                 <h3 className="text-lg font-semibold">{t('pages.projectDetails.designerInfo')}</h3>
                                             </CardHeader>
                                             <CardBody className="p-6">
-                                                <div className="flex items-center justify-center py-8 text-default-500">
-                                                    <div className="text-center">
-                                                        <Icon icon="lucide:user" className="text-4xl mx-auto mb-2 opacity-50" />
-                                                        <p>{t('pages.projectDetails.toBeDeveloped')}</p>
+                                                {project.assignedDesigners && project.assignedDesigners.length > 0 ? (
+                                                    <div className="space-y-6">
+                                                        <div>
+                                                            <span className="text-sm text-default-500 font-medium block mb-3">
+                                                                {t('pages.projectDetails.assignedDesigners')}
+                                                            </span>
+                                                            <div className="flex flex-wrap gap-4">
+                                                                {project.assignedDesigners.map((designer, idx) => (
+                                                                    <div key={idx} className="flex items-center gap-3 bg-default-50 p-2 pr-4 rounded-full border border-default-200">
+                                                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                                                                            {designer.image ? (
+                                                                                <img src={designer.image} alt={designer.name} className="w-full h-full object-cover" />
+                                                                            ) : (
+                                                                                <Icon icon="lucide:user" className="text-primary" />
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex flex-col">
+                                                                            <span className="text-sm font-semibold">{designer.name}</span>
+                                                                            <span className="text-xs text-default-500">{t('pages.projectDetails.designer')}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex flex-col gap-3">
+                                                            <Button
+                                                                color="primary"
+                                                                variant="flat"
+                                                                className="w-full justify-start"
+                                                                startContent={<Icon icon="lucide:eye" />}
+                                                                onPress={() => setIsResultsModalOpen(true)}
+                                                            >
+                                                                {t('pages.projectDetails.showResults')}
+                                                            </Button>
+                                                            <Button
+                                                                color="secondary"
+                                                                variant="flat"
+                                                                className="w-full justify-start"
+                                                                startContent={<Icon icon="lucide:message-square" />}
+                                                                onPress={() => console.log('Open chat')}
+                                                            >
+                                                                {t('pages.projectDetails.chatWithDesigner')}
+                                                            </Button>
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                ) : (
+                                                    <div className="text-center py-6">
+                                                        <div className="w-16 h-16 rounded-full bg-default-100 flex items-center justify-center mx-auto mb-3">
+                                                            <Icon icon="lucide:user-x" className="text-2xl text-default-400" />
+                                                        </div>
+                                                        <p className="text-default-500 mb-4">{t('pages.projectDetails.noDesignersAssigned')}</p>
+                                                        {/* Optional: Add button to assign designer if user has permission */}
+                                                    </div>
+                                                )}
                                             </CardBody>
                                         </Card>
                                     </div>
@@ -676,6 +729,10 @@ export default function ProjectDetails() {
                         </Tab>
                     </Tabs>
                 </div>
+                <ProjectResultsModal
+                    isOpen={isResultsModalOpen}
+                    onOpenChange={setIsResultsModalOpen}
+                />
             </Scroller>
         </div>
     );
