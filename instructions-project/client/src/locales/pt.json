@@ -138,6 +138,18 @@
           "tomorrow": "Amanhã",
           "overdue": "{{days}}d em atraso",
           "days": "{{days}}d"
+        },
+        "clearCompleted": {
+          "one": "Limpar 1 tarefa concluída",
+          "other": "Limpar {{count}} tarefas concluídas"
+        },
+        "clearCompletedModal": {
+          "title": "Limpar Tarefas Concluídas",
+          "message": {
+            "one": "Tem certeza que deseja remover 1 tarefa concluída?",
+            "other": "Tem certeza que deseja remover {{count}} tarefas concluídas?"
+          },
+          "warning": "Esta ação não pode ser desfeita."
         }
       },
       "smartProjectTable": {

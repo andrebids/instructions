@@ -1026,8 +1026,8 @@ fi
 # Verificar se node_modules existe
 if [ ! -d "node_modules" ]; then
     echo '[AVISO] node_modules não encontrado, instalando dependências...'
-    npm install
-    if [ `$? -ne 0 ]; then
+    npm install 2>&1 | grep -v 'npm notice' || true
+    if [ `${PIPESTATUS[0]} -ne 0 ]; then
         echo '[ERRO] Falha ao instalar dependências'
         exit 1
     fi
@@ -1041,8 +1041,9 @@ if [ ! -f ".env" ]; then
 fi
 
 echo 'Executando npm run setup (cria tabelas e executa migrations)...'
-npm run setup
-SETUP_EXIT=`$?
+# Filtrar npm notices mas preservar erros reais
+npm run setup 2>&1 | grep -v 'npm notice' || true
+SETUP_EXIT=`${PIPESTATUS[0]}
 
 if [ `$SETUP_EXIT -eq 0 ]; then
     echo ''
@@ -1050,7 +1051,7 @@ if [ `$SETUP_EXIT -eq 0 ]; then
     echo ''
     # Verificar se há migrations individuais também
     echo 'Verificando se há migrations adicionais...'
-    npm run migrate:all 2>&1 | grep -E '(Migration|migration|✅|❌|ERRO|OK)' || echo 'Migrations adicionais concluídas'
+    npm run migrate:all 2>&1 | grep -v 'npm notice' | grep -E '(Migration|migration|✅|❌|ERRO|OK)' || echo 'Migrations adicionais concluídas'
     echo ''
     echo '[OK] Todas as migrations foram executadas!'
 else
@@ -1060,8 +1061,8 @@ else
     echo ''
     
     # Tentar executar migrations individuais como fallback
-    npm run migrate:all
-    MIGRATE_EXIT=`$?
+    npm run migrate:all 2>&1 | grep -v 'npm notice' || true
+    MIGRATE_EXIT=`${PIPESTATUS[0]}
     
     if [ `$MIGRATE_EXIT -eq 0 ]; then
         echo '[OK] Migrations executadas com sucesso (via migrate:all)!'
@@ -1074,11 +1075,28 @@ fi
 
 echo ''
 echo '=== Migrations Concluídas ==='
+echo 'EXIT_CODE_MIGRATION='`$SETUP_EXIT
 "@
 
+# Execute migration commands and capture output
 $migrationOutput = Invoke-SshCommand -User $sshUser -SshHost $sshHost -Key $sshKey -BashCommand $migrationCommands
 Write-Host $migrationOutput -ForegroundColor Gray
-if ($LASTEXITCODE -ne 0) {
+
+# Check for actual migration failure by looking for exit code in output
+$migrationFailed = $false
+if ($migrationOutput -match 'EXIT_CODE_MIGRATION=(\d+)') {
+    $migrationExitCode = [int]$matches[1]
+    if ($migrationExitCode -ne 0) {
+        $migrationFailed = $true
+    }
+}
+
+# Also check if there are explicit error messages
+if ($migrationOutput -match '\[ERRO\]' -and $migrationOutput -notmatch '\[OK\].*migrations') {
+    $migrationFailed = $true
+}
+
+if ($migrationFailed) {
     Write-Host "[AVISO] Pode ter havido problemas ao executar migrations" -ForegroundColor Yellow
     Write-Host "   Verifique os logs acima para mais detalhes" -ForegroundColor Yellow
     Write-Host "   Continuando com deploy mesmo assim..." -ForegroundColor Yellow

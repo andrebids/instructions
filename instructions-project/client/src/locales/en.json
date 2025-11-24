@@ -138,6 +138,18 @@
           "tomorrow": "Tomorrow",
           "overdue": "{{days}}d overdue",
           "days": "{{days}}d"
+        },
+        "clearCompleted": {
+          "one": "Clear 1 completed task",
+          "other": "Clear {{count}} completed tasks"
+        },
+        "clearCompletedModal": {
+          "title": "Clear Completed Tasks",
+          "message": {
+            "one": "Are you sure you want to remove 1 completed task?",
+            "other": "Are you sure you want to remove {{count}} completed tasks?"
+          },
+          "warning": "This action cannot be undone."
         }
       },
       "smartProjectTable": {

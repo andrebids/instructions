@@ -138,6 +138,18 @@
           "tomorrow": "Demain",
           "overdue": "{{days}}j en retard",
           "days": "{{days}}j"
+        },
+        "clearCompleted": {
+          "one": "Effacer 1 tâche terminée",
+          "other": "Effacer {{count}} tâches terminées"
+        },
+        "clearCompletedModal": {
+          "title": "Effacer les Tâches Terminées",
+          "message": {
+            "one": "Êtes-vous sûr de vouloir supprimer 1 tâche terminée ?",
+            "other": "Êtes-vous sûr de vouloir supprimer {{count}} tâches terminées ?"
+          },
+          "warning": "Cette action ne peut pas être annulée."
         }
       },
       "smartProjectTable": {
