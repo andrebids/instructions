@@ -5,8 +5,10 @@ import 'dotenv/config';
 import sequelize, { testConnection } from './config/database.js';
 import projectRoutes from './routes/projects.js';
 import decorationRoutes from './routes/decorations.js';
+import projectsRouter from './routes/projects.js';
+import todosRouter from './routes/todos.js';
 import productRoutes from './routes/products.js';
-import uploadRoutes from './routes/upload.js';
+import uploadRouter from './routes/upload.js';
 import editorUploadRoutes from './routes/editor-upload.js';
 import userRoutes from './routes/users.js';
 import authRoutes from './routes/auth.route.js';
@@ -365,8 +367,10 @@ app.get('/api/files/:filename', (req, res) => {
 // API Routes
 app.use('/api/projects', projectRoutes);
 app.use('/api/decorations', decorationRoutes);
+app.use('/api/projects', projectsRouter);
+app.use('/api/todos', todosRouter);
 app.use('/api/products', productRoutes);
-app.use('/api/upload', uploadRoutes);
+app.use('/api/upload', uploadRouter);
 app.use('/api/upload', editorUploadRoutes);
 app.use('/api/users', userRoutes);
 

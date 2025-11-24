@@ -3,6 +3,7 @@ import Decoration from './Decoration.js';
 import ProjectElement from './ProjectElement.js';
 import Product from './Product.js';
 import ProjectNote from './ProjectNote.js';
+import Task from './Task.js';
 
 // Definir associações entre modelos
 Project.hasMany(ProjectElement, {
@@ -44,5 +45,6 @@ export {
   ProjectElement,
   Product,
   ProjectNote,
+  Task,
 };
 
