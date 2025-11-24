@@ -283,6 +283,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
                 <StepIndicator
                   steps={visibleSteps}
                   currentStep={navigation.currentStep}
+                  onStepClick={(stepNumber) => navigation.setCurrentStep(stepNumber)}
                 />
               </div>
 
@@ -315,9 +316,12 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
               onNext={navigation.nextStep}
               onPrev={navigation.prevStep}
               onSubmit={formState.handleSubmit}
+              onSave={formState.handleSave}
               isValid={navigation.canProceed()}
               loading={formState.loading}
               isNavigating={navigation.isNavigating}
+              projectId={projectId}
+              isSaving={saveStatus.status === 'saving'}
               onResetLogo={() => {
                 // Get current logoDetails structure
                 const currentLogoDetails = formState.formData.logoDetails || {};

@@ -12,13 +12,14 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isLoadingProject, setIsLoadingProject] = useState(!!projectId);
-  
+
   // Estado do formulário
   const [formData, setFormData] = useState({
     name: "",
     projectType: null,
     simuWorkflow: null,
     status: "draft",
+    category: "normal",
     clientId: null,
     selectedClientKey: null,
     clientName: "",
@@ -47,7 +48,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
   });
 
   // 🧪 Logging inicial - removido para evitar logs infinitos
-  
+
   logger.lifecycle('useProjectForm', 'Hook initialized', { hasOnClose: !!onClose, projectId });
 
   // Carregar projeto existente quando projectId fornecido (modo edição)
@@ -58,14 +59,14 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
       try {
         setIsLoadingProject(true);
         logger.lifecycle('useProjectForm', 'Loading existing project', { projectId });
-        
+
         const project = await projectsAPI.getById(projectId);
-        
+
         if (project) {
           // Converter datas do backend para formato do DatePicker
           const startDate = project.startDate ? parseDate(project.startDate.split('T')[0]) : null;
           const endDate = project.endDate ? parseDate(project.endDate.split('T')[0]) : null;
-          
+
           // Restaurar estado completo do formulário
           setFormData({
             id: project.id,
@@ -73,6 +74,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
             projectType: project.projectType || null,
             simuWorkflow: null, // Não guardado no backend
             status: project.status || "draft",
+            category: project.category || "normal",
             clientId: null,
             selectedClientKey: null,
             clientName: project.clientName || "",
@@ -99,8 +101,8 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
             },
             logoDetails: project.logoDetails || {},
           });
-          
-          logger.lifecycle('useProjectForm', 'Project loaded successfully', { 
+
+          logger.lifecycle('useProjectForm', 'Project loaded successfully', {
             projectId: project.id,
             name: project.name,
             hasCanvasData: !!(project.canvasDecorations?.length || project.canvasImages?.length)
@@ -120,7 +122,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
   // Handler genérico de input - usando useCallback para evitar re-renders desnecessários
   const handleInputChange = useCallback((field, value) => {
     logger.userAction('Input Change', field, value);
-    
+
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -135,13 +137,14 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
     try {
       setLoading(true);
       setError(null);
-      
+
       const projectData = {
         name: formData.name,
         clientName: formData.clientName,
         // Se projectType for null (skip), usar 'decor' como padrão (compatibilidade com BD)
         projectType: formData.projectType || 'decor',
         status: "created", // Status definido como "created" ao finalizar o projeto
+        category: formData.category || "normal",
         location: formData.location,
         description: formData.description,
         budget: formData.budget ? parseFloat(formData.budget) : null,
@@ -165,7 +168,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
         // Dados das instruções do logo (apenas para projetos tipo logo)
         logoDetails: formData.logoDetails || {},
       };
-      
+
       // Log detalhado das zonas incluídas na criação
       if (projectData.snapZonesByImage && Object.keys(projectData.snapZonesByImage).length > 0) {
         var zonasResumo = {};
@@ -179,12 +182,12 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
         }
         // Log removido
       }
-      
+
       logger.api('projects', 'POST', projectData);
       logger.lifecycle('useProjectForm', 'Submitting project', projectData);
-      
+
       // Logs de teste removidos
-      
+
       // Se já existe tempProjectId ou projectId, atualizar projeto existente em vez de criar novo
       let finalProject;
       const projectIdToUpdate = projectId || formData.tempProjectId;
@@ -217,14 +220,14 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
         finalProject = await projectsAPI.create(createData);
         logger.lifecycle('useProjectForm', 'Project created', finalProject);
       }
-      
+
       // Atualizar formData com o ID do projeto
       setFormData(prev => ({
         ...prev,
         id: finalProject.id,
         tempProjectId: finalProject.id
       }));
-      
+
       // Fechar modal e redirecionar para o dashboard (não redirecionar para notas)
       if (onClose) {
         onClose();  // Fecha modal e recarrega dados
@@ -234,10 +237,67 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
       }
     } catch (err) {
       logger.error('useProjectForm.handleSubmit', err);
-      
+
       // Logs de teste removidos
-      
+
       setError(err.response?.data?.error || "Failed to create project");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Save current project state without closing modal
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Indicate save start
+      if (saveStatus) saveStatus.setSaving();
+
+      const projectData = {
+        name: formData.name,
+        clientName: formData.clientName,
+        projectType: formData.projectType || 'decor',
+        status: formData.status || 'draft',
+        category: formData.category || "normal",
+        location: formData.location,
+        description: formData.description,
+        budget: formData.budget ? parseFloat(formData.budget) : null,
+        endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
+        canvasDecorations: formData.canvasDecorations || [],
+        canvasImages: formData.canvasImages || [],
+        snapZonesByImage: formData.snapZonesByImage || {},
+        decorationsByImage: formData.decorationsByImage || {},
+        cartoucheByImage: formData.cartoucheByImage || {},
+        uploadedImages: formData.uploadedImages || [],
+        simulationState: formData.simulationState || {
+          uploadStep: 'uploading',
+          selectedImageId: null,
+          isDayMode: true,
+          conversionComplete: {}
+        },
+        logoDetails: formData.logoDetails || {},
+      };
+
+      const projectIdToUpdate = projectId || formData.tempProjectId;
+      if (projectIdToUpdate) {
+        await projectsAPI.update(projectIdToUpdate, projectData);
+        logger.lifecycle('useProjectForm', 'Project saved', { projectId: projectIdToUpdate });
+
+        // Indicate save success
+        if (saveStatus) saveStatus.setSaved();
+      } else {
+        throw new Error('No project ID available for saving');
+      }
+    } catch (err) {
+      logger.error('useProjectForm.handleSave', err);
+
+      // Indicate save error
+      if (saveStatus) saveStatus.setError();
+
+      setError(err.response?.data?.error || "Failed to save project");
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -253,41 +313,42 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
     try {
       // Indicar início do salvamento
       if (saveStatus) saveStatus.setSaving();
-      
+
       const projectData = {
         name: formData.name,
         clientName: formData.clientName,
         projectType: formData.projectType || 'decor',
         status: 'draft',
+        category: formData.category || "normal",
         location: formData.location,
         description: formData.description,
         budget: formData.budget ? parseFloat(formData.budget) : null,
         startDate: null, // Será definido apenas quando o projeto for finalizado
         endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
       };
-      
+
       const newProject = await projectsAPI.create(projectData);
-      
+
       // Guardar ID temporário no formData
       setFormData(prev => ({
         ...prev,
         tempProjectId: newProject.id,
         id: newProject.id
       }));
-      
+
       // Indicar salvamento bem-sucedido
       if (saveStatus) saveStatus.setSaved();
-      
+
       logger.lifecycle('useProjectForm', 'Temporary project created', newProject);
       return newProject.id;
     } catch (err) {
       console.error('❌ [CREATE TEMP PROJECT] ===== ERRO AO CRIAR PROJETO TEMPORÁRIO =====');
       console.error('❌ [CREATE TEMP PROJECT] Erro:', err.message);
       console.error('❌ [CREATE TEMP PROJECT] Stack:', err.stack);
-      
+
       // Indicar erro no salvamento
       if (saveStatus) saveStatus.setError();
-      
+
       logger.error('useProjectForm.createTempProject', err);
       throw err;
     }
@@ -298,6 +359,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
     setFormData,
     handleInputChange,
     handleSubmit,
+    handleSave,
     createTempProject,
     loading: loading || isLoadingProject,
     error,

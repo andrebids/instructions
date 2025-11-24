@@ -124,6 +124,13 @@ const Project = sequelize.define('Project', {
     defaultValue: [],
     comment: 'Array de notas: [{ id, topic, title, content, createdAt, updatedAt }]',
   },
+  // Designers atribuídos ao projeto
+  assignedDesigners: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [],
+    comment: 'Array de designers atribuídos: [{ id, name, email, image }]',
+  },
 }, {
   tableName: 'projects',
   timestamps: true,

@@ -421,6 +421,10 @@
       "dueToday": "Due today",
       "overdue": "{{days}} days overdue",
       "designerInfo": "Designer Information",
+      "assignedDesigners": "Assigned Designers",
+      "noDesignersAssigned": "No designers assigned yet",
+      "showResults": "Show Results",
+      "chatWithDesigner": "Chat / Observations",
       "toBeDeveloped": "To be developed",
       "designer": "Designer",
       "notesManager": {
