@@ -36,28 +36,28 @@ const LogoDetailsContent = ({ logo }) => {
                     {logo.dimensions?.height?.value && (
                         <div>
                             <span className="text-xs text-default-500 block">{t('pages.projectDetails.height')}</span>
-                            <span className="font-semibold text-lg">{logo.dimensions.height.value} cm</span>
+                            <span className="font-semibold text-lg">{logo.dimensions.height.value} m</span>
                             {logo.dimensions.height.imperative && <Icon icon="lucide:lock" className="inline ml-1 text-xs text-warning" />}
                         </div>
                     )}
                     {logo.dimensions?.length?.value && (
                         <div>
                             <span className="text-xs text-default-500 block">{t('pages.projectDetails.length')}</span>
-                            <span className="font-semibold text-lg">{logo.dimensions.length.value} cm</span>
+                            <span className="font-semibold text-lg">{logo.dimensions.length.value} m</span>
                             {logo.dimensions.length.imperative && <Icon icon="lucide:lock" className="inline ml-1 text-xs text-warning" />}
                         </div>
                     )}
                     {logo.dimensions?.width?.value && (
                         <div>
                             <span className="text-xs text-default-500 block">{t('pages.projectDetails.width')}</span>
-                            <span className="font-semibold text-lg">{logo.dimensions.width.value} cm</span>
+                            <span className="font-semibold text-lg">{logo.dimensions.width.value} m</span>
                             {logo.dimensions.width.imperative && <Icon icon="lucide:lock" className="inline ml-1 text-xs text-warning" />}
                         </div>
                     )}
                     {logo.dimensions?.diameter?.value && (
                         <div>
                             <span className="text-xs text-default-500 block">{t('pages.projectDetails.diameter')}</span>
-                            <span className="font-semibold text-lg">{logo.dimensions.diameter.value} cm</span>
+                            <span className="font-semibold text-lg">{logo.dimensions.diameter.value} m</span>
                             {logo.dimensions.diameter.imperative && <Icon icon="lucide:lock" className="inline ml-1 text-xs text-warning" />}
                         </div>
                     )}
@@ -65,52 +65,103 @@ const LogoDetailsContent = ({ logo }) => {
             </div>
 
             {/* Technical Specs */}
-            <div className="col-span-full md:col-span-2">
-                <h4 className="text-sm font-bold text-default-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Icon icon="lucide:settings" />
-                    {t('pages.projectDetails.technicalSpecs')}
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <InfoField label={t('pages.projectDetails.fixationType')} value={logo.fixationType} />
-                    <InfoField label={t('pages.projectDetails.mastDiameter')} value={logo.mastDiameter ? `${logo.mastDiameter} mm` : null} />
+            {(logo.fixationType || logo.mastDiameter || logo.lacqueredStructure || logo.maxWeightConstraint) && (
+                <div className="col-span-full md:col-span-2">
+                    <h4 className="text-sm font-bold text-default-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <Icon icon="lucide:settings" />
+                        {t('pages.projectDetails.technicalSpecs')}
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {logo.fixationType && (
+                            <InfoField label={t('pages.projectDetails.fixationType')} value={logo.fixationType} />
+                        )}
+                        {logo.mastDiameter && (
+                            <InfoField label={t('pages.projectDetails.mastDiameter')} value={`${logo.mastDiameter} mm`} />
+                        )}
 
-                    <div>
-                        <div className="text-sm font-medium text-default-500 mb-1">{t('pages.projectDetails.lacquered')}</div>
-                        <div className="flex items-center gap-2">
-                            <Icon icon={logo.lacqueredStructure ? "lucide:check-circle" : "lucide:x-circle"}
-                                className={logo.lacqueredStructure ? "text-success" : "text-default-300"} />
-                            <span>{logo.lacqueredStructure ? logo.lacquerColor : t('common.no')}</span>
-                        </div>
-                    </div>
+                        {logo.lacqueredStructure && (
+                            <div>
+                                <div className="text-sm font-medium text-default-500 mb-1">{t('pages.projectDetails.lacquered')}</div>
+                                <div className="flex items-center gap-2">
+                                    <Icon icon="lucide:check-circle" className="text-success" />
+                                    <span>{logo.lacquerColor || t('common.yes')}</span>
+                                </div>
+                            </div>
+                        )}
 
-                    <div>
-                        <div className="text-sm font-medium text-default-500 mb-1">{t('pages.projectDetails.maxWeightConstraint')}</div>
-                        <div className="flex items-center gap-2">
-                            <Icon icon={logo.maxWeightConstraint ? "lucide:alert-triangle" : "lucide:check-circle"}
-                                className={logo.maxWeightConstraint ? "text-warning" : "text-default-300"} />
-                            <span>{logo.maxWeightConstraint ? `${logo.maxWeight} kg` : t('common.no')}</span>
-                        </div>
+                        {logo.maxWeightConstraint && logo.maxWeight && (
+                            <div>
+                                <div className="text-sm font-medium text-default-500 mb-1">{t('pages.projectDetails.maxWeightConstraint')}</div>
+                                <div className="flex items-center gap-2">
+                                    <Icon icon="lucide:alert-triangle" className="text-warning" />
+                                    <span>{logo.maxWeight} kg</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
-            </div>
+            )}
 
             {/* Additional Info */}
-            <div className="col-span-full md:col-span-1">
-                <h4 className="text-sm font-bold text-default-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Icon icon="lucide:info" />
-                    {t('pages.projectDetails.additionalInfo')}
-                </h4>
-                <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2 border-b border-divider">
-                        <span className="text-default-600">{t('pages.projectDetails.ballast')}</span>
-                        <Icon icon={logo.ballast ? "lucide:check" : "lucide:x"} className={logo.ballast ? "text-success" : "text-default-300"} />
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-divider">
-                        <span className="text-default-600">{t('pages.projectDetails.controlReport')}</span>
-                        <Icon icon={logo.controlReport ? "lucide:check" : "lucide:x"} className={logo.controlReport ? "text-success" : "text-default-300"} />
+            {(logo.ballast || logo.controlReport) && (
+                <div className="col-span-full md:col-span-1">
+                    <h4 className="text-sm font-bold text-default-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <Icon icon="lucide:info" />
+                        {t('pages.projectDetails.additionalInfo')}
+                    </h4>
+                    <div className="space-y-3">
+                        {logo.ballast && (
+                            <div className="flex justify-between items-center py-2 border-b border-divider">
+                                <span className="text-default-600">{t('pages.projectDetails.ballast')}</span>
+                                <Icon icon="lucide:check" className="text-success" />
+                            </div>
+                        )}
+                        {logo.controlReport && (
+                            <div className="flex justify-between items-center py-2 border-b border-divider">
+                                <span className="text-default-600">{t('pages.projectDetails.controlReport')}</span>
+                                <Icon icon="lucide:check" className="text-success" />
+                            </div>
+                        )}
                     </div>
                 </div>
-            </div>
+            )}
+
+            {/* Attachments */}
+            {logo.attachments && logo.attachments.length > 0 && (
+                <div className="col-span-full">
+                    <Divider className="my-4" />
+                    <h4 className="text-sm font-bold text-default-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <Icon icon="lucide:paperclip" />
+                        {t('pages.projectDetails.attachments')}
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {logo.attachments.map((attachment, idx) => (
+                            <a
+                                key={idx}
+                                href={attachment.url || attachment.path}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-3 p-3 bg-default-50 hover:bg-default-100 rounded-lg border border-default-200 transition-colors group"
+                            >
+                                <div className="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                                    <Icon icon="lucide:file" className="text-primary text-xl" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-default-700 truncate group-hover:text-primary transition-colors">
+                                        {attachment.name || `Attachment ${idx + 1}`}
+                                    </p>
+                                    {attachment.size && (
+                                        <p className="text-xs text-default-500">
+                                            {(attachment.size / 1024).toFixed(1)} KB
+                                        </p>
+                                    )}
+                                </div>
+                                <Icon icon="lucide:external-link" className="text-default-400 group-hover:text-primary transition-colors" />
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Description/Criteria */}
             {(logo.description || logo.criteria) && (
