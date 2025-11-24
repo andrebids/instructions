@@ -36,7 +36,7 @@ router.get('/', requireAuth(), async (req, res) => {
 // POST /api/todos - Create a new task
 router.post('/', requireAuth(), async (req, res) => {
     try {
-        const { title, description, type } = req.body;
+        const { title, description, type, dueDate } = req.body;
 
         if (!title) {
             return res.status(400).json({ message: 'Title is required' });
@@ -46,6 +46,7 @@ router.post('/', requireAuth(), async (req, res) => {
             userId: req.userId, // requireAuth sets req.userId
             title,
             description,
+            dueDate: dueDate || null,
             type: type || 'MANUAL',
         });
 
@@ -63,7 +64,7 @@ router.post('/', requireAuth(), async (req, res) => {
 router.patch('/:id', requireAuth(), async (req, res) => {
     try {
         const { id } = req.params;
-        const { isCompleted } = req.body;
+        const { isCompleted, dueDate } = req.body;
 
         const task = await Task.findOne({
             where: { id, userId: req.userId }, // requireAuth sets req.userId
@@ -75,6 +76,10 @@ router.patch('/:id', requireAuth(), async (req, res) => {
 
         if (isCompleted !== undefined) {
             task.isCompleted = isCompleted;
+        }
+
+        if (dueDate !== undefined) {
+            task.dueDate = dueDate;
         }
 
         await task.save();
