@@ -19,20 +19,28 @@ export const PipelineWidget = ({ value, trend }) => {
        {/* Background Glow Effect */}
        <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary-500/20 rounded-full blur-3xl group-hover:bg-primary-500/30 transition-all duration-500" />
        
-      <CardBody className="p-0 flex flex-col h-full overflow-hidden">
-        <div className="p-6 pb-0 z-10 shrink-0">
-          <div className="flex justify-between items-start mb-2">
-            <div className="p-2 rounded-lg bg-primary-500/10 text-primary-500">
+      <CardBody className="p-4 flex flex-col h-full overflow-hidden relative z-10">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-primary-500/10 text-primary-500 shadow-sm ring-1 ring-primary-500/20">
               <Icon icon="lucide:bar-chart-3" className="text-xl" />
             </div>
-            {trend && (
-               <div className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full text-xs font-medium">
-                <Icon icon="lucide:trending-up" />
-                {trend}
-              </div>
-            )}
+            <div className="flex flex-col">
+              <span className="text-default-500 text-sm font-medium">Total</span>
+              <span className="text-default-900 text-base font-bold">Pipeline</span>
+            </div>
           </div>
-          <p className="text-default-500 text-sm font-medium">Total Pipeline</p>
+          {trend && (
+            <div className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-500/20">
+              <Icon icon="lucide:trending-up" />
+              {trend}
+            </div>
+          )}
+        </div>
+
+        {/* Value Display */}
+        <div className="mb-4">
           <h4 className="text-3xl font-bold text-foreground">{value}</h4>
         </div>
 

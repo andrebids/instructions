@@ -7,7 +7,7 @@ export const ConversionWidget = ({ value, trend }) => {
   const numericValue = parseInt(value) || 0;
   
   // SVG Configuration
-  const size = 140;
+  const size = 120;
   const strokeWidth = 12;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -18,78 +18,78 @@ export const ConversionWidget = ({ value, trend }) => {
        {/* Background Glow Effect */}
        <div className="absolute -top-10 -right-10 w-32 h-32 bg-success-500/20 rounded-full blur-3xl group-hover:bg-success-500/30 transition-all duration-500" />
 
-      <CardBody className="p-4 flex flex-row items-center justify-between h-full overflow-hidden relative z-10">
-        
-        {/* Left Side: Info */}
-        <div className="flex flex-col justify-between h-full py-2 pl-2">
-            <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-success-500/10 text-success-500 shadow-sm ring-1 ring-success-500/20">
-                    <Icon icon="lucide:pie-chart" className="text-xl" />
-                </div>
-                <div className="flex flex-col">
-                    <span className="text-default-500 text-sm font-medium">Conversion</span>
-                    <span className="text-default-900 text-base font-bold">Rate</span>
-                </div>
+      <CardBody className="p-4 flex flex-col h-full overflow-hidden relative z-10">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-success-500/10 text-success-500 shadow-sm ring-1 ring-success-500/20">
+              <Icon icon="lucide:pie-chart" className="text-xl" />
             </div>
-
-            {trend && (
-               <div className="flex items-center gap-2 mt-4">
-                   <div className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-500/20">
-                    <Icon icon="lucide:trending-up" />
-                    {trend}
-                  </div>
-               </div>
-            )}
+            <div className="flex flex-col">
+              <span className="text-default-500 text-sm font-medium">Conversion</span>
+              <span className="text-default-900 text-base font-bold">Rate</span>
+            </div>
+          </div>
+          {trend && (
+            <div className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-500/20">
+              <Icon icon="lucide:trending-up" />
+              {trend}
+            </div>
+          )}
         </div>
 
-        {/* Right Side: Glassy Chart */}
-        <div className="relative flex items-center justify-center mr-2">
-            {/* Custom SVG Chart */}
-            <div className="relative" style={{ width: size, height: size }}>
-                <svg width={size} height={size} className="transform -rotate-90 drop-shadow-lg">
-                    <defs>
-                        <linearGradient id="glassGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#34d399" /> {/* emerald-400 */}
-                            <stop offset="100%" stopColor="#10b981" /> {/* emerald-500 */}
-                        </linearGradient>
-                        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                            <feGaussianBlur stdDeviation="3" result="blur" />
-                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                        </filter>
-                    </defs>
-                    
-                    {/* Track */}
-                    <circle
-                        cx={size / 2}
-                        cy={size / 2}
-                        r={radius}
-                        stroke="currentColor"
-                        strokeWidth={strokeWidth}
-                        fill="transparent"
-                        className="text-default-200/20"
-                    />
-                    
-                    {/* Progress */}
-                    <circle
-                        cx={size / 2}
-                        cy={size / 2}
-                        r={radius}
-                        stroke="url(#glassGradient)"
-                        strokeWidth={strokeWidth}
-                        fill="transparent"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={offset}
-                        strokeLinecap="round"
-                        className="transition-all duration-1000 ease-out"
-                        style={{ filter: 'drop-shadow(0 0 4px rgba(16, 185, 129, 0.4))' }}
-                    />
-                </svg>
-                
-                {/* Inner Text */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-3xl font-bold text-foreground tracking-tight">{numericValue}%</span>
-                </div>
+        {/* Value Display */}
+        <div className="mb-4">
+          <h4 className="text-3xl font-bold text-foreground">{numericValue}%</h4>
+        </div>
+
+        {/* Chart - Centered */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="relative" style={{ width: size, height: size }}>
+            <svg width={size} height={size} className="transform -rotate-90 drop-shadow-lg">
+              <defs>
+                <linearGradient id="glassGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#34d399" /> {/* emerald-400 */}
+                  <stop offset="100%" stopColor="#10b981" /> {/* emerald-500 */}
+                </linearGradient>
+                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              
+              {/* Track */}
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke="currentColor"
+                strokeWidth={strokeWidth}
+                fill="transparent"
+                className="text-default-200/20"
+              />
+              
+              {/* Progress */}
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                stroke="url(#glassGradient)"
+                strokeWidth={strokeWidth}
+                fill="transparent"
+                strokeDasharray={circumference}
+                strokeDashoffset={offset}
+                strokeLinecap="round"
+                className="transition-all duration-1000 ease-out"
+                style={{ filter: 'drop-shadow(0 0 4px rgba(16, 185, 129, 0.4))' }}
+              />
+            </svg>
+            
+            {/* Inner Text */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-2xl font-bold text-foreground tracking-tight">{numericValue}%</span>
             </div>
+          </div>
         </div>
 
       </CardBody>
