@@ -258,6 +258,18 @@ export const projectsAPI = {
     const response = await api.patch(`/projects/${id}/canvas`, data);
     return response.data;
   },
+
+  // GET /api/projects/:id/observations
+  getObservations: async (id) => {
+    const response = await api.get(`/projects/${id}/observations`);
+    return response.data;
+  },
+
+  // POST /api/projects/:id/observations
+  addObservation: async (id, data) => {
+    const response = await api.post(`/projects/${id}/observations`, data);
+    return response.data;
+  },
 };
 
 // ===== DECORATIONS API =====

@@ -3,7 +3,7 @@ import { useAuthContext } from "./AuthContext";
 
 const UserContext = React.createContext({
   userName: "Christopher",
-  setUserName: () => {},
+  setUserName: () => { },
 });
 
 export function UserProvider({ children }) {
@@ -22,7 +22,7 @@ export function UserProvider({ children }) {
     }
   }
   const authUser = authContext?.user;
-  
+
   // Get user name from AuthContext
   const userName = React.useMemo(() => {
     // Prioridade: AuthContext > localStorage
@@ -34,7 +34,7 @@ export function UserProvider({ children }) {
       console.log('🔍 [UserContext] Usando email do authUser:', authUser.email);
       return authUser.email;
     }
-    
+
     try {
       const saved = localStorage.getItem("userName");
       console.log('🔍 [UserContext] Usando nome do localStorage:', saved);
@@ -45,10 +45,22 @@ export function UserProvider({ children }) {
   }, [authUser?.name, authUser?.email, authUser?.id]); // Adicionar id para garantir atualização
 
   const setUserName = React.useCallback((name) => {
-    try { localStorage.setItem("userName", name); } catch (_) {}
+    try { localStorage.setItem("userName", name); } catch (_) { }
   }, []);
 
-  const value = React.useMemo(() => ({ userName, setUserName }), [userName, setUserName]);
+  // Create user object with name and avatar
+  const user = React.useMemo(() => ({
+    name: userName,
+    avatar: authUser?.image || null,
+    email: authUser?.email || null,
+    role: authUser?.role || null
+  }), [userName, authUser?.image, authUser?.email, authUser?.role]);
+
+  const value = React.useMemo(() => ({
+    userName,
+    setUserName,
+    user  // Add user object for components that need it
+  }), [userName, setUserName, user]);
 
   return (
     <UserContext.Provider value={value}>{children}</UserContext.Provider>

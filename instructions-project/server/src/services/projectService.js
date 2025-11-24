@@ -1,7 +1,7 @@
 /**
  * Serviço de projetos - Lógica de negócio CRUD
  */
-import { Project, ProjectElement, Decoration, ProjectNote } from '../models/index.js';
+import { Project, ProjectElement, Decoration, ProjectNote, Observation } from '../models/index.js';
 import sequelize from '../config/database.js';
 import { QueryTypes } from 'sequelize';
 import { logInfo, logSuccess, logError, logServerOperation, logStats, logDelete, formatErrorMessage } from '../utils/projectLogger.js';
@@ -13,15 +13,15 @@ export async function checkTableExists() {
   try {
     // Primeiro, verificar se a conexão está ativa
     await sequelize.authenticate();
-    
+
     // Verificar se a tabela existe usando query mais robusta
     const result = await sequelize.query(
       "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'projects') as exists",
       { type: QueryTypes.SELECT }
     );
-    
+
     const exists = result && result[0] && (result[0].exists === true || result[0].exists === 'true');
-    
+
     if (!exists) {
       logError('Tabela projects não encontrada na verificação');
       // Tentar verificar diretamente se a tabela pode ser consultada
@@ -35,7 +35,7 @@ export async function checkTableExists() {
         return false;
       }
     }
-    
+
     return exists;
   } catch (error) {
     logError('Erro ao verificar tabela', error);
@@ -65,11 +65,11 @@ export async function findAllProjects(filters = {}) {
   try {
     const { status, projectType, favorite, includeElements, createdBy, userRole, userId } = filters;
     const where = {};
-    
+
     if (status) where.status = status;
     if (projectType) where.projectType = projectType;
     if (favorite) where.isFavorite = favorite === 'true';
-    
+
     // Se for comercial, filtrar apenas projetos criados por ele
     // Se createdBy for explicitamente passado, usar esse valor
     if (createdBy) {
@@ -79,7 +79,7 @@ export async function findAllProjects(filters = {}) {
       where.created_by = userId;
     }
     // Admin vê todos os projetos (não adiciona filtro createdBy)
-    
+
     // Só carregar elementos se explicitamente solicitado (para melhor performance)
     const includeOptions = includeElements === 'true' ? [
       {
@@ -95,13 +95,13 @@ export async function findAllProjects(filters = {}) {
         ],
       },
     ] : [];
-    
+
     const projects = await Project.findAll({
       where,
       include: includeOptions,
       order: [['createdAt', 'DESC']],
     });
-    
+
     // Garantir que cartoucheByImage sempre tem valor padrão para projetos antigos
     return projects.map(project => {
       if (!project.cartoucheByImage) {
@@ -132,15 +132,15 @@ export async function findProjectById(id, includeElements = true) {
       ],
     },
   ] : [];
-  
+
   const project = await Project.findByPk(id, {
     include: includeOptions,
   });
-  
+
   if (project && !project.cartoucheByImage) {
     project.cartoucheByImage = {};
   }
-  
+
   return project;
 }
 
@@ -159,7 +159,7 @@ export async function createProject(projectData) {
     hasSnapZones: !!(projectData.snapZonesByImage && Object.keys(projectData.snapZonesByImage).length > 0),
     createdBy: projectData.createdBy || 'N/A',
   });
-  
+
   // Log das zonas se existirem
   if (projectData.snapZonesByImage && Object.keys(projectData.snapZonesByImage).length > 0) {
     const zonasResumo = {};
@@ -175,19 +175,19 @@ export async function createProject(projectData) {
   } else {
     logInfo('Projeto criado SEM zonas');
   }
-  
+
   // Garantir que cartoucheByImage existe e tem valor padrão se não fornecido
   // createdBy deve ser definido pelo controller (do req.auth.userId)
   const data = {
     ...projectData,
     cartoucheByImage: projectData.cartoucheByImage || {}
   };
-  
+
   // Se createdBy não foi fornecido, não definir (será null)
   // Isso permite que projetos antigos continuem funcionando
-  
+
   const project = await Project.create(data);
-  
+
   // Verificar o que foi realmente guardado
   if (project.snapZonesByImage) {
     const zonasGuardadas = {};
@@ -201,12 +201,12 @@ export async function createProject(projectData) {
     }
     logSuccess('Zonas guardadas na BD após criação:', JSON.stringify(zonasGuardadas, null, 2));
   }
-  
+
   logSuccess('Projeto criado com ID:', project.id);
   logSuccess('Created by:', project.createdBy || 'N/A');
   logSuccess('Description guardada na BD:', project.description ? `[${project.description.length} caracteres]` : '[vazio]');
   logSuccess('===== PROJETO CRIADO COM SUCESSO =====');
-  
+
   return project;
 }
 
@@ -218,29 +218,29 @@ export async function updateProject(id, updateData) {
     'Project ID': id,
     'Campos a atualizar': Object.keys(updateData),
   });
-  
+
   const project = await Project.findByPk(id);
-  
+
   if (!project) {
     return null;
   }
-  
+
   logInfo('Projeto encontrado:', {
     id: project.id,
     name: project.name,
     currentDescription: project.description ? `[${project.description.length} caracteres]` : '[vazio]'
   });
   logInfo('Salvando atualizações na base de dados...');
-  
+
   await project.update(updateData);
   await project.reload();
-  
+
   logSuccess('Projeto atualizado com sucesso!');
   if (updateData.description !== undefined) {
     logSuccess('Description guardada na BD:', project.description ? `[${project.description.length} caracteres]` : '[vazio]');
   }
   logSuccess('===== ATUALIZAÇÃO CONCLUÍDA =====');
-  
+
   return project;
 }
 
@@ -249,12 +249,12 @@ export async function updateProject(id, updateData) {
  */
 export async function deleteProjectWithRelations(projectId) {
   const transaction = await sequelize.transaction();
-  
+
   try {
     logDelete(`Iniciando deleção do projeto ${projectId}`);
-    
+
     // Buscar projeto com suas relações
-    const project = await Project.findByPk(projectId, { 
+    const project = await Project.findByPk(projectId, {
       transaction,
       include: [
         {
@@ -269,51 +269,51 @@ export async function deleteProjectWithRelations(projectId) {
         },
       ],
     });
-    
+
     if (!project) {
       await transaction.rollback();
       return null;
     }
-    
+
     logInfo(`Projeto encontrado: ${project.name}`);
-    
+
     // Deletar ProjectElements manualmente
-    const elementsCount = await ProjectElement.count({ 
-      where: { projectId }, 
-      transaction 
+    const elementsCount = await ProjectElement.count({
+      where: { projectId },
+      transaction
     });
-    
+
     if (elementsCount > 0) {
       logDelete(`Deletando ${elementsCount} elemento(s) do projeto...`);
-      await ProjectElement.destroy({ 
-        where: { projectId }, 
-        transaction 
+      await ProjectElement.destroy({
+        where: { projectId },
+        transaction
       });
       logSuccess(`${elementsCount} elemento(s) deletado(s)`);
     }
-    
+
     // Deletar ProjectNote manualmente
-    const noteCount = await ProjectNote.count({ 
-      where: { projectId }, 
-      transaction 
+    const noteCount = await ProjectNote.count({
+      where: { projectId },
+      transaction
     });
-    
+
     if (noteCount > 0) {
       logDelete('Deletando nota(s) do projeto...');
-      await ProjectNote.destroy({ 
-        where: { projectId }, 
-        transaction 
+      await ProjectNote.destroy({
+        where: { projectId },
+        transaction
       });
       logSuccess('Nota(s) deletada(s)');
     }
-    
+
     // Deletar o projeto
     logDelete('Deletando projeto...');
     await project.destroy({ transaction });
-    
+
     // Commit da transação
     await transaction.commit();
-    
+
     logSuccess(`Projeto ${projectId} deletado com sucesso`);
     return { success: true };
   } catch (error) {
@@ -362,16 +362,16 @@ export async function updateProjectCanvas(id, canvasData) {
       temLogoDetails: canvasData.logoDetails !== undefined
     }
   });
-  
+
   const project = await Project.findByPk(id);
   if (!project) {
     return null;
   }
-  
+
   const updateData = {};
   if (canvasData.snapZonesByImage !== undefined) {
     updateData.snapZonesByImage = canvasData.snapZonesByImage;
-    
+
     // Log detalhado das zonas recebidas
     const zonasResumo = {};
     for (const imageId in canvasData.snapZonesByImage) {
@@ -413,13 +413,13 @@ export async function updateProjectCanvas(id, canvasData) {
     updateData.logoDetails = canvasData.logoDetails;
     logInfo('LogoDetails recebido:', Object.keys(canvasData.logoDetails || {}).length, 'campos');
   }
-  
+
   logInfo('Dados a atualizar:', Object.keys(updateData));
   logInfo('Salvando na base de dados...');
-  
+
   await project.update(updateData);
   await project.reload();
-  
+
   logSuccess('===== CANVAS ATUALIZADO COM SUCESSO =====');
   logSuccess('Projeto ID:', id);
   if (project.snapZonesByImage) {
@@ -434,7 +434,7 @@ export async function updateProjectCanvas(id, canvasData) {
     }
     logSuccess('Zonas guardadas na BD (resumo):', JSON.stringify(zonasGuardadas, null, 2));
   }
-  
+
   return project;
 }
 
@@ -443,7 +443,7 @@ export async function updateProjectCanvas(id, canvasData) {
  */
 export async function getProjectStats() {
   logStats('GET /api/projects/stats - Iniciando busca');
-  
+
   const total = await Project.count();
   const draft = await Project.count({ where: { status: 'draft' } });
   const created = await Project.count({ where: { status: 'created' } });
@@ -452,7 +452,7 @@ export async function getProjectStats() {
   const approved = await Project.count({ where: { status: 'approved' } });
   const cancelled = await Project.count({ where: { status: 'cancelled' } });
   const inQueue = await Project.count({ where: { status: 'in_queue' } });
-  
+
   const stats = {
     total,
     draft,
@@ -463,8 +463,26 @@ export async function getProjectStats() {
     cancelled,
     inQueue,
   };
-  
+
   logStats('Stats:', stats);
   return stats;
 }
+/**
+ * Busca observações de um projeto
+ */
+export async function getObservations(projectId) {
+  return await Observation.findAll({
+    where: { projectId },
+    order: [['createdAt', 'ASC']],
+  });
+}
 
+/**
+ * Adiciona uma observação a um projeto
+ */
+export async function addObservation(projectId, data) {
+  return await Observation.create({
+    projectId,
+    ...data,
+  });
+}

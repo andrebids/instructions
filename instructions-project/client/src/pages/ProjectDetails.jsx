@@ -9,7 +9,8 @@ import { Scroller } from '../components/ui/scroller';
 import { NotesManager } from '../components/project-notes/NotesManager';
 import { ProjectProgress } from '../components/ui/ProjectProgress';
 import { useTranslation } from 'react-i18next';
-import ProjectResultsModal from "../components/projects/ProjectResultsModal";
+import ProjectResultsModal, { LANDSCAPES } from "../components/projects/ProjectResultsModal";
+import { ProjectObservations } from '../components/project-notes/ProjectObservations';
 
 // Helper component to display a field value
 const InfoField = ({ label, value, icon }) => (
@@ -527,6 +528,8 @@ export default function ProjectDetails() {
                             tab: "max-w-fit px-0 h-12",
                             tabContent: "group-data-[selected=true]:text-primary font-medium text-default-500"
                         }}
+                        selectedKey={activeTab}
+                        onSelectionChange={setActiveTab}
                     >
                         <Tab
                             key="overview"
@@ -635,7 +638,7 @@ export default function ProjectDetails() {
                                                                 variant="flat"
                                                                 className="w-full justify-start"
                                                                 startContent={<Icon icon="lucide:message-square" />}
-                                                                onPress={() => console.log('Open chat')}
+                                                                onPress={() => setActiveTab("observations")}
                                                             >
                                                                 {t('pages.projectDetails.chatWithDesigner')}
                                                             </Button>
@@ -711,6 +714,25 @@ export default function ProjectDetails() {
                                         <p className="text-lg">{t('pages.projectDetails.noInstructions')}</p>
                                     </div>
                                 )}
+                            </div>
+                        </Tab>
+
+                        <Tab
+                            key="observations"
+                            title={
+                                <div className="flex items-center gap-2">
+                                    <Icon icon="lucide:messages-square" />
+                                    <span>{t('pages.projectDetails.tabs.observations', 'Observations')}</span>
+                                </div>
+                            }
+                        >
+                            <div className="py-6 h-full">
+                                <ProjectObservations
+                                    projectId={id}
+                                    instructions={displayLogos}
+                                    results={LANDSCAPES}
+                                    designers={project.assignedDesigners || []}
+                                />
                             </div>
                         </Tab>
 
