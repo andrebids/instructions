@@ -7,6 +7,7 @@ import { PageTitle } from '../components/layout/page-title';
 import { useUser } from '../context/UserContext';
 import { Scroller } from '../components/ui/scroller';
 import { NotesManager } from '../components/project-notes/NotesManager';
+import { ProjectProgress } from '../components/ui/ProjectProgress';
 import { useTranslation } from 'react-i18next';
 
 // Helper component to display a field value
@@ -24,165 +25,373 @@ const InfoField = ({ label, value, icon }) => (
 const LogoDetailsContent = ({ logo }) => {
     const { t } = useTranslation();
 
+    // Helper to check if section has data
+    const hasDimensions = logo.dimensions?.height?.value || logo.dimensions?.length?.value || logo.dimensions?.width?.value || logo.dimensions?.diameter?.value;
+    const hasSpecs = logo.fixationType || logo.mastDiameter || logo.lacqueredStructure || logo.maxWeightConstraint || logo.ballast || logo.controlReport || logo.usageOutdoor !== undefined;
+    const hasComposition = (logo.composition?.componentes?.filter(c => c.referencia).length > 0) || (logo.composition?.bolas?.length > 0);
+    const hasContent = logo.description || logo.criteria || (logo.attachmentFiles?.length > 0);
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-            {/* Dimensions */}
-            <div className="col-span-full">
-                <h4 className="text-sm font-bold text-default-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Icon icon="lucide:ruler" />
-                    {t('pages.projectDetails.dimensions')}
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-default-50 p-4 rounded-lg">
-                    {logo.dimensions?.height?.value && (
-                        <div>
-                            <span className="text-xs text-default-500 block">{t('pages.projectDetails.height')}</span>
-                            <span className="font-semibold text-lg">{logo.dimensions.height.value} m</span>
-                            {logo.dimensions.height.imperative && <Icon icon="lucide:lock" className="inline ml-1 text-xs text-warning" />}
+        <div className="space-y-6">
+            {/* Identity Card */}
+            <Card className="shadow-sm border border-default-200">
+                <CardBody>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="flex items-start gap-3">
+                            <div className="p-2 bg-primary/10 rounded-lg text-primary mt-1">
+                                <Icon icon="lucide:hash" width={20} />
+                            </div>
+                            <div>
+                                <span className="text-xs text-default-500 font-medium uppercase tracking-wider block mb-1">{t('pages.projectDetails.logoNumber', 'Logo Number')}</span>
+                                <span className="font-bold text-lg text-default-900">{logo.logoNumber || '—'}</span>
+                            </div>
                         </div>
+                        <div className="flex items-start gap-3">
+                            <div className="p-2 bg-primary/10 rounded-lg text-primary mt-1">
+                                <Icon icon="lucide:type" width={20} />
+                            </div>
+                            <div>
+                                <span className="text-xs text-default-500 font-medium uppercase tracking-wider block mb-1">{t('pages.projectDetails.logoName', 'Logo Name')}</span>
+                                <span className="font-bold text-lg text-default-900">{logo.logoName || '—'}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <div className="p-2 bg-primary/10 rounded-lg text-primary mt-1">
+                                <Icon icon="lucide:user" width={20} />
+                            </div>
+                            <div>
+                                <span className="text-xs text-default-500 font-medium uppercase tracking-wider block mb-1">{t('pages.projectDetails.requestedBy', 'Requested By')}</span>
+                                <span className="font-bold text-lg text-default-900">{logo.requestedBy || '—'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </CardBody>
+            </Card>
+
+            {/* AI Generated Image */}
+            {logo.generatedImage && (
+                <Card className="shadow-sm border border-default-200">
+                    <CardHeader className="pb-0 pt-4 px-4 flex gap-3">
+                        <div className="p-2 bg-primary-100 text-primary-600 rounded-lg">
+                            <Icon icon="lucide:sparkles" width={20} />
+                        </div>
+                        <h4 className="text-medium font-bold text-default-700 uppercase tracking-wider">
+                            {t('pages.projectDetails.aiGeneratedImage', 'AI Generated Image')}
+                        </h4>
+                    </CardHeader>
+                    <CardBody>
+                        <div className="relative aspect-video max-w-md mx-auto rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50">
+                            <img
+                                src={logo.generatedImage}
+                                alt={logo.logoName || 'AI Generated Logo'}
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+                    </CardBody>
+                </Card>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left Column - Dimensions & Technical Specs */}
+                <div className="col-span-1 lg:col-span-5 space-y-6">
+                    {/* Dimensions */}
+                    {hasDimensions && (
+                        <Card className="shadow-sm border border-default-200 h-fit">
+                            <CardHeader className="pb-0 pt-4 px-4 flex gap-3">
+                                <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                                    <Icon icon="lucide:ruler" width={20} />
+                                </div>
+                                <h4 className="text-medium font-bold text-default-700 uppercase tracking-wider">
+                                    {t('pages.projectDetails.dimensions')}
+                                </h4>
+                            </CardHeader>
+                            <CardBody>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {logo.dimensions?.height?.value && (
+                                        <div className="bg-default-50 p-3 rounded-lg">
+                                            <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.height')}</span>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="font-bold text-xl">{logo.dimensions.height.value}</span>
+                                                <span className="text-xs text-default-400">m</span>
+                                                {logo.dimensions.height.imperative && <Icon icon="lucide:lock" className="text-warning text-xs ml-1" />}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {logo.dimensions?.length?.value && (
+                                        <div className="bg-default-50 p-3 rounded-lg">
+                                            <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.length')}</span>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="font-bold text-xl">{logo.dimensions.length.value}</span>
+                                                <span className="text-xs text-default-400">m</span>
+                                                {logo.dimensions.length.imperative && <Icon icon="lucide:lock" className="text-warning text-xs ml-1" />}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {logo.dimensions?.width?.value && (
+                                        <div className="bg-default-50 p-3 rounded-lg">
+                                            <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.width')}</span>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="font-bold text-xl">{logo.dimensions.width.value}</span>
+                                                <span className="text-xs text-default-400">m</span>
+                                                {logo.dimensions.width.imperative && <Icon icon="lucide:lock" className="text-warning text-xs ml-1" />}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {logo.dimensions?.diameter?.value && (
+                                        <div className="bg-default-50 p-3 rounded-lg">
+                                            <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.diameter')}</span>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="font-bold text-xl">{logo.dimensions.diameter.value}</span>
+                                                <span className="text-xs text-default-400">m</span>
+                                                {logo.dimensions.diameter.imperative && <Icon icon="lucide:lock" className="text-warning text-xs ml-1" />}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardBody>
+                        </Card>
                     )}
-                    {logo.dimensions?.length?.value && (
-                        <div>
-                            <span className="text-xs text-default-500 block">{t('pages.projectDetails.length')}</span>
-                            <span className="font-semibold text-lg">{logo.dimensions.length.value} m</span>
-                            {logo.dimensions.length.imperative && <Icon icon="lucide:lock" className="inline ml-1 text-xs text-warning" />}
-                        </div>
+
+                    {/* Technical Specs & Usage */}
+                    {hasSpecs && (
+                        <Card className="shadow-sm border border-default-200 h-fit">
+                            <CardHeader className="pb-0 pt-4 px-4 flex gap-3">
+                                <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
+                                    <Icon icon="lucide:settings-2" width={20} />
+                                </div>
+                                <h4 className="text-medium font-bold text-default-700 uppercase tracking-wider">
+                                    {t('pages.projectDetails.technicalSpecs')}
+                                </h4>
+                            </CardHeader>
+                            <CardBody className="space-y-4">
+                                {/* Usage & Fixation */}
+                                <div className="grid grid-cols-2 gap-4 pb-4 border-b border-default-100">
+                                    <div>
+                                        <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.usage', 'Usage')}</span>
+                                        <div className="flex items-center gap-2">
+                                            <Icon icon={logo.usageOutdoor ? "lucide:sun" : "lucide:home"} className="text-default-400" width={16} />
+                                            <span className="font-semibold text-sm">{logo.usageOutdoor ? t('pages.projectDetails.outdoor') : t('pages.projectDetails.indoor')}</span>
+                                        </div>
+                                    </div>
+                                    {logo.fixationType && (
+                                        <div>
+                                            <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.fixation', 'Fixation')}</span>
+                                            <div className="flex items-center gap-2">
+                                                <Icon icon="lucide:anchor" className="text-default-400" width={16} />
+                                                <span className="font-semibold text-sm capitalize">{logo.fixationType ? t(`pages.projectDetails.fixationTypes.${logo.fixationType}`) : ''}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Detailed Specs */}
+                                <div className="space-y-3">
+                                    {logo.mastDiameter && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-default-600">{t('pages.projectDetails.mastDiameter')}</span>
+                                            <span className="font-medium">{logo.mastDiameter} mm</span>
+                                        </div>
+                                    )}
+                                    {logo.lacqueredStructure && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-default-600">{t('pages.projectDetails.lacquered')}</span>
+                                            <span className="text-xs bg-success/10 text-success px-2 py-1 rounded-full font-medium">
+                                                {logo.lacquerColor || t('common.yes')}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {logo.maxWeightConstraint && logo.maxWeight && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-default-600">{t('pages.projectDetails.maxWeightConstraint')}</span>
+                                            <div className="flex items-center gap-1 text-warning-600">
+                                                <Icon icon="lucide:scale" width={14} />
+                                                <span className="font-medium">{logo.maxWeight} kg</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {logo.ballast && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-default-600">{t('pages.projectDetails.ballast')}</span>
+                                            <Icon icon="lucide:check-circle" className="text-success" width={18} />
+                                        </div>
+                                    )}
+                                    {logo.controlReport && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-default-600">{t('pages.projectDetails.controlReport')}</span>
+                                            <Icon icon="lucide:file-check" className="text-success" width={18} />
+                                        </div>
+                                    )}
+                                </div>
+                            </CardBody>
+                        </Card>
                     )}
-                    {logo.dimensions?.width?.value && (
-                        <div>
-                            <span className="text-xs text-default-500 block">{t('pages.projectDetails.width')}</span>
-                            <span className="font-semibold text-lg">{logo.dimensions.width.value} m</span>
-                            {logo.dimensions.width.imperative && <Icon icon="lucide:lock" className="inline ml-1 text-xs text-warning" />}
-                        </div>
+                </div>
+
+                {/* Right Column - Composition & Content */}
+                <div className="col-span-1 lg:col-span-7 space-y-6">
+                    {/* Composition */}
+                    {hasComposition && (
+                        <Card className="shadow-sm border border-default-200 h-fit">
+                            <CardHeader className="pb-0 pt-4 px-4 flex gap-3">
+                                <div className="p-2 bg-orange-100 text-orange-600 rounded-lg">
+                                    <Icon icon="lucide:layers" width={20} />
+                                </div>
+                                <h4 className="text-medium font-bold text-default-700 uppercase tracking-wider">
+                                    {t('pages.projectDetails.composition')}
+                                </h4>
+                            </CardHeader>
+                            <CardBody>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Components List */}
+                                    {logo.composition.componentes && logo.composition.componentes.filter(c => c.referencia).length > 0 && (
+                                        <div>
+                                            <h5 className="text-xs font-bold text-default-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                                <Icon icon="lucide:box" width={14} />
+                                                {t('pages.projectDetails.components', 'Components')}
+                                                <span className="bg-default-100 text-default-600 px-1.5 py-0.5 rounded text-[10px]">
+                                                    {logo.composition.componentes.filter(c => c.referencia).length}
+                                                </span>
+                                            </h5>
+                                            <div className="space-y-2">
+                                                {logo.composition.componentes.filter(c => c.referencia).map((comp, idx) => (
+                                                    <div key={idx} className="bg-default-50 p-3 rounded-lg border border-default-200 hover:border-default-300 transition-colors">
+                                                        <div className="flex items-start justify-between gap-2 mb-1">
+                                                            <span className="font-semibold text-sm text-default-900">{comp.componenteNome}</span>
+                                                            {comp.referencia && (
+                                                                <span className="text-[10px] font-mono bg-default-200 text-default-600 px-1.5 py-0.5 rounded">
+                                                                    {comp.referencia}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-2 text-xs text-default-500">
+                                                            {comp.corNome && <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-default-400"></div>{comp.corNome}</span>}
+                                                            {comp.acabamentoNome && <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-default-400"></div>{comp.acabamentoNome}</span>}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Balls List */}
+                                    {logo.composition.bolas && logo.composition.bolas.length > 0 && (
+                                        <div>
+                                            <h5 className="text-xs font-bold text-default-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                                <Icon icon="lucide:circle-dot" width={14} />
+                                                {t('pages.projectDetails.balls', 'Balls')}
+                                                <span className="bg-default-100 text-default-600 px-1.5 py-0.5 rounded text-[10px]">
+                                                    {logo.composition.bolas.length}
+                                                </span>
+                                            </h5>
+                                            <div className="space-y-2">
+                                                {logo.composition.bolas.map((bola, idx) => (
+                                                    <div key={idx} className="bg-default-50 p-3 rounded-lg border border-default-200 hover:border-default-300 transition-colors">
+                                                        <div className="flex items-start justify-between gap-2 mb-1">
+                                                            <span className="font-semibold text-sm text-default-900">{bola.bolaName}</span>
+                                                            {bola.reference && (
+                                                                <span className="text-[10px] font-mono bg-default-200 text-default-600 px-1.5 py-0.5 rounded">
+                                                                    {bola.reference}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-2 text-xs text-default-500">
+                                                            {bola.corNome && <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-default-400"></div>{bola.corNome}</span>}
+                                                            {bola.acabamentoNome && <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-default-400"></div>{bola.acabamentoNome}</span>}
+                                                            {bola.tamanhoName && <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-default-400"></div>{bola.tamanhoName}</span>}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardBody>
+                        </Card>
                     )}
-                    {logo.dimensions?.diameter?.value && (
-                        <div>
-                            <span className="text-xs text-default-500 block">{t('pages.projectDetails.diameter')}</span>
-                            <span className="font-semibold text-lg">{logo.dimensions.diameter.value} m</span>
-                            {logo.dimensions.diameter.imperative && <Icon icon="lucide:lock" className="inline ml-1 text-xs text-warning" />}
-                        </div>
+
+                    {/* Description & Attachments */}
+                    {hasContent && (
+                        <Card className="shadow-sm border border-default-200 h-fit">
+                            <CardHeader className="pb-0 pt-4 px-4 flex gap-3">
+                                <div className="p-2 bg-teal-100 text-teal-600 rounded-lg">
+                                    <Icon icon="lucide:file-text" width={20} />
+                                </div>
+                                <h4 className="text-medium font-bold text-default-700 uppercase tracking-wider">
+                                    {t('pages.projectDetails.details')}
+                                </h4>
+                            </CardHeader>
+                            <CardBody className="space-y-6">
+                                {/* Description & Criteria */}
+                                {(logo.description || logo.criteria) && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {logo.description && (
+                                            <div>
+                                                <h5 className="text-xs font-bold text-default-400 uppercase tracking-wider mb-2">{t('pages.projectDetails.description')}</h5>
+                                                <p className="text-sm text-default-700 leading-relaxed whitespace-pre-wrap bg-default-50 p-3 rounded-lg border border-default-100">
+                                                    {logo.description}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {logo.criteria && (
+                                            <div>
+                                                <h5 className="text-xs font-bold text-default-400 uppercase tracking-wider mb-2">{t('pages.projectDetails.criteria')}</h5>
+                                                <p className="text-sm text-default-700 leading-relaxed whitespace-pre-wrap bg-default-50 p-3 rounded-lg border border-default-100">
+                                                    {logo.criteria}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Attachments */}
+                                {logo.attachmentFiles && logo.attachmentFiles.length > 0 && (
+                                    <div>
+                                        {(logo.description || logo.criteria) && <Divider className="mb-4" />}
+                                        <h5 className="text-xs font-bold text-default-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                            <Icon icon="lucide:paperclip" width={14} />
+                                            {t('pages.projectDetails.attachments')}
+                                        </h5>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                            {logo.attachmentFiles.map((attachment, idx) => {
+                                                const isImage = attachment.mimetype?.startsWith('image/');
+                                                const fileUrl = attachment.url || `http://localhost:5000${attachment.path}`;
+
+                                                return (
+                                                    <a
+                                                        key={idx}
+                                                        href={fileUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="group relative aspect-square rounded-lg overflow-hidden border border-default-200 hover:border-primary hover:shadow-md transition-all cursor-pointer"
+                                                    >
+                                                        {isImage ? (
+                                                            <>
+                                                                <img
+                                                                    src={fileUrl}
+                                                                    alt={attachment.name}
+                                                                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                                                />
+                                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                                            </>
+                                                        ) : (
+                                                            <div className="w-full h-full flex flex-col items-center justify-center bg-default-50 p-2 group-hover:bg-default-100 transition-colors">
+                                                                <Icon icon="lucide:file" className="w-8 h-8 text-default-400 mb-2 group-hover:text-primary transition-colors" />
+                                                                <p className="text-[10px] text-center text-default-600 truncate w-full px-2 font-medium">
+                                                                    {attachment.name}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </a>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </CardBody>
+                        </Card>
                     )}
                 </div>
             </div>
-
-            {/* Technical Specs */}
-            {(logo.fixationType || logo.mastDiameter || logo.lacqueredStructure || logo.maxWeightConstraint) && (
-                <div className="col-span-full md:col-span-2">
-                    <h4 className="text-sm font-bold text-default-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <Icon icon="lucide:settings" />
-                        {t('pages.projectDetails.technicalSpecs')}
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {logo.fixationType && (
-                            <InfoField label={t('pages.projectDetails.fixationType')} value={logo.fixationType} />
-                        )}
-                        {logo.mastDiameter && (
-                            <InfoField label={t('pages.projectDetails.mastDiameter')} value={`${logo.mastDiameter} mm`} />
-                        )}
-
-                        {logo.lacqueredStructure && (
-                            <div>
-                                <div className="text-sm font-medium text-default-500 mb-1">{t('pages.projectDetails.lacquered')}</div>
-                                <div className="flex items-center gap-2">
-                                    <Icon icon="lucide:check-circle" className="text-success" />
-                                    <span>{logo.lacquerColor || t('common.yes')}</span>
-                                </div>
-                            </div>
-                        )}
-
-                        {logo.maxWeightConstraint && logo.maxWeight && (
-                            <div>
-                                <div className="text-sm font-medium text-default-500 mb-1">{t('pages.projectDetails.maxWeightConstraint')}</div>
-                                <div className="flex items-center gap-2">
-                                    <Icon icon="lucide:alert-triangle" className="text-warning" />
-                                    <span>{logo.maxWeight} kg</span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Additional Info */}
-            {(logo.ballast || logo.controlReport) && (
-                <div className="col-span-full md:col-span-1">
-                    <h4 className="text-sm font-bold text-default-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <Icon icon="lucide:info" />
-                        {t('pages.projectDetails.additionalInfo')}
-                    </h4>
-                    <div className="space-y-3">
-                        {logo.ballast && (
-                            <div className="flex justify-between items-center py-2 border-b border-divider">
-                                <span className="text-default-600">{t('pages.projectDetails.ballast')}</span>
-                                <Icon icon="lucide:check" className="text-success" />
-                            </div>
-                        )}
-                        {logo.controlReport && (
-                            <div className="flex justify-between items-center py-2 border-b border-divider">
-                                <span className="text-default-600">{t('pages.projectDetails.controlReport')}</span>
-                                <Icon icon="lucide:check" className="text-success" />
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Attachments */}
-            {logo.attachments && logo.attachments.length > 0 && (
-                <div className="col-span-full">
-                    <Divider className="my-4" />
-                    <h4 className="text-sm font-bold text-default-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <Icon icon="lucide:paperclip" />
-                        {t('pages.projectDetails.attachments')}
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        {logo.attachments.map((attachment, idx) => (
-                            <a
-                                key={idx}
-                                href={attachment.url || attachment.path}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-3 p-3 bg-default-50 hover:bg-default-100 rounded-lg border border-default-200 transition-colors group"
-                            >
-                                <div className="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                                    <Icon icon="lucide:file" className="text-primary text-xl" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-default-700 truncate group-hover:text-primary transition-colors">
-                                        {attachment.name || `Attachment ${idx + 1}`}
-                                    </p>
-                                    {attachment.size && (
-                                        <p className="text-xs text-default-500">
-                                            {(attachment.size / 1024).toFixed(1)} KB
-                                        </p>
-                                    )}
-                                </div>
-                                <Icon icon="lucide:external-link" className="text-default-400 group-hover:text-primary transition-colors" />
-                            </a>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Description/Criteria */}
-            {(logo.description || logo.criteria) && (
-                <div className="col-span-full mt-4">
-                    <Divider className="my-4" />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {logo.description && (
-                            <div>
-                                <h4 className="text-sm font-bold text-default-500 uppercase tracking-wider mb-2">{t('pages.projectDetails.description')}</h4>
-                                <p className="text-default-700 whitespace-pre-wrap">{logo.description}</p>
-                            </div>
-                        )}
-                        {logo.criteria && (
-                            <div>
-                                <h4 className="text-sm font-bold text-default-500 uppercase tracking-wider mb-2">{t('pages.projectDetails.criteria')}</h4>
-                                <p className="text-default-700 whitespace-pre-wrap">{logo.criteria}</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
@@ -264,7 +473,7 @@ export default function ProjectDetails() {
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
                                 <h1 className="text-3xl font-bold text-foreground mb-2">{project.name}</h1>
-                                <div className="flex items-center gap-2 text-default-500">
+                                <div className="flex items-center gap-2 text-default-500 flex-wrap">
                                     <Icon icon="lucide:building-2" />
                                     <span className="font-medium">{project.clientName}</span>
                                     <span className="mx-2">•</span>
@@ -275,6 +484,19 @@ export default function ProjectDetails() {
                                     }>
                                         {t(`pages.dashboard.projectTable.statusLabels.${project.status}`, project.status)}
                                     </Chip>
+                                    {project.category === 'ao_tender' && (
+                                        <>
+                                            <span className="mx-2">•</span>
+                                            <Chip
+                                                size="sm"
+                                                variant="flat"
+                                                color="secondary"
+                                                startContent={<Icon icon="lucide:star" className="text-sm" />}
+                                            >
+                                                {t('pages.projectDetails.aoTender', 'AO/Tender')}
+                                            </Chip>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex gap-2">
@@ -352,12 +574,12 @@ export default function ProjectDetails() {
                                                 <h3 className="text-lg font-semibold">{t('pages.projectDetails.projectProgress')}</h3>
                                             </CardHeader>
                                             <CardBody className="p-6">
-                                                <div className="flex items-center justify-center py-8 text-default-500">
-                                                    <div className="text-center">
-                                                        <Icon icon="lucide:construction" className="text-4xl mx-auto mb-2 opacity-50" />
-                                                        <p>{t('pages.projectDetails.toBeDeveloped')}</p>
-                                                    </div>
-                                                </div>
+                                                <ProjectProgress
+                                                    status={project.status}
+                                                    endDate={project.endDate}
+                                                    showLabel={false}
+                                                    size="lg"
+                                                />
                                             </CardBody>
                                         </Card>
                                     </div>

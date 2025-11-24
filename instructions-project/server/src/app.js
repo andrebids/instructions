@@ -11,6 +11,7 @@ import editorUploadRoutes from './routes/editor-upload.js';
 import userRoutes from './routes/users.js';
 import authRoutes from './routes/auth.route.js';
 import { createHocuspocusServer } from './hocuspocus-server.js';
+import upload from './config/multer-config.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -310,6 +311,56 @@ app.get('/health', async (req, res) => {
   });
 });
 
+
+// File upload endpoint
+app.post('/api/files/upload', upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Return file metadata
+    res.json({
+      success: true,
+      file: {
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        path: `/api/files/${req.file.filename}`,
+        url: `${req.protocol}://${req.get('host')}/api/files/${req.file.filename}`
+      }
+    });
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    res.status(500).json({ error: 'Failed to upload file', message: error.message });
+  }
+});
+
+// File serving endpoint
+app.get('/api/files/:filename', (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    const filePath = path.join(uploadsDir, filename);
+
+    // Security: prevent directory traversal
+    if (!filePath.startsWith(uploadsDir)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Serve the file
+    res.sendFile(filePath);
+  } catch (error) {
+    console.error('Error serving file:', error);
+    res.status(500).json({ error: 'Failed to serve file' });
+  }
+});
 
 // API Routes
 app.use('/api/projects', projectRoutes);

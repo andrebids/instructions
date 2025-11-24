@@ -255,6 +255,11 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
         return (
           <div className="flex items-center gap-2">
             <span className="font-medium">{project.name}</span>
+            {project.category === 'ao_tender' && (
+              <Chip size="sm" color="secondary" variant="flat" startContent={<Icon icon="lucide:star" className="text-xs" />}>
+                AO
+              </Chip>
+            )}
             {project.projectType === 'simu' && (
               <Chip size="sm" color="primary" variant="dot">Simu</Chip>
             )}

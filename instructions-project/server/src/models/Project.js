@@ -23,6 +23,11 @@ const Project = sequelize.define('Project', {
     allowNull: false,
     defaultValue: 'decor',
   },
+  category: {
+    type: DataTypes.ENUM('normal', 'ao_tender', 'urgent', 'modifications'),
+    allowNull: true,
+    defaultValue: 'normal',
+  },
   status: {
     type: DataTypes.ENUM('draft', 'created', 'in_progress', 'finished', 'approved', 'cancelled', 'in_queue'),
     defaultValue: 'draft',

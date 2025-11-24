@@ -1,5 +1,5 @@
 import React from "react";
-import { Input, DatePicker, Button } from "@heroui/react";
+import { Input, DatePicker, Button, Checkbox } from "@heroui/react";
 import { today, getLocalTimeZone } from "@internationalized/date";
 import { Icon } from "@iconify/react";
 import * as Yup from "yup";
@@ -118,6 +118,28 @@ export function StepProjectDetails({
               onInputChange={onClientInputChange}
               onAddNewClick={onAddNewClient}
             />
+          </div>
+
+          {/* AO/Tender Checkbox */}
+          <div className="max-w-md mx-auto">
+            <Checkbox
+              isSelected={formData.category === 'ao_tender'}
+              onValueChange={(checked) => {
+                onInputChange('category', checked ? 'ao_tender' : 'normal');
+              }}
+              classNames={{
+                base: "w-full max-w-full",
+                label: "w-full"
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Icon icon="lucide:star" className="text-purple-600" />
+                <div>
+                  <span className="font-medium text-foreground">{t('pages.projectDetails.aoTender')}</span>
+                  <p className="text-xs text-default-500">{t('pages.projectDetails.aoTenderDescription')}</p>
+                </div>
+              </div>
+            </Checkbox>
           </div>
 
           {/* Date and Budget */}

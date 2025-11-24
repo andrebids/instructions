@@ -467,6 +467,64 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
     formData: currentLogo,
   });
 
+  const handleFileUpload = async (newFiles) => {
+    if (newFiles.length > 0) {
+      console.log('📤 Uploading files to server...', newFiles);
+
+      // Upload each file to the server
+      const uploadPromises = newFiles.map(async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+          const response = await fetch('http://localhost:5000/api/files/upload', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(`Upload failed: ${response.statusText}`);
+          }
+
+          const result = await response.json();
+          console.log('✅ File uploaded:', result.file);
+
+          // Return file metadata to store in attachments
+          return {
+            name: result.file.originalName,
+            filename: result.file.filename,
+            path: result.file.path,
+            url: result.file.url,
+            size: result.file.size,
+            mimetype: result.file.mimetype,
+          };
+        } catch (error) {
+          console.error('❌ Error uploading file:', file.name, error);
+          return null;
+        }
+      });
+
+      // Wait for all uploads to complete
+      const uploadedFiles = await Promise.all(uploadPromises);
+      const successfulUploads = uploadedFiles.filter(f => f !== null);
+
+      if (successfulUploads.length > 0) {
+        const existingFiles = logoDetails.attachmentFiles || [];
+        const allFiles = [...existingFiles, ...successfulUploads];
+
+        // Save file metadata to logoDetails
+        const updatedLogoDetails = {
+          ...logoDetails,
+          attachmentFiles: allFiles,
+          currentLogo: currentLogo,
+          logos: savedLogos,
+        };
+        onInputChange("logoDetails", updatedLogoDetails);
+        console.log('✅ Files uploaded and metadata saved:', successfulUploads);
+      }
+    }
+  };
+
   // Preencher automaticamente o campo "Requested By" com o nome do usuário (apenas uma vez)
   React.useEffect(() => {
     // Preencher apenas se ainda não foi preenchido e userName estiver disponível
@@ -1588,19 +1646,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
               className="hidden"
               onChange={(e) => {
                 const newFiles = Array.from(e.target.files);
-                const existingFiles = logoDetails.attachmentFiles || [];
-                const allFiles = [...existingFiles, ...newFiles];
-
-                // Save directly to logoDetails, not currentLogo
-                const updatedLogoDetails = {
-                  ...logoDetails,
-                  attachmentFiles: allFiles,
-                  currentLogo: currentLogo,
-                  logos: savedLogos,
-                };
-                onInputChange("logoDetails", updatedLogoDetails);
-                console.log("Files selected:", newFiles);
-                console.log("All files:", allFiles);
+                if (newFiles.length > 0) {
+                  handleFileUpload(newFiles);
+                }
+                // Reset input value to allow selecting same files again
+                e.target.value = '';
               }}
             />
 
@@ -1610,21 +1660,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
               className="rounded-lg transition-colors"
               multiple={true}
               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ai,.eps"
-              onFilesSelected={(newFiles) => {
-                if (newFiles.length > 0) {
-                  const existingFiles = logoDetails.attachmentFiles || [];
-                  const allFiles = [...existingFiles, ...newFiles];
-
-                  // Save directly to logoDetails, not currentLogo
-                  const updatedLogoDetails = {
-                    ...logoDetails,
-                    attachmentFiles: allFiles,
-                    currentLogo: currentLogo,
-                    logos: savedLogos,
-                  };
-                  onInputChange("logoDetails", updatedLogoDetails);
-                }
-              }}
+              onFilesSelected={handleFileUpload}
             >
               {(() => {
                 return (currentLogo.generatedImage || (logoDetails.attachmentFiles && logoDetails.attachmentFiles.length > 0));
@@ -1668,8 +1704,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
                   {/* Uploaded Files */}
                   {logoDetails.attachmentFiles && logoDetails.attachmentFiles.map((file, index) => {
-                    const isImage = file.type?.startsWith('image/');
-                    const fileUrl = URL.createObjectURL(file);
+                    const isImage = file.mimetype?.startsWith('image/');
+                    const fileUrl = file.url || `http://localhost:5000${file.path}`;
 
                     return (
                       <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-default-200 group">
@@ -1681,10 +1717,15 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                           />
                         ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center bg-default-100 p-2">
-                            <Icon icon="lucide:file" className="w-8 h-8 text-default-400 mb-2" />
+                            <Icon icon="lucide:file" className="w-12 h-12 text-default-400 mb-2" />
                             <p className="text-xs text-center text-default-600 truncate w-full px-2">
                               {file.name}
                             </p>
+                            {file.size && (
+                              <p className="text-xs text-default-400 mt-1">
+                                {(file.size / 1024).toFixed(1)} KB
+                              </p>
+                            )}
                           </div>
                         )}
                         <div
