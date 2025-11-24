@@ -14,6 +14,9 @@ import { UrgencyWidget } from "../components/features/UrgencyWidget";
 import { TodoListWidget } from "../components/features/TodoListWidget";
 import { SmartProjectTable } from "../components/features/SmartProjectTable";
 import { CreateProjectMultiStep } from "../components/create-project-multi-step";
+import { PipelineWidget } from "../components/features/sales/PipelineWidget";
+import { DraftsWidget } from "../components/features/sales/DraftsWidget";
+import { ConversionWidget } from "../components/features/sales/ConversionWidget";
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -159,29 +162,7 @@ export default function Dashboard() {
     loadData();
   };
 
-  // KPI Card Component
-  const KPICard = ({ title, value, subtext, trend, icon, color }) => (
-    <Card className="bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm">
-      <CardBody className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div className={`p-3 rounded-2xl bg-${color}-500/10 text-${color}-500`}>
-            <Icon icon={icon} className="text-xl" />
-          </div>
-          {trend && (
-            <div className="flex items-center gap-1 text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-full text-xs font-medium">
-              <Icon icon="lucide:trending-up" />
-              {trend}
-            </div>
-          )}
-        </div>
-        <div className="space-y-1">
-          <p className="text-default-500 text-sm font-medium">{title}</p>
-          <h4 className="text-3xl font-bold text-foreground">{value}</h4>
-          <p className="text-default-400 text-xs">{subtext}</p>
-        </div>
-      </CardBody>
-    </Card>
-  );
+
 
   return (
     <>
@@ -255,29 +236,18 @@ export default function Dashboard() {
                   </div>
 
                   {/* Financial KPIs */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <KPICard 
-                      title={t('pages.dashboard.main.kpis.totalPipeline.title')} 
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-48">
+                    <PipelineWidget 
                       value="€ 1.2M" 
-                      subtext={t('pages.dashboard.main.kpis.totalPipeline.subtext')} 
                       trend="+12%" 
-                      icon="lucide:bar-chart-3" 
-                      color="primary"
                     />
-                    <KPICard 
-                      title={t('pages.dashboard.main.kpis.draftsValue.title')} 
+                    <DraftsWidget 
                       value="€ 450k" 
-                      subtext={t('pages.dashboard.main.kpis.draftsValue.subtext', { count: stats.draft })} 
-                      icon="lucide:file-edit" 
-                      color="warning"
+                      count={stats.draft}
                     />
-                    <KPICard 
-                      title={t('pages.dashboard.main.kpis.conversionRate.title')} 
+                    <ConversionWidget 
                       value="68%" 
-                      subtext={t('pages.dashboard.main.kpis.conversionRate.subtext')} 
                       trend="+5%" 
-                      icon="lucide:pie-chart" 
-                      color="success"
                     />
                   </div>
 
