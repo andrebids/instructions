@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardBody, Checkbox, cn, Input, Spinner, DatePicker, Button, Chip } from "@heroui/react";
+import { Card, CardBody, Checkbox, cn, Input, Spinner, DatePicker, Button, Chip, Tooltip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { todosAPI } from "../../services/todos";
 import { useTranslation } from "react-i18next";
@@ -15,6 +15,8 @@ export function TodoListWidget() {
   const [showDatePicker, setShowDatePicker] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [creating, setCreating] = React.useState(false);
+  const [clearingCompleted, setClearingCompleted] = React.useState(false);
+  const [showConfirmModal, setShowConfirmModal] = React.useState(false);
 
   const loadTasks = async () => {
     try {
@@ -83,6 +85,38 @@ export function TodoListWidget() {
     }
   };
 
+  const handleClearCompleted = async () => {
+    const completedTasks = tasks.filter(t => t.isCompleted);
+    if (completedTasks.length === 0) return;
+
+    // Show modal instead of window.confirm
+    setShowConfirmModal(true);
+  };
+
+  const confirmClearCompleted = async () => {
+    const completedTasks = tasks.filter(t => t.isCompleted);
+
+    try {
+      setClearingCompleted(true);
+      setShowConfirmModal(false);
+      
+      // Delete all completed tasks
+      await Promise.all(
+        completedTasks.map(task => todosAPI.delete(task.id))
+      );
+      
+      // Update UI - remove completed tasks
+      setTasks(tasks.filter(t => !t.isCompleted));
+    } catch (error) {
+      console.error("Failed to clear completed tasks:", error);
+      alert(t('pages.dashboard.todoListWidget.clearCompleted.error', {
+        defaultValue: "Erro ao limpar tarefas concluídas"
+      }));
+    } finally {
+      setClearingCompleted(false);
+    }
+  };
+
   const getDueDateStatus = (dueDate) => {
     if (!dueDate) return null;
     const due = new Date(dueDate);
@@ -112,18 +146,56 @@ export function TodoListWidget() {
   };
 
   const today = new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' });
+  const completedCount = tasks.filter(t => t.isCompleted).length;
 
   return (
     <Card className="h-full bg-zinc-900/50 border-zinc-800/50 backdrop-blur-md shadow-lg rounded-3xl">
       <CardBody className="p-6 flex flex-col h-full">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-bold text-white">{t('pages.dashboard.todoListWidget.title')}</h3>
-            <p className="text-xs text-zinc-500 font-medium">{today}</p>
+          <div className="flex items-center gap-3">
+            <div className="bg-primary-500/10 p-2 rounded-xl">
+               <Icon icon="lucide:check-square" className="text-primary text-xl" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">{t('pages.dashboard.todoListWidget.title')}</h3>
+              <p className="text-xs text-zinc-500 font-medium">{today}</p>
+            </div>
           </div>
-          <div className="bg-primary-500/10 p-2 rounded-xl">
-             <Icon icon="lucide:check-square" className="text-primary text-xl" />
-          </div>
+          <AnimatePresence>
+            {completedCount > 0 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Tooltip
+                  content={t('pages.dashboard.todoListWidget.clearCompleted.tooltip', {
+                    count: completedCount,
+                    defaultValue: `Limpar ${completedCount} tarefa(s) concluída(s)`
+                  })}
+                  placement="left"
+                  delay={300}
+                  closeDelay={0}
+                  classNames={{
+                    content: "bg-zinc-800 text-zinc-200 text-xs px-3 py-2 border border-zinc-700/50"
+                  }}
+                >
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    onPress={handleClearCompleted}
+                    isLoading={clearingCompleted}
+                    isDisabled={clearingCompleted}
+                    className="h-8 w-8 min-w-unit-8 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
+                    <Icon icon="lucide:trash-2" className="text-base" />
+                  </Button>
+                </Tooltip>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <motion.div 
@@ -339,6 +411,62 @@ export function TodoListWidget() {
             </AnimatePresence>
           )}
         </div>
+
+        {/* Confirmation Modal */}
+        <Modal 
+          isOpen={showConfirmModal} 
+          onClose={() => setShowConfirmModal(false)}
+          classNames={{
+            base: "bg-zinc-900 border border-zinc-800",
+            header: "border-b border-zinc-800",
+            body: "py-6",
+            footer: "border-t border-zinc-800",
+          }}
+        >
+          <ModalContent>
+            <ModalHeader className="flex flex-col gap-1">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-500/10 rounded-xl">
+                  <Icon icon="lucide:trash-2" className="text-red-400 text-xl" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">
+                  {t('pages.dashboard.todoListWidget.clearCompleted.modal.title', {
+                    defaultValue: 'Limpar Tarefas Concluídas'
+                  })}
+                </h3>
+              </div>
+            </ModalHeader>
+            <ModalBody>
+              <p className="text-zinc-400 text-sm">
+                {t('pages.dashboard.todoListWidget.clearCompleted.modal.message', {
+                  count: completedCount,
+                  defaultValue: `Tem certeza que deseja remover ${completedCount} tarefa(s) concluída(s)? Esta ação não pode ser desfeita.`
+                })}
+              </p>
+            </ModalBody>
+            <ModalFooter>
+              <Button 
+                variant="light" 
+                onPress={() => setShowConfirmModal(false)}
+                className="text-zinc-400 hover:text-zinc-200"
+              >
+                {t('pages.dashboard.todoListWidget.clearCompleted.modal.cancel', {
+                  defaultValue: 'Cancelar'
+                })}
+              </Button>
+              <Button 
+                color="danger" 
+                onPress={confirmClearCompleted}
+                isLoading={clearingCompleted}
+                startContent={!clearingCompleted && <Icon icon="lucide:trash-2" />}
+              >
+                {t('pages.dashboard.todoListWidget.clearCompleted.modal.confirm', {
+                  defaultValue: 'Limpar Tarefas'
+                })}
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </CardBody>
     </Card>
   );

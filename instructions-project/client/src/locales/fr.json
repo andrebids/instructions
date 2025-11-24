@@ -71,18 +71,18 @@
       },
       "main": {
         "welcomeBack": "Bon retour,",
-        "subtitle": "Voici ce qui se passe avec vos projets aujourd'hui.",
+        "subtitle": "Voici le point de situation sur vos projets aujourd'hui.",
         "newProject": "Nouveau Projet",
         "hero": {
           "title": "Prêt à illuminer",
           "titleHighlight": "Noël 2025 ?",
           "draftsMessage": "Vous avez {{count}} brouillons en attente de finalisation.",
-          "continueWorking": "Continuer à Travailler"
+          "continueWorking": "Reprendre le travail"
         },
         "kpis": {
           "totalPipeline": {
             "title": "Pipeline Total",
-            "subtext": "Revenus potentiels"
+            "subtext": "Chiffre d'affaires potentiel"
           },
           "draftsValue": {
             "title": "Valeur des Brouillons",
@@ -94,7 +94,7 @@
           }
         },
         "quickStats": {
-          "title": "Statistiques Rapides",
+          "title": "Indicateurs Clés",
           "activeClients": {
             "title": "Clients Actifs",
             "subtext": "Contrats actifs"
@@ -110,17 +110,17 @@
         }
       },
       "urgencyWidget": {
-        "title": "Alerte d'Urgence",
-        "subtitle": "Réservations de Stock Expirant Bientôt",
+        "title": "Attention Requise",
+        "subtitle": "Réservations de stock expirant bientôt",
         "project": "Projet :",
-        "daysLeft": "{{count}} jours restants",
-        "dayLeft": "1 jour restant",
+        "daysLeft": "Expire dans {{count}} jours",
+        "dayLeft": "Expire dans 1 jour",
         "extend": "Prolonger",
         "release": "Libérer"
       },
       "todoListWidget": {
         "title": "Liste de tâches",
-        "addTaskPlaceholder": "Ajouter une nouvelle tâche...",
+        "addTaskPlaceholder": "Ajouter une tâche...",
         "create": "Créer",
         "datePicker": {
           "label": "Date Limite",
@@ -148,15 +148,15 @@
           "design": "DESIGN",
           "reservation": "RÉSERVATION",
           "budget": "BUDGET",
-          "timeline": "CALENDRIER"
+          "timeline": "PLANNING"
         },
         "emptyState": "Aucun projet actif",
         "tooltip": {
           "render": "Rendu d'Éclairage de Noël"
         },
         "reservation": {
-          "daysLeft": "{{count}} jours restants",
-          "dayLeft": "1 jour restant"
+          "daysLeft": "Expire dans {{count}} jours",
+          "dayLeft": "Expire dans 1 jour"
         },
         "dates": {
           "start": "Début :",

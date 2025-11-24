@@ -36,6 +36,19 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
   const [page, setPage] = React.useState(1);
   const rowsPerPage = 5;
 
+  // Status translation map
+  const statusLabelMap = React.useMemo(() => ({
+    "draft": t('pages.dashboard.stats.draft'),
+    "created": t('pages.dashboard.stats.created'),
+    "in_progress": t('pages.dashboard.stats.inProgress'),
+    "finished": t('pages.dashboard.stats.finished'),
+    "approved": t('pages.dashboard.stats.approved'),
+    "cancelled": t('pages.dashboard.stats.cancelled'),
+    "in_queue": t('pages.dashboard.stats.inQueue'),
+    "to_order": t('pages.dashboard.projectTable.statusLabels.toOrder'),
+    "ordered": t('pages.dashboard.projectTable.statusLabels.ordered'),
+  }), [t]);
+
   // Mock data augmentation
   const augmentedProjects = React.useMemo(() => {
     return projects.map((p, index) => ({
@@ -109,6 +122,8 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
           </Tooltip>
         );
       case "status":
+        const normalizedStatus = project.status?.toLowerCase()?.replace(/\s+/g, '_') || project.status;
+        const statusLabel = statusLabelMap[normalizedStatus] || project.status?.replace(/_/g, " ") || project.status;
         return (
           <Chip
             color={statusColorMap[project.status] || "default"}
@@ -116,7 +131,7 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
             size="sm"
             className="capitalize"
           >
-            {project.status?.replace(/_/g, " ")}
+            {statusLabel}
           </Chip>
         );
       case "contract":
@@ -173,7 +188,7 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
       default:
         return cellValue;
     }
-  }, [navigate, onProjectsUpdate, t]);
+  }, [navigate, onProjectsUpdate, t, statusLabelMap]);
 
   return (
     <Card className="h-full bg-zinc-900/50 border-zinc-800/50 backdrop-blur-md">
