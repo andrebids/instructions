@@ -183,7 +183,7 @@ const translations = {
                 title: "Additional dev member",
                 names: "External Expansion",
                 tag: "Native Stores",
-                price: "€3720",
+                price: "€5k+",
                 cost_desc: "Salaries + €220/mo Ops",
                 strat: {
                     title: "Platform Strategy",
@@ -388,7 +388,7 @@ const translations = {
                 title: "Membre dev additionnel",
                 names: "Expansion Externe",
                 tag: "Stores Natifs",
-                price: "3720 €",
+                price: "5000+ €",
                 cost_desc: "Salaires + 220 €/mois Ops",
                 strat: {
                     title: "Stratégie Plateforme",

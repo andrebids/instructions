@@ -1,26 +1,24 @@
 import React from "react";
 import { Header } from "../components/layout/header";
-import { StatsCard } from "../components/features/stats-card";
-import { Button, Spinner } from "@heroui/react";
+import { Button, Spinner, Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { ProjectTable } from "../components/features/project-table";
-import { CreateProjectMultiStep } from "../components/create-project-multi-step";
 import { projectsAPI } from "../services/api";
 import { PageTitle } from "../components/layout/page-title";
 import { DashboardVoiceAssistant } from "../components/features/DashboardVoiceAssistant";
-import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "../context/UserContext";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 import { Scroller } from "../components/ui/scroller";
 import { useTranslation } from "react-i18next";
 import { useVoiceAssistant } from "../context/VoiceAssistantContext";
-
+import { UrgencyWidget } from "../components/features/UrgencyWidget";
+import { TodoListWidget } from "../components/features/TodoListWidget";
+import { SmartProjectTable } from "../components/features/SmartProjectTable";
+import { CreateProjectMultiStep } from "../components/create-project-multi-step";
 
 export default function Dashboard() {
   const { t } = useTranslation();
   const { userName } = useUser();
   const { updateDashboardContext } = useVoiceAssistant();
-  const [isOpen, setIsOpen] = React.useState(false);
   const [showCreateProject, setShowCreateProject] = React.useState(false);
   const [projects, setProjects] = React.useState([]);
   const [stats, setStats] = React.useState({
@@ -35,56 +33,20 @@ export default function Dashboard() {
   });
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
-  const [selectedImage, setSelectedImage] = React.useState(null);
   const { isHandheld } = useResponsiveProfile();
-
-
-  // Imagens carregadas (simuladas)
-  const loadedImages = [
-    {
-      id: 1,
-      name: 'source 1.jpeg',
-      thumbnail: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop&crop=center'
-    },
-    {
-      id: 2,
-      name: 'source 2.jpeg',
-      thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop&crop=center'
-    },
-    {
-      id: 3,
-      name: 'source 3.jpeg',
-      thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop&crop=center'
-    },
-  ];
 
   const loadData = React.useCallback(async (signal = null) => {
     try {
       setLoading(true);
       setError(null);
-
-      // Carregar projetos e stats em paralelo
-      // Se stats falhar com 403, ainda tentar carregar projetos
       const options = signal ? { signal } : {};
 
       try {
         const [projectsData, statsData] = await Promise.all([
           projectsAPI.getAll(options),
           projectsAPI.getStats(options).catch((statsErr) => {
-            // Se stats falhar com 403, não bloquear o carregamento de projetos
             if (statsErr.response?.status === 403) {
-              console.warn('⚠️  [Dashboard] Acesso negado para /projects/stats (requer role admin)');
-              // Retornar stats vazios se não tiver permissão
-              return {
-                total: 0,
-                draft: 0,
-                created: 0,
-                inProgress: 0,
-                finished: 0,
-                approved: 0,
-                cancelled: 0,
-                inQueue: 0,
-              };
+              return { total: 0, draft: 0, created: 0, inProgress: 0, finished: 0, approved: 0, cancelled: 0, inQueue: 0 };
             }
             throw statsErr;
           }),
@@ -102,113 +64,28 @@ export default function Dashboard() {
           inQueue: statsData.inQueue,
         });
       } catch (err) {
-        // Se for erro 403 em stats, ainda tentar carregar projetos
         if (err.response?.status === 403 && err.config?.url?.includes('/projects/stats')) {
-          console.warn('⚠️  [Dashboard] Acesso negado para stats, carregando apenas projetos');
-          try {
-            const projectsData = await projectsAPI.getAll(options);
-            setProjects(projectsData);
-            // Usar stats vazios
-            setStats({
-              total: 0,
-              draft: 0,
-              created: 0,
-              inProgress: 0,
-              finished: 0,
-              approved: 0,
-              cancelled: 0,
-              inQueue: 0,
-            });
-            return; // Sucesso parcial, não definir erro
-          } catch (projectsErr) {
-            // Se projetos também falhar, tratar como erro geral
-            throw projectsErr;
-          }
+           const projectsData = await projectsAPI.getAll(options);
+           setProjects(projectsData);
+           setStats({ total: 0, draft: 0, created: 0, inProgress: 0, finished: 0, approved: 0, cancelled: 0, inQueue: 0 });
+           return;
         }
         throw err;
       }
     } catch (err) {
-      // Ignorar erros de requisições abortadas/canceladas
-      if (
-        err.name === 'AbortError' ||
-        err.name === 'CanceledError' ||
-        err.code === 'ECONNABORTED' ||
-        err.code === 'ERR_CANCELED' ||
-        err.message === 'Request aborted' ||
-        err.message === 'canceled' ||
-        err.message?.includes('aborted') ||
-        err.message?.includes('canceled')
-      ) {
-        return;
-      }
-
+      if (err.name === 'AbortError' || err.code === 'ECONNABORTED') return;
       console.error('❌ Erro ao carregar dados:', err);
-
-      // Mensagem de erro mais detalhada
-      let errorMessage = t('errors.failedToLoadData');
-      if (err.response?.status === 403) {
-        const errorData = err.response?.data;
-        errorMessage = errorData?.message || 'Acesso negado. Você não tem permissão para acessar este recurso.';
-      } else if (err.response?.status === 500) {
-        const errorData = err.response?.data;
-        if (errorData?.error) {
-          if (errorData.hint) {
-            errorMessage = t('errors.serverErrorWithHint', { error: errorData.error, hint: errorData.hint });
-          } else {
-            errorMessage = t('errors.serverError', { error: errorData.error });
-          }
-        } else {
-          errorMessage = t('errors.serverError500');
-        }
-      } else if (err.response?.status) {
-        errorMessage = t('errors.requestFailed', { status: err.response.status });
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
-      setError(errorMessage);
+      setError(t('errors.failedToLoadData'));
     } finally {
       setLoading(false);
     }
-  }, [t, updateDashboardContext, userName]);
+  }, [t]);
 
-  // Update voice assistant context when projects change
   React.useEffect(() => {
     if (!loading && projects.length >= 0) {
       updateDashboardContext(projects, { name: userName });
     }
   }, [projects, loading, userName, updateDashboardContext]);
-  // Carregar dados ao iniciar
-  React.useEffect(() => {
-    const abortController = new AbortController();
-
-    // Chamar loadData diretamente
-    loadData(abortController.signal);
-
-    // Cleanup: cancelar requisições quando o componente desmontar
-    return () => {
-      abortController.abort();
-    };
-  }, []); // Executar apenas uma vez na montagem
-
-  const handleCreateProject = () => {
-    setShowCreateProject(true);
-  };
-
-  // Expose to global window for Voice Assistant Context
-  React.useEffect(() => {
-    window.handleCreateProjectGlobal = handleCreateProject;
-    return () => {
-      delete window.handleCreateProjectGlobal;
-    };
-  }, []);
-
-  const handleCloseCreateProject = () => {
-    setShowCreateProject(false);
-    setSelectedImage(null);
-    // Recarregar dados após criar projeto
-    loadData();
-  };
 
   // Função para remover projeto do estado local
   const removeProjectFromState = React.useCallback((projectId) => {
@@ -270,148 +147,198 @@ export default function Dashboard() {
     });
   }, [removeProjectFromState, updateStatsAfterDelete]);
 
+  React.useEffect(() => {
+    const abortController = new AbortController();
+    loadData(abortController.signal);
+    return () => abortController.abort();
+  }, []);
+
+  const handleCreateProject = () => setShowCreateProject(true);
+  const handleCloseCreateProject = () => {
+    setShowCreateProject(false);
+    loadData();
+  };
+
+  // KPI Card Component
+  const KPICard = ({ title, value, subtext, trend, icon, color }) => (
+    <Card className="bg-zinc-900/50 border-zinc-800/50 backdrop-blur-md">
+      <CardBody className="p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div className={`p-3 rounded-2xl bg-${color}-500/10 text-${color}-500`}>
+            <Icon icon={icon} className="text-xl" />
+          </div>
+          {trend && (
+            <div className="flex items-center gap-1 text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-full text-xs font-medium">
+              <Icon icon="lucide:trending-up" />
+              {trend}
+            </div>
+          )}
+        </div>
+        <div className="space-y-1">
+          <p className="text-zinc-400 text-sm font-medium">{title}</p>
+          <h4 className="text-3xl font-bold text-white">{value}</h4>
+          <p className="text-zinc-500 text-xs">{subtext}</p>
+        </div>
+      </CardBody>
+    </Card>
+  );
+
   return (
     <>
-      {/* Dashboard Content */}
       {showCreateProject ? (
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <CreateProjectMultiStep
-            onClose={handleCloseCreateProject}
-            selectedImage={selectedImage}
-          />
+        <div className="flex-1 min-h-0 overflow-hidden bg-zinc-950">
+          <CreateProjectMultiStep onClose={handleCloseCreateProject} />
         </div>
       ) : (
-        <Scroller className={`flex-1 min-h-0 p-6 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>
-          {/* Title section + Create button */}
-          <div className="flex justify-between items-center mb-6">
-            <PageTitle title={t('pages.dashboard.title')} userName={userName} subtitle={t('pages.dashboard.subtitle')} showWelcome />
-            <Button
-              color="primary"
-              startContent={<Icon icon="lucide:plus" />}
-              className="font-medium"
-              onPress={handleCreateProject}
-              isDisabled={loading}
-            >
-              {t('pages.dashboard.createNewProject')}
-            </Button>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-600">
-              <div className="flex items-center gap-2">
-                <Icon icon="lucide:alert-circle" className="text-xl" />
-                <span>{error}</span>
+        <Scroller className="flex-1 min-h-0 bg-zinc-950" hideScrollbar>
+          <div className="p-6 max-w-[1920px] mx-auto space-y-6">
+            
+            {/* Header Section */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-white">
+                  Welcome back, <span className="text-primary">{userName}</span>
+                </h1>
+                <p className="text-zinc-400 text-sm">Here's what's happening with your projects today.</p>
               </div>
               <Button
-                size="sm"
-                color="danger"
-                variant="flat"
-                className="mt-2"
-                onPress={loadData}
+                color="primary"
+                startContent={<Icon icon="lucide:plus" />}
+                className="font-medium shadow-lg shadow-primary/20"
+                onPress={handleCreateProject}
               >
-                {t('common.retry')}
+                New Project
               </Button>
             </div>
-          )}
 
-          {/* Loading State */}
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <Spinner size="lg" label={t('pages.dashboard.loadingData')} />
-            </div>
-          ) : (
-            <>
-              {/* Stats Grid */}
-              <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8">
-                <StatsCard
-                  title={t('pages.dashboard.stats.totalProjects')}
-                  value={stats.total.toString()}
-                  change={`${stats.total} projects total`}
-                  isPositive={true}
-                  icon="lucide:folder"
-                  timePeriod={t('pages.dashboard.timePeriods.allTime')}
-                  colorKey="primary"
-                />
-                <StatsCard
-                  title={t('pages.dashboard.stats.draft')}
-                  value={stats.draft.toString()}
-                  change={`${stats.draft} drafts`}
-                  isPositive={false}
-                  icon="lucide:file-edit"
-                  timePeriod={t('pages.dashboard.timePeriods.pending')}
-                  colorKey="default"
-                />
-                <StatsCard
-                  title={t('pages.dashboard.stats.created')}
-                  value={stats.created.toString()}
-                  change={`${stats.created} created`}
-                  isPositive={true}
-                  icon="lucide:file-plus"
-                  timePeriod={t('pages.dashboard.timePeriods.new')}
-                  colorKey="primary"
-                />
-                <StatsCard
-                  title={t('pages.dashboard.stats.inProgress')}
-                  value={stats.inProgress.toString()}
-                  change={`${stats.inProgress} active`}
-                  isPositive={true}
-                  icon="lucide:loader"
-                  timePeriod={t('pages.dashboard.timePeriods.currently')}
-                  colorKey="warning"
-                />
-                <StatsCard
-                  title={t('pages.dashboard.stats.finished')}
-                  value={stats.finished.toString()}
-                  change={`${stats.finished} completed`}
-                  isPositive={true}
-                  icon="lucide:check-circle"
-                  timePeriod={t('pages.dashboard.timePeriods.thisMonth')}
-                  colorKey="success"
-                />
-                <StatsCard
-                  title={t('pages.dashboard.stats.approved')}
-                  value={stats.approved.toString()}
-                  change={`${stats.approved} approved`}
-                  isPositive={true}
-                  icon="lucide:thumbs-up"
-                  timePeriod={t('pages.dashboard.timePeriods.thisMonth')}
-                  colorKey="success"
-                />
-                <StatsCard
-                  title={t('pages.dashboard.stats.inQueue')}
-                  value={stats.inQueue.toString()}
-                  change={`${stats.inQueue} waiting`}
-                  isPositive={false}
-                  icon="lucide:clock"
-                  timePeriod={t('pages.dashboard.timePeriods.pending')}
-                  colorKey="secondary"
-                />
-                <StatsCard
-                  title={t('pages.dashboard.stats.cancelled')}
-                  value={stats.cancelled.toString()}
-                  change={`${stats.cancelled} cancelled`}
-                  isPositive={false}
-                  icon="lucide:x-circle"
-                  timePeriod={t('pages.dashboard.timePeriods.thisMonth')}
-                  colorKey="danger"
-                />
+            {loading ? (
+              <div className="flex justify-center items-center h-96">
+                <Spinner size="lg" color="primary" />
               </div>
+            ) : (
+              <div className="grid grid-cols-12 gap-6">
+                
+                {/* Left Column - Hero & KPIs (8 cols) */}
+                <div className="col-span-12 lg:col-span-8 space-y-6">
+                  {/* Hero Widget */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-64">
+                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-900/50 to-zinc-900 border border-white/5 p-8 flex flex-col justify-center group">
+                      <div className="absolute top-0 right-0 p-32 bg-primary-500/20 blur-[100px] rounded-full -mr-16 -mt-16 pointer-events-none" />
+                      <div className="relative z-10">
+                        <h2 className="text-3xl font-bold text-white mb-2">
+                          Ready to light up <br/>
+                          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500">Christmas 2025?</span>
+                        </h2>
+                        <p className="text-zinc-300 mb-6 max-w-xs">
+                          You have {stats.draft} drafts waiting to be finalized.
+                        </p>
+                        <Button 
+                          className="bg-white/10 backdrop-blur-md text-white border border-white/20 group-hover:bg-white/20 transition-all"
+                          endContent={<Icon icon="lucide:arrow-right" />}
+                        >
+                          Continue Working
+                        </Button>
+                      </div>
+                    </div>
+                    <UrgencyWidget />
+                  </div>
 
-              {/* Project Table */}
-              <div className="mb-6">
-                <ProjectTable
-                  projects={projects}
-                  onProjectsUpdate={loadData}
-                  onProjectDeleted={handleProjectDeleted}
-                />
+                  {/* Financial KPIs */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <KPICard 
+                      title="Total Pipeline" 
+                      value="€ 1.2M" 
+                      subtext="Potential revenue" 
+                      trend="+12%" 
+                      icon="lucide:bar-chart-3" 
+                      color="primary"
+                    />
+                    <KPICard 
+                      title="Drafts Value" 
+                      value="€ 450k" 
+                      subtext={`${stats.draft} projects in draft`} 
+                      icon="lucide:file-edit" 
+                      color="warning"
+                    />
+                    <KPICard 
+                      title="Conversion Rate" 
+                      value="68%" 
+                      subtext="Last 30 days" 
+                      trend="+5%" 
+                      icon="lucide:pie-chart" 
+                      color="success"
+                    />
+                  </div>
+
+                  {/* Smart Project Table */}
+                  <div className="h-[500px]">
+                    <SmartProjectTable 
+                      projects={projects} 
+                      onProjectsUpdate={loadData}
+                      onProjectDeleted={handleProjectDeleted}
+                    />
+                  </div>
+                </div>
+
+                {/* Right Column - Todo & Extras (4 cols) */}
+                <div className="col-span-12 lg:col-span-4 space-y-6">
+                  <div className="h-[400px]">
+                    <TodoListWidget />
+                  </div>
+                  
+                  {/* Mini Calendar / Quick Stats / Notifications could go here */}
+                  <Card className="h-[420px] bg-zinc-900/50 border-zinc-800/50 backdrop-blur-md">
+                    <CardBody className="p-6">
+                      <h3 className="text-lg font-semibold text-white mb-4">Quick Stats</h3>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center p-3 rounded-xl bg-zinc-800/50">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-blue-500/20 text-blue-400">
+                              <Icon icon="lucide:users" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-white">Active Clients</p>
+                              <p className="text-xs text-zinc-500">Active contracts</p>
+                            </div>
+                          </div>
+                          <span className="text-lg font-bold text-white">24</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center p-3 rounded-xl bg-zinc-800/50">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400">
+                              <Icon icon="lucide:box" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-white">Stock Items</p>
+                              <p className="text-xs text-zinc-500">Reserved units</p>
+                            </div>
+                          </div>
+                          <span className="text-lg font-bold text-white">1,450</span>
+                        </div>
+
+                        <div className="flex justify-between items-center p-3 rounded-xl bg-zinc-800/50">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-pink-500/20 text-pink-400">
+                              <Icon icon="lucide:truck" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-white">Deliveries</p>
+                              <p className="text-xs text-zinc-500">Next 7 days</p>
+                            </div>
+                          </div>
+                          <span className="text-lg font-bold text-white">8</span>
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
+                </div>
+
               </div>
-            </>
-          )}
+            )}
+          </div>
         </Scroller>
       )}
-
-      {/* Voice AI Assistant */}
       <DashboardVoiceAssistant />
     </>
   );
