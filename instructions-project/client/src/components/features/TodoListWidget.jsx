@@ -88,10 +88,10 @@ export function TodoListWidget() {
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Tomorrow';
     if (diffDays <= 7) return `${diffDays}d`;
-    return due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return due.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
   };
 
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const today = new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
     <Card className="h-full bg-zinc-900/50 border-zinc-800/50 backdrop-blur-md shadow-lg rounded-3xl">
