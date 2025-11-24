@@ -1,66 +1,97 @@
 import React from "react";
 import { Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { RadialBarChart, RadialBar, ResponsiveContainer, PolarAngleAxis } from 'recharts';
 
 export const ConversionWidget = ({ value, trend }) => {
   // Parse numeric value from string (e.g. "68%")
   const numericValue = parseInt(value) || 0;
   
-  const data = [
-    {
-      name: 'Conversion',
-      value: numericValue,
-      fill: '#17C964',
-    },
-  ];
+  // SVG Configuration
+  const size = 140;
+  const strokeWidth = 12;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (numericValue / 100) * circumference;
 
   return (
     <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
        {/* Background Glow Effect */}
        <div className="absolute -top-10 -right-10 w-32 h-32 bg-success-500/20 rounded-full blur-3xl group-hover:bg-success-500/30 transition-all duration-500" />
 
-      <CardBody className="p-0 flex flex-row h-full items-center overflow-hidden">
-        <div className="p-6 flex-1 z-10 shrink-0">
-          <div className="flex justify-between items-start mb-2">
-            <div className="p-2 rounded-lg bg-success-500/10 text-success-500">
-              <Icon icon="lucide:pie-chart" className="text-xl" />
+      <CardBody className="p-4 flex flex-row items-center justify-between h-full overflow-hidden relative z-10">
+        
+        {/* Left Side: Info */}
+        <div className="flex flex-col justify-between h-full py-2 pl-2">
+            <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-success-500/10 text-success-500 shadow-sm ring-1 ring-success-500/20">
+                    <Icon icon="lucide:pie-chart" className="text-xl" />
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-default-500 text-sm font-medium">Conversion</span>
+                    <span className="text-default-900 text-base font-bold">Rate</span>
+                </div>
             </div>
-             {trend && (
-               <div className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full text-xs font-medium">
-                <Icon icon="lucide:trending-up" />
-                {trend}
-              </div>
+
+            {trend && (
+               <div className="flex items-center gap-2 mt-4">
+                   <div className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-500/20">
+                    <Icon icon="lucide:trending-up" />
+                    {trend}
+                  </div>
+               </div>
             )}
-          </div>
-          <p className="text-default-500 text-sm font-medium">Conversion Rate</p>
-          <h4 className="text-3xl font-bold text-foreground">{value}</h4>
-          <p className="text-default-400 text-xs mt-1">Better than last month</p>
         </div>
 
-        <div className="h-full w-[120px] relative flex items-center justify-center mr-2 shrink-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadialBarChart 
-              innerRadius="60%" 
-              outerRadius="90%" 
-              barSize={10} 
-              data={data} 
-              startAngle={90} 
-              endAngle={-270}
-            >
-              <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
-              <RadialBar
-                background
-                clockWise
-                dataKey="value"
-                cornerRadius={10}
-              />
-            </RadialBarChart>
-          </ResponsiveContainer>
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-             <span className="text-sm font-bold text-success-500">{numericValue}%</span>
-          </div>
+        {/* Right Side: Glassy Chart */}
+        <div className="relative flex items-center justify-center mr-2">
+            {/* Custom SVG Chart */}
+            <div className="relative" style={{ width: size, height: size }}>
+                <svg width={size} height={size} className="transform -rotate-90 drop-shadow-lg">
+                    <defs>
+                        <linearGradient id="glassGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#34d399" /> {/* emerald-400 */}
+                            <stop offset="100%" stopColor="#10b981" /> {/* emerald-500 */}
+                        </linearGradient>
+                        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                    </defs>
+                    
+                    {/* Track */}
+                    <circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        stroke="currentColor"
+                        strokeWidth={strokeWidth}
+                        fill="transparent"
+                        className="text-default-200/20"
+                    />
+                    
+                    {/* Progress */}
+                    <circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        stroke="url(#glassGradient)"
+                        strokeWidth={strokeWidth}
+                        fill="transparent"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={offset}
+                        strokeLinecap="round"
+                        className="transition-all duration-1000 ease-out"
+                        style={{ filter: 'drop-shadow(0 0 4px rgba(16, 185, 129, 0.4))' }}
+                    />
+                </svg>
+                
+                {/* Inner Text */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-3xl font-bold text-foreground tracking-tight">{numericValue}%</span>
+                </div>
+            </div>
         </div>
+
       </CardBody>
     </Card>
   );
