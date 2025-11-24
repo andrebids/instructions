@@ -4,16 +4,12 @@ import { Icon } from "@iconify/react";
 export function ComponentsField({ materials, size = "base" }) {
   if (!materials) return null;
 
-  // Filtrar apenas COMET STRING e LIGHT STRING do campo materiais
+  // Split by comma and clean up
   const materialsArray = materials.split(",").map((m) => m.trim()).filter((m) => m.length > 0);
-  const filteredMaterials = materialsArray.filter((m) => {
-    return m.includes("COMET STRING") || m.includes("LIGHT STRING");
-  });
 
-  // Se não houver COMET STRING ou LIGHT STRING, não renderizar o campo
-  if (filteredMaterials.length === 0) return null;
+  if (materialsArray.length === 0) return null;
 
-  const displayText = filteredMaterials.join(", ");
+  const displayText = materialsArray.join(", ");
 
   const iconSize = size === "xs" ? "text-xs" : "text-base";
   const labelSize = size === "xs" ? "text-xs" : "text-sm";

@@ -20,7 +20,7 @@ function loadPersistedState() {
 function persistState(state) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (_) {}
+  } catch (_) { }
 }
 
 export function ShopProvider({ children }) {
@@ -29,43 +29,41 @@ export function ShopProvider({ children }) {
   const [productsError, setProductsError] = React.useState(null);
   const [projects] = React.useState(mockProjects);
   const [categories] = React.useState(mockCategories);
-  
-  // Buscar produtos da API na montagem
-  React.useEffect(function() {
-    var fetchProducts = function() {
-      setProductsLoading(true);
-      setProductsError(null);
-      
-      productsAPI.getAll({ isActive: true })
-        .then(function(apiProducts) {
-          if (Array.isArray(apiProducts) && apiProducts.length > 0) {
-            var transformed = [];
-            for (var i = 0; i < apiProducts.length; i++) {
-              var transformedProduct = transformApiProduct(apiProducts[i]);
-              if (transformedProduct) {
-                transformed.push(transformedProduct);
-              }
+
+  const fetchProducts = React.useCallback(function () {
+    setProductsLoading(true);
+    setProductsError(null);
+
+    productsAPI.getAll({ isActive: true })
+      .then(function (apiProducts) {
+        if (Array.isArray(apiProducts) && apiProducts.length > 0) {
+          var transformed = [];
+          for (var i = 0; i < apiProducts.length; i++) {
+            var transformedProduct = transformApiProduct(apiProducts[i]);
+            if (transformedProduct) {
+              transformed.push(transformedProduct);
             }
-            // Log removido
-            setProducts(transformed);
-            setProductsLoading(false);
-          } else {
-            console.warn('⚠️ [ShopContext] API retornou dados vazios ou inválidos');
-            setProducts([]);
-            setProductsLoading(false);
           }
-        })
-        .catch(function(error) {
-          console.error('❌ [ShopContext] Erro ao buscar produtos da API:', error);
-          setProductsError(error.message || 'Erro ao carregar produtos');
-          // NÃO usar dados mockados - apenas array vazio
+          setProducts(transformed);
+          setProductsLoading(false);
+        } else {
+          console.warn('⚠️ [ShopContext] API retornou dados vazios ou inválidos');
           setProducts([]);
           setProductsLoading(false);
-        });
-    };
-    
-    fetchProducts();
+        }
+      })
+      .catch(function (error) {
+        console.error('❌ [ShopContext] Erro ao buscar produtos da API:', error);
+        setProductsError(error.message || 'Erro ao carregar produtos');
+        setProducts([]);
+        setProductsLoading(false);
+      });
   }, []);
+
+  // Buscar produtos da API na montagem
+  React.useEffect(function () {
+    fetchProducts();
+  }, [fetchProducts]);
   const [cartByProject, setCartByProject] = React.useState(() => {
     const persisted = loadPersistedState();
     return persisted?.cartByProject || {};
@@ -149,7 +147,7 @@ export function ShopProvider({ children }) {
 
   const getBaseStock = React.useCallback((product) => {
     const computeStock = (id) => {
-      try { let sum = 0; for (const ch of String(id||'')) sum += ch.charCodeAt(0); return 5 + (sum % 60); } catch (_) { return 20; }
+      try { let sum = 0; for (const ch of String(id || '')) sum += ch.charCodeAt(0); return 5 + (sum % 60); } catch (_) { return 20; }
     };
     return typeof product?.stock === 'number' ? product.stock : computeStock(product?.id);
   }, []);
@@ -248,6 +246,7 @@ export function ShopProvider({ children }) {
 
   const value = React.useMemo(() => ({
     products,
+    fetchProducts,
     projects,
     categories,
     cartByProject,
@@ -265,8 +264,8 @@ export function ShopProvider({ children }) {
         const product = products.find((p) => p.id === currentItem.productId);
         // Compute allowed maximum: available stock (already excludes this line)
         // plus current quantity on this line
-        const available = product ? (function(p){
-          const computeStock = (id) => { try { let sum = 0; for (const ch of String(id||'')) sum += ch.charCodeAt(0); return 5 + (sum % 60); } catch (_) { return 20; } };
+        const available = product ? (function (p) {
+          const computeStock = (id) => { try { let sum = 0; for (const ch of String(id || '')) sum += ch.charCodeAt(0); return 5 + (sum % 60); } catch (_) { return 20; } };
           const base = typeof p.stock === 'number' ? p.stock : computeStock(p.id);
           // reserved across all projects
           let reserved = 0;

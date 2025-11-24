@@ -37,11 +37,13 @@ import { Scroller } from "../components/ui/scroller";
 import { useTranslation } from "react-i18next";
 import { useUserRole } from "../hooks/useUserRole";
 import { useProductForm } from "./hooks/useProductForm";
+import { useShop } from "../context/ShopContext";
 
 export default function AdminProducts() {
   const { t } = useTranslation();
   var { userName } = useUser();
   const { isAdmin, isEditorStock, isLoaded } = useUserRole();
+  const { fetchProducts } = useShop();
 
   // Verificação adicional de role (a rota já está protegida, mas esta é uma camada extra)
   React.useEffect(() => {
@@ -817,6 +819,7 @@ export default function AdminProducts() {
     productsAPI.archive(productId)
       .then(function () {
         loadProducts();
+        fetchProducts();
       })
       .catch(function (err) {
         console.error("Error archiving product:", err);
@@ -829,6 +832,7 @@ export default function AdminProducts() {
     productsAPI.unarchive(productId)
       .then(function () {
         loadProducts();
+        fetchProducts();
       })
       .catch(function (err) {
         console.error("Error unarchiving product:", err);
@@ -845,6 +849,7 @@ export default function AdminProducts() {
     productsAPI.delete(productId)
       .then(function () {
         loadProducts();
+        fetchProducts();
       })
       .catch(function (err) {
         console.error("Error deleting product:", err);
@@ -915,6 +920,7 @@ export default function AdminProducts() {
         setSelectedProducts(new Set());
         setIsSelectionMode(false);
         loadProducts();
+        fetchProducts();
       })
       .catch(function (err) {
         console.error("Error archiving products:", err);
@@ -947,6 +953,7 @@ export default function AdminProducts() {
         setSelectedProducts(new Set());
         setIsSelectionMode(false);
         loadProducts();
+        fetchProducts();
       })
       .catch(function (err) {
         console.error("Error unarchiving products:", err);
@@ -979,6 +986,7 @@ export default function AdminProducts() {
         setSelectedProducts(new Set());
         setIsSelectionMode(false);
         loadProducts();
+        fetchProducts();
       })
       .catch(function (err) {
         console.error("Error deleting products:", err);
@@ -1266,6 +1274,7 @@ export default function AdminProducts() {
           setLoading(false);
           onModalClose();
           loadProducts();
+          fetchProducts(); // Atualizar catálogo da loja
         })
         .catch(function (err) {
           console.error("Erro ao salvar produto:", err);
@@ -1654,7 +1663,7 @@ export default function AdminProducts() {
                             } else {
                               abs = choose;
                             }
-                            var src = abs + (abs.indexOf('/demo-images/') === 0 ? '' : ('?v=' + encodeURIComponent(String(product.updatedAt || product.id || '1'))));
+                            var src = abs;
                             return (
                               <img
                                 src={src}
@@ -1667,7 +1676,7 @@ export default function AdminProducts() {
                                   if (e.target.dataset.fb === '1') return;
                                   e.target.dataset.fb = '1';
                                   var day = product.imagesDayUrl;
-                                  var alt = day ? ((day.indexOf('/uploads/') === 0 ? ((baseApi ? baseApi : '/api') + day) : day) + '?v=' + encodeURIComponent(String(product.updatedAt || product.id || '1'))) : null;
+                                  var alt = day ? (day.indexOf('/uploads/') === 0 ? ((baseApi ? baseApi : '/api') + day) : day) : null;
                                   console.warn('⚠️ [AdminProducts] grid imagem ERRO', { id: product.id, tried: src, fallback: alt });
                                   e.target.src = alt || "/demo-images/placeholder.png";
                                 }}

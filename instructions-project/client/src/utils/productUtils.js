@@ -61,10 +61,6 @@ export function transformApiProduct(apiProduct) {
 
   if (isValidImageUrl(apiProduct.imagesNightUrl)) {
     nightImage = apiProduct.imagesNightUrl;
-  } else if (isValidImageUrl(apiProduct.imagesDayUrl)) {
-    nightImage = apiProduct.imagesDayUrl;
-  } else if (isValidImageUrl(apiProduct.thumbnailUrl)) {
-    nightImage = apiProduct.thumbnailUrl;
   }
 
   // Se ainda não houver imagens válidas, usar imagens aleatórias das pastas locais
@@ -99,15 +95,27 @@ export function transformApiProduct(apiProduct) {
     mount: apiProduct.mount || null,
     specs: (function () {
       try {
-        if (apiProduct.specs) {
-          // Criar cópia profunda do specs para evitar referências
-          var specsCopy = JSON.parse(JSON.stringify(apiProduct.specs));
-          return specsCopy;
+        if (!apiProduct.specs) return {};
+
+        var specs = apiProduct.specs;
+        // Se for string, tentar fazer parse
+        if (typeof specs === 'string') {
+          try {
+            specs = JSON.parse(specs);
+          } catch (e) {
+            console.error('⚠️ [transformApiProduct] Erro ao fazer parse de specs string:', e);
+            return {};
+          }
         }
-        return {};
+
+        // Garantir que é um objeto
+        if (typeof specs !== 'object') return {};
+
+        // Criar cópia profunda
+        return JSON.parse(JSON.stringify(specs));
       } catch (e) {
         console.error('⚠️ [transformApiProduct] Erro ao processar specs:', e, apiProduct.id);
-        return apiProduct.specs || {};
+        return {};
       }
     })(),
     variantProductByColor: apiProduct.variantProductByColor || null,

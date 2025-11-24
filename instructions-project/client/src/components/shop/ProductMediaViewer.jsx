@@ -58,16 +58,16 @@ export default function ProductMediaViewer({ product, initialMode = "night", cla
     const v = videoRef.current;
     if (!v) return;
     if (mediaIndex === 1) {
-      const play = async () => { try { await v.play(); } catch {} };
+      const play = async () => { try { await v.play(); } catch { } };
       play();
     } else {
-      try { v.pause(); } catch {}
+      try { v.pause(); } catch { }
     }
   }, [mediaIndex, videoSrc]);
 
   if (!product) return null;
   const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || '';
-  const mapPath = function(path) {
+  const mapPath = function (path) {
     if (!path) return path;
     if (baseApi) return path.indexOf('/uploads/') === 0 ? (baseApi + path) : path;
     return path.indexOf('/uploads/') === 0 ? ('/api' + path) : path;
@@ -82,9 +82,7 @@ export default function ProductMediaViewer({ product, initialMode = "night", cla
     baseDay = null; // Se day também for temporária, usar placeholder
   }
   const imageSrc = mode === "day" ? baseDay : baseNight;
-  const imageSrcWithBuster = imageSrc 
-    ? imageSrc + '?v=' + encodeURIComponent(String(product.updatedAt || product.id || '1')) 
-    : imageSrc;
+  const imageSrcWithBuster = imageSrc;
 
   const totalMedia = 1 + (product?.videoFile ? 1 : 0);
 
@@ -129,7 +127,7 @@ export default function ProductMediaViewer({ product, initialMode = "night", cla
               e.target.src = fallback;
             }}
             onLoad={() => {
-              try { console.log('🖼️ [ProductMediaViewer] imagem mostrada:', imageSrcWithBuster); } catch(_) {}
+              try { console.log('🖼️ [ProductMediaViewer] imagem mostrada:', imageSrcWithBuster); } catch (_) { }
             }}
           />
         )}
@@ -188,26 +186,26 @@ export default function ProductMediaViewer({ product, initialMode = "night", cla
 
       <div className="mt-3 flex items-center justify-center">
         <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-[#1f2937] text-white shadow-md">
-        <button
-          type="button"
-          aria-label="Image"
-          onClick={() => setMediaIndex(0)}
-          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${mediaIndex === 0 ? 'bg-[#111827] text-white border-white/20' : 'bg-transparent text-white/80 border-white/20 hover:bg-white/10'}`}
-        >
-          <Icon icon="lucide:image" className={`text-sm ${mediaIndex === 0 ? 'text-white' : 'text-white/80'}`} />
-          <span className="text-xs font-medium">Image</span>
-        </button>
-        {product.videoFile && (
           <button
             type="button"
-            aria-label="Video"
-            onClick={() => setMediaIndex(1)}
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${mediaIndex === 1 ? 'bg-[#111827] text-white border-white/20' : 'bg-transparent text-white/80 border-white/20 hover:bg-white/10'}`}
+            aria-label="Image"
+            onClick={() => setMediaIndex(0)}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${mediaIndex === 0 ? 'bg-[#111827] text-white border-white/20' : 'bg-transparent text-white/80 border-white/20 hover:bg-white/10'}`}
           >
-            <Icon icon="lucide:play-circle" className={`text-sm ${mediaIndex === 1 ? 'text-white' : 'text-white/80'}`} />
-            <span className="text-xs font-medium">Video</span>
+            <Icon icon="lucide:image" className={`text-sm ${mediaIndex === 0 ? 'text-white' : 'text-white/80'}`} />
+            <span className="text-xs font-medium">Image</span>
           </button>
-        )}
+          {product.videoFile && (
+            <button
+              type="button"
+              aria-label="Video"
+              onClick={() => setMediaIndex(1)}
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${mediaIndex === 1 ? 'bg-[#111827] text-white border-white/20' : 'bg-transparent text-white/80 border-white/20 hover:bg-white/10'}`}
+            >
+              <Icon icon="lucide:play-circle" className={`text-sm ${mediaIndex === 1 ? 'text-white' : 'text-white/80'}`} />
+              <span className="text-xs font-medium">Video</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
