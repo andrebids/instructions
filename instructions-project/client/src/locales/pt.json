@@ -8,7 +8,12 @@
     "email": "Email",
     "role": "Função",
     "cancel": "Cancelar",
-    "save": "Salvar"
+    "save": "Salvar",
+    "delete": "Eliminar",
+    "backToDashboard": "Voltar ao Dashboard",
+    "edit": "Editar",
+    "back": "Voltar",
+    "no": "Não"
   },
   "pages": {
     "landing": {
@@ -356,6 +361,59 @@
           "finished": "Projeto criado com sucesso!",
           "cancelled": "Cancelado."
         }
+      },
+      "requestedBy": "Solicitado por",
+      "outdoor": "Exterior",
+      "indoor": "Interior",
+      "dimensions": "Dimensões",
+      "height": "Altura",
+      "length": "Comprimento",
+      "width": "Largura",
+      "diameter": "Diâmetro",
+      "technicalSpecs": "Especificações Técnicas",
+      "fixationType": "Tipo de Fixação",
+      "mastDiameter": "Diâmetro do Mastro",
+      "lacquered": "Lacado",
+      "maxWeightConstraint": "Restrição de Peso Máx.",
+      "additionalInfo": "Informações Adicionais",
+      "ballast": "Balastro",
+      "controlReport": "Relatório de Controlo",
+      "description": "Descrição",
+      "criteria": "Critérios",
+      "errorLoading": "Erro ao carregar projeto",
+      "notFoundTitle": "Projeto não encontrado",
+      "notFoundMessage": "O projeto que procura não existe ou foi removido.",
+      "projectInfo": "Informações do Projeto",
+      "instructions": "Instruções",
+      "noInstructions": "Não há instruções disponíveis para este projeto.",
+      "notes": "Notas",
+      "startDate": "Data de Início",
+      "endDate": "Data de Entrega",
+      "tabs": {
+        "overview": "Visão Geral",
+        "instructions": "Instruções",
+        "notes": "Notas"
+      },
+      "logoDefaultName": "Logo {{index}}",
+      "projectProgress": "Progresso do Projeto",
+      "designerInfo": "Informação do Designer",
+      "toBeDeveloped": "A desenvolver",
+      "designer": "Designer",
+      "notesManager": {
+        "addTopic": "Adicionar Tópico",
+        "deleteTopic": "Eliminar Tópico",
+        "topicName": "Nome do Tópico",
+        "noTopics": "Ainda não há tópicos. Crie um para começar a adicionar notas.",
+        "noteTitle": "Título da Nota",
+        "noteTitlePlaceholder": "Introduza o título da nota...",
+        "saveNote": "Guardar Nota",
+        "saving": "A guardar...",
+        "saved": "Guardado",
+        "unsavedChanges": "Alterações não guardadas",
+        "deleteNote": "Eliminar Nota",
+        "confirmDelete": "Tem a certeza que deseja eliminar esta nota?",
+        "newTopic": "Novo Tópico",
+        "enterTopicName": "Introduza o nome do tópico"
       }
     },
     "projectNotes": {

@@ -112,6 +112,13 @@ const Project = sequelize.define('Project', {
     field: 'created_by',
     comment: 'ID do utilizador que criou o projeto (Auth.js userId)',
   },
+  // Notas organizadas por tópicos
+  notes: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [],
+    comment: 'Array de notas: [{ id, topic, title, content, createdAt, updatedAt }]',
+  },
 }, {
   tableName: 'projects',
   timestamps: true,

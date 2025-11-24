@@ -13,6 +13,7 @@ import AdminUsers from "./pages/AdminUsers";
 import ProjectNotes from "./pages/ProjectNotes";
 import EditProject from "./pages/EditProject";
 import SignIn from "./pages/SignIn";
+import ProjectDetails from "./pages/ProjectDetails";
 import { SignedIn, SignedOut } from "./components/auth/AuthGuard";
 import { MobileBottomNav } from "./components/layout/mobile-bottom-nav";
 import { useResponsiveProfile } from "./hooks/useResponsiveProfile";
@@ -40,6 +41,7 @@ function AppLayout() {
           <Route path="/stock-catalogue" element={<Shop />} />
           <Route path="/favorites" element={<Favorites />} />
           {/* <Route path="/projects" element={<Projects />} /> */}
+          <Route path="/projects/:id" element={<ProjectDetails />} />
           <Route path="/projects/:id/notes" element={<ProjectNotes />} />
           <Route path="/projects/:id/edit" element={<EditProject />} />
           <Route path="/orders" element={<Projects />} />

@@ -1,18 +1,18 @@
 import React from "react";
-import { 
-  Table, 
-  TableHeader, 
-  TableColumn, 
-  TableBody, 
-  TableRow, 
-  TableCell, 
-  Input, 
-  Dropdown, 
-  DropdownTrigger, 
-  DropdownMenu, 
-  DropdownItem, 
-  Button, 
-  Chip, 
+import {
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Input,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Button,
+  Chip,
   Pagination,
   Select,
   SelectItem,
@@ -45,7 +45,7 @@ const statusColorMap = {
 export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onProjectDeleted }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  
+
   const statusLabelMap = React.useMemo(() => ({
     "draft": t('pages.dashboard.projectTable.statusLabels.draft'),
     "created": t('pages.dashboard.projectTable.statusLabels.created'),
@@ -66,13 +66,13 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
     // Tentar encontrar tradução primeiro com status normalizado, depois com original
     return statusLabelMap[normalized] || statusLabelMap[status] || status;
   }, [statusLabelMap]);
-  
+
   // Transform API data to table format
   const projects = React.useMemo(() => {
     if (!apiProjects || !Array.isArray(apiProjects) || apiProjects.length === 0) {
       return [];
     }
-    
+
     return apiProjects.map(project => ({
       id: project.id,
       name: project.name,
@@ -91,7 +91,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
   const [page, setPage] = React.useState(1);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [dateRange, setDateRange] = React.useState({ start: null, end: null });
-  
+
   // Estado para modal de confirmação de delete
   const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onOpenChange: onDeleteModalOpenChange } = useDisclosure();
   const [projectToDelete, setProjectToDelete] = React.useState(null);
@@ -110,28 +110,28 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
 
   const filteredProjects = React.useMemo(() => {
     let filtered = [...projects];
-    
+
     // Filter by search term (debounced)
     if (deferredFilterValue) {
       const term = deferredFilterValue.toLowerCase();
-      filtered = filtered.filter(project => 
+      filtered = filtered.filter(project =>
         project.name.toLowerCase().includes(term) ||
         project.client.toLowerCase().includes(term)
       );
     }
-    
+
     // Filter by status
     if (statusFilter !== "all") {
       filtered = filtered.filter(project => project.status === statusFilter);
     }
-    
+
     // Filter by favorite
     if (favoriteFilter !== "all") {
-      filtered = filtered.filter(project => 
+      filtered = filtered.filter(project =>
         favoriteFilter === "favorites" ? project.isFavorite : !project.isFavorite
       );
     }
-    
+
     // Filter by date interval overlap: project [start,end] intersects selected [start,end]
     if (dateRange.start && dateRange.end) {
       const selStart = new Date(dateRange.start);
@@ -144,7 +144,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
         return !(projEnd < selStart || projStart > selEnd);
       });
     }
-    
+
     return filtered;
   }, [projects, deferredFilterValue, statusFilter, favoriteFilter, dateRange]);
 
@@ -195,13 +195,13 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
 
   const handleConfirmDelete = async () => {
     if (!projectToDelete) return;
-    
+
     setIsDeleting(true);
     const projectToDeleteCopy = { ...projectToDelete }; // Guardar cópia para usar no callback
-    
+
     try {
       await projectsAPI.delete(projectToDelete.id);
-      
+
       // Atualização otimista: usar callback otimizado se disponível
       if (onProjectDeleted) {
         onProjectDeleted(projectToDeleteCopy);
@@ -209,18 +209,18 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
         // Fallback: refresh completo se callback otimizado não estiver disponível
         onProjectsUpdate();
       }
-      
+
       setProjectToDelete(null);
       // O modal será fechado automaticamente pelo ConfirmModal após a Promise resolver
     } catch (error) {
       console.error('Error deleting project:', error);
       const errorMessage = error.response?.data?.error || error.message || 'Unknown error occurred while deleting project';
-      
+
       // Em caso de erro, fazer refresh completo para garantir sincronização
       if (onProjectsUpdate) {
         onProjectsUpdate();
       }
-      
+
       alert(`Error deleting project: ${errorMessage}`);
       // Re-throw para que o ConfirmModal não feche em caso de erro
       throw error;
@@ -245,8 +245,8 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
             aria-label={project.isFavorite ? t('pages.dashboard.projectTable.actions.removeFromFavorites') : t('pages.dashboard.projectTable.actions.addToFavorites')}
             className="text-warning hover:text-warning-600"
           >
-            <Icon 
-              icon={project.isFavorite ? "material-symbols:star" : "material-symbols:star-outline"} 
+            <Icon
+              icon={project.isFavorite ? "material-symbols:star" : "material-symbols:star-outline"}
               className={`text-lg text-warning ${project.isFavorite ? "opacity-100" : "opacity-50 hover:opacity-100"}`}
             />
           </Button>
@@ -268,8 +268,8 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
         const normalizedStatus = project.status?.toLowerCase()?.replace(/\s+/g, '_') || project.status;
         const translatedStatus = getTranslatedStatus(project.status);
         return (
-          <Chip 
-            color={statusColorMap[normalizedStatus] || statusColorMap[project.status] || "default"} 
+          <Chip
+            color={statusColorMap[normalizedStatus] || statusColorMap[project.status] || "default"}
             variant="flat"
             size="sm"
           >
@@ -279,40 +279,41 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
       case "actions":
         return (
           <div className="flex items-center gap-2">
-            <Button 
-              isIconOnly 
-              size="sm" 
-              variant="light" 
-              title={t('pages.dashboard.projectTable.actions.viewNotes')} 
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              title={t('pages.dashboard.projectTable.actions.viewNotes')}
               aria-label={t('pages.dashboard.projectTable.actions.viewNotes')}
               onPress={() => navigate(`/projects/${project.id}/notes`)}
             >
               <Icon icon="lucide:file-text" className="text-lg" />
             </Button>
-            <Button 
-              isIconOnly 
-              size="sm" 
-              variant="light" 
-              title={t('pages.dashboard.projectTable.actions.viewProject')} 
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              title={t('pages.dashboard.projectTable.actions.viewProject')}
               aria-label={t('pages.dashboard.projectTable.actions.viewProject')}
+              onPress={() => navigate(`/projects/${project.id}`)}
             >
               <Icon icon="lucide:eye" className="text-lg" />
             </Button>
-            <Button 
-              isIconOnly 
-              size="sm" 
-              variant="light" 
-              title={t('pages.dashboard.projectTable.actions.editProject')} 
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              title={t('pages.dashboard.projectTable.actions.editProject')}
               aria-label={t('pages.dashboard.projectTable.actions.editProject')}
               onPress={() => navigate(`/projects/${project.id}/edit`)}
             >
               <Icon icon="lucide:edit-2" className="text-lg" />
             </Button>
-            <Button 
-              isIconOnly 
-              size="sm" 
-              variant="light" 
-              title={t('pages.dashboard.projectTable.actions.deleteProject')} 
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              title={t('pages.dashboard.projectTable.actions.deleteProject')}
               aria-label={t('pages.dashboard.projectTable.actions.deleteProject')}
               className="text-danger hover:text-danger-600"
               onPress={() => handleDeleteClick(project)}
@@ -348,34 +349,34 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
       <div className="flex justify-between items-center">
         <div className="text-xl font-semibold">{getTitle()}</div>
       </div>
-      
+
       {/* Filters */}
       <div className="flex flex-col gap-4 md:flex-row md:items-end">
         <Input
           isClearable
           className="w-full md:max-w-xs"
-            classNames={{
-              inputWrapper: "bg-[#e4e3e8] dark:bg-content1 shadow-sm"
-            }}
+          classNames={{
+            inputWrapper: "bg-[#e4e3e8] dark:bg-content1 shadow-sm"
+          }}
           placeholder={t('pages.dashboard.projectTable.searchPlaceholder')}
           startContent={<Icon icon="lucide:search" />}
           value={filterValue}
           onValueChange={onSearchChange}
         />
-        
+
         <Dropdown>
           <DropdownTrigger>
-            <Button 
-              variant="flat" 
+            <Button
+              variant="flat"
               className="bg-[#e4e3e8] dark:bg-content1 shadow-sm"
               endContent={<Icon icon="lucide:chevron-down" />}
             >
-              {t('pages.dashboard.projectTable.statusFilter', { 
-                status: statusFilter === "all" ? t('pages.dashboard.projectTable.statusAll') : statusLabelMap[statusFilter] || statusFilter 
+              {t('pages.dashboard.projectTable.statusFilter', {
+                status: statusFilter === "all" ? t('pages.dashboard.projectTable.statusAll') : statusLabelMap[statusFilter] || statusFilter
               })}
             </Button>
           </DropdownTrigger>
-          <DropdownMenu 
+          <DropdownMenu
             aria-label={t('pages.dashboard.projectTable.statusFilter', { status: '' })}
             onAction={(key) => onStatusFilterChange(key)}
             selectedKeys={[statusFilter]}
@@ -396,15 +397,15 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
 
         <Dropdown>
           <DropdownTrigger>
-            <Button 
-              variant="flat" 
+            <Button
+              variant="flat"
               className="bg-[#e4e3e8] dark:bg-content1 shadow-sm"
               endContent={<Icon icon="lucide:chevron-down" />}
             >
               {t('pages.dashboard.projectTable.favoritesFilter', { filter: getFavoritesFilterLabel() })}
             </Button>
           </DropdownTrigger>
-          <DropdownMenu 
+          <DropdownMenu
             aria-label={t('pages.dashboard.projectTable.favoritesFilter', { filter: '' })}
             onAction={(key) => onFavoriteFilterChange(key)}
             selectedKeys={[favoriteFilter]}
@@ -415,12 +416,12 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
             <DropdownItem key="non-favorites">{t('pages.dashboard.projectTable.favoritesNone')}</DropdownItem>
           </DropdownMenu>
         </Dropdown>
-        
+
         <div className="flex items-center gap-2">
           <Popover placement="bottom-start">
             <PopoverTrigger>
-              <Button 
-                variant="flat" 
+              <Button
+                variant="flat"
                 className="w-full md:w-auto justify-start bg-[#e4e3e8] dark:bg-content1 shadow-sm"
                 endContent={<Icon icon="lucide:calendar" />}
               >
@@ -435,11 +436,11 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
               />
             </PopoverContent>
           </Popover>
-          
+
           <Popover placement="bottom-start">
             <PopoverTrigger>
-              <Button 
-                variant="flat" 
+              <Button
+                variant="flat"
                 className="w-full md:w-auto justify-start bg-[#e4e3e8] dark:bg-content1 shadow-sm"
                 endContent={<Icon icon="lucide:calendar" />}
               >
@@ -456,15 +457,15 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
           </Popover>
         </div>
 
-        <Button 
-          variant="light" 
-          onPress={clearFilters} 
+        <Button
+          variant="light"
+          onPress={clearFilters}
           className="md:ml-auto bg-[#e4e3e8] dark:bg-content1 shadow-sm"
         >
           {t('pages.dashboard.projectTable.clearFilters')}
         </Button>
       </div>
-      
+
       {/* Table */}
       <Table
         aria-label={t('pages.dashboard.projectTable.columns.projectName')}
@@ -472,7 +473,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
           <div className="flex w-full justify-between items-center">
             <div className="flex items-center gap-2">
               <span className="text-small text-default-400">{t('pages.dashboard.projectTable.rowsPerPage')}</span>
-              <Select 
+              <Select
                 size="sm"
                 selectedKeys={[rowsPerPage.toString()]}
                 onSelectionChange={(keys) => {
@@ -513,7 +514,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
           <TableColumn key="budget">{t('pages.dashboard.projectTable.columns.budget')}</TableColumn>
           <TableColumn key="actions" width="160px">{t('pages.dashboard.projectTable.columns.actions')}</TableColumn>
         </TableHeader>
-        <TableBody 
+        <TableBody
           items={items}
           emptyContent={t('pages.dashboard.projectTable.noProjectsFound')}
         >
@@ -526,7 +527,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
           )}
         </TableBody>
       </Table>
-      
+
       {/* Modal de confirmação de delete */}
       <ConfirmModal
         isOpen={isDeleteModalOpen}

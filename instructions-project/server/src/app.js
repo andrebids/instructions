@@ -162,7 +162,7 @@ const enableAuth = process.env.ENABLE_AUTH === 'true';
 if (useAuthJs) {
   // Trust proxy para Auth.js funcionar corretamente
   app.set('trust proxy', true);
-  
+
   // Montar rotas do Auth.js em /auth/*
   app.use('/auth', authRoutes);
   console.log('✅ Auth.js configurado em /auth/*');
@@ -178,28 +178,28 @@ app.get('/api/icons/*', async (req, res) => {
     const iconPath = req.params[0] || '';
     // Preservar query string se existir
     const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
-    
+
     // Detectar qual provider está sendo usado baseado no path ou query string
     // O Iconify pode usar diferentes APIs: iconify.design, simplesvg.com, unisvg.com
     // Por padrão, usamos api.iconify.design, mas podemos detectar outros providers
     // se necessário no futuro
     let baseUrl = 'https://api.iconify.design';
-    
+
     // Se o path contém indicação de outro provider, ajustar baseUrl
     // (Por enquanto, todos os providers do Iconify usam api.iconify.design)
     // Mas mantemos a estrutura para facilitar futuras expansões
     const iconUrl = `${baseUrl}/${iconPath}${queryString}`;
-    
+
     console.log('🔍 [Icon Proxy] Requisição recebida:', req.path);
     console.log('🔍 [Icon Proxy] Fazendo proxy para:', iconUrl);
     console.log('🔍 [Icon Proxy] Path completo:', req.path);
     console.log('🔍 [Icon Proxy] Query string:', queryString);
     console.log('🔍 [Icon Proxy] Headers:', JSON.stringify(req.headers, null, 2));
-    
+
     // Fazer requisição para o CDN do Iconify com timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
-    
+
     let response;
     try {
       response = await fetch(iconUrl, {
@@ -218,38 +218,38 @@ app.get('/api/icons/*', async (req, res) => {
       }
       throw fetchError;
     }
-    
+
     if (!response.ok) {
       console.warn(`⚠️  [Icon Proxy] CDN retornou status ${response.status} para: ${iconUrl}`);
       console.warn(`⚠️  [Icon Proxy] Response status text: ${response.statusText}`);
-      
+
       // Retornar erro com informações úteis para debug
-      return res.status(response.status).json({ 
+      return res.status(response.status).json({
         error: 'Failed to fetch icon',
         status: response.status,
         statusText: response.statusText,
         url: iconUrl
       });
     }
-    
+
     const data = await response.json();
-    
+
     // Retornar com headers CORS corretos
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache por 24 horas
     res.setHeader('Content-Type', 'application/json');
-    
+
     console.debug('✅ [Icon Proxy] Proxy bem-sucedido para:', iconPath);
     res.json(data);
   } catch (error) {
     console.error('❌ [Icon Proxy] Erro ao fazer proxy de ícone:', error.message);
     console.error('❌ [Icon Proxy] Stack:', error.stack);
     console.error('❌ [Icon Proxy] URL original:', req.url);
-    
+
     // Retornar erro detalhado para debug
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to proxy icon request',
       message: error.message,
       url: req.url
@@ -282,7 +282,7 @@ var distExistsCheck = fs.existsSync(distPathCheck) && fs.statSync(distPathCheck)
 
 if (!distExistsCheck) {
   app.get('/', (req, res) => {
-    res.json({ 
+    res.json({
       message: 'Instructions Project API Server',
       version: '1.0.0',
       endpoints: {
@@ -303,8 +303,8 @@ if (!distExistsCheck) {
 // Health check
 app.get('/health', async (req, res) => {
   const dbConnected = await testConnection();
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     env: process.env.NODE_ENV || 'development',
     database: dbConnected ? 'Connected' : 'Disconnected',
   });
@@ -324,37 +324,37 @@ app.post('/api/email/test', requireAuth(), async (req, res) => {
   try {
     const { getAuth } = await import('./middleware/auth.js');
     const auth = await getAuth(req);
-    
+
     // Verificar se é admin
     if (auth?.role !== 'admin') {
       return res.status(403).json({ error: 'Acesso negado. Apenas administradores podem testar emails.' });
     }
-    
+
     const { email } = req.body;
     if (!email) {
       return res.status(400).json({ error: 'Email é obrigatório' });
     }
-    
+
     // Importar serviço de email
     const { sendNotificationEmail } = await import('./services/emailService.js');
     const { verifyEmailConfig } = await import('./config/email.js');
-    
+
     // Verificar configuração primeiro
     const configValid = await verifyEmailConfig();
     if (!configValid) {
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Configuração de email inválida',
         message: 'Verifique as variáveis de ambiente de email'
       });
     }
-    
+
     // Enviar email de teste
     const result = await sendNotificationEmail(
       email,
       'Teste de Email - TheCore',
       'Este é um email de teste do sistema TheCore.\n\nSe você recebeu este email, a configuração de email está funcionando corretamente.'
     );
-    
+
     if (result.success) {
       res.json({
         success: true,
@@ -383,8 +383,8 @@ app.get('/api/me', async (req, res) => {
   // Usar middleware dual que suporta ambos os sistemas
   const { getAuth } = await import('./middleware/auth.js');
   const auth = await getAuth(req);
-  res.json({ 
-    userId: auth?.userId || null, 
+  res.json({
+    userId: auth?.userId || null,
     sessionId: auth?.sessionId || null,
     role: auth?.role || null,
     source: auth?.source || 'none'
@@ -419,18 +419,18 @@ if (distExists) {
 // Servir arquivos estáticos do build de produção (client/dist) se existir
 if (distExists) {
   console.log('📦 [APP] Build de produção detectado - servindo arquivos estáticos de client/dist');
-  
+
   // Middleware para Cache-Control restritivo em arquivos críticos do PWA
   // Conforme documentação Vite PWA: /, /sw.js, /index.html, /manifest.webmanifest
   // devem ter cache muito restritivo (sem immutable)
   app.use((req, res, next) => {
     const reqPath = req.path.toLowerCase();
     // Arquivos críticos do PWA: sem cache ou cache muito curto
-    if (reqPath === '/' || 
-        reqPath === '/sw.js' || 
-        reqPath === '/index.html' || 
-        reqPath.endsWith('/manifest.webmanifest') ||
-        reqPath.endsWith('/manifest.json')) {
+    if (reqPath === '/' ||
+      reqPath === '/sw.js' ||
+      reqPath === '/index.html' ||
+      reqPath.endsWith('/manifest.webmanifest') ||
+      reqPath.endsWith('/manifest.json')) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
@@ -443,7 +443,7 @@ if (distExists) {
     }
     next();
   });
-  
+
   // Servir arquivos estáticos do dist (sw.js já foi servido acima, então não será servido aqui)
   // IMPORTANTE: Usar fallthrough: false para não servir index.html automaticamente
   // e adicionar verificação customizada para ignorar rotas /auth/ e /api/
@@ -466,7 +466,7 @@ if (distExists) {
       // Se encontrou e serviu, não fazer nada (já foi servido)
     });
   });
-  
+
   // Rota catch-all para SPA routing (deve vir depois de todas as rotas de API)
   // Retorna index.html para qualquer rota que não seja API e não seja um arquivo estático
   app.get('*', (req, res, next) => {
@@ -474,7 +474,7 @@ if (distExists) {
     if (req.path.startsWith('/api/') || req.path.startsWith('/auth/')) {
       return next();
     }
-    
+
     // Se for um arquivo estático (com extensão), deixar o express.static lidar
     // Se não tiver extensão ou for uma rota SPA, servir index.html
     const hasExtension = /\.\w+$/.test(req.path);
@@ -489,7 +489,7 @@ if (distExists) {
         return;
       }
     }
-    
+
     // Se chegou aqui, deixar o 404 handler lidar
     next();
   });
@@ -513,7 +513,7 @@ app.get('/api/media/:name', async (req, res) => {
     ];
     let baseDir = null;
     for (const d of candidateDirs) {
-      try { if (fs.existsSync(d)) { baseDir = d; break; } } catch {}
+      try { if (fs.existsSync(d)) { baseDir = d; break; } } catch { }
     }
     const clientPublic = baseDir || candidateDirs[0];
     const tryNames = [
@@ -541,8 +541,8 @@ app.get('/api/media/:name', async (req, res) => {
     const range = req.headers.range;
     const contentType = filePath.toLowerCase().endsWith('.mp4') ? 'video/mp4'
       : filePath.toLowerCase().endsWith('.webm') ? 'video/webm'
-      : filePath.toLowerCase().endsWith('.mov') ? 'video/quicktime'
-      : 'application/octet-stream';
+        : filePath.toLowerCase().endsWith('.mov') ? 'video/quicktime'
+          : 'application/octet-stream';
 
     // Ensure CORS headers for media (some browsers enforce on <video>)
     try {
@@ -554,7 +554,7 @@ app.get('/api/media/:name', async (req, res) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
       }
       res.setHeader('Access-Control-Allow-Credentials', 'true');
-    } catch {}
+    } catch { }
 
     if (range) {
       // Support forms: bytes=start-end, bytes=start-, bytes=-suffix
@@ -617,10 +617,10 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error('❌ [APP] Error handler global:', err);
   console.error('❌ [APP] Stack:', err.stack);
-  
+
   // Verificar se a resposta já foi enviada
   if (!res.headersSent) {
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error',
       details: err.message,
       name: err.name
@@ -637,23 +637,23 @@ async function startServer() {
   try {
     // Testar conexão com o banco
     await testConnection();
-    
+
     // Carregar modelos primeiro para garantir que estão definidos
     console.log('🔄 Carregando modelos...');
     await import('./models/index.js');
     console.log('✅ Modelos carregados');
-    
+
     // Sincronizar modelos (com alter: false para evitar problemas com ENUMs)
     // Nota: Usar migrations para alterações de schema em produção
     console.log('🔄 Sincronizando modelos...');
     try {
-      await sequelize.sync({ alter: false });
+      await sequelize.sync({ alter: true }); // TEMPORARY: alter true to add notes column
       console.log('✅ Modelos sincronizados');
     } catch (syncError) {
       console.warn('⚠️  Aviso durante sincronização:', syncError.message);
       console.log('💡 Continuando mesmo assim (migrations devem ser executadas separadamente)');
     }
-    
+
     // Iniciar servidor Express
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Servidor em http://localhost:${PORT}`);
@@ -663,7 +663,7 @@ async function startServer() {
       console.log(`💚 Health check: http://localhost:${PORT}/health`);
       console.log(`💚 Health check externo: http://192.168.2.16:${PORT}/health`);
     });
-    
+
     // Iniciar servidor Hocuspocus para colaboração em tempo real
     try {
       const hocuspocusServer = createHocuspocusServer();

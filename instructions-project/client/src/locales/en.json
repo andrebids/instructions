@@ -8,7 +8,12 @@
     "email": "Email",
     "role": "Role",
     "cancel": "Cancel",
-    "save": "Save"
+    "delete": "Delete",
+    "save": "Save",
+    "backToDashboard": "Back to Dashboard",
+    "edit": "Edit",
+    "back": "Back",
+    "no": "No"
   },
   "pages": {
     "landing": {
@@ -296,77 +301,130 @@
           "cannotChangeOwnRole": "Cannot change your own role",
           "passwordTooShort": "Password must be at least 6 characters"
         }
+      }
+    },
+    "projectDetails": {
+      "title": "Project Details",
+      "subtitle": "Let's start with the basic information about your project.",
+      "projectName": "Project Name",
+      "projectNameRequired": "*",
+      "projectNamePlaceholder": "Enter the project name",
+      "deliveryDate": "Delivery Date",
+      "budget": "Budget (EUR)",
+      "budgetRequired": "*",
+      "budgetPlaceholder": "Enter the budget amount",
+      "client": "Client",
+      "location": "Location",
+      "type": "Type",
+      "status": "Status",
+      "name": "Name",
+      "projectInformation": "Project Information",
+      "validation": {
+        "projectNameRequired": "Project name is required",
+        "projectNameMinLength": "Project name must be at least 3 characters",
+        "budgetRequired": "Budget is required",
+        "budgetMustBePositive": "Budget must be greater than 0",
+        "deliveryDateRequired": "Delivery date is required"
       },
-      "projectDetails": {
-        "title": "Project Details",
-        "subtitle": "Let's start with the basic information about your project.",
-        "projectName": "Project Name",
-        "projectNameRequired": "*",
-        "projectNamePlaceholder": "Enter the project name",
-        "deliveryDate": "Delivery Date",
-        "budget": "Budget (EUR)",
-        "budgetRequired": "*",
-        "budgetPlaceholder": "Enter the budget amount",
+      "clientAutocomplete": {
+        "label": "Client",
+        "placeholder": "Search for a client",
+        "addNewClient": "Add New Client"
+      },
+      "voiceAssistant": {
+        "title": "Voice Assistant",
+        "ready": "Ready. Click mic.",
+        "clickToStart": "Click mic to start...",
+        "speaking": "Speaking...",
+        "listening": "Listening...",
+        "prompts": {
+          "askName": "What is the project name?",
+          "askClient": "Who is the client?",
+          "confirmClient": "New client. Say 'Create' to fill form.",
+          "askEmail": "What is the client's email?",
+          "askPhone": "What is the client's phone?",
+          "askDate": "What is the delivery date?",
+          "askBudget": "What is the budget?",
+          "askConfirm": "Data filled. Say 'Continue' to proceed.",
+          "finished": "Assistant finished."
+        }
+      },
+      "requestedBy": "Requested by",
+      "outdoor": "Outdoor",
+      "indoor": "Indoor",
+      "dimensions": "Dimensions",
+      "height": "Height",
+      "length": "Length",
+      "width": "Width",
+      "diameter": "Diameter",
+      "technicalSpecs": "Technical Specs",
+      "fixationType": "Fixation Type",
+      "mastDiameter": "Mast Diameter",
+      "lacquered": "Lacquered",
+      "maxWeightConstraint": "Max Weight Constraint",
+      "additionalInfo": "Additional Info",
+      "ballast": "Ballast",
+      "controlReport": "Control Report",
+      "description": "Description",
+      "criteria": "Criteria",
+      "errorLoading": "Error loading project",
+      "notFoundTitle": "Project not found",
+      "notFoundMessage": "The project you are looking for does not exist or has been removed.",
+      "projectInfo": "Project Information",
+      "instructions": "Instructions",
+      "noInstructions": "No instructions available for this project.",
+      "notes": "Notes",
+      "startDate": "Start Date",
+      "endDate": "Delivery Date",
+      "tabs": {
+        "overview": "Overview",
+        "instructions": "Instructions",
+        "notes": "Notes"
+      },
+      "logoDefaultName": "Logo {{index}}",
+      "projectProgress": "Project Progress",
+      "designerInfo": "Designer Information",
+      "toBeDeveloped": "To be developed",
+      "designer": "Designer",
+      "notesManager": {
+        "addTopic": "Add Topic",
+        "deleteTopic": "Delete Topic",
+        "topicName": "Topic Name",
+        "noTopics": "No topics yet. Create one to start adding notes.",
+        "noteTitle": "Note Title",
+        "noteTitlePlaceholder": "Enter note title...",
+        "saveNote": "Save Note",
+        "saving": "Saving...",
+        "saved": "Saved",
+        "unsavedChanges": "Unsaved changes",
+        "deleteNote": "Delete Note",
+        "confirmDelete": "Are you sure you want to delete this note?",
+        "newTopic": "New Topic",
+        "enterTopicName": "Enter topic name"
+      }
+    },
+    "projectNotes": {
+      "title": "Notes: {{name}}",
+      "subtitle": "Client: {{clientName}}",
+      "loading": "Loading project...",
+      "errorTitle": "Error loading project",
+      "errorMessage": "Error loading project. Please check if the project exists.",
+      "projectNotFound": "Project not found",
+      "backToDashboard": "Back to Dashboard",
+      "back": "Back",
+      "editProject": "Edit Project",
+      "projectInformation": "Project Information",
+      "projectNotesTitle": "Project Notes",
+      "notesEditor": "Notes Editor",
+      "createProjectFirst": "Create project first",
+      "createProjectFirstDescription": "Complete the project details to start adding notes.",
+      "addNotesDescription": "Add notes and observations about this project. Changes are saved automatically every 2 seconds.",
+      "fields": {
+        "name": "Name",
         "client": "Client",
         "location": "Location",
         "type": "Type",
-        "status": "Status",
-        "name": "Name",
-        "projectInformation": "Project Information",
-        "validation": {
-          "projectNameRequired": "Project name is required",
-          "projectNameMinLength": "Project name must be at least 3 characters",
-          "budgetRequired": "Budget is required",
-          "budgetMustBePositive": "Budget must be greater than 0",
-          "deliveryDateRequired": "Delivery date is required"
-        },
-        "clientAutocomplete": {
-          "label": "Client",
-          "placeholder": "Search for a client",
-          "addNewClient": "Add New Client"
-        },
-        "voiceAssistant": {
-          "title": "Voice Assistant",
-          "ready": "Ready. Click mic.",
-          "clickToStart": "Click mic to start...",
-          "speaking": "Speaking...",
-          "listening": "Listening...",
-          "prompts": {
-            "askName": "What is the project name?",
-            "askClient": "Who is the client?",
-            "confirmClient": "New client. Say 'Create' to fill form.",
-            "askEmail": "What is the client's email?",
-            "askPhone": "What is the client's phone?",
-            "askDate": "What is the delivery date?",
-            "askBudget": "What is the budget?",
-            "askConfirm": "Data filled. Say 'Continue' to proceed.",
-            "finished": "Assistant finished."
-          }
-        }
-      },
-      "projectNotes": {
-        "title": "Notes: {{name}}",
-        "subtitle": "Client: {{clientName}}",
-        "loading": "Loading project...",
-        "errorTitle": "Error loading project",
-        "errorMessage": "Error loading project. Please check if the project exists.",
-        "projectNotFound": "Project not found",
-        "backToDashboard": "Back to Dashboard",
-        "back": "Back",
-        "editProject": "Edit Project",
-        "projectInformation": "Project Information",
-        "projectNotesTitle": "Project Notes",
-        "notesEditor": "Notes Editor",
-        "createProjectFirst": "Create project first",
-        "createProjectFirstDescription": "Complete the project details to start adding notes.",
-        "addNotesDescription": "Add notes and observations about this project. Changes are saved automatically every 2 seconds.",
-        "fields": {
-          "name": "Name",
-          "client": "Client",
-          "location": "Location",
-          "type": "Type",
-          "status": "Status"
-        }
+        "status": "Status"
       }
     },
     "createProject": {
