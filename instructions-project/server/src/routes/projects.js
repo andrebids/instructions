@@ -42,6 +42,11 @@ router.post('/:id/images/:imageId/night/failed', projectController.markConversio
 
 // Rota de debug para verificar arquivos (sempre disponível para diagnóstico)
 router.get('/:id/images/debug', projectController.debugProjectImages);
+
+// Rotas de observações
+router.get('/:id/observations', projectController.getObservations);
+router.post('/:id/observations', projectController.addObservation);
+
 router.get('/', projectController.getAll);
 router.get('/:id', projectController.getById);
 router.post('/', projectController.create);

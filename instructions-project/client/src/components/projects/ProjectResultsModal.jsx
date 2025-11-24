@@ -17,7 +17,7 @@ const PASTEL_COLORS = [
     'fdfd96'  // Light Yellow
 ];
 
-const LANDSCAPES = Array.from({ length: 6 }).map((_, i) => ({
+export const LANDSCAPES = Array.from({ length: 6 }).map((_, i) => ({
     id: i,
     title: `Result Proposal ${i + 1}`,
     // Using placehold.co with pastel backgrounds to match the "clean/vector" style request

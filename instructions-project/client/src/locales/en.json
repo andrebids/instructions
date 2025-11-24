@@ -504,7 +504,8 @@
       "tabs": {
         "overview": "Overview",
         "instructions": "Instructions",
-        "notes": "Notes"
+        "notes": "Notes",
+        "observations": "Observations"
       },
       "logoDefaultName": "Logo {{index}}",
       "projectProgress": "Project Progress",
