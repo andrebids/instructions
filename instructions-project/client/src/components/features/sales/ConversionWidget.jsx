@@ -20,7 +20,7 @@ export const ConversionWidget = ({ value, trend }) => {
 
       <CardBody className="p-4 flex flex-col h-full overflow-hidden relative z-10">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-2">
           <div className="p-2.5 rounded-xl bg-success-500/10 text-success-500 shadow-sm ring-1 ring-success-500/20">
             <Icon icon="lucide:pie-chart" className="text-xl" />
           </div>
@@ -30,8 +30,8 @@ export const ConversionWidget = ({ value, trend }) => {
           </div>
         </div>
 
-        {/* Chart - Centered */}
-        <div className="flex-1 flex items-center justify-center">
+        {/* Chart - Aligned to Right and Centered Vertically */}
+        <div className="flex-1 flex items-center justify-end -mt-4">
           <div className="relative" style={{ width: size, height: size }}>
             <svg width={size} height={size} className="transform -rotate-90 drop-shadow-lg">
               <defs>

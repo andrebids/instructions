@@ -2,19 +2,48 @@ import React from "react";
 import { Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
-const data = [
-  { name: 'Mon', value: 12 },
-  { name: 'Tue', value: 19 },
-  { name: 'Wed', value: 3 },
-  { name: 'Thu', value: 5 },
-  { name: 'Fri', value: 2 },
-  { name: 'Sat', value: 15 },
-  { name: 'Sun', value: 8 },
-];
+export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
+  // Parse value (e.g. "€ 450k" -> 450000)
+  const parseValue = (str) => {
+    if (!str) return 0;
+    const clean = str.toString().replace(/[^0-9.km]/gi, '');
+    let num = parseFloat(clean);
+    if (str.toString().toLowerCase().includes('k')) num *= 1000;
+    if (str.toString().toLowerCase().includes('m')) num *= 1000000;
+    return num;
+  };
 
-export const DraftsWidget = ({ value, count }) => {
-  const maxValue = Math.max(...data.map(d => d.value));
+  const currentVal = parseValue(value);
+  const percentage = Math.min(100, Math.max(0, Math.round((currentVal / goal) * 100)));
+
+  // SVG Configuration for Semi-Circle
+  const width = 140;
+  const height = 80; // Half height + padding
+  const strokeWidth = 12;
+  const radius = (width - strokeWidth) / 2;
+  const cx = width / 2;
+  const cy = height - 10; // Bottom align
   
+  // Calculate path for the progress arc
+  // Start from 180deg (left) to 0deg (right)
+  // Angle in radians: PI to 0
+  // We want to draw from left to right based on percentage
+  const totalAngle = Math.PI; 
+  const progressAngle = totalAngle * (percentage / 100);
+  
+  // Background Arc (Full Semi-Circle)
+  const bgPath = `M ${strokeWidth/2},${cy} A ${radius},${radius} 0 0,1 ${width - strokeWidth/2},${cy}`;
+  
+  // Progress Arc
+  // We need to calculate the end point based on angle
+  // Angle starts at PI (left) and decreases to 0 (right)
+  // Current angle = PI - progressAngle
+  const currentAngle = Math.PI - progressAngle;
+  const endX = cx + radius * Math.cos(currentAngle);
+  const endY = cy - radius * Math.sin(currentAngle);
+  
+  const progressPath = `M ${strokeWidth/2},${cy} A ${radius},${radius} 0 0,1 ${endX},${endY}`;
+
   return (
     <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
        {/* Background Glow Effect */}
@@ -22,7 +51,7 @@ export const DraftsWidget = ({ value, count }) => {
 
       <CardBody className="p-4 flex flex-col h-full overflow-hidden relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-warning-500/10 text-warning-500 shadow-sm ring-1 ring-warning-500/20">
               <Icon icon="lucide:file-edit" className="text-xl" />
@@ -34,41 +63,62 @@ export const DraftsWidget = ({ value, count }) => {
           </div>
         </div>
 
-        {/* Value Display */}
-        <div className="flex items-baseline gap-2 mb-4">
-          <h4 className="text-3xl font-bold text-foreground">{value}</h4>
-          <span className="text-xs text-default-400 font-medium">{count} drafts</span>
-        </div>
-
-        {/* Custom SVG Bar Chart */}
-        <div className="flex-1 flex items-end gap-1.5 px-1 pb-2">
-          {data.map((item, index) => {
-            const heightPercent = (item.value / maxValue) * 100;
-            const opacity = 0.5 + (index / data.length) * 0.5;
-            
-            return (
-              <div key={item.name} className="flex-1 flex flex-col items-center gap-1 group/bar">
-                {/* Bar */}
-                <div className="w-full flex items-end" style={{ height: '80px' }}>
-                  <div 
-                    className="w-full rounded-t-md transition-all duration-500 ease-out relative overflow-hidden"
-                    style={{ 
-                      height: `${heightPercent}%`,
-                      background: `linear-gradient(180deg, #F5A524 0%, #D97706 100%)`,
-                      opacity: opacity,
-                      boxShadow: '0 0 8px rgba(245, 165, 36, 0.3)',
-                    }}
-                  >
-                    {/* Glass overlay effect */}
-                    <div 
-                      className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent"
-                      style={{ mixBlendMode: 'overlay' }}
-                    />
-                  </div>
+        {/* Content */}
+        <div className="flex items-end justify-between flex-1 pb-2">
+          <div className="flex flex-col gap-1">
+             <div className="flex items-baseline gap-2">
+                <h4 className="text-3xl font-bold text-foreground">{value}</h4>
+             </div>
+             <div className="flex flex-col">
+                <span className="text-xs text-default-400 font-medium">Year Goal: € {(goal/1000000).toFixed(1)}M</span>
+                <div className="flex items-center gap-2 mt-1">
+                    <span className="text-sm font-bold text-warning-500">{percentage}%</span>
+                    <span className="text-xs text-default-400">completed</span>
                 </div>
-              </div>
-            );
-          })}
+             </div>
+          </div>
+
+          {/* Gauge Chart */}
+          <div className="relative flex items-end justify-center" style={{ width: width, height: height }}>
+            <svg width={width} height={height} className="overflow-visible">
+              <defs>
+                <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#F5A524" /> {/* warning-500 */}
+                  <stop offset="100%" stopColor="#D97706" /> {/* warning-600 */}
+                </linearGradient>
+                <filter id="gaugeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              
+              {/* Track */}
+              <path
+                d={bgPath}
+                stroke="currentColor"
+                strokeWidth={strokeWidth}
+                fill="none"
+                strokeLinecap="round"
+                className="text-default-200/20"
+              />
+              
+              {/* Progress */}
+              <path
+                d={progressPath}
+                stroke="url(#gaugeGradient)"
+                strokeWidth={strokeWidth}
+                fill="none"
+                strokeLinecap="round"
+                className="transition-all duration-1000 ease-out"
+                style={{ filter: 'drop-shadow(0 0 4px rgba(245, 165, 36, 0.4))' }}
+              />
+            </svg>
+            
+            {/* Icon or Text inside Gauge? */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-2 text-warning-500/20">
+                <Icon icon="lucide:target" className="text-3xl" />
+            </div>
+          </div>
         </div>
       </CardBody>
     </Card>
