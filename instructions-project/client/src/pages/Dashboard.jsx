@@ -10,13 +10,14 @@ import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 import { Scroller } from "../components/ui/scroller";
 import { useTranslation } from "react-i18next";
 import { useVoiceAssistant } from "../context/VoiceAssistantContext";
-import { UrgencyWidget } from "../components/features/UrgencyWidget";
+
 import { TodoListWidget } from "../components/features/TodoListWidget";
 import { SmartProjectTable } from "../components/features/SmartProjectTable";
 import { CreateProjectMultiStep } from "../components/create-project-multi-step";
 import { PipelineWidget } from "../components/features/sales/PipelineWidget";
 import { DraftsWidget } from "../components/features/sales/DraftsWidget";
 import { ConversionWidget } from "../components/features/sales/ConversionWidget";
+import { OrderManagementWidget } from "../components/features/OrderManagementWidget";
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -267,56 +268,10 @@ export default function Dashboard() {
                     <TodoListWidget />
                   </div>
                   
-                  <div className="h-[400px]">
-                    <UrgencyWidget />
-                  </div>
-                  
-                  {/* Mini Calendar / Quick Stats / Notifications could go here */}
-                  <Card className="h-[420px] bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm">
-                    <CardBody className="p-6">
-                      <h3 className="text-lg font-semibold text-foreground mb-4">{t('pages.dashboard.main.quickStats.title')}</h3>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center p-3 rounded-xl bg-default-100/50">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-blue-500/20 text-blue-500 dark:text-blue-400">
-                              <Icon icon="lucide:users" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-foreground">{t('pages.dashboard.main.quickStats.activeClients.title')}</p>
-                              <p className="text-xs text-default-500">{t('pages.dashboard.main.quickStats.activeClients.subtext')}</p>
-                            </div>
-                          </div>
-                          <span className="text-lg font-bold text-foreground">24</span>
-                        </div>
-                        
-                        <div className="flex justify-between items-center p-3 rounded-xl bg-default-100/50">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-purple-500/20 text-purple-500 dark:text-purple-400">
-                              <Icon icon="lucide:box" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-foreground">{t('pages.dashboard.main.quickStats.stockItems.title')}</p>
-                              <p className="text-xs text-default-500">{t('pages.dashboard.main.quickStats.stockItems.subtext')}</p>
-                            </div>
-                          </div>
-                          <span className="text-lg font-bold text-foreground">1,450</span>
-                        </div>
 
-                        <div className="flex justify-between items-center p-3 rounded-xl bg-default-100/50">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-pink-500/20 text-pink-500 dark:text-pink-400">
-                              <Icon icon="lucide:truck" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-foreground">{t('pages.dashboard.main.quickStats.deliveries.title')}</p>
-                              <p className="text-xs text-default-500">{t('pages.dashboard.main.quickStats.deliveries.subtext')}</p>
-                            </div>
-                          </div>
-                          <span className="text-lg font-bold text-foreground">8</span>
-                        </div>
-                      </div>
-                    </CardBody>
-                  </Card>
+                  
+                  {/* Order Management Widget */}
+                  <OrderManagementWidget />
                 </div>
 
               </div>

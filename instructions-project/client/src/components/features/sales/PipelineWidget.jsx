@@ -84,16 +84,16 @@ export const PipelineWidget = ({ value }) => {
                   <Tooltip
                     key={stage.name}
                     content={
-                      <div className="px-1 py-2">
-                        <div className="text-small font-bold mb-1">{stage.name}</div>
-                        <div className="text-tiny mb-2 text-default-400">
+                      <div className="px-3 py-3 min-w-[200px]">
+                        <div className="text-base font-bold mb-2 text-foreground">{stage.name}</div>
+                        <div className="text-sm mb-3 text-foreground-600 font-medium">
                           {stage.projectCount} projects • {stage.totalValue}
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           {stage.projects.map((project, idx) => (
-                            <div key={idx} className="flex justify-between gap-3 text-tiny">
-                              <span className="text-default-300">{project.name}</span>
-                              <span className="font-semibold">{project.value}</span>
+                            <div key={idx} className="flex justify-between gap-4 text-sm">
+                              <span className="text-foreground-700">{project.name}</span>
+                              <span className="font-bold text-foreground">{project.value}</span>
                             </div>
                           ))}
                         </div>
@@ -102,7 +102,7 @@ export const PipelineWidget = ({ value }) => {
                     placement="top"
                     classNames={{
                       base: "py-2 px-3",
-                      content: "py-2 px-3 bg-content1/95 backdrop-blur-md border border-default-200/50"
+                      content: "py-3 px-3 bg-content1 border-2 border-default-300 shadow-lg backdrop-blur-md"
                     }}
                   >
                     <div

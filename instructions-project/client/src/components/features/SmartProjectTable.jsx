@@ -220,7 +220,7 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
             tr: "hover:bg-default-100/50 transition-colors"
           }}
           bottomContent={
-            <div className="flex w-full justify-center px-4 pb-4">
+            <div className="flex w-full justify-end px-4 pb-4">
               <Pagination
                 isCompact
                 showControls
