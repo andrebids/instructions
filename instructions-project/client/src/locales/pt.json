@@ -530,7 +530,8 @@
       "tabs": {
         "overview": "Visão Geral",
         "instructions": "Instruções",
-        "notes": "Notas"
+        "notes": "Notas",
+        "observations": "Chat do Projeto"
       },
       "logoDefaultName": "Logo {{index}}",
       "projectProgress": "Progresso do Projeto",

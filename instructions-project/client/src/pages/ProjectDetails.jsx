@@ -816,7 +816,7 @@ export default function ProjectDetails() {
                             title={
                                 <div className="flex items-center gap-2">
                                     <Icon icon="lucide:messages-square" />
-                                    <span>{t('pages.projectDetails.tabs.observations', 'Observations')}</span>
+                                    <span>{t('pages.projectDetails.tabs.observations', 'Project Chat')}</span>
                                     {unreadObservationsCount > 0 && (
                                         <Chip
                                             size="sm"

@@ -511,7 +511,8 @@
       "tabs": {
         "overview": "Vue d'ensemble",
         "instructions": "Instructions",
-        "notes": "Notes"
+        "notes": "Notes",
+        "observations": "Chat du Projet"
       },
       "projectProgress": "Progression du Projet",
       "projectStatus": "Statut du Projet",

@@ -333,10 +333,10 @@ export function ProjectObservations({ projectId, instructions = [], results = []
             (!translations[obs.id]?.[targetLang])
         );
 
-        // Set active translation for all messages (even if not yet translated, they will be)
+        // Set active translation ONLY for messages that are already cached
         const newActiveTranslations = {};
         observations.forEach(obs => {
-            if (obs.content) {
+            if (obs.content && translations[obs.id]?.[targetLang]) {
                 newActiveTranslations[obs.id] = targetLang;
             }
         });
@@ -426,7 +426,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                 <Icon icon="lucide:message-square" width={20} />
                             </div>
                             <div className="flex-1">
-                                <h3 className="text-lg font-semibold text-default-900">Project Observations</h3>
+                                <h3 className="text-lg font-semibold text-default-900">{t('pages.projectDetails.tabs.observations', 'Project Chat')}</h3>
                                 <p className="text-xs text-default-500">Discuss results, give feedback, and collaborate.</p>
                             </div>
                             <div className="flex items-center gap-3">
@@ -569,56 +569,61 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                             </div>
 
                                             {/* Dropdown menu - show for all messages */}
-                                            <Dropdown placement="bottom-end">
+                                            <Dropdown>
                                                 <DropdownTrigger>
                                                     <Button
                                                         isIconOnly
                                                         size="sm"
                                                         variant="light"
-                                                        className="min-w-6 h-6 text-default-400 hover:text-default-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        className={`opacity-0 group-hover:opacity-100 transition-opacity ${obs.author.name === user?.name ? 'text-primary-foreground' : 'text-default-500'}`}
                                                     >
                                                         <Icon icon="lucide:more-vertical" width={16} />
                                                     </Button>
                                                 </DropdownTrigger>
                                                 <DropdownMenu aria-label="Message actions">
-                                                    {/* Translation submenu */}
-                                                    {obs.content && !translatingMessages[obs.id] && (
+                                                    {/* Translation Options - only show if auto-translate is off */}
+                                                    {!isAutoTranslate && obs.content && (
                                                         <>
-                                                            <DropdownItem
-                                                                key="translate-pt"
-                                                                startContent={<span className="text-base">{LANGUAGES.PT.flag}</span>}
-                                                                onPress={() => handleTranslateMessage(obs.id, LANGUAGES.PT.code)}
-                                                            >
-                                                                Translate to {LANGUAGES.PT.label}
-                                                            </DropdownItem>
-                                                            <DropdownItem
-                                                                key="translate-en"
-                                                                startContent={<span className="text-base">{LANGUAGES.EN.flag}</span>}
-                                                                onPress={() => handleTranslateMessage(obs.id, LANGUAGES.EN.code)}
-                                                            >
-                                                                Translate to {LANGUAGES.EN.label}
-                                                            </DropdownItem>
-                                                            <DropdownItem
-                                                                key="translate-fr"
-                                                                startContent={<span className="text-base">{LANGUAGES.FR.flag}</span>}
-                                                                onPress={() => handleTranslateMessage(obs.id, LANGUAGES.FR.code)}
-                                                            >
-                                                                Translate to {LANGUAGES.FR.label}
-                                                            </DropdownItem>
+                                                            {activeTranslations[obs.id] ? (
+                                                                <DropdownItem
+                                                                    key="show-original"
+                                                                    startContent={<Icon icon="lucide:undo" width={16} />}
+                                                                    onPress={() => handleShowOriginal(obs.id)}
+                                                                >
+                                                                    Show Original
+                                                                </DropdownItem>
+                                                            ) : (
+                                                                <>
+                                                                    <DropdownItem
+                                                                        key="translate-pt"
+                                                                        startContent={<Icon icon="lucide:languages" width={16} />}
+                                                                        onPress={() => handleTranslateMessage(obs.id, LANGUAGES.PT.code)}
+                                                                        isDisabled={translatingMessages[obs.id]}
+                                                                    >
+                                                                        Translate to {LANGUAGES.PT.label}
+                                                                    </DropdownItem>
+                                                                    <DropdownItem
+                                                                        key="translate-en"
+                                                                        startContent={<Icon icon="lucide:languages" width={16} />}
+                                                                        onPress={() => handleTranslateMessage(obs.id, LANGUAGES.EN.code)}
+                                                                        isDisabled={translatingMessages[obs.id]}
+                                                                    >
+                                                                        Translate to {LANGUAGES.EN.label}
+                                                                    </DropdownItem>
+                                                                    <DropdownItem
+                                                                        key="translate-fr"
+                                                                        startContent={<Icon icon="lucide:languages" width={16} />}
+                                                                        onPress={() => handleTranslateMessage(obs.id, LANGUAGES.FR.code)}
+                                                                        isDisabled={translatingMessages[obs.id]}
+                                                                    >
+                                                                        Translate to {LANGUAGES.FR.label}
+                                                                    </DropdownItem>
+                                                                </>
+                                                            )}
                                                         </>
                                                     )}
 
-                                                    {translatingMessages[obs.id] && (
-                                                        <DropdownItem
-                                                            key="translating"
-                                                            isReadOnly
-                                                            startContent={<Icon icon="lucide:loader-2" className="animate-spin" width={16} />}
-                                                        >
-                                                            Translating...
-                                                        </DropdownItem>
-                                                    )}
-
-                                                    {/* Delete option - only for own messages */}
+                                                    {/* Delete Option - only for user's own messages */}
                                                     {obs.author.name === user?.name && (
                                                         <DropdownItem
                                                             key="delete"
@@ -627,11 +632,12 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                             startContent={<Icon icon="lucide:trash-2" width={16} />}
                                                             onPress={() => handleDeleteObservation(obs.id)}
                                                         >
-                                                            Delete message
+                                                            Delete Message
                                                         </DropdownItem>
                                                     )}
                                                 </DropdownMenu>
                                             </Dropdown>
+
                                         </div>
                                     </div>
                                 </div>
