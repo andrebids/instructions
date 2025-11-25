@@ -93,9 +93,17 @@ export function ProjectObservations({ projectId, instructions = [], results = []
 
     // Poll for new messages every 10 seconds
     useEffect(() => {
+        if (!projectId) return;
+        
+        let isMounted = true; // Track if component is still mounted
+
         const pollInterval = setInterval(async () => {
+            if (!isMounted) return; // Don't process if component unmounted
+            
             try {
                 const data = await projectsAPI.getObservations(projectId);
+
+                if (!isMounted) return; // Check again after async operation
 
                 // Get IDs of current observations
                 const currentIds = new Set(observations.map(obs => obs.id));
@@ -121,11 +129,17 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                     }
                 }
             } catch (error) {
-                console.error('Error polling observations:', error);
+                // Only log error if component is still mounted
+                if (isMounted) {
+                    console.error('Error polling observations:', error);
+                }
             }
         }, 10000); // Poll every 10 seconds
 
-        return () => clearInterval(pollInterval);
+        return () => {
+            isMounted = false; // Mark as unmounted
+            clearInterval(pollInterval);
+        };
     }, [projectId, observations, onNewMessage, user?.name]);
 
     // Scroll to bottom when new messages arrive
@@ -139,14 +153,25 @@ export function ProjectObservations({ projectId, instructions = [], results = []
         setIsSubmitting(true);
 
         try {
+            // Check if there's an annotated image in the attachments
+            const hasAnnotatedImage = attachments.some(att => att.name.startsWith('annotated_'));
+            
+            // If there's an annotated image, don't send the linkedResultImageId (original image)
+            // Only send the annotated version in attachments
+            const linkedResultId = hasAnnotatedImage ? null : selectedResultImage?.id;
+
             const observationData = {
                 content: newMessage,
                 attachments: attachments,
                 linkedInstructionId: selectedInstruction,
-                linkedResultImageId: selectedResultImage?.id,
+                linkedResultImageId: linkedResultId,
             };
 
+            console.log('📤 Sending observation with attachments:', attachments);
+
             const newObservation = await projectsAPI.addObservation(projectId, observationData);
+            
+            console.log('📥 Received observation:', newObservation);
 
             // Optimistically update or wait for re-fetch. 
             // Ideally the backend returns the full created object with author info.
@@ -163,13 +188,20 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                 },
                 // Ensure linked objects are available for display if the backend only returns IDs
                 linkedInstruction: selectedInstruction !== null ? instructions.find(i => (i.logoNumber || instructions.indexOf(i)) === selectedInstruction) : null,
-                linkedResultImage: selectedResultImage
+                linkedResultImage: hasAnnotatedImage ? null : selectedResultImage,
+                // Preserve annotations data in attachments (in case backend doesn't return it)
+                attachments: newObservation.attachments?.map((att, idx) => {
+                    // Match with original attachment to preserve annotations
+                    const originalAtt = attachments.find(a => a.name === att.name);
+                    return originalAtt?.annotations ? { ...att, annotations: originalAtt.annotations } : att;
+                }) || attachments
             };
 
             setObservations(prev => [...prev, displayObservation]);
             setNewMessage('');
             setSelectedInstruction(null);
             setSelectedResultImage(null);
+            setAnnotatedImageData(null);
             setAttachments([]);
         } catch (error) {
             console.error('Error sending observation:', error);
@@ -285,6 +317,8 @@ export function ProjectObservations({ projectId, instructions = [], results = []
     };
 
     const handleAttachmentClick = (attachment) => {
+        console.log('📎 Attachment clicked:', attachment);
+        console.log('📝 Annotations:', attachment.annotations);
         setSelectedAttachment(attachment);
         onAttachmentModalOpen();
     };
@@ -400,27 +434,37 @@ export function ProjectObservations({ projectId, instructions = [], results = []
     }, [i18n.language, isAutoTranslate]);
 
     // Annotation handlers
-    const handleSaveAnnotation = (blob, dataUrl) => {
-        // Create an attachment from the annotated image
+    const handleSaveAnnotation = (blob, dataUrl, annotations) => {
+        console.log('🎨 Saving annotation with data:', { annotations, imageTitle: imageToAnnotate.title });
+        
+        // Create an attachment from the annotated image with annotations data
         const annotatedAttachment = {
             name: `annotated_${imageToAnnotate.title}.png`,
             type: 'image/png',
             url: dataUrl,
-            blob: blob
+            blob: blob,
+            annotations: annotations // Save annotation texts for legend
         };
+
+        console.log('📎 Created annotated attachment:', annotatedAttachment);
 
         // Set the annotated image data
         setAnnotatedImageData({
             originalImage: imageToAnnotate,
             dataUrl: dataUrl,
-            blob: blob
+            blob: blob,
+            annotations: annotations
         });
 
         // Set as selected result image
         setSelectedResultImage(imageToAnnotate);
 
         // Add to attachments
-        setAttachments(prev => [...prev, annotatedAttachment]);
+        setAttachments(prev => {
+            const newAttachments = [...prev, annotatedAttachment];
+            console.log('📎 Updated attachments:', newAttachments);
+            return newAttachments;
+        });
 
         // Close annotation modal
         onAnnotationModalOpenChange();
@@ -432,11 +476,11 @@ export function ProjectObservations({ projectId, instructions = [], results = []
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)] min-h-[600px]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
             {/* Chat Feed */}
             <div className="lg:col-span-2 flex flex-col h-full">
-                <Card className="flex-1 flex flex-col h-full shadow-sm border border-default-200">
-                    <CardHeader className="px-6 py-4 border-b border-divider bg-default-50">
+                <Card className="flex flex-col h-full shadow-sm border border-default-200">
+                    <CardHeader className="px-6 py-4 border-b border-divider bg-default-50 flex-shrink-0">
                         <div className="flex items-center justify-between gap-3 w-full">
                             <div className="p-2 bg-primary/10 rounded-lg text-primary">
                                 <Icon icon="lucide:message-square" width={20} />
@@ -467,8 +511,8 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                         </div>
                     </CardHeader>
 
-                    {/* Messages Area */}
-                    <CardBody className="flex-1 overflow-y-auto p-6 space-y-6 bg-default-50/50">
+                    {/* Messages Area - Fixed height with scroll */}
+                    <CardBody className="flex-1 overflow-y-auto p-6 space-y-6 bg-default-50/50 min-h-0 max-h-[600px] scroll-smooth scrollbar-thin scrollbar-thumb-default-300 scrollbar-track-transparent hover:scrollbar-thumb-default-400">
                         {observations.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-default-400">
                                 <Icon icon="lucide:messages-square" className="text-6xl mb-4 opacity-20" />
@@ -569,15 +613,32 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                         {obs.attachments.map((att, idx) => (
                                                             <div
                                                                 key={idx}
-                                                                className={`flex items-center gap-2 p-2 rounded-lg text-xs cursor-pointer hover:opacity-80 transition-opacity ${obs.author.name === user?.name ? 'bg-white/20' : 'bg-content3'}`}
+                                                                className={`rounded-lg cursor-pointer hover:opacity-80 transition-opacity overflow-hidden ${obs.author.name === user?.name ? 'bg-white/20' : 'bg-content3'}`}
                                                                 onClick={() => handleAttachmentClick(att)}
                                                             >
                                                                 {att.type.startsWith('image/') ? (
-                                                                    <Icon icon="lucide:image" />
+                                                                    <div className="relative group">
+                                                                        <img 
+                                                                            src={att.url} 
+                                                                            alt={att.name}
+                                                                            className="h-32 w-auto object-cover rounded-lg"
+                                                                        />
+                                                                        {att.annotations && att.annotations.length > 0 && (
+                                                                            <div className="absolute top-2 left-2 bg-primary text-white text-xs px-2 py-1 rounded-full font-semibold shadow-lg flex items-center gap-1">
+                                                                                <Icon icon="lucide:message-square-text" className="text-xs" />
+                                                                                {att.annotations.filter(a => a.text).length || att.annotations.length}
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs px-2 py-1 truncate">
+                                                                            {att.name}
+                                                                        </div>
+                                                                    </div>
                                                                 ) : (
-                                                                    <Icon icon="lucide:file" />
+                                                                    <div className="flex items-center gap-2 p-2 text-xs">
+                                                                        <Icon icon="lucide:file" />
+                                                                        <span className="truncate max-w-[100px]">{att.name}</span>
+                                                                    </div>
                                                                 )}
-                                                                <span className="truncate max-w-[100px]">{att.name}</span>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -688,8 +749,8 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                         <div ref={messagesEndRef} />
                     </CardBody>
 
-                    {/* Input Area */}
-                    <div className="p-4 bg-content1 border-t border-divider">
+                    {/* Input Area - Fixed at bottom */}
+                    <div className="p-4 bg-content1 border-t border-divider flex-shrink-0">
                         {/* Context Selection Preview */}
                         {(selectedInstruction !== null || selectedResultImage || attachments.length > 0) && (
                             <div className="flex flex-wrap gap-2 mb-3 p-2 bg-content2 rounded-lg border border-divider">
@@ -723,16 +784,43 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                     </Chip>
                                 )}
                                 {attachments.map((att, idx) => (
-                                    <Chip
-                                        key={idx}
-                                        onClose={() => removeAttachment(idx)}
-                                        variant="flat"
-                                        color="default"
-                                        size="sm"
-                                        startContent={<Icon icon="lucide:paperclip" />}
-                                    >
-                                        {att.name}
-                                    </Chip>
+                                    att.type.startsWith('image/') ? (
+                                        <div key={idx} className="relative group rounded-lg overflow-hidden border-2 border-default-200">
+                                            <img 
+                                                src={att.url} 
+                                                alt={att.name}
+                                                className="h-20 w-auto object-cover"
+                                            />
+                                            {att.annotations && att.annotations.length > 0 && (
+                                                <div className="absolute top-1 left-1 bg-primary text-white text-xs px-2 py-0.5 rounded-full font-semibold shadow-lg">
+                                                    {att.annotations.length} notes
+                                                </div>
+                                            )}
+                                            <Button
+                                                isIconOnly
+                                                size="sm"
+                                                radius="full"
+                                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-danger text-white"
+                                                onPress={() => removeAttachment(idx)}
+                                            >
+                                                <Icon icon="lucide:x" className="text-sm" />
+                                            </Button>
+                                            <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs px-2 py-1 truncate">
+                                                {att.name}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <Chip
+                                            key={idx}
+                                            onClose={() => removeAttachment(idx)}
+                                            variant="flat"
+                                            color="default"
+                                            size="sm"
+                                            startContent={<Icon icon="lucide:paperclip" />}
+                                        >
+                                            {att.name}
+                                        </Chip>
+                                    )
                                 ))}
                             </div>
                         )}
@@ -741,7 +829,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                             {/* Tools Popover */}
                             <Popover placement="top-start">
                                 <PopoverTrigger>
-                                    <Button isIconOnly variant="flat" className="text-default-500">
+                                    <Button isIconOnly variant="flat" className="text-default-500" aria-label="Add attachment or link">
                                         <Icon icon="lucide:plus" className="text-xl" />
                                     </Button>
                                 </PopoverTrigger>
@@ -857,7 +945,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                             </ModalBody>
                                             <ModalFooter>
                                                 <Button color="danger" variant="light" onPress={onClose}>
-                                                    Close
+                                                    {t('common.close', 'Close')}
                                                 </Button>
                                             </ModalFooter>
                                         </>
@@ -901,7 +989,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                             </ModalBody>
                                             <ModalFooter>
                                                 <Button color="danger" variant="light" onPress={onClose}>
-                                                    Close
+                                                    {t('common.close', 'Close')}
                                                 </Button>
                                             </ModalFooter>
                                         </>
@@ -913,7 +1001,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                             <Modal
                                 isOpen={isAttachmentModalOpen}
                                 onOpenChange={onAttachmentModalOpenChange}
-                                size={selectedAttachment?.type.startsWith('image/') ? '3xl' : 'md'}
+                                size={selectedAttachment?.type.startsWith('image/') ? '5xl' : 'md'}
                             >
                                 <ModalContent>
                                     {(onClose) => (
@@ -929,12 +1017,51 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                             </ModalHeader>
                                             <ModalBody>
                                                 {selectedAttachment?.type.startsWith('image/') ? (
-                                                    <div className="flex items-center justify-center bg-default-100 rounded-lg overflow-hidden">
-                                                        <img
-                                                            src={selectedAttachment.url}
-                                                            alt={selectedAttachment.name}
-                                                            className="max-w-full max-h-[60vh] object-contain"
-                                                        />
+                                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                                        {/* Image Preview */}
+                                                        <div className={`${selectedAttachment?.annotations?.length > 0 ? 'lg:col-span-2' : 'lg:col-span-3'} flex items-center justify-center bg-default-100 rounded-lg overflow-hidden`}>
+                                                            <img
+                                                                src={selectedAttachment.url}
+                                                                alt={selectedAttachment.name}
+                                                                className="max-w-full max-h-[60vh] object-contain"
+                                                            />
+                                                        </div>
+                                                        
+                                                        {/* Annotations Legend */}
+                                                        {selectedAttachment?.annotations && selectedAttachment.annotations.length > 0 && (
+                                                            <div className="lg:col-span-1 bg-content2 rounded-lg p-4 border border-default-300">
+                                                                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-divider">
+                                                                    <Icon icon="lucide:info" className="text-primary text-xl" />
+                                                                    <h3 className="font-semibold text-foreground">{t('components.projectObservations.annotationLegend', 'Annotation Legend')}</h3>
+                                                                </div>
+                                                                <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+                                                                    {selectedAttachment.annotations.map((ann, idx) => (
+                                                                        <div key={idx} className="flex gap-3 p-3 bg-content1 rounded-lg border border-default-300 shadow-sm">
+                                                                            <div
+                                                                                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md"
+                                                                                style={{ backgroundColor: ann.color }}
+                                                                            >
+                                                                                {idx + 1}
+                                                                            </div>
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <div className="text-xs text-default-600 uppercase font-medium mb-1">
+                                                                                    {ann.tool}
+                                                                                </div>
+                                                                                {ann.text ? (
+                                                                                    <div className="text-sm text-foreground break-words">
+                                                                                        {ann.text}
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <div className="text-sm text-default-500 italic">
+                                                                                        {t('components.projectObservations.noNoteAdded', 'No note added')}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-col items-center gap-4 py-8">
@@ -955,10 +1082,10 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                     href={selectedAttachment?.url}
                                                     download={selectedAttachment?.name}
                                                 >
-                                                    Download
+                                                    {t('common.download', 'Download')}
                                                 </Button>
                                                 <Button color="danger" variant="light" onPress={onClose}>
-                                                    Close
+                                                    {t('common.close', 'Close')}
                                                 </Button>
                                             </ModalFooter>
                                         </>
@@ -1047,8 +1174,8 @@ export function ProjectObservations({ projectId, instructions = [], results = []
             </div>
 
             {/* Right Sidebar - Context Info */}
-            <div className="lg:col-span-1 hidden lg:flex flex-col gap-6">
-                <Card className="shadow-sm border border-default-200">
+            <div className="lg:col-span-1 hidden lg:flex flex-col gap-6 h-full overflow-y-auto">
+                <Card className="shadow-sm border border-default-200 flex-shrink-0">
                     <CardHeader className="px-6 py-4 border-b border-divider">
                         <h3 className="text-base font-semibold">Active Participants</h3>
                     </CardHeader>
@@ -1087,7 +1214,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                     </CardBody>
                 </Card>
 
-                <Card className="shadow-sm border border-default-200 flex-1">
+                <Card className="shadow-sm border border-default-200 flex-shrink-0">
                     <CardHeader className="px-6 py-4 border-b border-divider">
                         <h3 className="text-base font-semibold">Quick Actions</h3>
                     </CardHeader>

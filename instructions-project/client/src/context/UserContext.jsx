@@ -14,8 +14,9 @@ export function UserProvider({ children }) {
     authContext = useAuthContext();
   } catch (error) {
     // Durante hot reload, pode haver erros temporários
+    // Silenciar warning durante hot reload (não é um erro real)
     if (import.meta.env.DEV) {
-      console.warn('⚠️ [UserContext] Erro ao obter AuthContext durante hot reload:', error.message);
+      // Apenas log em debug se necessário, não warning
       authContext = null;
     } else {
       throw error;
