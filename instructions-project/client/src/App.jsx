@@ -21,6 +21,8 @@ import PWAInstallPrompt from "./components/features/PWAInstallPrompt";
 import UpdateNotification from "./components/features/UpdateNotification";
 import OfflineReadyNotification from "./components/features/OfflineReadyNotification";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { NotificationProvider } from "./context/NotificationContext";
+import { NotificationContainer } from "./components/notifications/NotificationContainer";
 
 function AppLayout() {
   const { isHandheld } = useResponsiveProfile();
@@ -70,27 +72,30 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <>
-      <PWAInstallPrompt />
-      <UpdateNotification />
-      <OfflineReadyNotification />
-      <SignedOut>
-        <div className="bg-background text-foreground flex h-screen">
-          <main className="flex flex-1 flex-col overflow-hidden">
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/sign-in" element={<SignIn />} />
-              <Route path="/sign-up" element={<Navigate to="/sign-in" replace />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-        </div>
-      </SignedOut>
+    <NotificationProvider>
+      <>
+        <PWAInstallPrompt />
+        <UpdateNotification />
+        <OfflineReadyNotification />
+        <NotificationContainer />
+        <SignedOut>
+          <div className="bg-background text-foreground flex h-screen">
+            <main className="flex flex-1 flex-col overflow-hidden">
+              <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/sign-in" element={<SignIn />} />
+                <Route path="/sign-up" element={<Navigate to="/sign-in" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </main>
+          </div>
+        </SignedOut>
 
-      <SignedIn>
-        <AppLayout />
-      </SignedIn>
-    </>
+        <SignedIn>
+          <AppLayout />
+        </SignedIn>
+      </>
+    </NotificationProvider>
   );
 }
 

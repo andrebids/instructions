@@ -26,8 +26,10 @@ const LINE_WIDTHS = [
 ];
 
 export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen }) {
-    const canvasRef = useRef(null);
+    const baseCanvasRef = useRef(null); // Static canvas for the image
+    const annotationCanvasRef = useRef(null); // Dynamic canvas for annotations
     const containerRef = useRef(null);
+    const baseImageRef = useRef(null); // Cache the loaded image
     const [activeTool, setActiveTool] = useState(TOOLS.RECTANGLE);
     const [color, setColor] = useState(COLORS[0].value);
     const [lineWidth, setLineWidth] = useState(LINE_WIDTHS[1].value);
@@ -40,12 +42,12 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
     const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
     const [imageLoaded, setImageLoaded] = useState(false);
 
-    // Load image and setup canvas
+    // Load image and setup base canvas (only once)
     useEffect(() => {
-        if (!isOpen || !image || !canvasRef.current) return;
+        if (!isOpen || !image || !baseCanvasRef.current) return;
 
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+        const baseCanvas = baseCanvasRef.current;
+        const baseCtx = baseCanvas.getContext('2d');
         const img = new Image();
         img.crossOrigin = 'anonymous';
 
@@ -56,72 +58,76 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
             const dimensions = calculateCanvasDimensions(img.width, img.height, maxWidth, maxHeight);
 
             setCanvasDimensions(dimensions);
-            canvas.width = dimensions.width;
-            canvas.height = dimensions.height;
+            baseCanvas.width = dimensions.width;
+            baseCanvas.height = dimensions.height;
 
-            // Draw the image
-            ctx.drawImage(img, 0, 0, dimensions.width, dimensions.height);
+            // Draw the image on base canvas (only once)
+            baseCtx.drawImage(img, 0, 0, dimensions.width, dimensions.height);
+
+            // Cache the image for later use
+            baseImageRef.current = img;
             setImageLoaded(true);
         };
 
         img.src = image.src;
     }, [isOpen, image]);
 
-    // Redraw canvas when annotations change
+    // Setup annotation canvas dimensions
     useEffect(() => {
-        if (!imageLoaded || !canvasRef.current) return;
+        if (!imageLoaded || !annotationCanvasRef.current) return;
 
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+        const annotationCanvas = annotationCanvasRef.current;
+        annotationCanvas.width = canvasDimensions.width;
+        annotationCanvas.height = canvasDimensions.height;
+    }, [imageLoaded, canvasDimensions]);
 
-        // Clear canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Redraw annotations only (no image reload!)
+    useEffect(() => {
+        if (!imageLoaded || !annotationCanvasRef.current) return;
 
-        // Redraw image
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const annotationCanvas = annotationCanvasRef.current;
+        const ctx = annotationCanvas.getContext('2d');
 
-            // Draw all annotations
-            annotations.forEach(annotation => {
-                if (annotation.tool === TOOLS.RECTANGLE) {
-                    drawRectangle(
-                        ctx,
-                        annotation.startX,
-                        annotation.startY,
-                        annotation.endX,
-                        annotation.endY,
-                        annotation.color,
-                        annotation.lineWidth
-                    );
-                } else if (annotation.tool === TOOLS.ARROW) {
-                    drawArrow(
-                        ctx,
-                        annotation.startX,
-                        annotation.startY,
-                        annotation.endX,
-                        annotation.endY,
-                        annotation.color,
-                        annotation.lineWidth
-                    );
-                }
-            });
+        // Clear annotation canvas
+        ctx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
 
-            // Draw preview if currently drawing
-            if (isDrawing) {
-                if (activeTool === TOOLS.RECTANGLE) {
-                    drawRectangle(ctx, startPos.x, startPos.y, currentPos.x, currentPos.y, color, lineWidth);
-                } else if (activeTool === TOOLS.ARROW) {
-                    drawArrow(ctx, startPos.x, startPos.y, currentPos.x, currentPos.y, color, lineWidth);
-                }
+        // Draw all saved annotations
+        annotations.forEach(annotation => {
+            if (annotation.tool === TOOLS.RECTANGLE) {
+                drawRectangle(
+                    ctx,
+                    annotation.startX,
+                    annotation.startY,
+                    annotation.endX,
+                    annotation.endY,
+                    annotation.color,
+                    annotation.lineWidth
+                );
+            } else if (annotation.tool === TOOLS.ARROW) {
+                drawArrow(
+                    ctx,
+                    annotation.startX,
+                    annotation.startY,
+                    annotation.endX,
+                    annotation.endY,
+                    annotation.color,
+                    annotation.lineWidth
+                );
             }
-        };
-        img.src = image.src;
-    }, [annotations, isDrawing, currentPos, imageLoaded, image, activeTool, color, lineWidth, startPos]);
+        });
+
+        // Draw preview if currently drawing
+        if (isDrawing) {
+            if (activeTool === TOOLS.RECTANGLE) {
+                drawRectangle(ctx, startPos.x, startPos.y, currentPos.x, currentPos.y, color, lineWidth);
+            } else if (activeTool === TOOLS.ARROW) {
+                drawArrow(ctx, startPos.x, startPos.y, currentPos.x, currentPos.y, color, lineWidth);
+            }
+        }
+    }, [annotations, isDrawing, currentPos, imageLoaded, activeTool, color, lineWidth, startPos]);
 
     const getCanvasCoordinates = (e) => {
-        const canvas = canvasRef.current;
+        const canvas = annotationCanvasRef.current;
         const rect = canvas.getBoundingClientRect();
         return {
             x: e.clientX - rect.left,
@@ -194,9 +200,20 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
 
     const handleSave = async () => {
         try {
-            const mergedDataUrl = await mergeImageWithAnnotations(image.src, canvasRef.current);
+            // Create a temporary canvas to merge both layers
+            const mergedCanvas = document.createElement('canvas');
+            mergedCanvas.width = canvasDimensions.width;
+            mergedCanvas.height = canvasDimensions.height;
+            const mergedCtx = mergedCanvas.getContext('2d');
 
-            // Convert data URL to blob
+            // Draw base image
+            mergedCtx.drawImage(baseCanvasRef.current, 0, 0);
+
+            // Draw annotations on top
+            mergedCtx.drawImage(annotationCanvasRef.current, 0, 0);
+
+            // Convert to data URL and blob
+            const mergedDataUrl = mergedCanvas.toDataURL('image/png');
             const response = await fetch(mergedDataUrl);
             const blob = await response.blob();
 
@@ -283,8 +300,8 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
                                             <Tooltip key={c.value} content={c.name}>
                                                 <button
                                                     className={`w-7 h-7 rounded-md border-2 transition-all ${color === c.value
-                                                            ? 'border-primary scale-110'
-                                                            : 'border-default-300 hover:scale-105'
+                                                        ? 'border-primary scale-110'
+                                                        : 'border-default-300 hover:scale-105'
                                                         }`}
                                                     style={{ backgroundColor: c.value }}
                                                     onClick={() => setColor(c.value)}
@@ -360,18 +377,44 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
                                 ref={containerRef}
                                 className="flex items-center justify-center bg-default-50 rounded-lg border-2 border-dashed border-default-300 p-4"
                             >
-                                <canvas
-                                    ref={canvasRef}
-                                    className="cursor-crosshair shadow-lg rounded-lg"
-                                    onMouseDown={handleMouseDown}
-                                    onMouseMove={handleMouseMove}
-                                    onMouseUp={handleMouseUp}
-                                    onMouseLeave={() => setIsDrawing(false)}
+                                <div
+                                    className="relative"
                                     style={{
+                                        width: canvasDimensions.width || 'auto',
+                                        height: canvasDimensions.height || 'auto',
                                         maxWidth: '100%',
                                         maxHeight: '60vh'
                                     }}
-                                />
+                                >
+                                    {/* Base canvas with the image (static) */}
+                                    <canvas
+                                        ref={baseCanvasRef}
+                                        className="shadow-lg rounded-lg"
+                                        style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%'
+                                        }}
+                                    />
+                                    {/* Annotation canvas (dynamic) */}
+                                    <canvas
+                                        ref={annotationCanvasRef}
+                                        className="cursor-crosshair shadow-lg rounded-lg"
+                                        onMouseDown={handleMouseDown}
+                                        onMouseMove={handleMouseMove}
+                                        onMouseUp={handleMouseUp}
+                                        onMouseLeave={() => setIsDrawing(false)}
+                                        style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%'
+                                        }}
+                                    />
+                                </div>
                             </div>
 
                             {/* Instructions */}

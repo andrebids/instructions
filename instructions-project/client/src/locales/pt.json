@@ -563,6 +563,18 @@
         "deleting": "A eliminar...",
         "error": "Erro ao eliminar projeto"
       },
+      "modificationRequest": {
+        "submitted": "Pedido de modificação enviado com sucesso",
+        "error": "Falha ao enviar pedido de modificação",
+        "sending": "A enviar...",
+        "badge": "Pedido de Modificação"
+      },
+      "notifications": {
+        "newMessage": "Nova Mensagem",
+        "modificationRequest": "Pedido de Modificação",
+        "requestSent": "Pedido de Modificação Enviado",
+        "requestSentMessage": "O seu pedido de modificação foi enviado aos designers."
+      },
       "notesManager": {
         "addTopic": "Adicionar Tópico",
         "deleteTopic": "Eliminar Tópico",

@@ -9,7 +9,7 @@ import { projectsAPI } from '../../services/api';
 import { translateText, LANGUAGES, getLanguageLabel } from '../../services/translationService';
 import ImageAnnotationEditor from './ImageAnnotationEditor';
 
-export function ProjectObservations({ projectId, instructions = [], results = [], designers = [] }) {
+export function ProjectObservations({ projectId, instructions = [], results = [], designers = [], onNewMessage }) {
     const { t } = useTranslation();
     const { user } = useUser();
     const [observations, setObservations] = useState([]);
@@ -52,6 +52,32 @@ export function ProjectObservations({ projectId, instructions = [], results = []
             fetchObservations();
         }
     }, [projectId]);
+
+    // Poll for new messages every 10 seconds
+    useEffect(() => {
+        const pollInterval = setInterval(async () => {
+            try {
+                const data = await projectsAPI.getObservations(projectId);
+
+                // Check if there are new messages
+                if (data.length > observations.length) {
+                    const newMessages = data.slice(observations.length); // Get only the new messages
+
+                    // Update observations
+                    setObservations(data);
+
+                    // Notify parent about new messages
+                    if (onNewMessage && newMessages.length > 0) {
+                        onNewMessage(newMessages);
+                    }
+                }
+            } catch (error) {
+                console.error('Error polling observations:', error);
+            }
+        }, 10000); // Poll every 10 seconds
+
+        return () => clearInterval(pollInterval);
+    }, [projectId, observations.length, onNewMessage]);
 
     // Scroll to bottom when new messages arrive
     useEffect(() => {
@@ -310,6 +336,18 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className="text-xs font-semibold text-foreground">{obs.author.name}</span>
                                             <span className="text-[10px] text-default-400">{formatDistanceToNow(new Date(obs.createdAt), { addSuffix: true })}</span>
+                                            {/* Modification Request Badge */}
+                                            {obs.linkedResultImage && (
+                                                <Chip
+                                                    size="sm"
+                                                    variant="flat"
+                                                    color="warning"
+                                                    startContent={<Icon icon="lucide:edit" width={12} />}
+                                                    className="h-5 text-[10px]"
+                                                >
+                                                    Modification Request
+                                                </Chip>
+                                            )}
                                         </div>
 
                                         <div className="flex items-start gap-2">

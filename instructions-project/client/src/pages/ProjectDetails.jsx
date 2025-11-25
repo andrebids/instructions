@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardBody, CardHeader, Button, Spinner, Tabs, Tab, Chip, Divider, Accordion, AccordionItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { projectsAPI } from '../services/api';
@@ -11,6 +11,7 @@ import { ProjectProgress } from '../components/ui/ProjectProgress';
 import { useTranslation } from 'react-i18next';
 import ProjectResultsModal, { LANDSCAPES } from "../components/projects/ProjectResultsModal";
 import { ProjectObservations } from '../components/project-notes/ProjectObservations';
+import { useNotifications } from '../context/NotificationContext';
 
 // Helper component to display a field value
 const InfoField = ({ label, value, icon }) => (
@@ -402,6 +403,7 @@ const LogoDetailsContent = ({ logo }) => {
 export default function ProjectDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { userName } = useUser();
     const { t } = useTranslation();
     const [project, setProject] = useState(null);
@@ -411,6 +413,17 @@ export default function ProjectDetails() {
     const [activeTab, setActiveTab] = useState("overview");
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [unreadObservationsCount, setUnreadObservationsCount] = useState(0);
+    const { addNotification } = useNotifications();
+
+    // Handle tab switching from URL query parameters
+    React.useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const tabParam = params.get('tab');
+        if (tabParam && ['overview', 'instructions', 'observations', 'notes'].includes(tabParam)) {
+            setActiveTab(tabParam);
+        }
+    }, [location.search]);
 
     React.useEffect(() => {
         loadProject();
@@ -443,6 +456,63 @@ export default function ProjectDetails() {
             setIsDeleting(false);
         }
     };
+
+    const handleNewMessage = (newMessages) => {
+        // Only count if not on observations tab
+        if (activeTab !== 'observations') {
+            setUnreadObservationsCount(prev => prev + newMessages.length);
+
+            // Show toast notification for each new message
+            newMessages.forEach(msg => {
+                // Check if it's a modification request
+                const isModificationRequest = msg.linkedResultImage !== null && msg.linkedResultImage !== undefined;
+
+                // Create notification title
+                const notificationTitle = isModificationRequest
+                    ? '🔧 Modification Request'
+                    : '💬 New Message';
+
+                // Create message preview
+                let messagePreview = msg.content || '';
+                if (messagePreview.length > 60) {
+                    messagePreview = messagePreview.substring(0, 60) + '...';
+                }
+
+                // Add context if there's a linked image
+                if (msg.linkedResultImage) {
+                    messagePreview = `Re: ${msg.linkedResultImage.title} - ${messagePreview}`;
+                }
+
+                addNotification({
+                    title: notificationTitle,
+                    message: `${msg.author?.name || 'Designer'}: ${messagePreview}`,
+                    type: isModificationRequest ? 'warning' : 'observation',
+                    url: `/projects/${id}?tab=observations`
+                });
+            });
+        }
+    };
+
+    const handleModificationSubmitted = () => {
+        // Show success notification
+        addNotification({
+            title: '✓ Modification Request Sent',
+            message: 'Your modification request has been sent to the designers.',
+            type: 'success',
+            url: `/projects/${id}?tab=observations`
+        });
+
+        // Switch to observations tab and clear unread count
+        setActiveTab('observations');
+        setUnreadObservationsCount(0);
+    };
+
+    // Clear unread count when switching to observations tab
+    useEffect(() => {
+        if (activeTab === 'observations') {
+            setUnreadObservationsCount(0);
+        }
+    }, [activeTab]);
 
     if (loading) {
         return (
@@ -747,6 +817,16 @@ export default function ProjectDetails() {
                                 <div className="flex items-center gap-2">
                                     <Icon icon="lucide:messages-square" />
                                     <span>{t('pages.projectDetails.tabs.observations', 'Observations')}</span>
+                                    {unreadObservationsCount > 0 && (
+                                        <Chip
+                                            size="sm"
+                                            color="danger"
+                                            variant="solid"
+                                            className="min-w-5 h-5 px-1 text-[10px]"
+                                        >
+                                            {unreadObservationsCount}
+                                        </Chip>
+                                    )}
                                 </div>
                             }
                         >
@@ -756,6 +836,7 @@ export default function ProjectDetails() {
                                     instructions={displayLogos}
                                     results={LANDSCAPES}
                                     designers={project.assignedDesigners || []}
+                                    onNewMessage={handleNewMessage}
                                 />
                             </div>
                         </Tab>
@@ -778,6 +859,8 @@ export default function ProjectDetails() {
                 <ProjectResultsModal
                     isOpen={isResultsModalOpen}
                     onOpenChange={setIsResultsModalOpen}
+                    projectId={id}
+                    onModificationSubmitted={handleModificationSubmitted}
                 />
 
                 {/* Delete Confirmation Modal */}

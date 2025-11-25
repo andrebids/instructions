@@ -2,7 +2,8 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
-html, body {
+html,
+body {
   font-family: "Urbanist", sans-serif;
 }
 
@@ -19,17 +20,21 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 input[type="number"] {
-  -moz-appearance: textfield; /* Firefox */
+  -moz-appearance: textfield;
+  /* Firefox */
 }
 
 /* Esconder scrollbar mas manter funcionalidade */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE e Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE e Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari e Opera */
+  display: none;
+  /* Chrome, Safari e Opera */
 }
 
 /* Auth CTA hover effect (scoped to landing only) */
@@ -50,8 +55,10 @@ input[type="number"] {
   list-style: none;
   width: 60px;
   height: 60px;
-  background: transparent; /* remove solid color */
-  box-shadow: none; /* remove colored/glow shadows */
+  background: transparent;
+  /* remove solid color */
+  box-shadow: none;
+  /* remove colored/glow shadows */
   border-radius: 60px;
   cursor: pointer;
   display: flex;
@@ -60,9 +67,13 @@ input[type="number"] {
   transition: 0.5s;
 }
 
-.auth-cta li::before { display: none; }
+.auth-cta li::before {
+  display: none;
+}
 
-.auth-cta li::after { display: none; }
+.auth-cta li::after {
+  display: none;
+}
 
 .auth-cta li:hover {
   width: 180px;
@@ -121,7 +132,7 @@ input[type="number"] {
 
 .auth-cta li:hover .glass-surface {
   transform: scale(1.06);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.25) inset;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.25) inset;
 }
 
 .auth-cta li:active .glass-surface {
@@ -143,14 +154,14 @@ ul[data-type="taskList"] li {
   margin: 0.25rem 0;
 }
 
-ul[data-type="taskList"] li > label {
+ul[data-type="taskList"] li>label {
   flex: 0 0 auto;
   margin-top: 0.25rem;
   user-select: none;
   cursor: pointer;
 }
 
-ul[data-type="taskList"] li > div {
+ul[data-type="taskList"] li>div {
   flex: 1 1 auto;
 }
 
@@ -166,7 +177,7 @@ ul[data-type="taskList"] li[data-checked="true"] {
   text-decoration: line-through;
 }
 
-ul[data-type="taskList"] li[data-checked="true"] > div {
+ul[data-type="taskList"] li[data-checked="true"]>div {
   text-decoration: line-through;
 }
 
@@ -175,7 +186,7 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   ul[data-type="taskList"] li {
     gap: 0.375rem;
   }
-  
+
   ul[data-type="taskList"] input[type="checkbox"] {
     width: 1rem;
     height: 1rem;
@@ -196,7 +207,7 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
     font-size: 0.875rem;
     padding: 0.75rem;
   }
-  
+
   .ProseMirror img {
     margin: 0.5rem 0;
   }
@@ -204,8 +215,13 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
 
 /* Marquee animation for long text in Selects and Autocompletes */
 @keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(calc(-100% - 1rem)); }
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(calc(-100% - 1rem));
+  }
 }
 
 /* Ensure Select and Autocomplete values don't overflow */
@@ -260,4 +276,21 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   animation: marquee 10s linear infinite;
   padding-right: 2rem;
   text-overflow: clip;
+}
+
+/* Notification slide-in animation */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }

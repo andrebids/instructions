@@ -551,6 +551,18 @@
         "deleting": "Deleting...",
         "error": "Error deleting project"
       },
+      "modificationRequest": {
+        "submitted": "Modification request sent successfully",
+        "error": "Failed to send modification request",
+        "sending": "Sending...",
+        "badge": "Modification Request"
+      },
+      "notifications": {
+        "newMessage": "New Message",
+        "modificationRequest": "Modification Request",
+        "requestSent": "Modification Request Sent",
+        "requestSentMessage": "Your modification request has been sent to the designers."
+      },
       "notesManager": {
         "addTopic": "Add Topic",
         "deleteTopic": "Delete Topic",

@@ -1,8 +1,9 @@
 import React, { useRef, useState } from 'react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Textarea } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Textarea, useDisclosure } from "@heroui/react";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Mousewheel, Keyboard } from 'swiper/modules';
 import { Icon } from "@iconify/react";
+import ImageAnnotationEditor from '../project-notes/ImageAnnotationEditor';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
@@ -24,27 +25,90 @@ export const LANDSCAPES = Array.from({ length: 6 }).map((_, i) => ({
     src: `https://placehold.co/1200x800/${PASTEL_COLORS[i % PASTEL_COLORS.length]}/ffffff?text=Landscape+${i + 1}&font=roboto`
 }));
 
-export default function ProjectResultsModal({ isOpen, onOpenChange }) {
+export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, onModificationSubmitted }) {
     const swiperRef = useRef(null);
     const [showAllView, setShowAllView] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
     const [modificationRequest, setModificationRequest] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Annotation states
+    const { isOpen: isAnnotationModalOpen, onOpen: onAnnotationModalOpen, onOpenChange: onAnnotationModalOpenChange } = useDisclosure();
+    const [annotatedImageData, setAnnotatedImageData] = useState(null);
 
     const handleImageClick = (image) => {
         setSelectedImage(image);
         setModificationRequest('');
+        setAnnotatedImageData(null);
     };
 
     const handleCloseDetailModal = () => {
         setSelectedImage(null);
         setModificationRequest('');
+        setAnnotatedImageData(null);
     };
 
-    const handleSubmitModification = () => {
-        console.log('Modification request for', selectedImage?.title, ':', modificationRequest);
-        // TODO: Implement API call to submit modification request
-        handleCloseDetailModal();
+    const handleSaveAnnotation = (blob, dataUrl) => {
+        setAnnotatedImageData({
+            dataUrl: dataUrl,
+            blob: blob
+        });
+        onAnnotationModalOpenChange();
     };
+
+    const handleCancelAnnotation = () => {
+        onAnnotationModalOpenChange();
+    };
+
+    const handleSubmitModification = async () => {
+        if (!modificationRequest.trim()) return;
+
+        setIsSubmitting(true);
+
+        try {
+            // Prepare observation data
+            const observationData = {
+                content: modificationRequest,
+                linkedResultImageId: selectedImage?.id,
+                attachments: annotatedImageData ? [{
+                    name: `annotated_${selectedImage.title}.png`,
+                    type: 'image/png',
+                    url: annotatedImageData.dataUrl
+                }] : []
+            };
+
+            // Send to observations API
+            const response = await fetch(`http://localhost:5000/api/projects/${projectId}/observations`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(observationData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to send modification request');
+            }
+
+            // Notify parent component
+            onModificationSubmitted?.();
+
+            // Close modals and reset
+            handleCloseDetailModal();
+            onOpenChange(false);
+
+        } catch (error) {
+            console.error('Error sending modification:', error);
+            // Show user-friendly error message
+            const errorMessage = error.message || 'Failed to send modification request. Please try again.';
+            alert(errorMessage);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
 
     const handleThumbnailClick = (index) => {
         setShowAllView(false);
@@ -198,12 +262,31 @@ export default function ProjectResultsModal({ isOpen, onOpenChange }) {
                             </ModalHeader>
                             <ModalBody>
                                 <div className="space-y-4">
-                                    <div className="relative aspect-video rounded-lg overflow-hidden">
+                                    <div className="relative aspect-video rounded-lg overflow-hidden group">
                                         <img
-                                            src={selectedImage?.src}
+                                            src={annotatedImageData?.dataUrl || selectedImage?.src}
                                             alt={selectedImage?.title}
                                             className="w-full h-full object-cover"
                                         />
+                                        {/* Annotate button overlay */}
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                                            <Button
+                                                color="primary"
+                                                variant="solid"
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                startContent={<Icon icon="lucide:pencil" />}
+                                                onPress={onAnnotationModalOpen}
+                                            >
+                                                {annotatedImageData ? 'Edit Annotations' : 'Annotate Image'}
+                                            </Button>
+                                        </div>
+                                        {/* Annotation indicator */}
+                                        {annotatedImageData && (
+                                            <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1">
+                                                <Icon icon="lucide:pencil" width={14} />
+                                                Annotated
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">
@@ -219,22 +302,35 @@ export default function ProjectResultsModal({ isOpen, onOpenChange }) {
                                 </div>
                             </ModalBody>
                             <ModalFooter>
-                                <Button variant="light" onPress={onClose}>
+                                <Button
+                                    variant="light"
+                                    onPress={onClose}
+                                    isDisabled={isSubmitting}
+                                >
                                     Cancel
                                 </Button>
                                 <Button
                                     color="primary"
-                                    isDisabled={!modificationRequest.trim()}
+                                    isDisabled={!modificationRequest.trim() || isSubmitting}
+                                    isLoading={isSubmitting}
                                     onPress={handleSubmitModification}
-                                    startContent={<Icon icon="lucide:edit" />}
+                                    startContent={!isSubmitting && <Icon icon="lucide:edit" />}
                                 >
-                                    Ask for Modifications
+                                    {isSubmitting ? 'Sending...' : 'Ask for Modifications'}
                                 </Button>
                             </ModalFooter>
                         </>
                     )}
                 </ModalContent>
             </Modal>
+
+            {/* Image Annotation Editor Modal */}
+            <ImageAnnotationEditor
+                image={selectedImage}
+                isOpen={isAnnotationModalOpen}
+                onSave={handleSaveAnnotation}
+                onCancel={handleCancelAnnotation}
+            />
         </>
     );
 }
