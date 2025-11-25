@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardBody, CardHeader, Button, Input, Avatar, Chip, Tooltip, Popover, PopoverTrigger, PopoverContent, Select, SelectItem, Textarea, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@heroui/react';
+import { Card, CardBody, CardHeader, Button, Input, Avatar, Chip, Tooltip, Popover, PopoverTrigger, PopoverContent, Select, SelectItem, Textarea, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Accordion, AccordionItem, Switch } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { useTranslation } from 'react-i18next';
 import { useUser } from '../../context/UserContext';
@@ -10,12 +10,13 @@ import { translateText, LANGUAGES, getLanguageLabel } from '../../services/trans
 import ImageAnnotationEditor from './ImageAnnotationEditor';
 
 export function ProjectObservations({ projectId, instructions = [], results = [], designers = [], onNewMessage }) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { user } = useUser();
     const [observations, setObservations] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [selectedInstruction, setSelectedInstruction] = useState(null);
     const [selectedResultImage, setSelectedResultImage] = useState(null);
+    const [viewingInstruction, setViewingInstruction] = useState(null);
     const [attachments, setAttachments] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
@@ -36,13 +37,48 @@ export function ProjectObservations({ projectId, instructions = [], results = []
     const [translations, setTranslations] = useState({}); // { messageId: { targetLang: translatedText } }
     const [activeTranslations, setActiveTranslations] = useState({}); // { messageId: 'targetLang' or null }
     const [translatingMessages, setTranslatingMessages] = useState({}); // { messageId: boolean }
+    const [globalTranslationLang, setGlobalTranslationLang] = useState(null); // 'pt', 'en', 'fr' or null
+    const [isAutoTranslate, setIsAutoTranslate] = useState(true);
+
+    // Helper to hydrate observations with local data (instructions/results)
+    const hydrateObservations = (obsList) => {
+        return obsList.map(obs => {
+            // Hydrate linked instruction
+            let linkedInstruction = null;
+            if (obs.linkedInstructionId !== null && obs.linkedInstructionId !== undefined) {
+                // Try to find by logoNumber
+                linkedInstruction = instructions.find(i => i.logoNumber == obs.linkedInstructionId);
+
+                // If not found by logoNumber, try to match by index if the ID looks like an index (number)
+                if (!linkedInstruction && !isNaN(obs.linkedInstructionId)) {
+                    const idx = parseInt(obs.linkedInstructionId);
+                    if (idx >= 0 && idx < instructions.length) {
+                        linkedInstruction = instructions[idx];
+                    }
+                }
+            }
+
+            // Hydrate linked result image
+            let linkedResultImage = null;
+            if (obs.linkedResultImageId) {
+                linkedResultImage = results.find(r => r.id == obs.linkedResultImageId);
+            }
+
+            return {
+                ...obs,
+                linkedInstruction,
+                linkedResultImage
+            };
+        });
+    };
 
     // Fetch observations on mount
     useEffect(() => {
         const fetchObservations = async () => {
             try {
                 const data = await projectsAPI.getObservations(projectId);
-                setObservations(data);
+                const hydratedData = hydrateObservations(data);
+                setObservations(hydratedData);
             } catch (error) {
                 console.error('Error fetching observations:', error);
             }
@@ -51,7 +87,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
         if (projectId) {
             fetchObservations();
         }
-    }, [projectId]);
+    }, [projectId, instructions, results]); // Add dependencies to re-hydrate if props change
 
     // Poll for new messages every 10 seconds
     useEffect(() => {
@@ -67,8 +103,9 @@ export function ProjectObservations({ projectId, instructions = [], results = []
 
                 // Only process if there are genuinely new messages
                 if (newMessages.length > 0) {
-                    // Update observations with all data from server
-                    setObservations(data);
+                    // Update observations with all data from server, hydrated
+                    const hydratedData = hydrateObservations(data);
+                    setObservations(hydratedData);
 
                     // Filter to only notify about messages from other users
                     const messagesFromOthers = newMessages.filter(msg =>
@@ -95,7 +132,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
     }, [observations]);
 
     const handleSendMessage = async () => {
-        if (!newMessage.trim() && attachments.length === 0 && !selectedResultImage) return;
+        if (!newMessage.trim() && attachments.length === 0 && !selectedResultImage && selectedInstruction === null) return;
 
         setIsSubmitting(true);
 
@@ -123,7 +160,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                     role: 'Project Creator'
                 },
                 // Ensure linked objects are available for display if the backend only returns IDs
-                linkedInstruction: selectedInstruction ? instructions.find(i => i.id === selectedInstruction) : null,
+                linkedInstruction: selectedInstruction !== null ? instructions.find(i => (i.logoNumber || instructions.indexOf(i)) === selectedInstruction) : null,
                 linkedResultImage: selectedResultImage
             };
 
@@ -266,7 +303,12 @@ export function ProjectObservations({ projectId, instructions = [], results = []
             setActiveTranslations(prev => ({ ...prev, [messageId]: targetLang }));
         } catch (error) {
             console.error('Translation error:', error);
-            alert('Failed to translate message. Please try again.');
+            // Don't alert for auto-translation or if it's likely a same-language issue
+            if (!globalTranslationLang && !error.message?.includes('same language')) {
+                // Only alert if it's a manual action and a real error
+                // alert('Failed to translate message. Please try again.'); 
+                // Silently fail for now to avoid disrupting the user experience
+            }
         } finally {
             setTranslatingMessages(prev => ({ ...prev, [messageId]: false }));
         }
@@ -275,6 +317,71 @@ export function ProjectObservations({ projectId, instructions = [], results = []
     const handleShowOriginal = (messageId) => {
         setActiveTranslations(prev => ({ ...prev, [messageId]: null }));
     };
+
+    const handleGlobalTranslate = async (targetLang) => {
+        setGlobalTranslationLang(targetLang);
+
+        if (!targetLang) {
+            // Reset all active translations
+            setActiveTranslations({});
+            return;
+        }
+
+        // Translate all messages that aren't already translated to the target lang
+        const messagesToTranslate = observations.filter(obs =>
+            obs.content &&
+            (!translations[obs.id]?.[targetLang])
+        );
+
+        // Set active translation for all messages (even if not yet translated, they will be)
+        const newActiveTranslations = {};
+        observations.forEach(obs => {
+            if (obs.content) {
+                newActiveTranslations[obs.id] = targetLang;
+            }
+        });
+        setActiveTranslations(prev => ({ ...prev, ...newActiveTranslations }));
+
+        // Process translations in batches to avoid overwhelming the API
+        for (const obs of messagesToTranslate) {
+            await handleTranslateMessage(obs.id, targetLang);
+        }
+    };
+
+    // Effect to auto-translate new messages when global translation is active
+    useEffect(() => {
+        if (globalTranslationLang && observations.length > 0) {
+            observations.forEach(obs => {
+                if (obs.content && activeTranslations[obs.id] !== globalTranslationLang) {
+                    handleTranslateMessage(obs.id, globalTranslationLang);
+                }
+            });
+        }
+    }, [observations.length, globalTranslationLang]);
+
+    // Handle Auto-Translate Toggle
+    const handleAutoTranslateToggle = (isSelected) => {
+        setIsAutoTranslate(isSelected);
+        if (isSelected) {
+            const currentLang = i18n.language?.split('-')[0] || 'en';
+            // Ensure it's a supported language
+            const supportedLang = Object.values(LANGUAGES).find(l => l.code === currentLang)?.code || 'en';
+            handleGlobalTranslate(supportedLang);
+        } else {
+            handleGlobalTranslate(null);
+        }
+    };
+
+    // Update translation if page language changes while auto-translate is on
+    useEffect(() => {
+        if (isAutoTranslate) {
+            const currentLang = i18n.language?.split('-')[0] || 'en';
+            const supportedLang = Object.values(LANGUAGES).find(l => l.code === currentLang)?.code || 'en';
+            if (globalTranslationLang !== supportedLang) {
+                handleGlobalTranslate(supportedLang);
+            }
+        }
+    }, [i18n.language, isAutoTranslate]);
 
     // Annotation handlers
     const handleSaveAnnotation = (blob, dataUrl) => {
@@ -314,13 +421,32 @@ export function ProjectObservations({ projectId, instructions = [], results = []
             <div className="lg:col-span-2 flex flex-col h-full">
                 <Card className="flex-1 flex flex-col h-full shadow-sm border border-default-200">
                     <CardHeader className="px-6 py-4 border-b border-divider bg-default-50">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-between gap-3 w-full">
                             <div className="p-2 bg-primary/10 rounded-lg text-primary">
                                 <Icon icon="lucide:message-square" width={20} />
                             </div>
-                            <div>
+                            <div className="flex-1">
                                 <h3 className="text-lg font-semibold text-default-900">Project Observations</h3>
                                 <p className="text-xs text-default-500">Discuss results, give feedback, and collaborate.</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="flex flex-col items-end">
+                                    <span className="text-sm font-medium text-default-700">
+                                        {isAutoTranslate ? 'Auto Translate' : 'Original'}
+                                    </span>
+                                    {isAutoTranslate && globalTranslationLang && (
+                                        <span className="text-[10px] text-default-500">
+                                            To {getLanguageLabel(globalTranslationLang)}
+                                        </span>
+                                    )}
+                                </div>
+                                <Switch
+                                    size="sm"
+                                    color="secondary"
+                                    isSelected={isAutoTranslate}
+                                    onValueChange={handleAutoTranslateToggle}
+                                    startContent={<Icon icon="lucide:languages" />}
+                                />
                             </div>
                         </div>
                     </CardHeader>
@@ -361,14 +487,16 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                         </div>
 
                                         <div className="flex items-start gap-2">
-                                            <div className={`flex-1 p-4 rounded-2xl shadow-sm ${obs.author.name === user?.name
+                                            <div className={`flex-1 p-4 pb-8 rounded-2xl shadow-sm relative ${obs.author.name === user?.name
                                                 ? 'bg-primary text-primary-foreground rounded-tr-none'
                                                 : 'bg-content2 text-foreground border border-divider rounded-tl-none'
                                                 }`}>
                                                 {/* Context: Linked Instruction */}
                                                 {obs.linkedInstruction && (
-                                                    <div className={`mb-3 p-2 rounded-lg text-xs flex items-center gap-2 ${obs.author.name === user?.name ? 'bg-white/20' : 'bg-content3'
-                                                        }`}>
+                                                    <div
+                                                        className={`mb-3 p-2 rounded-lg text-xs flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ${obs.author.name === user?.name ? 'bg-white/20' : 'bg-content3'}`}
+                                                        onClick={() => setViewingInstruction(obs.linkedInstruction)}
+                                                    >
                                                         <Icon icon="lucide:link" />
                                                         <span className="font-medium truncate max-w-[200px]">Re: {obs.linkedInstruction.logoName || 'Instruction'}</span>
                                                     </div>
@@ -394,23 +522,18 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                     <>
                                                         {/* Translation Badge */}
                                                         {activeTranslations[obs.id] && (
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <Chip
-                                                                    size="sm"
-                                                                    variant="flat"
-                                                                    color="secondary"
-                                                                    startContent={<Icon icon="lucide:languages" width={14} />}
-                                                                >
-                                                                    Translated to {getLanguageLabel(activeTranslations[obs.id])}
-                                                                </Chip>
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="light"
-                                                                    className="h-6 min-w-0 px-2 text-xs"
-                                                                    onPress={() => handleShowOriginal(obs.id)}
-                                                                >
-                                                                    Show Original
-                                                                </Button>
+                                                            <div className="absolute bottom-2 right-2">
+                                                                <Tooltip content="Translated using the latest advanced artificial intelligence model" className="text-xs">
+                                                                    <Chip
+                                                                        size="sm"
+                                                                        variant="solid"
+                                                                        color="secondary"
+                                                                        startContent={<Icon icon="lucide:sparkles" width={10} />}
+                                                                        className="h-5 text-[10px] px-1 cursor-help opacity-90 hover:opacity-100"
+                                                                    >
+                                                                        AI Translated
+                                                                    </Chip>
+                                                                </Tooltip>
                                                             </div>
                                                         )}
 
@@ -546,9 +669,9 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                     {/* Input Area */}
                     <div className="p-4 bg-content1 border-t border-divider">
                         {/* Context Selection Preview */}
-                        {(selectedInstruction || selectedResultImage || attachments.length > 0) && (
+                        {(selectedInstruction !== null || selectedResultImage || attachments.length > 0) && (
                             <div className="flex flex-wrap gap-2 mb-3 p-2 bg-content2 rounded-lg border border-divider">
-                                {selectedInstruction && (
+                                {selectedInstruction !== null && (
                                     <Chip
                                         onClose={() => setSelectedInstruction(null)}
                                         variant="flat"
@@ -556,7 +679,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                         size="sm"
                                         startContent={<Icon icon="lucide:file-text" />}
                                     >
-                                        Instruction: {instructions.find(i => i.id === selectedInstruction)?.logoName}
+                                        Instruction: {instructions.find(i => (i.logoNumber || instructions.indexOf(i)) === selectedInstruction)?.logoName}
                                     </Chip>
                                 )}
                                 {selectedResultImage && (
@@ -659,47 +782,55 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                             </ModalHeader>
                                             <ModalBody>
                                                 <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto p-2">
-                                                    {results.map(img => (
-                                                        <div
-                                                            key={img.id}
-                                                            className="relative aspect-video rounded-lg overflow-hidden border-2 border-default-200 hover:border-primary transition-all group"
-                                                        >
-                                                            <img src={img.src} alt={img.title} className="w-full h-full object-cover" />
-                                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center gap-2">
-                                                                <Button
-                                                                    size="sm"
-                                                                    color="primary"
-                                                                    variant="solid"
-                                                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                    startContent={<Icon icon="lucide:pencil" />}
-                                                                    onPress={() => {
-                                                                        setImageToAnnotate(img);
-                                                                        onClose();
-                                                                        onAnnotationModalOpen();
-                                                                    }}
-                                                                >
-                                                                    Annotate
-                                                                </Button>
-                                                                <Button
-                                                                    size="sm"
-                                                                    color="secondary"
-                                                                    variant="solid"
-                                                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                    startContent={<Icon icon="lucide:check" />}
-                                                                    onPress={() => {
-                                                                        setSelectedResultImage(img);
-                                                                        setAnnotatedImageData(null);
-                                                                        onClose();
-                                                                    }}
-                                                                >
-                                                                    Select
-                                                                </Button>
+                                                    {results.length > 0 ? (
+                                                        results.map(img => (
+                                                            <div
+                                                                key={img.id}
+                                                                className="relative aspect-video rounded-lg overflow-hidden border-2 border-default-200 hover:border-primary transition-all group"
+                                                            >
+                                                                <img src={img.src} alt={img.title} className="w-full h-full object-cover" />
+                                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center gap-2">
+                                                                    <Button
+                                                                        size="sm"
+                                                                        color="primary"
+                                                                        variant="solid"
+                                                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                        startContent={<Icon icon="lucide:pencil" />}
+                                                                        onPress={() => {
+                                                                            setImageToAnnotate(img);
+                                                                            onClose();
+                                                                            onAnnotationModalOpen();
+                                                                        }}
+                                                                    >
+                                                                        Annotate
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        color="secondary"
+                                                                        variant="solid"
+                                                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                        startContent={<Icon icon="lucide:check" />}
+                                                                        onPress={() => {
+                                                                            setSelectedResultImage(img);
+                                                                            setAnnotatedImageData(null);
+                                                                            onClose();
+                                                                        }}
+                                                                    >
+                                                                        Select
+                                                                    </Button>
+                                                                </div>
+                                                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent text-white text-xs p-2 truncate">
+                                                                    {img.title}
+                                                                </div>
                                                             </div>
-                                                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent text-white text-xs p-2 truncate">
-                                                                {img.title}
-                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div className="col-span-2 flex flex-col items-center justify-center py-12 text-center">
+                                                            <Icon icon="lucide:image-off" className="text-6xl text-default-300 mb-4" />
+                                                            <p className="text-sm font-medium text-default-600 mb-1">No result images available</p>
+                                                            <p className="text-xs text-default-400">Designers haven't generated any results yet.</p>
                                                         </div>
-                                                    ))}
+                                                    )}
                                                 </div>
                                             </ModalBody>
                                             <ModalFooter>
@@ -720,22 +851,30 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                             <ModalHeader className="flex flex-col gap-1">Select an Instruction</ModalHeader>
                                             <ModalBody>
                                                 <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto p-2">
-                                                    {instructions.map(inst => (
-                                                        <Button
-                                                            key={inst.id}
-                                                            variant="flat"
-                                                            className="justify-start h-auto py-3"
-                                                            onPress={() => {
-                                                                setSelectedInstruction(inst.id);
-                                                                onClose();
-                                                            }}
-                                                        >
-                                                            <div className="text-left truncate w-full">
-                                                                <span className="block text-sm font-medium truncate">{inst.logoName || 'Unnamed Logo'}</span>
-                                                                <span className="block text-[10px] text-default-500">#{inst.logoNumber}</span>
-                                                            </div>
-                                                        </Button>
-                                                    ))}
+                                                    {instructions.length > 0 ? (
+                                                        instructions.map((inst, idx) => (
+                                                            <Button
+                                                                key={idx}
+                                                                variant="flat"
+                                                                className="justify-start h-auto py-3"
+                                                                onPress={() => {
+                                                                    setSelectedInstruction(inst.logoNumber || idx);
+                                                                    onClose();
+                                                                }}
+                                                            >
+                                                                <div className="text-left truncate w-full">
+                                                                    <span className="block text-sm font-medium truncate">{inst.logoName || 'Unnamed Logo'}</span>
+                                                                    <span className="block text-[10px] text-default-500">#{inst.logoNumber}</span>
+                                                                </div>
+                                                            </Button>
+                                                        ))
+                                                    ) : (
+                                                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                                                            <Icon icon="lucide:inbox" className="text-5xl text-default-300 mb-3" />
+                                                            <p className="text-sm font-medium text-default-600 mb-1">No instructions available</p>
+                                                            <p className="text-xs text-default-400">This project doesn't have any logo instructions yet.</p>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </ModalBody>
                                             <ModalFooter>
@@ -883,25 +1022,380 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                         <h3 className="text-base font-semibold">Quick Actions</h3>
                     </CardHeader>
                     <CardBody className="p-4 space-y-3">
-                        <Button
-                            variant="flat"
-                            className="w-full justify-start"
-                            startContent={<Icon icon="lucide:image" className="text-warning" />}
-                            onPress={onResultModalOpen}
+                        <Tooltip
+                            content={results.length === 0 ? "No result images available yet" : "Reference a generated design"}
+                            placement="left"
                         >
-                            Reference Result Image
-                        </Button>
-                        <Button
-                            variant="flat"
-                            className="w-full justify-start"
-                            startContent={<Icon icon="lucide:file-text" className="text-secondary" />}
-                            onPress={onInstructionModalOpen}
+                            <Button
+                                variant="flat"
+                                className="w-full justify-start"
+                                startContent={<Icon icon="lucide:image" className="text-warning" />}
+                                onPress={onResultModalOpen}
+                                isDisabled={results.length === 0}
+                            >
+                                Reference Result Image
+                            </Button>
+                        </Tooltip>
+                        <Tooltip
+                            content={instructions.length === 0 ? "No instructions available in this project" : "Reference a specific instruction"}
+                            placement="left"
                         >
-                            Reference Instruction
-                        </Button>
+                            <Button
+                                variant="flat"
+                                className="w-full justify-start"
+                                startContent={<Icon icon="lucide:file-text" className="text-secondary" />}
+                                onPress={onInstructionModalOpen}
+                                isDisabled={instructions.length === 0}
+                            >
+                                Reference Instruction
+                            </Button>
+                        </Tooltip>
                     </CardBody>
                 </Card>
             </div >
+
+            {/* Instruction Details Modal */}
+            <Modal
+                isOpen={!!viewingInstruction}
+                onOpenChange={(open) => !open && setViewingInstruction(null)}
+                size="4xl"
+                scrollBehavior="inside"
+                classNames={{
+                    base: "bg-content1",
+                    header: "border-b border-divider",
+                    footer: "border-t border-divider",
+                }}
+            >
+                <ModalContent>
+                    {(onClose) => {
+                        // Helper to check if section has data
+                        const logo = viewingInstruction || {};
+                        const hasDimensions = logo.dimensions?.height?.value || logo.dimensions?.length?.value || logo.dimensions?.width?.value || logo.dimensions?.diameter?.value;
+                        const hasSpecs = logo.fixationType || logo.mastDiameter || logo.lacqueredStructure || logo.maxWeightConstraint || logo.ballast || logo.controlReport || logo.usageOutdoor !== undefined;
+                        const hasComposition = (logo.composition?.componentes?.filter(c => c.referencia).length > 0) || (logo.composition?.bolas?.length > 0);
+
+                        return (
+                            <>
+                                <ModalHeader className="flex flex-col gap-1">
+                                    Instruction Details
+                                    <span className="text-sm font-normal text-default-500">
+                                        {logo.logoName || 'Unnamed Instruction'}
+                                    </span>
+                                </ModalHeader>
+                                <ModalBody className="p-6">
+                                    <div className="space-y-6">
+                                        {/* Identity Card */}
+                                        <Card className="shadow-sm border border-default-200">
+                                            <CardBody>
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="p-2 bg-primary/10 rounded-lg text-primary mt-1">
+                                                            <Icon icon="lucide:hash" width={20} />
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-xs text-default-500 font-medium uppercase tracking-wider block mb-1">{t('pages.projectDetails.logoNumber', 'Logo Number')}</span>
+                                                            <span className="font-bold text-lg text-default-900">{logo.logoNumber || '—'}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="p-2 bg-primary/10 rounded-lg text-primary mt-1">
+                                                            <Icon icon="lucide:type" width={20} />
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-xs text-default-500 font-medium uppercase tracking-wider block mb-1">{t('pages.projectDetails.logoName', 'Logo Name')}</span>
+                                                            <span className="font-bold text-lg text-default-900">{logo.logoName || '—'}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="p-2 bg-primary/10 rounded-lg text-primary mt-1">
+                                                            <Icon icon="lucide:user" width={20} />
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-xs text-default-500 font-medium uppercase tracking-wider block mb-1">{t('pages.projectDetails.requestedBy', 'Requested By')}</span>
+                                                            <span className="font-bold text-lg text-default-900">{logo.requestedBy || '—'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </CardBody>
+                                        </Card>
+
+                                        {/* AI Generated Image */}
+                                        {logo.generatedImage && (
+                                            <Card className="shadow-sm border border-default-200">
+                                                <CardHeader className="pb-0 pt-4 px-4 flex gap-3">
+                                                    <div className="p-2 bg-primary-100 text-primary-600 rounded-lg">
+                                                        <Icon icon="lucide:sparkles" width={20} />
+                                                    </div>
+                                                    <h4 className="text-medium font-bold text-default-700 uppercase tracking-wider">
+                                                        {t('pages.projectDetails.aiGeneratedImage', 'AI Generated Image')}
+                                                    </h4>
+                                                </CardHeader>
+                                                <CardBody>
+                                                    <div className="relative aspect-video max-w-md mx-auto rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50">
+                                                        <img
+                                                            src={logo.generatedImage}
+                                                            alt={logo.logoName || 'AI Generated Logo'}
+                                                            className="w-full h-full object-contain"
+                                                        />
+                                                    </div>
+                                                </CardBody>
+                                            </Card>
+                                        )}
+
+                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                            {/* Left Column - Dimensions & Technical Specs */}
+                                            <div className="col-span-1 lg:col-span-5 space-y-6">
+                                                {/* Dimensions */}
+                                                {hasDimensions && (
+                                                    <Card className="shadow-sm border border-default-200 h-fit">
+                                                        <CardHeader className="pb-0 pt-4 px-4 flex gap-3">
+                                                            <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                                                                <Icon icon="lucide:ruler" width={20} />
+                                                            </div>
+                                                            <h4 className="text-medium font-bold text-default-700 uppercase tracking-wider">
+                                                                {t('pages.projectDetails.dimensions')}
+                                                            </h4>
+                                                        </CardHeader>
+                                                        <CardBody>
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                {logo.dimensions?.height?.value && (
+                                                                    <div className="bg-default-50 p-3 rounded-lg">
+                                                                        <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.height')}</span>
+                                                                        <div className="flex items-baseline gap-1">
+                                                                            <span className="font-bold text-xl">{logo.dimensions.height.value}</span>
+                                                                            <span className="text-xs text-default-400">m</span>
+                                                                            {logo.dimensions.height.imperative && <Icon icon="lucide:lock" className="text-warning text-xs ml-1" />}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {logo.dimensions?.length?.value && (
+                                                                    <div className="bg-default-50 p-3 rounded-lg">
+                                                                        <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.length')}</span>
+                                                                        <div className="flex items-baseline gap-1">
+                                                                            <span className="font-bold text-xl">{logo.dimensions.length.value}</span>
+                                                                            <span className="text-xs text-default-400">m</span>
+                                                                            {logo.dimensions.length.imperative && <Icon icon="lucide:lock" className="text-warning text-xs ml-1" />}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {logo.dimensions?.width?.value && (
+                                                                    <div className="bg-default-50 p-3 rounded-lg">
+                                                                        <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.width')}</span>
+                                                                        <div className="flex items-baseline gap-1">
+                                                                            <span className="font-bold text-xl">{logo.dimensions.width.value}</span>
+                                                                            <span className="text-xs text-default-400">m</span>
+                                                                            {logo.dimensions.width.imperative && <Icon icon="lucide:lock" className="text-warning text-xs ml-1" />}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {logo.dimensions?.diameter?.value && (
+                                                                    <div className="bg-default-50 p-3 rounded-lg">
+                                                                        <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.diameter')}</span>
+                                                                        <div className="flex items-baseline gap-1">
+                                                                            <span className="font-bold text-xl">{logo.dimensions.diameter.value}</span>
+                                                                            <span className="text-xs text-default-400">m</span>
+                                                                            {logo.dimensions.diameter.imperative && <Icon icon="lucide:lock" className="text-warning text-xs ml-1" />}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </CardBody>
+                                                    </Card>
+                                                )}
+
+                                                {/* Technical Specs & Usage */}
+                                                {hasSpecs && (
+                                                    <Card className="shadow-sm border border-default-200 h-fit">
+                                                        <CardHeader className="pb-0 pt-4 px-4 flex gap-3">
+                                                            <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
+                                                                <Icon icon="lucide:settings-2" width={20} />
+                                                            </div>
+                                                            <h4 className="text-medium font-bold text-default-700 uppercase tracking-wider">
+                                                                {t('pages.projectDetails.technicalSpecs')}
+                                                            </h4>
+                                                        </CardHeader>
+                                                        <CardBody className="space-y-4">
+                                                            {/* Usage & Fixation */}
+                                                            <div className="grid grid-cols-2 gap-4 pb-4 border-b border-default-100">
+                                                                <div>
+                                                                    <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.usage', 'Usage')}</span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Icon icon={logo.usageOutdoor ? "lucide:sun" : "lucide:home"} className="text-default-400" width={16} />
+                                                                        <span className="font-semibold text-sm">{logo.usageOutdoor ? t('pages.projectDetails.outdoor') : t('pages.projectDetails.indoor')}</span>
+                                                                    </div>
+                                                                </div>
+                                                                {logo.fixationType && (
+                                                                    <div>
+                                                                        <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.fixation', 'Fixation')}</span>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Icon icon="lucide:anchor" className="text-default-400" width={16} />
+                                                                            <span className="font-semibold text-sm capitalize">{logo.fixationType ? t(`pages.projectDetails.fixationTypes.${logo.fixationType}`) : ''}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Detailed Specs */}
+                                                            <div className="space-y-3">
+                                                                {logo.mastDiameter && (
+                                                                    <div className="flex justify-between items-center">
+                                                                        <span className="text-sm text-default-600">{t('pages.projectDetails.mastDiameter')}</span>
+                                                                        <span className="font-medium">{logo.mastDiameter} mm</span>
+                                                                    </div>
+                                                                )}
+                                                                {logo.lacqueredStructure && (
+                                                                    <div className="flex justify-between items-center">
+                                                                        <span className="text-sm text-default-600">{t('pages.projectDetails.lacquered')}</span>
+                                                                        <span className="text-xs bg-success/10 text-success px-2 py-1 rounded-full font-medium">
+                                                                            {logo.lacquerColor || t('common.yes')}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                {logo.maxWeightConstraint && logo.maxWeight && (
+                                                                    <div className="flex justify-between items-center">
+                                                                        <span className="text-sm text-default-600">{t('pages.projectDetails.maxWeightConstraint')}</span>
+                                                                        <div className="flex items-center gap-1 text-warning-600">
+                                                                            <Icon icon="lucide:scale" width={14} />
+                                                                            <span className="font-medium">{logo.maxWeight} kg</span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {logo.ballast && (
+                                                                    <div className="flex justify-between items-center">
+                                                                        <span className="text-sm text-default-600">{t('pages.projectDetails.ballast')}</span>
+                                                                        <Icon icon="lucide:check-circle" className="text-success" width={18} />
+                                                                    </div>
+                                                                )}
+                                                                {logo.controlReport && (
+                                                                    <div className="flex justify-between items-center">
+                                                                        <span className="text-sm text-default-600">{t('pages.projectDetails.controlReport')}</span>
+                                                                        <Icon icon="lucide:file-check" className="text-success" width={18} />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </CardBody>
+                                                    </Card>
+                                                )}
+                                            </div>
+
+                                            {/* Right Column - Composition & Content */}
+                                            <div className="col-span-1 lg:col-span-7 space-y-6">
+                                                {/* Composition */}
+                                                {hasComposition && (
+                                                    <Card className="shadow-sm border border-default-200 h-fit">
+                                                        <CardHeader className="pb-0 pt-4 px-4 flex gap-3">
+                                                            <div className="p-2 bg-orange-100 text-orange-600 rounded-lg">
+                                                                <Icon icon="lucide:layers" width={20} />
+                                                            </div>
+                                                            <h4 className="text-medium font-bold text-default-700 uppercase tracking-wider">
+                                                                {t('pages.projectDetails.composition')}
+                                                            </h4>
+                                                        </CardHeader>
+                                                        <CardBody>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                                {/* Components List */}
+                                                                {logo.composition.componentes && logo.composition.componentes.filter(c => c.referencia).length > 0 && (
+                                                                    <div>
+                                                                        <h5 className="text-xs font-bold text-default-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                                                            <Icon icon="lucide:box" width={14} />
+                                                                            {t('pages.projectDetails.components', 'Components')}
+                                                                            <span className="bg-default-100 text-default-600 px-1.5 py-0.5 rounded text-[10px]">
+                                                                                {logo.composition.componentes.filter(c => c.referencia).length}
+                                                                            </span>
+                                                                        </h5>
+                                                                        <div className="space-y-2">
+                                                                            {logo.composition.componentes.filter(c => c.referencia).map((comp, idx) => (
+                                                                                <div key={idx} className="bg-default-50 p-3 rounded-lg border border-default-200 hover:border-default-300 transition-colors">
+                                                                                    <div className="flex items-start justify-between gap-2 mb-1">
+                                                                                        <span className="font-semibold text-sm text-default-900">{comp.componenteNome}</span>
+                                                                                        {comp.referencia && (
+                                                                                            <span className="text-[10px] font-mono bg-default-200 text-default-600 px-1.5 py-0.5 rounded">
+                                                                                                {comp.referencia}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <div className="flex flex-wrap gap-2 text-xs text-default-500">
+                                                                                        {comp.corNome && <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-default-400"></div>{comp.corNome}</span>}
+                                                                                        {comp.acabamentoNome && <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-default-400"></div>{comp.acabamentoNome}</span>}
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Balls List */}
+                                                                {logo.composition.bolas && logo.composition.bolas.length > 0 && (
+                                                                    <div>
+                                                                        <h5 className="text-xs font-bold text-default-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                                                            <Icon icon="lucide:circle-dot" width={14} />
+                                                                            {t('pages.projectDetails.balls', 'Balls')}
+                                                                            <span className="bg-default-100 text-default-600 px-1.5 py-0.5 rounded text-[10px]">
+                                                                                {logo.composition.bolas.length}
+                                                                            </span>
+                                                                        </h5>
+                                                                        <div className="space-y-2">
+                                                                            {logo.composition.bolas.map((bola, idx) => (
+                                                                                <div key={idx} className="bg-default-50 p-3 rounded-lg border border-default-200 hover:border-default-300 transition-colors">
+                                                                                    <div className="flex items-start justify-between gap-2 mb-1">
+                                                                                        <span className="font-semibold text-sm text-default-900">{bola.bolaName}</span>
+                                                                                        {bola.reference && (
+                                                                                            <span className="text-[10px] font-mono bg-default-200 text-default-600 px-1.5 py-0.5 rounded">
+                                                                                                {bola.reference}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <div className="flex flex-wrap gap-2 text-xs text-default-500">
+                                                                                        {bola.corNome && <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-default-400"></div>{bola.corNome}</span>}
+                                                                                        {bola.tamanhoNome && <span className="flex items-center gap-1"><Icon icon="lucide:ruler" width={10} />{bola.tamanhoNome}</span>}
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </CardBody>
+                                                    </Card>
+                                                )}
+
+                                                {/* Details & Description */}
+                                                {logo.description && (
+                                                    <Card className="shadow-sm border border-default-200 h-fit">
+                                                        <CardHeader className="pb-0 pt-4 px-4 flex gap-3">
+                                                            <div className="p-2 bg-teal-100 text-teal-600 rounded-lg">
+                                                                <Icon icon="lucide:file-text" width={20} />
+                                                            </div>
+                                                            <h4 className="text-medium font-bold text-default-700 uppercase tracking-wider">
+                                                                {t('pages.projectDetails.details', 'Details')}
+                                                            </h4>
+                                                        </CardHeader>
+                                                        <CardBody>
+                                                            <div className="space-y-4">
+                                                                <div>
+                                                                    <span className="text-xs text-default-500 block mb-2 font-bold uppercase tracking-wider">{t('pages.projectDetails.description')}</span>
+                                                                    <div className="bg-default-50 p-4 rounded-lg text-sm text-default-700 leading-relaxed whitespace-pre-wrap border border-default-200">
+                                                                        {logo.description}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </CardBody>
+                                                    </Card>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ModalBody>
+                                <ModalFooter>
+                                    <Button color="primary" onPress={onClose}>
+                                        Close
+                                    </Button>
+                                </ModalFooter>
+                            </>
+                        );
+                    }}
+                </ModalContent>
+            </Modal>
 
             {/* Image Annotation Editor Modal */}
             <ImageAnnotationEditor

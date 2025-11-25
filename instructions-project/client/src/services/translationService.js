@@ -30,8 +30,8 @@ export async function translateText(text, targetLang, sourceLang = null) {
 
     try {
         // Build language pair - MyMemory requires source|target format
-        // If no source language, use 'en' as default source for auto-detection
-        const langPair = sourceLang ? `${sourceLang}|${targetLang}` : `en|${targetLang}`;
+        // Use auto-detection if source language is not provided
+        const langPair = sourceLang ? `${sourceLang}|${targetLang}` : `|${targetLang}`;
 
         // Encode text for URL
         const encodedText = encodeURIComponent(text);
