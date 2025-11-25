@@ -71,7 +71,7 @@ export const PipelineWidget = ({ value }) => {
         </div>
 
         {/* Horizontal Stacked Bar Chart */}
-        <div className="flex-1 flex flex-col justify-start gap-1.5 min-h-0 pt-1">
+        <div className="flex-1 flex flex-col justify-end gap-1.5 min-h-0 pt-1">
           {/* Progress Bar */}
           <div className="relative w-full h-6 rounded-full bg-default-100/50 shadow-inner" style={{ overflow: 'visible' }}>
             <div className="absolute inset-0 flex h-full rounded-full" style={{ overflow: 'visible' }}>
