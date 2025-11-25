@@ -531,6 +531,13 @@
       "chatWithDesigner": "Chat / Observations",
       "toBeDeveloped": "To be developed",
       "designer": "Designer",
+      "deleteModal": {
+        "title": "Confirm Deletion",
+        "description": "Are you sure you want to delete the project <strong>{{name}}</strong>?",
+        "warning": "This action cannot be undone. All data related to this project will be permanently removed.",
+        "deleting": "Deleting...",
+        "error": "Error deleting project"
+      },
       "notesManager": {
         "addTopic": "Add Topic",
         "deleteTopic": "Delete Topic",

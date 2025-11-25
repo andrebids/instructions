@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardBody, CardHeader, Button, Spinner, Tabs, Tab, Chip, Divider, Accordion, AccordionItem } from '@heroui/react';
+import { Card, CardBody, CardHeader, Button, Spinner, Tabs, Tab, Chip, Divider, Accordion, AccordionItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { projectsAPI } from '../services/api';
 import { PageTitle } from '../components/layout/page-title';
@@ -409,6 +409,8 @@ export default function ProjectDetails() {
     const [error, setError] = useState(null);
     const [isResultsModalOpen, setIsResultsModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState("overview");
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     React.useEffect(() => {
         loadProject();
@@ -425,6 +427,20 @@ export default function ProjectDetails() {
             setError(t('pages.projectDetails.errorLoading'));
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteProject = async () => {
+        try {
+            setIsDeleting(true);
+            await projectsAPI.delete(id);
+            setIsDeleteModalOpen(false);
+            navigate('/');
+        } catch (err) {
+            console.error('❌ Error deleting project:', err);
+            alert(t('pages.projectDetails.deleteModal.error', 'Erro ao eliminar projeto'));
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -512,6 +528,14 @@ export default function ProjectDetails() {
                                     onPress={() => navigate(`/projects/${id}/edit`)}
                                 >
                                     {t('common.edit')}
+                                </Button>
+                                <Button
+                                    color="danger"
+                                    variant="flat"
+                                    startContent={<Icon icon="lucide:trash-2" />}
+                                    onPress={() => setIsDeleteModalOpen(true)}
+                                >
+                                    {t('common.delete')}
                                 </Button>
                             </div>
                         </div>
@@ -755,6 +779,56 @@ export default function ProjectDetails() {
                     isOpen={isResultsModalOpen}
                     onOpenChange={setIsResultsModalOpen}
                 />
+
+                {/* Delete Confirmation Modal */}
+                <Modal
+                    isOpen={isDeleteModalOpen}
+                    onOpenChange={setIsDeleteModalOpen}
+                    placement="center"
+                    backdrop="blur"
+                >
+                    <ModalContent>
+                        {(onClose) => (
+                            <>
+                                <ModalHeader className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                        <Icon icon="lucide:alert-triangle" className="text-danger" width={24} />
+                                        <span>{t('pages.projectDetails.deleteModal.title')}</span>
+                                    </div>
+                                </ModalHeader>
+                                <ModalBody>
+                                    <p dangerouslySetInnerHTML={{
+                                        __html: t('pages.projectDetails.deleteModal.description', { name: project?.name || '' })
+                                    }} />
+                                    <div className="bg-danger-50 border border-danger-200 rounded-lg p-3 mt-2">
+                                        <div className="flex items-start gap-2">
+                                            <Icon icon="lucide:alert-circle" className="text-danger mt-0.5" width={18} />
+                                            <p className="text-sm text-danger-700">
+                                                {t('pages.projectDetails.deleteModal.warning')}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </ModalBody>
+                                <ModalFooter>
+                                    <Button
+                                        variant="light"
+                                        onPress={onClose}
+                                        isDisabled={isDeleting}
+                                    >
+                                        {t('common.cancel')}
+                                    </Button>
+                                    <Button
+                                        color="danger"
+                                        onPress={handleDeleteProject}
+                                        isLoading={isDeleting}
+                                    >
+                                        {isDeleting ? t('pages.projectDetails.deleteModal.deleting') : t('common.delete')}
+                                    </Button>
+                                </ModalFooter>
+                            </>
+                        )}
+                    </ModalContent>
+                </Modal>
             </Scroller>
         </div>
     );

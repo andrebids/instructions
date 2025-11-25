@@ -46,6 +46,7 @@ router.get('/:id/images/debug', projectController.debugProjectImages);
 // Rotas de observações
 router.get('/:id/observations', projectController.getObservations);
 router.post('/:id/observations', projectController.addObservation);
+router.delete('/:id/observations/:observationId', projectController.deleteObservation);
 
 router.get('/', projectController.getAll);
 router.get('/:id', projectController.getById);

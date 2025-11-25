@@ -1673,7 +1673,22 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                         src={currentLogo.generatedImage}
                         alt="AI Generated"
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Hide broken image and show fallback
+                          e.target.style.display = 'none';
+                          const fallback = e.target.nextElementSibling;
+                          if (fallback && fallback.classList.contains('image-fallback')) {
+                            fallback.style.display = 'flex';
+                          }
+                        }}
                       />
+                      {/* Fallback UI for broken images */}
+                      <div className="image-fallback absolute inset-0 bg-default-100 flex-col items-center justify-center gap-2 hidden">
+                        <Icon icon="lucide:image-off" className="w-12 h-12 text-default-400" />
+                        <p className="text-xs text-default-500 text-center px-4">
+                          Image failed to load
+                        </p>
+                      </div>
                       <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
                         AI Generated
                       </div>
@@ -1710,11 +1725,28 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                     return (
                       <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-default-200 group">
                         {isImage ? (
-                          <img
-                            src={fileUrl}
-                            alt={file.name}
-                            className="w-full h-full object-cover"
-                          />
+                          <>
+                            <img
+                              src={fileUrl}
+                              alt={file.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Hide broken image and show fallback
+                                e.target.style.display = 'none';
+                                const fallback = e.target.nextElementSibling;
+                                if (fallback && fallback.classList.contains('image-fallback')) {
+                                  fallback.style.display = 'flex';
+                                }
+                              }}
+                            />
+                            {/* Fallback UI for broken images */}
+                            <div className="image-fallback absolute inset-0 bg-default-100 flex-col items-center justify-center gap-2 hidden">
+                              <Icon icon="lucide:image-off" className="w-12 h-12 text-default-400" />
+                              <p className="text-xs text-default-500 text-center px-4">
+                                Image failed to load
+                              </p>
+                            </div>
+                          </>
                         ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center bg-default-100 p-2">
                             <Icon icon="lucide:file" className="w-12 h-12 text-default-400 mb-2" />

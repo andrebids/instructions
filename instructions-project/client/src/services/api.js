@@ -270,6 +270,12 @@ export const projectsAPI = {
     const response = await api.post(`/projects/${id}/observations`, data);
     return response.data;
   },
+
+  // DELETE /api/projects/:id/observations/:observationId
+  deleteObservation: async (id, observationId) => {
+    const response = await api.delete(`/projects/${id}/observations/${observationId}`);
+    return response.data;
+  },
 };
 
 // ===== DECORATIONS API =====

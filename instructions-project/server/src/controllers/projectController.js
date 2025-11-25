@@ -485,6 +485,8 @@ export async function addObservation(req, res) {
 
     const observationData = {
       content: req.body.content,
+      // Attachments can include regular files and annotated images
+      // Annotated images are created by the ImageAnnotationEditor and added to this array
       attachments: req.body.attachments || [],
       linkedInstructionId: req.body.linkedInstructionId,
       linkedResultImageId: req.body.linkedResultImageId,
@@ -511,6 +513,46 @@ export async function addObservation(req, res) {
     });
   } catch (error) {
     logError('Erro ao adicionar observação', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+// DELETE /api/projects/:id/observations/:observationId - Deletar observação
+export async function deleteObservation(req, res) {
+  try {
+    const { observationId } = req.params;
+    const auth = await getAuth(req);
+    const userId = auth?.userId;
+    const userRole = await getUserRole(req);
+
+    // Buscar a observação para verificar permissões
+    const observations = await projectService.getObservations(req.params.id);
+    const targetObservation = observations.find(obs => obs.id === observationId);
+
+    if (!targetObservation) {
+      return res.status(404).json({ error: 'Observation not found' });
+    }
+
+    // Verificar se o usuário é o autor ou admin
+    const isAuthor = targetObservation.authorName === (auth?.user?.name || auth?.user?.email?.split('@')[0]);
+    const isAdmin = userRole === 'admin';
+
+    if (!isAuthor && !isAdmin) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You can only delete your own observations'
+      });
+    }
+
+    const result = await projectService.deleteObservation(observationId);
+
+    if (!result) {
+      return res.status(404).json({ error: 'Observation not found' });
+    }
+
+    res.json({ success: true, message: 'Observation deleted successfully' });
+  } catch (error) {
+    logError('Erro ao deletar observação', error);
     res.status(500).json({ error: error.message });
   }
 }

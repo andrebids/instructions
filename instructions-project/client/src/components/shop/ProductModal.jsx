@@ -621,6 +621,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                               setQty(val);
                             }}
                             className="w-20"
+                            aria-label="Product quantity"
                           />
                         </div>
                       )}
