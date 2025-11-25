@@ -1,82 +1,145 @@
 import React from "react";
-import { Card, CardBody } from "@heroui/react";
+import { Card, CardBody, Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const data = [
-  { name: 'Mon', value: 4000 },
-  { name: 'Tue', value: 3000 },
-  { name: 'Wed', value: 2000 },
-  { name: 'Thu', value: 2780 },
-  { name: 'Fri', value: 1890 },
-  { name: 'Sat', value: 2390 },
-  { name: 'Sun', value: 3490 },
+// Sales pipeline data - percentages for each stage with mock project details
+const pipelineStages = [
+  { 
+    name: 'Proposal', 
+    percentage: 40, 
+    color: '#A855F7', 
+    glowColor: 'rgba(168, 85, 247, 0.4)',
+    projectCount: 8,
+    totalValue: '€ 480k',
+    projects: [
+      { name: 'Hotel Algarve', value: '€ 85k' },
+      { name: 'Shopping Center Lisboa', value: '€ 120k' },
+      { name: 'Restaurant Porto', value: '€ 45k' },
+    ]
+  },
+  { 
+    name: 'Negotiation', 
+    percentage: 35, 
+    color: '#3B82F6', 
+    glowColor: 'rgba(59, 130, 246, 0.4)',
+    projectCount: 6,
+    totalValue: '€ 420k',
+    projects: [
+      { name: 'Corporate Office Braga', value: '€ 95k' },
+      { name: 'Retail Store Cascais', value: '€ 65k' },
+      { name: 'Event Venue Sintra', value: '€ 78k' },
+    ]
+  },
+  { 
+    name: 'Closing', 
+    percentage: 25, 
+    color: '#10B981', 
+    glowColor: 'rgba(16, 185, 129, 0.4)',
+    projectCount: 4,
+    totalValue: '€ 300k',
+    projects: [
+      { name: 'Municipal Building Faro', value: '€ 110k' },
+      { name: 'Private Villa Comporta', value: '€ 92k' },
+      { name: 'Boutique Hotel Óbidos', value: '€ 98k' },
+    ]
+  },
 ];
 
-export const PipelineWidget = ({ value, trend }) => {
+export const PipelineWidget = ({ value }) => {
   return (
     <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
-       {/* Background Glow Effect */}
-       <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary-500/20 rounded-full blur-3xl group-hover:bg-primary-500/30 transition-all duration-500" />
+       {/* Background Glow Effect - Purple to Pink gradient */}
+       <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-3xl group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-all duration-500" />
        
-      <CardBody className="p-4 flex flex-col h-full overflow-hidden relative z-10">
+      <CardBody className="p-5 pb-3 flex flex-col h-full relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 h-11">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-primary-500/10 text-primary-500 shadow-sm ring-1 ring-primary-500/20">
-              <Icon icon="lucide:bar-chart-3" className="text-xl" />
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500/15 to-pink-500/15 shadow-sm ring-1 ring-purple-500/20 backdrop-blur-sm">
+              <Icon icon="lucide:bar-chart-3" className="text-xl text-purple-400" />
             </div>
             <div className="flex flex-col">
               <span className="text-default-500 text-sm font-medium">Total</span>
               <span className="text-default-900 text-base font-bold">Pipeline</span>
             </div>
           </div>
-          {trend && (
-            <div className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-500/20">
-              <Icon icon="lucide:trending-up" />
-              {trend}
-            </div>
-          )}
         </div>
 
         {/* Value Display */}
-        <div className="mb-4">
-          <h4 className="text-3xl font-bold text-foreground">{value}</h4>
+        <div className="mb-2 h-10 flex items-end">
+          <h4 className="text-3xl font-bold text-foreground leading-none">{value}</h4>
         </div>
 
-        <div className="flex-1 min-h-0 w-full mt-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={data}
-              margin={{
-                top: 0,
-                right: 0,
-                left: 0,
-                bottom: 0,
-              }}
-            >
-              <defs>
-                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#006FEE" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#006FEE" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <Tooltip 
-                contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', borderRadius: '8px', border: 'none', color: '#fff' }}
-                itemStyle={{ color: '#fff' }}
-                cursor={{ stroke: '#006FEE', strokeWidth: 1, strokeDasharray: '4 4' }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#006FEE" 
-                fill="url(#colorValue)" 
-                strokeWidth={3}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+        {/* Horizontal Stacked Bar Chart */}
+        <div className="flex-1 flex flex-col justify-start gap-1.5 min-h-0 pt-1">
+          {/* Progress Bar */}
+          <div className="relative w-full h-6 rounded-full bg-default-100/50 shadow-inner" style={{ overflow: 'visible' }}>
+            <div className="absolute inset-0 flex h-full rounded-full" style={{ overflow: 'visible' }}>
+              {pipelineStages.map((stage, index) => {
+                const leftOffset = pipelineStages
+                  .slice(0, index)
+                  .reduce((sum, s) => sum + s.percentage, 0);
+                
+                return (
+                  <Tooltip
+                    key={stage.name}
+                    content={
+                      <div className="px-1 py-2">
+                        <div className="text-small font-bold mb-1">{stage.name}</div>
+                        <div className="text-tiny mb-2 text-default-400">
+                          {stage.projectCount} projects • {stage.totalValue}
+                        </div>
+                        <div className="space-y-1">
+                          {stage.projects.map((project, idx) => (
+                            <div key={idx} className="flex justify-between gap-3 text-tiny">
+                              <span className="text-default-300">{project.name}</span>
+                              <span className="font-semibold">{project.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    }
+                    placement="top"
+                    classNames={{
+                      base: "py-2 px-3",
+                      content: "py-2 px-3 bg-content1/95 backdrop-blur-md border border-default-200/50"
+                    }}
+                  >
+                    <div
+                      className="relative h-full transition-all duration-500 hover:brightness-110 cursor-pointer first:rounded-l-full last:rounded-r-full"
+                      style={{
+                        width: `${stage.percentage}%`,
+                        backgroundColor: stage.color,
+                        filter: `drop-shadow(0 0 4px ${stage.glowColor})`,
+                      }}
+                    />
+
+                  </Tooltip>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-4 flex-wrap px-1">
+            {pipelineStages.map((stage) => (
+              <div key={stage.name} className="flex items-center gap-1.5">
+                <div 
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  style={{ 
+                    backgroundColor: stage.color,
+                    boxShadow: `0 0 6px ${stage.glowColor}`
+                  }}
+                />
+                <span className="text-xs font-medium text-default-600 whitespace-nowrap">
+                  {stage.name}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </CardBody>
+
     </Card>
   );
 };

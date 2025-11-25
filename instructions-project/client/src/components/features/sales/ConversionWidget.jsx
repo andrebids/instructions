@@ -2,13 +2,13 @@ import React from "react";
 import { Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
-export const ConversionWidget = ({ value, trend }) => {
+export const ConversionWidget = ({ value, trend, won = 34, lost = 16 }) => {
   // Parse numeric value from string (e.g. "68%")
   const numericValue = parseInt(value) || 0;
   
   // SVG Configuration
-  const size = 140;
-  const strokeWidth = 12;
+  const size = 110;
+  const strokeWidth = 10;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (numericValue / 100) * circumference;
@@ -18,20 +18,9 @@ export const ConversionWidget = ({ value, trend }) => {
        {/* Background Glow Effect */}
        <div className="absolute -top-10 -right-10 w-32 h-32 bg-success-500/20 rounded-full blur-3xl group-hover:bg-success-500/30 transition-all duration-500" />
 
-      <CardBody className="p-4 flex flex-col h-full overflow-hidden relative z-10">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 rounded-xl bg-success-500/10 text-success-500 shadow-sm ring-1 ring-success-500/20">
-            <Icon icon="lucide:pie-chart" className="text-xl" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-default-500 text-sm font-medium">Conversion</span>
-            <span className="text-default-900 text-base font-bold">Rate</span>
-          </div>
-        </div>
-
-        {/* Chart - Centered */}
-        <div className="flex-1 flex items-center justify-center">
+      <CardBody className="p-5 flex flex-col h-full relative z-10 overflow-hidden">
+        {/* Chart - Positioned at 50% of ENTIRE widget height */}
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 z-10">
           <div className="relative" style={{ width: size, height: size }}>
             <svg width={size} height={size} className="transform -rotate-90 drop-shadow-lg">
               <defs>
@@ -74,7 +63,40 @@ export const ConversionWidget = ({ value, trend }) => {
             
             {/* Inner Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-3xl font-bold text-foreground tracking-tight">{numericValue}%</span>
+              <span className="text-2xl font-bold text-foreground tracking-tight">{numericValue}%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-2 h-11 relative z-20">
+          <div className="p-2.5 rounded-xl bg-success-500/10 text-success-500 shadow-sm ring-1 ring-success-500/20">
+            <Icon icon="lucide:pie-chart" className="text-xl" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-default-500 text-sm font-medium">Conversion</span>
+            <span className="text-default-900 text-base font-bold">Rate</span>
+          </div>
+        </div>
+
+        {/* Value Display */}
+        <div className="mb-1 h-10 flex items-end relative z-20">
+          <h4 className="text-3xl font-bold text-foreground leading-none">{value}</h4>
+        </div>
+
+        {/* Content Area with Info */}
+        <div className="flex-1 relative">
+          {/* Absolute Numbers */}
+          <div className="flex flex-col gap-1 relative z-20">
+            <div className="flex items-center gap-2">
+              <Icon icon="lucide:check-circle" className="text-sm text-success-500" />
+              <span className="text-xs text-default-500 font-medium">Won:</span>
+              <span className="text-sm font-bold text-success-600 dark:text-success-500">{won}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Icon icon="lucide:x-circle" className="text-sm text-danger-500" />
+              <span className="text-xs text-default-500 font-medium">Lost:</span>
+              <span className="text-sm font-bold text-danger-600 dark:text-danger-500">{lost}</span>
             </div>
           </div>
         </div>

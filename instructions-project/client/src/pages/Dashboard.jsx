@@ -236,10 +236,9 @@ export default function Dashboard() {
                   </div>
 
                   {/* Financial KPIs */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-48">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-48 items-stretch">
                     <PipelineWidget 
                       value="€ 1.2M" 
-                      trend="+12%" 
                     />
                     <DraftsWidget 
                       value="€ 450k" 
@@ -247,7 +246,9 @@ export default function Dashboard() {
                     />
                     <ConversionWidget 
                       value="68%" 
-                      trend="+5%" 
+                      trend="+5%"
+                      won={34}
+                      lost={16}
                     />
                   </div>
 
