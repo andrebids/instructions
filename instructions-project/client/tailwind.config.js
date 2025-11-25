@@ -45,6 +45,15 @@ export default {
         'aurora-gradient': 'linear-gradient(135deg, #A19AFE 0%, #F9D7AO 100%)',
         'glass-gradient': 'linear-gradient(145deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.1) 100%)',
       },
+      keyframes: {
+        shine: {
+          '0%': { 'background-position': '100%' },
+          '100%': { 'background-position': '-100%' },
+        },
+      },
+      animation: {
+        shine: 'shine 5s linear infinite',
+      },
     },
   },
 };

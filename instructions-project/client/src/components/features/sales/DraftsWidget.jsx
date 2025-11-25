@@ -15,12 +15,23 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
     return num;
   };
 
+  // Format value for display (e.g. 550000 -> "€ 550k")
+  const formatValue = (val) => {
+    if (val >= 1000000) {
+      return `€ ${(val / 1000000).toFixed(1)}M`;
+    } else if (val >= 1000) {
+      return `€ ${(val / 1000).toFixed(0)}k`;
+    }
+    return `€ ${val.toFixed(0)}`;
+  };
+
   const currentVal = parseValue(value);
+  const gap = Math.max(0, goal - currentVal);
   const percentage = Math.min(100, Math.max(0, Math.round((currentVal / goal) * 100)));
 
   // SVG Configuration for Semi-Circle
   const width = 120;
-  const height = 70; // Half height + padding
+  const height = 70; // Reduced height to move up
   const strokeWidth = 10;
   const radius = (width - strokeWidth) / 2;
   const cx = width / 2;
@@ -51,7 +62,7 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
        {/* Background Glow Effect - Blue to Teal gradient */}
        <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full blur-3xl group-hover:from-blue-500/30 group-hover:to-cyan-500/30 transition-all duration-500" />
 
-      <CardBody className="p-5 pb-3 flex flex-col h-full relative z-10 overflow-hidden">
+      <CardBody className="p-4 pb-2 flex flex-col h-full relative z-10 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -59,29 +70,28 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
               <Icon icon="lucide:target" className="text-xl text-blue-400" />
             </div>
             <div className="flex flex-col">
-              <span className="text-default-500 text-sm font-medium">{t('pages.dashboard.salesGoalWidget.sales')}</span>
-              <span className="text-default-900 text-base font-bold">{t('pages.dashboard.salesGoalWidget.goal')}</span>
+              <span className="text-default-500 text-sm font-medium">{t('pages.dashboard.salesGoalWidget.annualGoal')}</span>
+              <span className="text-default-900 text-base font-bold">{formatValue(goal)}</span>
             </div>
           </div>
         </div>
 
         {/* Value Display */}
-        <div className="mt-2 mb-2">
-          <h4 className="text-3xl font-bold text-foreground leading-none">{value}</h4>
+        <div className="mt-1 mb-1">
+          <h4 className="text-3xl font-bold text-foreground leading-none">{formatValue(gap)}</h4>
+          <span className="text-xs text-default-400 mt-0.5">{t('pages.dashboard.salesGoalWidget.toGo')}</span>
         </div>
 
         {/* Content */}
-        <div className="flex items-end justify-between flex-1 gap-4 pt-1">
-          <div className="flex flex-col gap-1 justify-end pb-3">
-             <span className="text-xs text-default-400 font-medium">{t('pages.dashboard.salesGoalWidget.yearGoal')}: € {(goal/1000000).toFixed(1)}M</span>
-             <div className="flex items-center gap-2">
-                 <span className="text-sm font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">{percentage}%</span>
-                 <span className="text-xs text-default-400">{t('pages.dashboard.salesGoalWidget.completed')}</span>
-             </div>
+        <div className="flex items-end justify-between flex-1 gap-4 pt-0">
+          <div className="flex flex-col gap-1 justify-end pb-4">
+             <span className="text-xs text-default-400 font-medium">
+               {t('pages.dashboard.salesGoalWidget.completedLabel')}: {value} • {percentage}%
+             </span>
           </div>
 
           {/* Gauge Chart */}
-          <div className="relative flex items-end justify-center pb-4" style={{ width: width, height: height }}>
+          <div className="relative flex items-center justify-center" style={{ width: width, height: height, transform: 'translateY(-12px)' }}>
             <svg width={width} height={height} className="overflow-visible">
               <defs>
                 <linearGradient id="salesGaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -118,7 +128,7 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
             </svg>
             
             {/* Icon inside Gauge */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-blue-500/20">
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-blue-500/20">
                 <Icon icon="lucide:trending-up" className="text-2xl" />
             </div>
           </div>

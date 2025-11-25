@@ -144,7 +144,7 @@ const OrderItem = ({ order, index }) => {
             isIconOnly
             size="sm"
             variant="light"
-            className="text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+            className="text-zinc-400 hover:text-red-500 hover:bg-red-500/10 hover:scale-110 active:scale-95 transition-all duration-300"
           >
             <Icon icon="lucide:trash-2" className="w-4 h-4" />
           </Button>
@@ -154,7 +154,7 @@ const OrderItem = ({ order, index }) => {
         <Button
           size="sm"
           variant="bordered"
-          className="border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex-1 sm:flex-none sm:min-w-[80px]"
+          className="border-zinc-300/50 dark:border-zinc-700/50 bg-white/5 backdrop-blur-md text-zinc-600 dark:text-zinc-300 hover:bg-white/20 hover:border-zinc-300 dark:hover:border-zinc-600 hover:scale-105 active:scale-95 transition-all duration-300 flex-1 sm:flex-none sm:min-w-[80px]"
         >
           <span>Extend</span>
         </Button>
@@ -162,8 +162,7 @@ const OrderItem = ({ order, index }) => {
         {/* Confirm Button (Primary) */}
         <Button
           size="sm"
-          variant="bordered"
-          className="border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold flex-1 sm:flex-none sm:min-w-[90px] transition-colors"
+          className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/50 hover:border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] backdrop-blur-md font-semibold hover:scale-105 active:scale-95 transition-all duration-300 flex-1 sm:flex-none sm:min-w-[90px]"
         >
           <span>Confirm</span>
         </Button>

@@ -169,7 +169,10 @@
         "sales": "Sales",
         "goal": "Goal",
         "yearGoal": "Year Goal",
-        "completed": "completed"
+        "completed": "completed",
+        "annualGoal": "Annual Goal",
+        "toGo": "To go",
+        "completedLabel": "Completed"
       },
       "conversionWidget": {
         "winLost": "Win / Lost",
