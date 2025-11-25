@@ -19,6 +19,7 @@ import { PipelineWidget } from "../components/features/sales/PipelineWidget";
 import { DraftsWidget } from "../components/features/sales/DraftsWidget";
 import { ConversionWidget } from "../components/features/sales/ConversionWidget";
 import { OrderManagementWidget } from "../components/features/OrderManagementWidget";
+import ShinyText from "../components/ShinyText";
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -231,7 +232,11 @@ export default function Dashboard() {
                       <div className="relative z-10">
                         <h2 className="text-3xl font-bold text-zinc-900 dark:text-white mb-2">
                           {t('pages.dashboard.main.hero.title')} <br/>
-                          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-500 dark:from-amber-200 dark:to-yellow-400">{t('pages.dashboard.main.hero.titleHighlight')}</span>
+                          <ShinyText 
+                            text={t('pages.dashboard.main.hero.titleHighlight')} 
+                            className="[--shiny-bg-gradient:linear-gradient(to_right,#d97706,#f97316)] dark:[--shiny-bg-gradient:linear-gradient(to_right,#fde68a,#facc15)]"
+                            speed={3}
+                          />
                         </h2>
                         <p className="text-zinc-600 dark:text-slate-200 mb-6 max-w-xs font-medium">
                           {t('pages.dashboard.main.hero.draftsMessage', { count: stats.draft })}
@@ -284,6 +289,7 @@ export default function Dashboard() {
                     <TodoListWidget />
                   </div>
                   
+                  
 
                   
                   {/* Order Management Widget */}
@@ -299,4 +305,3 @@ export default function Dashboard() {
     </>
   );
 }
-
