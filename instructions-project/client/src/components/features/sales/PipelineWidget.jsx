@@ -47,7 +47,24 @@ const pipelineStages = [
 
 export const PipelineWidget = ({ value }) => {
   return (
-    <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
+    <>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(155, 155, 155, 0.5);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(155, 155, 155, 0.7);
+        }
+      `}</style>
+      <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
        {/* Background Glow Effect - Purple to Pink gradient */}
        <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-3xl group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-all duration-500" />
        
@@ -84,16 +101,22 @@ export const PipelineWidget = ({ value }) => {
                   <Tooltip
                     key={stage.name}
                     content={
-                      <div className="px-3 py-3 min-w-[200px]">
+                      <div className="px-3 py-3 min-w-[200px] max-w-[280px]">
                         <div className="text-base font-bold mb-2 text-foreground">{stage.name}</div>
                         <div className="text-sm mb-3 text-foreground-600 font-medium">
                           {stage.projectCount} projects • {stage.totalValue}
                         </div>
-                        <div className="space-y-2">
+                        <div 
+                          className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar"
+                          style={{
+                            scrollbarWidth: 'thin',
+                            scrollbarColor: 'rgba(155, 155, 155, 0.5) transparent'
+                          }}
+                        >
                           {stage.projects.map((project, idx) => (
                             <div key={idx} className="flex justify-between gap-4 text-sm">
-                              <span className="text-foreground-700">{project.name}</span>
-                              <span className="font-bold text-foreground">{project.value}</span>
+                              <span className="text-foreground-700 truncate">{project.name}</span>
+                              <span className="font-bold text-foreground whitespace-nowrap">{project.value}</span>
                             </div>
                           ))}
                         </div>

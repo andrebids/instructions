@@ -102,12 +102,12 @@ const OrderItem = ({ order, index }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1, duration: 0.4, ease: "easeOut" }}
-      whileHover={{ scale: 1.02, backgroundColor: "rgba(255,255,255,0.05)" }}
+      whileHover={{ backgroundColor: "rgba(255,255,255,0.05)" }}
       className={`
         group relative flex flex-col sm:flex-row items-start sm:items-center justify-between 
         p-4 rounded-2xl border border-white/10 dark:border-white/5 
         bg-white/30 dark:bg-black/20 backdrop-blur-md
-        hover:shadow-lg hover:border-primary/20 transition-all duration-300
+        transition-colors duration-300
       `}
     >
       {/* Status Indicator Line (Left) */}
@@ -164,12 +164,8 @@ const OrderItem = ({ order, index }) => {
         {/* Confirm Button (Primary) */}
         <Button
           size="sm"
-          className={`
-            font-semibold shadow-lg text-white min-w-0 sm:min-w-[90px]
-            ${order.status === 'critical' 
-              ? 'bg-gradient-to-r from-emerald-500 to-green-600 shadow-emerald-500/20' 
-              : 'bg-gradient-to-r from-emerald-500 to-green-600 shadow-emerald-500/20'}
-          `}
+          variant="bordered"
+          className="border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold min-w-0 sm:min-w-[90px] transition-colors"
         >
           <span className="hidden sm:inline">Confirm</span>
           <Icon icon="lucide:check" className="w-4 h-4 sm:hidden" />
