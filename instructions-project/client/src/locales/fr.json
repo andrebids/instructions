@@ -75,7 +75,7 @@
         "newProject": "Nouveau Projet",
         "hero": {
           "title": "Prêt à illuminer",
-          "titleHighlight": "Noël 2025 ?",
+          "titleHighlight": "Noël ?",
           "draftsMessage": "Vous avez {{count}} brouillons en attente de finalisation.",
           "continueWorking": "Reprendre le travail"
         },

@@ -75,7 +75,7 @@
         "newProject": "Novo Projeto",
         "hero": {
           "title": "Pronto para iluminar",
-          "titleHighlight": "o Natal de 2025?",
+          "titleHighlight": "o Natal?",
           "draftsMessage": "Tem {{count}} rascunhos pendentes.",
           "continueWorking": "Retomar Trabalho"
         },

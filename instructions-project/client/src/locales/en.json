@@ -75,7 +75,7 @@
         "newProject": "New Project",
         "hero": {
           "title": "Ready to light up",
-          "titleHighlight": "Christmas 2025?",
+          "titleHighlight": "Christmas?",
           "draftsMessage": "You have {{count}} drafts waiting to be finalized.",
           "continueWorking": "Continue Working"
         },

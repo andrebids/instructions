@@ -7,24 +7,24 @@ import { useTranslation } from "react-i18next";
 const MOCK_ORDERS = [
   {
     id: 1,
-    project: "Alpha Tower",
-    items: ["Steel Beams", "Concrete Mix", "Rebar"],
+    project: "Lisbon Municipality",
+    items: ["IPL337W", "GX350LW-2A", "IPL337-REF"],
     status: "critical",
     timeLeft: "2h",
     date: "Today, 14:00"
   },
   {
     id: 2,
-    project: "Beta Complex",
-    items: ["Cement Bags"],
+    project: "Sports Center",
+    items: ["IPL337W"],
     status: "pending",
     timeLeft: "2d",
     date: "Nov 27, 09:00"
   },
   {
     id: 3,
-    project: "Gamma Mall",
-    items: ["Glass Panels", "Window Frames", "Door Handles", "LED Strips"],
+    project: "Green market",
+    items: ["IPL337W", "IPL337", "8CXMAR13446625-M27", "IPL337"],
     status: "normal",
     timeLeft: "New",
     date: "Just now"
