@@ -353,14 +353,21 @@ export function TodoListWidget() {
               {t('pages.dashboard.todoListWidget.emptyState')}
             </div>
           ) : (
+
             <AnimatePresence mode="popLayout">
-              {tasks.map((task) => {
+              {[...tasks]
+                .sort((a, b) => {
+                  // Sort by completion status (pending first)
+                  if (a.isCompleted === b.isCompleted) return 0;
+                  return a.isCompleted ? 1 : -1;
+                })
+                .map((task) => {
                 const dueDateInfo = getDueDateStatus(task.dueDate);
                 return (
                   <motion.div
                     key={task.id}
                     initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    animate={{ opacity: task.isCompleted ? 0.5 : 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, x: -100, scale: 0.95 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
                     layout

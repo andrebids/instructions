@@ -18,7 +18,7 @@ export const ConversionWidget = ({ value, trend, won = 34, lost = 16 }) => {
        {/* Background Glow Effect */}
        <div className="absolute -top-10 -right-10 w-32 h-32 bg-success-500/20 rounded-full blur-3xl group-hover:bg-success-500/30 transition-all duration-500" />
 
-      <CardBody className="p-5 flex flex-col h-full relative z-10 overflow-hidden">
+      <CardBody className="p-5 pb-3 flex flex-col h-full relative z-10 overflow-hidden">
         {/* Chart - Positioned at 50% of ENTIRE widget height */}
         <div className="absolute right-5 top-1/2 -translate-y-1/2 z-10">
           <div className="relative" style={{ width: size, height: size }}>
@@ -69,34 +69,30 @@ export const ConversionWidget = ({ value, trend, won = 34, lost = 16 }) => {
         </div>
 
         {/* Header */}
-        <div className="flex items-center gap-3 mb-2 h-11 relative z-20">
-          <div className="p-2.5 rounded-xl bg-success-500/10 text-success-500 shadow-sm ring-1 ring-success-500/20">
-            <Icon icon="lucide:pie-chart" className="text-xl" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-default-500 text-sm font-medium">Conversion</span>
-            <span className="text-default-900 text-base font-bold">Rate</span>
+        <div className="flex items-center justify-between relative z-20">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-success-500/10 text-success-500 shadow-sm ring-1 ring-success-500/20">
+              <Icon icon="lucide:pie-chart" className="text-xl" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-default-500 text-sm font-medium">Conversion</span>
+              <span className="text-default-900 text-base font-bold">Rate</span>
+            </div>
           </div>
         </div>
 
         {/* Value Display */}
-        <div className="mb-1 h-10 flex items-end relative z-20">
+        <div className="mt-2 mb-2 relative z-20">
           <h4 className="text-3xl font-bold text-foreground leading-none">{value}</h4>
         </div>
 
-        {/* Content Area with Info */}
-        <div className="flex-1 relative">
-          {/* Absolute Numbers */}
-          <div className="flex flex-col gap-1 relative z-20">
+        {/* Content */}
+        <div className="flex items-end justify-between flex-1 gap-4 pt-1">
+          <div className="flex flex-col gap-1 justify-end pb-3">
+            <span className="text-xs text-default-400 font-medium">Total: {won + lost} deals</span>
             <div className="flex items-center gap-2">
-              <Icon icon="lucide:check-circle" className="text-sm text-success-500" />
-              <span className="text-xs text-default-500 font-medium">Won:</span>
-              <span className="text-sm font-bold text-success-600 dark:text-success-500">{won}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Icon icon="lucide:x-circle" className="text-sm text-danger-500" />
-              <span className="text-xs text-default-500 font-medium">Lost:</span>
-              <span className="text-sm font-bold text-danger-600 dark:text-danger-500">{lost}</span>
+              <span className="text-sm font-bold bg-gradient-to-r from-success-500 to-emerald-500 bg-clip-text text-transparent">{numericValue}%</span>
+              <span className="text-xs text-default-400">conversion rate</span>
             </div>
           </div>
         </div>

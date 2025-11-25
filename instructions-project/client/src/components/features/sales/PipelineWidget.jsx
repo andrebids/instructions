@@ -47,13 +47,30 @@ const pipelineStages = [
 
 export const PipelineWidget = ({ value }) => {
   return (
-    <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
+    <>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(155, 155, 155, 0.5);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(155, 155, 155, 0.7);
+        }
+      `}</style>
+      <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
        {/* Background Glow Effect - Purple to Pink gradient */}
        <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-3xl group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-all duration-500" />
        
       <CardBody className="p-5 pb-3 flex flex-col h-full relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-3 h-11">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500/15 to-pink-500/15 shadow-sm ring-1 ring-purple-500/20 backdrop-blur-sm">
               <Icon icon="lucide:bar-chart-3" className="text-xl text-purple-400" />
@@ -66,12 +83,12 @@ export const PipelineWidget = ({ value }) => {
         </div>
 
         {/* Value Display */}
-        <div className="mb-2 h-10 flex items-end">
+        <div className="mt-2 mb-2">
           <h4 className="text-3xl font-bold text-foreground leading-none">{value}</h4>
         </div>
 
         {/* Horizontal Stacked Bar Chart */}
-        <div className="flex-1 flex flex-col justify-start gap-1.5 min-h-0 pt-1">
+        <div className="flex-1 flex flex-col justify-end gap-1.5 min-h-0 pt-1">
           {/* Progress Bar */}
           <div className="relative w-full h-6 rounded-full bg-default-100/50 shadow-inner" style={{ overflow: 'visible' }}>
             <div className="absolute inset-0 flex h-full rounded-full" style={{ overflow: 'visible' }}>
@@ -84,16 +101,22 @@ export const PipelineWidget = ({ value }) => {
                   <Tooltip
                     key={stage.name}
                     content={
-                      <div className="px-1 py-2">
-                        <div className="text-small font-bold mb-1">{stage.name}</div>
-                        <div className="text-tiny mb-2 text-default-400">
+                      <div className="px-3 py-3 min-w-[200px] max-w-[280px]">
+                        <div className="text-base font-bold mb-2 text-foreground">{stage.name}</div>
+                        <div className="text-sm mb-3 text-foreground-600 font-medium">
                           {stage.projectCount} projects • {stage.totalValue}
                         </div>
-                        <div className="space-y-1">
+                        <div 
+                          className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar"
+                          style={{
+                            scrollbarWidth: 'thin',
+                            scrollbarColor: 'rgba(155, 155, 155, 0.5) transparent'
+                          }}
+                        >
                           {stage.projects.map((project, idx) => (
-                            <div key={idx} className="flex justify-between gap-3 text-tiny">
-                              <span className="text-default-300">{project.name}</span>
-                              <span className="font-semibold">{project.value}</span>
+                            <div key={idx} className="flex justify-between gap-4 text-sm">
+                              <span className="text-foreground-700 truncate">{project.name}</span>
+                              <span className="font-bold text-foreground whitespace-nowrap">{project.value}</span>
                             </div>
                           ))}
                         </div>
@@ -102,7 +125,7 @@ export const PipelineWidget = ({ value }) => {
                     placement="top"
                     classNames={{
                       base: "py-2 px-3",
-                      content: "py-2 px-3 bg-content1/95 backdrop-blur-md border border-default-200/50"
+                      content: "py-3 px-3 bg-content1 border-2 border-default-300 shadow-lg backdrop-blur-md"
                     }}
                   >
                     <div
