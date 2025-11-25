@@ -139,11 +139,18 @@ export function ProjectObservations({ projectId, instructions = [], results = []
         setIsSubmitting(true);
 
         try {
+            // Check if there's an annotated image in the attachments
+            const hasAnnotatedImage = attachments.some(att => att.name.startsWith('annotated_'));
+            
+            // If there's an annotated image, don't send the linkedResultImageId (original image)
+            // Only send the annotated version in attachments
+            const linkedResultId = hasAnnotatedImage ? null : selectedResultImage?.id;
+
             const observationData = {
                 content: newMessage,
                 attachments: attachments,
                 linkedInstructionId: selectedInstruction,
-                linkedResultImageId: selectedResultImage?.id,
+                linkedResultImageId: linkedResultId,
             };
 
             const newObservation = await projectsAPI.addObservation(projectId, observationData);
@@ -163,13 +170,14 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                 },
                 // Ensure linked objects are available for display if the backend only returns IDs
                 linkedInstruction: selectedInstruction !== null ? instructions.find(i => (i.logoNumber || instructions.indexOf(i)) === selectedInstruction) : null,
-                linkedResultImage: selectedResultImage
+                linkedResultImage: hasAnnotatedImage ? null : selectedResultImage
             };
 
             setObservations(prev => [...prev, displayObservation]);
             setNewMessage('');
             setSelectedInstruction(null);
             setSelectedResultImage(null);
+            setAnnotatedImageData(null);
             setAttachments([]);
         } catch (error) {
             console.error('Error sending observation:', error);
