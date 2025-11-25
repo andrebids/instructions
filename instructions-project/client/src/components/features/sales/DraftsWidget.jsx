@@ -51,7 +51,7 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
 
       <CardBody className="p-5 pb-3 flex flex-col h-full relative z-10 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between mb-3 h-11">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/15 to-cyan-500/15 shadow-sm ring-1 ring-blue-500/20 backdrop-blur-sm">
               <Icon icon="lucide:target" className="text-xl text-blue-400" />
@@ -64,7 +64,7 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
         </div>
 
         {/* Value Display */}
-        <div className="mb-2 h-10 flex items-end">
+        <div className="mt-2 mb-2">
           <h4 className="text-3xl font-bold text-foreground leading-none">{value}</h4>
         </div>
 

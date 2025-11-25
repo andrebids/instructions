@@ -183,9 +183,8 @@ export default function Dashboard() {
                 <p className="text-default-500 text-sm">{t('pages.dashboard.main.subtitle')}</p>
               </div>
               <Button
-                color="primary"
+                className="font-medium shadow-lg shadow-primary/40 bg-gradient-to-r from-primary to-blue-600 hover:scale-[1.02] transition-all duration-300 ease-in-out"
                 startContent={<Icon icon="lucide:plus" />}
-                className="font-medium shadow-lg shadow-primary/20"
                 onPress={handleCreateProject}
               >
                 {t('pages.dashboard.main.newProject')}
