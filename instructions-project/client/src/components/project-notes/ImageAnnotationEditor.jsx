@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, ButtonGroup, Tooltip, Divider } from '@heroui/react';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, ButtonGroup, Tooltip, Divider, Input, Popover, PopoverTrigger, PopoverContent } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { drawRectangle, drawArrow, mergeImageWithAnnotations, canvasToBlob, calculateCanvasDimensions } from '../../utils/canvasUtils';
 
@@ -41,6 +41,9 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
     const [historyIndex, setHistoryIndex] = useState(-1);
     const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [hoveredAnnotationIndex, setHoveredAnnotationIndex] = useState(null);
+    const [editingAnnotationIndex, setEditingAnnotationIndex] = useState(null);
+    const [annotationText, setAnnotationText] = useState('');
 
     // Reset all annotation states when a new image is opened or modal is closed
     useEffect(() => {
@@ -51,6 +54,9 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
             setHistoryIndex(-1);
             setIsDrawing(false);
             setImageLoaded(false);
+            setHoveredAnnotationIndex(null);
+            setEditingAnnotationIndex(null);
+            setAnnotationText('');
             baseImageRef.current = null;
         }
     }, [isOpen]);
@@ -63,6 +69,9 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
             setHistoryIndex(-1);
             setIsDrawing(false);
             setImageLoaded(false);
+            setHoveredAnnotationIndex(null);
+            setEditingAnnotationIndex(null);
+            setAnnotationText('');
         }
     }, [image?.id, image?.src]);
 
@@ -105,6 +114,27 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
         annotationCanvas.height = canvasDimensions.height;
     }, [imageLoaded, canvasDimensions]);
 
+    // Keyboard shortcuts
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleKeyDown = (e) => {
+            // Don't trigger shortcuts if editing text
+            if (editingAnnotationIndex !== null) return;
+
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                handleUndo();
+            } else if (e.ctrlKey && e.key === 'y') {
+                e.preventDefault();
+                handleRedo();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, editingAnnotationIndex, historyIndex, history]);
+
     // Redraw annotations only (no image reload!)
     useEffect(() => {
         if (!imageLoaded || !annotationCanvasRef.current) return;
@@ -116,7 +146,11 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
         ctx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
 
         // Draw all saved annotations
-        annotations.forEach(annotation => {
+        annotations.forEach((annotation, index) => {
+            const isHovered = hoveredAnnotationIndex === index;
+            const annotationColor = isHovered ? '#ffcc00' : annotation.color;
+            const annotationWidth = isHovered ? annotation.lineWidth + 2 : annotation.lineWidth;
+
             if (annotation.tool === TOOLS.RECTANGLE) {
                 drawRectangle(
                     ctx,
@@ -124,8 +158,8 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
                     annotation.startY,
                     annotation.endX,
                     annotation.endY,
-                    annotation.color,
-                    annotation.lineWidth
+                    annotationColor,
+                    annotationWidth
                 );
             } else if (annotation.tool === TOOLS.ARROW) {
                 drawArrow(
@@ -134,9 +168,26 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
                     annotation.startY,
                     annotation.endX,
                     annotation.endY,
-                    annotation.color,
-                    annotation.lineWidth
+                    annotationColor,
+                    annotationWidth
                 );
+            }
+
+            // Draw number badge if annotation has text
+            if (annotation.text) {
+                const badgeX = Math.min(annotation.startX, annotation.endX);
+                const badgeY = Math.min(annotation.startY, annotation.endY) - 5;
+                
+                ctx.fillStyle = annotation.color;
+                ctx.beginPath();
+                ctx.arc(badgeX, badgeY, 12, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText((index + 1).toString(), badgeX, badgeY);
             }
         });
 
@@ -148,7 +199,7 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
                 drawArrow(ctx, startPos.x, startPos.y, currentPos.x, currentPos.y, color, lineWidth);
             }
         }
-    }, [annotations, isDrawing, currentPos, imageLoaded, activeTool, color, lineWidth, startPos]);
+    }, [annotations, isDrawing, currentPos, imageLoaded, activeTool, color, lineWidth, startPos, hoveredAnnotationIndex]);
 
     const getCanvasCoordinates = (e) => {
         const canvas = annotationCanvasRef.current;
@@ -167,9 +218,26 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
     };
 
     const handleMouseMove = (e) => {
-        if (!isDrawing) return;
         const pos = getCanvasCoordinates(e);
-        setCurrentPos(pos);
+        
+        if (isDrawing) {
+            setCurrentPos(pos);
+        } else {
+            // Check if hovering over any annotation
+            const hoveredIndex = annotations.findIndex(ann => isPointInAnnotation(pos, ann));
+            setHoveredAnnotationIndex(hoveredIndex >= 0 ? hoveredIndex : null);
+        }
+    };
+
+    // Helper function to check if a point is near an annotation
+    const isPointInAnnotation = (point, annotation) => {
+        const padding = 10; // Padding for easier hover detection
+        const minX = Math.min(annotation.startX, annotation.endX) - padding;
+        const maxX = Math.max(annotation.startX, annotation.endX) + padding;
+        const minY = Math.min(annotation.startY, annotation.endY) - padding;
+        const maxY = Math.max(annotation.startY, annotation.endY) + padding;
+        
+        return point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY;
     };
 
     const handleMouseUp = (e) => {
@@ -183,7 +251,8 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
             endX: pos.x,
             endY: pos.y,
             color: color,
-            lineWidth: lineWidth
+            lineWidth: lineWidth,
+            text: '' // Initialize with empty text
         };
 
         const newAnnotations = [...annotations, newAnnotation];
@@ -196,6 +265,10 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
         setHistoryIndex(newHistory.length - 1);
 
         setIsDrawing(false);
+        
+        // Open text editor for the new annotation
+        setEditingAnnotationIndex(newAnnotations.length - 1);
+        setAnnotationText('');
     };
 
     const handleUndo = () => {
@@ -222,6 +295,33 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
         setHistoryIndex(newHistory.length - 1);
     };
 
+    const handleSaveAnnotationText = () => {
+        if (editingAnnotationIndex === null) return;
+        
+        const updatedAnnotations = [...annotations];
+        updatedAnnotations[editingAnnotationIndex].text = annotationText;
+        setAnnotations(updatedAnnotations);
+        
+        // Update history
+        const newHistory = history.slice(0, historyIndex + 1);
+        newHistory.push(updatedAnnotations);
+        setHistory(newHistory);
+        setHistoryIndex(newHistory.length - 1);
+        
+        setEditingAnnotationIndex(null);
+        setAnnotationText('');
+    };
+
+    const handleCancelAnnotationText = () => {
+        setEditingAnnotationIndex(null);
+        setAnnotationText('');
+    };
+
+    const handleAnnotationClick = (index) => {
+        setEditingAnnotationIndex(index);
+        setAnnotationText(annotations[index].text || '');
+    };
+
     const handleSave = async () => {
         try {
             // Create a temporary canvas to merge both layers
@@ -241,7 +341,9 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
             const response = await fetch(mergedDataUrl);
             const blob = await response.blob();
 
-            onSave(blob, mergedDataUrl);
+            // Pass annotations with text for legend display
+            console.log('💾 Saving image with annotations:', annotations);
+            onSave(blob, mergedDataUrl, annotations);
         } catch (error) {
             console.error('Error saving annotated image:', error);
             alert('Failed to save annotated image. Please try again.');
@@ -255,6 +357,9 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
         setHistoryIndex(-1);
         setIsDrawing(false);
         setImageLoaded(false);
+        setHoveredAnnotationIndex(null);
+        setEditingAnnotationIndex(null);
+        setAnnotationText('');
         onCancel();
     };
 
@@ -429,7 +534,15 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
                                         onMouseDown={handleMouseDown}
                                         onMouseMove={handleMouseMove}
                                         onMouseUp={handleMouseUp}
-                                        onMouseLeave={() => setIsDrawing(false)}
+                                        onMouseLeave={() => {
+                                            setIsDrawing(false);
+                                            setHoveredAnnotationIndex(null);
+                                        }}
+                                        onClick={(e) => {
+                                            if (!isDrawing && hoveredAnnotationIndex !== null) {
+                                                handleAnnotationClick(hoveredAnnotationIndex);
+                                            }
+                                        }}
                                         style={{
                                             position: 'absolute',
                                             top: 0,
@@ -438,19 +551,126 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
                                             height: '100%'
                                         }}
                                     />
+                                    
+                                    {/* Tooltip for hovered annotation with text */}
+                                    {hoveredAnnotationIndex !== null && annotations[hoveredAnnotationIndex]?.text && (
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                left: Math.min(annotations[hoveredAnnotationIndex].startX, annotations[hoveredAnnotationIndex].endX),
+                                                top: Math.min(annotations[hoveredAnnotationIndex].startY, annotations[hoveredAnnotationIndex].endY) - 40,
+                                                backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                                                color: 'white',
+                                                padding: '8px 12px',
+                                                borderRadius: '8px',
+                                                fontSize: '13px',
+                                                maxWidth: '200px',
+                                                zIndex: 1000,
+                                                pointerEvents: 'none',
+                                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
+                                            }}
+                                        >
+                                            <div className="font-semibold mb-1">Note #{hoveredAnnotationIndex + 1}</div>
+                                            <div>{annotations[hoveredAnnotationIndex].text}</div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
+                            {/* Text Editor for Annotation */}
+                            {editingAnnotationIndex !== null && (
+                                <div className="p-4 bg-warning/10 border-2 border-warning rounded-lg">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Icon icon="lucide:message-square-text" className="text-warning" />
+                                        <h4 className="font-semibold text-foreground">
+                                            Add Note to Annotation #{editingAnnotationIndex + 1}
+                                        </h4>
+                                    </div>
+                                    <Input
+                                        autoFocus
+                                        placeholder="Enter a description or note for this annotation..."
+                                        value={annotationText}
+                                        onValueChange={setAnnotationText}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleSaveAnnotationText();
+                                            } else if (e.key === 'Escape') {
+                                                handleCancelAnnotationText();
+                                            }
+                                        }}
+                                        classNames={{
+                                            input: "text-sm"
+                                        }}
+                                    />
+                                    <div className="flex gap-2 mt-3">
+                                        <Button
+                                            size="sm"
+                                            color="primary"
+                                            onPress={handleSaveAnnotationText}
+                                            startContent={<Icon icon="lucide:check" />}
+                                        >
+                                            Save Note
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="flat"
+                                            onPress={handleCancelAnnotationText}
+                                            startContent={<Icon icon="lucide:x" />}
+                                        >
+                                            Skip
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Annotations List */}
+                            {annotations.length > 0 && (
+                                <div className="p-3 bg-content2 rounded-lg border border-default-300">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Icon icon="lucide:list" className="text-default-600" />
+                                        <h4 className="font-semibold text-foreground text-sm">Annotations ({annotations.length})</h4>
+                                    </div>
+                                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                                        {annotations.map((ann, idx) => (
+                                            <div
+                                                key={idx}
+                                                className={`flex items-start gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                                                    hoveredAnnotationIndex === idx ? 'bg-primary/20' : 'bg-content1 hover:bg-content3'
+                                                }`}
+                                                onClick={() => handleAnnotationClick(idx)}
+                                            >
+                                                <div
+                                                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                                                    style={{ backgroundColor: ann.color }}
+                                                >
+                                                    {idx + 1}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-xs text-default-600 capitalize">{ann.tool}</div>
+                                                    {ann.text ? (
+                                                        <div className="text-sm text-foreground truncate">{ann.text}</div>
+                                                    ) : (
+                                                        <div className="text-sm text-default-500 italic">No note</div>
+                                                    )}
+                                                </div>
+                                                <Icon icon="lucide:pencil" className="text-default-500 text-sm flex-shrink-0" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Instructions */}
-                            <div className="flex items-start gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                            <div className="flex items-start gap-2 p-3 bg-primary/10 rounded-lg border border-primary/30">
                                 <Icon icon="lucide:info" className="text-primary mt-0.5" />
-                                <div className="text-sm text-default-700">
+                                <div className="text-sm text-foreground">
                                     <p className="font-medium mb-1">How to use:</p>
-                                    <ul className="list-disc list-inside space-y-1 text-xs">
-                                        <li>Select a tool (Rectangle or Arrow)</li>
-                                        <li>Click and drag on the image to draw</li>
-                                        <li>Choose different colors and line widths</li>
-                                        <li>Use Undo/Redo to adjust your annotations</li>
+                                    <ul className="list-disc list-inside space-y-1 text-xs text-default-700">
+                                        <li>Draw rectangles or arrows to highlight areas</li>
+                                        <li>Add notes/legends to each annotation</li>
+                                        <li>Hover over annotations to see notes</li>
+                                        <li>Click on annotations to edit their notes</li>
+                                        <li>Use Undo/Redo to adjust your work</li>
                                     </ul>
                                 </div>
                             </div>
