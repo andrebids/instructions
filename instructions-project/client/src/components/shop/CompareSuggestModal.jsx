@@ -84,7 +84,7 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
     if (product?.depth != null) parts.push(`${Number(product.depth).toFixed(2)} m (D)`);
     if (product?.diameter != null) parts.push(`${Number(product.diameter).toFixed(2)} m (Ø)`);
     if (parts.length > 0) return parts.join(' x ');
-    
+
     // Fallback: specs.dimensions (formato antigo)
     const dim = specs?.dimensions;
     if (dim && (dim.widthM != null || dim.heightM != null || dim.depthM != null)) {
@@ -94,7 +94,7 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
       if (dim.depthM != null) parts2.push(`${Number(dim.depthM).toFixed(2)} m (D)`);
       return parts2.join(' x ');
     }
-    
+
     // Fallback: specs.dimensoes (texto)
     const s = specs?.dimensoes || specs?.dimensionsText;
     if (typeof s === 'string') {
@@ -203,8 +203,9 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                       <Input
                         placeholder="Search products..."
                         value={query}
-                        onChange={(e)=>setQuery(e.target.value)}
+                        onChange={(e) => setQuery(e.target.value)}
                         className="mb-2"
+                        aria-label="Search products to set as base"
                       />
                       <div className="grid grid-cols-1 gap-3 mt-2">
                         {results.map(p => (
@@ -288,10 +289,11 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                       <Input
                         placeholder="Search products..."
                         value={query}
-                        onChange={(e)=>setQuery(e.target.value)}
+                        onChange={(e) => setQuery(e.target.value)}
                         className="mb-2"
+                        aria-label="Search products to compare"
                       />
-                      
+
                       <div className="grid grid-cols-1 gap-3 mt-2">
                         {results.map(p => {
                           const already = compare?.includes(p.id);
@@ -304,7 +306,7 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
                                   Add to compare
                                 </Button>
                                 {already && (
-                                  <Button size="sm" color="danger" variant="bordered" onPress={()=>toggleCompare(p.id)}>Remove</Button>
+                                  <Button size="sm" color="danger" variant="bordered" onPress={() => toggleCompare(p.id)}>Remove</Button>
                                 )}
                               </div>
                             </div>
@@ -386,8 +388,8 @@ export default function CompareSuggestModal({ isOpen, onOpenChange, baseProduct,
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button 
-                variant="flat" 
+              <Button
+                variant="flat"
                 onPress={close}
                 className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-sm"
               >

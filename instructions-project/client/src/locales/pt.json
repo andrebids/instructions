@@ -556,6 +556,13 @@
       "chatWithDesigner": "Chat / Observações",
       "toBeDeveloped": "A desenvolver",
       "designer": "Designer",
+      "deleteModal": {
+        "title": "Confirmar Eliminação",
+        "description": "Tem certeza de que deseja eliminar o projeto <strong>{{name}}</strong>?",
+        "warning": "Esta ação não pode ser desfeita. Todos os dados relacionados a este projeto serão permanentemente removidos.",
+        "deleting": "A eliminar...",
+        "error": "Erro ao eliminar projeto"
+      },
       "notesManager": {
         "addTopic": "Adicionar Tópico",
         "deleteTopic": "Eliminar Tópico",

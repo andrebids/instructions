@@ -486,3 +486,15 @@ export async function addObservation(projectId, data) {
     ...data,
   });
 }
+
+/**
+ * Deleta uma observação
+ */
+export async function deleteObservation(observationId) {
+  const observation = await Observation.findByPk(observationId);
+  if (!observation) {
+    return null;
+  }
+  await observation.destroy();
+  return { success: true };
+}

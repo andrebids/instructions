@@ -532,6 +532,13 @@
       "designerInfo": "Informations du Designer",
       "toBeDeveloped": "À développer",
       "designer": "Designer",
+      "deleteModal": {
+        "title": "Confirmer la Suppression",
+        "description": "Êtes-vous sûr de vouloir supprimer le projet <strong>{{name}}</strong> ?",
+        "warning": "Cette action ne peut pas être annulée. Toutes les données liées à ce projet seront définitivement supprimées.",
+        "deleting": "Suppression...",
+        "error": "Erreur lors de la suppression du projet"
+      },
       "notesManager": {
         "addTopic": "Ajouter un sujet",
         "deleteTopic": "Supprimer le sujet",
