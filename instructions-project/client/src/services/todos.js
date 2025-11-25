@@ -17,4 +17,14 @@ export const todosAPI = {
         const response = await axios.patch(`${API_URL}/${id}`, data);
         return response.data;
     },
+
+    delete: async (id) => {
+        const response = await axios.delete(`${API_URL}/${id}`);
+        return response.data;
+    },
+
+    deleteCompleted: async () => {
+        const response = await axios.delete(`${API_URL}/completed`);
+        return response.data;
+    },
 };

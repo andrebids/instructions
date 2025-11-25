@@ -36,6 +36,19 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
   const [page, setPage] = React.useState(1);
   const rowsPerPage = 5;
 
+  // Status translation map
+  const statusLabelMap = React.useMemo(() => ({
+    "draft": t('pages.dashboard.stats.draft'),
+    "created": t('pages.dashboard.stats.created'),
+    "in_progress": t('pages.dashboard.stats.inProgress'),
+    "finished": t('pages.dashboard.stats.finished'),
+    "approved": t('pages.dashboard.stats.approved'),
+    "cancelled": t('pages.dashboard.stats.cancelled'),
+    "in_queue": t('pages.dashboard.stats.inQueue'),
+    "to_order": t('pages.dashboard.projectTable.statusLabels.toOrder'),
+    "ordered": t('pages.dashboard.projectTable.statusLabels.ordered'),
+  }), [t]);
+
   // Mock data augmentation
   const augmentedProjects = React.useMemo(() => {
     return projects.map((p, index) => ({
@@ -100,15 +113,17 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
             delay={0}
             closeDelay={0}
             placement="right"
-            className="bg-zinc-900 border border-zinc-700"
+            className="bg-content1 border border-default-200"
           >
             <div className="cursor-pointer hover:text-primary transition-colors" onClick={() => navigate(`/projects/${project.id}`)}>
-              <p className="font-bold text-sm">{project.name}</p>
-              <p className="text-xs text-zinc-500">{project.clientName || project.client}</p>
+              <p className="font-bold text-sm text-foreground">{project.name}</p>
+              <p className="text-xs text-default-500">{project.clientName || project.client}</p>
             </div>
           </Tooltip>
         );
       case "status":
+        const normalizedStatus = project.status?.toLowerCase()?.replace(/\s+/g, '_') || project.status;
+        const statusLabel = statusLabelMap[normalizedStatus] || project.status?.replace(/_/g, " ") || project.status;
         return (
           <Chip
             color={statusColorMap[project.status] || "default"}
@@ -116,7 +131,7 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
             size="sm"
             className="capitalize"
           >
-            {project.status?.replace(/_/g, " ")}
+            {statusLabel}
           </Chip>
         );
       case "contract":
@@ -140,14 +155,14 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
         const designKey = project.designStatusKey || (project.designStatus === 'Ready' ? "ready" : "pending");
         return (
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${project.designStatus === 'Ready' ? 'bg-green-500' : 'bg-yellow-500'}`} />
-            <span className="text-sm text-zinc-300">{t(`pages.dashboard.smartProjectTable.designStatus.${designKey}`)}</span>
+            <div className={`w-2 h-2 rounded-full ${project.designStatus === 'Ready' ? 'bg-success-500' : 'bg-warning-500'}`} />
+            <span className="text-sm text-default-500">{t(`pages.dashboard.smartProjectTable.designStatus.${designKey}`)}</span>
           </div>
         );
       case "reservation":
         const isUrgent = project.reservationValidity <= 5;
         return (
-          <div className={`flex items-center gap-1 ${isUrgent ? 'text-red-400' : 'text-zinc-400'}`}>
+          <div className={`flex items-center gap-1 ${isUrgent ? 'text-danger-400' : 'text-default-400'}`}>
             <Icon icon="lucide:clock" className="text-xs" />
             <span className="text-sm font-medium">
               {project.reservationValidity === 1 
@@ -158,33 +173,33 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
         );
       case "budget":
         return (
-          <span className="text-sm font-medium text-zinc-300">
+          <span className="text-sm font-medium text-default-500">
             {project.budget ? `€ ${parseFloat(project.budget).toLocaleString()}` : '€ 0'}
           </span>
         );
       case "dates":
         return (
           <div className="flex flex-col">
-            <span className="text-xs text-zinc-400">{t('pages.dashboard.smartProjectTable.dates.start')} {project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}</span>
-            <span className="text-xs text-zinc-500">{t('pages.dashboard.smartProjectTable.dates.end')} {project.endDate ? new Date(project.endDate).toLocaleDateString() : '-'}</span>
+            <span className="text-xs text-default-400">{t('pages.dashboard.smartProjectTable.dates.start')} {project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}</span>
+            <span className="text-xs text-default-500">{t('pages.dashboard.smartProjectTable.dates.end')} {project.endDate ? new Date(project.endDate).toLocaleDateString() : '-'}</span>
           </div>
         );
 
       default:
         return cellValue;
     }
-  }, [navigate, onProjectsUpdate, t]);
+  }, [navigate, onProjectsUpdate, t, statusLabelMap]);
 
   return (
-    <Card className="h-full bg-zinc-900/50 border-zinc-800/50 backdrop-blur-md">
+    <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm">
       <CardBody className="p-0 overflow-hidden flex flex-col h-full">
         <Table 
           removeWrapper 
           aria-label="Smart Project Table"
           classNames={{
-            th: "bg-zinc-800/50 text-zinc-400 font-medium border-b border-zinc-800",
-            td: "py-3 border-b border-zinc-800/50 group-last:border-none",
-            tr: "hover:bg-zinc-800/30 transition-colors"
+            th: "bg-default-100/50 text-default-500 font-medium border-b border-default-200/50",
+            td: "py-3 border-b border-default-200/50 group-last:border-none",
+            tr: "hover:bg-default-100/50 transition-colors"
           }}
           bottomContent={
             <div className="flex w-full justify-center px-4 pb-4">

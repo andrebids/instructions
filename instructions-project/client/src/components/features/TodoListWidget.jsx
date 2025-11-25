@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardBody, Checkbox, cn, Input, Spinner, DatePicker, Button, Chip } from "@heroui/react";
+import { Card, CardBody, Checkbox, cn, Input, Spinner, DatePicker, Button, Chip, Tooltip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { todosAPI } from "../../services/todos";
 import { useTranslation } from "react-i18next";
@@ -15,6 +15,8 @@ export function TodoListWidget() {
   const [showDatePicker, setShowDatePicker] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [creating, setCreating] = React.useState(false);
+  const [clearingCompleted, setClearingCompleted] = React.useState(false);
+  const [showConfirmModal, setShowConfirmModal] = React.useState(false);
 
   const loadTasks = async () => {
     try {
@@ -83,6 +85,36 @@ export function TodoListWidget() {
     }
   };
 
+  const handleClearCompleted = async () => {
+    const completedTasks = tasks.filter(t => t.isCompleted);
+    if (completedTasks.length === 0) return;
+
+    // Show modal instead of window.confirm
+    setShowConfirmModal(true);
+  };
+
+  const confirmClearCompleted = async () => {
+    const completedTasks = tasks.filter(t => t.isCompleted);
+
+    try {
+      setClearingCompleted(true);
+      setShowConfirmModal(false);
+      
+      // Delete all completed tasks
+      await Promise.all(
+        completedTasks.map(task => todosAPI.delete(task.id))
+      );
+      
+      // Update UI - remove completed tasks
+      setTasks(tasks.filter(t => !t.isCompleted));
+    } catch (error) {
+      console.error("Failed to clear completed tasks:", error);
+      alert(t('pages.dashboard.todoListWidget.clearCompleted.error'));
+    } finally {
+      setClearingCompleted(false);
+    }
+  };
+
   const getDueDateStatus = (dueDate) => {
     if (!dueDate) return null;
     const due = new Date(dueDate);
@@ -90,11 +122,11 @@ export function TodoListWidget() {
     const diffTime = due - now;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) return { status: 'overdue', color: 'text-red-400', icon: 'lucide:alert-circle' };
-    if (diffDays === 0) return { status: 'today', color: 'text-yellow-400', icon: 'lucide:clock' };
-    if (diffDays === 1) return { status: 'tomorrow', color: 'text-blue-400', icon: 'lucide:calendar' };
-    if (diffDays <= 7) return { status: 'upcoming', color: 'text-green-400', icon: 'lucide:calendar' };
-    return { status: 'future', color: 'text-zinc-400', icon: 'lucide:calendar' };
+    if (diffDays < 0) return { status: 'overdue', color: 'text-danger-400', icon: 'lucide:alert-circle' };
+    if (diffDays === 0) return { status: 'today', color: 'text-warning-400', icon: 'lucide:clock' };
+    if (diffDays === 1) return { status: 'tomorrow', color: 'text-primary-400', icon: 'lucide:calendar' };
+    if (diffDays <= 7) return { status: 'upcoming', color: 'text-success-400', icon: 'lucide:calendar' };
+    return { status: 'future', color: 'text-default-400', icon: 'lucide:calendar' };
   };
 
   const formatDueDate = (dueDate) => {
@@ -112,18 +144,55 @@ export function TodoListWidget() {
   };
 
   const today = new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' });
+  const completedCount = tasks.filter(t => t.isCompleted).length;
 
   return (
-    <Card className="h-full bg-zinc-900/50 border-zinc-800/50 backdrop-blur-md shadow-lg rounded-3xl">
+    <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm rounded-3xl">
       <CardBody className="p-6 flex flex-col h-full">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-bold text-white">{t('pages.dashboard.todoListWidget.title')}</h3>
-            <p className="text-xs text-zinc-500 font-medium">{today}</p>
+          <div className="flex items-center gap-3">
+            <div className="bg-primary-500/10 p-2 rounded-xl">
+               <Icon icon="lucide:check-square" className="text-primary text-xl" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-foreground">{t('pages.dashboard.todoListWidget.title')}</h3>
+              <p className="text-xs text-default-500 font-medium">{today}</p>
+            </div>
           </div>
-          <div className="bg-primary-500/10 p-2 rounded-xl">
-             <Icon icon="lucide:check-square" className="text-primary text-xl" />
-          </div>
+          <AnimatePresence>
+            {completedCount > 0 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Tooltip
+                  content={t('pages.dashboard.todoListWidget.clearCompleted.tooltip', {
+                    count: completedCount
+                  })}
+                  placement="left"
+                  delay={300}
+                  closeDelay={0}
+                  classNames={{
+                    content: "bg-zinc-800 text-zinc-200 text-xs px-3 py-2 border border-zinc-700/50"
+                  }}
+                >
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    onPress={handleClearCompleted}
+                    isLoading={clearingCompleted}
+                    isDisabled={clearingCompleted}
+                    className="h-8 w-8 min-w-unit-8 text-default-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
+                    <Icon icon="lucide:trash-2" className="text-base" />
+                  </Button>
+                </Tooltip>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <motion.div 
@@ -140,10 +209,10 @@ export function TodoListWidget() {
               isDisabled={creating}
               classNames={{
                 input: "text-sm",
-                inputWrapper: "bg-zinc-800/50 border-zinc-700/50 hover:bg-zinc-800 focus-within:bg-zinc-800 h-11 rounded-xl",
+                inputWrapper: "bg-default-100/50 border-default-200/50 hover:bg-default-200/50 focus-within:bg-default-200/50 h-11 rounded-xl",
               }}
               startContent={
-                <Icon icon="lucide:plus" className="text-zinc-400" />
+                <Icon icon="lucide:plus" className="text-default-400" />
               }
               endContent={
                 <div className="flex items-center gap-2">
@@ -154,7 +223,7 @@ export function TodoListWidget() {
                     onPress={() => setShowDatePicker(!showDatePicker)}
                     className={cn(
                       "min-w-unit-8 w-8 h-8 transition-colors",
-                      newTaskDueDate ? "text-primary" : "text-zinc-400"
+                      newTaskDueDate ? "text-primary" : "text-default-400"
                     )}
                   >
                     <Icon icon="lucide:calendar" className="text-lg" />
@@ -183,7 +252,7 @@ export function TodoListWidget() {
                 transition={{ duration: 0.2, ease: "easeOut" }}
                 className="overflow-hidden"
               >
-                <div className="bg-zinc-800/80 backdrop-blur-sm p-4 rounded-xl border border-zinc-700/50 space-y-3">
+                <div className="bg-content1/80 backdrop-blur-sm p-4 rounded-xl border border-default-200/50 space-y-3 shadow-lg">
                   {/* Quick Date Shortcuts */}
                   <div className="flex gap-2">
                     <Chip
@@ -229,9 +298,9 @@ export function TodoListWidget() {
                       minValue={todayDate()}
                       classNames={{
                         base: "w-full",
-                        label: "text-zinc-400 text-xs",
-                        inputWrapper: "bg-zinc-900/50 border-zinc-700/50 h-10",
-                        input: "text-sm text-zinc-200",
+                        label: "text-default-400 text-xs",
+                        inputWrapper: "bg-default-100/50 border-default-200/50 h-10",
+                        input: "text-sm text-foreground",
                       }}
                     />
                   </I18nProvider>
@@ -268,7 +337,7 @@ export function TodoListWidget() {
               <Spinner size="md" color="primary" />
             </div>
           ) : tasks.length === 0 ? (
-            <div className="text-center py-8 text-zinc-500 text-sm">
+            <div className="text-center py-8 text-default-500 text-sm">
               {t('pages.dashboard.todoListWidget.emptyState')}
             </div>
           ) : (
@@ -288,8 +357,8 @@ export function TodoListWidget() {
                       className={cn(
                         "group flex items-center gap-3 p-3 rounded-2xl transition-all duration-200 border border-transparent",
                         task.isCompleted 
-                          ? "bg-zinc-800/20" 
-                          : "bg-white/5 hover:bg-white/10 hover:border-white/5 hover:shadow-sm"
+                          ? "bg-default-100/50" 
+                          : "bg-default-50 hover:bg-default-100 hover:border-default-200/50 hover:shadow-sm"
                       )}
                     >
                       <div className="relative flex items-center justify-center">
@@ -308,12 +377,12 @@ export function TodoListWidget() {
                       <div className="flex-1 min-w-0">
                         <p className={cn(
                           "text-sm font-medium transition-all duration-300 truncate",
-                          task.isCompleted ? "text-zinc-500 line-through decoration-zinc-600" : "text-zinc-200"
+                          task.isCompleted ? "text-default-400 line-through decoration-default-400" : "text-foreground"
                         )}>
                           {task.title}
                         </p>
                         {task.description && (
-                          <p className="text-xs text-zinc-500 truncate">{task.description}</p>
+                          <p className="text-xs text-default-400 truncate">{task.description}</p>
                         )}
                       </div>
 
@@ -322,7 +391,7 @@ export function TodoListWidget() {
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
                           className={cn(
-                            "flex items-center gap-1 px-2 py-1 rounded-lg bg-zinc-800/50 border border-zinc-700/30",
+                            "flex items-center gap-1 px-2 py-1 rounded-lg bg-default-100/50 border border-default-200/50",
                             dueDateInfo.color
                           )}
                         >
@@ -339,6 +408,55 @@ export function TodoListWidget() {
             </AnimatePresence>
           )}
         </div>
+
+        {/* Confirmation Modal */}
+        <Modal 
+          isOpen={showConfirmModal} 
+          onClose={() => setShowConfirmModal(false)}
+          classNames={{
+            base: "bg-zinc-900 border border-zinc-800",
+            header: "border-b border-zinc-800",
+            body: "py-6",
+            footer: "border-t border-zinc-800",
+          }}
+        >
+          <ModalContent>
+            <ModalHeader className="flex flex-col gap-1">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-500/10 rounded-xl">
+                  <Icon icon="lucide:trash-2" className="text-red-400 text-xl" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  {t('pages.dashboard.todoListWidget.clearCompleted.modal.title')}
+                </h3>
+              </div>
+            </ModalHeader>
+            <ModalBody>
+              <p className="text-default-500 text-sm">
+                {t('pages.dashboard.todoListWidget.clearCompleted.modal.message', {
+                  count: completedCount
+                })}
+              </p>
+            </ModalBody>
+            <ModalFooter>
+              <Button 
+                variant="light" 
+                onPress={() => setShowConfirmModal(false)}
+                className="text-default-500 hover:text-foreground"
+              >
+                {t('pages.dashboard.todoListWidget.clearCompleted.modal.cancel')}
+              </Button>
+              <Button 
+                color="danger" 
+                onPress={confirmClearCompleted}
+                isLoading={clearingCompleted}
+                startContent={!clearingCompleted && <Icon icon="lucide:trash-2" />}
+              >
+                {t('pages.dashboard.todoListWidget.clearCompleted.modal.confirm')}
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </CardBody>
     </Card>
   );

@@ -7,23 +7,23 @@ export function UrgencyWidget() {
   const { t } = useTranslation();
   
   return (
-    <Card className="h-full bg-zinc-900/50 border-zinc-800/50 backdrop-blur-md">
+    <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm">
       <CardBody className="p-6 flex flex-col justify-between">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Icon icon="lucide:alert-triangle" className="text-warning text-xl" />
-            <h3 className="text-lg font-semibold text-white">{t('pages.dashboard.urgencyWidget.title')}</h3>
+            <h3 className="text-lg font-semibold text-foreground">{t('pages.dashboard.urgencyWidget.title')}</h3>
           </div>
-          <p className="text-zinc-400 text-sm mb-4">
+          <p className="text-default-500 text-sm mb-4">
             {t('pages.dashboard.urgencyWidget.subtitle')}
           </p>
           
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4">
+          <div className="bg-danger-500/10 border border-danger-500/20 rounded-xl p-3 mb-4">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-red-400 font-medium text-sm">{t('pages.dashboard.urgencyWidget.project')} Winter Wonderland</span>
+              <span className="text-danger-500 font-medium text-sm">{t('pages.dashboard.urgencyWidget.project')} Winter Wonderland</span>
               <Chip size="sm" color="danger" variant="flat" className="h-5 text-xs">{t('pages.dashboard.urgencyWidget.daysLeft', { count: 2 })}</Chip>
             </div>
-            <p className="text-zinc-500 text-xs">500m LED Strings (Warm White)</p>
+            <p className="text-default-500 text-xs">500m LED Strings (Warm White)</p>
           </div>
         </div>
 

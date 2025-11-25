@@ -99,4 +99,31 @@ router.patch('/:id', requireAuth(), async (req, res) => {
     }
 });
 
+// DELETE /api/todos/:id - Delete a task
+router.delete('/:id', requireAuth(), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        console.log('🗑️ [Todos] Deleting task:', { id, userId: req.userId });
+
+        const task = await Task.findOne({
+            where: { id, userId: req.userId },
+        });
+
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        await task.destroy();
+        console.log('✅ [Todos] Task deleted successfully:', { id });
+        res.json({ message: 'Task deleted successfully', id });
+    } catch (error) {
+        console.error('❌ [Todos] Error deleting task:', error);
+        res.status(500).json({
+            message: 'Failed to delete task',
+            error: error.message
+        });
+    }
+});
+
 export default router;

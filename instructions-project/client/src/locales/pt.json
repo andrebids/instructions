@@ -71,13 +71,13 @@
       },
       "main": {
         "welcomeBack": "Bem-vindo de volta,",
-        "subtitle": "Aqui está o que está a acontecer com os seus projetos hoje.",
+        "subtitle": "Resumo da atividade dos seus projetos.",
         "newProject": "Novo Projeto",
         "hero": {
           "title": "Pronto para iluminar",
-          "titleHighlight": "Natal 2025?",
-          "draftsMessage": "Tem {{count}} rascunhos à espera de serem finalizados.",
-          "continueWorking": "Continuar a Trabalhar"
+          "titleHighlight": "o Natal de 2025?",
+          "draftsMessage": "Tem {{count}} rascunhos pendentes.",
+          "continueWorking": "Retomar Trabalho"
         },
         "kpis": {
           "totalPipeline": {
@@ -94,33 +94,36 @@
           }
         },
         "quickStats": {
-          "title": "Estatísticas Rápidas",
+          "title": "Indicadores Chave",
           "activeClients": {
             "title": "Clientes Ativos",
             "subtext": "Contratos ativos"
           },
           "stockItems": {
-            "title": "Itens em Stock",
-            "subtext": "Unidades reservadas"
+            "title": "Artigos em Stock",
+            "subtext": "Unidades Reservadas"
           },
           "deliveries": {
             "title": "Entregas",
             "subtext": "Próximos 7 dias"
           }
+        },
+        "reservedSpace": {
+          "placeholder": "Espaço reservado para conteúdo futuro"
         }
       },
       "urgencyWidget": {
-        "title": "Alerta de Urgência",
-        "subtitle": "Reservas de Stock a Expirar em Breve",
+        "title": "Atenção Necessária",
+        "subtitle": "Reservas de stock a expirar",
         "project": "Projeto:",
-        "daysLeft": "{{count}} dias restantes",
-        "dayLeft": "1 dia restante",
-        "extend": "Prolongar",
-        "release": "Libertar"
+        "daysLeft": "Expira em {{count}} dias",
+        "dayLeft": "Expira em 1 dia",
+        "extend": "Estender Reserva",
+        "release": "Libertar Stock"
       },
       "todoListWidget": {
         "title": "Lista de Tarefas",
-        "addTaskPlaceholder": "Adicionar nova task...",
+        "addTaskPlaceholder": "Adicionar nova tarefa...",
         "create": "Criar",
         "datePicker": {
           "label": "Data Limite",
@@ -132,31 +135,41 @@
           "tomorrow": "Amanhã",
           "nextWeek": "Próxima Semana"
         },
-        "emptyState": "Nenhuma task ainda. Adicione uma acima!",
+        "emptyState": "Nenhuma tarefa ainda. Adicione uma acima!",
         "dateFormatting": {
           "today": "Hoje",
           "tomorrow": "Amanhã",
           "overdue": "{{days}}d em atraso",
           "days": "{{days}}d"
+        },
+        "clearCompleted": {
+          "tooltip": "Limpar {{count}} tarefa(s) concluída(s)",
+          "error": "Erro ao limpar tarefas concluídas",
+          "modal": {
+            "title": "Limpar Tarefas Concluídas",
+            "message": "Tem certeza que deseja remover {{count}} tarefa(s) concluída(s)? Esta ação não pode ser desfeita.",
+            "cancel": "Cancelar",
+            "confirm": "Limpar Tarefas"
+          }
         }
       },
       "smartProjectTable": {
         "columns": {
           "project": "PROJETO",
-          "status": "STATUS",
+          "status": "ESTADO",
           "contract": "CONTRATO",
           "design": "DESIGN",
           "reservation": "RESERVA",
           "budget": "ORÇAMENTO",
-          "timeline": "CRONOGRAMA"
+          "timeline": "PRAZOS"
         },
         "emptyState": "Nenhum projeto ativo",
         "tooltip": {
           "render": "Render de Iluminação de Natal"
         },
         "reservation": {
-          "daysLeft": "{{count}} dias restantes",
-          "dayLeft": "1 dia restante"
+          "daysLeft": "Expira em {{count}} dias",
+          "dayLeft": "Expira em 1 dia"
         },
         "dates": {
           "start": "Início:",
@@ -176,7 +189,7 @@
         "title": "Histórico de Projetos ({{count}} projetos)",
         "titleOne": "Histórico de Projetos (1 projeto)",
         "searchPlaceholder": "Pesquisar por nome ou cliente...",
-        "statusFilter": "Status: {{status}}",
+        "statusFilter": "Estado: {{status}}",
         "statusAll": "Todos",
         "favoritesFilter": "Favoritos: {{filter}}",
         "favoritesAll": "Todos",
@@ -191,7 +204,7 @@
           "favorite": "FAVORITO",
           "projectName": "NOME DO PROJETO",
           "client": "CLIENTE",
-          "status": "STATUS",
+          "status": "ESTADO",
           "startDate": "DATA DE INÍCIO",
           "endDate": "DATA DE TÉRMINO",
           "budget": "ORÇAMENTO",
@@ -588,7 +601,7 @@
         "client": "Cliente",
         "location": "Localização",
         "type": "Tipo",
-        "status": "Status"
+        "status": "Estado"
       }
     },
     "createProject": {
