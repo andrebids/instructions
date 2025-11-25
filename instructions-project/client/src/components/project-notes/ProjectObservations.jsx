@@ -225,11 +225,17 @@ export function ProjectObservations({ projectId, instructions = [], results = []
         }, delay);
     };
 
-    // Simulate designer messages when component mounts (for demo)
+
+    // Simulate designer messages when component mounts and there are no designer messages yet (for demo)
     useEffect(() => {
-        // Only simulate if we have designers and no observations yet
-        // Use a ref or check to prevent multiple executions
-        if (designers.length > 0 && observations.length === 0) {
+        // Check if there are any messages from designers already
+        const hasDesignerMessages = observations.some(obs =>
+            designers.some(d => d.name === obs.author?.name)
+        );
+
+        // Only simulate if we have designers and no designer messages yet
+        // This creates a welcoming conversation when the chat is first opened
+        if (designers.length > 0 && !hasDesignerMessages) {
             let timeoutIds = [];
 
             // First designer message after 3 seconds
@@ -259,7 +265,8 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                 timeoutIds.forEach(id => clearTimeout(id));
             };
         }
-    }, []); // Empty dependency array - only run once on mount
+    }, [designers, observations]); // Depend on designers and observations
+
 
     const handleFileSelect = (e) => {
         if (e.target.files && e.target.files[0]) {
