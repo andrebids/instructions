@@ -1,39 +1,15 @@
 import React from "react";
 import { Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useTranslation } from "react-i18next";
 
-// Mapear código do idioma do i18n para locale do toLocaleDateString
-const getLocaleFromLanguage = (lang) => {
-  const localeMap = {
-    'pt': 'pt-PT',
-    'en': 'en-US',
-    'fr': 'fr-FR'
-  };
-  return localeMap[lang] || 'pt-PT';
-};
-
-// Gerar dados com dias da semana traduzidos
-const generateWeekdayData = (locale) => {
-  const values = [4000, 3000, 2000, 2780, 1890, 2390, 3490];
-  const baseDate = new Date(2024, 0, 1); // Segunda-feira como base
-  const weekdays = [];
-  
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(baseDate);
-    date.setDate(baseDate.getDate() + i);
-    const weekdayName = date.toLocaleDateString(locale, { weekday: 'short' });
-    weekdays.push({ name: weekdayName, value: values[i] });
-  }
-  
-  return weekdays;
-};
+// Sales pipeline data - percentages for each stage
+const pipelineStages = [
+  { name: 'Proposal', percentage: 40, color: '#A855F7', glowColor: 'rgba(168, 85, 247, 0.4)' }, // Purple
+  { name: 'Negotiation', percentage: 35, color: '#3B82F6', glowColor: 'rgba(59, 130, 246, 0.4)' }, // Blue
+  { name: 'Closing', percentage: 25, color: '#10B981', glowColor: 'rgba(16, 185, 129, 0.4)' }, // Green
+];
 
 export const PipelineWidget = ({ value, trend }) => {
-  const { i18n } = useTranslation();
-  const locale = getLocaleFromLanguage(i18n.language);
-  const data = React.useMemo(() => generateWeekdayData(locale), [locale]);
   return (
     <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
        {/* Background Glow Effect - Purple to Pink gradient */}
@@ -60,44 +36,74 @@ export const PipelineWidget = ({ value, trend }) => {
         </div>
 
         {/* Value Display */}
-        <div className="mb-4">
+        <div className="mb-6">
           <h4 className="text-3xl font-bold text-foreground">{value}</h4>
         </div>
 
-        <div className="flex-1 min-h-0 w-full mt-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={data}
-              margin={{
-                top: 0,
-                right: 0,
-                left: 0,
-                bottom: 0,
-              }}
-            >
-              <defs>
-                <linearGradient id="pipelineGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="#EC4899" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <Tooltip 
-                contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', borderRadius: '8px', border: 'none', color: '#fff' }}
-                itemStyle={{ color: '#fff' }}
-                cursor={{ stroke: '#8B5CF6', strokeWidth: 1, strokeDasharray: '4 4' }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#8B5CF6" 
-                fill="url(#pipelineGradient)" 
-                strokeWidth={3}
-                style={{ filter: 'drop-shadow(0 0 8px rgba(139, 92, 246, 0.3))' }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+        {/* Horizontal Stacked Bar Chart */}
+        <div className="flex-1 flex flex-col justify-center gap-4">
+          {/* Progress Bar */}
+          <div className="relative w-full h-8 rounded-full overflow-hidden bg-default-100/50 shadow-inner">
+            <div className="absolute inset-0 flex h-full">
+              {pipelineStages.map((stage, index) => {
+                const leftOffset = pipelineStages
+                  .slice(0, index)
+                  .reduce((sum, s) => sum + s.percentage, 0);
+                
+                return (
+                  <div
+                    key={stage.name}
+                    className="relative h-full transition-all duration-500 hover:brightness-110"
+                    style={{
+                      width: `${stage.percentage}%`,
+                      backgroundColor: stage.color,
+                      boxShadow: `0 0 20px ${stage.glowColor}, inset 0 1px 0 rgba(255,255,255,0.2)`,
+                    }}
+                  >
+                    {/* Shimmer effect */}
+                    <div 
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                      style={{
+                        animation: 'shimmer 3s infinite',
+                        animationDelay: `${index * 0.5}s`
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-6">
+            {pipelineStages.map((stage) => (
+              <div key={stage.name} className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full"
+                  style={{ 
+                    backgroundColor: stage.color,
+                    boxShadow: `0 0 8px ${stage.glowColor}`
+                  }}
+                />
+                <span className="text-xs font-medium text-default-600">
+                  {stage.name}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </CardBody>
+
+      <style jsx>{`
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+      `}</style>
     </Card>
   );
 };

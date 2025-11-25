@@ -247,7 +247,9 @@ export default function Dashboard() {
                     />
                     <ConversionWidget 
                       value="68%" 
-                      trend="+5%" 
+                      trend="+5%"
+                      won={34}
+                      lost={16}
                     />
                   </div>
 

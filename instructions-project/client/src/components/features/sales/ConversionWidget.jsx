@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
-export const ConversionWidget = ({ value, trend }) => {
+export const ConversionWidget = ({ value, trend, won = 34, lost = 16 }) => {
   // Parse numeric value from string (e.g. "68%")
   const numericValue = parseInt(value) || 0;
   
@@ -27,6 +27,24 @@ export const ConversionWidget = ({ value, trend }) => {
           <div className="flex flex-col">
             <span className="text-default-500 text-sm font-medium">Conversion</span>
             <span className="text-default-900 text-base font-bold">Rate</span>
+          </div>
+        </div>
+
+        {/* Absolute Numbers */}
+        <div className="flex flex-col gap-2 mb-4 relative z-20">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-success-500/10">
+              <Icon icon="lucide:check-circle" className="text-sm text-success-500" />
+            </div>
+            <span className="text-xs text-default-500 font-medium">Won:</span>
+            <span className="text-sm font-bold text-success-600 dark:text-success-500">{won}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-danger-500/10">
+              <Icon icon="lucide:x-circle" className="text-sm text-danger-500" />
+            </div>
+            <span className="text-xs text-default-500 font-medium">Lost:</span>
+            <span className="text-sm font-bold text-danger-600 dark:text-danger-500">{lost}</span>
           </div>
         </div>
 
