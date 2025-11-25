@@ -51,7 +51,7 @@ export const PipelineWidget = ({ value }) => {
        {/* Background Glow Effect - Purple to Pink gradient */}
        <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-3xl group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-all duration-500" />
        
-      <CardBody className="p-5 pb-6 flex flex-col h-full relative z-10">
+      <CardBody className="p-5 pb-3 flex flex-col h-full relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-3 h-11">
           <div className="flex items-center gap-3">
@@ -121,7 +121,7 @@ export const PipelineWidget = ({ value }) => {
           </div>
 
           {/* Legend */}
-          <div className="flex items-center justify-center gap-4 flex-wrap px-1 mb-2">
+          <div className="flex items-center justify-center gap-4 flex-wrap px-1">
             {pipelineStages.map((stage) => (
               <div key={stage.name} className="flex items-center gap-1.5">
                 <div 
