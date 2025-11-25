@@ -136,7 +136,7 @@ const OrderItem = ({ order, index }) => {
       </div>
 
       {/* Actions Section */}
-      <div className="flex items-center gap-2 self-end sm:self-center w-full sm:w-auto justify-end">
+      <div className="flex items-center gap-2 mt-3 sm:mt-0 w-full sm:w-auto sm:justify-end">
         
         {/* Release Button (Tertiary) */}
         <Tooltip content="Release Order">
@@ -154,20 +154,18 @@ const OrderItem = ({ order, index }) => {
         <Button
           size="sm"
           variant="bordered"
-          className="border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 min-w-0 sm:min-w-[80px]"
+          className="border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex-1 sm:flex-none sm:min-w-[80px]"
         >
-          <span className="hidden sm:inline">Extend</span>
-          <Icon icon="lucide:calendar-clock" className="w-4 h-4 sm:hidden" />
+          <span>Extend</span>
         </Button>
 
         {/* Confirm Button (Primary) */}
         <Button
           size="sm"
           variant="bordered"
-          className="border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold min-w-0 sm:min-w-[90px] transition-colors"
+          className="border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold flex-1 sm:flex-none sm:min-w-[90px] transition-colors"
         >
-          <span className="hidden sm:inline">Confirm</span>
-          <Icon icon="lucide:check" className="w-4 h-4 sm:hidden" />
+          <span>Confirm</span>
         </Button>
       </div>
     </motion.div>

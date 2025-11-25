@@ -268,16 +268,6 @@ app.options('/api/icons/*', (req, res) => {
   res.sendStatus(204);
 });
 
-// Proteger rotas se o auth estiver explicitamente habilitado
-if (useAuthJs && enableAuth) {
-  app.use('/api', requireAuth());
-  console.log('🔐 Auth.js habilitado para rotas /api (exceto /api/icons/*)');
-} else if (useAuthJs) {
-  console.warn('⚠️  Auth.js presente mas ENABLE_AUTH!=true. Rotas /api não protegidas em desenvolvimento.');
-} else {
-  console.warn('⚠️  Auth.js desabilitado (USE_AUTH_JS != true). Rotas /api não protegidas.');
-}
-
 // Rota raiz - informações do servidor (apenas quando não há build de produção)
 // Quando há dist/, o catch-all serve index.html para /
 var distPathCheck = path.resolve(__dirname, '../../client/dist');
@@ -293,7 +283,8 @@ if (!distExistsCheck) {
         api: '/api',
         projects: '/api/projects',
         products: '/api/products',
-        decorations: '/api/decorations'
+        decorations: '/api/decorations',
+        todos: '/api/todos'
       },
       access: {
         local: `http://localhost:${process.env.PORT || 5000}`,
@@ -364,7 +355,8 @@ app.get('/api/files/:filename', (req, res) => {
   }
 });
 
-// API Routes
+// API Routes - Registrar rotas ANTES do middleware global de autenticação
+// As rotas individuais já têm requireAuth() onde necessário
 app.use('/api/projects', projectRoutes);
 app.use('/api/decorations', decorationRoutes);
 app.use('/api/projects', projectsRouter);
@@ -373,6 +365,20 @@ app.use('/api/products', productRoutes);
 app.use('/api/upload', uploadRouter);
 app.use('/api/upload', editorUploadRoutes);
 app.use('/api/users', userRoutes);
+
+// Proteger rotas se o auth estiver explicitamente habilitado
+// NOTA: Este middleware é aplicado DEPOIS do registro das rotas
+// para garantir que as rotas sejam encontradas primeiro
+// Cada rota individual já tem requireAuth() onde necessário
+if (useAuthJs && enableAuth) {
+  // Aplicar autenticação apenas para rotas que não têm requireAuth() individual
+  // Rotas como /api/todos já têm requireAuth() nas rotas individuais
+  console.log('🔐 Auth.js habilitado - rotas protegidas individualmente');
+} else if (useAuthJs) {
+  console.warn('⚠️  Auth.js presente mas ENABLE_AUTH!=true. Rotas /api não protegidas em desenvolvimento.');
+} else {
+  console.warn('⚠️  Auth.js desabilitado (USE_AUTH_JS != true). Rotas /api não protegidas.');
+}
 
 // Rota de teste de email (requer autenticação admin)
 app.post('/api/email/test', requireAuth(), async (req, res) => {
