@@ -10,6 +10,7 @@ import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 import { Scroller } from "../components/ui/scroller";
 import { useTranslation } from "react-i18next";
 import { useVoiceAssistant } from "../context/VoiceAssistantContext";
+import Galaxy from "../components/ui/Galaxy";
 
 import { TodoListWidget } from "../components/features/TodoListWidget";
 import { SmartProjectTable } from "../components/features/SmartProjectTable";
@@ -203,36 +204,48 @@ export default function Dashboard() {
                 <div className="col-span-12 lg:col-span-8 space-y-6">
                   {/* Hero Widget */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-64">
-                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50/80 via-white to-orange-50/30 dark:from-primary-900/50 dark:via-primary-900/50 dark:to-zinc-900 border border-amber-100/50 dark:border-white/5 p-8 flex flex-col justify-center group shadow-sm">
-                      {/* Dark Mode Glow */}
-                      <div className="absolute top-0 right-0 p-32 bg-primary-500/20 blur-[100px] rounded-full -mr-16 -mt-16 pointer-events-none hidden dark:block" />
-                      
-                      {/* Light Mode Glow */}
-                      <div className="absolute top-0 right-0 p-40 bg-amber-400/10 blur-[80px] rounded-full -mr-20 -mt-20 pointer-events-none dark:hidden" />
+                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 border border-white/10 p-8 flex flex-col justify-center group shadow-lg">
+                      {/* Galaxy Background */}
+                      <div className="absolute inset-0 z-0 opacity-25 pointer-events-none overflow-hidden rounded-3xl">
+                        <Galaxy 
+                          transparent={true}
+                          mouseInteraction={true}
+                          mouseRepulsion={false}
+                          density={0.5}
+                          glowIntensity={0.3}
+                          saturation={0.2}
+                          hueShift={0}
+                          rotationSpeed={0.05}
+                          speed={0.3}
+                          twinkleIntensity={1}
+                          starSpeed={0.2}
+                        />
+                      </div>
+
+                      {/* Accent Glow */}
+                      <div className="absolute top-0 right-0 p-32 bg-blue-500/20 blur-[100px] rounded-full -mr-16 -mt-16 pointer-events-none z-5" />
                       
                       <div className="relative z-10">
-                        <h2 className="text-3xl font-bold text-zinc-900 dark:text-foreground mb-2">
+                        <h2 className="text-3xl font-bold text-white mb-2">
                           {t('pages.dashboard.main.hero.title')} <br/>
-                          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-500 dark:from-amber-200 dark:to-yellow-500">{t('pages.dashboard.main.hero.titleHighlight')}</span>
+                          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-400">{t('pages.dashboard.main.hero.titleHighlight')}</span>
                         </h2>
-                        <p className="text-zinc-600 dark:text-zinc-300 mb-6 max-w-xs font-medium">
+                        <p className="text-slate-200 mb-6 max-w-xs font-medium">
                           {t('pages.dashboard.main.hero.draftsMessage', { count: stats.draft })}
                         </p>
                         <Button 
-                          className="bg-zinc-900 text-white shadow-lg shadow-zinc-900/20 dark:bg-white/10 dark:backdrop-blur-md dark:text-white dark:border dark:border-white/20 dark:shadow-none hover:bg-zinc-800 dark:hover:bg-white/20 transition-all"
+                          className="bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-lg hover:bg-white/20 transition-all"
                           endContent={<Icon icon="lucide:arrow-right" />}
                         >
                           {t('pages.dashboard.main.hero.continueWorking')}
                         </Button>
                       </div>
                     </div>
-                    <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm">
-                      <CardBody className="p-6 flex items-center justify-center">
-                        <p className="text-default-500 text-sm text-center">
-                          {t('pages.dashboard.main.reservedSpace.placeholder')}
-                        </p>
-                      </CardBody>
-                    </Card>
+                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 border border-white/10 p-8 flex items-center justify-center shadow-lg">
+                      <p className="text-slate-400 text-sm text-center">
+                        {t('pages.dashboard.main.reservedSpace.placeholder')}
+                      </p>
+                    </div>
                   </div>
 
                   {/* Financial KPIs */}
