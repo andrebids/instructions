@@ -577,15 +577,26 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                         {obs.attachments.map((att, idx) => (
                                                             <div
                                                                 key={idx}
-                                                                className={`flex items-center gap-2 p-2 rounded-lg text-xs cursor-pointer hover:opacity-80 transition-opacity ${obs.author.name === user?.name ? 'bg-white/20' : 'bg-content3'}`}
+                                                                className={`rounded-lg cursor-pointer hover:opacity-80 transition-opacity overflow-hidden ${obs.author.name === user?.name ? 'bg-white/20' : 'bg-content3'}`}
                                                                 onClick={() => handleAttachmentClick(att)}
                                                             >
                                                                 {att.type.startsWith('image/') ? (
-                                                                    <Icon icon="lucide:image" />
+                                                                    <div className="relative group">
+                                                                        <img 
+                                                                            src={att.url} 
+                                                                            alt={att.name}
+                                                                            className="h-32 w-auto object-cover rounded-lg"
+                                                                        />
+                                                                        <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs px-2 py-1 truncate">
+                                                                            {att.name}
+                                                                        </div>
+                                                                    </div>
                                                                 ) : (
-                                                                    <Icon icon="lucide:file" />
+                                                                    <div className="flex items-center gap-2 p-2 text-xs">
+                                                                        <Icon icon="lucide:file" />
+                                                                        <span className="truncate max-w-[100px]">{att.name}</span>
+                                                                    </div>
                                                                 )}
-                                                                <span className="truncate max-w-[100px]">{att.name}</span>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -731,16 +742,38 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                     </Chip>
                                 )}
                                 {attachments.map((att, idx) => (
-                                    <Chip
-                                        key={idx}
-                                        onClose={() => removeAttachment(idx)}
-                                        variant="flat"
-                                        color="default"
-                                        size="sm"
-                                        startContent={<Icon icon="lucide:paperclip" />}
-                                    >
-                                        {att.name}
-                                    </Chip>
+                                    att.type.startsWith('image/') ? (
+                                        <div key={idx} className="relative group rounded-lg overflow-hidden border-2 border-default-200">
+                                            <img 
+                                                src={att.url} 
+                                                alt={att.name}
+                                                className="h-20 w-auto object-cover"
+                                            />
+                                            <Button
+                                                isIconOnly
+                                                size="sm"
+                                                radius="full"
+                                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-danger text-white"
+                                                onPress={() => removeAttachment(idx)}
+                                            >
+                                                <Icon icon="lucide:x" className="text-sm" />
+                                            </Button>
+                                            <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs px-2 py-1 truncate">
+                                                {att.name}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <Chip
+                                            key={idx}
+                                            onClose={() => removeAttachment(idx)}
+                                            variant="flat"
+                                            color="default"
+                                            size="sm"
+                                            startContent={<Icon icon="lucide:paperclip" />}
+                                        >
+                                            {att.name}
+                                        </Chip>
+                                    )
                                 ))}
                             </div>
                         )}

@@ -42,6 +42,30 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
     const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
     const [imageLoaded, setImageLoaded] = useState(false);
 
+    // Reset all annotation states when a new image is opened or modal is closed
+    useEffect(() => {
+        if (!isOpen) {
+            // Clear everything when modal closes
+            setAnnotations([]);
+            setHistory([]);
+            setHistoryIndex(-1);
+            setIsDrawing(false);
+            setImageLoaded(false);
+            baseImageRef.current = null;
+        }
+    }, [isOpen]);
+
+    // Reset annotations when image changes (new image opened)
+    useEffect(() => {
+        if (image) {
+            setAnnotations([]);
+            setHistory([]);
+            setHistoryIndex(-1);
+            setIsDrawing(false);
+            setImageLoaded(false);
+        }
+    }, [image?.id, image?.src]);
+
     // Load image and setup base canvas (only once)
     useEffect(() => {
         if (!isOpen || !image || !baseCanvasRef.current) return;
