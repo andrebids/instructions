@@ -17,9 +17,9 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
   const percentage = Math.min(100, Math.max(0, Math.round((currentVal / goal) * 100)));
 
   // SVG Configuration for Semi-Circle
-  const width = 140;
-  const height = 80; // Half height + padding
-  const strokeWidth = 12;
+  const width = 120;
+  const height = 70; // Half height + padding
+  const strokeWidth = 10;
   const radius = (width - strokeWidth) / 2;
   const cx = width / 2;
   const cy = height - 10; // Bottom align
@@ -49,9 +49,9 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
        {/* Background Glow Effect - Blue to Teal gradient */}
        <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full blur-3xl group-hover:from-blue-500/30 group-hover:to-cyan-500/30 transition-all duration-500" />
 
-      <CardBody className="p-4 flex flex-col h-full overflow-hidden relative z-10">
+      <CardBody className="p-5 flex flex-col h-full relative z-10 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3 h-11">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/15 to-cyan-500/15 shadow-sm ring-1 ring-blue-500/20 backdrop-blur-sm">
               <Icon icon="lucide:target" className="text-xl text-blue-400" />
@@ -63,18 +63,18 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
           </div>
         </div>
 
+        {/* Value Display */}
+        <div className="mb-2 h-10 flex items-end">
+          <h4 className="text-3xl font-bold text-foreground leading-none">{value}</h4>
+        </div>
+
         {/* Content */}
-        <div className="flex items-end justify-between flex-1 pb-2">
-          <div className="flex flex-col gap-1">
-             <div className="flex items-baseline gap-2">
-                <h4 className="text-3xl font-bold text-foreground">{value}</h4>
-             </div>
-             <div className="flex flex-col">
-                <span className="text-xs text-default-400 font-medium">Year Goal: € {(goal/1000000).toFixed(1)}M</span>
-                <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">{percentage}%</span>
-                    <span className="text-xs text-default-400">completed</span>
-                </div>
+        <div className="flex items-start justify-between flex-1 gap-4 pt-1 pb-3">
+          <div className="flex flex-col gap-1 justify-end">
+             <span className="text-xs text-default-400 font-medium">Year Goal: € {(goal/1000000).toFixed(1)}M</span>
+             <div className="flex items-center gap-2">
+                 <span className="text-sm font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">{percentage}%</span>
+                 <span className="text-xs text-default-400">completed</span>
              </div>
           </div>
 
@@ -116,8 +116,8 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
             </svg>
             
             {/* Icon inside Gauge */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-2 text-blue-500/20">
-                <Icon icon="lucide:trending-up" className="text-3xl" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-1 text-blue-500/20">
+                <Icon icon="lucide:trending-up" className="text-2xl" />
             </div>
           </div>
         </div>
