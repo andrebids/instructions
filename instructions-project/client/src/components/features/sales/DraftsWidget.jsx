@@ -79,7 +79,7 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
           </div>
 
           {/* Gauge Chart */}
-          <div className="relative flex items-end justify-center" style={{ width: width, height: height }}>
+          <div className="relative flex items-end justify-center pb-4" style={{ width: width, height: height }}>
             <svg width={width} height={height} className="overflow-visible">
               <defs>
                 <linearGradient id="salesGaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -116,7 +116,7 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
             </svg>
             
             {/* Icon inside Gauge */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-0.5 text-blue-500/20">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-blue-500/20">
                 <Icon icon="lucide:trending-up" className="text-2xl" />
             </div>
           </div>
