@@ -46,19 +46,19 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
 
   return (
     <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
-       {/* Background Glow Effect */}
-       <div className="absolute -top-10 -right-10 w-32 h-32 bg-warning-500/20 rounded-full blur-3xl group-hover:bg-warning-500/30 transition-all duration-500" />
+       {/* Background Glow Effect - Blue to Teal gradient */}
+       <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full blur-3xl group-hover:from-blue-500/30 group-hover:to-cyan-500/30 transition-all duration-500" />
 
       <CardBody className="p-4 flex flex-col h-full overflow-hidden relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-warning-500/10 text-warning-500 shadow-sm ring-1 ring-warning-500/20">
-              <Icon icon="lucide:file-edit" className="text-xl" />
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/15 to-cyan-500/15 shadow-sm ring-1 ring-blue-500/20 backdrop-blur-sm">
+              <Icon icon="lucide:target" className="text-xl text-blue-400" />
             </div>
             <div className="flex flex-col">
-              <span className="text-default-500 text-sm font-medium">Drafts</span>
-              <span className="text-default-900 text-base font-bold">Value</span>
+              <span className="text-default-500 text-sm font-medium">Sales</span>
+              <span className="text-default-900 text-base font-bold">Goal</span>
             </div>
           </div>
         </div>
@@ -72,7 +72,7 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
              <div className="flex flex-col">
                 <span className="text-xs text-default-400 font-medium">Year Goal: € {(goal/1000000).toFixed(1)}M</span>
                 <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm font-bold text-warning-500">{percentage}%</span>
+                    <span className="text-sm font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">{percentage}%</span>
                     <span className="text-xs text-default-400">completed</span>
                 </div>
              </div>
@@ -82,11 +82,12 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
           <div className="relative flex items-end justify-center" style={{ width: width, height: height }}>
             <svg width={width} height={height} className="overflow-visible">
               <defs>
-                <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#F5A524" /> {/* warning-500 */}
-                  <stop offset="100%" stopColor="#D97706" /> {/* warning-600 */}
+                <linearGradient id="salesGaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#3B82F6" /> {/* blue-500 */}
+                  <stop offset="50%" stopColor="#0EA5E9" /> {/* sky-500 */}
+                  <stop offset="100%" stopColor="#06B6D4" /> {/* cyan-500 */}
                 </linearGradient>
-                <filter id="gaugeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <filter id="salesGaugeGlow" x="-20%" y="-20%" width="140%" height="140%">
                   <feGaussianBlur stdDeviation="3" result="blur" />
                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
@@ -105,18 +106,18 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
               {/* Progress */}
               <path
                 d={progressPath}
-                stroke="url(#gaugeGradient)"
+                stroke="url(#salesGaugeGradient)"
                 strokeWidth={strokeWidth}
                 fill="none"
                 strokeLinecap="round"
                 className="transition-all duration-1000 ease-out"
-                style={{ filter: 'drop-shadow(0 0 4px rgba(245, 165, 36, 0.4))' }}
+                style={{ filter: 'drop-shadow(0 0 6px rgba(59, 130, 246, 0.5))' }}
               />
             </svg>
             
-            {/* Icon or Text inside Gauge? */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-2 text-warning-500/20">
-                <Icon icon="lucide:target" className="text-3xl" />
+            {/* Icon inside Gauge */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-2 text-blue-500/20">
+                <Icon icon="lucide:trending-up" className="text-3xl" />
             </div>
           </div>
         </div>

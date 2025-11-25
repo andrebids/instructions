@@ -8,7 +8,17 @@ import { I18nProvider } from "@react-aria/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function TodoListWidget() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  
+  // Mapear código do idioma do i18n para locale do toLocaleDateString
+  const getLocaleFromLanguage = (lang) => {
+    const localeMap = {
+      'pt': 'pt-PT',
+      'en': 'en-US',
+      'fr': 'fr-FR'
+    };
+    return localeMap[lang] || 'pt-PT';
+  };
   const [tasks, setTasks] = React.useState([]);
   const [newTaskTitle, setNewTaskTitle] = React.useState("");
   const [newTaskDueDate, setNewTaskDueDate] = React.useState(null);
@@ -140,10 +150,12 @@ export function TodoListWidget() {
     if (diffDays === 0) return t('pages.dashboard.todoListWidget.dateFormatting.today');
     if (diffDays === 1) return t('pages.dashboard.todoListWidget.dateFormatting.tomorrow');
     if (diffDays <= 7) return t('pages.dashboard.todoListWidget.dateFormatting.days', { days: diffDays });
-    return due.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+    const locale = getLocaleFromLanguage(i18n.language);
+    return due.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
   };
 
-  const today = new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' });
+  const locale = getLocaleFromLanguage(i18n.language);
+  const today = new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
   const completedCount = tasks.filter(t => t.isCompleted).length;
 
   return (
