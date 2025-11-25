@@ -69,8 +69,8 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
         </div>
 
         {/* Content */}
-        <div className="flex items-start justify-between flex-1 gap-4 pt-1">
-          <div className="flex flex-col gap-1 justify-end">
+        <div className="flex items-end justify-between flex-1 gap-4 pt-1">
+          <div className="flex flex-col gap-1 justify-end pb-3">
              <span className="text-xs text-default-400 font-medium">Year Goal: € {(goal/1000000).toFixed(1)}M</span>
              <div className="flex items-center gap-2">
                  <span className="text-sm font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">{percentage}%</span>
