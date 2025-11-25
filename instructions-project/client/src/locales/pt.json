@@ -169,7 +169,10 @@
         "sales": "Vendas",
         "goal": "Objectivo",
         "yearGoal": "Objectivo Anual",
-        "completed": "concluído"
+        "completed": "concluído",
+        "annualGoal": "Meta Anual",
+        "toGo": "Em falta",
+        "completedLabel": "Realizado"
       },
       "conversionWidget": {
         "winLost": "Ganhos / Perdidos",
