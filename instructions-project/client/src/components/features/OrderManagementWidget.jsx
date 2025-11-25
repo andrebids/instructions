@@ -8,7 +8,7 @@ const MOCK_ORDERS = [
   {
     id: 1,
     project: "Alpha Tower",
-    item: "Steel Beams",
+    items: ["Steel Beams", "Concrete Mix", "Rebar"],
     status: "critical",
     timeLeft: "2h",
     date: "Today, 14:00"
@@ -16,7 +16,7 @@ const MOCK_ORDERS = [
   {
     id: 2,
     project: "Beta Complex",
-    item: "Cement Bags",
+    items: ["Cement Bags"],
     status: "pending",
     timeLeft: "2d",
     date: "Nov 27, 09:00"
@@ -24,7 +24,7 @@ const MOCK_ORDERS = [
   {
     id: 3,
     project: "Gamma Mall",
-    item: "Glass Panels",
+    items: ["Glass Panels", "Window Frames", "Door Handles", "LED Strips"],
     status: "normal",
     timeLeft: "New",
     date: "Just now"
@@ -127,7 +127,12 @@ const OrderItem = ({ order, index }) => {
           )}
         </div>
         <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-          <span className="font-medium">{order.item}</span>
+          <span className="font-medium">{order.items[0]}</span>
+          {order.items.length > 1 && (
+            <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-semibold">
+              +{order.items.length - 1}
+            </span>
+          )}
           <span className="text-zinc-300 dark:text-zinc-600">•</span>
           <span className={`${config.color} font-medium flex items-center gap-1`}>
             <Icon icon={config.icon} className="w-3 h-3" />

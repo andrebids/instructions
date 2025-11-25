@@ -164,5 +164,6 @@ export const PipelineWidget = ({ value }) => {
       </CardBody>
 
     </Card>
+    </>
   );
 };

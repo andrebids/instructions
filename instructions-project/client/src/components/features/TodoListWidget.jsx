@@ -162,10 +162,8 @@ export function TodoListWidget() {
     <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm rounded-3xl">
       <CardBody className="p-6 flex flex-col h-full">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary-500/10 p-2 rounded-xl">
-               <Icon icon="lucide:check-square" className="text-primary text-xl" />
-            </div>
+          <div className="flex items-center gap-2">
+            <Icon icon="lucide:check-square" className="w-6 h-6 text-primary" />
             <div>
               <h3 className="text-xl font-bold text-foreground">{t('pages.dashboard.todoListWidget.title')}</h3>
               <p className="text-xs text-default-500 font-medium">{today}</p>

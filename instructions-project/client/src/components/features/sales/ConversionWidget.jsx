@@ -3,15 +3,16 @@ import { Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 export const ConversionWidget = ({ value, trend, won = 34, lost = 16 }) => {
-  // Parse numeric value from string (e.g. "68%")
-  const numericValue = parseInt(value) || 0;
+  // Calculate win rate percentage
+  const total = won + lost;
+  const winRate = total > 0 ? Math.round((won / total) * 100) : 0;
   
   // SVG Configuration
   const size = 110;
   const strokeWidth = 10;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (numericValue / 100) * circumference;
+  const offset = circumference - (winRate / 100) * circumference;
 
   return (
     <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
@@ -63,7 +64,7 @@ export const ConversionWidget = ({ value, trend, won = 34, lost = 16 }) => {
             
             {/* Inner Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-bold text-foreground tracking-tight">{numericValue}%</span>
+              <span className="text-2xl font-bold text-foreground tracking-tight">{winRate}%</span>
             </div>
           </div>
         </div>
@@ -72,27 +73,27 @@ export const ConversionWidget = ({ value, trend, won = 34, lost = 16 }) => {
         <div className="flex items-center justify-between relative z-20">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-success-500/10 text-success-500 shadow-sm ring-1 ring-success-500/20">
-              <Icon icon="lucide:pie-chart" className="text-xl" />
+              <Icon icon="lucide:trending-up" className="text-xl" />
             </div>
             <div className="flex flex-col">
-              <span className="text-default-500 text-sm font-medium">Conversion</span>
-              <span className="text-default-900 text-base font-bold">Rate</span>
+              <span className="text-default-500 text-sm font-medium">Win / Lost</span>
+              <span className="text-default-900 text-base font-bold">Deals</span>
             </div>
           </div>
         </div>
 
         {/* Value Display */}
         <div className="mt-2 mb-2 relative z-20">
-          <h4 className="text-3xl font-bold text-foreground leading-none">{value}</h4>
+          <h4 className="text-3xl font-bold text-foreground leading-none">{winRate}%</h4>
         </div>
 
         {/* Content */}
         <div className="flex items-end justify-between flex-1 gap-4 pt-1">
           <div className="flex flex-col gap-1 justify-end pb-3">
-            <span className="text-xs text-default-400 font-medium">Total: {won + lost} deals</span>
+            <span className="text-xs text-default-400 font-medium">Sales Goal: {winRate}%</span>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold bg-gradient-to-r from-success-500 to-emerald-500 bg-clip-text text-transparent">{numericValue}%</span>
-              <span className="text-xs text-default-400">conversion rate</span>
+              <span className="text-sm font-bold bg-gradient-to-r from-success-500 to-emerald-500 bg-clip-text text-transparent">{winRate}%</span>
+              <span className="text-xs text-default-400">completed</span>
             </div>
           </div>
         </div>
