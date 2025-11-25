@@ -1,11 +1,13 @@
 import React from "react";
 import { Card, CardBody, Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
 
 // Sales pipeline data - percentages for each stage with mock project details
-const pipelineStages = [
+const getPipelineStages = (t) => [
   { 
-    name: 'Proposal', 
+    nameKey: 'proposal',
+    name: t('pages.dashboard.pipelineWidget.stages.proposal'), 
     percentage: 40, 
     color: '#A855F7', 
     glowColor: 'rgba(168, 85, 247, 0.4)',
@@ -18,7 +20,8 @@ const pipelineStages = [
     ]
   },
   { 
-    name: 'Negotiation', 
+    nameKey: 'negotiation',
+    name: t('pages.dashboard.pipelineWidget.stages.negotiation'), 
     percentage: 35, 
     color: '#3B82F6', 
     glowColor: 'rgba(59, 130, 246, 0.4)',
@@ -31,7 +34,8 @@ const pipelineStages = [
     ]
   },
   { 
-    name: 'Closing', 
+    nameKey: 'closing',
+    name: t('pages.dashboard.pipelineWidget.stages.closing'), 
     percentage: 25, 
     color: '#10B981', 
     glowColor: 'rgba(16, 185, 129, 0.4)',
@@ -46,6 +50,8 @@ const pipelineStages = [
 ];
 
 export const PipelineWidget = ({ value }) => {
+  const { t } = useTranslation();
+  const pipelineStages = getPipelineStages(t);
   return (
     <>
       <style>{`
@@ -76,8 +82,8 @@ export const PipelineWidget = ({ value }) => {
               <Icon icon="lucide:bar-chart-3" className="text-xl text-purple-400" />
             </div>
             <div className="flex flex-col">
-              <span className="text-default-500 text-sm font-medium">Total</span>
-              <span className="text-default-900 text-base font-bold">Pipeline</span>
+              <span className="text-default-500 text-sm font-medium">{t('pages.dashboard.pipelineWidget.total')}</span>
+              <span className="text-default-900 text-base font-bold">{t('pages.dashboard.pipelineWidget.pipeline')}</span>
             </div>
           </div>
         </div>
@@ -99,12 +105,12 @@ export const PipelineWidget = ({ value }) => {
                 
                 return (
                   <Tooltip
-                    key={stage.name}
+                    key={stage.nameKey}
                     content={
                       <div className="px-3 py-3 min-w-[200px] max-w-[280px]">
                         <div className="text-base font-bold mb-2 text-foreground">{stage.name}</div>
                         <div className="text-sm mb-3 text-foreground-600 font-medium">
-                          {stage.projectCount} projects • {stage.totalValue}
+                          {stage.projectCount} {t('pages.dashboard.pipelineWidget.tooltip.projects')} • {stage.totalValue}
                         </div>
                         <div 
                           className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar"
@@ -146,7 +152,7 @@ export const PipelineWidget = ({ value }) => {
           {/* Legend */}
           <div className="flex items-center justify-center gap-4 flex-wrap px-1">
             {pipelineStages.map((stage) => (
-              <div key={stage.name} className="flex items-center gap-1.5">
+              <div key={stage.nameKey} className="flex items-center gap-1.5">
                 <div 
                   className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                   style={{ 

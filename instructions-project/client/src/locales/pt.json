@@ -75,7 +75,7 @@
         "newProject": "Novo Projeto",
         "hero": {
           "title": "Pronto para iluminar",
-          "titleHighlight": "o Natal de 2025?",
+          "titleHighlight": "o Natal?",
           "draftsMessage": "Tem {{count}} rascunhos pendentes.",
           "continueWorking": "Retomar Trabalho"
         },
@@ -152,6 +152,32 @@
             "confirm": "Limpar Tarefas"
           }
         }
+      },
+      "pipelineWidget": {
+        "total": "Total",
+        "pipeline": "Pipeline",
+        "stages": {
+          "proposal": "Proposta",
+          "negotiation": "Negociação",
+          "closing": "Fecho"
+        },
+        "tooltip": {
+          "projects": "projetos"
+        }
+      },
+      "salesGoalWidget": {
+        "sales": "Vendas",
+        "goal": "Objectivo",
+        "yearGoal": "Objectivo Anual",
+        "completed": "concluído"
+      },
+      "conversionWidget": {
+        "winLost": "Ganhos / Perdidos",
+        "deals": "Projetos",
+        "total": "Total",
+        "projects": "projetos",
+        "won": "Ganhos",
+        "lost": "Perdidos"
       },
       "smartProjectTable": {
         "columns": {

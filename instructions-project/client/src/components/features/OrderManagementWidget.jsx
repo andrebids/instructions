@@ -7,24 +7,24 @@ import { useTranslation } from "react-i18next";
 const MOCK_ORDERS = [
   {
     id: 1,
-    project: "Alpha Tower",
-    items: ["Steel Beams", "Concrete Mix", "Rebar"],
+    project: "Lisbon Municipality",
+    items: ["IPL337W", "GX350LW-2A", "IPL337-REF"],
     status: "critical",
     timeLeft: "2h",
     date: "Today, 14:00"
   },
   {
     id: 2,
-    project: "Beta Complex",
-    items: ["Cement Bags"],
+    project: "Sports Center",
+    items: ["IPL337W"],
     status: "pending",
     timeLeft: "2d",
     date: "Nov 27, 09:00"
   },
   {
     id: 3,
-    project: "Gamma Mall",
-    items: ["Glass Panels", "Window Frames", "Door Handles", "LED Strips"],
+    project: "Green market",
+    items: ["IPL337W", "IPL337", "8CXMAR13446625-M27", "IPL337"],
     status: "normal",
     timeLeft: "New",
     date: "Just now"
@@ -35,22 +35,19 @@ const STATUS_CONFIG = {
   critical: {
     color: "text-red-500",
     bg: "bg-red-500",
-    border: "border-red-500/30",
-    glow: "shadow-[0_0_15px_rgba(239,68,68,0.4)]",
+    bgTinted: "bg-red-500/5",
     icon: "lucide:alert-circle"
   },
   pending: {
-    color: "text-amber-500",
-    bg: "bg-amber-500",
-    border: "border-amber-500/30",
-    glow: "shadow-[0_0_15px_rgba(245,158,11,0.4)]",
+    color: "text-yellow-500",
+    bg: "bg-yellow-500",
+    bgTinted: "bg-yellow-500/5",
     icon: "lucide:clock"
   },
   normal: {
-    color: "text-emerald-500",
-    bg: "bg-emerald-500",
-    border: "border-emerald-500/30",
-    glow: "shadow-[0_0_15px_rgba(16,185,129,0.4)]",
+    color: "text-blue-500",
+    bg: "bg-blue-500",
+    bgTinted: "bg-blue-500/5",
     icon: "lucide:check-circle-2"
   }
 };
@@ -102,19 +99,16 @@ const OrderItem = ({ order, index }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1, duration: 0.4, ease: "easeOut" }}
-      whileHover={{ backgroundColor: "rgba(255,255,255,0.05)" }}
       className={`
         group relative flex flex-col sm:flex-row items-start sm:items-center justify-between 
-        p-4 rounded-2xl border border-white/10 dark:border-white/5 
-        bg-white/30 dark:bg-black/20 backdrop-blur-md
-        transition-colors duration-300
+        p-4 rounded-2xl
+        ${config.bgTinted} backdrop-blur-md
+        transition-all duration-300
+        hover:brightness-105
       `}
     >
-      {/* Status Indicator Line (Left) */}
-      <div className={`absolute left-0 top-4 bottom-4 w-1 rounded-r-full ${config.bg} ${config.glow}`} />
-
       {/* Info Section */}
-      <div className="pl-4 flex-1 mb-3 sm:mb-0">
+      <div className="flex-1 mb-3 sm:mb-0">
         <div className="flex items-center gap-2 mb-1">
           <h4 className="font-bold text-zinc-800 dark:text-white text-base">
             {order.project}

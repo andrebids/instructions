@@ -1,8 +1,10 @@
 import React from "react";
 import { Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
 
 export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
+  const { t } = useTranslation();
   // Parse value (e.g. "€ 450k" -> 450000)
   const parseValue = (str) => {
     if (!str) return 0;
@@ -57,8 +59,8 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
               <Icon icon="lucide:target" className="text-xl text-blue-400" />
             </div>
             <div className="flex flex-col">
-              <span className="text-default-500 text-sm font-medium">Sales</span>
-              <span className="text-default-900 text-base font-bold">Goal</span>
+              <span className="text-default-500 text-sm font-medium">{t('pages.dashboard.salesGoalWidget.sales')}</span>
+              <span className="text-default-900 text-base font-bold">{t('pages.dashboard.salesGoalWidget.goal')}</span>
             </div>
           </div>
         </div>
@@ -71,10 +73,10 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
         {/* Content */}
         <div className="flex items-end justify-between flex-1 gap-4 pt-1">
           <div className="flex flex-col gap-1 justify-end pb-3">
-             <span className="text-xs text-default-400 font-medium">Year Goal: € {(goal/1000000).toFixed(1)}M</span>
+             <span className="text-xs text-default-400 font-medium">{t('pages.dashboard.salesGoalWidget.yearGoal')}: € {(goal/1000000).toFixed(1)}M</span>
              <div className="flex items-center gap-2">
                  <span className="text-sm font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">{percentage}%</span>
-                 <span className="text-xs text-default-400">completed</span>
+                 <span className="text-xs text-default-400">{t('pages.dashboard.salesGoalWidget.completed')}</span>
              </div>
           </div>
 
