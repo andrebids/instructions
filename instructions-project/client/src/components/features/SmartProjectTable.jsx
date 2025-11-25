@@ -31,10 +31,20 @@ const statusColorMap = {
 };
 
 export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDeleted }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [page, setPage] = React.useState(1);
   const rowsPerPage = 5;
+
+  // Helper para obter locale do i18n
+  const locale = React.useMemo(() => {
+    const langMap = {
+      'pt': 'pt-PT',
+      'en': 'en-US',
+      'fr': 'fr-FR'
+    };
+    return langMap[i18n.language] || 'pt-PT';
+  }, [i18n.language]);
 
   // Status translation map
   const statusLabelMap = React.useMemo(() => ({
@@ -174,21 +184,29 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
       case "budget":
         return (
           <span className="text-sm font-medium text-default-500">
-            {project.budget ? `€ ${parseFloat(project.budget).toLocaleString()}` : '€ 0'}
+            {project.budget ? `€ ${parseFloat(project.budget).toLocaleString(locale)}` : '€ 0'}
           </span>
         );
       case "dates":
+        const formatDate = (dateString) => {
+          if (!dateString) return '-';
+          try {
+            return new Date(dateString).toLocaleDateString(locale);
+          } catch (e) {
+            return dateString;
+          }
+        };
         return (
           <div className="flex flex-col">
-            <span className="text-xs text-default-400">{t('pages.dashboard.smartProjectTable.dates.start')} {project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}</span>
-            <span className="text-xs text-default-500">{t('pages.dashboard.smartProjectTable.dates.end')} {project.endDate ? new Date(project.endDate).toLocaleDateString() : '-'}</span>
+            <span className="text-xs text-default-400">{t('pages.dashboard.smartProjectTable.dates.start')} {formatDate(project.startDate)}</span>
+            <span className="text-xs text-default-500">{t('pages.dashboard.smartProjectTable.dates.end')} {formatDate(project.endDate)}</span>
           </div>
         );
 
       default:
         return cellValue;
     }
-  }, [navigate, onProjectsUpdate, t, statusLabelMap]);
+  }, [navigate, onProjectsUpdate, t, statusLabelMap, locale]);
 
   return (
     <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm">
