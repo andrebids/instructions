@@ -8,22 +8,38 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
-// Pastel colors matching the designer avatars style
-const PASTEL_COLORS = [
-    'b6e3f4', // Light Blue
-    'c0aede', // Light Purple
-    'd1d4f9', // Periwinkle
-    'ffd1dc', // Light Pink
-    'e2f0cb', // Light Green
-    'fdfd96'  // Light Yellow
+export const LANDSCAPES = [
+    {
+        id: 0,
+        title: 'Result Proposal 1',
+        src: '/demo-images/results/landscape-1.jpg'
+    },
+    {
+        id: 1,
+        title: 'Result Proposal 2',
+        src: '/demo-images/results/landscape-2.jpg'
+    },
+    {
+        id: 2,
+        title: 'Result Proposal 3',
+        src: '/demo-images/results/landscape-3.jpg'
+    },
+    {
+        id: 3,
+        title: 'Result Proposal 4',
+        src: '/demo-images/results/landscape-4.jpg'
+    },
+    {
+        id: 4,
+        title: 'Result Proposal 5',
+        src: '/demo-images/results/landscape-5.jpg'
+    },
+    {
+        id: 5,
+        title: 'Result Proposal 6',
+        src: '/demo-images/results/landscape-6.jpg'
+    }
 ];
-
-export const LANDSCAPES = Array.from({ length: 6 }).map((_, i) => ({
-    id: i,
-    title: `Result Proposal ${i + 1}`,
-    // Using placehold.co with pastel backgrounds to match the "clean/vector" style request
-    src: `https://placehold.co/1200x800/${PASTEL_COLORS[i % PASTEL_COLORS.length]}/ffffff?text=Landscape+${i + 1}&font=roboto`
-}));
 
 export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, onModificationSubmitted }) {
     const swiperRef = useRef(null);
@@ -123,14 +139,37 @@ export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, o
                 size="5xl"
                 backdrop="blur"
                 scrollBehavior="inside"
+                hideCloseButton
             >
                 <ModalContent>
                     {(onClose) => (
                         <>
                             <ModalHeader className="flex justify-between items-center">
                                 <span>Project Results</span>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        className="bg-background/60 backdrop-blur-md border border-default-200 hover:bg-default-100 text-foreground font-medium shadow-sm transition-all"
+                                        startContent={<Icon icon={showAllView ? "lucide:grid-3x3" : "lucide:layout-grid"} className="text-lg" />}
+                                        onPress={() => setShowAllView(!showAllView)}
+                                        radius="full"
+                                    >
+                                        {showAllView ? 'Carousel' : 'Show All'}
+                                    </Button>
+                                    <Button
+                                        color="danger"
+                                        variant="light"
+                                        size="sm"
+                                        onPress={onClose}
+                                        radius="full"
+                                        className="font-medium hover:bg-danger/10 border border-danger/20"
+                                        startContent={<Icon icon="lucide:x" className="text-lg" />}
+                                    >
+                                        Close
+                                    </Button>
+                                </div>
                             </ModalHeader>
-                            <ModalBody className="p-0 overflow-hidden">
+                            <ModalBody className="p-0 pb-20 overflow-hidden">
                                 {showAllView ? (
                                     <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-4">
                                         {LANDSCAPES.map((item, index) => (
@@ -142,7 +181,7 @@ export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, o
                                                 <img
                                                     src={item.src}
                                                     alt={item.title}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                                                 />
                                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                                                     <Icon icon="lucide:eye" className="text-white text-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -154,7 +193,7 @@ export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, o
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="relative w-full aspect-video bg-black/5">
+                                    <div className="relative w-full bg-black/5">
                                         {/* Custom Navigation Buttons */}
                                         <Button
                                             isIconOnly
@@ -184,6 +223,7 @@ export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, o
                                             loop={true}
                                             centeredSlides={true}
                                             slidesPerView={1}
+                                            autoHeight={true}
                                             autoplay={{
                                                 delay: 3000,
                                                 disableOnInteraction: false,
@@ -192,21 +232,21 @@ export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, o
                                             speed={800}
                                             mousewheel={true}
                                             keyboard={{ enabled: true }}
-                                            className="w-full h-full"
+                                            className="w-full"
                                         >
                                             {LANDSCAPES.map((item) => (
                                                 <SwiperSlide
                                                     key={item.id}
-                                                    className="w-full h-full"
+                                                    className="w-full"
                                                 >
                                                     <div
-                                                        className="relative w-full h-full group cursor-pointer"
+                                                        className="relative w-full group cursor-pointer"
                                                         onClick={() => handleImageClick(item)}
                                                     >
                                                         <img
                                                             src={item.src}
                                                             alt={item.title}
-                                                            className="w-full h-full object-cover"
+                                                            className="w-full object-contain"
                                                         />
                                                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                                                             <Icon icon="lucide:maximize-2" className="text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -221,27 +261,6 @@ export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, o
                                     </div>
                                 )}
                             </ModalBody>
-                            <ModalFooter className="flex justify-between items-center border-t border-default-200/50 bg-default-50/50 backdrop-blur-md py-4 px-6">
-                                <Button
-                                    size="md"
-                                    className="bg-background/60 backdrop-blur-md border border-default-200 hover:bg-default-100 text-foreground font-medium shadow-sm transition-all"
-                                    startContent={<Icon icon={showAllView ? "lucide:grid-3x3" : "lucide:layout-grid"} className="text-lg" />}
-                                    onPress={() => setShowAllView(!showAllView)}
-                                    radius="full"
-                                >
-                                    {showAllView ? 'Carousel View' : 'Show All'}
-                                </Button>
-                                <Button
-                                    color="danger"
-                                    variant="light"
-                                    onPress={onClose}
-                                    radius="full"
-                                    className="font-medium hover:bg-danger/10 border border-danger/20"
-                                    startContent={<Icon icon="lucide:x" className="text-lg" />}
-                                >
-                                    Close
-                                </Button>
-                            </ModalFooter>
                         </>
                     )}
                 </ModalContent>
@@ -266,7 +285,7 @@ export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, o
                                         <img
                                             src={annotatedImageData?.dataUrl || selectedImage?.src}
                                             alt={selectedImage?.title}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-contain"
                                         />
                                         {/* Annotate button overlay */}
                                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">

@@ -27,7 +27,9 @@ export function ProjectObservations({ projectId, instructions = [], results = []
     const { isOpen: isInstructionModalOpen, onOpen: onInstructionModalOpen, onOpenChange: onInstructionModalOpenChange } = useDisclosure();
     const { isOpen: isAttachmentModalOpen, onOpen: onAttachmentModalOpen, onOpenChange: onAttachmentModalOpenChange } = useDisclosure();
     const { isOpen: isAnnotationModalOpen, onOpen: onAnnotationModalOpen, onOpenChange: onAnnotationModalOpenChange } = useDisclosure();
+    const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onOpenChange: onDeleteModalOpenChange } = useDisclosure();
     const [selectedAttachment, setSelectedAttachment] = useState(null);
+    const [observationToDelete, setObservationToDelete] = useState(null);
 
     // Annotation state
     const [imageToAnnotate, setImageToAnnotate] = useState(null);
@@ -177,16 +179,23 @@ export function ProjectObservations({ projectId, instructions = [], results = []
         }
     };
 
-    const handleDeleteObservation = async (observationId) => {
-        if (!confirm('Are you sure you want to delete this observation?')) return;
+    const handleDeleteObservation = (observationId) => {
+        setObservationToDelete(observationId);
+        onDeleteModalOpen();
+    };
+
+    const confirmDeleteObservation = async () => {
+        if (!observationToDelete) return;
 
         try {
-            await projectsAPI.deleteObservation(projectId, observationId);
+            await projectsAPI.deleteObservation(projectId, observationToDelete);
             // Remove from local state
-            setObservations(prev => prev.filter(obs => obs.id !== observationId));
+            setObservations(prev => prev.filter(obs => obs.id !== observationToDelete));
+            onDeleteModalOpenChange(); // Close modal
+            setObservationToDelete(null);
         } catch (error) {
             console.error('Error deleting observation:', error);
-            alert('Failed to delete observation. Please try again.');
+            // Keep modal open to show error - could add error state here if needed
         }
     };
 
@@ -365,7 +374,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
         if (isSelected) {
             const currentLang = i18n.language?.split('-')[0] || 'en';
             // Ensure it's a supported language
-            const supportedLang = Object.values(LANGUAGES).find(l => l.code === currentLang)?.code || 'en';
+            const supportedLang = Object.values(LANGUAGES || {}).find(l => l.code === currentLang)?.code || 'en';
             handleGlobalTranslate(supportedLang);
         } else {
             handleGlobalTranslate(null);
@@ -376,7 +385,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
     useEffect(() => {
         if (isAutoTranslate) {
             const currentLang = i18n.language?.split('-')[0] || 'en';
-            const supportedLang = Object.values(LANGUAGES).find(l => l.code === currentLang)?.code || 'en';
+            const supportedLang = Object.values(LANGUAGES || {}).find(l => l.code === currentLang)?.code || 'en';
             if (globalTranslationLang !== supportedLang) {
                 handleGlobalTranslate(supportedLang);
             }
@@ -597,26 +606,26 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                                     <DropdownItem
                                                                         key="translate-pt"
                                                                         startContent={<Icon icon="lucide:languages" width={16} />}
-                                                                        onPress={() => handleTranslateMessage(obs.id, LANGUAGES.PT.code)}
+                                                                        onPress={() => handleTranslateMessage(obs.id, LANGUAGES?.PT?.code || 'pt')}
                                                                         isDisabled={translatingMessages[obs.id]}
                                                                     >
-                                                                        Translate to {LANGUAGES.PT.label}
+                                                                        Translate to {LANGUAGES?.PT?.label || 'Português'}
                                                                     </DropdownItem>
                                                                     <DropdownItem
                                                                         key="translate-en"
                                                                         startContent={<Icon icon="lucide:languages" width={16} />}
-                                                                        onPress={() => handleTranslateMessage(obs.id, LANGUAGES.EN.code)}
+                                                                        onPress={() => handleTranslateMessage(obs.id, LANGUAGES?.EN?.code || 'en')}
                                                                         isDisabled={translatingMessages[obs.id]}
                                                                     >
-                                                                        Translate to {LANGUAGES.EN.label}
+                                                                        Translate to {LANGUAGES?.EN?.label || 'English'}
                                                                     </DropdownItem>
                                                                     <DropdownItem
                                                                         key="translate-fr"
                                                                         startContent={<Icon icon="lucide:languages" width={16} />}
-                                                                        onPress={() => handleTranslateMessage(obs.id, LANGUAGES.FR.code)}
+                                                                        onPress={() => handleTranslateMessage(obs.id, LANGUAGES?.FR?.code || 'fr')}
                                                                         isDisabled={translatingMessages[obs.id]}
                                                                     >
-                                                                        Translate to {LANGUAGES.FR.label}
+                                                                        Translate to {LANGUAGES?.FR?.label || 'Français'}
                                                                     </DropdownItem>
                                                                 </>
                                                             )}
@@ -943,6 +952,54 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                 </Button>
                                                 <Button color="danger" variant="light" onPress={onClose}>
                                                     Close
+                                                </Button>
+                                            </ModalFooter>
+                                        </>
+                                    )}
+                                </ModalContent>
+                            </Modal>
+
+                            {/* Delete Confirmation Modal */}
+                            <Modal
+                                isOpen={isDeleteModalOpen}
+                                onOpenChange={onDeleteModalOpenChange}
+                                size="sm"
+                            >
+                                <ModalContent>
+                                    {(onClose) => (
+                                        <>
+                                            <ModalHeader className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <Icon
+                                                        icon="lucide:alert-triangle"
+                                                        className="text-danger"
+                                                        width={24}
+                                                    />
+                                                    <span>Delete Message</span>
+                                                </div>
+                                            </ModalHeader>
+                                            <ModalBody>
+                                                <p className="text-sm text-default-600">
+                                                    Are you sure you want to delete this observation? This action cannot be undone.
+                                                </p>
+                                            </ModalBody>
+                                            <ModalFooter>
+                                                <Button
+                                                    color="default"
+                                                    variant="light"
+                                                    onPress={onClose}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    color="danger"
+                                                    onPress={() => {
+                                                        confirmDeleteObservation();
+                                                        onClose();
+                                                    }}
+                                                    startContent={<Icon icon="lucide:trash-2" />}
+                                                >
+                                                    Delete
                                                 </Button>
                                             </ModalFooter>
                                         </>
