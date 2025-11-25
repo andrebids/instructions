@@ -203,7 +203,7 @@ export default function Dashboard() {
                 {/* Left Column - Hero & KPIs (8 cols) */}
                 <div className="col-span-12 lg:col-span-8 space-y-6">
                   {/* Hero Widget */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-64">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-auto md:h-64">
                     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50/80 via-white to-orange-50/30 dark:from-slate-900/30 dark:via-slate-800/20 dark:to-zinc-900/30 border border-amber-100/50 dark:border-transparent p-8 flex flex-col justify-center group shadow-sm dark:shadow-lg">
                       {/* Galaxy Background - Only in dark mode */}
                       <div className="absolute inset-0 z-0 opacity-40 pointer-events-none overflow-hidden rounded-3xl hidden dark:block">
