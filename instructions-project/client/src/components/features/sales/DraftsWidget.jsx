@@ -84,7 +84,7 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
 
         {/* Content */}
         <div className="flex items-end justify-between flex-1 gap-4 pt-0">
-          <div className="flex flex-col gap-1 justify-end pb-1">
+          <div className="flex flex-col gap-1 justify-end pb-4">
              <span className="text-xs text-default-400 font-medium">
                {t('pages.dashboard.salesGoalWidget.completedLabel')}: {value} • {percentage}%
              </span>
