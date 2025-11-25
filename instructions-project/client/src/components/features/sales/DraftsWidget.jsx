@@ -22,7 +22,7 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
   const strokeWidth = 10;
   const radius = (width - strokeWidth) / 2;
   const cx = width / 2;
-  const cy = height - 10; // Bottom align
+  const cy = height - 5; // Bottom align - reduced margin
   
   // Calculate path for the progress arc
   // Start from 180deg (left) to 0deg (right)
@@ -49,7 +49,7 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
        {/* Background Glow Effect - Blue to Teal gradient */}
        <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full blur-3xl group-hover:from-blue-500/30 group-hover:to-cyan-500/30 transition-all duration-500" />
 
-      <CardBody className="p-5 flex flex-col h-full relative z-10 overflow-hidden">
+      <CardBody className="p-5 pb-3 flex flex-col h-full relative z-10 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between mb-3 h-11">
           <div className="flex items-center gap-3">
@@ -69,7 +69,7 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
         </div>
 
         {/* Content */}
-        <div className="flex items-start justify-between flex-1 gap-4 pt-1 pb-3">
+        <div className="flex items-start justify-between flex-1 gap-4 pt-1">
           <div className="flex flex-col gap-1 justify-end">
              <span className="text-xs text-default-400 font-medium">Year Goal: € {(goal/1000000).toFixed(1)}M</span>
              <div className="flex items-center gap-2">
@@ -116,7 +116,7 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
             </svg>
             
             {/* Icon inside Gauge */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-1 text-blue-500/20">
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-0.5 text-blue-500/20">
                 <Icon icon="lucide:trending-up" className="text-2xl" />
             </div>
           </div>

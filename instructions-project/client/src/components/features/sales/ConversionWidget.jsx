@@ -87,18 +87,14 @@ export const ConversionWidget = ({ value, trend, won = 34, lost = 16 }) => {
         {/* Content Area with Info */}
         <div className="flex-1 relative">
           {/* Absolute Numbers */}
-          <div className="flex flex-col gap-2 relative z-20">
+          <div className="flex flex-col gap-1 relative z-20">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-success-500/10">
-                <Icon icon="lucide:check-circle" className="text-sm text-success-500" />
-              </div>
+              <Icon icon="lucide:check-circle" className="text-sm text-success-500" />
               <span className="text-xs text-default-500 font-medium">Won:</span>
               <span className="text-sm font-bold text-success-600 dark:text-success-500">{won}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-danger-500/10">
-                <Icon icon="lucide:x-circle" className="text-sm text-danger-500" />
-              </div>
+              <Icon icon="lucide:x-circle" className="text-sm text-danger-500" />
               <span className="text-xs text-default-500 font-medium">Lost:</span>
               <span className="text-sm font-bold text-danger-600 dark:text-danger-500">{lost}</span>
             </div>
