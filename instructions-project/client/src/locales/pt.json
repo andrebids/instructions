@@ -2,6 +2,7 @@
   "common": {
     "retry": "Tentar novamente",
     "close": "Fechar",
+    "download": "Baixar",
     "search": "Pesquisar",
     "loading": "Carregando...",
     "name": "Nome",
@@ -689,6 +690,10 @@
         "closeNotifications": "Fechar notificações",
         "close": "Fechar"
       }
+    },
+    "projectObservations": {
+      "annotationLegend": "Legenda das Anotações",
+      "noNoteAdded": "Nenhuma nota adicionada"
     }
   },
   "errors": {

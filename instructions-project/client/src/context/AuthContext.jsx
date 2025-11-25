@@ -41,9 +41,9 @@ function useAuthContext() {
   // Durante hot reload, o contexto pode estar temporariamente null
   // Retornar valor padrão em vez de lançar erro
   if (!context) {
-    // Em desenvolvimento, durante hot reload, retornar valor padrão
+    // Em desenvolvimento, durante hot reload, retornar valor padrão silenciosamente
+    // O warning foi removido pois é comportamento esperado durante hot reload
     if (import.meta.env.DEV) {
-      console.warn('⚠️ [AuthContext] Contexto não disponível durante hot reload, usando valor padrão');
       return defaultAuthValue;
     }
     // Em produção, lançar erro

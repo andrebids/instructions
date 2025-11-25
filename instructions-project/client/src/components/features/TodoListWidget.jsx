@@ -196,6 +196,7 @@ export function TodoListWidget() {
                     isLoading={clearingCompleted}
                     isDisabled={clearingCompleted}
                     className="h-8 w-8 min-w-unit-8 text-default-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    aria-label="Clear completed tasks"
                   >
                     <Icon icon="lucide:trash-2" className="text-base" />
                   </Button>
@@ -235,6 +236,7 @@ export function TodoListWidget() {
                       "min-w-unit-8 w-8 h-8 transition-colors",
                       newTaskDueDate ? "text-primary" : "text-default-400"
                     )}
+                    aria-label="Set due date"
                   >
                     <Icon icon="lucide:calendar" className="text-lg" />
                   </Button>

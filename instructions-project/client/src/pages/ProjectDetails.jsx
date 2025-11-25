@@ -830,7 +830,7 @@ export default function ProjectDetails() {
                                 </div>
                             }
                         >
-                            <div className="py-6 h-full">
+                            <div className="h-[calc(100vh-280px)]">
                                 <ProjectObservations
                                     projectId={id}
                                     instructions={displayLogos}

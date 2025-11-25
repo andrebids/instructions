@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, ButtonGroup, Tooltip, Divider, Input, Popover, PopoverTrigger, PopoverContent } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { drawRectangle, drawArrow, mergeImageWithAnnotations, canvasToBlob, calculateCanvasDimensions } from '../../utils/canvasUtils';
@@ -135,9 +135,22 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, editingAnnotationIndex, historyIndex, history]);
 
+    // Memoize drawing dependencies to prevent unnecessary rerenders
+    const drawingState = useMemo(() => ({
+        annotations,
+        isDrawing,
+        currentPos,
+        imageLoaded,
+        activeTool,
+        color,
+        lineWidth,
+        startPos,
+        hoveredAnnotationIndex
+    }), [annotations, isDrawing, currentPos, imageLoaded, activeTool, color, lineWidth, startPos, hoveredAnnotationIndex]);
+
     // Redraw annotations only (no image reload!)
     useEffect(() => {
-        if (!imageLoaded || !annotationCanvasRef.current) return;
+        if (!drawingState.imageLoaded || !annotationCanvasRef.current) return;
 
         const annotationCanvas = annotationCanvasRef.current;
         const ctx = annotationCanvas.getContext('2d');
@@ -146,8 +159,8 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
         ctx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
 
         // Draw all saved annotations
-        annotations.forEach((annotation, index) => {
-            const isHovered = hoveredAnnotationIndex === index;
+        drawingState.annotations.forEach((annotation, index) => {
+            const isHovered = drawingState.hoveredAnnotationIndex === index;
             const annotationColor = isHovered ? '#ffcc00' : annotation.color;
             const annotationWidth = isHovered ? annotation.lineWidth + 2 : annotation.lineWidth;
 
@@ -192,14 +205,14 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
         });
 
         // Draw preview if currently drawing
-        if (isDrawing) {
-            if (activeTool === TOOLS.RECTANGLE) {
-                drawRectangle(ctx, startPos.x, startPos.y, currentPos.x, currentPos.y, color, lineWidth);
-            } else if (activeTool === TOOLS.ARROW) {
-                drawArrow(ctx, startPos.x, startPos.y, currentPos.x, currentPos.y, color, lineWidth);
+        if (drawingState.isDrawing && drawingState.startPos && drawingState.currentPos) {
+            if (drawingState.activeTool === TOOLS.RECTANGLE) {
+                drawRectangle(ctx, drawingState.startPos.x, drawingState.startPos.y, drawingState.currentPos.x, drawingState.currentPos.y, drawingState.color, drawingState.lineWidth);
+            } else if (drawingState.activeTool === TOOLS.ARROW) {
+                drawArrow(ctx, drawingState.startPos.x, drawingState.startPos.y, drawingState.currentPos.x, drawingState.currentPos.y, drawingState.color, drawingState.lineWidth);
             }
         }
-    }, [annotations, isDrawing, currentPos, imageLoaded, activeTool, color, lineWidth, startPos, hoveredAnnotationIndex]);
+    }, [drawingState]);
 
     const getCanvasCoordinates = (e) => {
         const canvas = annotationCanvasRef.current;
@@ -401,6 +414,7 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
                                                 variant={activeTool === TOOLS.RECTANGLE ? 'solid' : 'flat'}
                                                 color={activeTool === TOOLS.RECTANGLE ? 'primary' : 'default'}
                                                 onPress={() => setActiveTool(TOOLS.RECTANGLE)}
+                                                aria-label="Rectangle tool"
                                             >
                                                 <Icon icon="lucide:square" className="text-lg" />
                                             </Button>
@@ -412,6 +426,7 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
                                                 variant={activeTool === TOOLS.ARROW ? 'solid' : 'flat'}
                                                 color={activeTool === TOOLS.ARROW ? 'primary' : 'default'}
                                                 onPress={() => setActiveTool(TOOLS.ARROW)}
+                                                aria-label="Arrow tool"
                                             >
                                                 <Icon icon="lucide:arrow-right" className="text-lg" />
                                             </Button>
@@ -471,6 +486,7 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
                                             variant="flat"
                                             isDisabled={historyIndex < 0}
                                             onPress={handleUndo}
+                                            aria-label="Undo annotation"
                                         >
                                             <Icon icon="lucide:undo" className="text-lg" />
                                         </Button>
@@ -482,6 +498,7 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
                                             variant="flat"
                                             isDisabled={historyIndex >= history.length - 1}
                                             onPress={handleRedo}
+                                            aria-label="Redo annotation"
                                         >
                                             <Icon icon="lucide:redo" className="text-lg" />
                                         </Button>
@@ -494,6 +511,7 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
                                             color="danger"
                                             isDisabled={annotations.length === 0}
                                             onPress={handleClearAll}
+                                            aria-label="Clear all annotations"
                                         >
                                             <Icon icon="lucide:trash-2" className="text-lg" />
                                         </Button>

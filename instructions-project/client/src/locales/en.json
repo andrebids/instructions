@@ -2,6 +2,7 @@
   "common": {
     "retry": "Retry",
     "close": "Close",
+    "download": "Download",
     "search": "Search",
     "loading": "Loading...",
     "name": "Name",
@@ -676,6 +677,10 @@
         "closeNotifications": "Close notifications",
         "close": "Close"
       }
+    },
+    "projectObservations": {
+      "annotationLegend": "Annotation Legend",
+      "noNoteAdded": "No note added"
     }
   },
   "errors": {

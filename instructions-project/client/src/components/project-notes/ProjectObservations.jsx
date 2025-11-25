@@ -93,9 +93,17 @@ export function ProjectObservations({ projectId, instructions = [], results = []
 
     // Poll for new messages every 10 seconds
     useEffect(() => {
+        if (!projectId) return;
+        
+        let isMounted = true; // Track if component is still mounted
+
         const pollInterval = setInterval(async () => {
+            if (!isMounted) return; // Don't process if component unmounted
+            
             try {
                 const data = await projectsAPI.getObservations(projectId);
+
+                if (!isMounted) return; // Check again after async operation
 
                 // Get IDs of current observations
                 const currentIds = new Set(observations.map(obs => obs.id));
@@ -121,11 +129,17 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                     }
                 }
             } catch (error) {
-                console.error('Error polling observations:', error);
+                // Only log error if component is still mounted
+                if (isMounted) {
+                    console.error('Error polling observations:', error);
+                }
             }
         }, 10000); // Poll every 10 seconds
 
-        return () => clearInterval(pollInterval);
+        return () => {
+            isMounted = false; // Mark as unmounted
+            clearInterval(pollInterval);
+        };
     }, [projectId, observations, onNewMessage, user?.name]);
 
     // Scroll to bottom when new messages arrive
@@ -462,11 +476,11 @@ export function ProjectObservations({ projectId, instructions = [], results = []
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)] min-h-[600px]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
             {/* Chat Feed */}
             <div className="lg:col-span-2 flex flex-col h-full">
-                <Card className="flex-1 flex flex-col h-full shadow-sm border border-default-200">
-                    <CardHeader className="px-6 py-4 border-b border-divider bg-default-50">
+                <Card className="flex flex-col h-full shadow-sm border border-default-200">
+                    <CardHeader className="px-6 py-4 border-b border-divider bg-default-50 flex-shrink-0">
                         <div className="flex items-center justify-between gap-3 w-full">
                             <div className="p-2 bg-primary/10 rounded-lg text-primary">
                                 <Icon icon="lucide:message-square" width={20} />
@@ -497,8 +511,8 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                         </div>
                     </CardHeader>
 
-                    {/* Messages Area */}
-                    <CardBody className="flex-1 overflow-y-auto p-6 space-y-6 bg-default-50/50">
+                    {/* Messages Area - Fixed height with scroll */}
+                    <CardBody className="flex-1 overflow-y-auto p-6 space-y-6 bg-default-50/50 min-h-0 max-h-[600px] scroll-smooth scrollbar-thin scrollbar-thumb-default-300 scrollbar-track-transparent hover:scrollbar-thumb-default-400">
                         {observations.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-default-400">
                                 <Icon icon="lucide:messages-square" className="text-6xl mb-4 opacity-20" />
@@ -735,8 +749,8 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                         <div ref={messagesEndRef} />
                     </CardBody>
 
-                    {/* Input Area */}
-                    <div className="p-4 bg-content1 border-t border-divider">
+                    {/* Input Area - Fixed at bottom */}
+                    <div className="p-4 bg-content1 border-t border-divider flex-shrink-0">
                         {/* Context Selection Preview */}
                         {(selectedInstruction !== null || selectedResultImage || attachments.length > 0) && (
                             <div className="flex flex-wrap gap-2 mb-3 p-2 bg-content2 rounded-lg border border-divider">
@@ -815,7 +829,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                             {/* Tools Popover */}
                             <Popover placement="top-start">
                                 <PopoverTrigger>
-                                    <Button isIconOnly variant="flat" className="text-default-500">
+                                    <Button isIconOnly variant="flat" className="text-default-500" aria-label="Add attachment or link">
                                         <Icon icon="lucide:plus" className="text-xl" />
                                     </Button>
                                 </PopoverTrigger>
@@ -931,7 +945,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                             </ModalBody>
                                             <ModalFooter>
                                                 <Button color="danger" variant="light" onPress={onClose}>
-                                                    Close
+                                                    {t('common.close', 'Close')}
                                                 </Button>
                                             </ModalFooter>
                                         </>
@@ -975,7 +989,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                             </ModalBody>
                                             <ModalFooter>
                                                 <Button color="danger" variant="light" onPress={onClose}>
-                                                    Close
+                                                    {t('common.close', 'Close')}
                                                 </Button>
                                             </ModalFooter>
                                         </>
@@ -1018,7 +1032,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                             <div className="lg:col-span-1 bg-content2 rounded-lg p-4 border border-default-300">
                                                                 <div className="flex items-center gap-2 mb-4 pb-3 border-b border-divider">
                                                                     <Icon icon="lucide:info" className="text-primary text-xl" />
-                                                                    <h3 className="font-semibold text-foreground">Annotation Legend</h3>
+                                                                    <h3 className="font-semibold text-foreground">{t('components.projectObservations.annotationLegend', 'Annotation Legend')}</h3>
                                                                 </div>
                                                                 <div className="space-y-3 max-h-[50vh] overflow-y-auto">
                                                                     {selectedAttachment.annotations.map((ann, idx) => (
@@ -1039,7 +1053,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                                                     </div>
                                                                                 ) : (
                                                                                     <div className="text-sm text-default-500 italic">
-                                                                                        No note added
+                                                                                        {t('components.projectObservations.noNoteAdded', 'No note added')}
                                                                                     </div>
                                                                                 )}
                                                                             </div>
@@ -1068,10 +1082,10 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                     href={selectedAttachment?.url}
                                                     download={selectedAttachment?.name}
                                                 >
-                                                    Download
+                                                    {t('common.download', 'Download')}
                                                 </Button>
                                                 <Button color="danger" variant="light" onPress={onClose}>
-                                                    Close
+                                                    {t('common.close', 'Close')}
                                                 </Button>
                                             </ModalFooter>
                                         </>
@@ -1160,8 +1174,8 @@ export function ProjectObservations({ projectId, instructions = [], results = []
             </div>
 
             {/* Right Sidebar - Context Info */}
-            <div className="lg:col-span-1 hidden lg:flex flex-col gap-6">
-                <Card className="shadow-sm border border-default-200">
+            <div className="lg:col-span-1 hidden lg:flex flex-col gap-6 h-full overflow-y-auto">
+                <Card className="shadow-sm border border-default-200 flex-shrink-0">
                     <CardHeader className="px-6 py-4 border-b border-divider">
                         <h3 className="text-base font-semibold">Active Participants</h3>
                     </CardHeader>
@@ -1200,7 +1214,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                     </CardBody>
                 </Card>
 
-                <Card className="shadow-sm border border-default-200 flex-1">
+                <Card className="shadow-sm border border-default-200 flex-shrink-0">
                     <CardHeader className="px-6 py-4 border-b border-divider">
                         <h3 className="text-base font-semibold">Quick Actions</h3>
                     </CardHeader>

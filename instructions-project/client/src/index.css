@@ -37,6 +37,43 @@ input[type="number"] {
   /* Chrome, Safari e Opera */
 }
 
+/* Scrollbar personalizada para o chat */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  /* Firefox */
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  /* Largura da scrollbar */
+}
+
+.scrollbar-thumb-default-300::-webkit-scrollbar-thumb {
+  background-color: rgb(212, 212, 216);
+  /* Cor do thumb */
+  border-radius: 9999px;
+  /* Arredondado */
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background-color: transparent;
+  /* Track transparente */
+}
+
+.scrollbar-thin:hover::-webkit-scrollbar-thumb {
+  background-color: rgb(161, 161, 170);
+  /* Cor do thumb no hover */
+}
+
+/* Para dark mode */
+.dark .scrollbar-thumb-default-300::-webkit-scrollbar-thumb {
+  background-color: rgb(82, 82, 91);
+}
+
+.dark .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+  background-color: rgb(113, 113, 122);
+}
+
 /* Auth CTA hover effect (scoped to landing only) */
 .auth-cta {
   display: flex;

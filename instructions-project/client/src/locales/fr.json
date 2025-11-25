@@ -2,6 +2,7 @@
   "common": {
     "retry": "Réessayer",
     "close": "Fermer",
+    "download": "Télécharger",
     "search": "Rechercher",
     "loading": "Chargement...",
     "name": "Nom",
@@ -560,6 +561,10 @@
       "dueToday": "Pour aujourd'hui",
       "overdue": "{{days}} jours de retard",
       "designerInfo": "Informations du Designer",
+      "assignedDesigners": "Designers Assignés",
+      "noDesignersAssigned": "Aucun designer assigné pour le moment",
+      "showResults": "Afficher les Résultats",
+      "chatWithDesigner": "Chat / Observations",
       "toBeDeveloped": "À développer",
       "designer": "Designer",
       "deleteModal": {
@@ -653,6 +658,10 @@
         "closeNotifications": "Fermer les notifications",
         "close": "Fermer"
       }
+    },
+    "projectObservations": {
+      "annotationLegend": "Légende des Annotations",
+      "noNoteAdded": "Aucune note ajoutée"
     }
   },
   "errors": {

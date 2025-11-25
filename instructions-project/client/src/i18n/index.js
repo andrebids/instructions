@@ -33,35 +33,38 @@ const getInitialLanguage = () => {
   return 'pt';
 };
 
-i18n
-  .use(initReactI18next)
-  .init({
-    resources: {
-      pt: {
-        translation: ptTranslations,
+// Only initialize if not already initialized (prevents multiple init during hot reload)
+if (!i18n.isInitialized) {
+  i18n
+    .use(initReactI18next)
+    .init({
+      resources: {
+        pt: {
+          translation: ptTranslations,
+        },
+        en: {
+          translation: enTranslations,
+        },
+        fr: {
+          translation: frTranslations,
+        },
       },
-      en: {
-        translation: enTranslations,
+      lng: getInitialLanguage(),
+      fallbackLng: 'pt',
+      interpolation: {
+        escapeValue: false, // React já faz escape
       },
-      fr: {
-        translation: frTranslations,
+      react: {
+        useSuspense: false, // Evitar suspense para melhor compatibilidade
       },
-    },
-    lng: getInitialLanguage(),
-    fallbackLng: 'pt',
-    interpolation: {
-      escapeValue: false, // React já faz escape
-    },
-    react: {
-      useSuspense: false, // Evitar suspense para melhor compatibilidade
-    },
-    debug: process.env.NODE_ENV === 'development', // Ativar debug em desenvolvimento
-    returnEmptyString: false, // Retornar chave se não encontrar tradução
-    returnNull: false,
-    missingKeyHandler: (lng, ns, key) => {
-      console.warn(`[i18n] Missing translation key: ${key} for language: ${lng}`);
-    },
-  });
+      debug: process.env.NODE_ENV === 'development', // Ativar debug em desenvolvimento
+      returnEmptyString: false, // Retornar chave se não encontrar tradução
+      returnNull: false,
+      missingKeyHandler: (lng, ns, key) => {
+        console.warn(`[i18n] Missing translation key: ${key} for language: ${lng}`);
+      },
+    });
+}
 
 // Salvar idioma no localStorage quando mudar
 i18n.on('languageChanged', (lng) => {
