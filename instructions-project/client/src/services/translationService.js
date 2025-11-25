@@ -30,8 +30,8 @@ export async function translateText(text, targetLang, sourceLang = null) {
 
     try {
         // Build language pair - MyMemory requires source|target format
-        // Use auto-detection if source language is not provided
-        const langPair = sourceLang ? `${sourceLang}|${targetLang}` : `|${targetLang}`;
+        // Default to 'en' as source if not provided, as most content is English
+        const langPair = sourceLang ? `${sourceLang}|${targetLang}` : `en|${targetLang}`;
 
         // Encode text for URL
         const encodedText = encodeURIComponent(text);
@@ -54,6 +54,20 @@ export async function translateText(text, targetLang, sourceLang = null) {
 
         // Check for API errors
         if (data.responseStatus !== 200) {
+            // Handle "same language" or invalid pair errors gracefully
+            // If the API complains about the pair (e.g. en|en), just return original text
+            if (data.responseDetails && (
+                data.responseDetails.includes('INVALID TARGET LANGUAGE') ||
+                data.responseDetails.includes('same language') ||
+                data.responseDetails.includes('IS AN INVALID')
+            )) {
+                console.warn('⚠️ [Translation] Same language or invalid pair detected, returning original text.');
+                return {
+                    translatedText: text,
+                    detectedSourceLang: sourceLang || 'en'
+                };
+            }
+
             console.error('❌ [Translation] API error:', data.responseStatus, data.responseDetails);
             throw new Error(data.responseDetails || 'Translation failed');
         }

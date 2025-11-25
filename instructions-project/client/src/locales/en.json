@@ -544,7 +544,7 @@
         "overview": "Overview",
         "instructions": "Instructions",
         "notes": "Notes",
-        "observations": "Observations"
+        "observations": "Project Chat"
       },
       "logoDefaultName": "Logo {{index}}",
       "projectProgress": "Project Progress",
