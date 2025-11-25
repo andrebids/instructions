@@ -153,6 +153,32 @@
           }
         }
       },
+      "pipelineWidget": {
+        "total": "Total",
+        "pipeline": "Pipeline",
+        "stages": {
+          "proposal": "Proposta",
+          "negotiation": "Negociação",
+          "closing": "Fecho"
+        },
+        "tooltip": {
+          "projects": "projetos"
+        }
+      },
+      "salesGoalWidget": {
+        "sales": "Vendas",
+        "goal": "Objectivo",
+        "yearGoal": "Objectivo Anual",
+        "completed": "concluído"
+      },
+      "conversionWidget": {
+        "winLost": "Ganhos / Perdidos",
+        "deals": "Projetos",
+        "total": "Total",
+        "projects": "projetos",
+        "won": "Ganhos",
+        "lost": "Perdidos"
+      },
       "smartProjectTable": {
         "columns": {
           "project": "PROJETO",
