@@ -182,6 +182,32 @@
         "won": "Gagnés",
         "lost": "Perdus"
       },
+      "orderManagement": {
+        "extend": "Prolonger",
+        "confirm": "Confirmer",
+        "releaseOrder": {
+          "tooltip": "Libérer la Commande",
+          "modal": {
+            "title": "Libérer la Commande",
+            "message": "Êtes-vous sûr de vouloir libérer la commande pour {{project}} ? Cette action est irréversible et annulera la commande.",
+            "confirm": "Libérer la Commande"
+          }
+        },
+        "extendOrder": {
+          "modal": {
+            "title": "Prolonger la Commande",
+            "message": "Voulez-vous prolonger le délai de la commande pour {{project}} ? La période de validité sera prolongée.",
+            "confirm": "Prolonger le Délai"
+          }
+        },
+        "confirmOrder": {
+          "modal": {
+            "title": "Confirmer la Commande",
+            "message": "Voulez-vous confirmer la commande pour {{project}} ? Cette action traitera et finalisera la commande.",
+            "confirm": "Confirmer la Commande"
+          }
+        }
+      },
       "smartProjectTable": {
         "columns": {
           "project": "PROJET",

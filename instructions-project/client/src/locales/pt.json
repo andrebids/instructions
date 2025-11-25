@@ -182,6 +182,32 @@
         "won": "Ganhos",
         "lost": "Perdidos"
       },
+      "orderManagement": {
+        "extend": "Estender",
+        "confirm": "Confirmar",
+        "releaseOrder": {
+          "tooltip": "Libertar Pedido",
+          "modal": {
+            "title": "Libertar Pedido",
+            "message": "Tem certeza que deseja libertar o pedido para {{project}}? Esta ação é irreversível e cancelará o pedido.",
+            "confirm": "Libertar Pedido"
+          }
+        },
+        "extendOrder": {
+          "modal": {
+            "title": "Estender Pedido",
+            "message": "Deseja estender o prazo do pedido para {{project}}? O tempo de validade será prolongado.",
+            "confirm": "Estender Prazo"
+          }
+        },
+        "confirmOrder": {
+          "modal": {
+            "title": "Confirmar Pedido",
+            "message": "Deseja confirmar o pedido para {{project}}? Esta ação processará e finalizará o pedido.",
+            "confirm": "Confirmar Pedido"
+          }
+        }
+      },
       "smartProjectTable": {
         "columns": {
           "project": "PROJETO",

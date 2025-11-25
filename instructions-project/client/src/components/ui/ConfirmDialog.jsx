@@ -24,8 +24,9 @@ export function ConfirmDialog({
                 <ModalHeader className="flex gap-3 items-center">
                     <div className={`p-2 rounded-full ${confirmColor === 'danger' ? 'bg-danger/10 text-danger' :
                             confirmColor === 'warning' ? 'bg-warning/10 text-warning' :
-                                confirmColor === 'primary' ? 'bg-primary/10 text-primary' :
-                                    'bg-default/10 text-default-500'
+                                confirmColor === 'success' ? 'bg-success/10 text-success' :
+                                    confirmColor === 'primary' ? 'bg-primary/10 text-primary' :
+                                        'bg-default/10 text-default-500'
                         }`}>
                         <Icon icon={icon} className="text-xl" />
                     </div>

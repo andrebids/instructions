@@ -183,8 +183,8 @@ const translations = {
                 title: "Additional dev member",
                 names: "External Expansion",
                 tag: "Native Stores",
-                price: "€5k+",
-                cost_desc: "Salaries + €220/mo Ops",
+                price: "€5000+ /month",
+                cost_desc: "Salarie + €220/mo Ops",
                 strat: {
                     title: "Platform Strategy",
                     desc: "<strong>Official Native Apps</strong> for iOS & Android. Requires specialized recruitment (Junior to Lead) and store approval processes.",
@@ -388,8 +388,8 @@ const translations = {
                 title: "Membre dev additionnel",
                 names: "Expansion Externe",
                 tag: "Stores Natifs",
-                price: "5000+ €",
-                cost_desc: "Salaires + 220 €/mois Ops",
+                price: "€5000+ /month",
+                cost_desc: "Salaire + 220 €/mois Ops",
                 strat: {
                     title: "Stratégie Plateforme",
                     desc: "<strong>Applications Natives Officielles</strong> pour iOS & Android. Nécessite un recrutement spécialisé (Junior à Lead) et des processus d'approbation des stores.",

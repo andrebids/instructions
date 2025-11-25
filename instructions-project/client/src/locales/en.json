@@ -182,6 +182,32 @@
         "won": "Won",
         "lost": "Lost"
       },
+      "orderManagement": {
+        "extend": "Extend",
+        "confirm": "Confirm",
+        "releaseOrder": {
+          "tooltip": "Release Order",
+          "modal": {
+            "title": "Release Order",
+            "message": "Are you sure you want to release the order for {{project}}? This action is irreversible and will cancel the order.",
+            "confirm": "Release Order"
+          }
+        },
+        "extendOrder": {
+          "modal": {
+            "title": "Extend Order",
+            "message": "Do you want to extend the deadline for the order for {{project}}? The validity period will be extended.",
+            "confirm": "Extend Deadline"
+          }
+        },
+        "confirmOrder": {
+          "modal": {
+            "title": "Confirm Order",
+            "message": "Do you want to confirm the order for {{project}}? This action will process and finalize the order.",
+            "confirm": "Confirm Order"
+          }
+        }
+      },
       "smartProjectTable": {
         "columns": {
           "project": "PROJECT",

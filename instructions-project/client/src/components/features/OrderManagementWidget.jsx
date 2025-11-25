@@ -1,8 +1,9 @@
 import React from 'react';
-import { Card, CardBody, Button, Tooltip } from "@heroui/react";
+import { Card, CardBody, Button, Tooltip, useDisclosure } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 const MOCK_ORDERS = [
   {
@@ -92,7 +93,32 @@ export const OrderManagementWidget = () => {
 };
 
 const OrderItem = ({ order, index }) => {
+  const { t } = useTranslation();
   const config = STATUS_CONFIG[order.status];
+  
+  // Modal states
+  const { isOpen: isReleaseOpen, onOpen: onReleaseOpen, onClose: onReleaseClose } = useDisclosure();
+  const { isOpen: isExtendOpen, onOpen: onExtendOpen, onClose: onExtendClose } = useDisclosure();
+  const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure();
+
+  // Handlers
+  const handleRelease = () => {
+    // TODO: Implementar lógica de release order
+    console.log('Release order:', order.id);
+    onReleaseClose();
+  };
+
+  const handleExtend = () => {
+    // TODO: Implementar lógica de extend order
+    console.log('Extend order:', order.id);
+    onExtendClose();
+  };
+
+  const handleConfirm = () => {
+    // TODO: Implementar lógica de confirm order
+    console.log('Confirm order:', order.id);
+    onConfirmClose();
+  };
 
   return (
     <motion.div
@@ -139,14 +165,15 @@ const OrderItem = ({ order, index }) => {
       <div className="flex items-center gap-2 mt-3 sm:mt-0 w-full sm:w-auto sm:justify-end">
         
         {/* Release Button (Tertiary) */}
-        <Tooltip content="Release Order">
+        <Tooltip content={t('pages.dashboard.orderManagement.releaseOrder.tooltip')}>
           <Button
             isIconOnly
             size="sm"
             variant="light"
             className="text-zinc-400 hover:text-red-500 hover:bg-red-500/10 hover:scale-110 active:scale-95 transition-all duration-300"
+            onPress={onReleaseOpen}
           >
-            <Icon icon="lucide:trash-2" className="w-4 h-4" />
+            <Icon icon="lucide:unlock" className="w-4 h-4" />
           </Button>
         </Tooltip>
 
@@ -155,18 +182,57 @@ const OrderItem = ({ order, index }) => {
           size="sm"
           variant="bordered"
           className="border-zinc-300/50 dark:border-zinc-700/50 bg-white/5 backdrop-blur-md text-zinc-600 dark:text-zinc-300 hover:bg-white/20 hover:border-zinc-300 dark:hover:border-zinc-600 hover:scale-105 active:scale-95 transition-all duration-300 flex-1 sm:flex-none sm:min-w-[80px]"
+          onPress={onExtendOpen}
         >
-          <span>Extend</span>
+          <span>{t('pages.dashboard.orderManagement.extend')}</span>
         </Button>
 
         {/* Confirm Button (Primary) */}
         <Button
           size="sm"
           className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/50 hover:border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] backdrop-blur-md font-semibold hover:scale-105 active:scale-95 transition-all duration-300 flex-1 sm:flex-none sm:min-w-[90px]"
+          onPress={onConfirmOpen}
         >
-          <span>Confirm</span>
+          <span>{t('pages.dashboard.orderManagement.confirm')}</span>
         </Button>
       </div>
+
+      {/* Confirmation Modals */}
+      <ConfirmDialog
+        isOpen={isReleaseOpen}
+        onClose={onReleaseClose}
+        onConfirm={handleRelease}
+        title={t('pages.dashboard.orderManagement.releaseOrder.modal.title')}
+        message={t('pages.dashboard.orderManagement.releaseOrder.modal.message', { project: order.project })}
+        confirmText={t('pages.dashboard.orderManagement.releaseOrder.modal.confirm')}
+        cancelText={t('common.cancel')}
+        confirmColor="danger"
+        icon="lucide:unlock"
+      />
+
+      <ConfirmDialog
+        isOpen={isExtendOpen}
+        onClose={onExtendClose}
+        onConfirm={handleExtend}
+        title={t('pages.dashboard.orderManagement.extendOrder.modal.title')}
+        message={t('pages.dashboard.orderManagement.extendOrder.modal.message', { project: order.project })}
+        confirmText={t('pages.dashboard.orderManagement.extendOrder.modal.confirm')}
+        cancelText={t('common.cancel')}
+        confirmColor="warning"
+        icon="lucide:calendar-plus"
+      />
+
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        onClose={onConfirmClose}
+        onConfirm={handleConfirm}
+        title={t('pages.dashboard.orderManagement.confirmOrder.modal.title')}
+        message={t('pages.dashboard.orderManagement.confirmOrder.modal.message', { project: order.project })}
+        confirmText={t('pages.dashboard.orderManagement.confirmOrder.modal.confirm')}
+        cancelText={t('common.cancel')}
+        confirmColor="success"
+        icon="lucide:check-circle-2"
+      />
     </motion.div>
   );
 };
