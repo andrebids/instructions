@@ -7,7 +7,7 @@ export const ConversionWidget = ({ value, trend }) => {
   const numericValue = parseInt(value) || 0;
   
   // SVG Configuration
-  const size = 120;
+  const size = 140;
   const strokeWidth = 12;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -20,27 +20,14 @@ export const ConversionWidget = ({ value, trend }) => {
 
       <CardBody className="p-4 flex flex-col h-full overflow-hidden relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-success-500/10 text-success-500 shadow-sm ring-1 ring-success-500/20">
-              <Icon icon="lucide:pie-chart" className="text-xl" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-default-500 text-sm font-medium">Conversion</span>
-              <span className="text-default-900 text-base font-bold">Rate</span>
-            </div>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2.5 rounded-xl bg-success-500/10 text-success-500 shadow-sm ring-1 ring-success-500/20">
+            <Icon icon="lucide:pie-chart" className="text-xl" />
           </div>
-          {trend && (
-            <div className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-500/20">
-              <Icon icon="lucide:trending-up" />
-              {trend}
-            </div>
-          )}
-        </div>
-
-        {/* Value Display */}
-        <div className="mb-4">
-          <h4 className="text-3xl font-bold text-foreground">{numericValue}%</h4>
+          <div className="flex flex-col">
+            <span className="text-default-500 text-sm font-medium">Conversion</span>
+            <span className="text-default-900 text-base font-bold">Rate</span>
+          </div>
         </div>
 
         {/* Chart - Centered */}
@@ -87,7 +74,7 @@ export const ConversionWidget = ({ value, trend }) => {
             
             {/* Inner Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-bold text-foreground tracking-tight">{numericValue}%</span>
+              <span className="text-3xl font-bold text-foreground tracking-tight">{numericValue}%</span>
             </div>
           </div>
         </div>
