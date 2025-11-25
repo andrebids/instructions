@@ -59,16 +59,26 @@ export function ProjectObservations({ projectId, instructions = [], results = []
             try {
                 const data = await projectsAPI.getObservations(projectId);
 
-                // Check if there are new messages
-                if (data.length > observations.length) {
-                    const newMessages = data.slice(observations.length); // Get only the new messages
+                // Get IDs of current observations
+                const currentIds = new Set(observations.map(obs => obs.id));
 
-                    // Update observations
+                // Find truly new messages (messages that don't exist in current observations)
+                const newMessages = data.filter(msg => !currentIds.has(msg.id));
+
+                // Only process if there are genuinely new messages
+                if (newMessages.length > 0) {
+                    // Update observations with all data from server
                     setObservations(data);
 
-                    // Notify parent about new messages
-                    if (onNewMessage && newMessages.length > 0) {
-                        onNewMessage(newMessages);
+                    // Filter to only notify about messages from other users
+                    const messagesFromOthers = newMessages.filter(msg =>
+                        msg.author?.name !== user?.name
+                    );
+
+                    // Notify parent about new messages from other users
+                    if (onNewMessage && messagesFromOthers.length > 0) {
+                        console.log('🔔 New messages from others:', messagesFromOthers);
+                        onNewMessage(messagesFromOthers);
                     }
                 }
             } catch (error) {
@@ -77,7 +87,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
         }, 10000); // Poll every 10 seconds
 
         return () => clearInterval(pollInterval);
-    }, [projectId, observations.length, onNewMessage]);
+    }, [projectId, observations, onNewMessage, user?.name]);
 
     // Scroll to bottom when new messages arrive
     useEffect(() => {
