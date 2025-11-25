@@ -90,7 +90,7 @@ export const ConversionWidget = ({ value, trend, won = 34, lost = 16 }) => {
         </div>
 
         {/* Content */}
-        <div className="flex items-end justify-between flex-1 gap-4 pt-1">
+        <div className="flex items-end justify-between flex-1 gap-4 pt-1 flex-wrap">
           <div className="flex flex-col gap-1 justify-end pb-3">
             <span className="text-xs text-default-400 font-medium">{t('pages.dashboard.conversionWidget.total')}: {total} {t('pages.dashboard.conversionWidget.projects')}</span>
             <div className="flex items-center gap-3">

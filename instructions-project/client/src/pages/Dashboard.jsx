@@ -252,7 +252,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* Financial KPIs */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-48 items-stretch">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-auto md:h-48 items-stretch">
                     <PipelineWidget 
                       value="€ 1.2M" 
                     />
