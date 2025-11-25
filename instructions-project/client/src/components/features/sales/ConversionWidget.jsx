@@ -63,6 +63,11 @@ export const ConversionWidget = ({ value, trend, won = 34, lost = 16 }) => {
                 style={{ filter: 'drop-shadow(0 0 4px rgba(16, 185, 129, 0.4))' }}
               />
             </svg>
+            
+            {/* Trophy Icon in Center */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-emerald-500/50">
+              <Icon icon="lucide:trophy" className="text-2xl" />
+            </div>
           </div>
         </div>
 

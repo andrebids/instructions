@@ -253,7 +253,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* Smart Project Table */}
-                  <div className="h-[500px]">
+                  <div className="min-h-[300px] max-h-[600px]">
                     <SmartProjectTable 
                       projects={projects} 
                       onProjectsUpdate={loadData}

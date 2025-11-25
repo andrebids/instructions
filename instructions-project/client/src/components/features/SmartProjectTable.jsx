@@ -209,31 +209,32 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
   }, [navigate, onProjectsUpdate, t, statusLabelMap, locale]);
 
   return (
-    <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm">
+    <Card className="flex-1 h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm">
       <CardBody className="p-0 overflow-hidden flex flex-col h-full">
-        <Table 
-          removeWrapper 
-          aria-label="Smart Project Table"
-          classNames={{
-            th: "bg-default-100/50 text-default-500 font-medium border-b border-default-200/50",
-            td: "py-3 border-b border-default-200/50 group-last:border-none",
-            tr: "hover:bg-default-100/50 transition-colors"
-          }}
-          bottomContent={
-            <div className="flex w-full justify-end px-4 pb-4">
-              <Pagination
-                isCompact
-                showControls
-                showShadow
-                color="primary"
-                page={page}
-                total={pages}
-                onChange={setPage}
-                className="bg-transparent"
-              />
-            </div>
-          }
-        >
+        <div className="flex-1 overflow-auto min-h-0">
+          <Table 
+            removeWrapper 
+            aria-label="Smart Project Table"
+            classNames={{
+              th: "bg-default-100/50 text-default-500 font-medium border-b border-default-200/50",
+              td: "py-3 border-b border-default-200/50 group-last:border-none",
+              tr: "hover:bg-default-100/50 transition-colors"
+            }}
+            bottomContent={
+              <div className="flex w-full justify-end px-4 pb-4">
+                <Pagination
+                  isCompact
+                  showControls
+                  showShadow
+                  color="primary"
+                  page={page}
+                  total={pages}
+                  onChange={setPage}
+                  className="bg-transparent"
+                />
+              </div>
+            }
+          >
           <TableHeader>
             <TableColumn key="favorite" width={50}> </TableColumn>
             <TableColumn key="name">{t('pages.dashboard.smartProjectTable.columns.project')}</TableColumn>
@@ -253,6 +254,7 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
             )}
           </TableBody>
         </Table>
+        </div>
       </CardBody>
     </Card>
   );
