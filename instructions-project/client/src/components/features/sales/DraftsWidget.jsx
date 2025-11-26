@@ -2,9 +2,18 @@ import React from "react";
 import { Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "@heroui/use-theme";
 
 export const DraftsWidget = React.memo(({ value, count, goal = 1000000 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const [isLightMode, setIsLightMode] = React.useState(theme !== 'dark');
+
+  // Update isLightMode when theme changes
+  React.useEffect(() => {
+    setIsLightMode(theme !== 'dark');
+  }, [theme]);
+
   // Parse value (e.g. "€ 450k" -> 450000)
   const parseValue = React.useCallback((str) => {
     if (!str) return 0;
@@ -85,14 +94,14 @@ export const DraftsWidget = React.memo(({ value, count, goal = 1000000 }) => {
 
         {/* Content */}
         <div className="flex items-end justify-between flex-1 gap-4 pt-0">
-          <div className="flex flex-col gap-1 justify-end pb-4">
+          <div className="flex flex-col gap-1 justify-end pb-6">
              <span className="text-xs text-default-400 font-medium">
                {t('pages.dashboard.salesGoalWidget.completedLabel')}: {value} • {percentage}%
              </span>
           </div>
 
           {/* Gauge Chart */}
-          <div className="relative flex items-center justify-center" style={{ width: width, height: height, transform: 'translateY(-12px)' }}>
+          <div className="relative flex items-center justify-center" style={{ width: width, height: height, transform: 'translateY(-28px)' }}>
             <svg width={width} height={height} className="overflow-visible">
               <defs>
                 <linearGradient id="salesGaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -109,11 +118,10 @@ export const DraftsWidget = React.memo(({ value, count, goal = 1000000 }) => {
               {/* Track */}
               <path
                 d={bgPath}
-                stroke="currentColor"
+                stroke={isLightMode ? "#d1d5db" : "rgba(255, 255, 255, 0.15)"}
                 strokeWidth={strokeWidth}
                 fill="none"
                 strokeLinecap="round"
-                className="text-default-200/20"
               />
               
               {/* Progress */}

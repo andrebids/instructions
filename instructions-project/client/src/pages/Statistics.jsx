@@ -585,7 +585,18 @@ export default function Statistics() {
                   innerRadius="60%"
                   outerRadius="95%"
                   cornerRadius={8}
-                  sx={{ "& text": { display: "none" } }}
+                  sx={{ 
+                    "& text": { display: "none" },
+                    // Ajustar cores no light mode para melhor visibilidade
+                    ...(theme !== 'dark' && {
+                      '& .MuiGauge-referenceArc': {
+                        fill: 'hsl(var(--heroui-default-200))', // Fundo mais visível no light mode
+                      },
+                      '& .MuiGauge-valueArc': {
+                        fill: 'hsl(var(--heroui-primary))', // Cor do valor mais visível
+                      },
+                    })
+                  }}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-5xl md:text-6xl font-extrabold" style={{ transform: "translateY(6px)" }}>{current.wonRatePct}%</div>

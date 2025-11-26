@@ -2,9 +2,17 @@ import React from "react";
 import { Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "@heroui/use-theme";
 
 export const ConversionWidget = React.memo(({ value, trend, won = 34, lost = 16 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const [isLightMode, setIsLightMode] = React.useState(theme !== 'dark');
+
+  // Update isLightMode when theme changes
+  React.useEffect(() => {
+    setIsLightMode(theme !== 'dark');
+  }, [theme]);
   
   // Calculate win rate percentage
   const total = won + lost;
@@ -43,10 +51,11 @@ export const ConversionWidget = React.memo(({ value, trend, won = 34, lost = 16 
                 cx={size / 2}
                 cy={size / 2}
                 r={radius}
-                stroke="currentColor"
+                stroke={isLightMode ? "#d1d5db" : "currentColor"}
                 strokeWidth={strokeWidth}
                 fill="transparent"
-                className="text-default-200/20"
+                className={isLightMode ? "" : "text-default-200/20"}
+                style={isLightMode ? { opacity: 0.8 } : {}}
               />
               
               {/* Progress */}
@@ -91,8 +100,8 @@ export const ConversionWidget = React.memo(({ value, trend, won = 34, lost = 16 
         </div>
 
         {/* Content */}
-        <div className="flex items-end justify-between flex-1 gap-4 pt-1 flex-wrap">
-          <div className="flex flex-col gap-1 justify-end pb-3">
+        <div className="flex items-end justify-between flex-1 gap- pt-1 flex-wrap">
+          <div className="flex flex-col gap-1 justify-end pb-1">
             <span className="text-xs text-default-400 font-medium">{t('pages.dashboard.conversionWidget.total')}: {total} {t('pages.dashboard.conversionWidget.projects')}</span>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">

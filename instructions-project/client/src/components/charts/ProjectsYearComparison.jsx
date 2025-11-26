@@ -48,10 +48,10 @@ export function ProjectsYearComparison({
   const projectsData = React.useMemo(() => {
     const data = { ...baseProjectsData };
     if (data[2020] == null) {
-      data[2020] = randomValueRef.current;
+      data[2020] = randomValue;
     }
     return data;
-  }, [baseProjectsData]);
+  }, [baseProjectsData, randomValue]);
 
   // Use years from props
   const safeCurrentYear = Number(currentYear);
@@ -101,6 +101,16 @@ export function ProjectsYearComparison({
 
   const rawMax = Math.max(...currentCumulative, ...comparisonCumulative);
   const roundedMax = Math.max(1000, Math.ceil(rawMax / 5000) * 5000);
+
+  // Ajustar opacidade e visibilidade das áreas no light mode
+  const [isLightMode, setIsLightMode] = React.useState(theme !== 'dark');
+
+  // Update isLightMode when theme changes
+  React.useEffect(() => {
+    setIsLightMode(theme !== 'dark');
+  }, [theme]);
+
+  const areaFillOpacity = isLightMode ? 0.25 : 0.12; // Maior opacidade no light mode para melhor visibilidade
 
 // Note: MUI X Charts already supports initial animations via skipAnimation={false}
 
@@ -200,7 +210,10 @@ export function ProjectsYearComparison({
               '& .MuiChartsAxis-tickLabel': { fill: 'hsl(var(--heroui-foreground))' },
               '& .MuiChartsGrid-line': { stroke: 'hsl(var(--heroui-default-300))', opacity: 0.25 },
               '& .MuiLineElement-root': { strokeLinecap: 'round', strokeWidth: 3 },
-              '& .MuiAreaElement-root': { fillOpacity: 0.12 },
+              // Ajustar opacidade das áreas no light mode para melhor visibilidade
+              '& .MuiAreaElement-root': { 
+                fillOpacity: areaFillOpacity,
+              },
             }}
             experimentalFeatures={{ preferStrictDomainInLineCharts: true }}
           />
