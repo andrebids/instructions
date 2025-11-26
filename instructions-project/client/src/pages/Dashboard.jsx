@@ -205,9 +205,12 @@ export default function Dashboard() {
                 <div className="col-span-12 lg:col-span-8 space-y-6">
                   {/* Hero Widget */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-auto md:h-64">
-                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50/80 via-white to-orange-50/30 dark:from-slate-900/30 dark:via-slate-800/20 dark:to-zinc-900/30 border border-amber-100/50 dark:border-transparent p-8 flex flex-col justify-center group shadow-sm dark:shadow-lg">
-                      {/* Galaxy Background - Only in dark mode */}
-                      <div className="absolute inset-0 z-0 opacity-40 pointer-events-none overflow-hidden rounded-3xl hidden dark:block">
+                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/30 via-slate-800/20 to-zinc-900/30 border border-transparent p-8 flex flex-col justify-center group shadow-lg">
+                      {/* Dark Background Base */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 rounded-3xl" />
+                      
+                      {/* Galaxy Background */}
+                      <div className="absolute inset-0 z-0 opacity-40 pointer-events-none overflow-hidden rounded-3xl">
                         <Galaxy 
                           transparent={true}
                           mouseInteraction={true}
@@ -223,26 +226,23 @@ export default function Dashboard() {
                         />
                       </div>
 
-                      {/* Dark Mode Glow */}
-                      <div className="absolute top-0 right-0 p-32 bg-blue-500/20 blur-[100px] rounded-full -mr-16 -mt-16 pointer-events-none z-5 hidden dark:block" />
-                      
-                      {/* Light Mode Glow */}
-                      <div className="absolute top-0 right-0 p-40 bg-amber-400/10 blur-[80px] rounded-full -mr-20 -mt-20 pointer-events-none dark:hidden z-5" />
+                      {/* Glow */}
+                      <div className="absolute top-0 right-0 p-32 bg-blue-500/20 blur-[100px] rounded-full -mr-16 -mt-16 pointer-events-none z-5" />
                       
                       <div className="relative z-10">
-                        <h2 className="text-3xl font-bold text-zinc-900 dark:text-white mb-2">
+                        <h2 className="text-3xl font-bold text-white mb-2">
                           {t('pages.dashboard.main.hero.title')} <br/>
                           <ShinyText 
                             text={t('pages.dashboard.main.hero.titleHighlight')} 
-                            className="[--shiny-bg-gradient:linear-gradient(to_right,#d97706,#f97316)] dark:[--shiny-bg-gradient:linear-gradient(to_right,#fde68a,#facc15)]"
+                            className="[--shiny-bg-gradient:linear-gradient(to_right,#fde68a,#facc15)]"
                             speed={3}
                           />
                         </h2>
-                        <p className="text-zinc-600 dark:text-slate-200 mb-6 max-w-xs font-medium">
+                        <p className="text-slate-200 mb-6 max-w-xs font-medium">
                           {t('pages.dashboard.main.hero.draftsMessage', { count: stats.draft })}
                         </p>
                         <Button 
-                          className="bg-zinc-900 text-white shadow-lg shadow-zinc-900/20 hover:bg-zinc-800 dark:bg-white/10 dark:backdrop-blur-md dark:text-white dark:border dark:border-white/20 dark:shadow-none dark:hover:bg-white/20 transition-all"
+                          className="bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-none hover:bg-white/20 transition-all"
                           endContent={<Icon icon="lucide:arrow-right" />}
                         >
                           {t('pages.dashboard.main.hero.continueWorking')}

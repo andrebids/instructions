@@ -422,8 +422,14 @@ export const TodoListWidget = React.memo(() => {
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
                           className={cn(
-                            "flex items-center gap-1 px-2 py-1 rounded-lg bg-default-100/50 border border-default-200/50",
-                            dueDateInfo.color
+                            "flex items-center gap-1 px-2 py-1 rounded-lg border transition-colors",
+                            dueDateInfo.status === 'overdue' 
+                              ? "bg-danger-500/10 border-danger-500/50 text-danger-600 dark:text-danger-400"
+                              : dueDateInfo.status === 'today'
+                                ? "bg-warning-500/10 border-warning-500/50 text-warning-600 dark:text-warning-400"
+                                : dueDateInfo.status === 'tomorrow'
+                                  ? "bg-primary-500/10 border-primary-500/50 text-primary-600 dark:text-primary-400"
+                                  : "bg-default-100/50 border-default-200/50 text-default-500"
                           )}
                         >
                           <Icon icon={dueDateInfo.icon} className="text-xs" />
