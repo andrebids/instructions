@@ -265,23 +265,42 @@ export default function TrendingFiltersSidebar({
     return { min: Math.min(...vals), max: Math.max(...vals) };
   }, [products]);
 
+  // Extrair valores primitivos para evitar recálculos desnecessários quando objetos são recriados
+  const heightMin = heightValues.min;
+  const heightMax = heightValues.max;
+  const widthMin = widthValues.min;
+  const widthMax = widthValues.max;
+  const depthMin = depthValues.min;
+  const depthMax = depthValues.max;
+
   // Get effective ranges for each dimension
-  const getDimensionRange = (key) => {
+  // Calcular diretamente nos useMemo usando valores primitivos para evitar recriações desnecessárias
+  const effectiveHeightRange = React.useMemo(() => {
     const dimRanges = filters.dimRanges || {};
-    const range = dimRanges[key];
+    const range = dimRanges.heightM;
     if (range && Array.isArray(range) && range.length === 2 && Number.isFinite(range[0]) && Number.isFinite(range[1])) {
       return range;
     }
-    let values;
-    if (key === "heightM") values = heightValues;
-    else if (key === "widthM") values = widthValues;
-    else values = depthValues;
-    return [values.min, values.max];
-  };
+    return [heightMin, heightMax];
+  }, [filters.dimRanges, heightMin, heightMax]);
 
-  const effectiveHeightRange = React.useMemo(() => getDimensionRange("heightM"), [filters.dimRanges, heightValues]);
-  const effectiveWidthRange = React.useMemo(() => getDimensionRange("widthM"), [filters.dimRanges, widthValues]);
-  const effectiveDepthRange = React.useMemo(() => getDimensionRange("depthM"), [filters.dimRanges, depthValues]);
+  const effectiveWidthRange = React.useMemo(() => {
+    const dimRanges = filters.dimRanges || {};
+    const range = dimRanges.widthM;
+    if (range && Array.isArray(range) && range.length === 2 && Number.isFinite(range[0]) && Number.isFinite(range[1])) {
+      return range;
+    }
+    return [widthMin, widthMax];
+  }, [filters.dimRanges, widthMin, widthMax]);
+
+  const effectiveDepthRange = React.useMemo(() => {
+    const dimRanges = filters.dimRanges || {};
+    const range = dimRanges.depthM;
+    if (range && Array.isArray(range) && range.length === 2 && Number.isFinite(range[0]) && Number.isFinite(range[1])) {
+      return range;
+    }
+    return [depthMin, depthMax];
+  }, [filters.dimRanges, depthMin, depthMax]);
 
   const getSelectedLocationLabel = () => {
     if (!filters.location) return "All";
@@ -473,7 +492,7 @@ export default function TrendingFiltersSidebar({
         })}
       </div>
     );
-  }, [filters.mount, isDark, itemsCount, handle]);
+  }, [filters.mount, isDark, itemsCount, handle, mountOptions]);
 
   const renderSectionContent = React.useCallback((sectionKey) => {
     switch (sectionKey) {
@@ -877,7 +896,7 @@ export default function TrendingFiltersSidebar({
       default:
         return null;
     }
-  }, [isDark, filters, itemsCount, mountOptions, heightValues, widthValues, depthValues, effectiveHeightRange, effectiveWidthRange, effectiveDepthRange, products, handle, formatCurrency, formatDimensionValue, availableYears, priceRange, effectiveMin, effectiveMax, handlePriceChange, handlePriceChangeStart, handlePriceChangeEnd, isDraggingPrice, colorOptions, typeOptions, stockRange, stockMin, stockMax, effectiveStockMin, effectiveStockMax, handleStockChange, priceHistogram, maxCount, histogramBins, min, max, statPillClass]);
+  }, [isDark, filters, itemsCount, mountOptions, heightValues, widthValues, depthValues, effectiveHeightRange, effectiveWidthRange, effectiveDepthRange, products, handle, formatCurrency, formatDimensionValue, availableYears, priceRange, effectiveMin, effectiveMax, handlePriceChange, handlePriceChangeStart, handlePriceChangeEnd, isDraggingPrice, colorOptions, typeOptions, stockRange, stockMin, stockMax, effectiveStockMin, effectiveStockMax, handleStockChange, priceHistogram, maxCount, histogramBins, min, max, statPillClass, MountingFilter, onChange, onPriceChange, onStockChange]);
 
   const CollapsibleCard = ({ section }) => {
     const isOpen = openSections.includes(section.key);

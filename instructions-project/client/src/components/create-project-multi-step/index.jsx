@@ -41,9 +41,10 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
   const clientState = useClientManagement(formState.setFormData);
 
   // Get visible steps based on project type
+  // Usar formState.formData completo para corresponder às dependências inferidas pelo React Compiler
   const visibleSteps = useMemo(() =>
     getVisibleSteps(formState.formData, STEPS),
-    [formState.formData.projectType, formState.formData.simuWorkflow]
+    [formState.formData]
   );
   const navigation = useStepNavigation(formState.formData, visibleSteps, formState.createTempProject);
 

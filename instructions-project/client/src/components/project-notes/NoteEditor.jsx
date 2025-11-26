@@ -23,6 +23,10 @@ export function NoteEditor({ note, onSave, onDelete }) {
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const initialContentRef = useRef(note.content || '');
+    const isResettingRef = useRef(false); // Marca quando estamos resetando a nota para evitar race condition
+    const previousNoteIdRef = useRef(note.id); // Rastreia o ID anterior da nota para detectar mudanças
+    const previousNoteTitleRef = useRef(note.title || ''); // Rastreia o título anterior da nota para detectar mudanças
+    const previousNoteContentRef = useRef(note.content || ''); // Rastreia o conteúdo anterior da nota para detectar mudanças
     const { isOpen: isDeleteDialogOpen, onOpen: onDeleteDialogOpen, onClose: onDeleteDialogClose } = useDisclosure();
 
     const editor = useEditor({
@@ -70,22 +74,75 @@ export function NoteEditor({ note, onSave, onDelete }) {
         },
     });
 
-    // Reset when note changes
+    // Reset when note changes (quando ID muda OU quando título muda com mesmo ID OU quando conteúdo muda)
     useEffect(() => {
-        setTitle(note.title || '');
-        editor?.commands.setContent(note.content || '');
-        initialContentRef.current = note.content || '';
-        setHasUnsavedChanges(false);
-        setSaveSuccess(false);
-    }, [note.id, editor]);
-
-    // Track title changes
-    useEffect(() => {
-        if (title !== note.title) {
-            setHasUnsavedChanges(true);
-            setSaveSuccess(false);
+        // Verificar se a nota realmente mudou (ID, título ou conteúdo)
+        const noteIdChanged = previousNoteIdRef.current !== note.id;
+        const noteTitleChanged = previousNoteTitleRef.current !== (note.title || '');
+        const noteContentChanged = previousNoteContentRef.current !== (note.content || '');
+        
+        // Se nada mudou, não fazer nada
+        if (!noteIdChanged && !noteTitleChanged && !noteContentChanged) {
+            return;
         }
-    }, [title, note.title]);
+        
+        // Atualizar refs sincronamente para evitar race conditions
+        previousNoteIdRef.current = note.id;
+        previousNoteTitleRef.current = note.title || '';
+        previousNoteContentRef.current = note.content || '';
+        
+        // Marcar que estamos resetando para evitar race condition com o effect de tracking
+        isResettingRef.current = true;
+        
+        // Usar setTimeout para evitar setState síncrono em effect
+        const timeoutId = setTimeout(() => {
+            setTitle(note.title || '');
+            // Atualizar conteúdo se o ID mudou (nova nota) OU se o conteúdo mudou externamente
+            // Não atualizar se apenas o título mudou (para evitar perder edições do usuário)
+            if (noteIdChanged || noteContentChanged) {
+                editor?.commands.setContent(note.content || '');
+                initialContentRef.current = note.content || '';
+            }
+            setHasUnsavedChanges(false);
+            setSaveSuccess(false);
+            // Resetar a flag após a atualização ser concluída
+            isResettingRef.current = false;
+        }, 0);
+        return () => {
+            clearTimeout(timeoutId);
+            // Se o effect for limpo antes do timeout executar, resetar a flag
+            isResettingRef.current = false;
+        };
+    }, [note.id, note.title, note.content, editor]); // Incluir note.title e note.content para detectar mudanças
+
+    // Track title changes (detecta quando o usuário edita o título manualmente)
+    useEffect(() => {
+        // Ignorar mudanças se a nota mudou (reset) ou se estamos no meio de um reset
+        const noteIdChanged = previousNoteIdRef.current !== note.id;
+        if (noteIdChanged || isResettingRef.current) {
+            return;
+        }
+        
+        // Verificar se o título do state difere do título da nota
+        // Isso indica que o usuário editou o título manualmente
+        let timeoutId = null;
+        if (title !== (note.title || '')) {
+            // Usar setTimeout para evitar setState síncrono em effect
+            timeoutId = setTimeout(() => {
+                // Verificar novamente se ainda não estamos resetando e a nota não mudou
+                if (!isResettingRef.current && previousNoteIdRef.current === note.id) {
+                    setHasUnsavedChanges(true);
+                    setSaveSuccess(false);
+                }
+            }, 0);
+        }
+        // Sempre retornar cleanup, mesmo quando timeoutId é null
+        return () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        };
+    }, [title, note.id, note.title]); // Incluir note.title para detectar quando a nota externa muda
 
     const handleSave = async () => {
         setIsSaving(true);

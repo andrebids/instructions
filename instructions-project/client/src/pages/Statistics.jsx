@@ -402,38 +402,54 @@ export default function Statistics() {
     w.document.close();
   };
 
-  const chatInitialMessages = [
-    {
-      id: "s1",
-      content: "Hello! I'm the Analytics Assistant. I can help with this page's data. What would you like to analyze?",
-      isUser: false,
-      timestamp: new Date(Date.now() - 180000),
-    },
-    {
-      id: "s2",
-      content: "What's the win rate trend this year versus last year?",
-      isUser: true,
-      timestamp: new Date(Date.now() - 120000),
-    },
-    {
-      id: "s3",
-      content: `The current win rate is ${current.wonRatePct}% (${wonRateDelta >= 0 ? "+" : ""}${wonRateDelta} pp YoY). I can break it down by quarter if you like.`,
-      isUser: false,
-      timestamp: new Date(Date.now() - 115000),
-    },
-    {
-      id: "s4",
-      content: "And the total revenue from won projects?",
-      isUser: true,
-      timestamp: new Date(Date.now() - 60000),
-    },
-    {
-      id: "s5",
-      content: `Total won revenue: ${formatEUR(current.totalWonBudget)} (↑ ${budgetDelta}% vs ${year - 1}). Would you like me to export a quick report (CSV/PDF)?`,
-      isUser: false,
-      timestamp: new Date(Date.now() - 55000),
-    },
-  ];
+  // Extrair valores primitivos de current para evitar recálculos desnecessários quando objeto é recriado
+  const currentWonRatePct = current.wonRatePct;
+  const currentTotalWonBudget = current.totalWonBudget;
+
+  // Calcular timestamp inicial uma vez usando useState com lazy initializer
+  // Isso garante que Date.now() só seja chamado uma vez durante a montagem do componente
+  // e não durante cada render, mantendo a pureza do render
+  const [initialTimestamp] = React.useState(() => Date.now());
+  
+  // Usar useMemo para calcular mensagens baseadas no timestamp inicial e dados atuais
+  // Isso garante que as mensagens sejam recalculadas quando os dados mudarem
+  const chatInitialMessages = React.useMemo(() => {
+    const now = initialTimestamp;
+    return [
+      {
+        id: "s1",
+        content: "Hello! I'm the Analytics Assistant. I can help with this page's data. What would you like to analyze?",
+        isUser: false,
+        timestamp: new Date(now - 180000),
+      },
+      {
+        id: "s2",
+        content: "What's the win rate trend this year versus last year?",
+        isUser: true,
+        timestamp: new Date(now - 120000),
+      },
+      {
+        id: "s3",
+        content: `The current win rate is ${currentWonRatePct}% (${wonRateDelta >= 0 ? "+" : ""}${wonRateDelta} pp YoY). I can break it down by quarter if you like.`,
+        isUser: false,
+        timestamp: new Date(now - 115000),
+      },
+      {
+        id: "s4",
+        content: "And the total revenue from won projects?",
+        isUser: true,
+        timestamp: new Date(now - 60000),
+      },
+      {
+        id: "s5",
+        content: `Total won revenue: ${formatEUR(currentTotalWonBudget)} (↑ ${budgetDelta}% vs ${year - 1}). Would you like me to export a quick report (CSV/PDF)?`,
+        isUser: false,
+        timestamp: new Date(now - 55000),
+      },
+    ];
+    // initialTimestampRef.current nunca muda, então não precisa estar nas dependências
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentWonRatePct, wonRateDelta, currentTotalWonBudget, budgetDelta, year]);
 
     return (
       <Scroller className={`flex-1 min-h-0 p-6 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>

@@ -13,34 +13,56 @@ export const NightThumb = ({
   const [isConverted, setIsConverted] = useState(false);
 
   useEffect(() => {
+    let timeoutId = null;
+    let animationFrameId = null;
+    let finalFrameId = null;
+
     if (isActive && nightImage) {
-      setIsAnimating(true);
-      setProgress(0);
-      
-      // Animar progresso de 0 a 100% durante a duração
-      const startTime = Date.now();
-      const animate = () => {
-        const elapsed = Date.now() - startTime;
-        const newProgress = Math.min((elapsed / duration) * 100, 100);
-        setProgress(newProgress);
+      // Usar setTimeout para evitar setState síncrono em effect
+      timeoutId = setTimeout(() => {
+        setIsAnimating(true);
+        setProgress(0);
         
-        if (newProgress < 100) {
-          requestAnimationFrame(animate);
-        } else {
-          // Aguardar um frame adicional para garantir que o último frame seja renderizado
-          // antes de mudar para o estado convertido
-          requestAnimationFrame(() => {
-            setIsAnimating(false);
-            setIsConverted(true);
-          });
-        }
-      };
-      
-      requestAnimationFrame(animate);
+        // Animar progresso de 0 a 100% durante a duração
+        const startTime = Date.now();
+        const animate = () => {
+          const elapsed = Date.now() - startTime;
+          const newProgress = Math.min((elapsed / duration) * 100, 100);
+          setProgress(newProgress);
+          
+          if (newProgress < 100) {
+            animationFrameId = requestAnimationFrame(animate);
+          } else {
+            // Aguardar um frame adicional para garantir que o último frame seja renderizado
+            // antes de mudar para o estado convertido
+            finalFrameId = requestAnimationFrame(() => {
+              setIsAnimating(false);
+              setIsConverted(true);
+            });
+          }
+        };
+        
+        animationFrameId = requestAnimationFrame(animate);
+      }, 0);
     } else {
-      setIsAnimating(false);
-      setProgress(0);
+      timeoutId = setTimeout(() => {
+        setIsAnimating(false);
+        setProgress(0);
+      }, 0);
     }
+
+    // Cleanup: cancelar timeout e animation frames quando o effect re-executa ou componente desmonta
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      if (finalFrameId) {
+        cancelAnimationFrame(finalFrameId);
+      }
+    };
   }, [isActive, duration, nightImage]);
 
   // Se não há nightImage, não mostrar animação

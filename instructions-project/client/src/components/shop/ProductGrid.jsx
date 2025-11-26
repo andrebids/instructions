@@ -31,73 +31,86 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
   const swiperRef = useRef(null);
   const [cardSize, setCardSize] = useState(400);
   const [cardHeight, setCardHeight] = useState(600);
+  const [swiperReady, setSwiperReady] = useState(false);
 
 
 
   // Calculate card size based on container width and height to show 2 cards at a time
-  useEffect(() => {
-    if (cols !== 1) return;
+  const updateCardSize = useCallback(() => {
+    if (swiperRef.current && carouselRef.current) {
+      const swiper = swiperRef.current;
+      const containerNode = swiper.el;
+      if (containerNode) {
+        const containerWidth = containerNode.offsetWidth || containerNode.clientWidth;
+        if (containerWidth > 0) {
+          // Calculate available height: viewport height minus header, controls, and padding
+          const carouselRect = carouselRef.current.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          const availableHeight = Math.max(400, viewportHeight - carouselRect.top - 40);
 
-    const updateCardSize = () => {
-      if (swiperRef.current && carouselRef.current) {
-        const swiper = swiperRef.current;
-        const containerNode = swiper.el;
-        if (containerNode) {
-          const containerWidth = containerNode.offsetWidth || containerNode.clientWidth;
-          if (containerWidth > 0) {
-            // Calculate available height: viewport height minus header, controls, and padding
-            const carouselRect = carouselRef.current.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const availableHeight = Math.max(400, viewportHeight - carouselRect.top - 40);
+          // Aspect ratio: 3/4 means width/height = 3/4, so height = width * 4/3
+          const gap = 24;
+          const aspectRatio = 3 / 4; // width / height
 
-            // Aspect ratio: 3/4 means width/height = 3/4, so height = width * 4/3
-            const gap = 24;
-            const aspectRatio = 3 / 4; // width / height
+          // Calculate width based on available height
+          const widthFromHeight = availableHeight * aspectRatio;
 
-            // Calculate width based on available height
-            const widthFromHeight = availableHeight * aspectRatio;
+          // Calculate width to show exactly 2 cards
+          const widthForTwoCards = Math.floor((containerWidth - gap) / 2);
 
-            // Calculate width to show exactly 2 cards
-            const widthForTwoCards = Math.floor((containerWidth - gap) / 2);
+          // Use the smaller width to ensure both constraints are met
+          const finalCardWidth = Math.min(widthFromHeight, widthForTwoCards);
+          const finalCardHeight = finalCardWidth / aspectRatio;
 
-            // Use the smaller width to ensure both constraints are met
-            const finalCardWidth = Math.min(widthFromHeight, widthForTwoCards);
-            const finalCardHeight = finalCardWidth / aspectRatio;
-
-            setCardSize(finalCardWidth);
-            setCardHeight(finalCardHeight);
-          }
+          setCardSize(finalCardWidth);
+          setCardHeight(finalCardHeight);
         }
       }
-    };
+    }
+  }, []);
 
+  // Setup ResizeObserver when Swiper instance is available
+  useEffect(() => {
+    if (cols !== 1 || !swiperReady || !swiperRef.current) return;
+
+    const swiper = swiperRef.current;
+    const container = swiper.el;
+    if (!container) return;
+
+    // Initial update
     const timeoutId = setTimeout(() => {
       updateCardSize();
     }, 100);
 
-    let resizeObserver = null;
-    if (swiperRef.current) {
-      const container = swiperRef.current.el;
-      if (container) {
-        resizeObserver = new ResizeObserver(() => {
-          updateCardSize();
-        });
-        resizeObserver.observe(container);
-      }
-    }
+    // Setup ResizeObserver for the Swiper container
+    const resizeObserver = new ResizeObserver(() => {
+      updateCardSize();
+    });
+    resizeObserver.observe(container);
 
+    // Setup window event listeners
     window.addEventListener('resize', updateCardSize);
     window.addEventListener('scroll', updateCardSize, { passive: true });
 
     return () => {
       clearTimeout(timeoutId);
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
+      resizeObserver.disconnect();
       window.removeEventListener('resize', updateCardSize);
       window.removeEventListener('scroll', updateCardSize);
     };
-  }, [cols, swiperRef.current]);
+  }, [cols, swiperReady, updateCardSize]); // Re-run when cols changes or Swiper instance is ready
+
+  // Reset swiperReady when cols changes away from 1
+  useEffect(() => {
+    if (cols !== 1) {
+      // Usar setTimeout em vez de queueMicrotask para garantir que o estado seja atualizado
+      // antes do próximo effect verificar swiperReady, evitando race conditions
+      const timeoutId = setTimeout(() => {
+        setSwiperReady(false);
+      }, 0);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [cols]);
 
   // Render carousel when cols === 1
   if (cols === 1) {
@@ -110,6 +123,10 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
           modules={[Autoplay, Mousewheel, Keyboard]}
           onSwiper={(swiper) => {
             swiperRef.current = swiper;
+            // Só definir swiperReady como true se cols ainda for 1 (evitar race condition)
+            if (cols === 1) {
+              setSwiperReady(true);
+            }
           }}
           loop={true}
           loopAdditionalSlides={3}

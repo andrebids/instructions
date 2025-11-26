@@ -83,14 +83,14 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
 
   const pages = Math.ceil(projects.length / rowsPerPage);
 
-  const handleToggleFavorite = async (projectId, isFavorite) => {
+  const handleToggleFavorite = React.useCallback(async (projectId, isFavorite) => {
     try {
       await projectsAPI.toggleFavorite(projectId);
       if (onProjectsUpdate) onProjectsUpdate();
     } catch (error) {
       console.error('Error toggling favorite:', error);
     }
-  };
+  }, [onProjectsUpdate]);
 
   const renderCell = React.useCallback((project, columnKey) => {
     const cellValue = project[columnKey];
@@ -102,7 +102,11 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
             isIconOnly
             size="sm"
             variant="light"
-            onPress={() => handleToggleFavorite(project.id, project.isFavorite)}
+            onPress={() => {
+              // Chamar handleToggleFavorite diretamente sem incluí-lo nas dependências
+              // para evitar dependência circular
+              handleToggleFavorite(project.id, project.isFavorite);
+            }}
             className="text-warning hover:text-warning-600"
           >
             <Icon
@@ -188,7 +192,7 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
       default:
         return cellValue;
     }
-  }, [navigate, onProjectsUpdate, t, statusLabelMap, locale]);
+  }, [navigate, onProjectsUpdate, t, statusLabelMap, locale, handleToggleFavorite]);
 
   return (
     <Card className="flex-1 h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm">

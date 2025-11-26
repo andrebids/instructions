@@ -306,8 +306,21 @@ export default function Galaxy({
         ctn.removeEventListener('mousemove', handleMouseMove);
         ctn.removeEventListener('mouseleave', handleMouseLeave);
       }
-      ctn.removeChild(gl.canvas);
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      try {
+        if (gl.canvas && ctn.contains(gl.canvas)) {
+          ctn.removeChild(gl.canvas);
+        }
+        // Verificar se o contexto ainda está válido antes de tentar perdê-lo
+        if (gl && !gl.isContextLost()) {
+          const loseContext = gl.getExtension('WEBGL_lose_context');
+          if (loseContext) {
+            loseContext.loseContext();
+          }
+        }
+      } catch (error) {
+        // Ignorar erros durante cleanup (contexto já pode ter sido perdido)
+        console.warn('Erro durante cleanup do WebGL:', error);
+      }
     };
   }, [
     focal,

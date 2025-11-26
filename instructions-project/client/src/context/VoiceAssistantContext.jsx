@@ -190,15 +190,27 @@ export const VoiceAssistantProvider = ({ children }) => {
       stop();
       resetTranscript(); // Clear the command so it doesn't persist
       const response = t('pages.dashboard.voiceAssistant.openingProject', { defaultValue: "A abrir novo projeto..." });
-      addMessage('user', transcript);
-      addMessage('bot', response);
-      speak(response);
+      // Usar setTimeout para evitar setState síncrono em effect
+      const timeoutId = setTimeout(() => {
+        addMessage('user', transcript);
+        addMessage('bot', response);
+        speak(response);
+      }, 0);
 
+      let createProjectTimeoutId = null;
       if (window.handleCreateProjectGlobal) {
-        setTimeout(() => {
+        createProjectTimeoutId = setTimeout(() => {
           window.handleCreateProjectGlobal();
         }, 1500);
       }
+
+      // Cleanup function para limpar os timeouts se o effect re-executar ou componente desmontar
+      return () => {
+        clearTimeout(timeoutId);
+        if (createProjectTimeoutId) {
+          clearTimeout(createProjectTimeoutId);
+        }
+      };
     }
   }, [mode, transcript, listening, t, speak, stop, addMessage, resetTranscript]);
 

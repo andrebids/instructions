@@ -214,7 +214,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
         newMode, 
         imageConversion.conversionComplete, 
         imageConversion.analysisComplete,
-        formData?.cartoucheByImage?.[canvasState.selectedImage.id]
+        canvasState.selectedImage?.id ? formData?.cartoucheByImage?.[canvasState.selectedImage.id] : null
       );
     }
   };
@@ -230,6 +230,11 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   };
 
   // Atualizar simulationState com conversionComplete quando mudar
+  // Usar useMemo para serializar conversionComplete de forma estável
+  const conversionCompleteStr = React.useMemo(() => {
+    return JSON.stringify(imageConversion.conversionComplete || {});
+  }, [imageConversion.conversionComplete]);
+
   useEffect(() => {
     if (imageConversion.conversionComplete && Object.keys(imageConversion.conversionComplete).length > 0) {
       const currentSimulationState = formData?.simulationState || {
@@ -239,12 +244,11 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
         conversionComplete: {}
       };
       const currentCompleteStr = JSON.stringify(currentSimulationState.conversionComplete || {});
-      const newCompleteStr = JSON.stringify(imageConversion.conversionComplete);
-      if (currentCompleteStr !== newCompleteStr) {
+      if (currentCompleteStr !== conversionCompleteStr) {
         onInputChange?.('simulationState', { ...currentSimulationState, conversionComplete: imageConversion.conversionComplete });
       }
     }
-  }, [JSON.stringify(imageConversion.conversionComplete)]);
+  }, [conversionCompleteStr, canvasState.uploadStep, canvasState.selectedImage?.id, canvasState.isDayMode, formData?.simulationState, imageConversion.conversionComplete, onInputChange]);
 
   // Salvamento automático
   useCanvasPersistence({
@@ -268,14 +272,14 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
     if (formData?.decorationsByImage && Object.keys(formData.decorationsByImage).length > 0) {
       decorationManagement.setDecorationsByImage(formData.decorationsByImage);
     }
-  }, [formData?.id]);
+  }, [formData?.id, formData?.decorationsByImage, decorationManagement]);
 
   // Restaurar conversionComplete do simulationState
   useEffect(() => {
     if (formData?.simulationState?.conversionComplete && Object.keys(formData.simulationState.conversionComplete).length > 0) {
       imageConversion.setConversionComplete(formData.simulationState.conversionComplete);
     }
-  }, [formData?.id]);
+  }, [formData?.id, formData?.simulationState?.conversionComplete, imageConversion]);
 
   const projectId = formData?.id || formData?.tempProjectId;
   const cartoucheData = canvasState.selectedImage 
@@ -434,10 +438,14 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
         }}
         onProjectNameChange={cartoucheManagement.handleProjectNameChange}
         onStreetOrZoneChange={(value) => {
-          cartoucheManagement.updateCartoucheForImage(canvasState.selectedImage.id, { streetOrZone: value });
+          if (canvasState.selectedImage?.id) {
+            cartoucheManagement.updateCartoucheForImage(canvasState.selectedImage.id, { streetOrZone: value });
+          }
         }}
         onOptionChange={(value) => {
-          cartoucheManagement.updateCartoucheForImage(canvasState.selectedImage.id, { option: value });
+          if (canvasState.selectedImage?.id) {
+            cartoucheManagement.updateCartoucheForImage(canvasState.selectedImage.id, { option: value });
+          }
         }}
         onApply={handleApplyCartouche}
         canApply={canvasState.canvasImages.length > 0}

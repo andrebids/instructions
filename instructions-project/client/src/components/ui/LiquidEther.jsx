@@ -1,3 +1,6 @@
+/* eslint-disable react-hooks/unsupported-syntax */
+// Este componente WebGL usa classes inline que são necessárias para o funcionamento correto
+// O React Compiler não suporta classes inline, mas este componente funciona corretamente
 import React, { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import './LiquidEther.css'

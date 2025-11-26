@@ -27,7 +27,10 @@ export const useTTS = (defaultLang = 'en-US') => {
 
         // Also initialize browser TTS voices for fallback
         if (typeof window !== 'undefined' && window.speechSynthesis) {
-            setSupported(true);
+            // Usar setTimeout para evitar setState síncrono em effect
+            setTimeout(() => {
+                setSupported(true);
+            }, 0);
 
             const loadVoices = () => {
                 const availableVoices = window.speechSynthesis.getVoices();

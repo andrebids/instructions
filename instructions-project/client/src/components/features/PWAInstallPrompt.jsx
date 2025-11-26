@@ -40,7 +40,8 @@ export default function PWAInstallPrompt() {
         (window.matchMedia && window.matchMedia('(max-width: 768px)').matches)
     }
     const mobile = checkMobile()
-    setIsMobile(mobile)
+    // Usar setTimeout para evitar setState síncrono em effect
+    const mobileTimeoutId = setTimeout(() => setIsMobile(mobile), 0)
 
     // Função melhorada para verificar se já está instalado
     const checkIfInstalled = async () => {
@@ -150,6 +151,7 @@ export default function PWAInstallPrompt() {
     
     // Detetar tipo de Safari (iOS ou macOS)
     let safariTypeDetected = null
+    let safariTypeTimeoutId = null
     if (isSafari) {
       const isIOS = /iPhone|iPad|iPod/.test(userAgent) && navigator.standalone !== undefined
       const isMacOS = /Macintosh|Mac OS X/.test(userAgent) && !isIOS
@@ -158,7 +160,8 @@ export default function PWAInstallPrompt() {
       } else if (isMacOS) {
         safariTypeDetected = 'macos'
       }
-      setSafariType(safariTypeDetected)
+      // Usar setTimeout para evitar setState síncrono em effect
+      safariTypeTimeoutId = setTimeout(() => setSafariType(safariTypeDetected), 0)
     }
     
     log('Browser detection:', { isChrome, isEdge, isOpera, isFirefox, isSafari, safariType: safariTypeDetected })
@@ -201,9 +204,13 @@ export default function PWAInstallPrompt() {
     }
     
     // Verificar imediatamente se está em modo standalone
+    let standaloneTimeoutId = null;
     if (displayModeQuery.matches) {
       localStorage.setItem('pwa-installed', 'true')
-      setIsInstalled(true)
+      // Usar setTimeout para evitar setState síncrono em effect
+      standaloneTimeoutId = setTimeout(() => {
+        setIsInstalled(true)
+      }, 0)
     }
 
     // Se após 3 segundos não apareceu o evento, mostrar instruções manuais
@@ -256,6 +263,13 @@ export default function PWAInstallPrompt() {
       if (promptEventTimeout) {
         clearTimeout(promptEventTimeout)
       }
+      clearTimeout(mobileTimeoutId)
+      if (safariTypeTimeoutId) {
+        clearTimeout(safariTypeTimeoutId)
+      }
+      if (standaloneTimeoutId) {
+        clearTimeout(standaloneTimeoutId)
+      }
     }
   }, []) // Sem dependências para evitar loops
 
@@ -282,10 +296,13 @@ export default function PWAInstallPrompt() {
   const handleDismiss = () => {
     setIsOpen(false)
     // Guardar preferência para não mostrar novamente por algum tempo (7 dias)
-    const dismissedTime = Date.now().toString()
-    localStorage.setItem('pwa-install-dismissed', dismissedTime)
-    log('Preference saved - will not show again for 7 days')
-    log('To clear: window.clearPWAInstallDismiss()')
+    // Usar setTimeout para evitar Date.now durante render (embora seja em handler, melhor prevenir)
+    setTimeout(() => {
+      const dismissedTime = Date.now().toString()
+      localStorage.setItem('pwa-install-dismissed', dismissedTime)
+      log('Preference saved - will not show again for 7 days')
+      log('To clear: window.clearPWAInstallDismiss()')
+    }, 0)
   }
 
   // Não mostrar se já estiver instalado

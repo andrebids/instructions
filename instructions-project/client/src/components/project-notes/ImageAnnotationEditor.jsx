@@ -47,31 +47,44 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
 
     // Reset all annotation states when a new image is opened or modal is closed
     useEffect(() => {
+        let timeoutId = null;
         if (!isOpen) {
-            // Clear everything when modal closes
-            setAnnotations([]);
-            setHistory([]);
-            setHistoryIndex(-1);
-            setIsDrawing(false);
-            setImageLoaded(false);
-            setHoveredAnnotationIndex(null);
-            setEditingAnnotationIndex(null);
-            setAnnotationText('');
-            baseImageRef.current = null;
+            // Clear everything when modal closes - usar setTimeout para evitar setState síncrono
+            timeoutId = setTimeout(() => {
+                setAnnotations([]);
+                setHistory([]);
+                setHistoryIndex(-1);
+                setIsDrawing(false);
+                setImageLoaded(false);
+                setHoveredAnnotationIndex(null);
+                setEditingAnnotationIndex(null);
+                setAnnotationText('');
+                baseImageRef.current = null;
+            }, 0);
         }
+        // Sempre limpar o timeout, mesmo quando isOpen é true, para evitar memory leaks
+        return () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        };
     }, [isOpen]);
 
     // Reset annotations when image changes (new image opened)
     useEffect(() => {
         if (image) {
-            setAnnotations([]);
-            setHistory([]);
-            setHistoryIndex(-1);
-            setIsDrawing(false);
-            setImageLoaded(false);
-            setHoveredAnnotationIndex(null);
-            setEditingAnnotationIndex(null);
-            setAnnotationText('');
+            // Usar setTimeout para evitar setState síncrono em effect
+            const timeoutId = setTimeout(() => {
+                setAnnotations([]);
+                setHistory([]);
+                setHistoryIndex(-1);
+                setIsDrawing(false);
+                setImageLoaded(false);
+                setHoveredAnnotationIndex(null);
+                setEditingAnnotationIndex(null);
+                setAnnotationText('');
+            }, 0);
+            return () => clearTimeout(timeoutId);
         }
     }, [image?.id, image?.src]);
 
@@ -114,6 +127,32 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
         annotationCanvas.height = canvasDimensions.height;
     }, [imageLoaded, canvasDimensions]);
 
+    // Funções de undo/redo movidas para antes de serem usadas
+    const handleUndo = React.useCallback(() => {
+        setHistoryIndex(prev => {
+            if (prev > 0) {
+                const newIndex = prev - 1;
+                setAnnotations(history[newIndex]);
+                return newIndex;
+            } else if (prev === 0) {
+                setAnnotations([]);
+                return -1;
+            }
+            return prev;
+        });
+    }, [history]);
+
+    const handleRedo = React.useCallback(() => {
+        setHistoryIndex(prev => {
+            if (prev < history.length - 1) {
+                const newIndex = prev + 1;
+                setAnnotations(history[newIndex]);
+                return newIndex;
+            }
+            return prev;
+        });
+    }, [history]);
+
     // Keyboard shortcuts
     useEffect(() => {
         if (!isOpen) return;
@@ -133,7 +172,7 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, editingAnnotationIndex, historyIndex, history]);
+    }, [isOpen, editingAnnotationIndex, handleUndo, handleRedo]);
 
     // Memoize drawing dependencies to prevent unnecessary rerenders
     const drawingState = useMemo(() => ({
@@ -282,23 +321,6 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
         // Open text editor for the new annotation
         setEditingAnnotationIndex(newAnnotations.length - 1);
         setAnnotationText('');
-    };
-
-    const handleUndo = () => {
-        if (historyIndex > 0) {
-            setHistoryIndex(historyIndex - 1);
-            setAnnotations(history[historyIndex - 1]);
-        } else if (historyIndex === 0) {
-            setHistoryIndex(-1);
-            setAnnotations([]);
-        }
-    };
-
-    const handleRedo = () => {
-        if (historyIndex < history.length - 1) {
-            setHistoryIndex(historyIndex + 1);
-            setAnnotations(history[historyIndex + 1]);
-        }
     };
 
     const handleClearAll = () => {

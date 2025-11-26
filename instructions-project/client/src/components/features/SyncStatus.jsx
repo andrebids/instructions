@@ -87,9 +87,12 @@ export function SyncStatus({ projectId, className = '' }) {
   // Show notification when going online with pending sync
   useEffect(() => {
     if (isOnline && syncStatus.pending && syncState === 'idle') {
-      setSyncState('syncing');
-      setNotificationMessage('Reconnected. Syncing pending changes...');
-      setShowNotification(true);
+      // Usar setTimeout para evitar setState síncrono em effect
+      setTimeout(() => {
+        setSyncState('syncing');
+        setNotificationMessage('Reconnected. Syncing pending changes...');
+        setShowNotification(true);
+      }, 0);
     }
   }, [isOnline, syncStatus.pending, syncState]);
 

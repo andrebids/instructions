@@ -101,7 +101,9 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
     const videoUrl = product?.videoFile || product?.animationUrl;
     // Só considerar simulação animada disponível se o produto tiver animationSimulationUrl
     const hasSimulationVideo = Boolean(product?.animationSimulationUrl);
-    setHasVideo(Boolean(videoUrl) || hasSimulationVideo);
+    // Usar setTimeout para evitar setState síncrono em effect
+    const timeoutId = setTimeout(() => setHasVideo(Boolean(videoUrl) || hasSimulationVideo), 0);
+    return () => clearTimeout(timeoutId);
   }, [product, isGX349L, isGX350LW, isIPL]);
 
   // Reset simulação animada e vídeo de sugestão quando o produto muda
@@ -116,27 +118,42 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
     });
     
     // Verificar se o produto realmente mudou
-    const productChanged = previousProductIdRef.current !== product?.id;
+    // IMPORTANTE: Capturar o valor atual do ref ANTES de qualquer atualização
+    const currentProductId = product?.id;
+    const productChanged = previousProductIdRef.current !== currentProductId;
+    
+    // Rastrear todos os timeouts para limpeza adequada
+    let timeoutId1 = null;
+    let timeoutId2 = null;
+    let timeoutId3 = null;
     
     if (productChanged) {
       console.log('🔄 [useEffect] Produto mudou, aplicando estado inicial');
       // Produto mudou: resetar flag e aplicar estado inicial
-      setManuallyToggled(false); // Resetar flag quando produto muda
-      manuallyToggledRef.current = false; // Resetar ref também
-      lastToggleTimeRef.current = 0; // Resetar timestamp também
-      previousProductIdRef.current = product?.id;
-      setProductType("new"); // Resetar para NEW quando produto muda
+      // IMPORTANTE: Atualizar refs apenas dentro dos timeouts para evitar race conditions
+      // Usar setTimeout para evitar setState síncrono em effect
+      timeoutId1 = setTimeout(() => {
+        setManuallyToggled(false); // Resetar flag quando produto muda
+        setProductType("new"); // Resetar para NEW quando produto muda
+        // Atualizar refs dentro do timeout para garantir que a atualização aconteça após o state
+        manuallyToggledRef.current = false;
+        lastToggleTimeRef.current = 0;
+        previousProductIdRef.current = currentProductId; // Atualizar ref apenas após processar a mudança
+      }, 0);
       
       // Se há um estado inicial de simulação animada passado como prop, usar esse estado
       // Também verificar se o produto tem animationSimulationUrl
       const hasAnimationSimulation = product?.animationSimulationUrl ? true : false;
-      if (initialAnimationSimulation && hasAnimationSimulation) {
-        setShowAnimationSimulation(true);
-      } else {
-        setShowAnimationSimulation(false);
-      }
-      setSelectedSuggestionVideo(null);
-      setPreviousAnimationState(false);
+      // Usar setTimeout para evitar setState síncrono em effect
+      timeoutId2 = setTimeout(() => {
+        if (initialAnimationSimulation && hasAnimationSimulation) {
+          setShowAnimationSimulation(true);
+        } else {
+          setShowAnimationSimulation(false);
+        }
+        setSelectedSuggestionVideo(null);
+        setPreviousAnimationState(false);
+      }, 0);
     } else {
       console.log('🔄 [useEffect] Produto não mudou, verificando sincronização com initialAnimationSimulation');
       // Produto não mudou mas initialAnimationSimulation pode ter mudado
@@ -154,16 +171,32 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
           shouldBe: shouldBeSimulation,
           initialAnimationSimulation
         });
-        setShowAnimationSimulation(shouldBeSimulation);
-        // Resetar flag manual quando sincronizado externamente
-        manuallyToggledRef.current = false;
-        setManuallyToggled(false);
+        // Usar setTimeout para evitar setState síncrono em effect
+        timeoutId3 = setTimeout(() => {
+          setShowAnimationSimulation(shouldBeSimulation);
+          // Resetar flag manual quando sincronizado externamente
+          manuallyToggledRef.current = false;
+          setManuallyToggled(false);
+        }, 0);
       } else if (recentlyToggled) {
         console.log('🔄 [useEffect] Bloqueado - foi alterado manualmente recentemente');
       } else {
         console.log('🔄 [useEffect] Estado já está sincronizado');
       }
     }
+    
+    // Cleanup: limpar todos os timeouts para evitar memory leaks e atualizações em componentes desmontados
+    return () => {
+      if (timeoutId1) {
+        clearTimeout(timeoutId1);
+      }
+      if (timeoutId2) {
+        clearTimeout(timeoutId2);
+      }
+      if (timeoutId3) {
+        clearTimeout(timeoutId3);
+      }
+    };
   }, [product?.id, initialAnimationSimulation, product?.animationSimulationUrl]); // Removido manuallyToggled das dependências para evitar execuções desnecessárias
 
   // Detectar tamanho da viewport para ajustar scale em resoluções específicas
@@ -186,11 +219,13 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
 
   // Configurações específicas por produto, resolução e orientação
   // Formato: { width, height, orientation } => { padding, aspectRatio, maxHeight, maxWidth, scale }
+  // Usar product.id como dependência principal para corresponder ao React Compiler
+  const productId = product?.id;
+  const productName = product?.name;
   const getProductLayoutConfig = React.useMemo(() => {
     const width = viewportSize.width;
     const height = viewportSize.height;
     const orientation = isPortrait ? 'portrait' : 'landscape';
-    const productId = product?.id || product?.name || '';
 
     // Configurações específicas por resolução/orientação
     const resolutionConfigs = {
@@ -316,7 +351,7 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
         scale: 1.05,
       };
     }
-  }, [viewportSize.width, viewportSize.height, isPortrait, product?.id, product?.name]);
+  }, [viewportSize.width, viewportSize.height, isPortrait, productId, productName]);
 
   const layoutConfig = getProductLayoutConfig;
 
@@ -327,16 +362,26 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
   useEffect(() => {
     if (!videoRef.current || !hasVideo) return;
 
+    let timeoutId = null;
+
     if (isActive) {
       videoRef.current.play().catch(err => {
         console.warn('Error playing video:', err);
       });
-      setIsPlaying(true);
+      // Usar setTimeout para evitar setState síncrono em effect
+      timeoutId = setTimeout(() => setIsPlaying(true), 0);
     } else {
       videoRef.current.pause();
       videoRef.current.currentTime = 0; // Reset to start
-      setIsPlaying(false);
+      // Usar setTimeout para evitar setState síncrono em effect
+      timeoutId = setTimeout(() => setIsPlaying(false), 0);
     }
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [isActive, hasVideo]); // Remover showAnimationSimulation e selectedSuggestionVideo daqui pois já são tratados no useEffect acima
 
   // Toggle play/pause manual
@@ -435,7 +480,6 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
   const getVideoUrl = () => {
     // Se houver vídeo selecionado de sugestões, usar esse
     if (selectedSuggestionVideo) {
-      console.log('🎥 [getVideoUrl] Usando vídeo de sugestão:', selectedSuggestionVideo);
       return selectedSuggestionVideo;
     }
     
@@ -448,13 +492,11 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
         
         // If already a complete URL (http/https), use directly
         if (simulationUrl.startsWith('http://') || simulationUrl.startsWith('https://')) {
-          console.log('🎥 [getVideoUrl] Vídeo de simulação animada (URL completa):', simulationUrl);
           return simulationUrl;
         }
         
         // If starts with /, it's an absolute server path
         if (simulationUrl.startsWith('/')) {
-          console.log('🎥 [getVideoUrl] Vídeo de simulação animada (path absoluto):', simulationUrl);
           return simulationUrl;
         }
         
@@ -462,18 +504,15 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
         const absUrl = simulationUrl.indexOf('/uploads/') === 0 
           ? (baseApi ? (baseApi + simulationUrl) : ('/api' + simulationUrl))
           : simulationUrl;
-        console.log('🎥 [getVideoUrl] Vídeo de simulação animada:', absUrl);
         return absUrl;
       }
       
       // Fallback para produtos específicos (GX349L e GX350LW) apenas se não tiver animationSimulationUrl
       // Removido fallback hardcoded pois os vídeos não existem nesses caminhos
-      console.log('⚠️ [getVideoUrl] Produto em modo simulação animada mas sem animationSimulationUrl');
     }
     
     // Por default, sempre retornar o vídeo normal do produto
     const videoFile = product?.videoFile || product?.animationUrl;
-    console.log('🎥 [getVideoUrl] Vídeo normal:', videoFile, 'showAnimationSimulation:', showAnimationSimulation);
     if (!videoFile) return null;
     
     // If already a complete URL (http/https), use directly
@@ -532,7 +571,6 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
   };
 
   const videoUrl = getVideoUrl();
-  console.log('🎬 [ProductFeedCard Render] videoUrl:', videoUrl, 'showAnimationSimulation:', showAnimationSimulation, 'manuallyToggledRef:', manuallyToggledRef.current);
   // Filtrar URLs temporárias
   let imageUrl = product?.images?.day || product?.images?.night || product?.images?.thumbnailUrl;
   if (imageUrl && (imageUrl.includes('temp_') || imageUrl.includes('temp_nightImage_'))) {

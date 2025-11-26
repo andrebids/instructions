@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 /**
  * Hook to manage PWA update notifications
@@ -11,7 +11,9 @@ export function usePWAUpdate() {
   const [registration, setRegistration] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Function to check for updates
+  // Function to check for updates (movida para antes do useEffect que a usa)
+  const checkForUpdatesRef = useRef(null);
+  
   const checkForUpdates = useCallback(async (reg) => {
     try {
       // Force update check (bypasses browser cache)
@@ -25,12 +27,21 @@ export function usePWAUpdate() {
       // In dev mode, check more frequently for changes
       if (import.meta.env.DEV) {
         // Check every 30 seconds in dev mode
-        setTimeout(() => checkForUpdates(reg), 30000);
+        setTimeout(() => {
+          if (checkForUpdatesRef.current) {
+            checkForUpdatesRef.current(reg);
+          }
+        }, 30000);
       }
     } catch (error) {
       console.error('❌ [PWA Update] Error checking for updates:', error);
     }
   }, []);
+  
+  // Atualizar ref quando checkForUpdates mudar
+  useEffect(() => {
+    checkForUpdatesRef.current = checkForUpdates;
+  }, [checkForUpdates]);
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) {
@@ -51,7 +62,9 @@ export function usePWAUpdate() {
       setRegistration(reg);
       
       // Check for updates when app is opened
-      checkForUpdates(reg);
+      if (checkForUpdatesRef.current) {
+        checkForUpdatesRef.current(reg);
+      }
       
       // Listen for updatefound event
       reg.addEventListener('updatefound', () => {
