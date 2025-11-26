@@ -23,54 +23,73 @@ import OfflineReadyNotification from "./components/features/OfflineReadyNotifica
 import ProtectedRoute from "./components/ProtectedRoute";
 import { NotificationProvider } from "./context/NotificationContext";
 import { NotificationContainer } from "./components/notifications/NotificationContainer";
+import { useTheme } from "@heroui/use-theme";
+import Aurora from "./components/ui/Aurora";
 
 function AppLayout() {
   const { isHandheld } = useResponsiveProfile();
   const showSidebar = !isHandheld;
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   return (
-    <div className="bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background text-foreground flex h-screen">
-      {showSidebar && (
-        <aside className="hidden md:block w-20">
-          <SidebarNavigation />
-        </aside>
+    <div className="bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background text-foreground flex h-screen relative">
+      {isDark && (
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <Aurora
+            colorStops={["#120059", "#9A83EB", "#120059"]}
+            blend={1}
+            amplitude={1.0}
+            speed={0.8}
+          />
+        </div>
       )}
-      <main className={`flex flex-1 flex-col overflow-hidden ${isHandheld ? "pb-24" : "pb-0"}`}>
-        <Header />
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          {/* <Route path="/statistics" element={<Statistics />} /> */}
-          <Route path="/stock-catalogue" element={<Shop />} />
-          <Route path="/favorites" element={<Favorites />} />
-          {/* <Route path="/projects" element={<Projects />} /> */}
-          <Route path="/projects/:id" element={<ProjectDetails />} />
-          <Route path="/projects/:id/notes" element={<ProjectNotes />} />
-          <Route path="/projects/:id/edit" element={<EditProject />} />
-          <Route path="/orders" element={<Projects />} />
-          <Route
-            path="/admin/products"
-            element={
-              <ProtectedRoute requireRole={['admin', 'editor_stock']}>
-                <AdminProducts />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/users"
-            element={
-              <ProtectedRoute requireRole={['admin']}>
-                <AdminUsers />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </main>
-      <MobileBottomNav />
+      <div className="relative z-10 flex w-full h-full">
+        {showSidebar && (
+          <aside className="hidden md:block w-20">
+            <SidebarNavigation />
+          </aside>
+        )}
+        <main className={`flex flex-1 flex-col overflow-hidden ${isHandheld ? "pb-24" : "pb-0"}`}>
+          <Header />
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            {/* <Route path="/statistics" element={<Statistics />} /> */}
+            <Route path="/stock-catalogue" element={<Shop />} />
+            <Route path="/favorites" element={<Favorites />} />
+            {/* <Route path="/projects" element={<Projects />} /> */}
+            <Route path="/projects/:id" element={<ProjectDetails />} />
+            <Route path="/projects/:id/notes" element={<ProjectNotes />} />
+            <Route path="/projects/:id/edit" element={<EditProject />} />
+            <Route path="/orders" element={<Projects />} />
+            <Route
+              path="/admin/products"
+              element={
+                <ProtectedRoute requireRole={['admin', 'editor_stock']}>
+                  <AdminProducts />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute requireRole={['admin']}>
+                  <AdminUsers />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </main>
+        <MobileBottomNav />
+      </div>
     </div>
   );
 }
 
 export default function App() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
     <NotificationProvider>
       <>
@@ -79,8 +98,18 @@ export default function App() {
         <OfflineReadyNotification />
         <NotificationContainer />
         <SignedOut>
-          <div className="bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background text-foreground flex h-screen">
-            <main className="flex flex-1 flex-col overflow-hidden">
+          <div className="bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background text-foreground flex h-screen relative">
+            {isDark && (
+              <div className="fixed inset-0 z-0 pointer-events-none">
+                <Aurora
+                  colorStops={["#120059", "#9A83EB", "#120059"]}
+                  blend={1}
+                  amplitude={1.0}
+                  speed={0.8}
+                />
+              </div>
+            )}
+            <main className="relative z-10 flex flex-1 flex-col overflow-hidden">
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/sign-in" element={<SignIn />} />

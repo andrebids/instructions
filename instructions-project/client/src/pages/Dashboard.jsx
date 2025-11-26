@@ -19,6 +19,7 @@ import { PipelineWidget } from "../components/features/sales/PipelineWidget";
 import { DraftsWidget } from "../components/features/sales/DraftsWidget";
 import { ConversionWidget } from "../components/features/sales/ConversionWidget";
 import { OrderManagementWidget } from "../components/features/OrderManagementWidget";
+import { RecommendedProductsWidget } from "../components/features/RecommendedProductsWidget";
 import ShinyText from "../components/ShinyText";
 
 export default function Dashboard() {
@@ -249,10 +250,8 @@ export default function Dashboard() {
                         </Button>
                       </div>
                     </div>
-                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 border border-white/10 p-8 flex items-center justify-center shadow-lg">
-                      <p className="text-slate-400 text-sm text-center">
-                        {t('pages.dashboard.main.reservedSpace.placeholder')}
-                      </p>
+                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 border border-white/10 flex items-center justify-center shadow-lg p-0">
+                      <RecommendedProductsWidget />
                     </div>
                   </div>
 
