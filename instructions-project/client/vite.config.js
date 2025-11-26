@@ -29,9 +29,14 @@ export default defineConfig({
   },
   plugins: [
     react({
+      babel: {
+        plugins: [
+          ['babel-plugin-react-compiler']
+        ],
+      },
       // Configuração do plugin React para suprimir avisos de source maps
       jsxRuntime: 'automatic',
-    }), 
+    }),
     tailwindcss(),
     // Plugin customizado para interceptar source maps inexistentes
     // Isso previne erros do React DevTools ao tentar carregar installHook.js.map
@@ -46,12 +51,12 @@ export default defineConfig({
             // Isso previne erros de JSON.parse no navegador
             // O Vite tentará servir o arquivo primeiro via next(), então só retornamos
             // um source map vazio se o arquivo realmente não existir
-            
+
             // Armazenar a função original do end para interceptar 404s
             const originalEnd = res.end.bind(res);
             let responseEnded = false;
-            
-            res.end = function(chunk, encoding) {
+
+            res.end = function (chunk, encoding) {
               // Se for um 404 e ainda não tivermos respondido
               if (res.statusCode === 404 && !responseEnded && req.url.endsWith('.map')) {
                 responseEnded = true;
@@ -61,7 +66,7 @@ export default defineConfig({
               }
               return originalEnd(chunk, encoding);
             };
-            
+
             next();
             return;
           }

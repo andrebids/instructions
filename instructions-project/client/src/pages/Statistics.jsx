@@ -69,7 +69,7 @@ export default function Statistics() {
         "Tech Company HQ",
       ],
       wonRatePct: 68,
-      totalWonBudget: 145_675,
+      totalWonBudget: 145675,
       simuLogoSplit: { logo: 55, simu: 45 },
       topClients: [
         { name: "Fashion Outlet", projects: 5, value: 25000 },
@@ -107,7 +107,7 @@ export default function Statistics() {
         "Town Square",
       ],
       wonRatePct: 62,
-      totalWonBudget: 126_700,
+      totalWonBudget: 126700,
       simuLogoSplit: { logo: 52, simu: 48 },
       topClients: [
         { name: "Fashion Outlet", projects: 4, value: 21000 },
@@ -144,7 +144,7 @@ export default function Statistics() {
         "Suburban Park",
       ],
       wonRatePct: 64,
-      totalWonBudget: 132_300,
+      totalWonBudget: 132300,
       simuLogoSplit: { logo: 50, simu: 50 },
       topClients: [
         { name: "Fashion Outlet", projects: 3, value: 19000 },
@@ -180,7 +180,7 @@ export default function Statistics() {
         "Metro Station",
       ],
       wonRatePct: 57,
-      totalWonBudget: 98_900,
+      totalWonBudget: 98900,
       simuLogoSplit: { logo: 47, simu: 53 },
       topClients: [
         { name: "Fashion Outlet", projects: 3, value: 16000 },
@@ -216,7 +216,7 @@ export default function Statistics() {
         "City Museum Annex",
       ],
       wonRatePct: 52,
-      totalWonBudget: 87_250,
+      totalWonBudget: 87250,
       simuLogoSplit: { logo: 44, simu: 56 },
       topClients: [
         { name: "Fashion Outlet", projects: 2, value: 14000 },

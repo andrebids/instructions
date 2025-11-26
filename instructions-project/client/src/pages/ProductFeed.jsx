@@ -142,7 +142,10 @@ export default function ProductFeed() {
 
   useEffect(() => {
     if (!isHandheld && isMenuOpen) {
-      setIsMenuOpen(false);
+      // Usar setTimeout para evitar setState síncrono em effect
+      setTimeout(() => {
+        setIsMenuOpen(false);
+      }, 0);
     }
   }, [isHandheld, isMenuOpen]);
 

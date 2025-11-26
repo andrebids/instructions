@@ -40,6 +40,36 @@ export const useTTS = (defaultLang = 'en-US') => {
         }
     }, [defaultLang]);
 
+    // Função de fallback movida para antes de ser usada
+    const speakBrowserFallback = useCallback((text, lang) => {
+        if (!window.speechSynthesis) {
+            setSpeaking(false);
+            return;
+        }
+
+        // Create utterance
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+
+        // Select best voice for the language
+        const availableVoices = getCachedVoices();
+        const selectedVoice = selectBestVoice(lang, availableVoices);
+
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+        } else {
+            console.warn(`[TTS] No suitable voice found for ${lang}`);
+        }
+
+        // Event handlers
+        utterance.onstart = () => setSpeaking(true);
+        utterance.onend = () => setSpeaking(false);
+        utterance.onerror = () => setSpeaking(false);
+
+        // Speak
+        window.speechSynthesis.speak(utterance);
+    }, []);
+
     /**
      * Speak text with automatic language detection
      * @param {string} text - Text to speak
@@ -130,36 +160,7 @@ export const useTTS = (defaultLang = 'en-US') => {
             console.error("Edge TTS Error, falling back to browser:", error);
             speakBrowserFallback(text, finalLang);
         }
-    }, [defaultLang, supported]);
-
-    const speakBrowserFallback = (text, lang) => {
-        if (!window.speechSynthesis) {
-            setSpeaking(false);
-            return;
-        }
-
-        // Create utterance
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = lang;
-
-        // Select best voice for the language
-        const availableVoices = getCachedVoices();
-        const selectedVoice = selectBestVoice(lang, availableVoices);
-
-        if (selectedVoice) {
-            utterance.voice = selectedVoice;
-        } else {
-            console.warn(`[TTS] No suitable voice found for ${lang}`);
-        }
-
-        // Event handlers
-        utterance.onstart = () => setSpeaking(true);
-        utterance.onend = () => setSpeaking(false);
-        utterance.onerror = () => setSpeaking(false);
-
-        // Speak
-        window.speechSynthesis.speak(utterance);
-    };
+    }, [defaultLang, supported, speakBrowserFallback]);
 
     const cancel = useCallback(() => {
         // Stop Audio

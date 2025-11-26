@@ -12,11 +12,6 @@ export const NightThumb = ({
   const [nightImageLoaded, setNightImageLoaded] = useState(false);
   const [isConverted, setIsConverted] = useState(false);
 
-  // Se não há nightImage, não mostrar animação
-  if (!nightImage) {
-    return null;
-  }
-
   useEffect(() => {
     if (isActive && nightImage) {
       setIsAnimating(true);
@@ -47,6 +42,11 @@ export const NightThumb = ({
       setProgress(0);
     }
   }, [isActive, duration, nightImage]);
+
+  // Se não há nightImage, não mostrar animação
+  if (!nightImage) {
+    return null;
+  }
 
   // Antes de converter: não mostrar nada por cima do thumbnail
   if (!isActive && !isConverted) {

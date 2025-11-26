@@ -41,10 +41,13 @@ export function CreateUserModal({
   useEffect(() => {
     if (isOpen) {
       const generatedPassword = generateSecurePassword(12);
-      setFormData(prev => ({
-        ...prev,
-        password: generatedPassword,
-      }));
+      // Usar setTimeout para evitar setState síncrono em effect
+      setTimeout(() => {
+        setFormData(prev => ({
+          ...prev,
+          password: generatedPassword,
+        }));
+      }, 0);
     }
   }, [isOpen]);
 

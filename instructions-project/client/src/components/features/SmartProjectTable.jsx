@@ -67,13 +67,15 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
 
     return visibleProjects.map((p, i) => {
       const index = start + i;
+      // Função determinística para gerar valor estável baseado no index (evita Math.random durante render)
+      const deterministicValue = ((index * 17 + 23) % 10) + 5; // Gera valores entre 5-14 de forma determinística
       return {
         ...p,
         contractType: index % 3 === 0 ? "Sale" : index % 3 === 1 ? "Rent 1Y" : "Rent 3Y",
         contractTypeKey: index % 3 === 0 ? "sale" : index % 3 === 1 ? "rent1y" : "rent3y",
         designStatus: index % 2 === 0 ? "Ready" : "Pending",
         designStatusKey: index % 2 === 0 ? "ready" : "pending",
-        reservationValidity: index % 4 === 0 ? 3 : Math.floor(Math.random() * 10) + 5, // Mock days
+        reservationValidity: index % 4 === 0 ? 3 : deterministicValue, // Mock days
         mockImage: `https://images.unsplash.com/photo-${index % 2 === 0 ? '1576692131261-40e88a446404' : '1512389142660-9c87db076481'}?w=300&h=200&fit=crop`
       };
     });

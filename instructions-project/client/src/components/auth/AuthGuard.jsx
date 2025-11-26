@@ -6,22 +6,16 @@ import { useAuthContext } from '../../context/AuthContext';
  * Compatível com Auth.js e Clerk
  */
 export function SignedIn({ children }) {
-  try {
-    const { isAuthenticated, loading } = useAuthContext();
+  // Hook deve ser chamado sempre, não condicionalmente
+  // useAuthContext já trata hot reload internamente retornando valor padrão
+  const authContext = useAuthContext();
+  const { isAuthenticated, loading } = authContext || { isAuthenticated: false, loading: true };
 
-    if (loading) {
-      return null; // ou um loading spinner se preferir
-    }
-
-    return isAuthenticated ? <>{children}</> : null;
-  } catch (error) {
-    // Durante hot reload, pode haver erros temporários
-    if (import.meta.env.DEV) {
-      console.warn('⚠️ [SignedIn] Erro durante hot reload:', error.message);
-      return null;
-    }
-    throw error;
+  if (loading) {
+    return null; // ou um loading spinner se preferir
   }
+
+  return isAuthenticated ? <>{children}</> : null;
 }
 
 /**
@@ -29,21 +23,15 @@ export function SignedIn({ children }) {
  * Compatível com Auth.js e Clerk
  */
 export function SignedOut({ children }) {
-  try {
-    const { isAuthenticated, loading } = useAuthContext();
+  // Hook deve ser chamado sempre, não condicionalmente
+  // useAuthContext já trata hot reload internamente retornando valor padrão
+  const authContext = useAuthContext();
+  const { isAuthenticated, loading } = authContext || { isAuthenticated: false, loading: true };
 
-    if (loading) {
-      return null; // ou um loading spinner se preferir
-    }
-
-    return !isAuthenticated ? <>{children}</> : null;
-  } catch (error) {
-    // Durante hot reload, pode haver erros temporários
-    if (import.meta.env.DEV) {
-      console.warn('⚠️ [SignedOut] Erro durante hot reload:', error.message);
-      return null;
-    }
-    throw error;
+  if (loading) {
+    return null; // ou um loading spinner se preferir
   }
+
+  return !isAuthenticated ? <>{children}</> : null;
 }
 

@@ -13,6 +13,27 @@ export const YOLO12AnalysisOverlay = ({ onComplete, duration = 2500 }) => {
     'Processing results...'
   ];
 
+  // Gerar valores determinísticos uma vez para as partículas (evitar Math.random durante render)
+  const particles = React.useMemo(() => {
+    // Função pseudo-aleatória determinística baseada em índice
+    const pseudoRandom = (seed) => {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
+    };
+    return Array.from({ length: 20 }, (_, i) => {
+      const seed1 = i * 17 + 23;
+      const seed2 = i * 31 + 47;
+      const seed3 = i * 13 + 19;
+      const seed4 = i * 7 + 11;
+      return {
+        left: pseudoRandom(seed1) * 100,
+        top: pseudoRandom(seed2) * 100,
+        duration: 2 + pseudoRandom(seed3) * 3,
+        delay: pseudoRandom(seed4) * 2,
+      };
+    });
+  }, []);
+
   useEffect(() => {
     const startTime = Date.now();
     const animate = () => {
@@ -99,15 +120,15 @@ export const YOLO12AnalysisOverlay = ({ onComplete, duration = 2500 }) => {
         
         {/* Partículas animadas */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {[...Array(20)].map((_, i) => (
+          {particles.map((particle, i) => (
             <div
               key={i}
               className="absolute w-1 h-1 bg-blue-400 rounded-full"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animation: `particleFloat ${2 + Math.random() * 3}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 2}s`,
+                left: `${particle.left}%`,
+                top: `${particle.top}%`,
+                animation: `particleFloat ${particle.duration}s ease-in-out infinite`,
+                animationDelay: `${particle.delay}s`,
                 opacity: 0.6
               }}
             />

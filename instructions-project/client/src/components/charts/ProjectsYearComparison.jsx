@@ -34,14 +34,24 @@ export function ProjectsYearComparison({
   };
 
   // Valor aleatório estável por montagem para anos em falta (ex.: 2020)
-  const randomInRange = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  // Usar useMemo para gerar valor determinístico baseado em um seed estável
+  const randomValue = React.useMemo(() => {
+    // Usar um seed determinístico baseado em um valor fixo
+    const seed = 2020;
+    // Função pseudo-aleatória determinística
+    const pseudoRandom = (seed) => {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
+    };
+    return Math.floor(pseudoRandom(seed) * (18000 - 6000 + 1)) + 6000;
+  }, []);
   const projectsData = React.useMemo(() => {
     const data = { ...baseProjectsData };
     if (data[2020] == null) {
-      data[2020] = randomInRange(6000, 18000);
+      data[2020] = randomValueRef.current;
     }
     return data;
-  }, []);
+  }, [baseProjectsData]);
 
   // Use years from props
   const safeCurrentYear = Number(currentYear);

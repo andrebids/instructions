@@ -235,7 +235,7 @@ export const VoiceAssistantProvider = ({ children }) => {
       // Context and memory
       dashboardContext,
       updateDashboardContext,
-      conversationMemory: conversationMemory.current,
+      getConversationMemory: () => conversationMemory.current,
       currentPage,
       setCurrentPage
     }}>

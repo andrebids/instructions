@@ -9,11 +9,7 @@ export const useClientManagement = (setFormData) => {
     email: ""
   });
 
-  // Carregar clientes
-  useEffect(() => {
-    loadClients();
-  }, []);
-
+  // Carregar clientes (movido para antes do useEffect)
   const loadClients = async () => {
     try {
       setClients(MOCK_CLIENTS);
@@ -21,6 +17,14 @@ export const useClientManagement = (setFormData) => {
       console.error("Erro ao carregar clientes:", err);
     }
   };
+
+  // Carregar clientes
+  useEffect(() => {
+    // Usar setTimeout para evitar setState síncrono em effect
+    setTimeout(() => {
+      loadClients();
+    }, 0);
+  }, []);
 
   // Handler de input do autocomplete
   const handleClientInputChange = (value) => {

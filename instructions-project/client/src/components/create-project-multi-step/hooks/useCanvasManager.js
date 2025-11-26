@@ -87,6 +87,16 @@ export const useCanvasManager = () => {
     logger.canvas('Remove Decoration', { id: decorationId });
   }, []);
 
+  // Histórico: Salvar estado (movido para antes de ser usado)
+  const saveToHistory = useCallback((state) => {
+    setCanvasHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push(JSON.parse(JSON.stringify(state)));
+      return newHistory;
+    });
+    setHistoryIndex(prev => prev + 1);
+  }, [historyIndex]);
+
   // ✅ CORRIGIDO: Canvas 2: Inicializar decorações com validação
   const initializePositions = useCallback(() => {
     if (selectedDecorations.length === 0) {
@@ -112,7 +122,7 @@ export const useCanvasManager = () => {
       count: positioned.length,
       decorations: positioned.map(d => d.name)
     });
-  }, [selectedDecorations]);
+  }, [selectedDecorations, saveToHistory]);
 
   // Canvas 2: Atualizar posição/transformação de decoração
   const updateDecorationTransform = useCallback((decorationId, newAttrs) => {
@@ -123,7 +133,7 @@ export const useCanvasManager = () => {
       saveToHistory(updated);
       return updated;
     });
-  }, []);
+  }, [saveToHistory]);
 
   // Canvas 2: Deletar decoração posicionada
   const deletePositionedDecoration = useCallback((decorationId) => {
@@ -133,17 +143,7 @@ export const useCanvasManager = () => {
       return updated;
     });
     setSelectedItemId(null);
-  }, []);
-
-  // Histórico: Salvar estado
-  const saveToHistory = useCallback((state) => {
-    setCanvasHistory(prev => {
-      const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push(JSON.parse(JSON.stringify(state)));
-      return newHistory;
-    });
-    setHistoryIndex(prev => prev + 1);
-  }, [historyIndex]);
+  }, [saveToHistory]);
 
   // Histórico: Undo
   const undo = useCallback(() => {

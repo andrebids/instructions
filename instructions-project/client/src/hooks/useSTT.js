@@ -10,7 +10,10 @@ export const useSTT = (defaultLang = 'en-US') => {
         if (typeof window !== 'undefined') {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (SpeechRecognition) {
-                setSupported(true);
+                // Usar setTimeout para evitar setState síncrono em effect
+                setTimeout(() => {
+                    setSupported(true);
+                }, 0);
                 recognitionRef.current = new SpeechRecognition();
                 recognitionRef.current.continuous = false;
                 recognitionRef.current.interimResults = false;

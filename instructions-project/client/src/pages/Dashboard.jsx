@@ -14,9 +14,8 @@ import Galaxy from "../components/ui/Galaxy";
 
 import { TodoListWidget } from "../components/features/TodoListWidget";
 import { SmartProjectTable } from "../components/features/SmartProjectTable";
+import { CreateProjectMultiStep } from "../components/create-project-multi-step";
 import { PipelineWidget } from "../components/features/sales/PipelineWidget";
-// Lazy load heavy component
-const CreateProjectMultiStep = React.lazy(() => import("../components/create-project-multi-step").then(module => ({ default: module.CreateProjectMultiStep })));
 import { DraftsWidget } from "../components/features/sales/DraftsWidget";
 import { ConversionWidget } from "../components/features/sales/ConversionWidget";
 import { OrderManagementWidget } from "../components/features/OrderManagementWidget";
@@ -160,30 +159,11 @@ export default function Dashboard() {
     return () => abortController.abort();
   }, []);
 
-  const handleCreateProject = React.useCallback(() => setShowCreateProject(true), []);
-  const handleCloseCreateProject = React.useCallback(() => {
+  const handleCreateProject = () => setShowCreateProject(true);
+  const handleCloseCreateProject = () => {
     setShowCreateProject(false);
     loadData();
-  }, [loadData]);
-
-  // Memoize Galaxy component to prevent re-renders
-  const galaxyBackground = React.useMemo(() => (
-    <div className="absolute inset-0 z-0 opacity-40 pointer-events-none overflow-hidden rounded-3xl hidden dark:block">
-      <Galaxy 
-        transparent={true}
-        mouseInteraction={true}
-        mouseRepulsion={false}
-        density={0.5}
-        glowIntensity={0.3}
-        saturation={0.2}
-        hueShift={0}
-        rotationSpeed={0.05}
-        speed={0.3}
-        twinkleIntensity={1}
-        starSpeed={0.2}
-      />
-    </div>
-  ), []);
+  };
 
 
 
@@ -191,13 +171,7 @@ export default function Dashboard() {
     <>
       {showCreateProject ? (
         <div className="flex-1 min-h-0 overflow-hidden bg-background">
-          <React.Suspense fallback={
-            <div className="flex justify-center items-center h-full">
-              <Spinner size="lg" color="primary" />
-            </div>
-          }>
-            <CreateProjectMultiStep onClose={handleCloseCreateProject} />
-          </React.Suspense>
+          <CreateProjectMultiStep onClose={handleCloseCreateProject} />
         </div>
       ) : (
         <Scroller className="flex-1 min-h-0 bg-background" hideScrollbar>
@@ -233,7 +207,21 @@ export default function Dashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-auto md:h-64">
                     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50/80 via-white to-orange-50/30 dark:from-slate-900/30 dark:via-slate-800/20 dark:to-zinc-900/30 border border-amber-100/50 dark:border-transparent p-8 flex flex-col justify-center group shadow-sm dark:shadow-lg">
                       {/* Galaxy Background - Only in dark mode */}
-                      {galaxyBackground}
+                      <div className="absolute inset-0 z-0 opacity-40 pointer-events-none overflow-hidden rounded-3xl hidden dark:block">
+                        <Galaxy 
+                          transparent={true}
+                          mouseInteraction={true}
+                          mouseRepulsion={false}
+                          density={0.5}
+                          glowIntensity={0.3}
+                          saturation={0.2}
+                          hueShift={0}
+                          rotationSpeed={0.05}
+                          speed={0.3}
+                          twinkleIntensity={1}
+                          starSpeed={0.2}
+                        />
+                      </div>
 
                       {/* Dark Mode Glow */}
                       <div className="absolute top-0 right-0 p-32 bg-blue-500/20 blur-[100px] rounded-full -mr-16 -mt-16 pointer-events-none z-5 hidden dark:block" />
