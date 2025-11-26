@@ -72,7 +72,7 @@ export const PipelineWidget = React.memo(({ value }) => {
           background: rgba(155, 155, 155, 0.7);
         }
       `}</style>
-      <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
+      <Card className="h-full glass-panel border-default-200/50 overflow-hidden relative group">
        {/* Background Glow Effect - Purple to Pink gradient */}
        <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-3xl group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-all duration-500" />
        

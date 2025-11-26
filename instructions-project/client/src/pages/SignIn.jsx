@@ -272,7 +272,7 @@ export default function SignIn() {
   };
 
   return (
-    <main className="bg-background text-foreground flex flex-1 items-center justify-center p-8 relative">
+    <main className="text-foreground flex flex-1 items-center justify-center p-8 relative">
       <LoginSnippet />
       <div className="w-full max-w-md">
         <div className="text-center mb-8">

@@ -57,7 +57,7 @@ export const OrderManagementWidget = React.memo(() => {
   const { t } = useTranslation();
 
   return (
-    <Card className="h-[420px] bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-xl overflow-hidden">
+    <Card className="h-[420px] glass-panel border border-white/20 dark:border-white/10 overflow-hidden">
       <CardBody className="p-0 flex flex-col h-full">
         {/* Header */}
         <div className="p-6 pb-2 flex justify-between items-center">

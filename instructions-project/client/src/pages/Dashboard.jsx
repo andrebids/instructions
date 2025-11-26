@@ -170,11 +170,11 @@ export default function Dashboard() {
   return (
     <>
       {showCreateProject ? (
-        <div className="flex-1 min-h-0 overflow-hidden bg-background">
+        <div className="flex-1 min-h-0 overflow-hidden">
           <CreateProjectMultiStep onClose={handleCloseCreateProject} />
         </div>
       ) : (
-        <Scroller className="flex-1 min-h-0 bg-background" hideScrollbar>
+        <Scroller className="flex-1 min-h-0" hideScrollbar>
           <div className="p-6 max-w-[1920px] mx-auto space-y-6">
             
             {/* Header Section */}

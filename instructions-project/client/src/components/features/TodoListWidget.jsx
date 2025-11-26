@@ -177,7 +177,7 @@ export const TodoListWidget = React.memo(() => {
   }, [tasks]);
 
   return (
-    <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm rounded-3xl">
+    <Card className="h-full glass-panel border-default-200/50 rounded-3xl">
       <CardBody className="p-6 flex flex-col h-full">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">

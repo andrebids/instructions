@@ -59,7 +59,7 @@ export const DraftsWidget = React.memo(({ value, count, goal = 1000000 }) => {
   }, [cx, radius, progressAngle, strokeWidth, cy]);
 
   return (
-    <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
+    <Card className="h-full glass-panel border-default-200/50 overflow-hidden relative group">
        {/* Background Glow Effect - Blue to Teal gradient */}
        <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full blur-3xl group-hover:from-blue-500/30 group-hover:to-cyan-500/30 transition-all duration-500" />
 

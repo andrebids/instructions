@@ -29,7 +29,7 @@ function AppLayout() {
   const showSidebar = !isHandheld;
 
   return (
-    <div className="bg-background text-foreground flex h-screen">
+    <div className="bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background text-foreground flex h-screen">
       {showSidebar && (
         <aside className="hidden md:block w-20">
           <SidebarNavigation />
@@ -79,7 +79,7 @@ export default function App() {
         <OfflineReadyNotification />
         <NotificationContainer />
         <SignedOut>
-          <div className="bg-background text-foreground flex h-screen">
+          <div className="bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background text-foreground flex h-screen">
             <main className="flex flex-1 flex-col overflow-hidden">
               <Routes>
                 <Route path="/" element={<Landing />} />

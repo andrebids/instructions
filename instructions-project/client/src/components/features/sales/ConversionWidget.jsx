@@ -18,7 +18,7 @@ export const ConversionWidget = React.memo(({ value, trend, won = 34, lost = 16 
   const offset = React.useMemo(() => circumference - (winRate / 100) * circumference, [circumference, winRate]);
 
   return (
-    <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
+    <Card className="h-full glass-panel border-default-200/50 overflow-hidden relative group">
        {/* Background Glow Effect */}
        <div className="absolute -top-10 -right-10 w-32 h-32 bg-success-500/20 rounded-full blur-3xl group-hover:bg-success-500/30 transition-all duration-500" />
 

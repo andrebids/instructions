@@ -26,7 +26,7 @@ export default function SignUp() {
   };
 
   return (
-    <main className="bg-background text-foreground flex flex-1 items-center justify-center p-8">
+    <main className="text-foreground flex flex-1 items-center justify-center p-8">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">{t('pages.landing.signUp') || 'Criar Conta'}</h1>

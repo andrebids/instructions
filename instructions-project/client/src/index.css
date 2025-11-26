@@ -331,3 +331,36 @@ ul[data-type="taskList"] li[data-checked="true"]>div {
 .animate-slide-in-right {
   animation: slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* Glassmorphism Panel */
+.glass-panel {
+  border-radius: 16px;
+  backdrop-filter: blur(6.5px);
+  -webkit-backdrop-filter: blur(6.5px);
+
+  /* Light mode (default) */
+  background: rgba(255, 255, 255, 0.38);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass-panel {
+  /* Dark mode override */
+  background: rgba(24, 24, 27, 0.6);
+  /* zinc-900 with opacity */
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Ensure dark mode doesn't use this white glass effect if not desired, 
+   or override it. For now, user said "test only in light mode". 
+   But if we apply this class, it will apply in dark mode too unless we scope it.
+   I'll scope it to not-dark or just let it be and user can check.
+   The user said "no light mode" (in light mode).
+   I'll add a dark mode override to reset or use a dark glass if needed, 
+   but for now I'll stick to the request. 
+   Actually, to be safe for dark mode, I should probably make it light-mode only 
+   or ensure it doesn't break dark mode.
+   But the user specifically asked for this CSS.
+   I will add it as is.
+*/
