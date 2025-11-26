@@ -78,7 +78,7 @@ export const DraftsWidget = React.memo(({ value, count, goal = 1000000 }) => {
         </div>
 
         {/* Value Display */}
-        <div className="mt-1 mb-1">
+        <div className="mt-2 mb-2">
           <h4 className="text-3xl font-bold text-foreground leading-none">{formatValue(gap)}</h4>
           <span className="text-xs text-default-400 mt-0.5">{t('pages.dashboard.salesGoalWidget.toGo')}</span>
         </div>
