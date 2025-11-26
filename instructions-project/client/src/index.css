@@ -409,15 +409,124 @@ ul[data-type="taskList"] li[data-checked="true"]>div {
       rgba(255, 255, 255, 0.1));
 }
 
-/* Ensure dark mode doesn't use this white glass effect if not desired, 
-   or override it. For now, user said "test only in light mode". 
-   But if we apply this class, it will apply in dark mode too unless we scope it.
-   I'll scope it to not-dark or just let it be and user can check.
-   The user said "no light mode" (in light mode).
-   I'll add a dark mode override to reset or use a dark glass if needed, 
-   but for now I'll stick to the request. 
-   Actually, to be safe for dark mode, I should probably make it light-mode only 
-   or ensure it doesn't break dark mode.
-   But the user specifically asked for this CSS.
-   I will add it as is.
-*/
+/* =========================================
+   ORDER MANAGEMENT BUTTON STYLES
+   ========================================= */
+:root {
+  /* Cores Base (Variáveis para fácil troca) */
+  --color-danger: 255, 82, 82;
+  /* Vermelho */
+  --color-warning: 255, 193, 7;
+  /* Amarelo */
+  --color-info: 64, 156, 255;
+  /* Azul */
+  --color-success: 16, 185, 129;
+  /* Emerald/Green */
+  --color-orange: 249, 115, 22;
+  /* Orange */
+
+  --text-light: #333;
+  --text-dark: #fff;
+}
+
+/* =========================================
+   ESTRUTURA BASE DO BOTÃO GLASS (MATTE & BORDERLESS)
+   ========================================= */
+.btn-glass {
+  /* Layout */
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  /* Forma */
+  border-radius: 12px;
+  /* Slightly more rounded for matte look */
+
+  /* O Efeito Glass Matte */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  /* Sem borda */
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+
+  /* Texto */
+  /* text-transform: uppercase; removed for consistency */
+  /* letter-spacing: 0.5px; removed for consistency */
+}
+
+/* Remove pseudo-element borders */
+.btn-glass::before,
+.btn-glass::after {
+  display: none;
+}
+
+/* =========================================
+   VARIANTE 1: PRIMARY (Botão Confirm - Green)
+   ========================================= */
+.btn-glass-primary {
+  background: rgba(var(--color-success), 0.2);
+  color: rgb(6, 95, 70);
+  /* Dark green text */
+}
+
+.dark .btn-glass-primary {
+  background: rgba(var(--color-success), 0.2);
+  color: rgb(167, 243, 208);
+  /* Light green text */
+}
+
+.btn-glass-primary:hover {
+  background: rgba(var(--color-success), 0.3);
+  transform: translateY(-1px);
+}
+
+/* =========================================
+   VARIANTE 2: SECONDARY (Botão Extend - Orange)
+   ========================================= */
+.btn-glass-secondary {
+  background: rgba(var(--color-orange), 0.2);
+  color: rgb(154, 52, 18);
+  /* Dark orange text */
+}
+
+.dark .btn-glass-secondary {
+  background: rgba(var(--color-orange), 0.2);
+  color: rgb(253, 186, 116);
+  /* Light orange text */
+}
+
+.btn-glass-secondary:hover {
+  background: rgba(var(--color-orange), 0.3);
+  transform: translateY(-1px);
+}
+
+/* =========================================
+   VARIANTE 3: TERTIARY (Botão Release - Red)
+   ========================================= */
+.btn-glass-tertiary {
+  background: rgba(var(--color-danger), 0.15);
+  color: rgb(185, 28, 28);
+  /* Dark red text */
+  padding: 8px;
+  /* Icon only padding */
+}
+
+.dark .btn-glass-tertiary {
+  background: rgba(var(--color-danger), 0.2);
+  color: rgb(252, 165, 165);
+  /* Light red text */
+}
+
+.btn-glass-tertiary:hover {
+  background: rgba(var(--color-danger), 0.3);
+  transform: scale(1.05);
+}

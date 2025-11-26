@@ -166,35 +166,31 @@ const OrderItem = React.memo(({ order, index }) => {
         
         {/* Release Button (Tertiary) */}
         <Tooltip content={t('pages.dashboard.orderManagement.releaseOrder.tooltip')}>
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            className="text-zinc-400 hover:text-red-500 hover:bg-red-500/10 hover:scale-110 active:scale-95 transition-all duration-300"
-            onPress={onReleaseOpen}
+          <button
+            className="btn-glass btn-glass-tertiary"
+            onClick={onReleaseOpen}
           >
             <Icon icon="lucide:unlock" className="w-4 h-4" />
-          </Button>
+          </button>
         </Tooltip>
 
         {/* Extend Button (Secondary) */}
-        <Button
-          size="sm"
-          variant="bordered"
-          className="border-zinc-400 dark:border-zinc-700/50 bg-white/10 dark:bg-white/5 backdrop-blur-md text-zinc-700 dark:text-zinc-300 hover:bg-white/30 dark:hover:bg-white/20 hover:border-zinc-500 dark:hover:border-zinc-600 hover:scale-105 active:scale-95 transition-all duration-300 flex-1 sm:flex-none sm:min-w-[80px]"
-          onPress={onExtendOpen}
+        {/* Extend Button (Secondary) */}
+        <button
+          className="btn-glass btn-glass-secondary flex-1 sm:flex-none sm:min-w-[80px]"
+          onClick={onExtendOpen}
         >
           <span>{t('pages.dashboard.orderManagement.extend')}</span>
-        </Button>
+        </button>
 
         {/* Confirm Button (Primary) */}
-        <Button
-          size="sm"
-          className="bg-emerald-500/20 dark:bg-emerald-500/10 hover:bg-emerald-500/30 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-600 dark:border-emerald-500/50 hover:border-emerald-700 dark:hover:border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)] hover:shadow-[0_0_20px_rgba(16,185,129,0.35)] backdrop-blur-md font-semibold hover:scale-105 active:scale-95 transition-all duration-300 flex-1 sm:flex-none sm:min-w-[90px]"
-          onPress={onConfirmOpen}
+        {/* Confirm Button (Primary) */}
+        <button
+          className="btn-glass btn-glass-primary flex-1 sm:flex-none sm:min-w-[90px]"
+          onClick={onConfirmOpen}
         >
           <span>{t('pages.dashboard.orderManagement.confirm')}</span>
-        </Button>
+        </button>
       </div>
 
       {/* Confirmation Modals */}
