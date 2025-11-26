@@ -30,14 +30,40 @@ function AppLayout() {
   const { isHandheld } = useResponsiveProfile();
   const showSidebar = !isHandheld;
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const [isDark, setIsDark] = React.useState(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return false;
+  });
+
+  React.useEffect(() => {
+    const checkDark = () => {
+      const hasDarkClass = document.documentElement.classList.contains('dark');
+      setIsDark(hasDarkClass);
+    };
+
+    checkDark();
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    window.addEventListener('themechange', checkDark);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('themechange', checkDark);
+    };
+  }, []);
 
   return (
     <div className="bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background text-foreground flex h-screen relative">
       {isDark && (
         <div className="fixed inset-0 z-0 pointer-events-none">
           <Aurora
-            colorStops={["#120059", "#9A83EB", "#120059"]}
+            colorStops={["#03135F", "#1A2B79", "#03135F"]}
             blend={1}
             amplitude={1.0}
             speed={0.8}
@@ -88,7 +114,33 @@ function AppLayout() {
 
 export default function App() {
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const [isDark, setIsDark] = React.useState(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return false;
+  });
+
+  React.useEffect(() => {
+    const checkDark = () => {
+      const hasDarkClass = document.documentElement.classList.contains('dark');
+      setIsDark(hasDarkClass);
+    };
+
+    checkDark();
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    window.addEventListener('themechange', checkDark);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('themechange', checkDark);
+    };
+  }, []);
 
   return (
     <NotificationProvider>
@@ -102,7 +154,7 @@ export default function App() {
             {isDark && (
               <div className="fixed inset-0 z-0 pointer-events-none">
                 <Aurora
-                  colorStops={["#120059", "#9A83EB", "#120059"]}
+                  colorStops={["#03135F", "#1A2B79", "#03135F"]}
                   blend={1}
                   amplitude={1.0}
                   speed={0.8}
