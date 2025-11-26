@@ -49,9 +49,11 @@ const getPipelineStages = (t) => [
   },
 ];
 
-export const PipelineWidget = ({ value }) => {
+export const PipelineWidget = React.memo(({ value }) => {
   const { t } = useTranslation();
-  const pipelineStages = getPipelineStages(t);
+  
+  const pipelineStages = React.useMemo(() => getPipelineStages(t), [t]);
+
   return (
     <>
       <style>{`
@@ -98,54 +100,9 @@ export const PipelineWidget = ({ value }) => {
           {/* Progress Bar */}
           <div className="relative w-full h-6 rounded-full bg-default-100/50 shadow-inner" style={{ overflow: 'visible' }}>
             <div className="absolute inset-0 flex h-full rounded-full" style={{ overflow: 'visible' }}>
-              {pipelineStages.map((stage, index) => {
-                const leftOffset = pipelineStages
-                  .slice(0, index)
-                  .reduce((sum, s) => sum + s.percentage, 0);
-                
-                return (
-                  <Tooltip
-                    key={stage.nameKey}
-                    content={
-                      <div className="px-3 py-3 min-w-[200px] max-w-[280px]">
-                        <div className="text-base font-bold mb-2 text-foreground">{stage.name}</div>
-                        <div className="text-sm mb-3 text-foreground-600 font-medium">
-                          {stage.projectCount} {t('pages.dashboard.pipelineWidget.tooltip.projects')} • {stage.totalValue}
-                        </div>
-                        <div 
-                          className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar"
-                          style={{
-                            scrollbarWidth: 'thin',
-                            scrollbarColor: 'rgba(155, 155, 155, 0.5) transparent'
-                          }}
-                        >
-                          {stage.projects.map((project, idx) => (
-                            <div key={idx} className="flex justify-between gap-4 text-sm">
-                              <span className="text-foreground-700 truncate">{project.name}</span>
-                              <span className="font-bold text-foreground whitespace-nowrap">{project.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    }
-                    placement="top"
-                    classNames={{
-                      base: "py-2 px-3",
-                      content: "py-3 px-3 bg-content1 border-2 border-default-300 shadow-lg backdrop-blur-md"
-                    }}
-                  >
-                    <div
-                      className="relative h-full transition-all duration-500 hover:brightness-110 cursor-pointer first:rounded-l-full last:rounded-r-full"
-                      style={{
-                        width: `${stage.percentage}%`,
-                        backgroundColor: stage.color,
-                        filter: `drop-shadow(0 0 4px ${stage.glowColor})`,
-                      }}
-                    />
-
-                  </Tooltip>
-                );
-              })}
+              {pipelineStages.map((stage, index) => (
+                <PipelineStageBar key={stage.nameKey} stage={stage} t={t} />
+              ))}
             </div>
           </div>
 
@@ -172,4 +129,52 @@ export const PipelineWidget = ({ value }) => {
     </Card>
     </>
   );
-};
+});
+
+// Extracted component to prevent re-renders of all tooltips when one changes (though here they are static mostly)
+// Also helps with code organization
+const PipelineStageBar = React.memo(({ stage, t }) => {
+  return (
+    <Tooltip
+      content={
+        <div className="px-3 py-3 min-w-[200px] max-w-[280px]">
+          <div className="text-base font-bold mb-2 text-foreground">{stage.name}</div>
+          <div className="text-sm mb-3 text-foreground-600 font-medium">
+            {stage.projectCount} {t('pages.dashboard.pipelineWidget.tooltip.projects')} • {stage.totalValue}
+          </div>
+          <div 
+            className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'rgba(155, 155, 155, 0.5) transparent'
+            }}
+          >
+            {stage.projects.map((project, idx) => (
+              <div key={idx} className="flex justify-between gap-4 text-sm">
+                <span className="text-foreground-700 truncate">{project.name}</span>
+                <span className="font-bold text-foreground whitespace-nowrap">{project.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      }
+      placement="top"
+      classNames={{
+        base: "py-2 px-3",
+        content: "py-3 px-3 bg-content1 border-2 border-default-300 shadow-lg backdrop-blur-md"
+      }}
+      // Add delay to prevent flickering and unnecessary renders on quick mouse moves
+      delay={200}
+      closeDelay={0}
+    >
+      <div
+        className="relative h-full transition-all duration-500 hover:brightness-110 cursor-pointer first:rounded-l-full last:rounded-r-full"
+        style={{
+          width: `${stage.percentage}%`,
+          backgroundColor: stage.color,
+          filter: `drop-shadow(0 0 4px ${stage.glowColor})`,
+        }}
+      />
+    </Tooltip>
+  );
+});

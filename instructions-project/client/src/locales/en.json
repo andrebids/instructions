@@ -140,7 +140,8 @@
         "dateFormatting": {
           "today": "Today",
           "tomorrow": "Tomorrow",
-          "overdue": "{{days}}d overdue",
+          "overdue_one": "{{days}} day overdue",
+          "overdue_other": "{{days}} days overdue",
           "days": "{{days}}d"
         },
         "clearCompleted": {
@@ -489,6 +490,7 @@
       "location": "Location",
       "aoTender": "AO/Tender",
       "aoTenderDescription": "Mark this project as an important tender or major contract",
+      "strictDeadline": "⚠️ Strict deadline - Public Tender Project",
       "type": "Type",
       "name": "Name",
       "projectInformation": "Project Information",

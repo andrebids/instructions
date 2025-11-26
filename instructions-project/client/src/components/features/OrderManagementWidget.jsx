@@ -53,7 +53,7 @@ const STATUS_CONFIG = {
   }
 };
 
-export const OrderManagementWidget = () => {
+export const OrderManagementWidget = React.memo(() => {
   const { t } = useTranslation();
 
   return (
@@ -90,9 +90,9 @@ export const OrderManagementWidget = () => {
       </CardBody>
     </Card>
   );
-};
+});
 
-const OrderItem = ({ order, index }) => {
+const OrderItem = React.memo(({ order, index }) => {
   const { t } = useTranslation();
   const config = STATUS_CONFIG[order.status];
   
@@ -102,23 +102,23 @@ const OrderItem = ({ order, index }) => {
   const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure();
 
   // Handlers
-  const handleRelease = () => {
+  const handleRelease = React.useCallback(() => {
     // TODO: Implementar lógica de release order
     console.log('Release order:', order.id);
     onReleaseClose();
-  };
+  }, [order.id, onReleaseClose]);
 
-  const handleExtend = () => {
+  const handleExtend = React.useCallback(() => {
     // TODO: Implementar lógica de extend order
     console.log('Extend order:', order.id);
     onExtendClose();
-  };
+  }, [order.id, onExtendClose]);
 
-  const handleConfirm = () => {
+  const handleConfirm = React.useCallback(() => {
     // TODO: Implementar lógica de confirm order
     console.log('Confirm order:', order.id);
     onConfirmClose();
-  };
+  }, [order.id, onConfirmClose]);
 
   return (
     <motion.div
@@ -235,4 +235,4 @@ const OrderItem = ({ order, index }) => {
       />
     </motion.div>
   );
-};
+});

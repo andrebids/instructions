@@ -1,5 +1,5 @@
 import React from "react";
-import { Input, DatePicker, Button, Checkbox } from "@heroui/react";
+import { Input, DatePicker, Button, Switch } from "@heroui/react";
 import { today, getLocalTimeZone } from "@internationalized/date";
 import { Icon } from "@iconify/react";
 import * as Yup from "yup";
@@ -84,7 +84,7 @@ export function StepProjectDetails({
         <div className="space-y-5">
           {/* Project Name */}
           <div className="max-w-md mx-auto">
-            <label className="block text-sm font-semibold mb-2 text-primary-700 dark:text-primary-400">
+            <label className="block text-sm font-semibold mb-2" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
               {t('pages.projectDetails.projectName')} {t('pages.projectDetails.projectNameRequired')}
             </label>
             <Input
@@ -103,8 +103,11 @@ export function StepProjectDetails({
               classNames={{
                 input: "text-foreground font-medium",
                 inputWrapper: formik.touched.name && formik.errors.name
-                  ? "bg-content1 border-2 border-danger hover:border-danger focus-within:border-danger"
-                  : "bg-content1 border-2 border-divider hover:border-primary focus-within:border-primary"
+                  ? "border-2 border-danger hover:border-danger focus-within:border-danger"
+                  : "border-2 border-divider hover:border-primary focus-within:border-primary"
+              }}
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.05)'
               }}
             />
           </div>
@@ -121,26 +124,28 @@ export function StepProjectDetails({
             />
           </div>
 
-          {/* AO/Tender Checkbox */}
+          {/* AO/Tender Toggle */}
           <div className="max-w-md mx-auto">
-            <Checkbox
-              isSelected={formData.category === 'ao_tender'}
-              onValueChange={(checked) => {
-                onInputChange('category', checked ? 'ao_tender' : 'normal');
-              }}
-              classNames={{
-                base: "w-full max-w-full",
-                label: "w-full"
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <Icon icon="lucide:star" className="text-purple-600" />
+            <div className="flex items-center justify-between p-4 rounded-xl border border-divider" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
+              <div className="flex items-center gap-3 flex-1">
+                <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                  <Icon icon="lucide:landmark" className="text-orange-500 text-xl" />
+                </div>
                 <div>
-                  <span className="font-medium text-foreground">{t('pages.projectDetails.aoTender')}</span>
-                  <p className="text-xs text-default-500">{t('pages.projectDetails.aoTenderDescription')}</p>
+                  <span className="font-medium text-foreground block">{t('pages.projectDetails.aoTender')}</span>
+                  <p className="text-xs text-default-500 mt-0.5">{t('pages.projectDetails.aoTenderDescription')}</p>
                 </div>
               </div>
-            </Checkbox>
+              <Switch
+                isSelected={formData.category === 'ao_tender'}
+                onValueChange={(checked) => {
+                  onInputChange('category', checked ? 'ao_tender' : 'normal');
+                }}
+                classNames={{
+                  wrapper: "group-data-[selected=true]:bg-orange-600"
+                }}
+              />
+            </div>
           </div>
 
           {/* Date and Budget */}
@@ -162,13 +167,25 @@ export function StepProjectDetails({
                 showMonthAndYearPickers
                 minValue={today(getLocalTimeZone())}
                 classNames={{
-                  label: "text-primary-700 dark:text-primary-400"
+                  label: "text-sm font-medium",
+                  inputWrapper: "border-2 border-divider hover:border-primary focus-within:border-primary"
+                }}
+                style={{
+                  '--label-color': 'rgba(255, 255, 255, 0.7)'
                 }}
               />
+              {formData.category === 'ao_tender' && (
+                <div className="flex items-center gap-1.5 mt-1.5 text-orange-400 animate-appearance-in">
+                  <Icon icon="lucide:alert-triangle" className="text-xs" />
+                  <span className="text-xs font-medium">
+                    {t('pages.projectDetails.strictDeadline')}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-primary-700 dark:text-primary-400">
+              <label className="block text-sm font-medium mb-2" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                 {t('pages.projectDetails.budget')} {t('pages.projectDetails.budgetRequired')}
               </label>
               <Input
@@ -190,8 +207,11 @@ export function StepProjectDetails({
                 }
                 classNames={{
                   inputWrapper: formik.touched.budget && formik.errors.budget
-                    ? "bg-content1 border-2 border-danger hover:border-danger focus-within:border-danger"
-                    : "bg-content1 border-2 border-divider hover:border-primary focus-within:border-primary"
+                    ? "border-2 border-danger hover:border-danger focus-within:border-danger"
+                    : "border-2 border-divider hover:border-primary focus-within:border-primary"
+                }}
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)'
                 }}
               />
             </div>

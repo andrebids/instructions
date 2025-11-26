@@ -140,7 +140,8 @@
         "dateFormatting": {
           "today": "Hoje",
           "tomorrow": "Amanhã",
-          "overdue": "{{days}}d em atraso",
+          "overdue_one": "{{days}} dia em atraso",
+          "overdue_other": "{{days}} dias em atraso",
           "days": "{{days}}d"
         },
         "clearCompleted": {
@@ -487,8 +488,9 @@
       "budgetPlaceholder": "Introduza o valor do orçamento",
       "clientName": "Nome do Cliente",
       "location": "Localização",
-      "aoTender": "AO/Concurso",
-      "aoTenderDescription": "Marcar este projeto como concurso importante ou contrato relevante",
+      "aoTender": "Concurso Público",
+      "aoTenderDescription": "Projeto de concurso público com prazo de entrega inadiável e obrigatório",
+      "strictDeadline": "⚠️ Prazo inadiável - Projeto de Concurso Público",
       "type": "Tipo",
       "name": "Nome",
       "projectInformation": "Informações do Projeto",

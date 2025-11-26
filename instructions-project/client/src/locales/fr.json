@@ -140,7 +140,8 @@
         "dateFormatting": {
           "today": "Aujourd'hui",
           "tomorrow": "Demain",
-          "overdue": "{{days}}j en retard",
+          "overdue_one": "{{days}} jour en retard",
+          "overdue_other": "{{days}} jours en retard",
           "days": "{{days}}j"
         },
         "clearCompleted": {
@@ -489,6 +490,7 @@
       "location": "Emplacement",
       "aoTender": "AO/Appel d'offres",
       "aoTenderDescription": "Marquer ce projet comme appel d'offres important ou contrat majeur",
+      "strictDeadline": "⚠️ Délai strict - Projet d'appel d'offres public",
       "type": "Type",
       "name": "Nom",
       "projectInfo": "Informations du Projet",

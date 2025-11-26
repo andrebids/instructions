@@ -7,18 +7,19 @@ import { parseDate, today as todayDate, CalendarDate } from "@internationalized/
 import { I18nProvider } from "@react-aria/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 
-export function TodoListWidget() {
+export const TodoListWidget = React.memo(() => {
   const { t, i18n } = useTranslation();
   
   // Mapear código do idioma do i18n para locale do toLocaleDateString
-  const getLocaleFromLanguage = (lang) => {
+  const getLocaleFromLanguage = React.useCallback((lang) => {
     const localeMap = {
       'pt': 'pt-PT',
       'en': 'en-US',
       'fr': 'fr-FR'
     };
     return localeMap[lang] || 'pt-PT';
-  };
+  }, []);
+
   const [tasks, setTasks] = React.useState([]);
   const [newTaskTitle, setNewTaskTitle] = React.useState("");
   const [newTaskDueDate, setNewTaskDueDate] = React.useState(null);
@@ -28,7 +29,7 @@ export function TodoListWidget() {
   const [clearingCompleted, setClearingCompleted] = React.useState(false);
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
 
-  const loadTasks = async () => {
+  const loadTasks = React.useCallback(async () => {
     try {
       const data = await todosAPI.getAll();
       setTasks(data);
@@ -37,13 +38,13 @@ export function TodoListWidget() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   React.useEffect(() => {
     loadTasks();
-  }, []);
+  }, [loadTasks]);
 
-  const handleCreateTask = async () => {
+  const handleCreateTask = React.useCallback(async () => {
     if (!newTaskTitle.trim()) return;
     
     try {
@@ -54,7 +55,7 @@ export function TodoListWidget() {
       }
       console.log("Creating task with data:", taskData);
       const newTask = await todosAPI.create(taskData);
-      setTasks([newTask, ...tasks]);
+      setTasks(prev => [newTask, ...prev]);
       setNewTaskTitle("");
       setNewTaskDueDate(null);
       setShowDatePicker(false);
@@ -64,15 +65,15 @@ export function TodoListWidget() {
     } finally {
       setCreating(false);
     }
-  };
+  }, [newTaskTitle, newTaskDueDate]);
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = React.useCallback((e) => {
     if (e.key === "Enter" && !showDatePicker) {
       handleCreateTask();
     }
-  };
+  }, [showDatePicker, handleCreateTask]);
 
-  const setQuickDate = (days) => {
+  const setQuickDate = React.useCallback((days) => {
     const date = new Date();
     date.setDate(date.getDate() + days);
     setNewTaskDueDate(new CalendarDate(
@@ -80,30 +81,35 @@ export function TodoListWidget() {
       date.getMonth() + 1,
       date.getDate()
     ));
-  };
+  }, []);
 
-  const toggleTask = async (id, currentStatus) => {
+  const toggleTask = React.useCallback(async (id, currentStatus) => {
     // Optimistic update
-    setTasks(tasks.map(t => t.id === id ? { ...t, isCompleted: !currentStatus } : t));
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, isCompleted: !currentStatus } : t));
     
     try {
       await todosAPI.update(id, { isCompleted: !currentStatus });
     } catch (error) {
       console.error("Failed to update task:", error);
       // Revert on error
-      setTasks(tasks.map(t => t.id === id ? { ...t, isCompleted: currentStatus } : t));
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, isCompleted: currentStatus } : t));
     }
-  };
+  }, []);
 
-  const handleClearCompleted = async () => {
-    const completedTasks = tasks.filter(t => t.isCompleted);
-    if (completedTasks.length === 0) return;
-
-    // Show modal instead of window.confirm
+  const handleClearCompleted = React.useCallback(async () => {
+    // We need to access tasks here, but we can't put it in dependency array if we want to memoize well
+    // But since this is a click handler, it's fine to depend on tasks or use functional state update if logic allows
+    // Here we need to check length, so we need tasks.
+    // Actually, we can just check in the render if button is disabled/shown.
+    // But the function itself:
     setShowConfirmModal(true);
-  };
+  }, []);
 
-  const confirmClearCompleted = async () => {
+  const confirmClearCompleted = React.useCallback(async () => {
+    // We need the current tasks state to know which ones to delete
+    // This makes this callback depend on `tasks`.
+    // To avoid re-creating it every time tasks change, we could use a ref for tasks, but that's overkill.
+    // Let's just depend on tasks.
     const completedTasks = tasks.filter(t => t.isCompleted);
 
     try {
@@ -116,16 +122,16 @@ export function TodoListWidget() {
       );
       
       // Update UI - remove completed tasks
-      setTasks(tasks.filter(t => !t.isCompleted));
+      setTasks(prev => prev.filter(t => !t.isCompleted));
     } catch (error) {
       console.error("Failed to clear completed tasks:", error);
       alert(t('pages.dashboard.todoListWidget.clearCompleted.error'));
     } finally {
       setClearingCompleted(false);
     }
-  };
+  }, [tasks, t]);
 
-  const getDueDateStatus = (dueDate) => {
+  const getDueDateStatus = React.useCallback((dueDate) => {
     if (!dueDate) return null;
     const due = new Date(dueDate);
     const now = new Date();
@@ -137,26 +143,38 @@ export function TodoListWidget() {
     if (diffDays === 1) return { status: 'tomorrow', color: 'text-primary-400', icon: 'lucide:calendar' };
     if (diffDays <= 7) return { status: 'upcoming', color: 'text-success-400', icon: 'lucide:calendar' };
     return { status: 'future', color: 'text-default-400', icon: 'lucide:calendar' };
-  };
+  }, []);
 
-  const formatDueDate = (dueDate) => {
+  const formatDueDate = React.useCallback((dueDate) => {
     if (!dueDate) return '';
     const due = new Date(dueDate);
     const now = new Date();
     const diffTime = due - now;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) return t('pages.dashboard.todoListWidget.dateFormatting.overdue', { days: Math.abs(diffDays) });
+    if (diffDays < 0) {
+      const daysOverdue = Math.abs(diffDays);
+      return t('pages.dashboard.todoListWidget.dateFormatting.overdue', { count: daysOverdue, days: daysOverdue });
+    }
     if (diffDays === 0) return t('pages.dashboard.todoListWidget.dateFormatting.today');
     if (diffDays === 1) return t('pages.dashboard.todoListWidget.dateFormatting.tomorrow');
     if (diffDays <= 7) return t('pages.dashboard.todoListWidget.dateFormatting.days', { days: diffDays });
     const locale = getLocaleFromLanguage(i18n.language);
     return due.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
-  };
+  }, [t, i18n.language, getLocaleFromLanguage]);
 
   const locale = getLocaleFromLanguage(i18n.language);
-  const today = new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
-  const completedCount = tasks.filter(t => t.isCompleted).length;
+  const today = React.useMemo(() => new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }), [locale]);
+  const completedCount = React.useMemo(() => tasks.filter(t => t.isCompleted).length, [tasks]);
+
+  const sortedTasks = React.useMemo(() => {
+    return [...tasks]
+      .sort((a, b) => {
+        // Sort by completion status (pending first)
+        if (a.isCompleted === b.isCompleted) return 0;
+        return a.isCompleted ? 1 : -1;
+      });
+  }, [tasks]);
 
   return (
     <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm rounded-3xl">
@@ -355,13 +373,7 @@ export function TodoListWidget() {
           ) : (
 
             <AnimatePresence mode="popLayout">
-              {[...tasks]
-                .sort((a, b) => {
-                  // Sort by completion status (pending first)
-                  if (a.isCompleted === b.isCompleted) return 0;
-                  return a.isCompleted ? 1 : -1;
-                })
-                .map((task) => {
+              {sortedTasks.map((task) => {
                 const dueDateInfo = getDueDateStatus(task.dueDate);
                 return (
                   <motion.div
@@ -479,4 +491,4 @@ export function TodoListWidget() {
       </CardBody>
     </Card>
   );
-}
+});

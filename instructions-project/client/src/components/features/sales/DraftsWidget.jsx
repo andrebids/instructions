@@ -3,31 +3,31 @@ import { Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useTranslation } from "react-i18next";
 
-export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
+export const DraftsWidget = React.memo(({ value, count, goal = 1000000 }) => {
   const { t } = useTranslation();
   // Parse value (e.g. "€ 450k" -> 450000)
-  const parseValue = (str) => {
+  const parseValue = React.useCallback((str) => {
     if (!str) return 0;
     const clean = str.toString().replace(/[^0-9.km]/gi, '');
     let num = parseFloat(clean);
     if (str.toString().toLowerCase().includes('k')) num *= 1000;
     if (str.toString().toLowerCase().includes('m')) num *= 1000000;
     return num;
-  };
+  }, []);
 
   // Format value for display (e.g. 550000 -> "€ 550k")
-  const formatValue = (val) => {
+  const formatValue = React.useCallback((val) => {
     if (val >= 1000000) {
       return `€ ${(val / 1000000).toFixed(1)}M`;
     } else if (val >= 1000) {
       return `€ ${(val / 1000).toFixed(0)}k`;
     }
     return `€ ${val.toFixed(0)}`;
-  };
+  }, []);
 
-  const currentVal = parseValue(value);
-  const gap = Math.max(0, goal - currentVal);
-  const percentage = Math.min(100, Math.max(0, Math.round((currentVal / goal) * 100)));
+  const currentVal = React.useMemo(() => parseValue(value), [value, parseValue]);
+  const gap = React.useMemo(() => Math.max(0, goal - currentVal), [goal, currentVal]);
+  const percentage = React.useMemo(() => Math.min(100, Math.max(0, Math.round((currentVal / goal) * 100))), [currentVal, goal]);
 
   // SVG Configuration for Semi-Circle
   const width = 120;
@@ -42,20 +42,21 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
   // Angle in radians: PI to 0
   // We want to draw from left to right based on percentage
   const totalAngle = Math.PI; 
-  const progressAngle = totalAngle * (percentage / 100);
+  const progressAngle = React.useMemo(() => totalAngle * (percentage / 100), [totalAngle, percentage]);
   
   // Background Arc (Full Semi-Circle)
-  const bgPath = `M ${strokeWidth/2},${cy} A ${radius},${radius} 0 0,1 ${width - strokeWidth/2},${cy}`;
+  const bgPath = React.useMemo(() => `M ${strokeWidth/2},${cy} A ${radius},${radius} 0 0,1 ${width - strokeWidth/2},${cy}`, [strokeWidth, cy, radius, width]);
   
   // Progress Arc
   // We need to calculate the end point based on angle
   // Angle starts at PI (left) and decreases to 0 (right)
   // Current angle = PI - progressAngle
-  const currentAngle = Math.PI - progressAngle;
-  const endX = cx + radius * Math.cos(currentAngle);
-  const endY = cy - radius * Math.sin(currentAngle);
-  
-  const progressPath = `M ${strokeWidth/2},${cy} A ${radius},${radius} 0 0,1 ${endX},${endY}`;
+  const progressPath = React.useMemo(() => {
+    const currentAngle = Math.PI - progressAngle;
+    const endX = cx + radius * Math.cos(currentAngle);
+    const endY = cy - radius * Math.sin(currentAngle);
+    return `M ${strokeWidth/2},${cy} A ${radius},${radius} 0 0,1 ${endX},${endY}`;
+  }, [cx, radius, progressAngle, strokeWidth, cy]);
 
   return (
     <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
@@ -136,4 +137,4 @@ export const DraftsWidget = ({ value, count, goal = 1000000 }) => {
       </CardBody>
     </Card>
   );
-};
+});

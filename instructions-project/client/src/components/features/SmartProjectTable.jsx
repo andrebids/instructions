@@ -30,7 +30,7 @@ const statusColorMap = {
   "ordered": "primary",
 };
 
-export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDeleted }) {
+export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, onProjectDeleted }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [page, setPage] = React.useState(1);
@@ -59,25 +59,27 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
     "ordered": t('pages.dashboard.projectTable.statusLabels.ordered'),
   }), [t]);
 
-  // Mock data augmentation
-  const augmentedProjects = React.useMemo(() => {
-    return projects.map((p, index) => ({
-      ...p,
-      contractType: index % 3 === 0 ? "Sale" : index % 3 === 1 ? "Rent 1Y" : "Rent 3Y",
-      contractTypeKey: index % 3 === 0 ? "sale" : index % 3 === 1 ? "rent1y" : "rent3y",
-      designStatus: index % 2 === 0 ? "Ready" : "Pending",
-      designStatusKey: index % 2 === 0 ? "ready" : "pending",
-      reservationValidity: index % 4 === 0 ? 3 : Math.floor(Math.random() * 10) + 5, // Mock days
-      mockImage: `https://images.unsplash.com/photo-${index % 2 === 0 ? '1576692131261-40e88a446404' : '1512389142660-9c87db076481'}?w=300&h=200&fit=crop`
-    }));
-  }, [projects]);
-
-  const pages = Math.ceil(augmentedProjects.length / rowsPerPage);
+  // Mock data augmentation - Optimized to only process visible items
   const items = React.useMemo(() => {
     const start = (page - 1) * rowsPerPage;
     const end = start + rowsPerPage;
-    return augmentedProjects.slice(start, end);
-  }, [page, augmentedProjects]);
+    const visibleProjects = projects.slice(start, end);
+
+    return visibleProjects.map((p, i) => {
+      const index = start + i;
+      return {
+        ...p,
+        contractType: index % 3 === 0 ? "Sale" : index % 3 === 1 ? "Rent 1Y" : "Rent 3Y",
+        contractTypeKey: index % 3 === 0 ? "sale" : index % 3 === 1 ? "rent1y" : "rent3y",
+        designStatus: index % 2 === 0 ? "Ready" : "Pending",
+        designStatusKey: index % 2 === 0 ? "ready" : "pending",
+        reservationValidity: index % 4 === 0 ? 3 : Math.floor(Math.random() * 10) + 5, // Mock days
+        mockImage: `https://images.unsplash.com/photo-${index % 2 === 0 ? '1576692131261-40e88a446404' : '1512389142660-9c87db076481'}?w=300&h=200&fit=crop`
+      };
+    });
+  }, [page, projects]);
+
+  const pages = Math.ceil(projects.length / rowsPerPage);
 
   const handleToggleFavorite = async (projectId, isFavorite) => {
     try {
@@ -108,29 +110,7 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
           </Button>
         );
       case "name":
-        return (
-          <Tooltip 
-            content={
-              <div className="p-1">
-                <img 
-                  src={project.mockImage} 
-                  alt="Preview" 
-                  className="w-48 h-32 object-cover rounded-lg mb-2" 
-                />
-                <div className="text-xs font-semibold text-center">{t('pages.dashboard.smartProjectTable.tooltip.render')}</div>
-              </div>
-            }
-            delay={0}
-            closeDelay={0}
-            placement="right"
-            className="bg-content1 border border-default-200"
-          >
-            <div className="cursor-pointer hover:text-primary transition-colors" onClick={() => navigate(`/projects/${project.id}`)}>
-              <p className="font-bold text-sm text-foreground">{project.name}</p>
-              <p className="text-xs text-default-500">{project.clientName || project.client}</p>
-            </div>
-          </Tooltip>
-        );
+        return <ProjectNameCell project={project} navigate={navigate} t={t} />;
       case "status":
         const normalizedStatus = project.status?.toLowerCase()?.replace(/\s+/g, '_') || project.status;
         const statusLabel = statusLabelMap[normalizedStatus] || project.status?.replace(/_/g, " ") || project.status;
@@ -258,4 +238,32 @@ export function SmartProjectTable({ projects = [], onProjectsUpdate, onProjectDe
       </CardBody>
     </Card>
   );
-}
+});
+
+// Extracted component for Name Cell with Tooltip to optimize rendering
+const ProjectNameCell = React.memo(({ project, navigate, t }) => {
+  return (
+    <Tooltip 
+      content={
+        <div className="p-1">
+          <img 
+            src={project.mockImage} 
+            alt="Preview" 
+            className="w-48 h-32 object-cover rounded-lg mb-2" 
+            loading="lazy" // Lazy load image
+          />
+          <div className="text-xs font-semibold text-center">{t('pages.dashboard.smartProjectTable.tooltip.render')}</div>
+        </div>
+      }
+      delay={200} // Add delay to prevent accidental triggers
+      closeDelay={0}
+      placement="right"
+      className="bg-content1 border border-default-200"
+    >
+      <div className="cursor-pointer hover:text-primary transition-colors" onClick={() => navigate(`/projects/${project.id}`)}>
+        <p className="font-bold text-sm text-foreground">{project.name}</p>
+        <p className="text-xs text-default-500">{project.clientName || project.client}</p>
+      </div>
+    </Tooltip>
+  );
+});

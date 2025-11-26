@@ -15,8 +15,23 @@ export function ClientAutocomplete({
 
   return (
     <div>
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-sm font-medium" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+          {t('pages.projectDetails.clientAutocomplete.label')}
+          <span className="text-danger ml-1">*</span>
+        </label>
+        <Button
+          size="sm"
+          color="primary"
+          variant="light"
+          className="h-6 min-w-0 px-2 text-xs"
+          onPress={onAddNewClick}
+          startContent={<Icon icon="lucide:plus" className="text-sm" />}
+        >
+          {t('pages.projectDetails.clientAutocomplete.addNewClient')}
+        </Button>
+      </div>
       <Autocomplete
-        label={t('pages.projectDetails.clientAutocomplete.label')}
         placeholder={t('pages.projectDetails.clientAutocomplete.placeholder')}
         isRequired
         onSelectionChange={onSelectionChange}
@@ -31,9 +46,11 @@ export function ClientAutocomplete({
         inputValue={inputValue}
         onInputChange={onInputChange}
         classNames={{
-          label: "text-primary-700 dark:text-primary-400 font-semibold",
           input: "text-foreground font-medium",
-          inputWrapper: "bg-content1 border-2 border-divider hover:border-primary focus-within:border-primary"
+          inputWrapper: "border-2 border-divider hover:border-primary focus-within:border-primary"
+        }}
+        style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.05)'
         }}
       >
         {(client) => (
@@ -45,17 +62,6 @@ export function ClientAutocomplete({
           </AutocompleteItem>
         )}
       </Autocomplete>
-      
-      <Button
-        size="sm"
-        color="primary"
-        variant="flat"
-        className="mt-2"
-        onPress={onAddNewClick}
-        startContent={<Icon icon="lucide:plus" />}
-      >
-        {t('pages.projectDetails.clientAutocomplete.addNewClient')}
-      </Button>
     </div>
   );
 }

@@ -3,18 +3,19 @@ import { Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useTranslation } from "react-i18next";
 
-export const ConversionWidget = ({ value, trend, won = 34, lost = 16 }) => {
+export const ConversionWidget = React.memo(({ value, trend, won = 34, lost = 16 }) => {
   const { t } = useTranslation();
+  
   // Calculate win rate percentage
   const total = won + lost;
-  const winRate = total > 0 ? Math.round((won / total) * 100) : 0;
+  const winRate = React.useMemo(() => total > 0 ? Math.round((won / total) * 100) : 0, [won, total]);
   
   // SVG Configuration
   const size = 110;
   const strokeWidth = 10;
   const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (winRate / 100) * circumference;
+  const circumference = React.useMemo(() => 2 * Math.PI * radius, [radius]);
+  const offset = React.useMemo(() => circumference - (winRate / 100) * circumference, [circumference, winRate]);
 
   return (
     <Card className="h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm overflow-hidden relative group">
@@ -109,4 +110,4 @@ export const ConversionWidget = ({ value, trend, won = 34, lost = 16 }) => {
       </CardBody>
     </Card>
   );
-};
+});
