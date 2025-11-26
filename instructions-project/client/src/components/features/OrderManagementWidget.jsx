@@ -34,21 +34,21 @@ const MOCK_ORDERS = [
 
 const STATUS_CONFIG = {
   critical: {
-    color: "text-red-500",
+    color: "text-red-600 dark:text-red-500",
     bg: "bg-red-500",
-    bgTinted: "bg-red-500/5",
+    bgTinted: "bg-red-500/15 dark:bg-red-500/5",
     icon: "lucide:alert-circle"
   },
   pending: {
-    color: "text-yellow-500",
+    color: "text-yellow-600 dark:text-yellow-500",
     bg: "bg-yellow-500",
-    bgTinted: "bg-yellow-500/5",
+    bgTinted: "bg-yellow-500/15 dark:bg-yellow-500/5",
     icon: "lucide:clock"
   },
   normal: {
-    color: "text-blue-500",
+    color: "text-blue-600 dark:text-blue-500",
     bg: "bg-blue-500",
-    bgTinted: "bg-blue-500/5",
+    bgTinted: "bg-blue-500/15 dark:bg-blue-500/5",
     icon: "lucide:check-circle-2"
   }
 };
@@ -181,7 +181,7 @@ const OrderItem = React.memo(({ order, index }) => {
         <Button
           size="sm"
           variant="bordered"
-          className="border-zinc-300/50 dark:border-zinc-700/50 bg-white/5 backdrop-blur-md text-zinc-600 dark:text-zinc-300 hover:bg-white/20 hover:border-zinc-300 dark:hover:border-zinc-600 hover:scale-105 active:scale-95 transition-all duration-300 flex-1 sm:flex-none sm:min-w-[80px]"
+          className="border-zinc-400 dark:border-zinc-700/50 bg-white/10 dark:bg-white/5 backdrop-blur-md text-zinc-700 dark:text-zinc-300 hover:bg-white/30 dark:hover:bg-white/20 hover:border-zinc-500 dark:hover:border-zinc-600 hover:scale-105 active:scale-95 transition-all duration-300 flex-1 sm:flex-none sm:min-w-[80px]"
           onPress={onExtendOpen}
         >
           <span>{t('pages.dashboard.orderManagement.extend')}</span>
@@ -190,7 +190,7 @@ const OrderItem = React.memo(({ order, index }) => {
         {/* Confirm Button (Primary) */}
         <Button
           size="sm"
-          className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/50 hover:border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] backdrop-blur-md font-semibold hover:scale-105 active:scale-95 transition-all duration-300 flex-1 sm:flex-none sm:min-w-[90px]"
+          className="bg-emerald-500/20 dark:bg-emerald-500/10 hover:bg-emerald-500/30 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-600 dark:border-emerald-500/50 hover:border-emerald-700 dark:hover:border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)] hover:shadow-[0_0_20px_rgba(16,185,129,0.35)] backdrop-blur-md font-semibold hover:scale-105 active:scale-95 transition-all duration-300 flex-1 sm:flex-none sm:min-w-[90px]"
           onPress={onConfirmOpen}
         >
           <span>{t('pages.dashboard.orderManagement.confirm')}</span>

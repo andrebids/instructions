@@ -51,11 +51,10 @@ export const ConversionWidget = React.memo(({ value, trend, won = 34, lost = 16 
                 cx={size / 2}
                 cy={size / 2}
                 r={radius}
-                stroke={isLightMode ? "#d1d5db" : "currentColor"}
+                stroke={isLightMode ? "#d1d5db" : "rgba(255, 255, 255, 0.15)"}
                 strokeWidth={strokeWidth}
                 fill="transparent"
-                className={isLightMode ? "" : "text-default-200/20"}
-                style={isLightMode ? { opacity: 0.8 } : {}}
+                strokeLinecap="round"
               />
               
               {/* Progress */}

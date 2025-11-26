@@ -343,7 +343,7 @@ ul[data-type="taskList"] li[data-checked="true"]>div {
   overflow: hidden;
 
   /* Light mode (default) - Enhanced effect */
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.1),

@@ -80,7 +80,7 @@ export const DraftsWidget = React.memo(({ value, count, goal = 1000000 }) => {
               <Icon icon="lucide:target" className="text-xl text-blue-400" />
             </div>
             <div className="flex flex-col">
-              <span className="text-default-500 text-sm font-medium">{t('pages.dashboard.salesGoalWidget.annualGoal')}</span>
+              <span className="text-gray-600 dark:text-default-500 text-sm font-semibold">{t('pages.dashboard.salesGoalWidget.annualGoal')}</span>
               <span className="text-default-900 text-base font-bold">{formatValue(goal)}</span>
             </div>
           </div>
@@ -89,13 +89,13 @@ export const DraftsWidget = React.memo(({ value, count, goal = 1000000 }) => {
         {/* Value Display */}
         <div className="mt-2 mb-2">
           <h4 className="text-3xl font-bold text-foreground leading-none">{formatValue(gap)}</h4>
-          <span className="text-xs text-default-400 mt-0.5">{t('pages.dashboard.salesGoalWidget.toGo')}</span>
+          <span className="text-xs text-gray-500 dark:text-default-400 font-medium mt-0.5">{t('pages.dashboard.salesGoalWidget.toGo')}</span>
         </div>
 
         {/* Content */}
         <div className="flex items-end justify-between flex-1 gap-4 pt-0">
           <div className="flex flex-col gap-1 justify-end pb-6">
-             <span className="text-xs text-default-400 font-medium">
+             <span className="text-xs text-gray-500 dark:text-default-400 font-medium">
                {t('pages.dashboard.salesGoalWidget.completedLabel')}: {value} • {percentage}%
              </span>
           </div>
