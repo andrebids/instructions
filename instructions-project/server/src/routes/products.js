@@ -7,6 +7,7 @@ const router = express.Router();
 
 // Rotas de produtos
 router.get('/source-images', productController.getSourceImages); // Deve vir antes de /search
+router.get('/trending', productController.getTrending); // Trending products (optimized)
 router.get('/colors', productController.getAvailableColors); // Buscar cores disponíveis
 router.get('/categories', productController.getCategories); // Buscar categorias disponíveis
 router.get('/search', productController.search); // Deve vir antes de /:id

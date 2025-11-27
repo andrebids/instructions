@@ -307,6 +307,17 @@ export const decorationsAPI = {
 
 // ===== PRODUCTS API =====
 export const productsAPI = {
+  // GET /api/products/trending - Buscar produtos trending (otimizado)
+  getTrending: async () => {
+    try {
+      const response = await api.get('/products/trending');
+      return response.data;
+    } catch (error) {
+      console.error('❌ [API Client] Erro ao chamar productsAPI.getTrending:', error);
+      throw error;
+    }
+  },
+
   // GET /api/products
   getAll: async (params = {}) => {
     try {

@@ -35,7 +35,7 @@ const getImageUrl = (imagePath) => {
   }
 };
 
-export const RecommendedProductsWidget = () => {
+export const RecommendedProductsWidget = React.memo(() => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -44,19 +44,20 @@ export const RecommendedProductsWidget = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const data = await productsAPI.getAll();
-        
-        // Prefer products with Night Images (using correct field name: imagesNightUrl)
-        let trending = data.filter(p => p.imagesNightUrl).slice(0, 5);
-        
-        // Fallback: if no night images, use products with day images or thumbnails
-        if (trending.length === 0) {
-          trending = data.filter(p => p.imagesDayUrl || p.thumbnailUrl).slice(0, 5);
-        }
-        
-        setProducts(trending);
+        // Use optimized trending endpoint instead of getAll
+        const data = await productsAPI.getTrending();
+        setProducts(data);
       } catch (error) {
-        console.error("❌ Failed to fetch recommended products:", error);
+        console.error("❌ Failed to fetch trending products:", error);
+        // Fallback to getAll if trending endpoint fails
+        try {
+          const fallbackData = await productsAPI.getAll();
+          // Filter products with night images
+          const trending = fallbackData.filter(p => p.imagesNightUrl).slice(0, 5);
+          setProducts(trending);
+        } catch (fallbackError) {
+          console.error("❌ Fallback also failed:", fallbackError);
+        }
       } finally {
         setLoading(false);
       }
@@ -64,6 +65,28 @@ export const RecommendedProductsWidget = () => {
 
     fetchProducts();
   }, []);
+
+  // Preload next image for smoother transitions
+  useEffect(() => {
+    if (products.length > 0) {
+      const nextIndex = (activeIndex + 1) % products.length;
+      const nextProduct = products[nextIndex];
+      if (nextProduct) {
+        const nextImageUrl = getImageUrl(nextProduct.imagesNightUrl) || 
+                            getImageUrl(nextProduct.imagesDayUrl) || 
+                            getImageUrl(nextProduct.thumbnailUrl);
+        if (nextImageUrl) {
+          const img = new Image();
+          img.src = nextImageUrl;
+        }
+      }
+    }
+  }, [activeIndex, products]);
+
+  // Memoize current product to avoid recalculation
+  const currentProduct = React.useMemo(() => {
+    return products[activeIndex];
+  }, [products, activeIndex]);
 
   if (loading) {
     return (
@@ -80,8 +103,6 @@ export const RecommendedProductsWidget = () => {
       </div>
     );
   }
-
-  const currentProduct = products[activeIndex];
 
   return (
     <div className="relative h-full w-full overflow-hidden group isolate">
@@ -186,7 +207,7 @@ export const RecommendedProductsWidget = () => {
       </div>
       
       {/* Custom Pagination Styles */}
-      <style jsx global>{`
+      <style>{`
         .swiper-pagination-bullet {
           width: 6px;
           height: 6px;
@@ -208,4 +229,4 @@ export const RecommendedProductsWidget = () => {
       `}</style>
     </div>
   );
-};
+});
