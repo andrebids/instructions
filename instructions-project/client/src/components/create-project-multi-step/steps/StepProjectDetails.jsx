@@ -176,7 +176,6 @@ export function StepProjectDetails({
               />
               {formData.category === 'ao_tender' && (
                 <div className="flex items-center gap-1.5 mt-1.5 text-orange-400 animate-appearance-in">
-                  <Icon icon="lucide:alert-triangle" className="text-xs" />
                   <span className="text-xs font-medium">
                     {t('pages.projectDetails.strictDeadline')}
                   </span>

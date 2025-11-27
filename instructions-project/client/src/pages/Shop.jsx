@@ -6,8 +6,9 @@ import { useShop } from "../context/ShopContext";
 import TrendingFiltersSidebar from "../components/shop/TrendingFiltersSidebar";
 import ProductGrid from "../components/shop/ProductGrid";
 import OrderAssignModal from "../components/shop/OrderAssignModal";
+import ProductModal from "../components/shop/ProductModal";
 import { PageTitle } from "../components/layout/page-title";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import {
   compareProductsByTagHierarchy,
@@ -20,6 +21,7 @@ import { Scroller } from "../components/ui/scroller";
 export default function Shop() {
   const { products } = useShop();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { userName } = useUser();
   const { isHandheld } = useResponsiveProfile();
   const { theme } = useTheme();
@@ -31,6 +33,9 @@ export default function Shop() {
   const [query, setQuery] = React.useState("");
   const [sort, setSort] = React.useState("relevance");
   const [cols, setCols] = React.useState(4);
+  const [productModalOpen, setProductModalOpen] = React.useState(false);
+  const [selectedProduct, setSelectedProduct] = React.useState(null);
+  const productFromUrlRef = React.useRef(null);
   const mainDescription = "Browse all our products and find what you need.";
 
   // Price limits and range - based on all products (no category filter)
@@ -252,6 +257,46 @@ export default function Shop() {
     return list;
   }, [products, filters, query, sort, priceRange, stockRange]);
 
+  // Handle product query parameter to open modal
+  React.useEffect(() => {
+    const productId = searchParams.get('product');
+    if (productId && products && products.length > 0) {
+      const product = products.find(p => String(p.id) === String(productId));
+      if (product) {
+        setSelectedProduct(product);
+        productFromUrlRef.current = product; // Preserve product reference
+        setProductModalOpen(true);
+      }
+    } else if (!productId && productFromUrlRef.current && !productModalOpen) {
+      // Query parameter was removed and modal is closed - clear the product after a delay
+      // This delay allows Compare modal to reopen ProductModal if needed
+      const timeoutId = setTimeout(() => {
+        if (!productModalOpen) {
+          productFromUrlRef.current = null;
+          setSelectedProduct(null);
+        }
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [searchParams, products, productModalOpen]);
+
+  // Handle modal close and remove query parameter
+  const handleProductModalClose = React.useCallback((isOpen) => {
+    setProductModalOpen(isOpen);
+    if (!isOpen) {
+      // Remove product parameter from URL when modal closes
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('product');
+      setSearchParams(newSearchParams, { replace: true });
+      // Don't clear selectedProduct immediately - preserve it in productFromUrlRef for Compare modal reopening
+    } else if (isOpen) {
+      // Modal is being opened - ensure product is set from ref if it exists
+      if (productFromUrlRef.current) {
+        setSelectedProduct(productFromUrlRef.current);
+      }
+    }
+  }, [searchParams, setSearchParams]);
+
   return (
     <Scroller className={`flex-1 min-h-0 p-6 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>
       <PageTitle title="Stock Catalogue" userName={userName} lead={`Here's your catalog, ${userName}`} subtitle={mainDescription} />
@@ -390,6 +435,13 @@ export default function Shop() {
         onOpenChange={setAssignOpen}
         product={selected.product}
         variant={selected.variant}
+      />
+
+      <ProductModal
+        isOpen={productModalOpen}
+        onOpenChange={handleProductModalClose}
+        product={selectedProduct}
+        onOrder={(product, variant) => { setSelected({ product, variant }); setAssignOpen(true); }}
       />
     </Scroller>
   );

@@ -201,7 +201,7 @@ export const RecommendedProductsWidget = React.memo(() => {
           size="sm"
           className="bg-white/10 backdrop-blur-md border border-white/20 text-white font-medium hover:bg-white/20 transition-all duration-300 group/btn mt-3"
           endContent={<Icon icon="lucide:arrow-right" className="group-hover/btn:translate-x-1 transition-transform" />}
-          onPress={() => navigate(`/shop/product/${currentProduct.id}`)}
+          onPress={() => navigate(`/stock-catalogue?product=${currentProduct.id}`)}
         >
           View Product
         </Button>

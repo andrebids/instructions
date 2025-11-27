@@ -4,8 +4,12 @@ function isValidImageUrl(url) {
   var trimmed = url.trim();
   if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') return false;
   // Filtrar URLs temporárias que não existem mais
-  // REMOVIDO: Agora permitimos URLs temporárias pois o upload pode ter gerado nomes com "temp"
-  // if (trimmed.includes('temp_nightImage_') || trimmed.includes('temp_') || trimmed.includes('/temp/')) return false;
+  // Estas são criadas durante upload mas nunca são persistidas permanentemente
+  if (trimmed.includes('temp_nightImage_') || 
+      trimmed.includes('temp_dayImage_') ||
+      (trimmed.includes('temp_') && trimmed.includes('/uploads/'))) {
+    return false;
+  }
   return true;
 }
 
