@@ -530,3 +530,24 @@ ul[data-type="taskList"] li[data-checked="true"]>div {
   background: rgba(var(--color-danger), 0.3);
   transform: scale(1.05);
 }
+
+/* =========================================
+   ANIMATIONS
+   ========================================= */
+@keyframes subtle-zoom {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-subtle-zoom {
+  animation: subtle-zoom 10s ease-in-out infinite;
+}

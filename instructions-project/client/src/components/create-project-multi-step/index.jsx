@@ -265,37 +265,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
 
   return (
     <div className="w-full h-full flex flex-col min-h-0 relative">
-      {/* Animated Gradient Background for Glassmorphism */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute w-96 h-96 rounded-full blur-3xl opacity-30 animate-float-slow"
-          style={{
-            background: 'radial-gradient(circle, rgba(139, 92, 246, 0.6) 0%, rgba(59, 130, 246, 0.4) 50%, transparent 100%)',
-            top: '10%',
-            left: '20%',
-            animation: 'float-slow 20s ease-in-out infinite'
-          }}
-        />
-        <div 
-          className="absolute w-80 h-80 rounded-full blur-3xl opacity-25 animate-float-medium"
-          style={{
-            background: 'radial-gradient(circle, rgba(59, 130, 246, 0.5) 0%, rgba(139, 92, 246, 0.3) 50%, transparent 100%)',
-            bottom: '15%',
-            right: '15%',
-            animation: 'float-medium 15s ease-in-out infinite reverse'
-          }}
-        />
-        <div 
-          className="absolute w-72 h-72 rounded-full blur-3xl opacity-20"
-          style={{
-            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, rgba(59, 130, 246, 0.2) 50%, transparent 100%)',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            animation: 'float-slow 25s ease-in-out infinite'
-          }}
-        />
-      </div>
+      {/* Animated Gradient Background removed */}
 
       {/* Glassmorphism Card */}
       <Card 
@@ -310,16 +280,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
         }}
       >
         <div className="flex flex-col h-full min-h-0">
-          <style jsx>{`
-            @keyframes float-slow {
-              0%, 100% { transform: translate(0, 0); }
-              50% { transform: translate(30px, -30px); }
-            }
-            @keyframes float-medium {
-              0%, 100% { transform: translate(0, 0); }
-              50% { transform: translate(-20px, 20px); }
-            }
-          `}</style>
+
           {/* Top bar + horizontal stepper */}
           <div className="w-full bg-content1 px-4 py-2 sm:px-6 sm:py-3 border-b border-divider flex-shrink-0">
             <div className="flex items-center gap-4 justify-between">

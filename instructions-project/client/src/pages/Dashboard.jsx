@@ -206,12 +206,12 @@ export default function Dashboard() {
                 <div className="col-span-12 lg:col-span-8 space-y-6">
                   {/* Hero Widget */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-auto md:h-64">
-                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/30 via-slate-800/20 to-zinc-900/30 border border-transparent p-8 flex flex-col justify-center group shadow-lg">
+                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/30 via-slate-800/20 to-zinc-900/30 border border-white/10 p-8 flex flex-col justify-center group shadow-lg">
                       {/* Dark Background Base */}
                       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-black to-slate-950 rounded-3xl" />
                       
                       {/* Galaxy Background */}
-                      <div className="absolute inset-0 z-0 opacity-50 pointer-events-none overflow-hidden rounded-3xl">
+                      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden rounded-3xl">
                         <Galaxy 
                           transparent={true}
                           mouseInteraction={true}
