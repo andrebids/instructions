@@ -17,6 +17,7 @@
     "insert:trending": "node src/scripts/insert-trending-products.js",
     "create:test-products": "node src/scripts/create-test-products.js",
     "update:test-images": "node src/scripts/update-test-products-images.js",
+    "check:images": "node src/scripts/check-missing-images.js",
     "migrate": "node src/migrations/add-canvas-fields.js",
     "migrate:products": "node src/migrations/add-product-category-fields.js",
     "migrate:dimensions": "node src/migrations/add-product-dimensions-fields.js",

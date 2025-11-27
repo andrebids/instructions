@@ -1,5 +1,6 @@
 import sequelize from '../config/database.js';
 import { Product } from '../models/index.js';
+import { resolveImagePath } from '../utils/imagePathResolver.js';
 
 // Função helper para processar imagens mock
 function processImages(images) {
@@ -8,6 +9,27 @@ function processImages(images) {
   var dayUrl = images.day || null;
   var nightUrl = images.night || null;
   var colors = images.colors || {};
+  
+  // Validar e corrigir caminhos de imagens usando utilitário profissional
+  if (dayUrl) {
+    const validatedDay = resolveImagePath(dayUrl);
+    if (!validatedDay) {
+      console.warn(`⚠️ [INSERT] Imagem diurna não encontrada: ${dayUrl}`);
+      dayUrl = null; // Definir como null se validação falhar
+    } else {
+      dayUrl = validatedDay;
+    }
+  }
+  
+  if (nightUrl) {
+    const validatedNight = resolveImagePath(nightUrl);
+    if (!validatedNight) {
+      console.warn(`⚠️ [INSERT] Imagem noturna não encontrada: ${nightUrl}`);
+      nightUrl = null; // Definir como null se validação falhar
+    } else {
+      nightUrl = validatedNight;
+    }
+  }
   
   // Converter cores para objeto simples com URLs
   var availableColors = {};
@@ -171,7 +193,7 @@ var trendingProducts = [
     videoFile: "IPL337W.webm",
     images: {
       day: "/SHOP/TRENDING/DAY/IPL337W.webp",
-      night: "/SHOP/TRENDING/NIGHT/IPL337W.webp",
+      night: "/SHOP/TRENDING/NIGHT/IPL337W.webp", // Ficheiro real no servidor: IPL337W.webp
       colors: { brancoQuente: "/demo-images/decorations/star_warm.jpg" },
     },
     tags: ["trending"],
@@ -199,7 +221,7 @@ var trendingProducts = [
     videoFile: "IPL337.webm",
     images: {
       day: "/SHOP/TRENDING/DAY/IPL337.webp",
-      night: "/SHOP/TRENDING/NIGHT/IPL337.webp",
+      night: "/SHOP/TRENDING/NIGHT/IPL337.webp", // Ficheiro real no servidor: IPL337.webp
       colors: { brancoPuro: "/demo-images/decorations/star_white.jpg" },
     },
     tags: ["trending", "summer"],
@@ -244,6 +266,51 @@ async function insertTrendingProducts() {
     for (var j = 0; j < productsData.length; j++) {
       var productData = productsData[j];
       
+      // Validar que a imagem night existe antes de inserir
+      const validatedNightUrl = productData.imagesNightUrl ? resolveImagePath(productData.imagesNightUrl) : null;
+      
+      if (!validatedNightUrl) {
+        console.warn('⚠️ [INSERT] Produto ignorado - sem imagem night válida: ' + productData.name + ' (ID: ' + productData.id + ')');
+        console.warn('   Caminho esperado: ' + productData.imagesNightUrl);
+        skipped++;
+        continue;
+      }
+      
+      // Atualizar com o caminho validado
+      productData.imagesNightUrl = validatedNightUrl;
+      
+      // Validar e atualizar day e thumbnail também
+      if (productData.imagesDayUrl) {
+        const validatedDayUrl = resolveImagePath(productData.imagesDayUrl);
+        if (validatedDayUrl) {
+          productData.imagesDayUrl = validatedDayUrl;
+        } else {
+          // Se validação falhar, definir como null em vez de manter caminho não validado
+          productData.imagesDayUrl = null;
+        }
+      }
+      
+      if (productData.thumbnailUrl) {
+        const validatedThumbUrl = resolveImagePath(productData.thumbnailUrl);
+        if (validatedThumbUrl) {
+          productData.thumbnailUrl = validatedThumbUrl;
+        } else {
+          // Se validação falhar, definir como null em vez de manter caminho não validado
+          productData.thumbnailUrl = null;
+        }
+      }
+      
+      // Definir thumbnail apenas se não existe e há uma imagem válida disponível
+      if (!productData.thumbnailUrl) {
+        if (productData.imagesDayUrl) {
+          // Se não há thumbnail mas há day image válida, usar day como thumbnail
+          productData.thumbnailUrl = productData.imagesDayUrl;
+        } else {
+          // Se não há day, usar night como thumbnail (já validado acima)
+          productData.thumbnailUrl = validatedNightUrl;
+        }
+      }
+      
       // Verificar se o produto já existe
       var existingProduct = await Product.findByPk(productData.id);
       
@@ -252,17 +319,20 @@ async function insertTrendingProducts() {
         await existingProduct.update(productData);
         updated++;
         console.log('🔄 Produto atualizado: ' + productData.name + ' (ID: ' + productData.id + ')');
+        console.log('   ✅ Imagem night: ' + validatedNightUrl);
       } else {
         // Criar novo produto
         await Product.create(productData);
         inserted++;
         console.log('✅ Produto criado: ' + productData.name + ' (ID: ' + productData.id + ')');
+        console.log('   ✅ Imagem night: ' + validatedNightUrl);
       }
     }
 
     console.log('\n📊 Resumo da inserção:');
     console.log('   - Produtos criados: ' + inserted);
     console.log('   - Produtos atualizados: ' + updated);
+    console.log('   - Produtos ignorados (sem imagem night): ' + skipped);
     console.log('   - Total processado: ' + (inserted + updated));
     console.log('🎉 Inserção de produtos trending concluída com sucesso!');
     

@@ -3,7 +3,12 @@ import { Op, QueryTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { generateThumbnail, processImageToWebP } from '../utils/imageUtils.js';
+import { resolveImagePath, validateProductImages, validateProductImagesFormat } from '../utils/imagePathResolver.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Função helper para atualizar tag "new" baseado no releaseYear mais recente
 async function updateNewTagForProducts() {
@@ -450,6 +455,19 @@ export async function getAll(req, res) {
             plainProduct.updatedAt = plainProduct.updatedAt.toISOString();
           }
 
+          // Validar formato de caminhos de imagens (sem verificar filesystem)
+          // Confia na base de dados e filtra apenas imagens temporárias problemáticas
+          const validatedImages = validateProductImagesFormat({
+            imagesNightUrl: plainProduct.imagesNightUrl,
+            imagesDayUrl: plainProduct.imagesDayUrl,
+            thumbnailUrl: plainProduct.thumbnailUrl,
+          });
+
+          // Atualizar apenas com imagens válidas
+          plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
+          plainProduct.imagesDayUrl = validatedImages.imagesDayUrl;
+          plainProduct.thumbnailUrl = validatedImages.thumbnailUrl;
+
           productsData.push(plainProduct);
         } catch (err) {
           console.error('❌ [PRODUCTS API] Erro ao serializar produto ' + (products[i].id || 'unknown') + ':', err);
@@ -530,6 +548,12 @@ let trendingCache = {
   ttl: 5 * 60 * 1000 // 5 minutes
 };
 
+// Função para limpar cache manualmente
+export function clearTrendingCache() {
+  trendingCache.data = null;
+  trendingCache.timestamp = null;
+}
+
 // GET /api/products/trending - Listar produtos trending (otimizado para performance)
 export async function getTrending(req, res) {
   try {
@@ -602,7 +626,24 @@ export async function getTrending(req, res) {
         if (isNaN(plainProduct.stock)) plainProduct.stock = 0;
       }
 
+      // Validar formato de caminhos de imagens (sem verificar filesystem)
+      // Confia na base de dados e filtra apenas imagens temporárias problemáticas
+      const validatedImages = validateProductImagesFormat({
+        imagesNightUrl: plainProduct.imagesNightUrl,
+        imagesDayUrl: plainProduct.imagesDayUrl,
+        thumbnailUrl: plainProduct.thumbnailUrl,
+      });
+
+      // Atualizar apenas com imagens válidas
+      plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
+      plainProduct.imagesDayUrl = validatedImages.imagesDayUrl;
+      plainProduct.thumbnailUrl = validatedImages.thumbnailUrl;
+
       return plainProduct;
+    }).filter(function (p) {
+      // IMPORTANTE: Filtrar apenas produtos que têm imagem NIGHT válida
+      // O widget só precisa da versão night
+      return p.imagesNightUrl !== null;
     });
 
     // Update cache
@@ -654,7 +695,22 @@ export async function search(req, res) {
 
     // Converter produtos para objetos simples
     var productsData = products.map(function (p) {
-      return p.get({ plain: true });
+      var plainProduct = p.get({ plain: true });
+      
+      // Validar formato de caminhos de imagens (sem verificar filesystem)
+      // Confia na base de dados e filtra apenas imagens temporárias problemáticas
+      const validatedImages = validateProductImagesFormat({
+        imagesNightUrl: plainProduct.imagesNightUrl,
+        imagesDayUrl: plainProduct.imagesDayUrl,
+        thumbnailUrl: plainProduct.thumbnailUrl,
+      });
+
+      // Atualizar apenas com imagens válidas
+      plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
+      plainProduct.imagesDayUrl = validatedImages.imagesDayUrl;
+      plainProduct.thumbnailUrl = validatedImages.thumbnailUrl;
+      
+      return plainProduct;
     });
 
     res.json(productsData);
@@ -792,6 +848,19 @@ export async function getById(req, res) {
     if (productData.updatedAt && productData.updatedAt instanceof Date) {
       productData.updatedAt = productData.updatedAt.toISOString();
     }
+
+    // Validar formato de caminhos de imagens (sem verificar filesystem)
+    // Confia na base de dados e filtra apenas imagens temporárias problemáticas
+    const validatedImages = validateProductImagesFormat({
+      imagesNightUrl: productData.imagesNightUrl,
+      imagesDayUrl: productData.imagesDayUrl,
+      thumbnailUrl: productData.thumbnailUrl,
+    });
+
+    // Atualizar apenas com imagens válidas
+    productData.imagesNightUrl = validatedImages.imagesNightUrl;
+    productData.imagesDayUrl = validatedImages.imagesDayUrl;
+    productData.thumbnailUrl = validatedImages.thumbnailUrl;
 
     res.json(productData);
   } catch (error) {

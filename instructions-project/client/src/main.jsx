@@ -110,6 +110,17 @@ if (typeof window !== 'undefined') {
       event.stopPropagation();
       return false;
     }
+
+    // Filtrar erros do React DevTools relacionados a validação de versão semver
+    // Este erro ocorre quando o React DevTools tenta validar uma versão vazia
+    // É um problema conhecido com React 19 e não afeta a funcionalidade
+    if (message.includes('Invalid argument not valid semver') ||
+        message.includes('not valid semver') ||
+        (source.includes('react_devtools') && message.includes('semver'))) {
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    }
   }, true);
 
   // Também interceptar eventos de unhandledrejection para erros de fetch e WebSocket
@@ -132,6 +143,13 @@ if (typeof window !== 'undefined') {
     if (message.includes('WebSocket') ||
       message.includes('ERR_CONNECTION_REFUSED') ||
       message.includes('localhost')) {
+      event.preventDefault();
+      return false;
+    }
+
+    // Filtrar erros do React DevTools relacionados a validação de versão semver
+    if (message.includes('Invalid argument not valid semver') ||
+        message.includes('not valid semver')) {
       event.preventDefault();
       return false;
     }
@@ -172,6 +190,15 @@ console.error = function (...args) {
       String(firstArg).includes('@vite')) {
       return;
     }
+  }
+
+  // Filtrar erros do React DevTools relacionados a validação de versão semver
+  // Este erro ocorre quando o React DevTools tenta validar uma versão vazia
+  // É um problema conhecido com React 19 e não afeta a funcionalidade
+  if (message.includes('Invalid argument not valid semver') ||
+      message.includes('not valid semver') ||
+      (String(firstArg).includes('react_devtools') && message.includes('semver'))) {
+    return;
   }
 
   originalError.apply(console, args);
