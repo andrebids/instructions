@@ -10,6 +10,7 @@ import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 import { Scroller } from "../components/ui/scroller";
 import { useTranslation } from "react-i18next";
 import { useVoiceAssistant } from "../context/VoiceAssistantContext";
+import { useLayout } from "../context/LayoutContext";
 import Galaxy from "../components/ui/Galaxy";
 
 import { TodoListWidget } from "../components/features/TodoListWidget";
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const { t } = useTranslation();
   const { userName } = useUser();
   const { updateDashboardContext } = useVoiceAssistant();
+  const { setShowCreateProjectForm } = useLayout();
   const [showCreateProject, setShowCreateProject] = React.useState(false);
   const [projects, setProjects] = React.useState([]);
   const [stats, setStats] = React.useState({
@@ -160,9 +162,13 @@ export default function Dashboard() {
     return () => abortController.abort();
   }, []);
 
-  const handleCreateProject = () => setShowCreateProject(true);
+  const handleCreateProject = () => {
+    setShowCreateProject(true);
+    setShowCreateProjectForm(true);
+  };
   const handleCloseCreateProject = () => {
     setShowCreateProject(false);
+    setShowCreateProjectForm(false);
     loadData();
   };
 

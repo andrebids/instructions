@@ -115,7 +115,7 @@ export const RecommendedProductsWidget = () => {
                   'https://placehold.co/600x400?text=Product'
                 } 
                 alt={product.name}
-                className="w-full h-full object-contain transition-transform duration-500 ease-out scale-100 group-hover:scale-105"
+                className="w-full h-full object-contain transition-transform duration-500 ease-out animate-subtle-zoom"
               />
             </div>
             {/* Dark gradient overlay for text readability */}

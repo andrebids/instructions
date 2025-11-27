@@ -25,10 +25,12 @@ import { NotificationProvider } from "./context/NotificationContext";
 import { NotificationContainer } from "./components/notifications/NotificationContainer";
 import { useTheme } from "@heroui/use-theme";
 import Aurora from "./components/ui/Aurora";
+import { LayoutProvider, useLayout } from "./context/LayoutContext";
 
 function AppLayout() {
   const { isHandheld } = useResponsiveProfile();
   const showSidebar = !isHandheld;
+  const { showCreateProjectForm } = useLayout();
   const { theme } = useTheme();
   const [isDark, setIsDark] = React.useState(() => {
     if (typeof document !== 'undefined') {
@@ -60,7 +62,7 @@ function AppLayout() {
 
   return (
     <div className="bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background text-foreground flex h-screen relative">
-      {isDark && (
+      {isDark && !showCreateProjectForm && (
         <div className="fixed inset-0 z-0 pointer-events-none">
           <Aurora
             colorStops={["#03135F", "#1A2B79", "#03135F"]}
@@ -144,7 +146,7 @@ export default function App() {
 
   return (
     <NotificationProvider>
-      <>
+      <LayoutProvider>
         <PWAInstallPrompt />
         <UpdateNotification />
         <OfflineReadyNotification />
@@ -175,7 +177,7 @@ export default function App() {
         <SignedIn>
           <AppLayout />
         </SignedIn>
-      </>
+      </LayoutProvider>
     </NotificationProvider>
   );
 }
