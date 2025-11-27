@@ -1,6 +1,6 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Header } from "../components/layout/header";
-import { Button, Spinner, Card, CardBody } from "@heroui/react";
+import { Button, Spinner, Card, CardBody, Skeleton } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { projectsAPI } from "../services/api";
 import { PageTitle } from "../components/layout/page-title";
@@ -11,7 +11,7 @@ import { Scroller } from "../components/ui/scroller";
 import { useTranslation } from "react-i18next";
 import { useVoiceAssistant } from "../context/VoiceAssistantContext";
 import { useLayout } from "../context/LayoutContext";
-import Galaxy from "../components/ui/Galaxy";
+// import Galaxy from "../components/ui/Galaxy"; // Lazy loaded below
 
 import { TodoListWidget } from "../components/features/TodoListWidget";
 import { SmartProjectTable } from "../components/features/SmartProjectTable";
@@ -22,6 +22,8 @@ import { ConversionWidget } from "../components/features/sales/ConversionWidget"
 import { OrderManagementWidget } from "../components/features/OrderManagementWidget";
 import { RecommendedProductsWidget } from "../components/features/RecommendedProductsWidget";
 import ShinyText from "../components/ShinyText";
+
+const Galaxy = React.lazy(() => import("../components/ui/Galaxy"));
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -51,27 +53,30 @@ export default function Dashboard() {
       const options = signal ? { signal } : {};
 
       try {
-        const [projectsData, statsData] = await Promise.all([
-          projectsAPI.getAll(options),
-          projectsAPI.getStats(options).catch((statsErr) => {
+        // Load stats first for faster KPI rendering
+        projectsAPI.getStats(options).then(statsData => {
+           setStats({
+            total: statsData.total,
+            draft: statsData.draft || 0,
+            created: statsData.created || 0,
+            inProgress: statsData.inProgress,
+            finished: statsData.finished,
+            approved: statsData.approved,
+            cancelled: statsData.cancelled,
+            inQueue: statsData.inQueue,
+          });
+        }).catch(statsErr => {
             if (statsErr.response?.status === 403) {
-              return { total: 0, draft: 0, created: 0, inProgress: 0, finished: 0, approved: 0, cancelled: 0, inQueue: 0 };
+               setStats({ total: 0, draft: 0, created: 0, inProgress: 0, finished: 0, approved: 0, cancelled: 0, inQueue: 0 });
+            } else {
+               console.warn("Stats load failed", statsErr);
             }
-            throw statsErr;
-          }),
-        ]);
-
-        setProjects(projectsData);
-        setStats({
-          total: statsData.total,
-          draft: statsData.draft || 0,
-          created: statsData.created || 0,
-          inProgress: statsData.inProgress,
-          finished: statsData.finished,
-          approved: statsData.approved,
-          cancelled: statsData.cancelled,
-          inQueue: statsData.inQueue,
         });
+
+        // Load projects in parallel
+        const projectsData = await projectsAPI.getAll(options);
+        setProjects(projectsData);
+        
       } catch (err) {
         if (err.response?.status === 403 && err.config?.url?.includes('/projects/stats')) {
            const projectsData = await projectsAPI.getAll(options);
@@ -201,12 +206,7 @@ export default function Dashboard() {
               </Button>
             </div>
 
-            {loading ? (
-              <div className="flex justify-center items-center h-96">
-                <Spinner size="lg" color="primary" />
-              </div>
-            ) : (
-              <div className="grid grid-cols-12 gap-6">
+            <div className="grid grid-cols-12 gap-6">
                 
                 {/* Left Column - Hero & KPIs (8 cols) */}
                 <div className="col-span-12 lg:col-span-8 space-y-6">
@@ -218,19 +218,21 @@ export default function Dashboard() {
                       
                       {/* Galaxy Background */}
                       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden rounded-3xl">
-                        <Galaxy 
-                          transparent={true}
-                          mouseInteraction={true}
-                          mouseRepulsion={false}
-                          density={0.5}
-                          glowIntensity={0.3}
-                          saturation={0.2}
-                          hueShift={0}
-                          rotationSpeed={0.05}
-                          speed={0.3}
-                          twinkleIntensity={1}
-                          starSpeed={0.2}
-                        />
+                        <Suspense fallback={<div className="w-full h-full bg-slate-900" />}>
+                          <Galaxy 
+                            transparent={true}
+                            mouseInteraction={true}
+                            mouseRepulsion={false}
+                            density={0.5}
+                            glowIntensity={0.3}
+                            saturation={0.2}
+                            hueShift={0}
+                            rotationSpeed={0.05}
+                            speed={0.3}
+                            twinkleIntensity={1}
+                            starSpeed={0.2}
+                          />
+                        </Suspense>
                       </div>
 
                       {/* Glow */}
@@ -306,8 +308,7 @@ export default function Dashboard() {
                   <OrderManagementWidget />
                 </div>
 
-              </div>
-            )}
+          </div>
           </div>
         </Scroller>
       )}

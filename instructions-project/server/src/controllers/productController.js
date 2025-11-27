@@ -544,34 +544,41 @@ export async function getTrending(req, res) {
 
     console.log('🔄 [TRENDING API] Cache expirado ou vazio, buscando do banco');
 
-    // Buscar produtos com imagens noturnas (preferência para trending)
-    var products = await Product.findAll({
-      where: {
-        isActive: true,
-        imagesNightUrl: {
-          [Op.ne]: null
-        }
-      },
-      order: [
-        // Priorizar produtos marcados como trending (DESC coloca true primeiro)
-        ['isTrending', 'DESC'],
-        // Depois por nome
-        ['name', 'ASC']
-      ],
-      limit: 5,
-      // Retornar apenas campos necessários para o widget
-      attributes: [
-        'id',
-        'name',
-        'price',
-        'oldPrice',
-        'stock',
-        'imagesNightUrl',
-        'imagesDayUrl',
-        'thumbnailUrl',
-        'isTrending'
-      ]
-    });
+    let products = [];
+    try {
+      // Tentativa 1: Query otimizada com filtro de imagem
+      products = await Product.findAll({
+        where: {
+          isActive: true,
+          imagesNightUrl: {
+            [Op.ne]: null
+          }
+        },
+        order: [
+          ['isTrending', 'DESC'],
+          ['name', 'ASC']
+        ],
+        limit: 5,
+        attributes: [
+          'id', 'name', 'price', 'oldPrice', 'stock',
+          'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
+        ]
+      });
+    } catch (queryError) {
+      console.warn('⚠️ [TRENDING API] Erro na query otimizada, tentando fallback simples:', queryError.message);
+      // Tentativa 2: Query simples sem filtro de imagem (pode retornar produtos sem imagem noturna)
+      products = await Product.findAll({
+        where: {
+          isActive: true,
+          isTrending: true
+        },
+        limit: 5,
+        attributes: [
+          'id', 'name', 'price', 'oldPrice', 'stock',
+          'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
+        ]
+      });
+    }
 
     console.log('📦 [TRENDING API] Produtos encontrados:', products.length);
 
@@ -581,20 +588,12 @@ export async function getTrending(req, res) {
 
       // Garantir que valores numéricos são números
       if (plainProduct.price !== null && plainProduct.price !== undefined) {
-        if (typeof plainProduct.price === 'object' && plainProduct.price.toString) {
-          plainProduct.price = parseFloat(plainProduct.price.toString());
-        } else {
-          plainProduct.price = parseFloat(plainProduct.price);
-        }
+        plainProduct.price = parseFloat(plainProduct.price);
         if (isNaN(plainProduct.price)) plainProduct.price = 0;
       }
 
       if (plainProduct.oldPrice !== null && plainProduct.oldPrice !== undefined) {
-        if (typeof plainProduct.oldPrice === 'object' && plainProduct.oldPrice.toString) {
-          plainProduct.oldPrice = parseFloat(plainProduct.oldPrice.toString());
-        } else {
-          plainProduct.oldPrice = parseFloat(plainProduct.oldPrice);
-        }
+        plainProduct.oldPrice = parseFloat(plainProduct.oldPrice);
         if (isNaN(plainProduct.oldPrice)) plainProduct.oldPrice = null;
       }
 
@@ -613,18 +612,10 @@ export async function getTrending(req, res) {
     console.log('✅ [TRENDING API] Cache atualizado');
     res.json(productsData);
   } catch (error) {
-    console.error('❌ [TRENDING API] Erro ao buscar produtos trending:', error);
+    console.error('❌ [TRENDING API] Erro crítico ao buscar produtos trending:', error);
 
-    // Write error to file for debugging
-    try {
-      const fs = await import('fs');
-      const errorLog = `[${new Date().toISOString()}] Error in getTrending: ${error.message}\nStack: ${error.stack}\n\n`;
-      fs.appendFileSync('server_error.log', errorLog);
-    } catch (e) {
-      console.error('Failed to write error log:', e);
-    }
-
-    res.status(500).json({ error: error.message });
+    // Em último caso, retornar array vazio em vez de erro 500 para não quebrar o frontend
+    res.json([]);
   }
 }
 

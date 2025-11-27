@@ -1,19 +1,28 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { SidebarNavigation } from "./components/layout/sidebar-navigation";
 import { Header } from "./components/layout/header";
-import Dashboard from "./pages/Dashboard";
-// import Statistics from "./pages/Statistics";
-import Shop from "./pages/Shop";
-import Projects from "./pages/Projects";
-import Favorites from "./pages/Favorites";
-import Landing from "./pages/Landing";
-import AdminProducts from "./pages/AdminProducts";
-import AdminUsers from "./pages/AdminUsers";
-import ProjectNotes from "./pages/ProjectNotes";
-import EditProject from "./pages/EditProject";
-import SignIn from "./pages/SignIn";
-import ProjectDetails from "./pages/ProjectDetails";
+import { Spinner } from "@heroui/react";
+
+// Lazy load pages
+const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+// const Statistics = React.lazy(() => import("./pages/Statistics"));
+const Shop = React.lazy(() => import("./pages/Shop"));
+const Projects = React.lazy(() => import("./pages/Projects"));
+const Favorites = React.lazy(() => import("./pages/Favorites"));
+const Landing = React.lazy(() => import("./pages/Landing"));
+const AdminProducts = React.lazy(() => import("./pages/AdminProducts"));
+const AdminUsers = React.lazy(() => import("./pages/AdminUsers"));
+const ProjectNotes = React.lazy(() => import("./pages/ProjectNotes"));
+const EditProject = React.lazy(() => import("./pages/EditProject"));
+const SignIn = React.lazy(() => import("./pages/SignIn"));
+const ProjectDetails = React.lazy(() => import("./pages/ProjectDetails"));
+
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-screen w-full bg-background/50 backdrop-blur-sm">
+    <Spinner size="lg" color="primary" label="Loading..." />
+  </div>
+);
 import { SignedIn, SignedOut } from "./components/auth/AuthGuard";
 import { MobileBottomNav } from "./components/layout/mobile-bottom-nav";
 import { useResponsiveProfile } from "./hooks/useResponsiveProfile";
@@ -80,33 +89,35 @@ function AppLayout() {
         )}
         <main className={`flex flex-1 flex-col overflow-hidden ${isHandheld ? "pb-24" : "pb-0"}`}>
           <Header />
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            {/* <Route path="/statistics" element={<Statistics />} /> */}
-            <Route path="/stock-catalogue" element={<Shop />} />
-            <Route path="/favorites" element={<Favorites />} />
-            {/* <Route path="/projects" element={<Projects />} /> */}
-            <Route path="/projects/:id" element={<ProjectDetails />} />
-            <Route path="/projects/:id/notes" element={<ProjectNotes />} />
-            <Route path="/projects/:id/edit" element={<EditProject />} />
-            <Route path="/orders" element={<Projects />} />
-            <Route
-              path="/admin/products"
-              element={
-                <ProtectedRoute requireRole={['admin', 'editor_stock']}>
-                  <AdminProducts />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                <ProtectedRoute requireRole={['admin']}>
-                  <AdminUsers />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              {/* <Route path="/statistics" element={<Statistics />} /> */}
+              <Route path="/stock-catalogue" element={<Shop />} />
+              <Route path="/favorites" element={<Favorites />} />
+              {/* <Route path="/projects" element={<Projects />} /> */}
+              <Route path="/projects/:id" element={<ProjectDetails />} />
+              <Route path="/projects/:id/notes" element={<ProjectNotes />} />
+              <Route path="/projects/:id/edit" element={<EditProject />} />
+              <Route path="/orders" element={<Projects />} />
+              <Route
+                path="/admin/products"
+                element={
+                  <ProtectedRoute requireRole={['admin', 'editor_stock']}>
+                    <AdminProducts />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute requireRole={['admin']}>
+                    <AdminUsers />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </Suspense>
         </main>
         <MobileBottomNav />
       </div>
@@ -164,12 +175,14 @@ export default function App() {
               </div>
             )}
             <main className="relative z-10 flex flex-1 flex-col overflow-hidden">
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/sign-in" element={<SignIn />} />
-                <Route path="/sign-up" element={<Navigate to="/sign-in" replace />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
+              <Suspense fallback={<LoadingFallback />}>
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/sign-in" element={<SignIn />} />
+                  <Route path="/sign-up" element={<Navigate to="/sign-in" replace />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
             </main>
           </div>
         </SignedOut>

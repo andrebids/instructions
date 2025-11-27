@@ -51,7 +51,8 @@ export const RecommendedProductsWidget = React.memo(() => {
         console.error("❌ Failed to fetch trending products:", error);
         // Fallback to getAll if trending endpoint fails
         try {
-          const fallbackData = await productsAPI.getAll();
+          // Try to fetch only trending products first
+          const fallbackData = await productsAPI.getAll({ isTrending: true });
           // Filter products with night images
           const trending = fallbackData.filter(p => p.imagesNightUrl).slice(0, 5);
           setProducts(trending);
