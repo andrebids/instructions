@@ -73,12 +73,12 @@ export function resolveImagePath(imagePath, variants = []) {
 
   // Base paths para procurar
   const basePaths = [];
-  
+
   const clientPublic = getClientPublicPath();
   if (clientPublic) {
     basePaths.push(clientPublic);
   }
-  
+
   const serverPublic = getServerPublicPath();
   if (serverPublic) {
     basePaths.push(serverPublic);
@@ -108,7 +108,7 @@ export function resolveImagePath(imagePath, variants = []) {
   for (const basePath of basePaths) {
     for (const variant of nameVariants) {
       const fullPath = path.join(basePath, dir, variant);
-      
+
       if (fs.existsSync(fullPath)) {
         // Retornar caminho relativo começando com /
         const relativePath = path.posix.join('/', dir, variant).replace(/\\/g, '/');
@@ -132,16 +132,20 @@ function validateImagePathFormat(imagePath) {
     return null;
   }
 
-  // Filtrar imagens temporárias que são conhecidas por não existirem
-  // Estas são criadas durante upload mas nunca são persistidas permanentemente
-  if (imagePath.includes('temp_nightImage_') || 
-      imagePath.includes('temp_dayImage_') ||
-      (imagePath.includes('temp_') && imagePath.includes('/uploads/'))) {
+  // Validar formato básico: deve começar com / e ter extensão válida
+  if (!imagePath.startsWith('/')) {
     return null;
   }
 
-  // Validar formato básico: deve começar com / e ter extensão válida
-  if (!imagePath.startsWith('/')) {
+  // IMPORTANTE: Permitir arquivos WebP com prefixo temp_ porque são arquivos convertidos válidos
+  // O processImageToWebP converte para WebP mas mantém o prefixo temp_ no nome
+  // Exemplo: /uploads/products/temp_dayImage_1761908607230.webp é um arquivo válido
+  const isWebP = imagePath.toLowerCase().endsWith('.webp');
+  const hasTemp = imagePath.includes('temp_');
+
+  if (hasTemp && !isWebP) {
+    // Filtrar apenas arquivos temporários que NÃO são WebP
+    // Estes são uploads em progresso que nunca foram convertidos
     return null;
   }
 
@@ -180,7 +184,7 @@ export function validateProductImagesFormat(imagePaths) {
   if (!result.thumbnailUrl && result.imagesDayUrl) {
     result.thumbnailUrl = result.imagesDayUrl;
   }
-  
+
   // Se não há thumbnail nem day image, usar night image como thumbnail
   // Isso garante que produtos com apenas imagem night válida tenham um thumbnail
   if (!result.thumbnailUrl && result.imagesNightUrl) {
@@ -221,7 +225,7 @@ export function validateProductImages(imagePaths) {
   if (!result.thumbnailUrl && result.imagesDayUrl) {
     result.thumbnailUrl = result.imagesDayUrl;
   }
-  
+
   // Se não há thumbnail nem day image, usar night image como thumbnail
   // Isso garante que produtos com apenas imagem night válida tenham um thumbnail
   if (!result.thumbnailUrl && result.imagesNightUrl) {

@@ -182,12 +182,29 @@ export default function AdminProducts() {
 
   // Render helper for product image
   const renderProductImage = (product) => {
-    const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
-    const choose = product.imagesNightUrl || product.imagesDayUrl || product.thumbnailUrl || '/demo-images/placeholder.png';
+    // Inline SVG placeholder (mais confiável que arquivo externo)
+    const PLACEHOLDER_SVG = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+    
+    // Get base URL without /api suffix for uploads
+    // VITE_API_URL is http://localhost:5000/api, but uploads are at http://localhost:5000/uploads
+    const apiUrl = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
+    const baseUrl = apiUrl ? apiUrl.replace(/\/api$/, '') : '';
+    
+    const choose = product.imagesNightUrl || product.imagesDayUrl || product.thumbnailUrl || PLACEHOLDER_SVG;
     let src;
     
-    if (choose && choose.indexOf('/uploads/') === 0) {
-      src = baseApi ? (baseApi + choose) : ('/api' + choose);
+    // Construir URL corretamente baseado no tipo de caminho
+    if (choose.startsWith('data:')) {
+      // Data URL (SVG inline)
+      src = choose;
+    } else if (choose.startsWith('/SHOP/')) {
+      // Imagens em /SHOP/ são servidas diretamente do client/public
+      src = choose;
+    } else if (choose.startsWith('/uploads/')) {
+      // Imagens em /uploads/ precisam da base URL do servidor
+      // Development: http://localhost:5000/uploads/...
+      // Production: /uploads/... (same origin)
+      src = baseUrl ? (baseUrl + choose) : choose;
     } else {
       src = choose;
     }
@@ -202,23 +219,39 @@ export default function AdminProducts() {
         onLoad={() => console.log('🖼️ [AdminProducts] Image loaded:', { id: product.id, src })}
         onError={(e) => {
           // Prevent infinite error loop
-          if (e.target.getAttribute('data-fb') === '1') {
-            console.warn('⚠️ [AdminProducts] Fallback also failed, using placeholder');
+          const attemptCount = parseInt(e.target.getAttribute('data-attempt') || '0');
+          if (attemptCount >= 2) {
+            console.warn('⚠️ [AdminProducts] All fallbacks failed, using SVG placeholder');
+            e.target.src = PLACEHOLDER_SVG;
             return;
           }
-          e.target.setAttribute('data-fb', '1');
+          e.target.setAttribute('data-attempt', String(attemptCount + 1));
           
-          // Try day image as fallback
-          const day = product.imagesDayUrl;
-          if (day && day !== choose) {
-            const alt = day.indexOf('/uploads/') === 0 ? ((baseApi ? baseApi : '/api') + day) : day;
-            console.warn('⚠️ [AdminProducts] Image error, trying fallback:', { id: product.id, tried: src, fallback: alt });
-            e.target.src = alt;
-          } else {
-            // Use placeholder
-            console.warn('⚠️ [AdminProducts] No fallback available, using placeholder:', { id: product.id, tried: src });
-            e.target.src = '/demo-images/placeholder.png';
+          // Try day image as fallback on first error
+          if (attemptCount === 0) {
+            const day = product.imagesDayUrl;
+            if (day && day !== choose) {
+              let fallbackSrc;
+              if (day.startsWith('/SHOP/')) {
+                fallbackSrc = day;
+              } else if (day.startsWith('/uploads/')) {
+                fallbackSrc = baseUrl ? (baseUrl + day) : day;
+              } else {
+                fallbackSrc = day;
+              }
+              console.warn('⚠️ [AdminProducts] Image error, trying day image fallback:', { 
+                id: product.id, 
+                tried: src, 
+                fallback: fallbackSrc 
+              });
+              e.target.src = fallbackSrc;
+              return;
+            }
           }
+          
+          // Use SVG placeholder as final fallback
+          console.warn('⚠️ [AdminProducts] No valid fallback, using SVG placeholder:', { id: product.id, tried: src });
+          e.target.src = PLACEHOLDER_SVG;
         }}
       />
     );
