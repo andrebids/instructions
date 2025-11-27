@@ -1220,12 +1220,25 @@ if [ -d server ]; then
         rmdir $serverTempPath 2>/dev/null || true
         echo '[OK] Código do backend atualizado!'
         
-        # Restaurar node_modules se existia backup
-        NODE_BACKUP=`$(ls -td /tmp/server-node_modules-backup-* 2>/dev/null | head -1)
-        if [ -n "`$NODE_BACKUP" ] && [ -d "`$NODE_BACKUP" ]; then
-            mv "`$NODE_BACKUP" server/node_modules 2>/dev/null || true
-            echo '[OK] node_modules restaurado'
+        # NÃO restaurar node_modules antigo - sempre reinstalar para garantir sincronização com package.json
+        # Se package.json mudou, node_modules antigo pode estar desatualizado
+        echo '[INFO] Removendo node_modules antigo e reinstalando dependências...'
+        rm -rf /tmp/server-node_modules-backup-* 2>/dev/null || true
+        
+        # Sempre executar npm install para garantir que dependências estão sincronizadas
+        cd server
+        if [ -f package.json ]; then
+            echo '[INFO] Instalando dependências (npm install)...'
+            npm install 2>&1 | grep -v 'npm notice' || true
+            if [ `${PIPESTATUS[0]} -eq 0 ]; then
+                echo '[OK] Dependências instaladas com sucesso!'
+            else
+                echo '[AVISO] npm install pode ter tido problemas, mas continuando...'
+            fi
+        else
+            echo '[AVISO] package.json não encontrado, pulando instalação de dependências'
         fi
+        cd ..
     else
         echo '[ERRO] Diretório temporário vazio ou não encontrado'
         exit 1
