@@ -584,7 +584,7 @@ export async function getTrending(req, res) {
         ],
         limit: 5,
         attributes: [
-          'id', 'name', 'price', 'oldPrice', 'rentalPrice', 'stock',
+          'id', 'name', 'price', 'oldPrice', 'stock',
           'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
         ]
       });
@@ -598,7 +598,7 @@ export async function getTrending(req, res) {
         },
         limit: 5,
         attributes: [
-          'id', 'name', 'price', 'oldPrice', 'rentalPrice', 'stock',
+          'id', 'name', 'price', 'oldPrice', 'stock',
           'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
         ]
       });
@@ -628,11 +628,21 @@ export async function getTrending(req, res) {
 
       // Validar formato de caminhos de imagens (sem verificar filesystem)
       // Confia na base de dados e filtra apenas imagens temporárias problemáticas
+      console.log('🔍 [TRENDING API] Produto antes da validação:', {
+        id: plainProduct.id,
+        name: plainProduct.name,
+        imagesNightUrl: plainProduct.imagesNightUrl,
+        imagesDayUrl: plainProduct.imagesDayUrl,
+        thumbnailUrl: plainProduct.thumbnailUrl
+      });
+
       const validatedImages = validateProductImagesFormat({
         imagesNightUrl: plainProduct.imagesNightUrl,
         imagesDayUrl: plainProduct.imagesDayUrl,
         thumbnailUrl: plainProduct.thumbnailUrl,
       });
+
+      console.log('🔍 [TRENDING API] Imagens validadas:', validatedImages);
 
       // Atualizar apenas com imagens válidas
       plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
@@ -643,7 +653,14 @@ export async function getTrending(req, res) {
     }).filter(function (p) {
       // IMPORTANTE: Filtrar apenas produtos que têm imagem NIGHT válida
       // O widget só precisa da versão night
-      return p.imagesNightUrl !== null;
+      const hasNightImage = p.imagesNightUrl !== null;
+      console.log('🔍 [TRENDING API] Produto após filtro:', {
+        id: p.id,
+        name: p.name,
+        hasNightImage: hasNightImage,
+        imagesNightUrl: p.imagesNightUrl
+      });
+      return hasNightImage;
     });
 
     // Update cache
