@@ -22,17 +22,24 @@ const getImageUrl = (imagePath) => {
   // Ensure path starts with /
   const path = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
   
-  // In development, use relative path (goes through Vite proxy to avoid CORS)
-  // In production, prepend the current origin
-  const isDev = import.meta.env.DEV;
+  // Get base URL for uploads (same logic as ProductModal and ProductMediaViewer)
+  // Em desenvolvimento, usar caminhos relativos para passar pelo proxy do Vite
+  // Em produção, usar /api/uploads diretamente
+  const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || '';
+  const isProduction = !baseApi || baseApi === '';
   
-  if (isDev) {
-    // Relative path - Vite will proxy to backend
-    return path;
-  } else {
-    // Production - use full URL with current origin
-    return `${window.location.origin}${path}`;
+  // Handle /uploads/ paths specially
+  if (path.startsWith('/uploads/')) {
+    // Se já começa com /api/uploads/, retornar como está
+    if (path.startsWith('/api/uploads/')) return path;
+    // Se começa com /uploads/, converter para /api/uploads/
+    // Em desenvolvimento: usar caminho relativo para passar pelo proxy do Vite
+    // Em produção: usar caminho relativo também (mesma origem)
+    return '/api' + path;
   }
+  
+  // For other paths (like /SHOP/), use as is
+  return path;
 };
 
 export const RecommendedProductsWidget = React.memo(() => {

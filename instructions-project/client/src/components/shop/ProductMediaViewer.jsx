@@ -66,11 +66,18 @@ export default function ProductMediaViewer({ product, initialMode = "night", cla
   }, [mediaIndex, videoSrc]);
 
   if (!product) return null;
-  const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || '';
+  // Em desenvolvimento, usar caminhos relativos para passar pelo proxy do Vite
+  // Em produção, usar /api/uploads diretamente
   const mapPath = function (path) {
     if (!path) return path;
-    if (baseApi) return path.indexOf('/uploads/') === 0 ? (baseApi + path) : path;
-    return path.indexOf('/uploads/') === 0 ? ('/api' + path) : path;
+    // Se já começa com /api/uploads/, retornar como está
+    if (path.startsWith('/api/uploads/')) return path;
+    // Se começa com /uploads/, converter para /api/uploads/
+    // Usar caminho relativo para passar pelo proxy do Vite em dev e mesma origem em prod
+    if (path.startsWith('/uploads/')) {
+      return '/api' + path;
+    }
+    return path;
   };
   let baseDay = mapPath(product.images?.day || product.imagesDayUrl || product.thumbnailUrl);
   let baseNight = mapPath(product.images?.night || product.imagesNightUrl || baseDay);

@@ -103,16 +103,20 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
     }
 
     // Prefer same-origin relative URL to leverage Vite proxy and avoid CORS
-    const baseFromEnv = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
-    // Use relative path by default (empty string) for same-origin requests
-    const apiBase = baseFromEnv || '';
+    // Em desenvolvimento, usar caminhos relativos para passar pelo proxy do Vite
+    // Em produção, usar /api/uploads diretamente
 
     // Map video path correctly (handles both /uploads/ and /api/media/)
     const mapPath = function (path) {
       if (!path) return path;
-      if (apiBase) return path.indexOf('/uploads/') === 0 ? (apiBase + path) : path;
-      // sem VITE_API_URL: usar /api/uploads para passar no proxy
-      return path.indexOf('/uploads/') === 0 ? ('/api' + path) : path;
+      // Se já começa com /api/uploads/, retornar como está
+      if (path.startsWith('/api/uploads/')) return path;
+      // Se começa com /uploads/, converter para /api/uploads/
+      // Usar caminho relativo para passar pelo proxy do Vite em dev e mesma origem em prod
+      if (path.startsWith('/uploads/')) {
+        return '/api' + path;
+      }
+      return path;
     };
 
     // Check if videoFile is already a full path or just a filename

@@ -322,8 +322,9 @@ registerRoute(
 // Isso evita problemas de CORS e erros de fetch
 // O navegador já faz cache automático de fontes
 
-// Estratégia para imagens temporárias (temp_*) - NÃO CACHEAR
-// Sempre buscar da rede para garantir freshness e evitar acúmulo de cache
+// Estratégia para imagens de upload (/api/uploads/ e /uploads/) - NÃO CACHEAR
+// Sempre buscar da rede para garantir freshness e evitar cache de respostas 404
+// IMPORTANTE: Todas as imagens de upload usam NetworkOnly para evitar problemas
 registerRoute(
   ({ request, url }) => {
     const isImage = request.destination === 'image';
@@ -333,52 +334,19 @@ registerRoute(
       url.origin.includes('fonts.googleapis.com') ||
       url.origin.includes('fonts.gstatic.com');
 
-    // Verificar se é uma imagem temporária
-    const isTempImage = url.pathname.includes('temp_') ||
-                       url.pathname.includes('temp_nightImage_') ||
-                       url.pathname.includes('temp_dayImage_');
+    // Verificar se é uma imagem de upload (incluindo /api/uploads/)
+    const isUploadImage = url.pathname.includes('/uploads/') || url.pathname.includes('/api/uploads/');
 
-    return isImage && isSameOrigin && !isExternalImage && isTempImage;
+    return isImage && isSameOrigin && !isExternalImage && isUploadImage;
   },
-  // NetworkOnly - não cachear imagens temporárias, sempre buscar da rede
+  // NetworkOnly - não cachear imagens de upload, sempre buscar da rede
+  // Isso evita cachear respostas 404 e garante que sempre busque do servidor
   new NetworkOnly()
 );
 
-// Estratégia para uploads permanentes (não temporários)
-// NetworkFirst com timeout curto e expiração agressiva para garantir freshness
-registerRoute(
-  ({ request, url }) => {
-    const isImage = request.destination === 'image';
-    const isSameOrigin = url.origin === self.location.origin;
-    const isExternalImage = url.origin.includes('unsplash.com') ||
-      url.origin.includes('images.unsplash.com') ||
-      url.origin.includes('fonts.googleapis.com') ||
-      url.origin.includes('fonts.gstatic.com');
-
-    // Verificar se é uma imagem de upload permanente (não temporária)
-    const isUploadImage = url.pathname.includes('/uploads/');
-    const isTempImage = url.pathname.includes('temp_') ||
-                       url.pathname.includes('temp_nightImage_') ||
-                       url.pathname.includes('temp_dayImage_');
-
-    return isImage && isSameOrigin && !isExternalImage && isUploadImage && !isTempImage;
-  },
-  // NetworkFirst para uploads permanentes - sempre tentar rede primeiro
-  new NetworkFirst({
-    cacheName: 'uploads-images-cache',
-    networkTimeoutSeconds: 5, // Timeout curto de 5 segundos
-    plugins: [
-      new CacheableResponsePlugin({
-        statuses: [0, 200]
-      }),
-      new ExpirationPlugin({
-        maxEntries: 100, // Reduzido de 200 para evitar acúmulo
-        maxAgeSeconds: 60 * 60 * 2, // 2 horas (reduzido de 7 dias)
-        purgeOnQuotaError: true // Limpar automaticamente quando quota excedida
-      })
-    ]
-  })
-);
+// NOTA: Rotas de uploads permanentes removidas - todas as imagens de upload
+// agora usam NetworkOnly para evitar problemas com cache de 404
+// Se precisar cachear uploads permanentes no futuro, adicionar rota específica aqui
 
 // CacheFirst para outras imagens estáticas (assets, ícones, logos, etc.)
 registerRoute(

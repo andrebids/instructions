@@ -185,10 +185,24 @@ export default function AdminProducts() {
     // Inline SVG placeholder (mais confiável que arquivo externo)
     const PLACEHOLDER_SVG = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
     
-    // Get base URL without /api suffix for uploads
-    // VITE_API_URL is http://localhost:5000/api, but uploads are at http://localhost:5000/uploads
-    const apiUrl = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '');
-    const baseUrl = apiUrl ? apiUrl.replace(/\/api$/, '') : '';
+    // Get base URL for uploads (same logic as ProductModal and ProductMediaViewer)
+    // Em desenvolvimento, usar caminhos relativos para passar pelo proxy do Vite
+    // Em produção, usar /api/uploads diretamente
+    const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || '';
+    const isProduction = !baseApi || baseApi === '';
+    
+    const mapPath = function (path) {
+      if (!path) return path;
+      // Se já começa com /api/uploads/, retornar como está
+      if (path.startsWith('/api/uploads/')) return path;
+      // Se começa com /uploads/, converter para /api/uploads/
+      // Em desenvolvimento: usar caminho relativo para passar pelo proxy do Vite
+      // Em produção: usar caminho relativo também (mesma origem)
+      if (path.startsWith('/uploads/')) {
+        return '/api' + path;
+      }
+      return path;
+    };
     
     const choose = product.imagesNightUrl || product.imagesDayUrl || product.thumbnailUrl || PLACEHOLDER_SVG;
     let src;
@@ -200,13 +214,13 @@ export default function AdminProducts() {
     } else if (choose.startsWith('/SHOP/')) {
       // Imagens em /SHOP/ são servidas diretamente do client/public
       src = choose;
-    } else if (choose.startsWith('/uploads/')) {
-      // Imagens em /uploads/ precisam da base URL do servidor
-      // Development: http://localhost:5000/uploads/...
-      // Production: /uploads/... (same origin)
-      src = baseUrl ? (baseUrl + choose) : choose;
     } else {
-      src = choose;
+      // Usar mapPath para /uploads/ e outros caminhos
+      src = mapPath(choose);
+      // Debug log apenas em desenvolvimento
+      if (import.meta.env.DEV && choose !== src) {
+        console.log('🔄 [AdminProducts] Mapeando caminho:', { original: choose, mapped: src });
+      }
     }
 
     return (
@@ -216,12 +230,31 @@ export default function AdminProducts() {
         className="w-full h-full object-contain"
         decoding="async"
         loading="lazy"
-        onLoad={() => console.log('🖼️ [AdminProducts] Image loaded:', { id: product.id, src })}
+        onLoad={() => {
+          if (import.meta.env.DEV) {
+            console.log('🖼️ [AdminProducts] Image loaded:', { id: product.id, src });
+          }
+        }}
         onError={(e) => {
           // Prevent infinite error loop
           const attemptCount = parseInt(e.target.getAttribute('data-attempt') || '0');
+          
+          // Log detalhado do erro
+          if (import.meta.env.DEV) {
+            console.error('❌ [AdminProducts] Image error:', {
+              id: product.id,
+              attempt: attemptCount,
+              src: e.target.src,
+              original: choose,
+              mapped: src,
+              error: e.type || 'unknown'
+            });
+          }
+          
           if (attemptCount >= 2) {
-            console.warn('⚠️ [AdminProducts] All fallbacks failed, using SVG placeholder');
+            if (import.meta.env.DEV) {
+              console.warn('⚠️ [AdminProducts] All fallbacks failed, using SVG placeholder');
+            }
             e.target.src = PLACEHOLDER_SVG;
             return;
           }
@@ -234,23 +267,25 @@ export default function AdminProducts() {
               let fallbackSrc;
               if (day.startsWith('/SHOP/')) {
                 fallbackSrc = day;
-              } else if (day.startsWith('/uploads/')) {
-                fallbackSrc = baseUrl ? (baseUrl + day) : day;
               } else {
-                fallbackSrc = day;
+                fallbackSrc = mapPath(day);
               }
-              console.warn('⚠️ [AdminProducts] Image error, trying day image fallback:', { 
-                id: product.id, 
-                tried: src, 
-                fallback: fallbackSrc 
-              });
+              if (import.meta.env.DEV) {
+                console.warn('⚠️ [AdminProducts] Image error, trying day image fallback:', { 
+                  id: product.id, 
+                  tried: src, 
+                  fallback: fallbackSrc 
+                });
+              }
               e.target.src = fallbackSrc;
               return;
             }
           }
           
           // Use SVG placeholder as final fallback
-          console.warn('⚠️ [AdminProducts] No valid fallback, using SVG placeholder:', { id: product.id, tried: src });
+          if (import.meta.env.DEV) {
+            console.warn('⚠️ [AdminProducts] No valid fallback, using SVG placeholder:', { id: product.id, tried: src });
+          }
           e.target.src = PLACEHOLDER_SVG;
         }}
       />
