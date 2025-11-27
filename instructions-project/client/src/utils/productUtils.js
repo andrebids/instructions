@@ -3,13 +3,19 @@ function isValidImageUrl(url) {
   if (!url || typeof url !== 'string') return false;
   var trimmed = url.trim();
   if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') return false;
-  // Filtrar URLs temporárias que não existem mais
-  // Estas são criadas durante upload mas nunca são persistidas permanentemente
-  if (trimmed.includes('temp_nightImage_') || 
-      trimmed.includes('temp_dayImage_') ||
-      (trimmed.includes('temp_') && trimmed.includes('/uploads/'))) {
+  
+  // IMPORTANTE: Permitir arquivos WebP com prefixo temp_ porque são arquivos convertidos válidos
+  // O processImageToWebP converte para WebP mas mantém o prefixo temp_ no nome
+  // Exemplo: /uploads/products/temp_dayImage_1761908607230.webp é um arquivo válido
+  var isWebP = trimmed.toLowerCase().endsWith('.webp');
+  var hasTemp = trimmed.includes('temp_');
+  
+  // Filtrar apenas arquivos temporários que NÃO são WebP
+  // Estes são uploads em progresso que nunca foram convertidos
+  if (hasTemp && !isWebP) {
     return false;
   }
+  
   return true;
 }
 

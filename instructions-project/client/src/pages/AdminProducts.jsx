@@ -15,6 +15,7 @@ import { useUser } from '../context/UserContext';
 import { useResponsiveProfile } from '../hooks/useResponsiveProfile';
 import { Scroller } from '../components/ui/scroller';
 import { useTranslation } from 'react-i18next';
+import { PLACEHOLDER_SVG } from '../utils/imageUtils';
 import { useUserRole } from '../hooks/useUserRole';
 import { useProductForm } from './hooks/useProductForm';
 import { useProductImages } from './hooks/useProductImages';
@@ -182,9 +183,6 @@ export default function AdminProducts() {
 
   // Render helper for product image
   const renderProductImage = (product) => {
-    // Inline SVG placeholder (mais confiável que arquivo externo)
-    const PLACEHOLDER_SVG = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
-    
     // Get base URL for uploads (same logic as ProductModal and ProductMediaViewer)
     // Em desenvolvimento, usar caminhos relativos para passar pelo proxy do Vite
     // Em produção, usar /api/uploads diretamente

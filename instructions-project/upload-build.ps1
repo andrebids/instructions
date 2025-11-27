@@ -1228,15 +1228,59 @@ if [ -d server ]; then
         # Sempre executar npm install para garantir que dependências estão sincronizadas
         cd server
         if [ -f package.json ]; then
+            echo '[INFO] Limpando cache do npm e removendo package-lock.json para reinstalação limpa...'
+            npm cache clean --force 2>/dev/null || true
+            rm -f package-lock.json 2>/dev/null || true
+            
             echo '[INFO] Instalando dependências (npm install)...'
-            npm install 2>&1 | grep -v 'npm notice' || true
-            if [ `${PIPESTATUS[0]} -eq 0 ]; then
-                echo '[OK] Dependências instaladas com sucesso!'
-            else
-                echo '[AVISO] npm install pode ter tido problemas, mas continuando...'
+            # Executar npm install SEM || true para garantir que erros sejam detectados
+            npm install 2>&1 | grep -v 'npm notice' | tee /tmp/npm-install.log
+            NPM_EXIT=${PIPESTATUS[0]}
+            
+            if [ $NPM_EXIT -ne 0 ]; then
+                echo '[ERRO] npm install falhou com código: '$NPM_EXIT
+                echo '[ERRO] Log completo:'
+                cat /tmp/npm-install.log | tail -50
+                rm -f /tmp/npm-install.log
+                exit 1
             fi
+            
+            rm -f /tmp/npm-install.log
+            
+            # Verificar se módulos críticos foram instalados corretamente
+            echo '[INFO] Verificando instalação de módulos críticos...'
+            MISSING_MODULES=0
+            
+            # Verificar express-rate-limit
+            if [ ! -f "node_modules/express-rate-limit/dist/index.mjs" ]; then
+                echo '[ERRO] express-rate-limit não instalado corretamente (dist/index.mjs faltando)'
+                MISSING_MODULES=1
+            fi
+            
+            # Verificar @hocuspocus/server (se estiver no package.json)
+            if grep -q '"@hocuspocus/server"' package.json 2>/dev/null; then
+                if [ ! -f "node_modules/@hocuspocus/server/dist/hocuspocus-server.esm.js" ]; then
+                    echo '[ERRO] @hocuspocus/server não instalado corretamente'
+                    MISSING_MODULES=1
+                fi
+            fi
+            
+            if [ $MISSING_MODULES -eq 1 ]; then
+                echo '[ERRO] Alguns módulos críticos não foram instalados corretamente!'
+                echo '[INFO] Tentando reinstalar módulos específicos...'
+                npm install express-rate-limit @hocuspocus/server --force 2>&1 | grep -v 'npm notice' || true
+                
+                # Verificar novamente
+                if [ ! -f "node_modules/express-rate-limit/dist/index.mjs" ]; then
+                    echo '[ERRO] Falha crítica: não foi possível instalar express-rate-limit corretamente'
+                    exit 1
+                fi
+            fi
+            
+            echo '[OK] Dependências instaladas e verificadas com sucesso!'
         else
-            echo '[AVISO] package.json não encontrado, pulando instalação de dependências'
+            echo '[ERRO] package.json não encontrado!'
+            exit 1
         fi
         cd ..
     else
@@ -1290,11 +1334,15 @@ fi
 # Verificar se node_modules existe
 if [ ! -d "node_modules" ]; then
     echo '[AVISO] node_modules não encontrado, instalando dependências...'
-    npm install 2>&1 | grep -v 'npm notice' || true
-    if [ `${PIPESTATUS[0]} -ne 0 ]; then
-        echo '[ERRO] Falha ao instalar dependências'
+    npm cache clean --force 2>/dev/null || true
+    npm install 2>&1 | grep -v 'npm notice' | tee /tmp/npm-migration-install.log
+    NPM_MIGRATION_EXIT=${PIPESTATUS[0]}
+    rm -f /tmp/npm-migration-install.log
+    if [ $NPM_MIGRATION_EXIT -ne 0 ]; then
+        echo '[ERRO] Falha ao instalar dependências durante migrations'
         exit 1
     fi
+    echo '[OK] Dependências instaladas para migrations'
 fi
 
 # Verificar se .env existe

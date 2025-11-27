@@ -3,6 +3,12 @@
  * Handles proxying and absolute/relative paths.
  */
 
+/**
+ * SVG placeholder image as base64 data URL
+ * Reusable placeholder for product images when no image is available
+ */
+export const PLACEHOLDER_SVG = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+
 export const getImageUrl = (path) => {
     if (!path) return null;
 
@@ -67,16 +73,21 @@ export const getImageUrl = (path) => {
 
 /**
  * Helper to validate if an image URL is a temporary/invalid one
+ * IMPORTANTE: Permitir arquivos WebP com prefixo temp_ porque são arquivos convertidos válidos
  */
 export const isValidImageUrl = (url) => {
     if (!url || typeof url !== 'string') return false;
     const trimmed = url.trim();
     if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') return false;
 
-    // Filter temporary URLs that might not exist anymore
-    if (trimmed.includes('temp_nightImage_') ||
-        trimmed.includes('temp_dayImage_') ||
-        (trimmed.includes('temp_') && trimmed.includes('/uploads/'))) {
+    // IMPORTANTE: Permitir arquivos WebP com prefixo temp_ porque são arquivos convertidos válidos
+    // O processImageToWebP converte para WebP mas mantém o prefixo temp_ no nome
+    const isWebP = trimmed.toLowerCase().endsWith('.webp');
+    const hasTemp = trimmed.includes('temp_');
+    
+    // Filtrar apenas arquivos temporários que NÃO são WebP
+    // Estes são uploads em progresso que nunca foram convertidos
+    if (hasTemp && !isWebP) {
         return false;
     }
 

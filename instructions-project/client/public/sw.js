@@ -299,9 +299,35 @@ registerRoute(
   })
 );
 
-// API cache with NetworkFirst strategy
+// CRÍTICO: Rotas de uploads DEVEM ser registradas ANTES da rota geral da API
+// para evitar que a rota /api/* intercepte requisições de imagens de upload
+// Estratégia para imagens de upload (/api/uploads/ e /uploads/) - NÃO CACHEAR
+// Sempre buscar da rede para garantir freshness e evitar cache de respostas 404
 registerRoute(
-  ({ url }) => url.pathname.startsWith('/api/') && !url.pathname.includes('/auth/session'),
+  ({ request, url }) => {
+    const isImage = request.destination === 'image';
+    const isSameOrigin = url.origin === self.location.origin;
+    const isExternalImage = url.origin.includes('unsplash.com') ||
+      url.origin.includes('images.unsplash.com') ||
+      url.origin.includes('fonts.googleapis.com') ||
+      url.origin.includes('fonts.gstatic.com');
+
+    // Verificar se é uma imagem de upload (incluindo /api/uploads/)
+    const isUploadImage = url.pathname.includes('/uploads/') || url.pathname.includes('/api/uploads/');
+
+    return isImage && isSameOrigin && !isExternalImage && isUploadImage;
+  },
+  // NetworkOnly - não cachear imagens de upload, sempre buscar da rede
+  // Isso evita cachear respostas 404 e garante que sempre busque do servidor
+  new NetworkOnly()
+);
+
+// API cache with NetworkFirst strategy
+// EXCLUIR /api/uploads/ para que seja tratado pela rota específica acima
+registerRoute(
+  ({ url }) => url.pathname.startsWith('/api/') && 
+               !url.pathname.includes('/auth/session') &&
+               !url.pathname.includes('/api/uploads/'), // Excluir uploads (tratados acima)
   new NetworkFirst({
     cacheName: 'api-cache',
     networkTimeoutSeconds: 10,
@@ -322,33 +348,8 @@ registerRoute(
 // Isso evita problemas de CORS e erros de fetch
 // O navegador já faz cache automático de fontes
 
-// Estratégia para imagens de upload (/api/uploads/ e /uploads/) - NÃO CACHEAR
-// Sempre buscar da rede para garantir freshness e evitar cache de respostas 404
-// IMPORTANTE: Todas as imagens de upload usam NetworkOnly para evitar problemas
-registerRoute(
-  ({ request, url }) => {
-    const isImage = request.destination === 'image';
-    const isSameOrigin = url.origin === self.location.origin;
-    const isExternalImage = url.origin.includes('unsplash.com') ||
-      url.origin.includes('images.unsplash.com') ||
-      url.origin.includes('fonts.googleapis.com') ||
-      url.origin.includes('fonts.gstatic.com');
-
-    // Verificar se é uma imagem de upload (incluindo /api/uploads/)
-    const isUploadImage = url.pathname.includes('/uploads/') || url.pathname.includes('/api/uploads/');
-
-    return isImage && isSameOrigin && !isExternalImage && isUploadImage;
-  },
-  // NetworkOnly - não cachear imagens de upload, sempre buscar da rede
-  // Isso evita cachear respostas 404 e garante que sempre busque do servidor
-  new NetworkOnly()
-);
-
-// NOTA: Rotas de uploads permanentes removidas - todas as imagens de upload
-// agora usam NetworkOnly para evitar problemas com cache de 404
-// Se precisar cachear uploads permanentes no futuro, adicionar rota específica aqui
-
 // CacheFirst para outras imagens estáticas (assets, ícones, logos, etc.)
+// NOTA: Imagens de upload já foram tratadas acima com NetworkOnly
 registerRoute(
   ({ request, url }) => {
     const isImage = request.destination === 'image';
