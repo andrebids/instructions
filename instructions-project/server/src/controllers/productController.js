@@ -570,27 +570,27 @@ export async function getTrending(req, res) {
 
     let products = [];
     try {
-      // Tentativa 1: Query otimizada com filtro de imagem
+      // Tentativa 1: Query otimizada com filtro de imagem e APENAS trending
       products = await Product.findAll({
         where: {
           isActive: true,
+          isTrending: true, // Apenas produtos marcados como trending
           imagesNightUrl: {
             [Op.ne]: null
           }
         },
         order: [
-          ['isTrending', 'DESC'],
           ['name', 'ASC']
         ],
         limit: 5,
         attributes: [
-          'id', 'name', 'price', 'oldPrice', 'stock',
+          'id', 'name', 'price', 'oldPrice', 'rentalPrice', 'stock',
           'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
         ]
       });
     } catch (queryError) {
       console.warn('⚠️ [TRENDING API] Erro na query otimizada, tentando fallback simples:', queryError.message);
-      // Tentativa 2: Query simples sem filtro de imagem (pode retornar produtos sem imagem noturna)
+      // Tentativa 2: Query simples sem filtro de imagem (mas ainda apenas trending)
       products = await Product.findAll({
         where: {
           isActive: true,
@@ -598,7 +598,7 @@ export async function getTrending(req, res) {
         },
         limit: 5,
         attributes: [
-          'id', 'name', 'price', 'oldPrice', 'stock',
+          'id', 'name', 'price', 'oldPrice', 'rentalPrice', 'stock',
           'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
         ]
       });
@@ -696,7 +696,7 @@ export async function search(req, res) {
     // Converter produtos para objetos simples
     var productsData = products.map(function (p) {
       var plainProduct = p.get({ plain: true });
-      
+
       // Validar formato de caminhos de imagens (sem verificar filesystem)
       // Confia na base de dados e filtra apenas imagens temporárias problemáticas
       const validatedImages = validateProductImagesFormat({
@@ -709,7 +709,7 @@ export async function search(req, res) {
       plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
       plainProduct.imagesDayUrl = validatedImages.imagesDayUrl;
       plainProduct.thumbnailUrl = validatedImages.thumbnailUrl;
-      
+
       return plainProduct;
     });
 
