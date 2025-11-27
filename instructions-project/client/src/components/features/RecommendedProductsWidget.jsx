@@ -10,6 +10,31 @@ import { useNavigate } from 'react-router-dom';
 import 'swiper/css';
 import 'swiper/css/pagination';
 
+// Helper function to build full image URLs
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  
+  // If already a full URL, return as is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  
+  // Ensure path starts with /
+  const path = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  
+  // In development, use relative path (goes through Vite proxy to avoid CORS)
+  // In production, prepend the current origin
+  const isDev = import.meta.env.DEV;
+  
+  if (isDev) {
+    // Relative path - Vite will proxy to backend
+    return path;
+  } else {
+    // Production - use full URL with current origin
+    return `${window.location.origin}${path}`;
+  }
+};
+
 export const RecommendedProductsWidget = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +108,12 @@ export const RecommendedProductsWidget = () => {
             {/* Background with padding for full product visibility */}
             <div className="absolute inset-0 p-8 flex items-center justify-center">
               <img 
-                src={product.imagesNightUrl || product.imagesDayUrl || product.thumbnailUrl || 'https://placehold.co/600x400?text=Product'} 
+                src={
+                  getImageUrl(product.imagesNightUrl) || 
+                  getImageUrl(product.imagesDayUrl) || 
+                  getImageUrl(product.thumbnailUrl) || 
+                  'https://placehold.co/600x400?text=Product'
+                } 
                 alt={product.name}
                 className="w-full h-full object-contain transition-transform duration-500 ease-out scale-100 group-hover:scale-105"
               />
