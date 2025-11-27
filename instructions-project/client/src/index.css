@@ -539,15 +539,11 @@ ul[data-type="taskList"] li[data-checked="true"]>div {
     transform: scale(1);
   }
 
-  50% {
-    transform: scale(1.05);
-  }
-
   100% {
-    transform: scale(1);
+    transform: scale(1.25);
   }
 }
 
 .animate-subtle-zoom {
-  animation: subtle-zoom 10s ease-in-out infinite;
+  animation: subtle-zoom 5s ease-out forwards;
 }

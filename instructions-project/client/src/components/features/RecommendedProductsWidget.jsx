@@ -103,11 +103,12 @@ export const RecommendedProductsWidget = () => {
         }}
         className="h-full w-full"
       >
-        {products.map((product) => (
+        {products.map((product, index) => (
           <SwiperSlide key={product.id} className="relative h-full w-full overflow-hidden">
             {/* Background with padding for full product visibility */}
             <div className="absolute inset-0 p-8 flex items-center justify-center">
               <img 
+                key={`${product.id}-${index === activeIndex ? activeIndex : 'inactive'}`}
                 src={
                   getImageUrl(product.imagesNightUrl) || 
                   getImageUrl(product.imagesDayUrl) || 
