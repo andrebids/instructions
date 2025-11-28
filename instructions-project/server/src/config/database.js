@@ -10,7 +10,6 @@ const isSupabase = process.env.DB_HOST?.includes('supabase.co') ||
 // Configurar DNS para usar Google DNS
 // IMPORTANTE: NODE_OPTIONS=--dns-result-order=ipv4first deve ser definido no .env ou no sistema
 // Isso força Node.js a preferir IPv4 sobre IPv6 (solução oficial para problemas DNS com Supabase)
-// O project-manager.bat já define isso automaticamente ao iniciar o servidor
 if (isSupabase) {
   dns.setServers(['8.8.8.8', '8.8.4.4', '2001:4860:4860::8888', '2001:4860:4860::8844']);
 }

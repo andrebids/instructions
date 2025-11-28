@@ -1,0 +1,91 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Build outputs
+client/dist/
+client/build/
+server/dist/
+server/build/
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Git
+.git/
+.github/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.cursor/
+
+# Logs
+*.log
+logs/
+project-manager.log
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Documentation
+README.md
+docs/
+*.md
+!.env.example
+
+# Scripts (exclude deployment scripts but keep docker-dev-start.sh)
+scripts/deploy/
+*.bat
+*.ps1
+deploy-server.sh
+upload-build.ps1
+project-manager.sh
+
+# Development tools
+dev-tools/
+Exemplos_UI/
+
+# Database files (using external Supabase)
+database/
+*.sql
+*.sqlite
+*.db
+
+# Uploads (will be mounted as volume)
+server/public/uploads/
+public/uploads/
+
+# SSH keys
+$keyPath
+$keyPath.pub
+*.pem
+*.key
+
+# Docker files (avoid recursion)
+Dockerfile*
+docker-compose*.yml
+.dockerignore

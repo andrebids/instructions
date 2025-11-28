@@ -94,7 +94,8 @@ export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, o
             };
 
             // Send to observations API
-            const response = await fetch(`http://localhost:5000/api/projects/${projectId}/observations`, {
+            const apiBase = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
+            const response = await fetch(`${apiBase}/api/projects/${projectId}/observations`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: instructions-dev
+
+    # Port mappings (avoiding conflicts)
+    ports:
+      - "5001:5000" # Backend API (mapped to 5001 to avoid conflict)
+      - "3003:3003" # Vite dev server
+
+    # Volume mappings
+    volumes:
+      # Bind mount source code for hot reload
+      - ./:/app
+
+      # Anonymous volumes to isolate node_modules from Windows
+      - /app/node_modules
+      - /app/client/node_modules
+      - /app/server/node_modules
+
+      # Bind mount for persistent uploads via UNC path
+      - \\192.168.2.22\Olimpo\.dev\web\thecore:/app/server/public/uploads
+
+    # Environment variables
+    environment:
+      # Windows file watching with polling
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+
+      # DNS resolution (from your NODE_OPTIONS)
+      - NODE_OPTIONS=--dns-result-order=ipv4first
+
+      # Development mode
+      - NODE_ENV=development
+
+      # API URL for frontend (porta 5001 é mapeada do container 5000)
+      - VITE_API_URL=http://localhost:5001/api
+
+    # Load additional environment variables from .env file
+    env_file:
+      - .env
+
+    # Keep container running and show logs
+    stdin_open: true
+    tty: true
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
