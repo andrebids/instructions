@@ -314,6 +314,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
   // Estado para controlar a visibilidade do chat
   const [isChatOpen, setIsChatOpen] = React.useState(false);
 
+  // Ref para o card Details & Criteria para fazer scroll
+  const detailsCriteriaRef = React.useRef(null);
+
   // Ref para rastrear se o campo "Requested By" já foi preenchido automaticamente
   const requestedByAutoFilled = React.useRef(false);
 
@@ -1012,12 +1015,12 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
   });
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 pb-8">
+    <div className="w-full h-full flex flex-col">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
         <div>
-          <h2 className="text-2xl font-bold text-default-900">Logo Instructions</h2>
-          <p className="text-default-500">Define the technical specifications for the logo</p>
+          <h2 className="text-xl font-bold text-default-900">Logo Instructions</h2>
+          <p className="text-sm text-default-500">Define the technical specifications for the logo</p>
         </div>
         <Button
           color="primary"
@@ -1030,105 +1033,69 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 flex-1 min-h-0">
 
         {/* Left Column - Main Specs */}
-        <div className="xl:col-span-8 space-y-6">
-
-          {/* 1. Identity Section */}
-          <Card className="shadow-sm">
-            <CardHeader className="px-6 pt-6 pb-0">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="lucide:fingerprint" className="text-primary" />
-                Project Identity
-              </h3>
-            </CardHeader>
-            <CardBody className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Input
-                label="Logo Number"
-                placeholder="Auto-generated"
-                variant="bordered"
-                isRequired
-                isReadOnly
-                value={formik.values.logoNumber}
-                onValueChange={(v) => formik.updateField("logoNumber", v)}
-                onBlur={formik.handleBlur}
-                isInvalid={formik.touched.logoNumber && !!formik.errors.logoNumber}
-                errorMessage={formik.touched.logoNumber && formik.errors.logoNumber}
-              />
-              <Input
-                label="Logo Name"
-                placeholder="Name of the logo"
-                variant="bordered"
-                isRequired
-                value={formik.values.logoName}
-                onValueChange={(v) => formik.updateField("logoName", v)}
-                onBlur={formik.handleBlur}
-                isInvalid={formik.touched.logoName && !!formik.errors.logoName}
-                errorMessage={formik.touched.logoName && formik.errors.logoName}
-              />
-              <Input
-                label="Requested By"
-                placeholder="Name"
-                variant="bordered"
-                isRequired
-                isReadOnly
-                value={formik.values.requestedBy}
-                onValueChange={(v) => formik.updateField("requestedBy", v)}
-                onBlur={formik.handleBlur}
-                isInvalid={formik.touched.requestedBy && !!formik.errors.requestedBy}
-                errorMessage={formik.touched.requestedBy && formik.errors.requestedBy}
-              />
-            </CardBody>
-          </Card>
+        <div className="xl:col-span-8 space-y-4 flex flex-col min-h-0">
+          {/* Project Identity fields are hidden but still auto-filled in the background */}
+          {/* Logo Number and Requested By are automatically populated via useEffects */}
 
           {/* 2. Physical Specifications */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0">
             {/* Dimensions */}
-            <Card className="shadow-sm">
-              <CardHeader className="px-4 pt-4 pb-0">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Icon icon="lucide:ruler" className="text-primary" />
+            <Card className="shadow-sm flex flex-col min-h-0">
+              <CardHeader className="px-4 pt-3 pb-2 flex-shrink-0">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <Icon icon="lucide:ruler" className="text-primary w-4 h-4" />
                   Dimensions
                 </h3>
               </CardHeader>
-              <CardBody className="p-4 space-y-2">
-                {['Height', 'Length', 'Width', 'Diameter'].map((dim) => {
-                  const key = dim.toLowerCase();
-                  const dimensionValue = formik.values.dimensions?.[key]?.value || "";
-                  const dimensionError = formik.errors.dimensions?.[key]?.value;
-                  const isTouched = formik.touched.dimensions?.[key]?.value;
+              <CardBody className="p-4 pt-2 flex-1 min-h-0">
+                <div className="grid grid-cols-4 gap-3">
+                  {['Height', 'Length', 'Width', 'Diameter'].map((dim) => {
+                    const key = dim.toLowerCase();
+                    const dimensionValue = formik.values.dimensions?.[key]?.value || "";
+                    const dimensionError = formik.errors.dimensions?.[key]?.value;
+                    const isTouched = formik.touched.dimensions?.[key]?.value;
 
-                  return (
-                    <div key={key} className="flex items-end gap-3">
-                      <Input
-                        label={dim}
-                        type="number"
-                        endContent={<span className="text-default-400 text-xs">m</span>}
-                        variant="flat"
-                        size="sm"
-                        className="flex-1"
-                        value={dimensionValue}
-                        onValueChange={(v) => handleDimensionUpdate(key, "value", v ? parseFloat(v) : null)}
-                        onBlur={() => formik.setFieldTouched(`dimensions.${key}.value`, true)}
-                        isInvalid={isTouched && !!dimensionError}
-                        errorMessage={isTouched && dimensionError}
-                      />
-                      <div className="pb-2">
+                    return (
+                      <div key={key} className="flex flex-col gap-1.5">
+                        <label className="text-xs text-default-600 font-medium">
+                          {dim}
+                        </label>
+                        <Input
+                          type="number"
+                          endContent={<span className="text-default-400 text-xs">m</span>}
+                          variant="flat"
+                          size="sm"
+                          classNames={{
+                            input: "text-sm",
+                            inputWrapper: "h-9 min-h-9"
+                          }}
+                          value={dimensionValue}
+                          onValueChange={(v) => handleDimensionUpdate(key, "value", v ? parseFloat(v) : null)}
+                          onBlur={() => formik.setFieldTouched(`dimensions.${key}.value`, true)}
+                          isInvalid={isTouched && !!dimensionError}
+                          errorMessage={isTouched && dimensionError}
+                        />
                         <Checkbox
                           size="sm"
                           color="danger"
+                          classNames={{
+                            label: "text-xs",
+                            base: "max-w-fit"
+                          }}
                           isSelected={formik.values.dimensions?.[key]?.imperative || false}
                           onValueChange={(v) => handleDimensionUpdate(key, "imperative", v)}
                         >
-                          Imperative
+                          <span className="text-xs">Imperative</span>
                         </Checkbox>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
                 {formik.errors.dimensions && typeof formik.errors.dimensions === 'string' && (
-                  <div className="text-danger text-xs mt-1">
+                  <div className="text-danger text-[10px] mt-1">
                     {formik.errors.dimensions}
                   </div>
                 )}
@@ -1136,107 +1103,147 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
             </Card>
 
             {/* Fixation & Constraints */}
-            <Card className="shadow-sm h-full">
-              <CardHeader className="px-6 pt-6 pb-0">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Icon icon="lucide:anchor" className="text-primary" />
+            <Card className="shadow-sm flex flex-col min-h-0">
+              <CardHeader className="px-4 pt-3 pb-2 flex-shrink-0">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <Icon icon="lucide:anchor" className="text-primary w-4 h-4" />
                   Fixation & Constraints
                 </h3>
               </CardHeader>
-              <CardBody className="p-6 space-y-6">
-                {/* Usage Toggle */}
-                <div>
-                  <p className="text-sm font-medium text-default-700 mb-2">Usage Environment</p>
-                  <Tabs
-                    fullWidth
-                    size="md"
-                    aria-label="Usage Options"
-                    selectedKey={formik.values.usageOutdoor ? "outdoor" : "indoor"}
-                    onSelectionChange={(key) => {
-                      if (key === "indoor") {
-                        formik.updateFields({
-                          usageIndoor: true,
-                          usageOutdoor: false,
-                        });
-                      } else {
-                        formik.updateFields({
-                          usageIndoor: false,
-                          usageOutdoor: true,
-                        });
-                      }
-                    }}
-                  >
-                    <Tab key="indoor" title="Indoor" />
-                    <Tab key="outdoor" title="Outdoor" />
-                  </Tabs>
-                </div>
-
-                <div>
-                  <Select
-                    label="Fixation Type"
-                    placeholder="Select fixation"
-                    isRequired
-                    selectedKeys={formik.values.fixationType ? new Set([formik.values.fixationType]) : new Set()}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys)[0] || "";
-                      formik.setFieldTouched("fixationType", true);
-                      formik.updateField("fixationType", selected);
-                    }}
-                    onBlur={() => formik.setFieldTouched("fixationType", true)}
-                    isInvalid={formik.touched.fixationType && !!formik.errors.fixationType}
-                    errorMessage={formik.touched.fixationType && formik.errors.fixationType}
-                    validationBehavior="aria"
-                  >
-                    <SelectItem key="ground">Ground</SelectItem>
-                    <SelectItem key="wall">Wall</SelectItem>
-                    <SelectItem key="suspended">Suspended / Transversal</SelectItem>
-                    <SelectItem key="none">None</SelectItem>
-                    <SelectItem key="pole_side">Pole (Side)</SelectItem>
-                    <SelectItem key="pole_central">Pole (Central)</SelectItem>
-                    <SelectItem key="special">Special</SelectItem>
-                  </Select>
-                </div>
-
-                <Divider />
-
-                {/* Lacquered Structure Moved Here */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-default-600">Lacquered Structure</span>
-                    <Switch
+              <CardBody className="p-4 pt-2 flex-1 min-h-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Usage Toggle */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] text-default-600 font-medium">Usage Environment</label>
+                    <Tabs
+                      fullWidth
                       size="sm"
-                      isSelected={formik.values.lacqueredStructure}
-                      onValueChange={(v) => formik.updateField("lacqueredStructure", v)}
-                    />
+                      aria-label="Usage Options"
+                      selectedKey={formik.values.usageOutdoor ? "outdoor" : "indoor"}
+                      onSelectionChange={(key) => {
+                        if (key === "indoor") {
+                          formik.updateFields({
+                            usageIndoor: true,
+                            usageOutdoor: false,
+                          });
+                        } else {
+                          formik.updateFields({
+                            usageIndoor: false,
+                            usageOutdoor: true,
+                          });
+                        }
+                      }}
+                      classNames={{
+                        tabList: "gap-1",
+                        tab: "min-w-0 px-2",
+                        tabContent: "text-xs"
+                      }}
+                    >
+                      <Tab key="indoor" title="Indoor" />
+                      <Tab key="outdoor" title="Outdoor" />
+                    </Tabs>
                   </div>
-                  {formik.values.lacqueredStructure && (
-                    <Input
-                      placeholder="RAL Color / Reference"
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] text-default-600 font-medium">Fixation Type</label>
+                    <Select
+                      placeholder="Select fixation"
+                      isRequired
                       size="sm"
-                      startContent={<Icon icon="lucide:palette" className="text-default-400" />}
-                      value={formik.values.lacquerColor}
-                      onValueChange={(v) => formik.updateField("lacquerColor", v)}
-                    />
-                  )}
-                </div>
+                      selectedKeys={formik.values.fixationType ? new Set([formik.values.fixationType]) : new Set()}
+                      onSelectionChange={(keys) => {
+                        const selected = Array.from(keys)[0] || "";
+                        formik.setFieldTouched("fixationType", true);
+                        formik.updateField("fixationType", selected);
+                      }}
+                      onBlur={() => formik.setFieldTouched("fixationType", true)}
+                      isInvalid={formik.touched.fixationType && !!formik.errors.fixationType}
+                      errorMessage={formik.touched.fixationType && formik.errors.fixationType}
+                      validationBehavior="aria"
+                      classNames={{
+                        trigger: "h-8 min-h-8",
+                        value: "text-xs"
+                      }}
+                    >
+                      <SelectItem key="ground" textValue="Ground">Ground</SelectItem>
+                      <SelectItem key="wall" textValue="Wall">Wall</SelectItem>
+                      <SelectItem key="suspended" textValue="Suspended">Suspended</SelectItem>
+                      <SelectItem key="none" textValue="None">None</SelectItem>
+                      <SelectItem key="pole_side" textValue="Pole Side">Pole (Side)</SelectItem>
+                      <SelectItem key="pole_central" textValue="Pole Central">Pole (Central)</SelectItem>
+                      <SelectItem key="special" textValue="Special">Special</SelectItem>
+                    </Select>
+                  </div>
 
-                <Divider />
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Checkbox size="sm" isSelected={formik.values.maxWeightConstraint} onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}>Max Weight</Checkbox>
-                    {formik.values.maxWeightConstraint && (
-                      <Input
-                        placeholder="kg"
+                  {/* Lacquered Structure */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs text-default-600 font-medium">Lacquered Structure</label>
+                    <div className="flex items-center gap-2">
+                      <Switch
                         size="sm"
-                        className="w-20"
-                        value={formik.values.maxWeight}
-                        onValueChange={(v) => formik.updateField("maxWeight", v)}
+                        isSelected={formik.values.lacqueredStructure}
+                        onValueChange={(v) => formik.updateField("lacqueredStructure", v)}
                       />
-                    )}
+                      {formik.values.lacqueredStructure && (
+                        <Input
+                          placeholder="RAL Color"
+                          size="sm"
+                          startContent={<Icon icon="lucide:palette" className="text-default-400 w-4 h-4" />}
+                          classNames={{
+                            input: "text-sm",
+                            inputWrapper: "h-9 min-h-9"
+                          }}
+                          value={formik.values.lacquerColor}
+                          onValueChange={(v) => formik.updateField("lacquerColor", v)}
+                        />
+                      )}
+                    </div>
                   </div>
-                  <Checkbox size="sm" isSelected={formik.values.ballast} onValueChange={(v) => formik.updateField("ballast", v)}>Ballast Integration</Checkbox>
-                  <Checkbox size="sm" isSelected={formik.values.controlReport} onValueChange={(v) => formik.updateField("controlReport", v)} className="ml-[5px]">Control Bureau Report</Checkbox>
+
+                  {/* Constraints */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs text-default-600 font-medium">Constraints</label>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <Checkbox 
+                          size="sm" 
+                          classNames={{ label: "text-xs" }}
+                          isSelected={formik.values.maxWeightConstraint} 
+                          onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
+                        >
+                          Max Weight
+                        </Checkbox>
+                        {formik.values.maxWeightConstraint && (
+                          <Input
+                            placeholder="kg"
+                            size="sm"
+                            classNames={{
+                              input: "text-sm",
+                              inputWrapper: "h-9 min-h-9 w-16"
+                            }}
+                            value={formik.values.maxWeight}
+                            onValueChange={(v) => formik.updateField("maxWeight", v)}
+                          />
+                        )}
+                      </div>
+                      <Checkbox 
+                        size="sm" 
+                        classNames={{ label: "text-xs" }}
+                        isSelected={formik.values.ballast} 
+                        onValueChange={(v) => formik.updateField("ballast", v)}
+                      >
+                        Ballast
+                      </Checkbox>
+                      <Checkbox 
+                        size="sm" 
+                        classNames={{ label: "text-xs" }}
+                        isSelected={formik.values.controlReport} 
+                        onValueChange={(v) => formik.updateField("controlReport", v)}
+                      >
+                        Control Report
+                      </Checkbox>
+                    </div>
+                  </div>
                 </div>
               </CardBody>
             </Card>
@@ -1245,22 +1252,22 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         </div>
 
         {/* Right Column - Composition & Options */}
-        <div className="xl:col-span-4 space-y-6">
+        <div className="xl:col-span-4 flex flex-col min-h-0">
 
           {/* Composition Card */}
-          <Card className="shadow-sm h-full">
-            <CardHeader className="px-6 pt-6 pb-0">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Icon icon="lucide:layers" className="text-primary" />
+          <Card className="shadow-sm flex flex-col flex-1 min-h-0">
+            <CardHeader className="px-4 pt-3 pb-2 flex-shrink-0">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Icon icon="lucide:layers" className="text-primary w-4 h-4" />
                 Composition
               </h3>
             </CardHeader>
-            <CardBody className="p-6 space-y-6 max-h-[calc(100vh-300px)] overflow-y-auto">
+            <CardBody className="p-4 pt-2 space-y-4 flex-1 min-h-0 overflow-y-auto">
 
               {/* Componentes Section */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-bold text-default-900 uppercase tracking-wider">Components</p>
+                  <p className="text-xs font-bold text-default-900 uppercase tracking-wider">Components</p>
                   <div className="flex items-center gap-2">
                     {composition.componentes && composition.componentes.length > 0 && (
                       <Button
@@ -1271,7 +1278,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                         onPress={handleClearAllComponentes}
                         className="min-w-0 px-2"
                       >
-                        Clear All
+                        Clear
                       </Button>
                     )}
                     <Button
@@ -1489,13 +1496,14 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
               {/* Bolas Section */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-bold text-default-900 uppercase tracking-wider">Balls</p>
+                  <p className="text-xs font-bold text-default-900 uppercase tracking-wider">Balls</p>
                   <Button
                     size="sm"
                     variant="flat"
                     color="primary"
                     startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
                     onPress={handleAddBola}
+                    className="min-w-0 px-2"
                   >
                     Add
                   </Button>
@@ -1605,22 +1613,46 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
       </div>
 
       {/* 3. Details & Criteria (Full Width) */}
-      <Card className="shadow-sm">
-        <CardHeader className="px-6 pt-6 pb-0">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Icon icon="lucide:file-text" className="text-primary" />
+      <Card ref={detailsCriteriaRef} className="shadow-sm flex-shrink-0">
+        <CardHeader className="px-4 pt-3 pb-2">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Icon icon="lucide:file-text" className="text-primary w-4 h-4" />
             Details & Criteria
           </h3>
         </CardHeader>
-        <CardBody className="p-6 space-y-4">
-          <div className="grid grid-cols-1 gap-4">
+        <CardBody className="p-4 pt-2 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input
+              label="Logo Name"
+              placeholder="Name of the logo"
+              variant="bordered"
+              size="sm"
+              isRequired
+              classNames={{
+                label: "text-xs",
+                input: "text-xs",
+                inputWrapper: "h-8 min-h-8"
+              }}
+              value={formik.values.logoName}
+              onValueChange={(v) => formik.updateField("logoName", v)}
+              onBlur={formik.handleBlur}
+              isInvalid={formik.touched.logoName && !!formik.errors.logoName}
+              errorMessage={formik.touched.logoName && formik.errors.logoName}
+              className="md:col-span-1"
+            />
             <Textarea
               label="Description"
               placeholder="Detailed description of the logo..."
-              minRows={4}
+              minRows={3}
               variant="bordered"
+              size="sm"
+              classNames={{
+                label: "text-xs",
+                input: "text-sm"
+              }}
               value={formik.values.description}
               onValueChange={(v) => formik.updateField("description", v)}
+              className="md:col-span-2"
             />
           </div>
 

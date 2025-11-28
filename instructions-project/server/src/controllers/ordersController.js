@@ -142,6 +142,34 @@ export const getOrCreateDraftOrder = async (req, res) => {
       });
     }
 
+    // Debug: Verificar se GX349L está na order
+    if (order && order.items) {
+      const gx349lItem = order.items.find(item => 
+        item.name === 'GX349L' || 
+        item.product?.name === 'GX349L' || 
+        item.product?.id === 'prd-005' ||
+        item.productId === 'prd-005'
+      );
+      if (gx349lItem) {
+        console.log('✅ [getOrCreateDraftOrder] GX349L encontrado:', {
+          itemId: gx349lItem.id,
+          name: gx349lItem.name,
+          productId: gx349lItem.productId,
+          productName: gx349lItem.product?.name,
+          itemType: gx349lItem.itemType
+        });
+      } else {
+        console.log('❌ [getOrCreateDraftOrder] GX349L NÃO encontrado. Total items:', order.items.length);
+        console.log('Items disponíveis:', order.items.map(item => ({
+          id: item.id,
+          name: item.name,
+          productId: item.productId,
+          productName: item.product?.name,
+          itemType: item.itemType
+        })));
+      }
+    }
+
     res.json(order);
   } catch (error) {
     console.error('Erro ao obter/criar order draft:', error);
@@ -299,6 +327,16 @@ export const addOrderItem = async (req, res) => {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
 
+    // Debug: Log para GX349L
+    if (product.name === 'GX349L' || productId === 'prd-005') {
+      console.log('🔍 [addOrderItem] Adicionando GX349L:', {
+        productId,
+        productName: product.name,
+        quantity,
+        orderId: id
+      });
+    }
+
     // Verificar se já existe item com mesmo produto e variante
     const variantKey = JSON.stringify(variant || {});
     const existingItem = await OrderItem.findOne({
@@ -317,6 +355,26 @@ export const addOrderItem = async (req, res) => {
       item = existingItem;
     } else {
       // Criar novo item
+      // Obter URL da imagem do produto (tentar várias fontes)
+      let productImageUrl = product.thumbnailUrl || product.imagesDayUrl || null;
+      
+      // Se o produto tem availableColors e há uma cor selecionada, tentar usar a imagem da cor
+      if (!productImageUrl && variant?.color && product.availableColors?.[variant.color]) {
+        productImageUrl = product.availableColors[variant.color];
+      }
+      
+      // Debug: Log para GX349L
+      if (product.name === 'GX349L' || productId === 'prd-005') {
+        console.log('🔍 [addOrderItem] Criando item GX349L com imagem:', {
+          productId,
+          productName: product.name,
+          thumbnailUrl: product.thumbnailUrl,
+          imagesDayUrl: product.imagesDayUrl,
+          productImageUrl,
+          availableColors: product.availableColors
+        });
+      }
+      
       item = await OrderItem.create({
         orderId: id,
         productId,
@@ -325,7 +383,7 @@ export const addOrderItem = async (req, res) => {
         quantity,
         unitPrice: product.price,
         variant: variant || {},
-        imageUrl: product.thumbnailUrl || product.imagesDayUrl || null,
+        imageUrl: productImageUrl,
       }, { transaction });
     }
 
@@ -485,6 +543,12 @@ export const syncDecorations = async (req, res) => {
     const { decorations, sourceImageId } = req.body;
     // decorations: [{ decorationId, name, quantity, imageUrl, price }]
 
+    // Validar que decorations é um array
+    if (!Array.isArray(decorations)) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'decorations deve ser um array' });
+    }
+
     // Verificar se o projeto existe
     const project = await Project.findByPk(projectId, { transaction });
     if (!project) {
@@ -506,70 +570,222 @@ export const syncDecorations = async (req, res) => {
       }, { transaction });
     }
 
-    // Remover items de decoração existentes desta source image (para fazer sync completo)
-    if (sourceImageId) {
+    // Se o array estiver vazio, apenas remover decorações existentes e retornar
+    if (decorations.length === 0) {
+      // Remover todas as decorações da order (apenas decorações, não produtos!)
       await OrderItem.destroy({
         where: {
           orderId: order.id,
           itemType: 'decoration',
+        },
+        transaction,
+      });
+
+      // Recalcular total
+      const allItems = await OrderItem.findAll({
+        where: { orderId: order.id },
+        transaction,
+      });
+
+      const newTotal = allItems.reduce((sum, i) => {
+        const price = parseFloat(i.unitPrice) || 0;
+        return sum + (price * i.quantity);
+      }, 0);
+
+      order.total = newTotal;
+      await order.save({ transaction });
+      await transaction.commit();
+
+      const updatedOrder = await Order.findByPk(order.id, {
+        include: [
+          {
+            model: OrderItem,
+            as: 'items',
+            include: [
+              {
+                model: Product,
+                as: 'product',
+                attributes: ['id', 'name', 'price', 'imagesDayUrl', 'imagesNightUrl', 'thumbnailUrl'],
+                required: false,
+              },
+              {
+                model: Decoration,
+                as: 'decoration',
+                attributes: ['id', 'name', 'price', 'thumbnailUrl', 'category'],
+                required: false,
+              },
+            ],
+          },
+        ],
+      });
+
+      return res.json({
+        order: updatedOrder,
+        syncedDecorations: 0,
+        totalDecorations: 0,
+      });
+    }
+
+    // Contar items antes da remoção (para debug)
+    const itemsBefore = await OrderItem.findAll({
+      where: { orderId: order.id },
+      transaction,
+    });
+    const productsBefore = itemsBefore.filter(item => item.itemType === 'product' || !item.itemType);
+    const decorationsBefore = itemsBefore.filter(item => item.itemType === 'decoration');
+    
+    console.log('🔄 [syncDecorations] Antes da sincronização:', {
+      totalItems: itemsBefore.length,
+      products: productsBefore.length,
+      decorations: decorationsBefore.length,
+      productNames: productsBefore.map(p => p.name)
+    });
+
+    // Remover items de decoração existentes desta source image (para fazer sync completo)
+    // IMPORTANTE: Remover APENAS decorações, nunca produtos!
+    // Usar condição explícita para garantir que apenas decorações são removidas
+    if (sourceImageId) {
+      const deleted = await OrderItem.destroy({
+        where: {
+          orderId: order.id,
+          itemType: 'decoration', // Apenas decorações
           sourceImageId,
         },
         transaction,
       });
+      console.log(`🗑️ [syncDecorations] Removidas ${deleted} decorações da sourceImage ${sourceImageId}`);
     } else {
       // Se não há sourceImageId, remover todas as decorações da order
-      await OrderItem.destroy({
+      // IMPORTANTE: itemType: 'decoration' garante que produtos não são removidos
+      const deleted = await OrderItem.destroy({
         where: {
           orderId: order.id,
-          itemType: 'decoration',
+          itemType: 'decoration', // Apenas decorações
         },
         transaction,
       });
+      console.log(`🗑️ [syncDecorations] Removidas ${deleted} decorações (todas)`);
     }
 
-    // Agregar decorações por ID (contar quantidades)
+    // Verificar items após remoção (para debug)
+    const itemsAfter = await OrderItem.findAll({
+      where: { orderId: order.id },
+      transaction,
+    });
+    const productsAfter = itemsAfter.filter(item => item.itemType === 'product' || !item.itemType);
+    const decorationsAfter = itemsAfter.filter(item => item.itemType === 'decoration');
+    
+    console.log('🔄 [syncDecorations] Após remoção de decorações:', {
+      totalItems: itemsAfter.length,
+      products: productsAfter.length,
+      decorations: decorationsAfter.length,
+      productNames: productsAfter.map(p => p.name)
+    });
+
+    // Verificar se algum produto foi removido incorretamente
+    if (productsBefore.length !== productsAfter.length) {
+      console.error('❌ [syncDecorations] ERRO: Produtos foram removidos!', {
+        antes: productsBefore.length,
+        depois: productsAfter.length,
+        produtosRemovidos: productsBefore.filter(p => !productsAfter.find(pa => pa.id === p.id)).map(p => p.name)
+      });
+    }
+
+    // Função para normalizar chave de agrupamento (mesma lógica do frontend)
+    const normalizeKey = (value) => {
+      if (!value) return 'unknown';
+      return String(value)
+        .toLowerCase()
+        .replace(/^prd-/, '') // Remove prefixo "prd-"
+        .replace(/[-\s]/g, '') // Remove hífens e espaços
+        .trim();
+    };
+
+    // Agregar decorações por ID normalizado (contar quantidades)
+    // Isso garante que decorações com formatação diferente sejam agrupadas
     const decorationCounts = {};
     for (const dec of decorations) {
-      const key = dec.decorationId || dec.id;
-      if (!key) continue;
+      const originalKey = dec.decorationId || dec.id;
+      if (!originalKey) continue;
       
-      if (!decorationCounts[key]) {
-        decorationCounts[key] = {
-          decorationId: key,
+      // Normalizar chave para agrupamento
+      const normalizedKey = normalizeKey(originalKey);
+      
+      if (!decorationCounts[normalizedKey]) {
+        decorationCounts[normalizedKey] = {
+          decorationId: originalKey, // Guardar ID original
+          normalizedKey: normalizedKey, // Chave normalizada para agrupamento
           name: dec.name,
           imageUrl: dec.imageUrl || dec.dayUrl || dec.src,
           price: dec.price || 0,
           quantity: 0,
         };
       }
-      decorationCounts[key].quantity += 1;
+      decorationCounts[normalizedKey].quantity += 1;
     }
 
     // Criar novos items para cada decoração única
     const createdItems = [];
-    for (const [decorationId, data] of Object.entries(decorationCounts)) {
-      // Tentar buscar informações da decoração na base de dados
+    for (const [normalizedKey, data] of Object.entries(decorationCounts)) {
+      // Tentar buscar informações da decoração na base de dados usando o ID original
       let decoration = null;
-      try {
-        decoration = await Decoration.findByPk(decorationId, { transaction });
-      } catch (e) {
-        // Decoração pode não existir (IDs temporários do canvas)
+      
+      // Verificar se o decorationId parece ser um UUID válido antes de tentar buscar
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.decorationId);
+      
+      if (isUUID) {
+        try {
+          decoration = await Decoration.findByPk(data.decorationId, { transaction });
+        } catch (e) {
+          // Decoração pode não existir (IDs temporários do canvas)
+          console.warn('Decoração não encontrada na BD:', data.decorationId, e.message);
+        }
+      } else {
+        // ID não é um UUID válido, provavelmente é um ID temporário do canvas
+        console.log('ID de decoração não é UUID válido (provavelmente temporário):', data.decorationId);
       }
 
-      const item = await OrderItem.create({
-        orderId: order.id,
-        decorationId: decoration ? decorationId : null,
-        productId: null,
-        itemType: 'decoration',
-        name: decoration?.name || data.name || 'Decoração',
-        quantity: data.quantity,
-        unitPrice: decoration?.price || data.price || 0,
-        imageUrl: decoration?.thumbnailUrl || data.imageUrl,
-        sourceImageId: sourceImageId || null,
-        variant: {},
-      }, { transaction });
+      // Só guardar decorationId se for um UUID válido e a decoração existir na BD
+      const validDecorationId = (decoration && isUUID) ? data.decorationId : null;
 
-      createdItems.push(item);
+      // Validar e preparar dados antes de criar o item
+      const itemName = (decoration?.name || data.name || 'Decoração').trim();
+      if (!itemName) {
+        console.warn('Nome vazio para decoração:', data.decorationId);
+        continue; // Pular esta decoração se não tiver nome
+      }
+      
+      const itemPrice = decoration?.price || parseFloat(data.price) || 0;
+      const itemImageUrl = decoration?.thumbnailUrl || data.imageUrl || null;
+      // data.quantity já é um número (foi incrementado), mas garantir que é válido
+      const itemQuantity = typeof data.quantity === 'number' ? data.quantity : parseInt(data.quantity) || 1;
+
+      // Validar que a quantidade é válida
+      if (!itemQuantity || itemQuantity < 1) {
+        console.warn('Quantidade inválida para decoração:', data.decorationId, itemQuantity);
+        continue; // Pular esta decoração
+      }
+
+      try {
+        const item = await OrderItem.create({
+          orderId: order.id,
+          decorationId: validDecorationId,
+          productId: null,
+          itemType: 'decoration',
+          name: itemName,
+          quantity: itemQuantity,
+          unitPrice: itemPrice,
+          imageUrl: itemImageUrl,
+          sourceImageId: sourceImageId || null,
+          variant: {},
+        }, { transaction });
+
+        createdItems.push(item);
+      } catch (itemError) {
+        console.error('Erro ao criar OrderItem para decoração:', data.decorationId, itemError);
+        // Continuar com as outras decorações mesmo se uma falhar
+        throw itemError; // Re-throw para que a transação seja revertida
+      }
     }
 
     // Recalcular total da order
@@ -589,28 +805,52 @@ export const syncDecorations = async (req, res) => {
     await transaction.commit();
 
     // Retornar order atualizada
-    const updatedOrder = await Order.findByPk(order.id, {
-      include: [
-        {
-          model: OrderItem,
-          as: 'items',
-          include: [
-            {
-              model: Product,
-              as: 'product',
-              attributes: ['id', 'name', 'price', 'imagesDayUrl', 'imagesNightUrl', 'thumbnailUrl'],
-              required: false,
-            },
-            {
-              model: Decoration,
-              as: 'decoration',
-              attributes: ['id', 'name', 'price', 'thumbnailUrl', 'category'],
-              required: false,
-            },
-          ],
-        },
-      ],
-    });
+    let updatedOrder;
+    try {
+      updatedOrder = await Order.findByPk(order.id, {
+        include: [
+          {
+            model: OrderItem,
+            as: 'items',
+            include: [
+              {
+                model: Product,
+                as: 'product',
+                attributes: ['id', 'name', 'price', 'imagesDayUrl', 'imagesNightUrl', 'thumbnailUrl'],
+                required: false,
+              },
+              {
+                model: Decoration,
+                as: 'decoration',
+                attributes: ['id', 'name', 'price', 'thumbnailUrl', 'category'],
+                required: false,
+              },
+            ],
+          },
+        ],
+      });
+
+      if (!updatedOrder) {
+        throw new Error('Order não encontrada após sincronização');
+      }
+      
+      // Debug: Verificar se produtos estão na resposta
+      const finalProducts = updatedOrder.items?.filter(item => item.itemType === 'product' || !item.itemType) || [];
+      const finalDecorations = updatedOrder.items?.filter(item => item.itemType === 'decoration') || [];
+      console.log('✅ [syncDecorations] Order final retornada:', {
+        totalItems: updatedOrder.items?.length || 0,
+        products: finalProducts.length,
+        decorations: finalDecorations.length,
+        productNames: finalProducts.map(p => p.name)
+      });
+    } catch (fetchError) {
+      console.error('Erro ao buscar order atualizada:', fetchError);
+      // Se falhar ao buscar a order atualizada, tentar buscar sem includes
+      updatedOrder = await Order.findByPk(order.id);
+      if (!updatedOrder) {
+        throw new Error('Order não encontrada após sincronização');
+      }
+    }
 
     res.json({
       order: updatedOrder,
@@ -618,9 +858,19 @@ export const syncDecorations = async (req, res) => {
       totalDecorations: decorations.length,
     });
   } catch (error) {
-    await transaction.rollback();
+    // Se a transação ainda estiver ativa, fazer rollback
+    if (transaction && !transaction.finished) {
+      await transaction.rollback();
+    }
     console.error('Erro ao sincronizar decorações:', error);
-    res.status(500).json({ error: 'Erro ao sincronizar decorações', details: error.message });
+    console.error('Stack trace:', error.stack);
+    console.error('Request body:', JSON.stringify(req.body, null, 2));
+    console.error('Project ID:', req.params.projectId);
+    res.status(500).json({ 
+      error: 'Erro ao sincronizar decorações', 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 

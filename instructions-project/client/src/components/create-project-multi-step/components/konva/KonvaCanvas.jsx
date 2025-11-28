@@ -262,9 +262,13 @@ export const KonvaCanvas = forwardRef(({
     
     // Se clicou no stage vazio, prevenir scroll e desselecionar
     if (target === stage && isTouchDevice) {
-      // Prevenir scroll apenas quando toca no stage vazio
-      if (e.evt && e.evt.preventDefault) {
-        e.evt.preventDefault();
+      // Prevenir scroll apenas quando toca no stage vazio (se o evento permitir)
+      try {
+        if (e.evt && e.evt.preventDefault && e.evt.cancelable !== false) {
+          e.evt.preventDefault();
+        }
+      } catch (err) {
+        // Ignorar se preventDefault não for permitido (evento passivo)
       }
       checkDeselect(e);
     }
@@ -277,9 +281,13 @@ export const KonvaCanvas = forwardRef(({
     
     // Desselecionar apenas se clicar no stage vazio
     if (target === stage) {
-      // Prevenir comportamentos padrão apenas no stage vazio
-      if (isTouchDevice && e.evt && e.evt.preventDefault) {
-        e.evt.preventDefault();
+      // Prevenir comportamentos padrão apenas no stage vazio (se o evento permitir)
+      try {
+        if (isTouchDevice && e.evt && e.evt.preventDefault && e.evt.cancelable !== false) {
+          e.evt.preventDefault();
+        }
+      } catch (err) {
+        // Ignorar se preventDefault não for permitido (evento passivo)
       }
       checkDeselect(e);
     }

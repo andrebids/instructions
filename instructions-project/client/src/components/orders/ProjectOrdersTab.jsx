@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Card,
   CardBody,
@@ -31,7 +31,7 @@ const statusConfig = {
   cancelled: { color: 'danger', icon: 'lucide:x-circle', label: 'cancelled' },
 };
 
-export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorations = [] }) {
+export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorations = [], decorationsByImage = {} }) {
   const { t } = useTranslation();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,20 +39,53 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [updatingItem, setUpdatingItem] = useState(null);
   const [syncing, setSyncing] = useState(false);
-  const hasSyncedRef = useRef(false);
+  const lastSyncKeyRef = useRef(null);
 
-  // Sincronizar decorações do canvas com a order (apenas uma vez)
+  // Sincronizar decorações do canvas com a order
   const syncCanvasDecorations = useCallback(async () => {
-    if (!projectId || canvasDecorations.length === 0 || hasSyncedRef.current) {
-      return;
+    // Agregar todas as decorações de todas as imagens
+    const allDecorations = [];
+    
+    // Priorizar decorationsByImage (mais completo)
+    if (Object.keys(decorationsByImage).length > 0) {
+      for (const [imageId, imageDecorations] of Object.entries(decorationsByImage)) {
+        if (Array.isArray(imageDecorations)) {
+          for (const dec of imageDecorations) {
+            allDecorations.push({
+              ...dec,
+              sourceImageId: imageId,
+            });
+          }
+        }
+      }
+    } else if (canvasDecorations.length > 0) {
+      // Fallback para canvasDecorations
+      for (const dec of canvasDecorations) {
+        allDecorations.push(dec);
+      }
+    }
+
+    if (!projectId || allDecorations.length === 0) {
+      return null;
+    }
+
+    // Criar uma chave única para esta sincronização
+    const syncKey = JSON.stringify(allDecorations.map(dec => ({
+      id: dec.decorationId || dec.id,
+      name: dec.name,
+    })).sort((a, b) => (a.id || '').localeCompare(b.id || '')));
+
+    // Se já sincronizámos com esta mesma chave, não sincronizar novamente
+    if (lastSyncKeyRef.current === syncKey) {
+      return null;
     }
 
     try {
       setSyncing(true);
-      console.log('🔄 Sincronizando', canvasDecorations.length, 'decorações do canvas...');
+      console.log('🔄 Sincronizando', allDecorations.length, 'decorações do canvas...');
       
-      // Preparar decorações para sincronização
-      const decorationsToSync = canvasDecorations.map(dec => ({
+      // Preparar decorações para sincronização (todas, o backend vai agrupar por decorationId)
+      const decorationsToSync = allDecorations.map(dec => ({
         decorationId: dec.decorationId || dec.id,
         name: dec.name || 'Decoração',
         imageUrl: dec.dayUrl || dec.nightUrl || dec.src || dec.imageUrl,
@@ -61,7 +94,20 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
 
       const result = await ordersAPI.syncDecorations(projectId, decorationsToSync, null);
       console.log('✅ Decorações sincronizadas:', result);
-      hasSyncedRef.current = true;
+      
+      // Debug: Verificar se produtos estão na order retornada
+      if (result.order && result.order.items) {
+        const products = result.order.items.filter(item => item.itemType === 'product' || !item.itemType);
+        const decorations = result.order.items.filter(item => item.itemType === 'decoration');
+        console.log('📦 [syncCanvasDecorations] Order retornada:', {
+          totalItems: result.order.items.length,
+          products: products.length,
+          decorations: decorations.length,
+          productNames: products.map(p => p.name)
+        });
+      }
+      
+      lastSyncKeyRef.current = syncKey;
       return result.order;
     } catch (err) {
       console.error('❌ Erro ao sincronizar decorações:', err);
@@ -69,7 +115,7 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
     } finally {
       setSyncing(false);
     }
-  }, [projectId, canvasDecorations]);
+  }, [projectId, canvasDecorations, decorationsByImage]);
 
   // Carregar order draft do projeto
   const loadOrder = useCallback(async () => {
@@ -78,15 +124,6 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
       setError(null);
       let data = await ordersAPI.getOrCreateDraft(projectId);
       
-      // Se não há itens de decoração na order mas há decorações no canvas, sincronizar
-      const decorationItems = data.items?.filter(item => item.itemType === 'decoration') || [];
-      if (decorationItems.length === 0 && canvasDecorations.length > 0 && !hasSyncedRef.current) {
-        const syncedOrder = await syncCanvasDecorations();
-        if (syncedOrder) {
-          data = syncedOrder;
-        }
-      }
-      
       setOrder(data);
     } catch (err) {
       console.error('Erro ao carregar order:', err);
@@ -94,14 +131,74 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
     } finally {
       setLoading(false);
     }
-  }, [projectId, t, canvasDecorations, syncCanvasDecorations]);
+  }, [projectId, t]);
 
+  // Carregar order quando o projeto mudar
   useEffect(() => {
     loadOrder();
   }, [loadOrder]);
 
+  // Criar uma chave estável para as decorações
+  const decorationsKey = useMemo(() => {
+    const allDecs = [];
+    if (Object.keys(decorationsByImage).length > 0) {
+      for (const [imageId, imageDecorations] of Object.entries(decorationsByImage)) {
+        if (Array.isArray(imageDecorations)) {
+          for (const dec of imageDecorations) {
+            allDecs.push(`${imageId}:${dec.decorationId || dec.id}`);
+          }
+        }
+      }
+    } else if (canvasDecorations.length > 0) {
+      for (const dec of canvasDecorations) {
+        allDecs.push(dec.decorationId || dec.id);
+      }
+    }
+    return allDecs.sort().join(',');
+  }, [decorationsByImage, canvasDecorations]);
+
+  // Sincronizar decorações quando mudarem (após carregar a order)
+  useEffect(() => {
+    if (!order || syncing || !decorationsKey) return;
+    
+    // Usar setTimeout para evitar execução imediata e permitir que o componente estabilize
+    const timeoutId = setTimeout(() => {
+      syncCanvasDecorations().then((syncedOrder) => {
+        if (syncedOrder) {
+          setOrder(syncedOrder);
+        }
+      });
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [order?.id, decorationsKey, syncCanvasDecorations]); // Só sincronizar quando order estiver carregada e decorações mudarem
+
   // Calcular totais
   const items = order?.items || [];
+  
+  // Debug: Verificar se GX349L está na lista
+  useEffect(() => {
+    if (items.length > 0) {
+      const gx349lItem = items.find(item => 
+        item.name === 'GX349L' || 
+        item.product?.name === 'GX349L' || 
+        item.product?.id === 'prd-005' ||
+        item.productId === 'prd-005'
+      );
+      if (gx349lItem) {
+        console.log('✅ GX349L encontrado na order:', gx349lItem);
+      } else {
+        console.log('❌ GX349L NÃO encontrado na order. Items disponíveis:', items.map(item => ({
+          id: item.id,
+          name: item.name,
+          productId: item.productId,
+          productName: item.product?.name,
+          itemType: item.itemType
+        })));
+      }
+    }
+  }, [items]);
+  
   const total = parseFloat(order?.total) || 0;
   const effectiveBudget = parseFloat(budget) || 0;
   const remainingBudget = Math.max(0, effectiveBudget - total);
@@ -337,7 +434,53 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
                 const product = item.product;
                 const decoration = item.decoration;
                 const isDecoration = item.itemType === 'decoration';
-                const imageUrl = item.imageUrl || product?.thumbnailUrl || product?.imagesDayUrl || decoration?.thumbnailUrl || null;
+                
+                // Função para mapear caminhos de imagens (mesma lógica do ProductModal)
+                const mapImagePath = (path) => {
+                  if (!path) return null;
+                  // Se já é URL completa (http/https), usar diretamente
+                  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+                  const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || '';
+                  // Se tem baseApi configurado, usar ele
+                  if (baseApi && path.indexOf('/uploads/') === 0) return baseApi + path;
+                  // Sem baseApi: converter /uploads/ para /api/uploads/ para passar pelo proxy
+                  if (path.indexOf('/uploads/') === 0) return '/api' + path;
+                  return path;
+                };
+                
+                // Obter URL da imagem com mapeamento correto
+                // Tentar várias fontes de imagem
+                let rawImageUrl = item.imageUrl;
+                if (!rawImageUrl && product) {
+                  // Tentar images.day (pode ser string ou array)
+                  if (product.images?.day) {
+                    rawImageUrl = Array.isArray(product.images.day) 
+                      ? product.images.day[0] 
+                      : product.images.day;
+                  }
+                  // Fallback para thumbnailUrl ou imagesDayUrl
+                  if (!rawImageUrl) {
+                    rawImageUrl = product.thumbnailUrl || product.imagesDayUrl;
+                  }
+                }
+                if (!rawImageUrl && decoration) {
+                  rawImageUrl = decoration.thumbnailUrl;
+                }
+                
+                const imageUrl = mapImagePath(rawImageUrl);
+                
+                // Debug: Log para GX349L ou produtos sem imagem
+                if ((product?.name === 'GX349L' || item.name === 'GX349L') && !imageUrl) {
+                  console.warn('⚠️ [ProjectOrdersTab] GX349L sem imagem:', {
+                    itemId: item.id,
+                    itemName: item.name,
+                    itemImageUrl: item.imageUrl,
+                    productThumbnailUrl: product?.thumbnailUrl,
+                    productImagesDayUrl: product?.imagesDayUrl,
+                    productImages: product?.images,
+                    rawImageUrl
+                  });
+                }
 
                 return (
                   <div

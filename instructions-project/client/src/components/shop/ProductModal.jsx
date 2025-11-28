@@ -124,11 +124,12 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
       const mapped = mapPath(videoFile);
       srcUrl = mapped;
     } else if (videoFile.startsWith('/')) {
-      // It's an absolute path starting with /
-      srcUrl = videoFile;
+      // It's an absolute path starting with /, use mapPath to handle /SHOP/ paths
+      srcUrl = mapPath(videoFile);
     } else {
       // It's just a filename, try multiple possible locations
       // First try /api/media, then try /SHOP/TRENDING/VIDEO/ (like ProductFeedCard)
+      // Only encode the filename, not the path
       srcUrl = `${apiBase}/api/media/${encodeURIComponent(videoFile)}`;
     }
 

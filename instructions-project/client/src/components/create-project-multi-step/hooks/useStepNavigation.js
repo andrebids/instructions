@@ -19,6 +19,8 @@ export const useStepNavigation = (formData, visibleSteps, onCreateTempProject, i
   const hasRestoredRef = useRef(false); // Flag para evitar múltiplas restaurações
   const lastProjectIdRef = useRef(null); // Rastrear último projectId restaurado
   const initialStepAppliedRef = useRef(false); // Flag para aplicar initialStep apenas uma vez
+  const lastInitialStepRef = useRef(null); // Rastrear último initialStep aplicado
+  const visibleStepsKeyRef = useRef(''); // Chave estável baseada nos IDs dos steps
 
   // Atualizar projectId ref quando mudar
   useEffect(() => {
@@ -29,34 +31,53 @@ export const useStepNavigation = (formData, visibleSteps, onCreateTempProject, i
   // Este useEffect deve executar ANTES do restore para garantir prioridade
   // IMPORTANTE: Re-executar sempre que visibleSteps mudar, pois o step pode aparecer depois
   useEffect(() => {
+    // Criar chave estável baseada nos IDs dos steps
+    const currentStepsKey = visibleSteps.map(s => s.id).join(',');
+    
+    // Se o initialStep mudou, resetar a flag para permitir re-aplicação
+    if (lastInitialStepRef.current !== initialStep) {
+      initialStepAppliedRef.current = false;
+      lastInitialStepRef.current = initialStep;
+    }
+
+    // Se os visibleSteps mudaram (mas não o initialStep), resetar apenas se ainda não foi aplicado
+    if (visibleStepsKeyRef.current !== currentStepsKey && !initialStepAppliedRef.current) {
+      visibleStepsKeyRef.current = currentStepsKey;
+    }
+
+    // Se já foi aplicado para este initialStep e os steps não mudaram, não fazer nada (evitar loops)
+    if (initialStepAppliedRef.current && visibleStepsKeyRef.current === currentStepsKey) {
+      return;
+    }
+
     if (initialStep && visibleSteps.length > 0) {
       const stepIndex = visibleSteps.findIndex(step => step.id === initialStep);
       if (stepIndex >= 0) {
-        // Aplicar mesmo se já foi aplicado antes (caso os visibleSteps tenham mudado)
-        if (currentStep !== stepIndex + 1) {
-          console.log('🎯 Aplicando initialStep do URL:', initialStep, '→ Step', stepIndex + 1);
-          isRestoringRef.current = true;
-          setCurrentStep(stepIndex + 1);
-          logger.lifecycle('useStepNavigation', 'Step inicial do URL aplicado', { 
-            stepId: initialStep, 
-            stepIndex: stepIndex + 1,
-            visibleSteps: visibleSteps.map(s => s.id)
-          });
-          setTimeout(() => {
-            isRestoringRef.current = false;
-          }, 100);
-        }
+        // Aplicar apenas uma vez
+        console.log('🎯 Aplicando initialStep do URL:', initialStep, '→ Step', stepIndex + 1);
+        isRestoringRef.current = true;
+        setCurrentStep(stepIndex + 1);
+        logger.lifecycle('useStepNavigation', 'Step inicial do URL aplicado', { 
+          stepId: initialStep, 
+          stepIndex: stepIndex + 1,
+          visibleSteps: visibleSteps.map(s => s.id)
+        });
+        setTimeout(() => {
+          isRestoringRef.current = false;
+        }, 100);
         initialStepAppliedRef.current = true;
+        visibleStepsKeyRef.current = currentStepsKey;
         hasRestoredRef.current = true; // Marcar como restaurado para não sobrescrever
       } else {
         // Step não encontrado nos visibleSteps - pode ser que ainda não estejam prontos
         // Não marcar como aplicado ainda, para tentar novamente quando visibleSteps mudar
+        // Mas apenas logar uma vez para evitar spam
         if (!initialStepAppliedRef.current) {
           console.warn('⚠️ Step inicial não encontrado nos visibleSteps ainda:', initialStep, 'Available:', visibleSteps.map(s => s.id));
         }
       }
     }
-  }, [initialStep, visibleSteps]);
+  }, [initialStep, visibleSteps]); // Manter visibleSteps completo, mas usar chave estável para evitar loops
 
   // Restaurar step salvo ao carregar projeto existente (apenas se não houver initialStep do URL)
   useEffect(() => {

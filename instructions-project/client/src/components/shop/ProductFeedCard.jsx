@@ -520,13 +520,27 @@ export default function ProductFeedCard({ product, isActive = false, onPlay, onP
       return videoFile;
     }
     
-    // If starts with /, it's an absolute server path
+    // Mapear caminhos que começam com /SHOP/ ou /uploads/ para passar pelo proxy
+    if (videoFile.startsWith('/SHOP/') || videoFile.startsWith('/uploads/')) {
+      const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || '';
+      if (baseApi) {
+        return baseApi + videoFile;
+      }
+      return '/api' + videoFile;
+    }
+    
+    // If starts with /, it's an absolute server path (use as is)
     if (videoFile.startsWith('/')) {
       return videoFile;
     }
     
     // Otherwise, assume it's relative to /SHOP/TRENDING/VIDEO/
-    return `/SHOP/TRENDING/VIDEO/${videoFile}`;
+    const fullPath = `/SHOP/TRENDING/VIDEO/${videoFile}`;
+    const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || '';
+    if (baseApi) {
+      return baseApi + fullPath;
+    }
+    return '/api' + fullPath;
   };
 
   // Helper function to format text to Title Case

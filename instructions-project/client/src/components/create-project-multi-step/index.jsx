@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { Card, Button, DatePicker } from "@heroui/react";
 import { today, getLocalTimeZone } from "@internationalized/date";
 import { Icon } from "@iconify/react";
@@ -47,15 +47,17 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
     [formState.formData]
   );
   
-  // Debug: verificar initialStep e visibleSteps
+  // Debug: verificar initialStep e visibleSteps (apenas uma vez quando initialStep é fornecido)
+  const initialStepCheckedRef = useRef(false);
   useEffect(() => {
-    if (initialStep) {
+    if (initialStep && !initialStepCheckedRef.current && visibleSteps.length > 0) {
       console.log('📋 CreateProjectMultiStep: initialStep recebido:', initialStep);
       console.log('📋 VisibleSteps disponíveis:', visibleSteps.map(s => s.id));
       const stepExists = visibleSteps.some(s => s.id === initialStep);
       console.log('📋 Step existe nos visibleSteps?', stepExists);
+      initialStepCheckedRef.current = true;
     }
-  }, [initialStep, visibleSteps]);
+  }, [initialStep, visibleSteps.length]); // Usar apenas length para evitar re-execuções
   
   const navigation = useStepNavigation(formState.formData, visibleSteps, formState.createTempProject, initialStep);
 

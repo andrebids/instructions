@@ -654,19 +654,21 @@ const SimulationContent = ({ simulation, projectId }) => {
                                     const uniqueKey = normalizeKey(displayReference) + '-' + idx;
                                     
                                     return (
-                                        <div key={uniqueKey} className="text-center">
-                                            <div className="w-16 h-16 mx-auto rounded-lg bg-default-100 overflow-hidden mb-2 flex items-center justify-center relative">
-                                                {dec.dayUrl || dec.src || dec.imageUrl ? (
-                                                    <img
-                                                        src={dec.dayUrl || dec.src || dec.imageUrl}
-                                                        alt={displayReference}
-                                                        className="w-full h-full object-contain"
-                                                    />
-                                                ) : (
-                                                    <Icon icon="lucide:sparkles" className="text-2xl text-default-400" />
-                                                )}
-                                                {/* Badge com quantidade (sempre visível) */}
-                                                <div className="absolute -top-1 -right-1 bg-secondary text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                        <div key={uniqueKey} className="text-center relative">
+                                            <div className="relative w-16 h-16 mx-auto mb-2">
+                                                <div className="w-16 h-16 rounded-lg bg-default-100 overflow-hidden flex items-center justify-center">
+                                                    {dec.dayUrl || dec.src || dec.imageUrl ? (
+                                                        <img
+                                                            src={dec.dayUrl || dec.src || dec.imageUrl}
+                                                            alt={displayReference}
+                                                            className="w-full h-full object-contain"
+                                                        />
+                                                    ) : (
+                                                        <Icon icon="lucide:sparkles" className="text-2xl text-default-400" />
+                                                    )}
+                                                </div>
+                                                {/* Badge com quantidade (sempre visível, posicionado fora do container da imagem) */}
+                                                <div className="absolute -top-1 -right-1 bg-secondary text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center z-10 shadow-sm">
                                                     {dec.quantity}
                                                 </div>
                                             </div>
@@ -1124,9 +1126,9 @@ export default function ProjectDetails() {
                                                             {t('pages.projectDetails.simulationType', 'Simulação')}
                                                         </Chip>
                                                     ) : (
-                                                        <Chip size="sm" variant="flat" color="primary" className="mt-2">
-                                                            {logo.usageOutdoor ? t('pages.projectDetails.outdoor') : t('pages.projectDetails.indoor')}
-                                                        </Chip>
+                                                    <Chip size="sm" variant="flat" color="primary" className="mt-2">
+                                                        {logo.usageOutdoor ? t('pages.projectDetails.outdoor') : t('pages.projectDetails.indoor')}
+                                                    </Chip>
                                                     )
                                                 }
                                             >
@@ -1134,7 +1136,7 @@ export default function ProjectDetails() {
                                                     {logo.isSimulation ? (
                                                         <SimulationContent simulation={logo} projectId={id} />
                                                     ) : (
-                                                        <LogoDetailsContent logo={logo} />
+                                                    <LogoDetailsContent logo={logo} />
                                                     )}
                                                 </div>
                                             </AccordionItem>
@@ -1162,6 +1164,7 @@ export default function ProjectDetails() {
                                 projectId={id}
                                 budget={project.budget}
                                 canvasDecorations={project.canvasDecorations || []}
+                                decorationsByImage={project.decorationsByImage || {}}
                             />
                         </Tab>
 

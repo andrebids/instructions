@@ -2,7 +2,7 @@
   "common": {
     "retry": "Tentar novamente",
     "close": "Fechar",
-    "download": "Descarregar",
+    "download": "Baixar",
     "search": "Pesquisar",
     "loading": "Carregando...",
     "name": "Nome",
@@ -23,9 +23,9 @@
       "lets": "Vamos ",
       "create": "criar",
       "somethingGreat": " algo incrível.",
-      "signInSubtitle": "Entre para entrar no seu painel.",
+      "signInSubtitle": "Entre para acessar seu painel.",
       "signIn": "Entrar",
-      "signUp": "Registar"
+      "signUp": "Cadastrar"
     },
     "dashboard": {
       "title": "Dashboard",

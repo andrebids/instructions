@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { Image as KonvaImage, Transformer } from 'react-konva';
+import { Image as KonvaImage, Transformer, Rect } from 'react-konva';
 import useImage from 'use-image';
 import { useImageAspectRatio } from '../../hooks/useImageAspectRatio';
 import { checkSnapToZone } from '../../utils/snapZoneUtils';
@@ -26,7 +26,95 @@ export const DecorationItem = ({
   isDayMode = true,
   isTouchDevice = false
 }) => {
-  const [image] = useImage(decoration.src, 'anonymous');
+  // Obter URL da imagem baseado no modo (dia/noite) ou usar src
+  // Tentar várias fontes de URL
+  const rawImageUrl = decoration.src || 
+                      (isDayMode ? decoration.dayUrl : decoration.nightUrl) || 
+                      decoration.dayUrl || 
+                      decoration.nightUrl ||
+                      decoration.imageUrl ||
+                      decoration.thumbnailUrl;
+  
+  // Mapear caminho da imagem (mesma lógica do URLImage)
+  const mapImagePath = (path) => {
+    if (!path) return path;
+    // Se já é URL completa (http/https), usar diretamente
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || '';
+    
+    // Se tem baseApi configurado, usar ele para caminhos que começam com /uploads/ ou /SHOP/
+    if (baseApi) {
+      if (path.indexOf('/uploads/') === 0 || path.indexOf('/SHOP/') === 0) {
+        return baseApi + path;
+      }
+    }
+    
+    // Sem baseApi: converter /uploads/ ou /SHOP/ para /api/... para passar pelo proxy
+    if (path.indexOf('/uploads/') === 0) {
+      return '/api' + path;
+    }
+    if (path.indexOf('/SHOP/') === 0) {
+      return '/api' + path;
+    }
+    
+    return path;
+  };
+  
+  const imageUrl = mapImagePath(rawImageUrl);
+  // Só tentar carregar a imagem se tivermos uma URL válida
+  const [image, imageStatus] = useImage(imageUrl && imageUrl !== '' ? imageUrl : null, 'anonymous');
+  
+  // Log para debug
+  useEffect(() => {
+    if (!rawImageUrl) {
+      console.warn('⚠️ [DecorationItem] Sem URL de imagem:', {
+        id: decoration.id,
+        name: decoration.name,
+        type: decoration.type,
+        decoration: {
+          src: decoration.src,
+          dayUrl: decoration.dayUrl,
+          nightUrl: decoration.nightUrl,
+          imageUrl: decoration.imageUrl,
+          thumbnailUrl: decoration.thumbnailUrl
+        },
+        isDayMode
+      });
+    } else {
+      if (imageUrl !== rawImageUrl) {
+        console.log('🔄 [DecorationItem] Caminho mapeado:', {
+          id: decoration.id,
+          name: decoration.name,
+          original: rawImageUrl,
+          mapped: imageUrl
+        });
+      }
+      
+      // useImage retorna status como objeto ou string
+      if (imageStatus && typeof imageStatus === 'object' && imageStatus.error) {
+        console.error('❌ [DecorationItem] Erro ao carregar imagem:', {
+          id: decoration.id,
+          name: decoration.name,
+          imageUrl,
+          error: imageStatus.error,
+          decoration: {
+            src: decoration.src,
+            dayUrl: decoration.dayUrl,
+            nightUrl: decoration.nightUrl,
+            imageUrl: decoration.imageUrl
+          }
+        });
+      } else if (image) {
+        console.log('✅ [DecorationItem] Imagem carregada:', {
+          id: decoration.id,
+          name: decoration.name,
+          imageUrl,
+          imageWidth: image.width,
+          imageHeight: image.height
+        });
+      }
+    }
+  }, [imageStatus, image, decoration.id, decoration.name, decoration.type, imageUrl, rawImageUrl, decoration.src, decoration.dayUrl, decoration.nightUrl, decoration.imageUrl, decoration.thumbnailUrl, isDayMode]);
   const shapeRef = useRef();
   const trRef = useRef();
   const touchStartPos = useRef({ x: 0, y: 0 });
@@ -131,8 +219,14 @@ export const DecorationItem = ({
   const handleTouchStart = (e) => {
     if (!isTouchDevice) return;
     
-    // Prevenir scroll durante interação
-    e.evt.preventDefault();
+    // Prevenir scroll durante interação (se o evento permitir)
+    try {
+      if (e.evt && e.evt.cancelable !== false) {
+        e.evt.preventDefault();
+      }
+    } catch (err) {
+      // Ignorar se preventDefault não for permitido (evento passivo)
+    }
     
     // Guardar posição inicial do toque
     const touch = e.evt.touches[0] || e.evt.changedTouches[0];
@@ -150,8 +244,14 @@ export const DecorationItem = ({
   const handleTouchMove = (e) => {
     if (!isTouchDevice) return;
     
-    // Prevenir scroll durante drag
-    e.evt.preventDefault();
+    // Prevenir scroll durante drag (se o evento permitir)
+    try {
+      if (e.evt && e.evt.cancelable !== false) {
+        e.evt.preventDefault();
+      }
+    } catch (err) {
+      // Ignorar se preventDefault não for permitido (evento passivo)
+    }
     
     // Verificar se está arrastando (movimento > 5px)
     const touch = e.evt.touches[0];
@@ -170,8 +270,14 @@ export const DecorationItem = ({
   const handleTouchEnd = (e) => {
     if (!isTouchDevice) return;
     
-    // Prevenir comportamentos padrão
-    e.evt.preventDefault();
+    // Prevenir comportamentos padrão (se o evento permitir)
+    try {
+      if (e.evt && e.evt.cancelable !== false) {
+        e.evt.preventDefault();
+      }
+    } catch (err) {
+      // Ignorar se preventDefault não for permitido (evento passivo)
+    }
     
     // Se não estava arrastando, foi apenas um tap (seleção)
     if (!isDragging.current) {
@@ -184,49 +290,84 @@ export const DecorationItem = ({
   };
 
   // Renderizar apenas decorações tipo imagem (PNG)
-  if (decoration.type === 'image' && decoration.src) {
+  // Verificar se há URL de imagem disponível
+  if (decoration.type === 'image' && imageUrl) {
+    // Handlers comuns para ambos os casos
+    const commonHandlers = {
+      draggable: true,
+      onClick: onSelect,
+      onTap: onSelect,
+      onTouchStart: handleTouchStart,
+      onTouchMove: handleTouchMove,
+      onTouchEnd: handleTouchEnd,
+      onDragStart: (e) => {
+        if (isTouchDevice && e.evt) {
+          try {
+            if (e.evt.cancelable !== false) {
+              e.evt.preventDefault();
+            }
+          } catch (err) {
+            // Ignorar se preventDefault não for permitido (evento passivo)
+          }
+        }
+        onSelect();
+      },
+      onDragMove: (e) => {
+        if (isTouchDevice && e.evt) {
+          try {
+            if (e.evt.cancelable !== false) {
+              e.evt.preventDefault();
+            }
+          } catch (err) {
+            // Ignorar se preventDefault não for permitido (evento passivo)
+          }
+        }
+        handleDragMove(e);
+      },
+      onDragEnd: (e) => {
+        if (isTouchDevice && e.evt) {
+          try {
+            if (e.evt.cancelable !== false) {
+              e.evt.preventDefault();
+            }
+          } catch (err) {
+            // Ignorar se preventDefault não for permitido (evento passivo)
+          }
+        }
+        handleDragEnd(e);
+      },
+      onTransformEnd: handleTransformEnd,
+    };
+
+    const commonProps = {
+      ref: shapeRef,
+      x: decoration.x,
+      y: decoration.y,
+      width: decoration.width,
+      height: decoration.height,
+      offsetX: decoration.width / 2,
+      offsetY: decoration.height / 2,
+      rotation: decoration.rotation || 0,
+      ...commonHandlers
+    };
+
     return (
       <>
-        <KonvaImage
-          ref={shapeRef}
-          image={image}
-          x={decoration.x}
-          y={decoration.y}
-          width={decoration.width}
-          height={decoration.height}
-          offsetX={decoration.width / 2}
-          offsetY={decoration.height / 2}
-          rotation={decoration.rotation || 0}
-          draggable
-          onClick={onSelect}
-          onTap={onSelect}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onDragStart={(e) => {
-            // Prevenir scroll em touch durante drag
-            if (isTouchDevice && e.evt) {
-              e.evt.preventDefault();
-            }
-            // Garantir seleção quando inicia drag
-            onSelect();
-          }}
-          onDragMove={(e) => {
-            // Prevenir scroll durante drag em touch
-            if (isTouchDevice && e.evt) {
-              e.evt.preventDefault();
-            }
-            handleDragMove(e);
-          }}
-          onDragEnd={(e) => {
-            // Prevenir comportamentos padrão em touch
-            if (isTouchDevice && e.evt) {
-              e.evt.preventDefault();
-            }
-            handleDragEnd(e);
-          }}
-          onTransformEnd={handleTransformEnd}
-        />
+        {/* Renderizar imagem quando carregada, senão renderizar placeholder */}
+        {image ? (
+          <KonvaImage
+            {...commonProps}
+            image={image}
+          />
+        ) : (
+          <Rect
+            {...commonProps}
+            fill="#888888"
+            opacity={0.3}
+            stroke="#666666"
+            strokeWidth={1}
+          />
+        )}
         {isSelected && (
           <Transformer
             ref={trRef}

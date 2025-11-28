@@ -5,6 +5,8 @@ import { Project, ProjectElement, Decoration, ProjectNote, Observation } from '.
 import sequelize from '../config/database.js';
 import { QueryTypes } from 'sequelize';
 import { logInfo, logSuccess, logError, logServerOperation, logStats, logDelete, formatErrorMessage } from '../utils/projectLogger.js';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Verifica se a tabela projects existe
@@ -347,6 +349,61 @@ export async function toggleProjectFavorite(id) {
 }
 
 /**
+ * Processa e guarda imagem preview como ficheiro PNG
+ * Converte base64 data URL para ficheiro e guarda em public/uploads/projects/{projectId}/preview/
+ */
+async function saveCanvasPreviewImage(projectId, base64DataUrl) {
+  try {
+    // Verificar se é um data URL válido
+    if (!base64DataUrl || typeof base64DataUrl !== 'string') {
+      logError('CanvasPreviewImage: Data URL inválido ou vazio');
+      return null;
+    }
+
+    // Verificar se começa com data:image
+    if (!base64DataUrl.startsWith('data:image/')) {
+      logError('CanvasPreviewImage: Não é um data URL de imagem válido');
+      return null;
+    }
+
+    // Extrair o base64 do data URL
+    const base64Match = base64DataUrl.match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/);
+    if (!base64Match) {
+      logError('CanvasPreviewImage: Formato de data URL não suportado');
+      return null;
+    }
+
+    const imageFormat = base64Match[1] || 'png'; // Default para PNG
+    const base64Data = base64Match[2];
+
+    // Criar diretório de preview se não existir
+    const previewDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/preview`);
+    if (!fs.existsSync(previewDir)) {
+      fs.mkdirSync(previewDir, { recursive: true });
+      logInfo('CanvasPreviewImage: Diretório criado:', previewDir);
+    }
+
+    // Nome do ficheiro
+    const timestamp = Date.now();
+    const filename = `canvas-preview-${timestamp}.png`;
+    const filePath = path.join(previewDir, filename);
+
+    // Converter base64 para buffer e guardar
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+    fs.writeFileSync(filePath, imageBuffer);
+
+    // URL relativa para guardar na base de dados
+    const imageUrl = `/uploads/projects/${projectId}/preview/${filename}`;
+
+    logSuccess('CanvasPreviewImage: Imagem guardada como ficheiro:', imageUrl);
+    return imageUrl;
+  } catch (error) {
+    logError('CanvasPreviewImage: Erro ao guardar imagem:', error.message);
+    return null;
+  }
+}
+
+/**
  * Atualiza dados do canvas
  */
 export async function updateProjectCanvas(id, canvasData) {
@@ -414,8 +471,26 @@ export async function updateProjectCanvas(id, canvasData) {
     logInfo('LogoDetails recebido:', Object.keys(canvasData.logoDetails || {}).length, 'campos');
   }
   if (canvasData.canvasPreviewImage !== undefined) {
-    updateData.canvasPreviewImage = canvasData.canvasPreviewImage;
-    logInfo('CanvasPreviewImage recebido:', canvasData.canvasPreviewImage ? 'Sim (base64)' : 'Não');
+    // Se for base64 data URL, converter para ficheiro e guardar URL
+    if (canvasData.canvasPreviewImage && canvasData.canvasPreviewImage.startsWith('data:image/')) {
+      const imageUrl = await saveCanvasPreviewImage(id, canvasData.canvasPreviewImage);
+      if (imageUrl) {
+        updateData.canvasPreviewImage = imageUrl;
+        logInfo('CanvasPreviewImage: Convertido de base64 para ficheiro:', imageUrl);
+      } else {
+        // Se falhar, guardar null
+        updateData.canvasPreviewImage = null;
+        logError('CanvasPreviewImage: Falha ao guardar como ficheiro, removendo');
+      }
+    } else if (canvasData.canvasPreviewImage === null || canvasData.canvasPreviewImage === '') {
+      // Se for null ou vazio, remover
+      updateData.canvasPreviewImage = null;
+      logInfo('CanvasPreviewImage: Removido');
+    } else {
+      // Se já for uma URL, guardar diretamente
+      updateData.canvasPreviewImage = canvasData.canvasPreviewImage;
+      logInfo('CanvasPreviewImage: URL recebida:', canvasData.canvasPreviewImage);
+    }
   }
 
   logInfo('Dados a atualizar:', Object.keys(updateData));

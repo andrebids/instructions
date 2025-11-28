@@ -41,8 +41,19 @@ import './i18n' // Inicializar i18next
     );
   };
 
+  // Função para verificar se é um erro de extensão do Chrome (message channel)
+  const isChromeExtensionError = (...args) => {
+    const message = args.join(' ');
+    return (
+      message.includes('A listener indicated an asynchronous response by returning true') ||
+      message.includes('message channel closed before a response was received') ||
+      message.includes('Extension context invalidated')
+    );
+  };
+
   console.error = function (...args) {
     if (isViteClientError(...args)) return;
+    if (isChromeExtensionError(...args)) return; // Suprimir erros de extensões do Chrome
     originalConsoleError.apply(console, args);
   };
 
@@ -70,6 +81,15 @@ if (typeof window !== 'undefined') {
     const url = event.filename || event.target?.src || event.target?.href || '';
     const message = event.message || '';
     const source = event.filename || '';
+
+    // Filtrar erros de extensões do Chrome (message channel)
+    if (message.includes('A listener indicated an asynchronous response') ||
+        message.includes('message channel closed before a response was received') ||
+        message.includes('Extension context invalidated')) {
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    }
 
     // Filtrar erros do Iconify (serão tratados pelo proxy abaixo)
     if (typeof url === 'string' && (
@@ -126,7 +146,27 @@ if (typeof window !== 'undefined') {
   // Também interceptar eventos de unhandledrejection para erros de fetch e WebSocket
   window.addEventListener('unhandledrejection', (event) => {
     const reason = event.reason;
-    const message = reason?.message || reason?.toString() || '';
+    let message = '';
+    
+    // Tentar obter a mensagem de várias formas
+    if (typeof reason === 'string') {
+      message = reason;
+    } else if (reason?.message) {
+      message = reason.message;
+    } else if (reason?.toString) {
+      message = reason.toString();
+    } else {
+      message = String(reason || '');
+    }
+
+    // Filtrar erros de extensões do Chrome (message channel)
+    if (message.includes('A listener indicated an asynchronous response') ||
+        message.includes('message channel closed before a response was received') ||
+        message.includes('Extension context invalidated') ||
+        message.includes('asynchronous response') && message.includes('message channel')) {
+      event.preventDefault();
+      return false;
+    }
 
     // Filtrar erros de CORS do Iconify (serão tratados pelo proxy abaixo)
     if (message.includes('CORS') && (
@@ -562,6 +602,12 @@ if (!rootElement._reactRoot) {
   rootElement._reactRoot = createRoot(rootElement);
 }
 
+// Log apenas uma vez (fora do componente)
+if (useAuthJs && typeof window !== 'undefined' && !window.__AUTH_JS_LOGGED__) {
+  console.log('✅ Auth.js está ativo');
+  window.__AUTH_JS_LOGGED__ = true;
+}
+
 // Componente raiz usando Auth.js
 function RootApp() {
   if (!useAuthJs) {
@@ -572,8 +618,6 @@ function RootApp() {
       </div>
     );
   }
-
-  console.log('✅ Auth.js está ativo');
   return (
     <AuthProvider>
       <HeroUIProvider>
