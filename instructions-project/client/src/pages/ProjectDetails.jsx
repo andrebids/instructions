@@ -358,7 +358,8 @@ const LogoDetailsContent = ({ logo }) => {
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                                             {logo.attachmentFiles.map((attachment, idx) => {
                                                 const isImage = attachment.mimetype?.startsWith('image/');
-                                                const fileUrl = attachment.url || `http://localhost:5000${attachment.path}`;
+                                                const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
+                                                const fileUrl = attachment.url || `${baseApi}${attachment.path}`;
 
                                                 return (
                                                     <a

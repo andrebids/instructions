@@ -477,7 +477,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         formData.append('file', file);
 
         try {
-          const response = await fetch('http://localhost:5000/api/files/upload', {
+          const apiBase = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
+          const response = await fetch(`${apiBase}/api/files/upload`, {
             method: 'POST',
             body: formData,
           });
@@ -1720,7 +1721,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                   {/* Uploaded Files */}
                   {logoDetails.attachmentFiles && logoDetails.attachmentFiles.map((file, index) => {
                     const isImage = file.mimetype?.startsWith('image/');
-                    const fileUrl = file.url || `http://localhost:5000${file.path}`;
+                    const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
+                    const fileUrl = file.url || `${baseApi}${file.path}`;
 
                     return (
                       <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-default-200 group">
