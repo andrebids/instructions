@@ -109,8 +109,6 @@ export function useProductManagement(
      * Load products from API
      */
     const loadProducts = useCallback((filters = {}, showArchived = false) => {
-        console.log('🔄 [useProductManagement] loadProducts chamado');
-
         // Remove empty filters
         const cleanedFilters = {};
         for (const key in filters) {
@@ -126,13 +124,11 @@ export function useProductManagement(
             cleanedFilters.showArchived = 'true';
         }
 
-        console.log('🔄 [useProductManagement] Filtros limpos:', cleanedFilters);
         setLoading(true);
         setError(null);
 
         productsAPI.getAll(cleanedFilters)
             .then((data) => {
-                console.log('✅ [useProductManagement] Produtos recebidos:', data.length);
                 setProducts(data);
 
                 // Update available years
@@ -631,8 +627,6 @@ export function useProductManagement(
             if (imageHandlers.imageFiles.animation) data.animation = imageHandlers.imageFiles.animation;
             if (imageHandlers.imageFiles.animationSimulation) data.animationSimulation = imageHandlers.imageFiles.animationSimulation;
 
-            console.log('📦 [useProductManagement] Enviando dados:', data);
-
             setLoading(true);
             setError(null);
 
@@ -642,7 +636,6 @@ export function useProductManagement(
 
             promise
                 .then((saved) => {
-                    console.log('🟢 [useProductManagement] Produto salvo:', saved);
                     setLoading(false);
                     onModalClose();
                     loadProducts();

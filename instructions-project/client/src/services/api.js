@@ -28,16 +28,6 @@ if (isDev) {
   API_BASE_URL = '/api';
 }
 
-// Debug: Log da configuração da API (temporário para debug)
-if (typeof window !== 'undefined') {
-  console.log('🔧 [API Config]', {
-    DEV: import.meta.env.DEV,
-    MODE: import.meta.env.MODE,
-    VITE_API_URL: import.meta.env.VITE_API_URL,
-    API_BASE_URL: API_BASE_URL,
-    location: window.location.origin
-  });
-}
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -104,18 +94,6 @@ api.interceptors.request.use(async (config) => {
     delete config.signal;
   }
 
-  // Debug: Log da URL final para verificar se baseURL está sendo aplicado
-  const finalURL = config.baseURL && config.url
-    ? `${config.baseURL}${config.url.startsWith('/') ? '' : '/'}${config.url}`
-    : config.url;
-  if (config.url?.includes('/users')) {
-    console.log('🔍 [API Debug] Request URL:', {
-      baseURL: config.baseURL,
-      url: config.url,
-      finalURL: finalURL,
-      method: config.method
-    });
-  }
 
   return config;
 });

@@ -4,13 +4,6 @@ import ptTranslations from '../locales/pt.json';
 import enTranslations from '../locales/en.json';
 import frTranslations from '../locales/fr.json';
 
-// Debug: Verificar se as traduções foram importadas corretamente
-if (process.env.NODE_ENV === 'development') {
-  console.log('[i18n] ptTranslations loaded:', !!ptTranslations);
-  console.log('[i18n] ptTranslations.pages exists:', !!ptTranslations?.pages);
-  console.log('[i18n] ptTranslations.pages.projectDetails exists:', !!ptTranslations?.pages?.projectDetails);
-  console.log('[i18n] projectDetails.title:', ptTranslations?.pages?.projectDetails?.title);
-}
 
 // Detectar idioma do localStorage ou navegador
 const getInitialLanguage = () => {
@@ -57,7 +50,7 @@ if (!i18n.isInitialized) {
       react: {
         useSuspense: false, // Evitar suspense para melhor compatibilidade
       },
-      debug: process.env.NODE_ENV === 'development', // Ativar debug em desenvolvimento
+      debug: false, // Debug desativado
       returnEmptyString: false, // Retornar chave se não encontrar tradução
       returnNull: false,
       missingKeyHandler: (lng, ns, key) => {
@@ -71,17 +64,6 @@ i18n.on('languageChanged', (lng) => {
   localStorage.setItem('i18nextLng', lng);
 });
 
-// Debug: Verificar se as traduções foram carregadas
-if (process.env.NODE_ENV === 'development') {
-  i18n.on('initialized', () => {
-    console.log('i18n initialized with language:', i18n.language);
-    console.log('ptTranslations keys:', Object.keys(ptTranslations.pages || {}));
-    console.log('projectDetails exists:', !!ptTranslations.pages?.projectDetails);
-    console.log('projectDetails title:', ptTranslations.pages?.projectDetails?.title);
-    console.log('i18n can find title:', !!i18n.getResource(i18n.language, 'translation', 'pages.projectDetails.title'));
-    console.log('i18n.t result:', i18n.t('pages.projectDetails.title'));
-  });
-}
 
 export default i18n;
 
