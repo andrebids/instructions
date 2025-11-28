@@ -42,9 +42,11 @@ export const DecorationDrawer = ({
     // Criar nova decoração para o canvas na posição central
     const newDecoration = {
       id: 'dec-' + Date.now(),
+      decorationId: decoration.id, // ID da decoração na base de dados (para orders)
       type: decoration.imageUrl ? 'image' : decoration.type,
       name: decoration.name,
       icon: decoration.icon,
+      price: decoration.price || 0, // Preço para orders
       // Guardar URLs para alternância futura
       dayUrl: decoration.imageUrlDay || decoration.thumbnailUrl || decoration.imageUrl || undefined,
       nightUrl: decoration.imageUrlNight || undefined,
@@ -107,4 +109,3 @@ export const DecorationDrawer = ({
     </>
   );
 };
-

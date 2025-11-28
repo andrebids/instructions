@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import { Stage, Layer, Rect } from 'react-konva';
 import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
@@ -14,7 +14,7 @@ import { useResponsiveProfile } from '../../../../hooks/useResponsiveProfile';
  * Componente KonvaCanvas - Canvas principal com layers organizados
  * Gerencia Stage, Layers, drag & drop, zone editing, controles de z-index
  */
-export const KonvaCanvas = ({ 
+export const KonvaCanvas = forwardRef(({ 
   width, 
   height, 
   onDecorationAdd, 
@@ -32,7 +32,7 @@ export const KonvaCanvas = ({
   analysisComplete = {}, // Nova prop para verificar se análise YOLO completou
   showSnapZones = false, // Zonas removidas
   cartoucheInfo = null // Informações do cartouche: { projectName, streetOrZone, option }
-}) => {
+}, ref) => {
   const stageRef = useRef(null);
   const containerRef = useRef(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -43,6 +43,34 @@ export const KonvaCanvas = ({
   // Detectar dispositivo touch
   const { hasTouch } = useResponsiveProfile();
   const isTouchDevice = hasTouch || (typeof window !== 'undefined' && 'ontouchstart' in window);
+
+  // Expor função de exportar imagem via ref
+  useImperativeHandle(ref, () => ({
+    exportImage: (options = {}) => {
+      if (!stageRef.current) return null;
+      
+      const { pixelRatio = 2, mimeType = 'image/png', quality = 0.92 } = options;
+      
+      try {
+        // Desselecionar qualquer decoração antes de exportar
+        setSelectedId(null);
+        
+        // Exportar o stage como imagem
+        const dataURL = stageRef.current.toDataURL({
+          pixelRatio,
+          mimeType,
+          quality
+        });
+        
+        console.log('📸 Canvas exportado como imagem');
+        return dataURL;
+      } catch (error) {
+        console.error('❌ Erro ao exportar canvas:', error);
+        return null;
+      }
+    },
+    getStage: () => stageRef.current
+  }), []);
   
   // Define tamanho virtual/base da cena (dimensões de referência)
   const sceneWidth = 1200;
@@ -532,5 +560,5 @@ export const KonvaCanvas = ({
       )}
     </div>
   );
-};
+});
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { DecorationLibrary } from "../../decoration-library";
@@ -21,6 +21,9 @@ import { getDecorationColor } from '../utils/decorationUtils';
 import { getCenterPosition } from '../utils/canvasCalculations';
 
 export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externalSelectedImage }) => {
+  // Ref para o canvas (para exportar imagem)
+  const canvasRef = useRef(null);
+  
   // Estados locais
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isDecorationDrawerOpen, setIsDecorationDrawerOpen] = useState(false);
@@ -261,6 +264,14 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   }, [conversionCompleteStr, canvasState.uploadStep, canvasState.selectedImage?.id, canvasState.isDayMode, formData?.simulationState, imageConversion.conversionComplete, onInputChange]);
 
   // Salvamento automático
+  // Função para exportar imagem do canvas
+  const getExportImage = useCallback(() => {
+    if (canvasRef.current && canvasRef.current.exportImage) {
+      return canvasRef.current.exportImage({ pixelRatio: 1.5 });
+    }
+    return null;
+  }, []);
+
   useCanvasPersistence({
     decorations: canvasState.decorations,
     canvasImages: canvasState.canvasImages,
@@ -274,7 +285,8 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
       conversionComplete: imageConversion.conversionComplete || {}
     },
     formData,
-    onInputChange
+    onInputChange,
+    getExportImage
   });
 
   // Carregar decorações do formData
@@ -354,6 +366,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                   </div>
                 )}
                 <KonvaCanvas
+                  ref={canvasRef}
                   width="100%"
                   height="100%"
                   onDecorationAdd={handleDecorationAdd}
@@ -403,9 +416,11 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                 
                 const newDecoration = {
                   id: 'dec-' + Date.now(),
+                  decorationId: decoration.id, // ID da decoração na BD (para orders)
                   type: decoration.imageUrl ? 'image' : decoration.type,
                   name: decoration.name,
                   icon: decoration.icon,
+                  price: decoration.price || 0, // Preço para orders
                   dayUrl: decoration.imageUrlDay || decoration.thumbnailUrl || decoration.imageUrl || undefined,
                   nightUrl: decoration.imageUrlNight || undefined,
                   src: decoration.imageUrl || undefined,

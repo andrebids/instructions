@@ -103,6 +103,12 @@ const Project = sequelize.define('Project', {
     },
     comment: 'Estado da simulação: { uploadStep, selectedImageId, isDayMode, conversionComplete }',
   },
+  // Imagem preview do canvas com decorações (base64 ou URL)
+  canvasPreviewImage: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Imagem preview do canvas exportada com decorações (base64 data URL)',
+  },
   // Dados das instruções do logo (apenas para projetos tipo logo)
   logoDetails: {
     type: DataTypes.JSON,

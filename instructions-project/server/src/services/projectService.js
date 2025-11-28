@@ -413,6 +413,10 @@ export async function updateProjectCanvas(id, canvasData) {
     updateData.logoDetails = canvasData.logoDetails;
     logInfo('LogoDetails recebido:', Object.keys(canvasData.logoDetails || {}).length, 'campos');
   }
+  if (canvasData.canvasPreviewImage !== undefined) {
+    updateData.canvasPreviewImage = canvasData.canvasPreviewImage;
+    logInfo('CanvasPreviewImage recebido:', canvasData.canvasPreviewImage ? 'Sim (base64)' : 'Não');
+  }
 
   logInfo('Dados a atualizar:', Object.keys(updateData));
   logInfo('Salvando na base de dados...');

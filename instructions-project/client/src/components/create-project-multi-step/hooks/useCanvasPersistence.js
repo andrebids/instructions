@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { projectsAPI } from '../../../services/api';
+import { projectsAPI, ordersAPI } from '../../../services/api';
 import { saveEditorState } from '../../../services/indexedDB';
 import { registerSyncTag, isBackgroundSyncAvailable } from '../../../services/backgroundSync';
 
@@ -16,6 +16,7 @@ import { registerSyncTag, isBackgroundSyncAvailable } from '../../../services/ba
  * @param {Object} params.simulationState - Estado da simulação (uploadStep, selectedImageId, isDayMode, conversionComplete)
  * @param {Object} params.formData - Dados do formulário
  * @param {Function} params.onInputChange - Callback para atualizar formData
+ * @param {Function} params.getExportImage - Função para exportar imagem do canvas
  */
 export const useCanvasPersistence = ({
   decorations,
@@ -25,7 +26,8 @@ export const useCanvasPersistence = ({
   uploadedImages = [],
   simulationState = null,
   formData,
-  onInputChange
+  onInputChange,
+  getExportImage = null
 }) => {
   // Ref para rastrear valores anteriores e evitar atualizações desnecessárias
   const prevValuesRef = useRef({
@@ -115,6 +117,19 @@ export const useCanvasPersistence = ({
     
     if (temProjectId) {
       var timeoutId = setTimeout(async function() {
+        // Exportar imagem do canvas se houver decorações e imagens
+        let canvasPreviewImage = null;
+        if (getExportImage && canvasImages.length > 0 && decorations.length > 0) {
+          try {
+            canvasPreviewImage = getExportImage();
+            if (canvasPreviewImage) {
+              console.log('📸 Canvas preview exportado');
+            }
+          } catch (exportErr) {
+            console.warn('⚠️ Erro ao exportar canvas preview:', exportErr.message);
+          }
+        }
+        
         var dadosParaSalvar = {
           snapZonesByImage: snapZonesByImage,
           canvasDecorations: decorations,
@@ -128,7 +143,9 @@ export const useCanvasPersistence = ({
             selectedImageId: null,
             isDayMode: true,
             conversionComplete: {}
-          }
+          },
+          // Incluir preview do canvas exportado (imagem com decorações)
+          canvasPreviewImage: canvasPreviewImage
         };
         
         // Salvar no IndexedDB também (robusto para mobile)
@@ -140,6 +157,7 @@ export const useCanvasPersistence = ({
             snapZonesByImage: snapZonesByImage,
             decorationsByImage: decorationsByImage,
             cartoucheByImage: cartoucheByImage,
+            canvasPreviewImage: canvasPreviewImage,
             pendingSync: !navigator.onLine
           });
         } catch (idxError) {
@@ -155,6 +173,25 @@ export const useCanvasPersistence = ({
         }
         
         projectsAPI.updateCanvas(formData.id, dadosParaSalvar)
+          .then(function() {
+            // Sincronizar decorações com as orders do projeto
+            if (decorations && decorations.length > 0) {
+              const decorationsToSync = decorations.map(dec => ({
+                decorationId: dec.decorationId || dec.id,
+                name: dec.name || 'Decoração',
+                imageUrl: dec.dayUrl || dec.nightUrl || dec.src || dec.imageUrl,
+                price: dec.price || 0,
+              }));
+              
+              ordersAPI.syncDecorations(formData.id, decorationsToSync)
+                .then(function(result) {
+                  console.log('✅ Decorações sincronizadas com orders:', result);
+                })
+                .catch(function(syncErr) {
+                  console.warn('⚠️ Erro ao sincronizar decorações com orders:', syncErr.message);
+                });
+            }
+          })
           .catch(function(err) {
             console.error('❌ Erro ao salvar canvas na API:', err.message);
             

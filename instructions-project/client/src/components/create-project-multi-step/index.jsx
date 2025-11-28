@@ -33,7 +33,7 @@ import { Scroller } from "../ui/scroller";
 // 🧪 Breakpoint de Teste 5 (Componente Principal)
 const TEST_BREAKPOINT_5 = false;
 
-export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
+export function CreateProjectMultiStep({ onClose, selectedImage, projectId, initialStep }) {
   // Initialize hooks
   const { t } = useTranslation();
   const saveStatus = useSaveStatus();
@@ -46,7 +46,18 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId }) {
     getVisibleSteps(formState.formData, STEPS),
     [formState.formData]
   );
-  const navigation = useStepNavigation(formState.formData, visibleSteps, formState.createTempProject);
+  
+  // Debug: verificar initialStep e visibleSteps
+  useEffect(() => {
+    if (initialStep) {
+      console.log('📋 CreateProjectMultiStep: initialStep recebido:', initialStep);
+      console.log('📋 VisibleSteps disponíveis:', visibleSteps.map(s => s.id));
+      const stepExists = visibleSteps.some(s => s.id === initialStep);
+      console.log('📋 Step existe nos visibleSteps?', stepExists);
+    }
+  }, [initialStep, visibleSteps]);
+  
+  const navigation = useStepNavigation(formState.formData, visibleSteps, formState.createTempProject, initialStep);
 
   // 🔄 Lifecycle logging
   useEffect(() => {

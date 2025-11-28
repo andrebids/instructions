@@ -9,7 +9,8 @@ import { registerSyncTag, isBackgroundSyncAvailable } from "../../../services/ba
 export const TEST_BREAKPOINT_3 = false;
 
 // ✅ CORRIGIDO: Agora recebe visibleSteps para navegação correta
-export const useStepNavigation = (formData, visibleSteps, onCreateTempProject) => {
+// Também aceita initialStep para navegação direta via URL (ex: ?step=ai-designer)
+export const useStepNavigation = (formData, visibleSteps, onCreateTempProject, initialStep = null) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isNavigating, setIsNavigating] = useState(false);
   const debounceTimerRef = useRef(null);
@@ -17,14 +18,58 @@ export const useStepNavigation = (formData, visibleSteps, onCreateTempProject) =
   const isRestoringRef = useRef(false); // Flag para evitar salvar durante restauração
   const hasRestoredRef = useRef(false); // Flag para evitar múltiplas restaurações
   const lastProjectIdRef = useRef(null); // Rastrear último projectId restaurado
+  const initialStepAppliedRef = useRef(false); // Flag para aplicar initialStep apenas uma vez
 
   // Atualizar projectId ref quando mudar
   useEffect(() => {
     projectIdRef.current = formData.id || formData.tempProjectId;
   }, [formData.id, formData.tempProjectId]);
 
-  // Restaurar step salvo ao carregar projeto existente
+  // Aplicar initialStep do URL se fornecido (tem prioridade absoluta sobre step salvo)
+  // Este useEffect deve executar ANTES do restore para garantir prioridade
+  // IMPORTANTE: Re-executar sempre que visibleSteps mudar, pois o step pode aparecer depois
   useEffect(() => {
+    if (initialStep && visibleSteps.length > 0) {
+      const stepIndex = visibleSteps.findIndex(step => step.id === initialStep);
+      if (stepIndex >= 0) {
+        // Aplicar mesmo se já foi aplicado antes (caso os visibleSteps tenham mudado)
+        if (currentStep !== stepIndex + 1) {
+          console.log('🎯 Aplicando initialStep do URL:', initialStep, '→ Step', stepIndex + 1);
+          isRestoringRef.current = true;
+          setCurrentStep(stepIndex + 1);
+          logger.lifecycle('useStepNavigation', 'Step inicial do URL aplicado', { 
+            stepId: initialStep, 
+            stepIndex: stepIndex + 1,
+            visibleSteps: visibleSteps.map(s => s.id)
+          });
+          setTimeout(() => {
+            isRestoringRef.current = false;
+          }, 100);
+        }
+        initialStepAppliedRef.current = true;
+        hasRestoredRef.current = true; // Marcar como restaurado para não sobrescrever
+      } else {
+        // Step não encontrado nos visibleSteps - pode ser que ainda não estejam prontos
+        // Não marcar como aplicado ainda, para tentar novamente quando visibleSteps mudar
+        if (!initialStepAppliedRef.current) {
+          console.warn('⚠️ Step inicial não encontrado nos visibleSteps ainda:', initialStep, 'Available:', visibleSteps.map(s => s.id));
+        }
+      }
+    }
+  }, [initialStep, visibleSteps]);
+
+  // Restaurar step salvo ao carregar projeto existente (apenas se não houver initialStep do URL)
+  useEffect(() => {
+    // Se houver initialStep do URL, NUNCA restaurar do storage (mesmo que ainda não tenha sido aplicado)
+    if (initialStep) {
+      return;
+    }
+    
+    // Se já foi aplicado initialStep, também não restaurar
+    if (initialStepAppliedRef.current) {
+      return;
+    }
+
     const projectId = formData.id || formData.tempProjectId;
 
     // Se não há projectId ou já foi restaurado para este projectId, não fazer nada

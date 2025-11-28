@@ -67,12 +67,17 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
           const startDate = project.startDate ? parseDate(project.startDate.split('T')[0]) : null;
           const endDate = project.endDate ? parseDate(project.endDate.split('T')[0]) : null;
 
+          // Determinar simuWorkflow baseado nos dados do projeto
+          // Se tem dados do AI Designer (canvasDecorations, canvasImages), é workflow "ai"
+          const hasAIDesignerData = !!(project.canvasDecorations?.length || project.canvasImages?.length);
+          const simuWorkflow = project.projectType === "simu" && hasAIDesignerData ? "ai" : null;
+          
           // Restaurar estado completo do formulário
           setFormData({
             id: project.id,
             name: project.name || "",
             projectType: project.projectType || null,
-            simuWorkflow: null, // Não guardado no backend
+            simuWorkflow: simuWorkflow, // Determinar baseado nos dados do projeto
             status: project.status || "draft",
             category: project.category || "normal",
             clientId: null,

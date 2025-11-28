@@ -400,6 +400,308 @@ const LogoDetailsContent = ({ logo }) => {
     );
 };
 
+// Helper function to calculate unique decorations count
+const getUniqueDecorationsCount = (decorations) => {
+    if (!decorations || decorations.length === 0) return 0;
+    
+    // Função para normalizar a chave de agrupamento
+    const normalizeKey = (value) => {
+        if (!value) return 'unknown';
+        return String(value)
+            .toLowerCase()
+            .replace(/^prd-/, '') // Remove prefixo "prd-"
+            .replace(/[-\s]/g, '') // Remove hífens e espaços
+            .trim();
+    };
+
+    // Remover duplicados por canvas ID
+    const seenCanvasIds = new Set();
+    const uniqueByCanvasId = decorations.filter(dec => {
+        const canvasId = dec.id;
+        if (seenCanvasIds.has(canvasId)) return false;
+        seenCanvasIds.add(canvasId);
+        return true;
+    });
+
+    // Agrupar por referência normalizada
+    const grouped = uniqueByCanvasId.reduce((acc, dec) => {
+        const originalValue = dec.decorationId || dec.name || dec.id || 'unknown';
+        const normalizedKey = normalizeKey(originalValue);
+        if (!acc[normalizedKey]) {
+            acc[normalizedKey] = true;
+        }
+        return acc;
+    }, {});
+
+    return Object.keys(grouped).length;
+};
+
+// Helper function to calculate total quantity of all decorations (sum of all quantities)
+const getTotalDecorationsQuantity = (decorations) => {
+    if (!decorations || decorations.length === 0) return 0;
+    
+    // Função para normalizar a chave de agrupamento
+    const normalizeKey = (value) => {
+        if (!value) return 'unknown';
+        return String(value)
+            .toLowerCase()
+            .replace(/^prd-/, '') // Remove prefixo "prd-"
+            .replace(/[-\s]/g, '') // Remove hífens e espaços
+            .trim();
+    };
+
+    // Remover duplicados por canvas ID
+    const seenCanvasIds = new Set();
+    const uniqueByCanvasId = decorations.filter(dec => {
+        const canvasId = dec.id;
+        if (seenCanvasIds.has(canvasId)) return false;
+        seenCanvasIds.add(canvasId);
+        return true;
+    });
+
+    // Agrupar por referência normalizada e contar quantidades
+    const grouped = uniqueByCanvasId.reduce((acc, dec) => {
+        const originalValue = dec.decorationId || dec.name || dec.id || 'unknown';
+        const normalizedKey = normalizeKey(originalValue);
+        if (!acc[normalizedKey]) {
+            acc[normalizedKey] = 0;
+        }
+        acc[normalizedKey] += 1; // Contar cada instância
+        return acc;
+    }, {});
+
+    // Somar todas as quantidades
+    return Object.values(grouped).reduce((sum, quantity) => sum + quantity, 0);
+};
+
+// Component to display simulation content (AI Designer)
+const SimulationContent = ({ simulation, projectId }) => {
+    const { t } = useTranslation();
+    const navigate = useNavigate();
+    
+    const decorations = simulation.canvasDecorations || [];
+    const images = simulation.canvasImages || [];
+    const sourceImages = images.filter(img => img.isSourceImage);
+    const previewImage = simulation.canvasPreviewImage; // Imagem exportada com decorações
+    
+    // Calcular número de decorações únicas (para outros usos)
+    const uniqueDecorationsCount = getUniqueDecorationsCount(decorations);
+    // Calcular quantidade total de produtos (soma de todas as quantidades)
+    const totalDecorationsQuantity = getTotalDecorationsQuantity(decorations);
+    
+    return (
+        <div className="space-y-6">
+            {/* Resumo da Simulação */}
+            <Card className="shadow-sm border border-default-200">
+                <CardBody>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="flex items-start gap-3">
+                            <div className="p-2 bg-secondary/10 rounded-lg text-secondary mt-1">
+                                <Icon icon="lucide:image" width={20} />
+                            </div>
+                            <div>
+                                <span className="text-xs text-default-500 font-medium uppercase tracking-wider block mb-1">
+                                    {t('pages.projectDetails.simulation.images', 'Imagens')}
+                                </span>
+                                <span className="font-bold text-lg text-default-900">{sourceImages.length}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <div className="p-2 bg-secondary/10 rounded-lg text-secondary mt-1">
+                                <Icon icon="lucide:sparkles" width={20} />
+                            </div>
+                            <div>
+                                <span className="text-xs text-default-500 font-medium uppercase tracking-wider block mb-1">
+                                    {t('pages.projectDetails.simulation.decorations', 'Decorações')}
+                                </span>
+                                <span className="font-bold text-lg text-default-900">{totalDecorationsQuantity}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <div className="p-2 bg-secondary/10 rounded-lg text-secondary mt-1">
+                                <Icon icon="lucide:calendar" width={20} />
+                            </div>
+                            <div>
+                                <span className="text-xs text-default-500 font-medium uppercase tracking-wider block mb-1">
+                                    {t('pages.projectDetails.simulation.savedAt', 'Guardado em')}
+                                </span>
+                                <span className="font-bold text-lg text-default-900">
+                                    {simulation.savedAt ? new Date(simulation.savedAt).toLocaleDateString() : '—'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </CardBody>
+            </Card>
+
+            {/* Preview Principal (Canvas com Decorações) */}
+            {previewImage && (
+                <Card className="shadow-sm border border-default-200">
+                    <CardHeader className="px-4 py-3 border-b border-default-200">
+                        <div className="flex items-center gap-2">
+                            <Icon icon="lucide:sparkles" className="text-secondary" />
+                            <span className="font-semibold">{t('pages.projectDetails.simulation.decoratedPreview', 'Preview com Decorações')}</span>
+                        </div>
+                    </CardHeader>
+                    <CardBody className="p-4">
+                        <div className="relative w-full aspect-[2/1] rounded-lg overflow-hidden bg-default-100">
+                            <img
+                                src={previewImage}
+                                alt="Simulation Preview with Decorations"
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+                    </CardBody>
+                </Card>
+            )}
+
+            {/* Preview das Imagens Source (fallback ou complemento) */}
+            {sourceImages.length > 0 && !previewImage && (
+                <Card className="shadow-sm border border-default-200">
+                    <CardHeader className="px-4 py-3 border-b border-default-200">
+                        <div className="flex items-center gap-2">
+                            <Icon icon="lucide:image" className="text-secondary" />
+                            <span className="font-semibold">{t('pages.projectDetails.simulation.imagePreview', 'Preview das Imagens')}</span>
+                        </div>
+                    </CardHeader>
+                    <CardBody className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {sourceImages.slice(0, 6).map((img, idx) => (
+                                <div key={idx} className="relative aspect-video rounded-lg overflow-hidden bg-default-100 group">
+                                    <img
+                                        src={img.src || img.url}
+                                        alt={`Simulation ${idx + 1}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                    {img.cartouche?.hasCartouche && (
+                                        <div className="absolute bottom-2 left-2 bg-black/70 px-2 py-1 rounded text-white text-xs">
+                                            {img.cartouche.streetOrZone || img.cartouche.projectName}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        {sourceImages.length > 6 && (
+                            <p className="text-center text-default-500 mt-4">
+                                +{sourceImages.length - 6} {t('pages.projectDetails.simulation.moreImages', 'mais imagens')}
+                            </p>
+                        )}
+                    </CardBody>
+                </Card>
+            )}
+
+            {/* Lista de Decorações */}
+            {decorations.length > 0 && (() => {
+                // Função para normalizar a chave de agrupamento
+                // Remove hífens, espaços, prefixos comuns e converte para minúsculas
+                const normalizeKey = (value) => {
+                    if (!value) return 'unknown';
+                    return String(value)
+                        .toLowerCase()
+                        .replace(/^prd-/, '') // Remove prefixo "prd-"
+                        .replace(/[-\s]/g, '') // Remove hífens e espaços
+                        .trim();
+                };
+
+                // Remover decorações duplicadas baseado no ID único do canvas (dec.id)
+                // Se duas decorações têm o mesmo decorationId/nome mas IDs diferentes, são instâncias diferentes no canvas
+                // Mas se têm o mesmo ID do canvas, são duplicados que devem ser removidos
+                const seenCanvasIds = new Set();
+                const uniqueDecorationsByCanvasId = decorations.filter(dec => {
+                    const canvasId = dec.id; // ID único da decoração no canvas
+                    if (seenCanvasIds.has(canvasId)) {
+                        // Duplicado - remover
+                        return false;
+                    }
+                    seenCanvasIds.add(canvasId);
+                    return true;
+                });
+
+                // Agrupar decorações por referência/nome normalizado
+                // Prioridade: decorationId > name > id
+                const groupedDecorations = uniqueDecorationsByCanvasId.reduce((acc, dec) => {
+                    // Obter valor original para exibição
+                    const originalValue = dec.decorationId || dec.name || dec.id || 'unknown';
+                    // Normalizar para agrupamento
+                    const normalizedKey = normalizeKey(originalValue);
+                    
+                    if (!acc[normalizedKey]) {
+                        acc[normalizedKey] = {
+                            ...dec,
+                            quantity: 0,
+                            // Guardar a referência original para exibição (sem prefixo prd-)
+                            reference: originalValue.replace(/^prd-/, '')
+                        };
+                    }
+                    acc[normalizedKey].quantity += 1;
+                    return acc;
+                }, {});
+
+                const uniqueDecorations = Object.values(groupedDecorations);
+
+                return (
+                    <Card className="shadow-sm border border-default-200">
+                        <CardHeader className="px-4 py-3 border-b border-default-200">
+                            <div className="flex items-center gap-2">
+                                <Icon icon="lucide:sparkles" className="text-secondary" />
+                                <span className="font-semibold">{t('pages.projectDetails.simulation.decorationsList', 'Decorações Utilizadas')}</span>
+                            </div>
+                        </CardHeader>
+                        <CardBody className="p-4">
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                {uniqueDecorations.map((dec, idx) => {
+                                    const displayReference = dec.reference || dec.decorationId || dec.name || dec.id || 'Decoração';
+                                    const uniqueKey = normalizeKey(displayReference) + '-' + idx;
+                                    
+                                    return (
+                                        <div key={uniqueKey} className="text-center">
+                                            <div className="w-16 h-16 mx-auto rounded-lg bg-default-100 overflow-hidden mb-2 flex items-center justify-center relative">
+                                                {dec.dayUrl || dec.src || dec.imageUrl ? (
+                                                    <img
+                                                        src={dec.dayUrl || dec.src || dec.imageUrl}
+                                                        alt={displayReference}
+                                                        className="w-full h-full object-contain"
+                                                    />
+                                                ) : (
+                                                    <Icon icon="lucide:sparkles" className="text-2xl text-default-400" />
+                                                )}
+                                                {/* Badge com quantidade (sempre visível) */}
+                                                <div className="absolute -top-1 -right-1 bg-secondary text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                                    {dec.quantity}
+                                                </div>
+                                            </div>
+                                            <span 
+                                                className="text-xs text-default-600 truncate block" 
+                                                title={displayReference}
+                                            >
+                                                {displayReference}
+                                            </span>
+                                            <span className="text-[10px] text-default-500 block mt-0.5">
+                                                {t('pages.projectDetails.simulation.quantity', 'Quantidade')}: {dec.quantity}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </CardBody>
+                    </Card>
+                );
+            })()}
+
+            {/* Botão para editar simulação */}
+            <div className="flex justify-center">
+                <Button
+                    color="secondary"
+                    variant="flat"
+                    startContent={<Icon icon="lucide:edit-2" />}
+                    onPress={() => navigate(`/projects/${projectId}/edit?step=ai-designer`)}
+                >
+                    {t('pages.projectDetails.simulation.editSimulation', 'Editar Simulação')}
+                </Button>
+            </div>
+        </div>
+    );
+};
 
 export default function ProjectDetails() {
     const { id } = useParams();
@@ -545,7 +847,26 @@ export default function ProjectDetails() {
     const savedLogos = project.logoDetails?.logos || [];
     // If no saved logos but we have currentLogo details, show that
     const hasCurrentLogo = project.logoDetails?.currentLogo?.logoNumber || project.logoDetails?.logoNumber;
-    const displayLogos = savedLogos.length > 0 ? savedLogos : (hasCurrentLogo ? [project.logoDetails.currentLogo || project.logoDetails] : []);
+    const logoInstructions = savedLogos.length > 0 ? savedLogos : (hasCurrentLogo ? [project.logoDetails.currentLogo || project.logoDetails] : []);
+    
+    // Also check for simulation data (AI Designer) - create a "simulation instruction" if there are decorations
+    const hasSimulation = (project.canvasDecorations && project.canvasDecorations.length > 0) ||
+                          (project.canvasImages && project.canvasImages.length > 0) ||
+                          (project.decorationsByImage && Object.keys(project.decorationsByImage).length > 0);
+    
+    const simulationInstruction = hasSimulation ? [{
+        isSimulation: true,
+        logoName: t('pages.projectDetails.simulationInstruction', 'Simulação AI Designer'),
+        logoNumber: 'SIM-001',
+        canvasImages: project.canvasImages || [],
+        canvasDecorations: project.canvasDecorations || [],
+        decorationsByImage: project.decorationsByImage || {},
+        canvasPreviewImage: project.canvasPreviewImage || null, // Imagem exportada com decorações
+        savedAt: project.updatedAt || project.createdAt
+    }] : [];
+    
+    // Combine logo instructions with simulation instructions
+    const displayLogos = [...logoInstructions, ...simulationInstruction];
 
     return (
         <div className="flex flex-col h-full">
@@ -774,8 +1095,8 @@ export default function ProjectDetails() {
                                                 aria-label={logo.logoName || `Logo ${idx + 1}`}
                                                 title={
                                                     <div className="flex items-center gap-3">
-                                                        <div className="bg-primary/10 p-2 rounded-full text-primary">
-                                                            <Icon icon="lucide:box" className="text-xl" />
+                                                        <div className={`p-2 rounded-full ${logo.isSimulation ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'}`}>
+                                                            <Icon icon={logo.isSimulation ? "lucide:sparkles" : "lucide:box"} className="text-xl" />
                                                         </div>
                                                         <div>
                                                             <h3 className="text-lg font-bold">{logo.logoName || t('pages.projectDetails.logoDefaultName', { index: idx + 1 })}</h3>
@@ -787,18 +1108,34 @@ export default function ProjectDetails() {
                                                                         <span>{t('pages.projectDetails.requestedBy')}: {logo.requestedBy}</span>
                                                                     </>
                                                                 )}
+                                                                {logo.isSimulation && logo.canvasDecorations && (
+                                                                    <>
+                                                                        <span>•</span>
+                                                                        <span>{getTotalDecorationsQuantity(logo.canvasDecorations)} {t('pages.projectDetails.decorations', 'decorações')}</span>
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
                                                 }
                                                 subtitle={
-                                                    <Chip size="sm" variant="flat" color="primary" className="mt-2">
-                                                        {logo.usageOutdoor ? t('pages.projectDetails.outdoor') : t('pages.projectDetails.indoor')}
-                                                    </Chip>
+                                                    logo.isSimulation ? (
+                                                        <Chip size="sm" variant="flat" color="secondary" className="mt-2">
+                                                            {t('pages.projectDetails.simulationType', 'Simulação')}
+                                                        </Chip>
+                                                    ) : (
+                                                        <Chip size="sm" variant="flat" color="primary" className="mt-2">
+                                                            {logo.usageOutdoor ? t('pages.projectDetails.outdoor') : t('pages.projectDetails.indoor')}
+                                                        </Chip>
+                                                    )
                                                 }
                                             >
                                                 <div className="py-2">
-                                                    <LogoDetailsContent logo={logo} />
+                                                    {logo.isSimulation ? (
+                                                        <SimulationContent simulation={logo} projectId={id} />
+                                                    ) : (
+                                                        <LogoDetailsContent logo={logo} />
+                                                    )}
                                                 </div>
                                             </AccordionItem>
                                         ))}
