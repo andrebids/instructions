@@ -26,8 +26,9 @@ echo    Certifique-se de que a chave SSH está configurada
 echo.
        echo O script ira executar automaticamente:
        echo    - Atualização do código do servidor (git pull)
-       echo    - Execução de migrations na base de dados
        echo    - pm2 restart instructions-server
+echo.
+echo NOTA: Migrations devem ser executadas localmente antes do deploy
 echo.
 echo Iniciando deploy automaticamente...
 timeout /t 2 /nobreak >nul
