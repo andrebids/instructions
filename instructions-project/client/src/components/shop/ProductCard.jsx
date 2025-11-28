@@ -63,15 +63,6 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
     // Mapear o caminho se existir
     if (imagePath) {
       const mapped = mapPath(imagePath);
-      // Debug log apenas em desenvolvimento
-      if (import.meta.env.DEV && imagePath !== mapped) {
-        console.log('🔄 [ProductCard] Mapeando caminho:', { 
-          productId: product.id, 
-          productName: product.name,
-          original: imagePath, 
-          mapped
-        });
-      }
       return mapped;
     }
     

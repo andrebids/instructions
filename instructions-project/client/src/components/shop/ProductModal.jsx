@@ -53,13 +53,6 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
   // Active product can change when user selects a color
   const [activeProduct, setActiveProduct] = React.useState(product);
 
-  // Debug activeProduct
-  React.useEffect(() => {
-    console.log('🔍 [ProductModal] activeProduct:', activeProduct);
-    console.log('🔍 [ProductModal] specs:', activeProduct?.specs);
-    console.log('🔍 [ProductModal] images:', activeProduct?.images);
-    console.log('🔍 [ProductModal] mode:', mode);
-  }, [activeProduct, mode]);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -139,7 +132,6 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
       srcUrl = `${apiBase}/api/media/${encodeURIComponent(videoFile)}`;
     }
 
-    console.log('🎥 [ProductModal] Loading video:', { videoFile, srcUrl, mediaIndex });
 
     let revokedUrl = null;
     const controller = new AbortController();
@@ -158,7 +150,6 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
       .then((blob) => {
         const objectUrl = URL.createObjectURL(blob);
         revokedUrl = objectUrl;
-        console.log('✅ [ProductModal] Video loaded as blob:', objectUrl);
         setVideoSrc(objectUrl);
         setIsLoadingVideo(false);
       })
@@ -168,7 +159,6 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
         // Also try alternative path if original failed
         if (!videoFile.startsWith('/') && !videoFile.startsWith('http')) {
           const altUrl = `/SHOP/TRENDING/VIDEO/${videoFile}`;
-          console.log('🔄 [ProductModal] Trying alternative path:', altUrl);
           setVideoSrc(altUrl);
         } else {
           setVideoSrc(srcUrl);
@@ -337,7 +327,6 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                             e.target.src = fallback;
                           }}
                           onLoad={() => {
-                            try { console.log('🖼️ [ProductModal] imagem mostrada:', imageSrcWithBuster); } catch (_) { }
                           }}
                         />
                       )}
@@ -365,17 +354,14 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                                 const videoFile = activeProduct.videoFile;
                                 if (videoSrc && !videoFile.startsWith('/') && !videoFile.startsWith('http')) {
                                   const altUrl = `/SHOP/TRENDING/VIDEO/${videoFile}`;
-                                  console.log('🔄 [ProductModal] Video error, trying alternative:', altUrl);
                                   setVideoSrc(altUrl);
                                   setVideoError(false);
                                 }
                               }}
                               onLoadedData={() => {
-                                console.log('✅ [ProductModal] Video loaded successfully');
                                 setVideoError(false);
                               }}
                               onCanPlay={() => {
-                                console.log('✅ [ProductModal] Video can play');
                                 setVideoError(false);
                               }}
                               src={videoSrc || `/api/media/${encodeURIComponent(activeProduct.videoFile)}`}
@@ -486,16 +472,6 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                             <div className="text-default-500 text-sm mb-3">Materials</div>
                             <div className="space-y-3">
                               {(() => {
-                                // Debug: log specs for troubleshooting
-                                if (activeProduct.id === 'IPL317R') {
-                                  console.log('🔍 [ProductModal] IPL317R specs:', {
-                                    printType: activeProduct.specs?.printType,
-                                    printColor: activeProduct.specs?.printColor,
-                                    effects: activeProduct.specs?.effects,
-                                    sparkles: activeProduct.specs?.sparkles,
-                                    materiais: activeProduct.specs?.materiais
-                                  });
-                                }
                                 return null;
                               })()}
                               <ComponentsField materials={activeProduct.specs?.materiais} />

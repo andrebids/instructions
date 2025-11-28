@@ -215,10 +215,6 @@ export default function AdminProducts() {
     } else {
       // Usar mapPath para /uploads/ e outros caminhos
       src = mapPath(choose);
-      // Debug log apenas em desenvolvimento
-      if (import.meta.env.DEV && choose !== src) {
-        console.log('🔄 [AdminProducts] Mapeando caminho:', { original: choose, mapped: src });
-      }
     }
 
     return (
@@ -229,30 +225,14 @@ export default function AdminProducts() {
         decoding="async"
         loading="lazy"
         onLoad={() => {
-          if (import.meta.env.DEV) {
-            console.log('🖼️ [AdminProducts] Image loaded:', { id: product.id, src });
-          }
+          // Image loaded successfully
         }}
         onError={(e) => {
           // Prevent infinite error loop
           const attemptCount = parseInt(e.target.getAttribute('data-attempt') || '0');
           
-          // Log detalhado do erro
-          if (import.meta.env.DEV) {
-            console.error('❌ [AdminProducts] Image error:', {
-              id: product.id,
-              attempt: attemptCount,
-              src: e.target.src,
-              original: choose,
-              mapped: src,
-              error: e.type || 'unknown'
-            });
-          }
-          
+          // Log detalhado do erro apenas em caso de erro crítico
           if (attemptCount >= 2) {
-            if (import.meta.env.DEV) {
-              console.warn('⚠️ [AdminProducts] All fallbacks failed, using SVG placeholder');
-            }
             e.target.src = PLACEHOLDER_SVG;
             return;
           }
@@ -268,22 +248,12 @@ export default function AdminProducts() {
               } else {
                 fallbackSrc = mapPath(day);
               }
-              if (import.meta.env.DEV) {
-                console.warn('⚠️ [AdminProducts] Image error, trying day image fallback:', { 
-                  id: product.id, 
-                  tried: src, 
-                  fallback: fallbackSrc 
-                });
-              }
               e.target.src = fallbackSrc;
               return;
             }
           }
           
           // Use SVG placeholder as final fallback
-          if (import.meta.env.DEV) {
-            console.warn('⚠️ [AdminProducts] No valid fallback, using SVG placeholder:', { id: product.id, tried: src });
-          }
           e.target.src = PLACEHOLDER_SVG;
         }}
       />
