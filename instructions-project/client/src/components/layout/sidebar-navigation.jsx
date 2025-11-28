@@ -1,6 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
-import { Tooltip } from "@heroui/react";
+import { NavLink, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { useTheme } from "@heroui/use-theme";
 import { navigationItems } from "../../constants/navigation";
@@ -10,6 +9,8 @@ export function SidebarNavigation() {
   // Mantemos o hook (pode ser útil para outras reações ao tema)
   useTheme();
   const { isAdmin, isEditorStock, isComercial } = useUserRole();
+  const navigate = useNavigate();
+  const [clickedItem, setClickedItem] = React.useState(null);
 
   // Filtrar itens de navegação baseado no role
   const filteredItems = React.useMemo(() => {
@@ -34,6 +35,61 @@ export function SidebarNavigation() {
     });
   }, [isAdmin, isEditorStock, isComercial]);
 
+  // Preload das páginas principais ao montar o componente
+  React.useEffect(() => {
+    const preloadPages = async () => {
+      try {
+        // Preload das páginas mais acessadas
+        const pagesToPreload = [
+          () => import("../../pages/Dashboard"),
+          () => import("../../pages/Shop"),
+          () => import("../../pages/AdminProducts"),
+        ];
+        
+        // Preload com delay para não bloquear a renderização inicial
+        setTimeout(() => {
+          pagesToPreload.forEach(preload => {
+            preload().catch(() => {}); // Silently fail se houver erro
+          });
+        }, 1000);
+      } catch (error) {
+        console.debug("Preload pages skipped");
+      }
+    };
+    
+    preloadPages();
+  }, []);
+
+  // Handler otimizado para navegação imediata
+  const handleNavigation = React.useCallback((href, isExternal) => (e) => {
+    if (isExternal) return; // Deixar o comportamento padrão para links externos
+    
+    e.preventDefault();
+    setClickedItem(href);
+    
+    // Navegação imediata
+    requestAnimationFrame(() => {
+      navigate(href);
+      // Reset do estado após navegação
+      setTimeout(() => setClickedItem(null), 300);
+    });
+  }, [navigate]);
+
+  // Prefetch on hover para navegação instantânea
+  const handleMouseEnter = React.useCallback((href) => {
+    const pageMap = {
+      '/': () => import("../../pages/Dashboard"),
+      '/stock-catalogue': () => import("../../pages/Shop"),
+      '/admin/products': () => import("../../pages/AdminProducts"),
+      '/admin/users': () => import("../../pages/AdminUsers"),
+    };
+    
+    const preloadFn = pageMap[href];
+    if (preloadFn) {
+      preloadFn().catch(() => {});
+    }
+  }, []);
+
   return (
     <div className={`flex flex-col items-center h-full bg-transparent py-6`}>
       {/* Logo reativo ao tema (sem JS) */}
@@ -55,52 +111,49 @@ export function SidebarNavigation() {
         <div className="flex flex-col items-center gap-4">
           {filteredItems.map((item) => {
             const isPlaceholder = !item.href || item.href === "#";
-            return (
-              <Tooltip
+            const isClicked = clickedItem === item.href;
+            
+            return isPlaceholder ? (
+              <button
                 key={item.name}
-                content={item.name}
-                placement="right"
-                showArrow
-                color="default"
-                delay={300}
+                type="button"
+                aria-label={item.name}
+                className="w-10 h-10 rounded-xl bg-content2/60 dark:bg-content2 hover:bg-content3 shadow-sm flex items-center justify-center transition-all cursor-default"
+                disabled
               >
-                {isPlaceholder ? (
-                  <button
-                    type="button"
-                    aria-label={item.name}
-                    className="w-10 h-10 rounded-xl bg-content2/60 dark:bg-content2 hover:bg-content3 shadow-sm flex items-center justify-center transition-all cursor-default"
-                    disabled
-                  >
-                    <Icon icon={item.icon} className="text-default-600 text-xl" />
-                  </button>
-                ) : item.external ? (
-                  <a
-                    href={item.href}
-                    aria-label={item.name}
-                    className="w-10 h-10 rounded-xl bg-content2/70 dark:bg-content2 hover:bg-content3 shadow-sm flex items-center justify-center transition-all"
-                  >
-                    <Icon icon={item.icon} className="text-default-600 text-xl" />
-                  </a>
-                ) : (
-                  <NavLink
-                    to={item.href}
-                    aria-label={item.name}
-                    className={({ isActive }) =>
-                      `w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-all ` +
-                      (isActive
-                        ? `bg-primary/50 hover:bg-primary/60`
-                        : `bg-content2/70 dark:bg-content2 hover:bg-content3`)
-                    }
-                  >
-                    {({ isActive }) => (
-                      <Icon
-                        icon={item.icon}
-                        className={`${isActive ? "text-white" : "text-default-600"} text-xl`}
-                      />
-                    )}
-                  </NavLink>
+                <Icon icon={item.icon} className="text-default-600 text-xl" />
+              </button>
+            ) : item.external ? (
+              <a
+                key={item.name}
+                href={item.href}
+                aria-label={item.name}
+                className="w-10 h-10 rounded-xl bg-content2/70 dark:bg-content2 hover:bg-content3 shadow-sm flex items-center justify-center transition-all active:scale-95"
+              >
+                <Icon icon={item.icon} className="text-default-600 text-xl" />
+              </a>
+            ) : (
+              <NavLink
+                key={item.name}
+                to={item.href}
+                aria-label={item.name}
+                onClick={handleNavigation(item.href, false)}
+                onMouseEnter={() => handleMouseEnter(item.href)}
+                onTouchStart={() => handleMouseEnter(item.href)}
+                className={({ isActive }) =>
+                  `w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-all active:scale-95 ` +
+                  (isActive || isClicked
+                    ? `bg-primary/50 hover:bg-primary/60`
+                    : `bg-content2/70 dark:bg-content2 hover:bg-content3`)
+                }
+              >
+                {({ isActive }) => (
+                  <Icon
+                    icon={item.icon}
+                    className={`${isActive || isClicked ? "text-white" : "text-default-600"} text-xl transition-colors`}
+                  />
                 )}
-              </Tooltip>
+              </NavLink>
             );
           })}
         </div>

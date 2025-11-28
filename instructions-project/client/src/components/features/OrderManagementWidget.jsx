@@ -1,9 +1,144 @@
 import React from 'react';
-import { Card, CardBody, Button, Tooltip, useDisclosure } from "@heroui/react";
+import { Card, CardBody, Button, Tooltip, useDisclosure, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Select, SelectItem, Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
+
+// Extend Order Modal Component
+const ExtendOrderModal = ({ isOpen, onClose, project, onConfirm }) => {
+  const { t } = useTranslation();
+  const [selectedPeriod, setSelectedPeriod] = React.useState('7');
+  const [customDays, setCustomDays] = React.useState('');
+  const [showSuccess, setShowSuccess] = React.useState(false);
+
+  const periodOptions = [
+    { key: '7', label: t('pages.dashboard.orderManagement.extendOrder.modal.days7') },
+    { key: '30', label: t('pages.dashboard.orderManagement.extendOrder.modal.days30') },
+    { key: 'custom', label: t('pages.dashboard.orderManagement.extendOrder.modal.custom') },
+  ];
+
+  const handleConfirm = () => {
+    const days = selectedPeriod === 'custom' ? parseInt(customDays, 10) : parseInt(selectedPeriod, 10);
+    if (selectedPeriod === 'custom' && (!customDays || isNaN(days) || days <= 0)) {
+      return;
+    }
+    
+    // Show success state
+    setShowSuccess(true);
+    
+    // Call parent confirm handler
+    onConfirm(days);
+    
+    // Close modal after showing success message
+    setTimeout(() => {
+      setShowSuccess(false);
+      setSelectedPeriod('7');
+      setCustomDays('');
+      onClose();
+    }, 2000);
+  };
+
+  const handleClose = () => {
+    setShowSuccess(false);
+    setSelectedPeriod('7');
+    setCustomDays('');
+    onClose();
+  };
+
+  const isCustomValid = selectedPeriod !== 'custom' || (customDays && parseInt(customDays, 10) > 0);
+
+  return (
+    <Modal isOpen={isOpen} onClose={handleClose} size="sm">
+      <ModalContent>
+        {showSuccess ? (
+          <>
+            <ModalHeader className="flex gap-3 items-center">
+              <div className="p-2 rounded-full bg-success/10 text-success">
+                <Icon icon="lucide:clock" className="text-xl" />
+              </div>
+              <span>{t('pages.dashboard.orderManagement.extendOrder.modal.pendingApproval')}</span>
+            </ModalHeader>
+            <ModalBody>
+              <div className="flex flex-col items-center py-4">
+                <div className="w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center mb-4">
+                  <Icon icon="lucide:hourglass" className="text-3xl text-warning" />
+                </div>
+                <p className="text-lg font-semibold text-center mb-2">
+                  {t('pages.dashboard.orderManagement.extendOrder.modal.requestSent')}
+                </p>
+                <p className="text-default-500 text-center text-sm">
+                  {t('pages.dashboard.orderManagement.extendOrder.modal.awaitingApproval')}
+                </p>
+              </div>
+            </ModalBody>
+          </>
+        ) : (
+          <>
+            <ModalHeader className="flex gap-3 items-center">
+              <div className="p-2 rounded-full bg-warning/10 text-warning">
+                <Icon icon="lucide:calendar-plus" className="text-xl" />
+              </div>
+              <span>{t('pages.dashboard.orderManagement.extendOrder.modal.title')}</span>
+            </ModalHeader>
+            <ModalBody>
+              <p className="text-default-600 mb-4">
+                {t('pages.dashboard.orderManagement.extendOrder.modal.message', { project })}
+              </p>
+              
+              <Select
+                label={t('pages.dashboard.orderManagement.extendOrder.modal.selectPeriod')}
+                selectedKeys={[selectedPeriod]}
+                onSelectionChange={(keys) => setSelectedPeriod(Array.from(keys)[0])}
+                classNames={{
+                  trigger: "bg-default-100",
+                }}
+              >
+                {periodOptions.map((option) => (
+                  <SelectItem key={option.key}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </Select>
+
+              {selectedPeriod === 'custom' && (
+                <Input
+                  type="number"
+                  label={t('pages.dashboard.orderManagement.extendOrder.modal.customDays')}
+                  placeholder={t('pages.dashboard.orderManagement.extendOrder.modal.customPlaceholder')}
+                  value={customDays}
+                  onValueChange={setCustomDays}
+                  min={1}
+                  classNames={{
+                    inputWrapper: "bg-default-100",
+                  }}
+                  className="mt-4"
+                  endContent={
+                    <span className="text-default-400 text-sm">
+                      {customDays && parseInt(customDays, 10) === 1 ? 'day' : 'days'}
+                    </span>
+                  }
+                />
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="light" onPress={handleClose}>
+                {t('common.cancel')}
+              </Button>
+              <Button 
+                color="warning" 
+                onPress={handleConfirm}
+                isDisabled={!isCustomValid}
+              >
+                {t('pages.dashboard.orderManagement.extendOrder.modal.confirm')}
+              </Button>
+            </ModalFooter>
+          </>
+        )}
+      </ModalContent>
+    </Modal>
+  );
+};
 
 const MOCK_ORDERS = [
   {
@@ -55,6 +190,11 @@ const STATUS_CONFIG = {
 
 export const OrderManagementWidget = React.memo(() => {
   const { t } = useTranslation();
+  const [pendingExtensions, setPendingExtensions] = React.useState(new Set());
+
+  const handleExtensionRequest = React.useCallback((orderId) => {
+    setPendingExtensions(prev => new Set([...prev, orderId]));
+  }, []);
 
   return (
     <Card className="h-[420px] glass-panel border border-white/20 dark:border-white/10 overflow-hidden">
@@ -83,7 +223,13 @@ export const OrderManagementWidget = React.memo(() => {
         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
           <AnimatePresence>
             {MOCK_ORDERS.map((order, index) => (
-              <OrderItem key={order.id} order={order} index={index} />
+              <OrderItem 
+                key={order.id} 
+                order={order} 
+                index={index} 
+                hasPendingExtension={pendingExtensions.has(order.id)}
+                onExtensionRequest={handleExtensionRequest}
+              />
             ))}
           </AnimatePresence>
         </div>
@@ -92,7 +238,7 @@ export const OrderManagementWidget = React.memo(() => {
   );
 });
 
-const OrderItem = React.memo(({ order, index }) => {
+const OrderItem = React.memo(({ order, index, hasPendingExtension, onExtensionRequest }) => {
   const { t } = useTranslation();
   const config = STATUS_CONFIG[order.status];
   
@@ -108,11 +254,12 @@ const OrderItem = React.memo(({ order, index }) => {
     onReleaseClose();
   }, [order.id, onReleaseClose]);
 
-  const handleExtend = React.useCallback(() => {
-    // TODO: Implementar lógica de extend order
-    console.log('Extend order:', order.id);
-    onExtendClose();
-  }, [order.id, onExtendClose]);
+  const handleExtend = React.useCallback((days) => {
+    // TODO: Implementar lógica de extend order com API
+    console.log('Extend order:', order.id, 'for', days, 'days - Pending Approval');
+    // Marcar este pedido como tendo extensão pendente
+    onExtensionRequest(order.id);
+  }, [order.id, onExtensionRequest]);
 
   const handleConfirm = React.useCallback(() => {
     // TODO: Implementar lógica de confirm order
@@ -146,7 +293,7 @@ const OrderItem = React.memo(({ order, index }) => {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400 flex-wrap">
           <span className="font-medium">{order.items[0]}</span>
           {order.items.length > 1 && (
             <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-semibold">
@@ -158,6 +305,14 @@ const OrderItem = React.memo(({ order, index }) => {
             <Icon icon={config.icon} className="w-3 h-3" />
             {order.timeLeft}
           </span>
+          {hasPendingExtension && (
+            <>
+              <span className="text-zinc-300 dark:text-zinc-600">•</span>
+              <span className="text-warning font-medium text-xs">
+                ({t('pages.dashboard.orderManagement.extendOrder.modal.awaitingExtension')})
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -206,16 +361,11 @@ const OrderItem = React.memo(({ order, index }) => {
         icon="lucide:unlock"
       />
 
-      <ConfirmDialog
+      <ExtendOrderModal
         isOpen={isExtendOpen}
         onClose={onExtendClose}
+        project={order.project}
         onConfirm={handleExtend}
-        title={t('pages.dashboard.orderManagement.extendOrder.modal.title')}
-        message={t('pages.dashboard.orderManagement.extendOrder.modal.message', { project: order.project })}
-        confirmText={t('pages.dashboard.orderManagement.extendOrder.modal.confirm')}
-        cancelText={t('common.cancel')}
-        confirmColor="warning"
-        icon="lucide:calendar-plus"
       />
 
       <ConfirmDialog

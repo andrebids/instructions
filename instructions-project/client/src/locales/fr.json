@@ -198,8 +198,18 @@
         "extendOrder": {
           "modal": {
             "title": "Prolonger la Commande",
-            "message": "Voulez-vous prolonger le délai de la commande pour {{project}} ? La période de validité sera prolongée.",
-            "confirm": "Prolonger le Délai"
+            "message": "Sélectionnez la période de prolongation pour la commande de {{project}}.",
+            "confirm": "Prolonger le Délai",
+            "selectPeriod": "Période de Prolongation",
+            "days7": "7 jours",
+            "days30": "30 jours",
+            "custom": "Personnalisé",
+            "customDays": "Nombre de jours",
+            "customPlaceholder": "Entrez le nombre de jours",
+            "pendingApproval": "En Attente d'Approbation",
+            "requestSent": "Demande de prolongation envoyée",
+            "awaitingApproval": "Votre demande de prolongation est en attente d'approbation.",
+            "awaitingExtension": "En attente d'approbation"
           }
         },
         "confirmOrder": {
@@ -569,8 +579,47 @@
       "tabs": {
         "overview": "Vue d'ensemble",
         "instructions": "Instructions",
+        "orders": "Commandes",
         "notes": "Notes",
         "observations": "Chat du Projet"
+      },
+      "orders": {
+        "title": "Commandes",
+        "status": "Statut",
+        "budget": "Budget",
+        "items": "Articles de la Commande",
+        "addItem": "Ajouter un Article",
+        "addFirstItem": "Ajouter le premier article",
+        "addItemTo": "Ajouter un article à",
+        "searchProduct": "Rechercher un produit",
+        "noProducts": "Aucun produit trouvé",
+        "emptyState": "Aucun article ajouté",
+        "errorLoading": "Erreur lors du chargement de la commande",
+        "errorAddingItem": "Erreur lors de l'ajout de l'article",
+        "insufficientBudget": "Budget insuffisant pour ajouter ce produit",
+        "changeStatus": "Changer le statut",
+        "totalItems": "{{count}} articles",
+        "budgetUsage": "Utilisation du budget",
+        "used": "utilisé",
+        "remaining": "Restant",
+        "lines": "lignes",
+        "pieces": "pièces",
+        "decrease": "Diminuer",
+        "increase": "Augmenter",
+        "remove": "Supprimer",
+        "readyToOrder": "La commande est prête à être soumise",
+        "overBudgetWarning": "Attention: Le total dépasse le budget du projet",
+        "submitOrder": "Soumettre la Commande",
+        "statusLabels": {
+          "draft": "Brouillon",
+          "toOrder": "À Commander",
+          "ordered": "Commandé",
+          "delivered": "Livré",
+          "cancelled": "Annulé"
+        },
+        "decoration": "Décoration",
+        "decorations": "décorations",
+        "fromAIDesigner": "Du AI Designer"
       },
       "projectProgress": "Progression du Projet",
       "projectStatus": "Statut du Projet",
@@ -698,5 +747,26 @@
     "serverErrorWithHint": "Erreur du serveur : {{error}} ({{hint}})",
     "serverError500": "Erreur du serveur (500). Veuillez vérifier si le serveur est en cours d'exécution et si la base de données est correctement configurée.",
     "requestFailed": "Échec de la requête avec le statut {{status}}"
+  },
+  "shop": {
+    "orderAssign": {
+      "title": "Ajouter au Projet",
+      "project": "Projet",
+      "searchProject": "Rechercher un projet...",
+      "quantity": "Quantité",
+      "outOfStock": "Rupture de stock.",
+      "budget": "Budget",
+      "currentTotal": "Total actuel",
+      "itemTotal": "Cet article",
+      "afterAddition": "Après ajout",
+      "overBudgetWarning": "Attention: Le total dépassera le budget du projet.",
+      "confirm": "Confirmer",
+      "success": "Article ajouté avec succès!",
+      "viewInOrders": "Vous pouvez le voir dans l'onglet Commandes du projet.",
+      "selectProjectFirst": "Sélectionnez d'abord un projet.",
+      "addError": "Erreur lors de l'ajout de l'article à la commande.",
+      "qtyMinError": "La quantité ne peut pas être négative ou nulle.",
+      "qtyStockError": "La quantité ne peut pas dépasser le stock ({{stock}})."
+    }
   }
 }

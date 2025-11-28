@@ -198,8 +198,18 @@
         "extendOrder": {
           "modal": {
             "title": "Extend Order",
-            "message": "Do you want to extend the deadline for the order for {{project}}? The validity period will be extended.",
-            "confirm": "Extend Deadline"
+            "message": "Select the extension period for the order for {{project}}.",
+            "confirm": "Extend Deadline",
+            "selectPeriod": "Extension Period",
+            "days7": "7 days",
+            "days30": "30 days",
+            "custom": "Custom",
+            "customDays": "Number of days",
+            "customPlaceholder": "Enter number of days",
+            "pendingApproval": "Pending Approval",
+            "requestSent": "Extension request sent",
+            "awaitingApproval": "Your extension request is awaiting approval.",
+            "awaitingExtension": "Awaiting extension approval"
           }
         },
         "confirmOrder": {
@@ -575,8 +585,47 @@
       "tabs": {
         "overview": "Overview",
         "instructions": "Instructions",
+        "orders": "Orders",
         "notes": "Notes",
         "observations": "Project Chat"
+      },
+      "orders": {
+        "title": "Orders",
+        "status": "Status",
+        "budget": "Budget",
+        "items": "Order Items",
+        "addItem": "Add Item",
+        "addFirstItem": "Add first item",
+        "addItemTo": "Add item to",
+        "searchProduct": "Search product",
+        "noProducts": "No products found",
+        "emptyState": "No items added yet",
+        "errorLoading": "Error loading order",
+        "errorAddingItem": "Error adding item",
+        "insufficientBudget": "Insufficient budget to add this product",
+        "changeStatus": "Change status",
+        "totalItems": "{{count}} items",
+        "budgetUsage": "Budget usage",
+        "used": "used",
+        "remaining": "Remaining",
+        "lines": "lines",
+        "pieces": "pieces",
+        "decrease": "Decrease",
+        "increase": "Increase",
+        "remove": "Remove",
+        "readyToOrder": "The order is ready to be submitted",
+        "overBudgetWarning": "Warning: Total exceeds project budget",
+        "submitOrder": "Submit Order",
+        "statusLabels": {
+          "draft": "Draft",
+          "toOrder": "To Order",
+          "ordered": "Ordered",
+          "delivered": "Delivered",
+          "cancelled": "Cancelled"
+        },
+        "decoration": "Decoration",
+        "decorations": "decorations",
+        "fromAIDesigner": "From AI Designer"
       },
       "logoDefaultName": "Logo {{index}}",
       "projectProgress": "Project Progress",
@@ -717,5 +766,26 @@
     "serverErrorWithHint": "Server error: {{error}} ({{hint}})",
     "serverError500": "Server error (500). Please check if the server is running and the database is set up correctly.",
     "requestFailed": "Request failed with status {{status}}"
+  },
+  "shop": {
+    "orderAssign": {
+      "title": "Add to Project",
+      "project": "Project",
+      "searchProject": "Search project...",
+      "quantity": "Quantity",
+      "outOfStock": "Out of stock.",
+      "budget": "Budget",
+      "currentTotal": "Current total",
+      "itemTotal": "This item",
+      "afterAddition": "After addition",
+      "overBudgetWarning": "Warning: Total will exceed project budget.",
+      "confirm": "Confirm",
+      "success": "Item added successfully!",
+      "viewInOrders": "You can view it in the project's Orders tab.",
+      "selectProjectFirst": "Select a project first.",
+      "addError": "Error adding item to order.",
+      "qtyMinError": "Quantity cannot be negative or zero.",
+      "qtyStockError": "Quantity cannot exceed stock ({{stock}})."
+    }
   }
 }

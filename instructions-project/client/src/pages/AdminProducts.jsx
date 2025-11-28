@@ -404,13 +404,18 @@ export default function AdminProducts() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.2 }}
+                  className="cursor-pointer"
+                  onClick={() => handleEdit(product)}
                 >
                   <Card className="h-full hover:scale-[1.02] transition-transform duration-200 shadow-sm hover:shadow-md">
                     <CardBody className="p-0">
                       <div className="relative h-48 bg-content2">
                         {/* Selection checkbox */}
                         {isSelectionMode && (
-                          <div className="absolute top-2 left-2 z-10">
+                          <div 
+                            className="absolute top-2 left-2 z-10"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <Checkbox
                               isSelected={selectedProducts.has(product.id)}
                               onValueChange={() => toggleProductSelection(product.id)}
@@ -439,7 +444,10 @@ export default function AdminProducts() {
                         <p className="text-default-400 text-xs mb-2">
                           {t('pages.dashboard.adminProducts.status.stock')} {product.stock}
                         </p>
-                        <div className="flex gap-2 mt-4 flex-wrap">
+                        <div 
+                          className="flex gap-2 mt-4 flex-wrap"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Button
                             size="sm"
                             variant="flat"

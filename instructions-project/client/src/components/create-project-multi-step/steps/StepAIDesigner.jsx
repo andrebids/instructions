@@ -15,6 +15,7 @@ import { useDecorationManagement } from '../hooks/useDecorationManagement';
 import { useCanvasPersistence } from '../hooks/useCanvasPersistence';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useCartoucheManagement } from '../hooks/useCartoucheManagement';
+import { useDecorationOrders } from '../hooks/useDecorationOrders';
 import { getDefaultStreetName } from '../utils/cartoucheUtils';
 import { getDecorationColor } from '../utils/decorationUtils';
 import { getCenterPosition } from '../utils/canvasCalculations';
@@ -49,6 +50,15 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
     formData,
     onInputChange,
     uploadedImages: canvasState.uploadedImages
+  });
+
+  // Hook para sincronizar decorações com orders do projeto
+  const decorationOrders = useDecorationOrders({
+    decorations: canvasState.decorations,
+    decorationsByImage: decorationManagement.decorationsByImage,
+    projectId: formData?.id || null, // Só sincroniza se projeto já existir
+    selectedImage: canvasState.selectedImage,
+    enabled: !!formData?.id, // Habilitar apenas se projeto já foi salvo
   });
 
   // Handler para upload completo

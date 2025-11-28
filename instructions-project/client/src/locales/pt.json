@@ -198,8 +198,18 @@
         "extendOrder": {
           "modal": {
             "title": "Estender Pedido",
-            "message": "Deseja estender o prazo do pedido para {{project}}? O tempo de validade será prolongado.",
-            "confirm": "Estender Prazo"
+            "message": "Selecione o período de extensão para o pedido de {{project}}.",
+            "confirm": "Estender Prazo",
+            "selectPeriod": "Período de Extensão",
+            "days7": "7 dias",
+            "days30": "30 dias",
+            "custom": "Personalizado",
+            "customDays": "Número de dias",
+            "customPlaceholder": "Introduza o número de dias",
+            "pendingApproval": "A Aguardar Aprovação",
+            "requestSent": "Pedido de extensão enviado",
+            "awaitingApproval": "O seu pedido de extensão está a aguardar aprovação.",
+            "awaitingExtension": "Aguardando aprovação de extensão"
           }
         },
         "confirmOrder": {
@@ -588,8 +598,47 @@
       "tabs": {
         "overview": "Visão Geral",
         "instructions": "Instruções",
+        "orders": "Encomendas",
         "notes": "Notas",
         "observations": "Chat do Projeto"
+      },
+      "orders": {
+        "title": "Encomendas",
+        "status": "Estado",
+        "budget": "Budget",
+        "items": "Items da Encomenda",
+        "addItem": "Adicionar Item",
+        "addFirstItem": "Adicionar primeiro item",
+        "addItemTo": "Adicionar item a",
+        "searchProduct": "Pesquisar produto",
+        "noProducts": "Nenhum produto encontrado",
+        "emptyState": "Nenhum item adicionado ainda",
+        "errorLoading": "Erro ao carregar encomenda",
+        "errorAddingItem": "Erro ao adicionar item",
+        "insufficientBudget": "Budget insuficiente para adicionar este produto",
+        "changeStatus": "Alterar estado",
+        "totalItems": "{{count}} items",
+        "budgetUsage": "Utilização do budget",
+        "used": "utilizado",
+        "remaining": "Restante",
+        "lines": "linhas",
+        "pieces": "peças",
+        "decrease": "Diminuir",
+        "increase": "Aumentar",
+        "remove": "Remover",
+        "readyToOrder": "A encomenda está pronta para ser submetida",
+        "overBudgetWarning": "Atenção: O total excede o budget do projeto",
+        "submitOrder": "Submeter Encomenda",
+        "statusLabels": {
+          "draft": "Rascunho",
+          "toOrder": "A Encomendar",
+          "ordered": "Encomendado",
+          "delivered": "Entregue",
+          "cancelled": "Cancelado"
+        },
+        "decoration": "Decoração",
+        "decorations": "decorações",
+        "fromAIDesigner": "Do AI Designer"
       },
       "logoDefaultName": "Logo {{index}}",
       "projectProgress": "Progresso do Projeto",
@@ -730,5 +779,26 @@
     "serverErrorWithHint": "Erro do servidor: {{error}} ({{hint}})",
     "serverError500": "Erro do servidor (500). Verifique se o servidor está em execução e o banco de dados está configurado corretamente.",
     "requestFailed": "Falha na requisição com status {{status}}"
+  },
+  "shop": {
+    "orderAssign": {
+      "title": "Adicionar ao Projeto",
+      "project": "Projeto",
+      "searchProject": "Pesquisar projeto...",
+      "quantity": "Quantidade",
+      "outOfStock": "Sem stock.",
+      "budget": "Budget",
+      "currentTotal": "Total atual",
+      "itemTotal": "Este item",
+      "afterAddition": "Após adição",
+      "overBudgetWarning": "Atenção: O total excederá o budget do projeto.",
+      "confirm": "Confirmar",
+      "success": "Item adicionado com sucesso!",
+      "viewInOrders": "Pode ver na aba de Encomendas do projeto.",
+      "selectProjectFirst": "Selecione um projeto primeiro.",
+      "addError": "Erro ao adicionar item à encomenda.",
+      "qtyMinError": "A quantidade não pode ser negativa ou zero.",
+      "qtyStockError": "A quantidade não pode exceder o stock ({{stock}})."
+    }
   }
 }

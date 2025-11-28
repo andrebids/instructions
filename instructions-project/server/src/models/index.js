@@ -5,6 +5,8 @@ import Product from './Product.js';
 import ProjectNote from './ProjectNote.js';
 import Task from './Task.js';
 import Observation from './Observation.js';
+import Order from './Order.js';
+import OrderItem from './OrderItem.js';
 
 // Definir associações entre modelos
 Project.hasMany(ProjectElement, {
@@ -52,6 +54,52 @@ Observation.belongsTo(Project, {
   as: 'project',
 });
 
+// Associação Order com Project
+Project.hasMany(Order, {
+  foreignKey: 'projectId',
+  as: 'orders',
+  onDelete: 'CASCADE',
+});
+
+Order.belongsTo(Project, {
+  foreignKey: 'projectId',
+  as: 'project',
+});
+
+// Associação OrderItem com Order
+Order.hasMany(OrderItem, {
+  foreignKey: 'orderId',
+  as: 'items',
+  onDelete: 'CASCADE',
+});
+
+OrderItem.belongsTo(Order, {
+  foreignKey: 'orderId',
+  as: 'order',
+});
+
+// Associação OrderItem com Product
+Product.hasMany(OrderItem, {
+  foreignKey: 'productId',
+  as: 'orderItems',
+});
+
+OrderItem.belongsTo(Product, {
+  foreignKey: 'productId',
+  as: 'product',
+});
+
+// Associação OrderItem com Decoration
+Decoration.hasMany(OrderItem, {
+  foreignKey: 'decorationId',
+  as: 'orderItems',
+});
+
+OrderItem.belongsTo(Decoration, {
+  foreignKey: 'decorationId',
+  as: 'decoration',
+});
+
 export {
   Project,
   Decoration,
@@ -60,5 +108,7 @@ export {
   ProjectNote,
   Task,
   Observation,
+  Order,
+  OrderItem,
 };
 

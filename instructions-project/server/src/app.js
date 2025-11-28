@@ -12,6 +12,7 @@ import uploadRouter from './routes/upload.js';
 import editorUploadRoutes from './routes/editor-upload.js';
 import userRoutes from './routes/users.js';
 import authRoutes from './routes/auth.route.js';
+import ordersRoutes from './routes/orders.js';
 import { createHocuspocusServer } from './hocuspocus-server.js';
 import upload from './config/multer-config.js';
 import fs from 'fs';
@@ -365,6 +366,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/upload', uploadRouter);
 app.use('/api/upload', editorUploadRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/orders', ordersRoutes);
 
 // Proteger rotas se o auth estiver explicitamente habilitado
 // NOTA: Este middleware é aplicado DEPOIS do registro das rotas

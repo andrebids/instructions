@@ -19,8 +19,8 @@ const SignIn = React.lazy(() => import("./pages/SignIn"));
 const ProjectDetails = React.lazy(() => import("./pages/ProjectDetails"));
 
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center h-screen w-full bg-background/50 backdrop-blur-sm">
-    <Spinner size="lg" color="primary" label="Loading..." />
+  <div className="flex items-center justify-center h-screen w-full bg-background/30">
+    <Spinner size="lg" color="primary" />
   </div>
 );
 import { SignedIn, SignedOut } from "./components/auth/AuthGuard";
@@ -47,6 +47,26 @@ function AppLayout() {
     }
     return false;
   });
+
+  // Preload crítico das páginas principais na montagem inicial
+  React.useEffect(() => {
+    const preloadCriticalPages = async () => {
+      try {
+        // Preload imediato das páginas mais críticas
+        const criticalPages = [
+          Dashboard,
+          Shop,
+        ];
+        
+        // As páginas lazy já são módulos, não precisamos fazer nada
+        // O preload real acontece nos componentes de navegação
+      } catch (error) {
+        console.debug("Critical pages preload skipped");
+      }
+    };
+    
+    preloadCriticalPages();
+  }, []);
 
   React.useEffect(() => {
     const checkDark = () => {

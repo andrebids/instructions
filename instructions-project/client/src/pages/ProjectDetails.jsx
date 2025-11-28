@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import ProjectResultsModal, { LANDSCAPES } from "../components/projects/ProjectResultsModal";
 import { ProjectObservations } from '../components/project-notes/ProjectObservations';
 import { useNotifications } from '../context/NotificationContext';
+import ProjectOrdersTab from '../components/orders/ProjectOrdersTab';
 
 // Helper component to display a field value
 const InfoField = ({ label, value, icon }) => (
@@ -420,7 +421,7 @@ export default function ProjectDetails() {
     React.useEffect(() => {
         const params = new URLSearchParams(location.search);
         const tabParam = params.get('tab');
-        if (tabParam && ['overview', 'instructions', 'observations', 'notes'].includes(tabParam)) {
+        if (tabParam && ['overview', 'instructions', 'orders', 'observations', 'notes'].includes(tabParam)) {
             setActiveTab(tabParam);
         }
     }, [location.search]);
@@ -809,6 +810,22 @@ export default function ProjectDetails() {
                                     </div>
                                 )}
                             </div>
+                        </Tab>
+
+                        <Tab
+                            key="orders"
+                            title={
+                                <div className="flex items-center gap-2">
+                                    <Icon icon="lucide:shopping-cart" />
+                                    <span>{t('pages.projectDetails.tabs.orders', 'Encomendas')}</span>
+                                </div>
+                            }
+                        >
+                            <ProjectOrdersTab
+                                projectId={id}
+                                budget={project.budget}
+                                canvasDecorations={project.canvasDecorations || []}
+                            />
                         </Tab>
 
                         <Tab

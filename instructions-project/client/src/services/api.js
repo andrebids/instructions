@@ -597,6 +597,78 @@ export const usersAPI = {
   },
 };
 
+// ===== ORDERS API =====
+export const ordersAPI = {
+  // GET /api/orders/project/:projectId - Obter todas as orders de um projeto
+  getByProject: async (projectId) => {
+    const response = await api.get(`/orders/project/${projectId}`);
+    return response.data;
+  },
+
+  // GET /api/orders/project/:projectId/draft - Obter ou criar order draft
+  getOrCreateDraft: async (projectId) => {
+    const response = await api.get(`/orders/project/${projectId}/draft`);
+    return response.data;
+  },
+
+  // GET /api/orders/:id - Obter order por ID
+  getById: async (id) => {
+    const response = await api.get(`/orders/${id}`);
+    return response.data;
+  },
+
+  // POST /api/orders - Criar nova order
+  create: async (data) => {
+    const response = await api.post('/orders', data);
+    return response.data;
+  },
+
+  // PUT /api/orders/:id - Atualizar order
+  update: async (id, data) => {
+    const response = await api.put(`/orders/${id}`, data);
+    return response.data;
+  },
+
+  // PUT /api/orders/:id/status - Alterar status da order
+  updateStatus: async (id, status) => {
+    const response = await api.put(`/orders/${id}/status`, { status });
+    return response.data;
+  },
+
+  // DELETE /api/orders/:id - Eliminar order
+  delete: async (id) => {
+    const response = await api.delete(`/orders/${id}`);
+    return response.data;
+  },
+
+  // POST /api/orders/:id/items - Adicionar item à order
+  addItem: async (orderId, data) => {
+    const response = await api.post(`/orders/${orderId}/items`, data);
+    return response.data;
+  },
+
+  // PUT /api/orders/:id/items/:itemId - Atualizar item
+  updateItem: async (orderId, itemId, data) => {
+    const response = await api.put(`/orders/${orderId}/items/${itemId}`, data);
+    return response.data;
+  },
+
+  // DELETE /api/orders/:id/items/:itemId - Remover item
+  removeItem: async (orderId, itemId) => {
+    const response = await api.delete(`/orders/${orderId}/items/${itemId}`);
+    return response.data;
+  },
+
+  // POST /api/orders/project/:projectId/sync-decorations - Sincronizar decorações do AI Designer
+  syncDecorations: async (projectId, decorations, sourceImageId = null) => {
+    const response = await api.post(`/orders/project/${projectId}/sync-decorations`, {
+      decorations,
+      sourceImageId,
+    });
+    return response.data;
+  },
+};
+
 // Health check
 export const healthCheck = async () => {
   try {

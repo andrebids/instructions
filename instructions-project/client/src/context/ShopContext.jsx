@@ -23,6 +23,29 @@ function persistState(state) {
   } catch (_) { }
 }
 
+// Limpar cart data antigo do localStorage (agora usamos API)
+function clearOldCartData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    // Remover dados de cart, status e budget (agora geridos pela API)
+    if (state.cartByProject || state.projectStatusById || state.projectBudgetById) {
+      const cleanedState = {
+        ...state,
+        cartByProject: {}, // Limpar carts antigos
+        projectStatusById: {}, // Limpar status antigos
+        projectBudgetById: {}, // Limpar budgets antigos
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanedState));
+      console.log('🧹 [ShopContext] Dados de orders antigos limpos do localStorage');
+    }
+  } catch (_) { }
+}
+
+// Executar limpeza na inicialização
+clearOldCartData();
+
 export function ShopProvider({ children }) {
   const [products, setProducts] = React.useState([]);
   const [productsLoading, setProductsLoading] = React.useState(true);
@@ -349,7 +372,9 @@ export function ShopProvider({ children }) {
     getAvailableStock,
     projectStatusById,
     projectBudgetById,
-  }), [products, projects, categories, cartByProject, totalsByProject, addToProject, favorites, favoriteFolders, compare, toggleFavorite, createFavoriteFolder, renameFavoriteFolder, deleteFavoriteFolder, toggleProductInFolder, toggleCompare, getReservedQuantity, getBaseStock, getAvailableStock, projectStatusById, projectBudgetById]);
+    productsLoading,
+    productsError,
+  }), [products, projects, categories, cartByProject, totalsByProject, addToProject, favorites, favoriteFolders, compare, toggleFavorite, createFavoriteFolder, renameFavoriteFolder, deleteFavoriteFolder, toggleProductInFolder, toggleCompare, getReservedQuantity, getBaseStock, getAvailableStock, projectStatusById, projectBudgetById, productsLoading, productsError]);
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 }

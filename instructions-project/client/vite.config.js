@@ -20,12 +20,42 @@ const APP_VERSION = generateVersion();
 
 export default defineConfig({
   build: {
-    sourcemap: false // Desativar source maps para evitar erros em dev
+    sourcemap: false, // Desativar source maps para evitar erros em dev
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Otimizar chunking para carregamento mais rápido
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['@heroui/react', '@iconify/react'],
+          'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
+        },
+      },
+    },
+    // Otimizações de performance
+    chunkSizeWarningLimit: 1000,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: false,
+        drop_debugger: true,
+      },
+    },
   },
   define: {
     // Suprimir avisos de source maps do React DevTools
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
     '__APP_VERSION__': JSON.stringify(APP_VERSION)
+  },
+  optimizeDeps: {
+    // Pre-bundle dependencies para carregamento mais rápido
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@heroui/react',
+      '@iconify/react',
+    ],
+    exclude: ['@react-three/fiber', '@react-three/drei', 'three'],
   },
   plugins: [
     react({
