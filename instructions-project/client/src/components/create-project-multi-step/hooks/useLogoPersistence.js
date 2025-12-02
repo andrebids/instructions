@@ -5,7 +5,7 @@ import { registerSyncTag, isBackgroundSyncAvailable } from '../../../services/ba
 
 /**
  * Hook para gerenciar salvamento automático dos dados do logo
- * Salva em formData, localStorage e API (se projeto existe)
+ * Salva em formData e API (se projeto existe)
  * Similar ao useCanvasPersistence mas para projetos tipo logo
  * 
  * @param {Object} params
@@ -44,14 +44,6 @@ export const useLogoPersistence = ({
     // Salvar no formData
     onInputChange("logoDetails", logoDetails);
     
-    // Salvar também no localStorage como backup
-    try {
-      const projectId = formData?.id || 'temp';
-      localStorage.setItem(`logoDetails_${projectId}`, logoDetailsStr);
-    } catch (e) {
-      console.error('⚠️ Erro ao salvar no localStorage:', e);
-    }
-    
     // Se projeto já existe (tem ID), salvar automaticamente na base de dados
     const temProjectId = !!formData?.id;
     
@@ -74,14 +66,6 @@ export const useLogoPersistence = ({
           });
         } catch (idxError) {
           console.warn('⚠️ Erro ao salvar no IndexedDB:', idxError);
-        }
-        
-        // Salvar no localStorage também
-        try {
-          localStorage.setItem(`project_${formData.id}_lastStep`, 'logo-instructions');
-          localStorage.setItem(`project_${formData.id}_lastStepTime`, new Date().toISOString());
-        } catch (lsError) {
-          console.warn('⚠️ Erro ao salvar no localStorage:', lsError);
         }
         
         // Salvar na API usando updateCanvas (que suporta logoDetails)

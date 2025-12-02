@@ -101,7 +101,9 @@ export const validateStepLogoInstructions = (formData) => {
   const isCurrentLogoValid = (
     currentLogo.logoNumber?.trim() !== "" &&
     currentLogo.logoName?.trim() !== "" &&
+    currentLogo.description?.trim() !== "" &&
     currentLogo.requestedBy?.trim() !== "" &&
+    currentLogo.fixationType?.trim() !== "" &&
     hasAtLeastOneDimension
   );
 
@@ -110,7 +112,9 @@ export const validateStepLogoInstructions = (formData) => {
   logger.validation("logo-instructions", isValid, {
     hasLogoNumber: !!currentLogo.logoNumber,
     hasLogoName: !!currentLogo.logoName,
+    hasDescription: !!currentLogo.description?.trim(),
     hasRequestedBy: !!currentLogo.requestedBy,
+    hasFixationType: !!currentLogo.fixationType?.trim(),
     hasAtLeastOneDimension: hasAtLeastOneDimension,
     savedLogosCount: savedLogos.length,
     isCurrentLogoValid: isCurrentLogoValid,
