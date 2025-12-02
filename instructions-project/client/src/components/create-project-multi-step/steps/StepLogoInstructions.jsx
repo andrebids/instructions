@@ -311,6 +311,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
   // Estado para controlar quais componentes estão em modo de edição
   const [componentesEditando, setComponentesEditando] = React.useState({});
 
+  // Estado para controlar quais bolas estão em modo de edição
+  const [bolasEditando, setBolasEditando] = React.useState({});
+
   // Estado para controlar a visibilidade do chat
   const [isChatOpen, setIsChatOpen] = React.useState(false);
 
@@ -425,6 +428,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
     // Se precisa de cor, precisa ter corId e referência
     return comp.corId && comp.referencia;
+  }, []);
+
+  // Verificar se uma bola está completa (tem cor, acabamento, tamanho e referência)
+  const isBolaCompleta = React.useCallback((bola) => {
+    return bola.corId && bola.acabamentoId && bola.tamanhoId && bola.referencia;
   }, []);
 
   // Usar Formik para gerenciar estado e validação
@@ -925,7 +933,27 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
     if (newComposition.bolas) {
       newComposition.bolas = newComposition.bolas.filter((_, i) => i !== index);
       handleUpdate("composition", newComposition);
+      // Limpar estado de edição
+      setBolasEditando(prev => {
+        const newValues = {};
+        Object.keys(prev).forEach(key => {
+          const keyIndex = Number(key);
+          if (keyIndex < index) {
+            newValues[keyIndex] = prev[key];
+          } else if (keyIndex > index) {
+            newValues[keyIndex - 1] = prev[key];
+          }
+        });
+        return newValues;
+      });
     }
+  };
+
+  const handleToggleEditBola = (index) => {
+    setBolasEditando(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
   };
 
   const handleBolaUpdate = (index, field, value) => {
@@ -938,6 +966,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
     if (!newArray[index]) {
       newArray[index] = {};
     }
+
+    // Guardar estado anterior para verificar se ficou completa
+    const estadoAnterior = { ...newArray[index] };
 
     newArray[index] = {
       ...newArray[index],
@@ -1003,7 +1034,27 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
       newArray[index].referencia = null;
     }
 
-    newComposition.bolas = newArray;
+    // Verificar se a bola acabou de ficar completa (só para bolas)
+    const estavaCompleta = isBolaCompleta(estadoAnterior);
+    const ficouCompleta = isBolaCompleta(newArray[index]);
+
+    // Se acabou de ficar completa e não estava completa antes, adicionar nova bola
+    if (ficouCompleta && !estavaCompleta) {
+      newComposition.bolas = newArray;
+      newComposition.bolas.push({
+        bolaId: null,
+        corId: null,
+        corNome: null,
+        acabamentoId: null,
+        acabamentoNome: null,
+        tamanhoId: null,
+        tamanhoNome: null,
+        referencia: null
+      });
+    } else {
+      newComposition.bolas = newArray;
+    }
+
     handleUpdate("composition", newComposition);
   };
 
@@ -1035,17 +1086,17 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
+      <div className="flex justify-between items-center px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Logo Instructions</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Define the technical specifications for the logo</p>
+          <h1 className="text-lg font-bold text-gray-800 dark:text-white">Logo Instructions</h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Define the technical specifications for the logo</p>
         </div>
         <Button
           color="primary"
           variant="shadow"
-          size="md"
-          className="bg-gradient-to-tr from-primary-500 to-secondary-500 text-white font-medium shadow-lg"
-          startContent={<Icon icon="lucide:sparkles" className="w-5 h-5" />}
+          size="sm"
+          className="bg-gradient-to-tr from-primary-500 to-secondary-500 text-white font-medium shadow-lg text-xs"
+          startContent={<Icon icon="lucide:sparkles" className="w-4 h-4" />}
           onPress={() => setIsChatOpen(true)}
         >
           AI Assistant
@@ -1053,47 +1104,47 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
       </div>
 
       {/* Form - Responsive Horizontal Grid */}
-      <div className="flex-1 overflow-hidden p-6 bg-gray-50/30 dark:bg-gray-900/10">
-        <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="flex-1 overflow-hidden p-3 bg-gray-50/30 dark:bg-gray-900/10">
+        <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Column 1: Details & Attachments */}
-          <div className="flex flex-col gap-8 overflow-y-auto pr-2 custom-scrollbar">
+          <div className="flex flex-col gap-4">
 
             {/* Details Section */}
             <div>
-              <div className="flex items-center gap-3 mb-5 text-blue-600 dark:text-blue-400">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <Icon icon="lucide:file-signature" className="w-6 h-6" />
+              <div className="flex items-center gap-2 mb-3 text-blue-600 dark:text-blue-400">
+                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Icon icon="lucide:file-signature" className="w-4 h-4" />
                 </div>
-                <h2 className="text-xl font-bold">Details</h2>
+                <h2 className="text-base font-bold">Details</h2>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-3">
                 <div>
-                  <label className="text-base font-semibold text-gray-700 dark:text-gray-200 block mb-2">Logo Name</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 block mb-1.5">Logo Name</label>
                   <Input
                     placeholder="Enter logo name"
                     variant="bordered"
-                    size="md"
+                    size="sm"
                     isRequired
                     value={formik.values.logoName}
                     onValueChange={(v) => formik.updateField("logoName", v)}
                     onBlur={formik.handleBlur}
                     isInvalid={formik.touched.logoName && !!formik.errors.logoName}
                     errorMessage={formik.touched.logoName && formik.errors.logoName}
-                    classNames={{ input: "text-base" }}
+                    classNames={{ input: "text-sm" }}
                   />
                 </div>
 
                 <div>
-                  <label className="text-base font-semibold text-gray-700 dark:text-gray-200 block mb-2">Description</label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 block mb-1.5">Description</label>
                   <Textarea
                     placeholder="Enter description..."
-                    minRows={5}
+                    minRows={2}
                     variant="bordered"
-                    size="md"
+                    size="sm"
                     value={formik.values.description}
                     onValueChange={(v) => formik.updateField("description", v)}
-                    classNames={{ input: "text-base" }}
+                    classNames={{ input: "text-sm" }}
                   />
                 </div>
               </div>
@@ -1101,23 +1152,23 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
             {/* Attachments Section */}
             <div>
-              <div className="flex items-center gap-3 mb-5 text-pink-600 dark:text-pink-400">
-                <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
-                  <Icon icon="lucide:paperclip" className="w-6 h-6" />
+              <div className="flex items-center gap-2 mb-3 text-pink-600 dark:text-pink-400">
+                <div className="p-1.5 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
+                  <Icon icon="lucide:paperclip" className="w-4 h-4" />
                 </div>
-                <h2 className="text-xl font-bold">Attachments</h2>
+                <h2 className="text-base font-bold">Attachments</h2>
               </div>
 
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 bg-white dark:bg-gray-800 hover:border-pink-300 dark:hover:border-pink-700 transition-colors">
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-800 hover:border-pink-300 dark:hover:border-pink-700 transition-colors">
                 {logoDetails.attachmentFiles && logoDetails.attachmentFiles.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     {logoDetails.attachmentFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600 group">
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <div className="p-2 bg-white dark:bg-gray-600 rounded-md text-pink-500 shadow-sm">
-                            <Icon icon="lucide:file" className="w-5 h-5" />
+                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600 group">
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <div className="p-1.5 bg-white dark:bg-gray-600 rounded-md text-pink-500 shadow-sm">
+                            <Icon icon="lucide:file" className="w-4 h-4" />
                           </div>
-                          <span className="truncate text-sm font-medium">{file.name}</span>
+                          <span className="truncate text-xs font-medium">{file.name}</span>
                         </div>
                         <Button
                           isIconOnly
@@ -1125,9 +1176,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                           variant="light"
                           color="danger"
                           onPress={() => handleRemoveAttachment(index)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 min-w-6"
                         >
-                          <Icon icon="lucide:x" className="w-4 h-4" />
+                          <Icon icon="lucide:x" className="w-3 h-3" />
                         </Button>
                       </div>
                     ))}
@@ -1139,24 +1190,24 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                       onChange={(e) => handleFileUpload(Array.from(e.target.files))}
                     />
                     <Button
-                      size="md"
+                      size="sm"
                       variant="flat"
                       color="primary"
                       fullWidth
-                      className="mt-2 font-medium"
-                      startContent={<Icon icon="lucide:upload" className="w-5 h-5" />}
+                      className="mt-1 font-medium"
+                      startContent={<Icon icon="lucide:upload" className="w-4 h-4" />}
                       onPress={() => document.getElementById('file-upload-more').click()}
                     >
                       Add More Files
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-6 text-center">
-                    <div className="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-full mb-4">
-                      <Icon icon="lucide:cloud-upload" className="w-8 h-8 text-pink-500" />
+                  <div className="flex flex-col items-center justify-center py-3 text-center">
+                    <div className="p-2 bg-pink-50 dark:bg-pink-900/20 rounded-full mb-2">
+                      <Icon icon="lucide:cloud-upload" className="w-6 h-6 text-pink-500" />
                     </div>
-                    <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">Upload Files</h4>
-                    <p className="text-sm text-gray-500 mb-5">Drag & drop or click to upload</p>
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-0.5">Upload Files</h4>
+                    <p className="text-xs text-gray-500 mb-3">Drag & drop or click to upload</p>
                     <input
                       type="file"
                       id="file-upload"
@@ -1165,15 +1216,15 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                       onChange={(e) => handleFileUpload(Array.from(e.target.files))}
                     />
                     <Button
-                      size="md"
+                      size="sm"
                       color="primary"
                       variant="flat"
-                      className="font-medium px-8"
+                      className="font-medium px-6"
                       onPress={() => document.getElementById('file-upload').click()}
                     >
                       Select Files
                     </Button>
-                    <p className="text-xs text-gray-400 mt-4">Supported: PNG, JPG, PDF</p>
+                    <p className="text-xs text-gray-400 mt-2">Supported: PNG, JPG, PDF</p>
                   </div>
                 )}
               </div>
@@ -1181,17 +1232,17 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
           </div>
 
           {/* Column 2: Dimensions & Fixation */}
-          <div className="flex flex-col gap-8 overflow-y-auto pr-2 custom-scrollbar">
+          <div className="flex flex-col gap-4">
             {/* Dimensions Section */}
             <div>
-              <div className="flex items-center gap-3 mb-5 text-emerald-600 dark:text-emerald-400">
-                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                  <Icon icon="lucide:ruler" className="w-6 h-6" />
+              <div className="flex items-center gap-2 mb-3 text-emerald-600 dark:text-emerald-400">
+                <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                  <Icon icon="lucide:ruler" className="w-4 h-4" />
                 </div>
-                <h2 className="text-xl font-bold">Dimensions</h2>
+                <h2 className="text-base font-bold">Dimensions</h2>
               </div>
 
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-2 gap-3">
                 {['Height', 'Length', 'Width', 'Diameter'].map((dim) => {
                   const key = dim.toLowerCase();
                   const dimensionValue = formik.values.dimensions?.[key]?.value || "";
@@ -1199,31 +1250,31 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                   const isTouched = formik.touched.dimensions?.[key]?.value;
 
                   return (
-                    <div key={key} className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
-                      <label className="text-sm font-bold text-gray-600 dark:text-gray-300 block mb-3 uppercase tracking-wider">{dim}</label>
-                      <Input
-                        type="number"
-                        placeholder="0.00"
-                        endContent={<span className="text-sm text-gray-500 font-bold">m</span>}
-                        variant="flat"
-                        size="md"
-                        classNames={{ inputWrapper: "bg-gray-50 dark:bg-gray-700" }}
-                        value={dimensionValue}
-                        onValueChange={(v) => handleDimensionUpdate(key, "value", v ? parseFloat(v) : null)}
-                        onBlur={() => formik.setFieldTouched(`dimensions.${key}.value`, true)}
-                        isInvalid={isTouched && !!dimensionError}
-                      />
-                      <div className="mt-3">
+                    <div key={key} className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{dim}</label>
                         <Checkbox
-                          size="md"
+                          size="sm"
                           color="danger"
-                          classNames={{ label: "text-sm font-medium text-gray-600" }}
+                          classNames={{ label: "text-xs font-medium text-gray-600" }}
                           isSelected={formik.values.dimensions?.[key]?.imperative || false}
                           onValueChange={(v) => handleDimensionUpdate(key, "imperative", v)}
                         >
                           Imperative
                         </Checkbox>
                       </div>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        endContent={<span className="text-xs text-gray-500 font-bold">m</span>}
+                        variant="flat"
+                        size="sm"
+                        classNames={{ inputWrapper: "bg-gray-50 dark:bg-gray-700", input: "text-sm" }}
+                        value={dimensionValue}
+                        onValueChange={(v) => handleDimensionUpdate(key, "value", v ? parseFloat(v) : null)}
+                        onBlur={() => formik.setFieldTouched(`dimensions.${key}.value`, true)}
+                        isInvalid={isTouched && !!dimensionError}
+                      />
                     </div>
                   );
                 })}
@@ -1232,19 +1283,19 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
             {/* Fixation Section */}
             <div>
-              <div className="flex items-center gap-3 mb-5 text-orange-600 dark:text-orange-400">
-                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                  <Icon icon="lucide:hammer" className="w-6 h-6" />
+              <div className="flex items-center gap-2 mb-2 text-orange-600 dark:text-orange-400">
+                <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                  <Icon icon="lucide:hammer" className="w-4 h-4" />
                 </div>
-                <h2 className="text-xl font-bold">Fixation</h2>
+                <h2 className="text-base font-bold">Fixation</h2>
               </div>
 
-              <div className="space-y-6 p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+              <div className="space-y-2 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
                 <div>
-                  <label className="text-base font-semibold text-gray-700 dark:text-gray-200 block mb-3">Usage Environment</label>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1.5">Usage Environment</label>
                   <Tabs
                     fullWidth
-                    size="md"
+                    size="sm"
                     color="primary"
                     aria-label="Usage Environment"
                     selectedKey={formik.values.usageOutdoor ? "outdoor" : "indoor"}
@@ -1256,16 +1307,16 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                       }
                     }}
                     classNames={{
-                      tabList: "p-1 bg-gray-100 dark:bg-gray-700",
+                      tabList: "p-0.5 bg-gray-100 dark:bg-gray-700",
                       cursor: "shadow-md",
-                      tabContent: "font-bold"
+                      tabContent: "font-bold text-xs"
                     }}
                   >
                     <Tab
                       key="indoor"
                       title={
-                        <div className="flex items-center gap-2 py-1">
-                          <Icon icon="lucide:home" className="w-4 h-4" />
+                        <div className="flex items-center gap-1.5 py-0.5">
+                          <Icon icon="lucide:home" className="w-3 h-3" />
                           <span>Indoor</span>
                         </div>
                       }
@@ -1273,8 +1324,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                     <Tab
                       key="outdoor"
                       title={
-                        <div className="flex items-center gap-2 py-1">
-                          <Icon icon="lucide:trees" className="w-4 h-4" />
+                        <div className="flex items-center gap-1.5 py-0.5">
+                          <Icon icon="lucide:trees" className="w-3 h-3" />
                           <span>Outdoor</span>
                         </div>
                       }
@@ -1283,11 +1334,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                 </div>
 
                 <div>
-                  <label className="text-base font-semibold text-gray-700 dark:text-gray-200 block mb-3">Fixation Type</label>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1.5">Fixation Type</label>
                   <Select
                     placeholder="Select fixation type"
                     isRequired
-                    size="md"
+                    size="sm"
                     variant="bordered"
                     selectedKeys={formik.values.fixationType ? new Set([formik.values.fixationType]) : new Set()}
                     onSelectionChange={(keys) => {
@@ -1295,12 +1346,13 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                       formik.setFieldTouched("fixationType", true);
                       formik.updateField("fixationType", selected);
                     }}
-                    startContent={<Icon icon="lucide:settings-2" className="w-4 h-4 text-gray-500" />}
+                    startContent={<Icon icon="lucide:settings-2" className="w-3 h-3 text-gray-500" />}
+                    classNames={{ trigger: "text-sm h-8" }}
                   >
-                    <SelectItem key="ground" startContent={<Icon icon="lucide:arrow-down-to-line" className="w-4 h-4" />}>Ground</SelectItem>
-                    <SelectItem key="wall" startContent={<Icon icon="lucide:brick-wall" className="w-4 h-4" />}>Wall</SelectItem>
-                    <SelectItem key="suspended" startContent={<Icon icon="lucide:arrow-up-to-line" className="w-4 h-4" />}>Suspended</SelectItem>
-                    <SelectItem key="none" startContent={<Icon icon="lucide:ban" className="w-4 h-4" />}>None</SelectItem>
+                    <SelectItem key="ground" startContent={<Icon icon="lucide:arrow-down-to-line" className="w-3 h-3" />}>Ground</SelectItem>
+                    <SelectItem key="wall" startContent={<Icon icon="lucide:brick-wall" className="w-3 h-3" />}>Wall</SelectItem>
+                    <SelectItem key="suspended" startContent={<Icon icon="lucide:arrow-up-to-line" className="w-3 h-3" />}>Suspended</SelectItem>
+                    <SelectItem key="none" startContent={<Icon icon="lucide:ban" className="w-3 h-3" />}>None</SelectItem>
                     <SelectItem key="pole_side">Pole (Side)</SelectItem>
                     <SelectItem key="pole_central">Pole (Central)</SelectItem>
                     <SelectItem key="special">Special</SelectItem>
@@ -1308,24 +1360,25 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                 </div>
 
                 <div>
-                  <label className="text-base font-semibold text-gray-700 dark:text-gray-200 block mb-3">Structure Finish</label>
-                  <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <div className="flex items-center gap-3">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1.5">Structure Finish</label>
+                  <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center gap-2">
                       <Switch
-                        size="md"
+                        size="sm"
                         color="secondary"
                         isSelected={formik.values.lacqueredStructure}
                         onValueChange={(v) => formik.updateField("lacqueredStructure", v)}
                       />
-                      <span className="text-sm font-bold">Lacquered</span>
+                      <span className="text-xs font-bold">Lacquered</span>
                     </div>
                     {formik.values.lacqueredStructure && (
                       <Input
                         placeholder="RAL Color Code"
-                        size="md"
+                        size="sm"
                         variant="flat"
                         className="flex-1"
-                        startContent={<div className="w-4 h-4 rounded-full bg-gradient-to-br from-red-500 to-blue-500 ring-2 ring-white"></div>}
+                        classNames={{ input: "text-sm", inputWrapper: "h-8" }}
+                        startContent={<div className="w-3 h-3 rounded-full bg-gradient-to-br from-red-500 to-blue-500 ring-2 ring-white"></div>}
                         value={formik.values.lacquerColor}
                         onValueChange={(v) => formik.updateField("lacquerColor", v)}
                       />
@@ -1334,32 +1387,32 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                 </div>
 
                 <div>
-                  <label className="text-base font-semibold text-gray-700 dark:text-gray-200 block mb-3">Technical Constraints</label>
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className={`p - 3 rounded - lg border - 2 transition - all ${formik.values.maxWeightConstraint ? 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800' : 'bg-transparent border-gray-200 dark:border-gray-700'} `}>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1.5">Technical Constraints</label>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    <div className={`p-1.5 rounded-lg border-2 transition-all ${formik.values.maxWeightConstraint ? 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800' : 'bg-transparent border-gray-200 dark:border-gray-700'}`}>
                       <Checkbox
-                        size="md"
-                        classNames={{ label: "text-sm font-medium" }}
+                        size="sm"
+                        classNames={{ label: "text-xs font-medium" }}
                         isSelected={formik.values.maxWeightConstraint}
                         onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
                       >
                         Maximum Weight Constraint
                       </Checkbox>
                     </div>
-                    <div className={`p - 3 rounded - lg border - 2 transition - all ${formik.values.ballast ? 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800' : 'bg-transparent border-gray-200 dark:border-gray-700'} `}>
+                    <div className={`p-1.5 rounded-lg border-2 transition-all ${formik.values.ballast ? 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800' : 'bg-transparent border-gray-200 dark:border-gray-700'}`}>
                       <Checkbox
-                        size="md"
-                        classNames={{ label: "text-sm font-medium" }}
+                        size="sm"
+                        classNames={{ label: "text-xs font-medium" }}
                         isSelected={formik.values.ballast}
                         onValueChange={(v) => formik.updateField("ballast", v)}
                       >
                         Ballast Required
                       </Checkbox>
                     </div>
-                    <div className={`p - 3 rounded - lg border - 2 transition - all ${formik.values.controlReport ? 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800' : 'bg-transparent border-gray-200 dark:border-gray-700'} `}>
+                    <div className={`p-1.5 rounded-lg border-2 transition-all ${formik.values.controlReport ? 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800' : 'bg-transparent border-gray-200 dark:border-gray-700'}`}>
                       <Checkbox
-                        size="md"
-                        classNames={{ label: "text-sm font-medium" }}
+                        size="sm"
+                        classNames={{ label: "text-xs font-medium" }}
                         isSelected={formik.values.controlReport}
                         onValueChange={(v) => formik.updateField("controlReport", v)}
                       >
@@ -1373,22 +1426,22 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
           </div>
 
           {/* Column 3: Composition (Components & Balls) */}
-          <div className="flex flex-col gap-8 overflow-y-auto pr-2 custom-scrollbar">
-            <div className="flex items-center gap-3 mb-2 text-purple-600 dark:text-purple-400">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <Icon icon="lucide:layers" className="w-6 h-6" />
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2 mb-1 text-purple-600 dark:text-purple-400">
+              <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <Icon icon="lucide:layers" className="w-4 h-4" />
               </div>
-              <h2 className="text-xl font-bold">Composition</h2>
+              <h2 className="text-base font-bold">Composition</h2>
             </div>
 
             {/* Components Section */}
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between bg-purple-50 dark:bg-purple-900/20 p-2.5 rounded-lg border border-purple-100 dark:border-purple-800">
                 <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
-                  <Icon icon="lucide:box" className="w-5 h-5" />
-                  <h4 className="text-base font-bold uppercase tracking-wide">Components</h4>
+                  <Icon icon="lucide:box" className="w-4 h-4" />
+                  <h4 className="text-sm font-bold uppercase tracking-wide">Components</h4>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   {composition.componentes && composition.componentes.length > 0 && (
                     <Button
                       size="sm"
@@ -1396,16 +1449,16 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                       color="danger"
                       isIconOnly
                       onPress={handleClearAllComponentes}
-                      className="bg-white dark:bg-gray-800 shadow-sm"
+                      className="bg-white dark:bg-gray-800 shadow-sm h-7 w-7 min-w-7"
                     >
-                      <Icon icon="lucide:trash-2" className="w-4 h-4" />
+                      <Icon icon="lucide:trash-2" className="w-3 h-3" />
                     </Button>
                   )}
                   <Button
                     size="sm"
                     color="primary"
-                    className="font-medium shadow-sm"
-                    startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
+                    className="font-medium shadow-sm h-7 text-xs"
+                    startContent={<Icon icon="lucide:plus" className="w-3 h-3" />}
                     onPress={handleAddComponente}
                   >
                     Add
@@ -1413,7 +1466,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                 </div>
               </div>
 
-              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+              <div className="space-y-2">
                 {composition.componentes && composition.componentes.length > 0 ? (
                   composition.componentes.map((comp, index) => {
                     const componente = comp.componenteId ? getComponenteById(comp.componenteId) : null;
@@ -1431,15 +1484,14 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
                     if (mostrarApenasReferencia) {
                       return (
-                        <div key={index} className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 shadow-sm hover:shadow-md transition-shadow">
-                          <div className="flex items-start justify-between gap-3">
+                        <div key={index} className="p-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <div className="w-2 h-2 rounded-full bg-green-500 ring-2 ring-green-100"></div>
-                                <div className="text-base font-bold truncate text-gray-900 dark:text-white">{componente?.nome}</div>
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <div className="text-sm font-bold truncate text-gray-900 dark:text-white">{componente?.nome}</div>
                               </div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400 truncate pl-4">
-                                Ref: <span className="font-mono bg-gray-100 dark:bg-gray-600 px-2 py-0.5 rounded text-xs">{comp.referencia}</span>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                Ref: <span className="font-mono bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded text-xs">{comp.referencia}</span>
                               </div>
                             </div>
                             <div className="flex gap-1">
@@ -1448,9 +1500,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                                 variant="flat"
                                 isIconOnly
                                 onPress={() => handleToggleEditComponente(index)}
-                                className="h-8 w-8 min-w-8"
+                                className="h-6 w-6 min-w-6"
                               >
-                                <Icon icon="lucide:pencil" className="w-4 h-4" />
+                                <Icon icon="lucide:pencil" className="w-3 h-3" />
                               </Button>
                               <Button
                                 size="sm"
@@ -1458,9 +1510,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                                 color="danger"
                                 isIconOnly
                                 onPress={() => handleRemoveComponente(index)}
-                                className="h-8 w-8 min-w-8"
+                                className="h-6 w-6 min-w-6"
                               >
-                                <Icon icon="lucide:trash-2" className="w-4 h-4" />
+                                <Icon icon="lucide:trash-2" className="w-3 h-3" />
                               </Button>
                             </div>
                           </div>
@@ -1469,11 +1521,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                     }
 
                     return (
-                      <div key={index} className="p-4 border border-purple-200 dark:border-purple-800 rounded-xl bg-purple-50/30 dark:bg-purple-900/10 space-y-4 shadow-sm">
+                      <div key={index} className="p-2.5 border border-purple-200 dark:border-purple-800 rounded-lg bg-purple-50/30 dark:bg-purple-900/10 space-y-2 shadow-sm">
                         <AutocompleteWithMarquee
                           label="Component"
                           placeholder="Search component"
-                          size="md"
+                          size="sm"
                           variant="bordered"
                           selectedKey={comp.componenteId ? String(comp.componenteId) : null}
                           inputValue={componenteSearchValues[index] || displayValue || ""}
@@ -1494,9 +1546,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                           }}
                           defaultItems={componentesFiltrados}
                           menuTrigger="input"
-                          startContent={<Icon icon="lucide:search" className="w-4 h-4 text-gray-500" />}
+                          startContent={<Icon icon="lucide:search" className="w-3 h-3 text-gray-500" />}
                           allowsCustomValue={false}
-                          classNames={{ listboxWrapper: "max-h-[300px]" }}
+                          classNames={{ listboxWrapper: "max-h-[300px]", trigger: "text-sm", input: "text-sm" }}
                         >
                           {(c) => (
                             <AutocompleteItem key={String(c.id)} textValue={`${c.nome} ${c.referencia || ""} `}>
@@ -1510,14 +1562,15 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                           <SelectWithMarquee
                             label="Color"
                             placeholder="Select color"
-                            size="md"
+                            size="sm"
                             variant="bordered"
                             selectedKeys={comp.corId ? new Set([String(comp.corId)]) : new Set()}
                             onSelectionChange={(keys) => {
                               const selectedId = Array.from(keys)[0];
                               handleCompositionUpdate("componentes", index, "corId", selectedId ? Number(selectedId) : null);
                             }}
-                            startContent={<Icon icon="lucide:palette" className="w-4 h-4 text-gray-500" />}
+                            startContent={<Icon icon="lucide:palette" className="w-3 h-3 text-gray-500" />}
+                            classNames={{ trigger: "text-sm" }}
                           >
                             {coresDisponiveis.map((cor) => (
                               <SelectItem key={String(cor.id)} textValue={cor.nome}>
@@ -1527,14 +1580,14 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                           </SelectWithMarquee>
                         )}
 
-                        <div className="flex gap-2 justify-end mt-2">
+                        <div className="flex gap-1.5 justify-end mt-1">
                           {completo && (
                             <Button
                               size="sm"
                               color="success"
                               variant="flat"
-                              className="font-medium"
-                              startContent={<Icon icon="lucide:check" className="w-4 h-4" />}
+                              className="font-medium h-6 text-xs"
+                              startContent={<Icon icon="lucide:check" className="w-3 h-3" />}
                               onPress={() => handleToggleEditComponente(index)}
                             >
                               Done
@@ -1545,42 +1598,43 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                             variant="flat"
                             color="danger"
                             isIconOnly
+                            className="h-6 w-6 min-w-6"
                             onPress={() => handleRemoveComponente(index)}
                           >
-                            <Icon icon="lucide:trash-2" className="w-4 h-4" />
+                            <Icon icon="lucide:trash-2" className="w-3 h-3" />
                           </Button>
                         </div>
                       </div>
                     );
                   })
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-800/50">
-                    <Icon icon="lucide:box" className="w-10 h-10 text-gray-300 mb-2" />
-                    <p className="text-sm text-gray-400">No components added yet</p>
+                  <div className="flex flex-col items-center justify-center py-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50/50 dark:bg-gray-800/50">
+                    <Icon icon="lucide:box" className="w-8 h-8 text-gray-300 mb-1" />
+                    <p className="text-xs text-gray-400">No components added yet</p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Balls Section */}
-            <div className="flex flex-col gap-4 border-t-2 border-gray-100 dark:border-gray-700 pt-6 mt-2">
-              <div className="flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
+            <div className="flex flex-col gap-3 border-t-2 border-gray-100 dark:border-gray-700 pt-3 mt-1">
+              <div className="flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 p-2.5 rounded-lg border border-indigo-100 dark:border-indigo-800">
                 <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
-                  <Icon icon="lucide:circle-dot" className="w-5 h-5" />
-                  <h4 className="text-base font-bold uppercase tracking-wide">Balls</h4>
+                  <Icon icon="lucide:circle-dot" className="w-4 h-4" />
+                  <h4 className="text-sm font-bold uppercase tracking-wide">Balls</h4>
                 </div>
                 <Button
                   size="sm"
                   color="primary"
-                  className="font-medium shadow-sm"
-                  startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
+                  className="font-medium shadow-sm h-7 text-xs"
+                  startContent={<Icon icon="lucide:plus" className="w-3 h-3" />}
                   onPress={handleAddBola}
                 >
                   Add
                 </Button>
               </div>
 
-              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+              <div className="space-y-2">
                 {composition.bolas && composition.bolas.length > 0 ? (
                   composition.bolas.map((bola, index) => {
                     const coresDisponiveis = getCoresDisponiveisBolas();
@@ -1590,37 +1644,84 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                     const tamanhosDisponiveis = bola.corId && bola.acabamentoId
                       ? getTamanhosByCorEAcabamentoBola(bola.corId, bola.acabamentoId)
                       : materialsData.tamanhos;
+                    const completa = isBolaCompleta(bola);
+                    const editando = bolasEditando[index];
+                    const mostrarApenasReferencia = completa && !editando;
+
+                    if (mostrarApenasReferencia) {
+                      // Montar nome da bola: cor + acabamento + tamanho
+                      const nomeBola = [bola.corNome, bola.acabamentoNome, bola.tamanhoNome]
+                        .filter(Boolean)
+                        .join(" - ");
+
+                      return (
+                        <div key={index} className="p-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <div className="text-sm font-bold truncate text-gray-900 dark:text-white">{nomeBola}</div>
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                Ref: <span className="font-mono bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded text-xs">{bola.referencia}</span>
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                isIconOnly
+                                onPress={() => handleToggleEditBola(index)}
+                                className="h-6 w-6 min-w-6"
+                              >
+                                <Icon icon="lucide:pencil" className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                color="danger"
+                                isIconOnly
+                                onPress={() => handleRemoveBola(index)}
+                                className="h-6 w-6 min-w-6"
+                              >
+                                <Icon icon="lucide:trash-2" className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
 
                     return (
-                      <div key={index} className="p-4 border border-indigo-200 dark:border-indigo-800 rounded-xl bg-indigo-50/30 dark:bg-indigo-900/10 space-y-4 shadow-sm">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center text-xs font-bold text-indigo-600 dark:text-indigo-300 ring-2 ring-white dark:ring-gray-700">
+                      <div key={index} className="p-2.5 border border-indigo-200 dark:border-indigo-800 rounded-lg bg-indigo-50/30 dark:bg-indigo-900/10 space-y-2 shadow-sm">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <div className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center text-xs font-bold text-indigo-600 dark:text-indigo-300 ring-2 ring-white dark:ring-gray-700">
                             {index + 1}
                           </div>
-                          <span className="text-sm font-bold text-gray-600 dark:text-gray-300">Ball Configuration</span>
+                          <span className="text-xs font-bold text-gray-600 dark:text-gray-300">Ball Configuration</span>
                         </div>
 
                         <Select
                           label="Color"
                           placeholder="Select color"
-                          size="md"
+                          size="sm"
                           variant="bordered"
                           selectedKeys={bola.corId ? [String(bola.corId)] : []}
                           onSelectionChange={(keys) => {
                             const selectedId = Array.from(keys)[0];
                             handleBolaUpdate(index, "corId", selectedId ? Number(selectedId) : null);
                           }}
+                          classNames={{ trigger: "text-sm" }}
                         >
                           {coresDisponiveis.map((cor) => (
                             <SelectItem key={String(cor.id)}>{cor.nome}</SelectItem>
                           ))}
                         </Select>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-2">
                           <Select
                             label="Finish"
                             placeholder="Finish"
-                            size="md"
+                            size="sm"
                             variant="bordered"
                             selectedKeys={bola.acabamentoId ? [String(bola.acabamentoId)] : []}
                             onSelectionChange={(keys) => {
@@ -1628,6 +1729,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                               handleBolaUpdate(index, "acabamentoId", selectedId ? Number(selectedId) : null);
                             }}
                             isDisabled={!bola.corId}
+                            classNames={{ trigger: "text-sm" }}
                           >
                             {acabamentosDisponiveis.map((acabamento) => (
                               <SelectItem key={String(acabamento.id)}>{acabamento.nome}</SelectItem>
@@ -1637,7 +1739,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                           <Select
                             label="Size"
                             placeholder="Size"
-                            size="md"
+                            size="sm"
                             variant="bordered"
                             selectedKeys={bola.tamanhoId ? [String(bola.tamanhoId)] : []}
                             onSelectionChange={(keys) => {
@@ -1645,6 +1747,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                               handleBolaUpdate(index, "tamanhoId", selectedId ? Number(selectedId) : null);
                             }}
                             isDisabled={!bola.corId || !bola.acabamentoId}
+                            classNames={{ trigger: "text-sm" }}
                           >
                             {tamanhosDisponiveis.map((tamanho) => (
                               <SelectItem key={String(tamanho.id)}>{tamanho.nome}</SelectItem>
@@ -1652,24 +1755,37 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                           </Select>
                         </div>
 
-                        <div className="flex justify-end mt-1">
+                        <div className="flex gap-1.5 justify-end mt-0.5">
+                          {completa && (
+                            <Button
+                              size="sm"
+                              color="success"
+                              variant="flat"
+                              className="font-medium h-6 text-xs"
+                              startContent={<Icon icon="lucide:check" className="w-3 h-3" />}
+                              onPress={() => handleToggleEditBola(index)}
+                            >
+                              Done
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="light"
                             color="danger"
-                            startContent={<Icon icon="lucide:trash-2" className="w-4 h-4" />}
+                            isIconOnly
+                            className="h-6 w-6 min-w-6"
                             onPress={() => handleRemoveBola(index)}
                           >
-                            Remove
+                            <Icon icon="lucide:trash-2" className="w-3 h-3" />
                           </Button>
                         </div>
                       </div>
                     );
                   })
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-800/50">
-                    <Icon icon="lucide:circle-dashed" className="w-10 h-10 text-gray-300 mb-2" />
-                    <p className="text-sm text-gray-400">No balls added yet</p>
+                  <div className="flex flex-col items-center justify-center py-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50/50 dark:bg-gray-800/50">
+                    <Icon icon="lucide:circle-dashed" className="w-8 h-8 text-gray-300 mb-1" />
+                    <p className="text-xs text-gray-400">No balls added yet</p>
                   </div>
                 )}
               </div>
