@@ -1093,9 +1093,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         </div>
         <Button
           color="primary"
-          variant="shadow"
+          variant="solid"
           size="sm"
-          className="bg-gradient-to-tr from-primary-500 to-secondary-500 text-white font-medium shadow-lg text-xs"
+          className="bg-gradient-to-tr from-primary-500 to-secondary-500 text-white font-medium text-xs"
           startContent={<Icon icon="lucide:sparkles" className="w-4 h-4" />}
           onPress={() => setIsChatOpen(true)}
         >
@@ -1427,8 +1427,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
           {/* Column 3: Composition (Components & Balls) */}
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2 mb-1 text-purple-600 dark:text-purple-400">
-              <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+            <div className="flex items-center gap-2 mb-1 text-gray-600 dark:text-gray-400">
+              <div className="p-1.5 bg-gray-100 dark:bg-gray-900/30 rounded-lg">
                 <Icon icon="lucide:layers" className="w-4 h-4" />
               </div>
               <h2 className="text-base font-bold">Composition</h2>
@@ -1436,8 +1436,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
             {/* Components Section */}
             <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between bg-purple-50 dark:bg-purple-900/20 p-2.5 rounded-lg border border-purple-100 dark:border-purple-800">
-                <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+              <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-900/20 p-2.5 rounded-lg border border-gray-100 dark:border-gray-800">
+                <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                   <Icon icon="lucide:box" className="w-4 h-4" />
                   <h4 className="text-sm font-bold uppercase tracking-wide">Components</h4>
                 </div>
@@ -1449,7 +1449,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                       color="danger"
                       isIconOnly
                       onPress={handleClearAllComponentes}
-                      className="bg-white dark:bg-gray-800 shadow-sm h-7 w-7 min-w-7"
+                      className="bg-white dark:bg-gray-800 h-7 w-7 min-w-7"
                     >
                       <Icon icon="lucide:trash-2" className="w-3 h-3" />
                     </Button>
@@ -1457,7 +1457,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                   <Button
                     size="sm"
                     color="primary"
-                    className="font-medium shadow-sm h-7 text-xs"
+                    className="font-medium h-7 text-xs"
                     startContent={<Icon icon="lucide:plus" className="w-3 h-3" />}
                     onPress={handleAddComponente}
                   >
@@ -1521,7 +1521,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                     }
 
                     return (
-                      <div key={index} className="p-2.5 border border-purple-200 dark:border-purple-800 rounded-lg bg-purple-50/30 dark:bg-purple-900/10 space-y-2 shadow-sm">
+                      <div key={index} className="p-2.5 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50/30 dark:bg-gray-900/10 space-y-2 shadow-sm">
                         <AutocompleteWithMarquee
                           label="Component"
                           placeholder="Search component"
@@ -1618,15 +1618,15 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
             {/* Balls Section */}
             <div className="flex flex-col gap-3 border-t-2 border-gray-100 dark:border-gray-700 pt-3 mt-1">
-              <div className="flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 p-2.5 rounded-lg border border-indigo-100 dark:border-indigo-800">
-                <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+              <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-900/20 p-2.5 rounded-lg border border-gray-100 dark:border-gray-800">
+                <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                   <Icon icon="lucide:circle-dot" className="w-4 h-4" />
                   <h4 className="text-sm font-bold uppercase tracking-wide">Balls</h4>
                 </div>
                 <Button
                   size="sm"
                   color="primary"
-                  className="font-medium shadow-sm h-7 text-xs"
+                  className="font-medium h-7 text-xs"
                   startContent={<Icon icon="lucide:plus" className="w-3 h-3" />}
                   onPress={handleAddBola}
                 >
@@ -1692,9 +1692,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                     }
 
                     return (
-                      <div key={index} className="p-2.5 border border-indigo-200 dark:border-indigo-800 rounded-lg bg-indigo-50/30 dark:bg-indigo-900/10 space-y-2 shadow-sm">
+                      <div key={index} className="p-2.5 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50/30 dark:bg-gray-900/10 space-y-2 shadow-sm">
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <div className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center text-xs font-bold text-indigo-600 dark:text-indigo-300 ring-2 ring-white dark:ring-gray-700">
+                          <div className="w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300 ring-2 ring-white dark:ring-gray-700">
                             {index + 1}
                           </div>
                           <span className="text-xs font-bold text-gray-600 dark:text-gray-300">Ball Configuration</span>
