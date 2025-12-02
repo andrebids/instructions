@@ -428,21 +428,6 @@ export async function getAll(req, res) {
           // Validar formato de caminhos de imagens (sem verificar filesystem)
           // Confia na base de dados e filtra apenas imagens temporárias problemáticas
           
-          // Debug ANTES da validação para produto específico
-          const isDebugProduct = (plainProduct.id === 'prd-005' || plainProduct.name === 'GX349L');
-          if (isDevelopment && isDebugProduct) {
-            console.log(`🔍 [PRODUCTS API] ANTES da validação - produto prd-005/GX349L:`, {
-              id: plainProduct.id,
-              name: plainProduct.name,
-              originalImagesNightUrl: plainProduct.imagesNightUrl,
-              originalImagesDayUrl: plainProduct.imagesDayUrl,
-              originalThumbnailUrl: plainProduct.thumbnailUrl,
-              availableColors: plainProduct.availableColors,
-              availableColorsType: typeof plainProduct.availableColors,
-              availableColorsKeys: plainProduct.availableColors ? Object.keys(plainProduct.availableColors) : null
-            });
-          }
-          
           const validatedImages = validateProductImagesFormat({
             imagesNightUrl: plainProduct.imagesNightUrl,
             imagesDayUrl: plainProduct.imagesDayUrl,
@@ -459,53 +444,12 @@ export async function getAll(req, res) {
           plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
           plainProduct.imagesDayUrl = validatedImages.imagesDayUrl;
           plainProduct.thumbnailUrl = validatedImages.thumbnailUrl;
-          
-          // Debug DEPOIS da validação para produto específico
-          if (isDevelopment && isDebugProduct) {
-            console.log(`🔍 [PRODUCTS API] DEPOIS da validação - produto prd-005/GX349L:`, {
-              id: plainProduct.id,
-              name: plainProduct.name,
-              isActive: plainProduct.isActive,
-              validatedImagesNightUrl: validatedImages.imagesNightUrl,
-              validatedImagesDayUrl: validatedImages.imagesDayUrl,
-              validatedThumbnailUrl: validatedImages.thumbnailUrl,
-              finalImagesNightUrl: plainProduct.imagesNightUrl,
-              finalImagesDayUrl: plainProduct.imagesDayUrl,
-              finalThumbnailUrl: plainProduct.thumbnailUrl,
-              availableColors: plainProduct.availableColors,
-              willBeIncluded: true // Produto será incluído na resposta
-            });
-          }
 
           productsData.push(plainProduct);
         } catch (err) {
           console.error('❌ [PRODUCTS API] Erro ao serializar produto ' + (products[i].id || 'unknown') + ':', err);
           console.error('❌ [PRODUCTS API] Stack do erro de serialização:', err.stack);
           // Continuar mesmo se um produto falhar
-        }
-      }
-
-      if (isDevelopment) {
-        console.log('✅ [PRODUCTS API] Produtos serializados com sucesso:', productsData.length);
-        
-        // Verificar se GX349L está na lista
-        const gx349lInList = productsData.find(p => p.id === 'prd-005' || p.name === 'GX349L');
-        if (gx349lInList) {
-          console.log('✅ [PRODUCTS API] GX349L encontrado na lista de produtos retornados:', {
-            id: gx349lInList.id,
-            name: gx349lInList.name,
-            isActive: gx349lInList.isActive,
-            hasImagesNightUrl: !!gx349lInList.imagesNightUrl,
-            hasImagesDayUrl: !!gx349lInList.imagesDayUrl,
-            hasThumbnailUrl: !!gx349lInList.thumbnailUrl,
-            hasAvailableColors: !!(gx349lInList.availableColors && Object.keys(gx349lInList.availableColors).length > 0)
-          });
-        } else {
-          console.warn('⚠️  [PRODUCTS API] GX349L NÃO encontrado na lista de produtos retornados');
-          console.warn('   Isso pode significar que:');
-          console.warn('   1. O produto está com isActive=false no banco');
-          console.warn('   2. O produto não existe no banco');
-          console.warn('   3. Há um filtro que está excluindo o produto');
         }
       }
 
@@ -593,19 +537,24 @@ export async function getTrending(req, res) {
     // Check cache first
     const now = Date.now();
     if (trendingCache.data && trendingCache.timestamp && (now - trendingCache.timestamp < trendingCache.ttl)) {
+      console.log('📦 [TRENDING API] Retornando dados do cache');
       return res.json(trendingCache.data);
     }
 
     let products = [];
+    
+    // Tentativa 1: Buscar produtos trending com qualquer imagem válida
     try {
-      // Tentativa 1: Query otimizada com filtro de imagem e APENAS trending
+      console.log('🔍 [TRENDING API] Buscando produtos trending...');
       products = await Product.findAll({
         where: {
           isActive: true,
-          isTrending: true, // Apenas produtos marcados como trending
-          imagesNightUrl: {
-            [Op.ne]: null
-          }
+          isTrending: true,
+          [Op.or]: [
+            { imagesNightUrl: { [Op.ne]: null } },
+            { imagesDayUrl: { [Op.ne]: null } },
+            { thumbnailUrl: { [Op.ne]: null } }
+          ]
         },
         order: [
           ['name', 'ASC']
@@ -616,22 +565,27 @@ export async function getTrending(req, res) {
           'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
         ]
       });
+      console.log(`✅ [TRENDING API] Encontrados ${products.length} produtos trending com imagens`);
     } catch (queryError) {
       console.warn('⚠️ [TRENDING API] Erro na query otimizada, tentando fallback simples:', queryError.message);
       // Tentativa 2: Query simples sem filtro de imagem (mas ainda apenas trending)
-      products = await Product.findAll({
-        where: {
-          isActive: true,
-          isTrending: true
-        },
-        limit: 5,
-        attributes: [
-          'id', 'name', 'price', 'oldPrice', 'stock',
-          'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
-        ]
-      });
+      try {
+        products = await Product.findAll({
+          where: {
+            isActive: true,
+            isTrending: true
+          },
+          limit: 5,
+          attributes: [
+            'id', 'name', 'price', 'oldPrice', 'stock',
+            'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
+          ]
+        });
+        console.log(`✅ [TRENDING API] Fallback: encontrados ${products.length} produtos trending`);
+      } catch (fallbackError) {
+        console.error('❌ [TRENDING API] Erro no fallback:', fallbackError.message);
+      }
     }
-
 
     // Converter para objetos simples e processar
     var productsData = products.map(function (p) {
@@ -668,10 +622,76 @@ export async function getTrending(req, res) {
 
       return plainProduct;
     }).filter(function (p) {
-      // IMPORTANTE: Filtrar apenas produtos que têm imagem NIGHT válida
-      // O widget só precisa da versão night
-      return p.imagesNightUrl !== null;
+      // IMPORTANTE: Aceitar produtos com QUALQUER imagem válida (night, day ou thumbnail)
+      // O widget aceita fallback para day ou thumbnail se não houver night
+      return p.imagesNightUrl !== null || p.imagesDayUrl !== null || p.thumbnailUrl !== null;
     });
+
+    // Fallback: Se não houver produtos trending com imagens, buscar produtos ativos com imagens
+    if (productsData.length === 0) {
+      console.log('⚠️ [TRENDING API] Nenhum produto trending encontrado, buscando produtos ativos com imagens como fallback...');
+      try {
+        const fallbackProducts = await Product.findAll({
+          where: {
+            isActive: true,
+            [Op.or]: [
+              { imagesNightUrl: { [Op.ne]: null } },
+              { imagesDayUrl: { [Op.ne]: null } },
+              { thumbnailUrl: { [Op.ne]: null } }
+            ]
+          },
+          order: [
+            ['name', 'ASC']
+          ],
+          limit: 5,
+          attributes: [
+            'id', 'name', 'price', 'oldPrice', 'stock',
+            'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
+          ]
+        });
+
+        productsData = fallbackProducts.map(function (p) {
+          var plainProduct = p.get({ plain: true });
+
+          // Garantir que valores numéricos são números
+          if (plainProduct.price !== null && plainProduct.price !== undefined) {
+            plainProduct.price = parseFloat(plainProduct.price);
+            if (isNaN(plainProduct.price)) plainProduct.price = 0;
+          }
+
+          if (plainProduct.oldPrice !== null && plainProduct.oldPrice !== undefined) {
+            plainProduct.oldPrice = parseFloat(plainProduct.oldPrice);
+            if (isNaN(plainProduct.oldPrice)) plainProduct.oldPrice = null;
+          }
+
+          if (plainProduct.stock !== null && plainProduct.stock !== undefined) {
+            plainProduct.stock = parseInt(String(plainProduct.stock), 10);
+            if (isNaN(plainProduct.stock)) plainProduct.stock = 0;
+          }
+
+          // Validar formato de caminhos de imagens
+          const validatedImages = validateProductImagesFormat({
+            imagesNightUrl: plainProduct.imagesNightUrl,
+            imagesDayUrl: plainProduct.imagesDayUrl,
+            thumbnailUrl: plainProduct.thumbnailUrl,
+          });
+
+          plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
+          plainProduct.imagesDayUrl = validatedImages.imagesDayUrl;
+          plainProduct.thumbnailUrl = validatedImages.thumbnailUrl;
+
+          return plainProduct;
+        }).filter(function (p) {
+          return p.imagesNightUrl !== null || p.imagesDayUrl !== null || p.thumbnailUrl !== null;
+        });
+
+        console.log(`✅ [TRENDING API] Fallback: encontrados ${productsData.length} produtos ativos com imagens`);
+      } catch (fallbackError) {
+        console.error('❌ [TRENDING API] Erro no fallback de produtos ativos:', fallbackError.message);
+      }
+    }
+
+    console.log(`📊 [TRENDING API] Retornando ${productsData.length} produtos para o widget`);
 
     // Update cache
     trendingCache.data = productsData;
