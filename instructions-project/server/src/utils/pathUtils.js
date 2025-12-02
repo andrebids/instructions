@@ -55,14 +55,14 @@ export function getUploadsDir() {
       console.warn(`⚠️ [PATHUTILS] UPLOADS_BASE_PATH configurado mas não existe: ${normalizedPath}`);
     }
   }
-  
+
   // 2. Caminho padrão de rede compartilhada (hardcoded - sempre o mesmo para todos)
   const defaultNetworkPath = '\\\\192.168.2.22\\.dev\\web\\thecore';
   if (fs.existsSync(defaultNetworkPath)) {
     console.log(`📁 [PATHUTILS] Usando caminho padrão de rede compartilhada: ${defaultNetworkPath}`);
     return defaultNetworkPath;
   }
-  
+
   // 3. Fallback: caminho padrão local
   const localPath = path.resolve(getPublicDir(), 'uploads');
   console.log(`📁 [PATHUTILS] Usando caminho local padrão: ${localPath}`);
@@ -231,7 +231,7 @@ export function getProductsUploadDir() {
       }
     }
   }
-  
+
   // 2. Verificar caminho padrão de rede compartilhada para produtos (hardcoded - sempre o mesmo)
   // PRIORIDADE: Verificar primeiro o caminho com "Olimpo" que o usuário especificou
   const preferredNetworkPath = '\\\\192.168.2.22\\Olimpo\\.dev\\web\\thecore\\products';
@@ -266,7 +266,7 @@ export function getProductsUploadDir() {
     }
     return defaultNetworkProductsPath;
   }
-  
+
   // 3. Verificar se estamos dentro do Docker (caminho montado em /app/server/public/uploads)
   // O Docker monta \\192.168.2.22\Olimpo\.dev\web\thecore em /app/server/public/uploads
   // Então produtos devem estar em /app/server/public/uploads/products
@@ -325,12 +325,12 @@ export function getProductsUploadDir() {
     }
     return dockerProductsPath;
   }
-  
+
   // 4. Fallback: produtos dentro do diretório de uploads base
   const dir = path.join(getUploadsDir(), 'products');
   const normalizedDir = dir.replace(/\//g, path.sep);
   console.log(`🔍 [PATHUTILS] Usando fallback: ${normalizedDir}`);
-  
+
   // Garantir que o diretório existe
   if (!fs.existsSync(normalizedDir)) {
     try {
@@ -359,7 +359,7 @@ export function getProjectsUploadDir(projectId = null, subfolder = null) {
   // 1. Verificar se existe caminho específico via variável de ambiente (sobrescreve tudo)
   const envProjectsPath = process.env.PROJECTS_UPLOAD_PATH;
   let base;
-  
+
   if (envProjectsPath) {
     base = envProjectsPath.replace(/\//g, '\\');
     if (fs.existsSync(base)) {
@@ -375,7 +375,7 @@ export function getProjectsUploadDir(projectId = null, subfolder = null) {
       }
     }
   }
-  
+
   // 2. Caminho padrão de rede compartilhada para projetos (hardcoded - sempre o mesmo)
   if (!base) {
     const defaultNetworkProjectsPath = '\\\\192.168.2.22\\.dev\\web\\thecore\\projects';
@@ -387,10 +387,10 @@ export function getProjectsUploadDir(projectId = null, subfolder = null) {
       base = path.join(getUploadsDir(), 'projects');
     }
   }
-  
+
   // Normalizar separadores
   base = base.replace(/\//g, path.sep);
-  
+
   if (projectId) {
     const projectDir = path.join(base, projectId);
     if (subfolder) {
@@ -415,7 +415,7 @@ export function getProjectsUploadDir(projectId = null, subfolder = null) {
     }
     return projectDir;
   }
-  
+
   // Garantir que o diretório base existe
   if (!fs.existsSync(base)) {
     try {
@@ -454,12 +454,12 @@ export function getEditorUploadDir() {
       return normalizedPath;
     }
   }
-  
+
   // Caminho padrão: editor dentro do diretório de uploads base
   const dir = path.join(getUploadsDir(), 'editor');
   // Normalizar separadores
   const normalizedDir = dir.replace(/\//g, path.sep);
-  
+
   // Garantir que o diretório existe
   if (!fs.existsSync(normalizedDir)) {
     try {
@@ -488,7 +488,7 @@ export function resolvePublicPath(relativePath) {
     // Normalizar separadores para Windows
     return resolvedPath.replace(/\//g, path.sep);
   }
-  
+
   // Se for caminho de projetos e existir PROJECTS_UPLOAD_PATH configurado
   if (relativePath.startsWith('/uploads/projects/') && process.env.PROJECTS_UPLOAD_PATH) {
     // Extrair projectId e subfolder do caminho
@@ -501,7 +501,7 @@ export function resolvePublicPath(relativePath) {
       return path.join(projectDir, filename);
     }
   }
-  
+
   // Caminho padrão: remover barra inicial e resolver a partir do public
   const normalized = relativePath.replace(/^\//, '');
   const resolved = path.resolve(getPublicDir(), normalized);

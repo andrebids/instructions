@@ -46,7 +46,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
     getVisibleSteps(formState.formData, STEPS),
     [formState.formData]
   );
-  
+
   // Debug: verificar initialStep e visibleSteps (apenas uma vez quando initialStep é fornecido)
   const initialStepCheckedRef = useRef(false);
   useEffect(() => {
@@ -58,7 +58,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
       initialStepCheckedRef.current = true;
     }
   }, [initialStep, visibleSteps.length]); // Usar apenas length para evitar re-execuções
-  
+
   const navigation = useStepNavigation(formState.formData, visibleSteps, formState.createTempProject, initialStep);
 
   // 🔄 Lifecycle logging
@@ -281,8 +281,8 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
       {/* Animated Gradient Background removed */}
 
       {/* Glassmorphism Card */}
-      <Card 
-        className="shadow-2xl overflow-hidden flex-1 min-h-0 rounded-none relative z-10" 
+      <Card
+        className="shadow-2xl overflow-hidden flex-1 min-h-0 rounded-none relative z-10"
         classNames={{ base: "flex flex-col" }}
         style={{
           background: 'rgba(20, 20, 20, 0.6)',
@@ -323,17 +323,29 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
           </div>
 
           {/* Main content */}
-          <Scroller
-            hideScrollbar
-            className={`flex-1 min-h-0 bg-default-100 ${isAIDesignerStep()
-              ? 'overflow-hidden'
-              : 'px-4 py-6 sm:px-6 sm:py-8 lg:px-8 overflow-y-auto'
-              }`}
-          >
-            <div className={isAIDesignerStep() ? 'h-full' : 'max-w-6xl mx-auto'}>
-              {renderStepContent()}
-            </div>
-          </Scroller>
+          {(() => {
+            const currentVisibleStep = visibleSteps[navigation.currentStep - 1];
+            const isLogoInstructionsStep = currentVisibleStep?.id === 'logo-instructions';
+
+            return (
+              <Scroller
+                hideScrollbar
+                className={`flex-1 min-h-0 bg-default-100 ${isAIDesignerStep() || isLogoInstructionsStep
+                    ? 'overflow-hidden'
+                    : 'px-4 py-6 sm:px-6 sm:py-8 lg:px-8 overflow-y-auto'
+                  }`}
+              >
+                <div className={
+                  isAIDesignerStep() || isLogoInstructionsStep
+                    ? 'h-full w-full'
+                    : 'max-w-6xl mx-auto'
+                }>
+                  {renderStepContent()}
+                </div>
+              </Scroller>
+            );
+          })()}
+
 
           {/* Navigation Footer */}
           <div className="flex-shrink-0">

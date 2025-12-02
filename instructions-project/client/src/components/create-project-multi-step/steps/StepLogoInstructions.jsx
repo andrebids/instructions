@@ -1016,254 +1016,250 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
   });
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col overflow-hidden p-3">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
+      <div className="flex justify-between items-center gap-3 mb-2 flex-shrink-0">
         <div>
-          <h2 className="text-xl font-bold text-default-900">Logo Instructions</h2>
-          <p className="text-sm text-default-500">Define the technical specifications for the logo</p>
+          <h2 className="text-lg font-bold text-default-900">Logo Instructions</h2>
+          <p className="text-xs text-default-500">Define the technical specifications for the logo</p>
         </div>
         <Button
           color="primary"
           variant="shadow"
+          size="sm"
           className="bg-gradient-to-tr from-primary-500 to-secondary-500 text-white"
-          startContent={<Icon icon="lucide:sparkles" className="w-5 h-5" />}
+          startContent={<Icon icon="lucide:sparkles" className="w-4 h-4" />}
           onPress={() => setIsChatOpen(true)}
         >
           AI Assistant
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 flex-1 min-h-0">
+      {/* Responsive Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1 min-h-0 overflow-hidden">
 
-        {/* Left Column - Main Specs */}
-        <div className="xl:col-span-8 space-y-4 flex flex-col min-h-0">
-          {/* Project Identity fields are hidden but still auto-filled in the background */}
-          {/* Logo Number and Requested By are automatically populated via useEffects */}
+        {/* Left Column - Dimensions + Fixation (3 cols on desktop) */}
+        <div className="lg:col-span-3 flex flex-col gap-2 min-h-0 overflow-y-auto lg:overflow-visible">
+          {/* Dimensions */}
+          <Card className="shadow-sm flex flex-col">
+            <CardHeader className="px-3 pt-2 pb-1 flex-shrink-0">
+              <h3 className="text-xs font-semibold flex items-center gap-1.5">
+                <Icon icon="lucide:ruler" className="text-primary w-3.5 h-3.5" />
+                Dimensions
+              </h3>
+            </CardHeader>
+            <CardBody className="p-2 pt-1">
+              <div className="grid grid-cols-2 gap-2">
+                {['Height', 'Length', 'Width', 'Diameter'].map((dim) => {
+                  const key = dim.toLowerCase();
+                  const dimensionValue = formik.values.dimensions?.[key]?.value || "";
+                  const dimensionError = formik.errors.dimensions?.[key]?.value;
+                  const isTouched = formik.touched.dimensions?.[key]?.value;
 
-          {/* 2. Physical Specifications */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0">
-            {/* Dimensions */}
-            <Card className="shadow-sm flex flex-col min-h-0">
-              <CardHeader className="px-4 pt-3 pb-2 flex-shrink-0">
-                <h3 className="text-sm font-semibold flex items-center gap-2">
-                  <Icon icon="lucide:ruler" className="text-primary w-4 h-4" />
-                  Dimensions
-                </h3>
-              </CardHeader>
-              <CardBody className="p-4 pt-2 flex-1 min-h-0">
-                <div className="grid grid-cols-4 gap-3">
-                  {['Height', 'Length', 'Width', 'Diameter'].map((dim) => {
-                    const key = dim.toLowerCase();
-                    const dimensionValue = formik.values.dimensions?.[key]?.value || "";
-                    const dimensionError = formik.errors.dimensions?.[key]?.value;
-                    const isTouched = formik.touched.dimensions?.[key]?.value;
-
-                    return (
-                      <div key={key} className="flex flex-col gap-1.5">
-                        <label className="text-xs text-default-600 font-medium">
-                          {dim}
-                        </label>
+                  return (
+                    <div key={key} className="flex flex-col gap-1">
+                      <label className="text-[10px] text-default-600 font-medium">
+                        {dim}
+                      </label>
+                      <div className="flex gap-1 items-center">
                         <Input
                           type="number"
-                          endContent={<span className="text-default-400 text-xs">m</span>}
+                          placeholder="0"
+                          endContent={<span className="text-default-400 text-[10px]">m</span>}
                           variant="flat"
                           size="sm"
                           classNames={{
-                            input: "text-sm",
-                            inputWrapper: "h-9 min-h-9"
+                            input: "text-xs",
+                            inputWrapper: "h-7 min-h-7"
                           }}
                           value={dimensionValue}
                           onValueChange={(v) => handleDimensionUpdate(key, "value", v ? parseFloat(v) : null)}
                           onBlur={() => formik.setFieldTouched(`dimensions.${key}.value`, true)}
                           isInvalid={isTouched && !!dimensionError}
-                          errorMessage={isTouched && dimensionError}
                         />
                         <Checkbox
                           size="sm"
                           color="danger"
                           classNames={{
-                            label: "text-xs",
-                            base: "max-w-fit"
+                            wrapper: "after:w-3 after:h-3 before:w-3 before:h-3",
+                            base: "m-0 p-0"
                           }}
                           isSelected={formik.values.dimensions?.[key]?.imperative || false}
                           onValueChange={(v) => handleDimensionUpdate(key, "imperative", v)}
-                        >
-                          <span className="text-xs">Imperative</span>
-                        </Checkbox>
+                          title="Imperative"
+                        />
                       </div>
-                    );
-                  })}
+                    </div>
+                  );
+                })}
+              </div>
+              {formik.errors.dimensions && typeof formik.errors.dimensions === 'string' && (
+                <div className="text-danger text-[9px] mt-1">
+                  {formik.errors.dimensions}
                 </div>
-                {formik.errors.dimensions && typeof formik.errors.dimensions === 'string' && (
-                  <div className="text-danger text-[10px] mt-1">
-                    {formik.errors.dimensions}
-                  </div>
-                )}
-              </CardBody>
-            </Card>
+              )}
+            </CardBody>
+          </Card>
 
-            {/* Fixation & Constraints */}
-            <Card className="shadow-sm flex flex-col min-h-0">
-              <CardHeader className="px-4 pt-3 pb-2 flex-shrink-0">
-                <h3 className="text-sm font-semibold flex items-center gap-2">
-                  <Icon icon="lucide:anchor" className="text-primary w-4 h-4" />
-                  Fixation & Constraints
-                </h3>
-              </CardHeader>
-              <CardBody className="p-4 pt-2 flex-1 min-h-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Usage Toggle */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] text-default-600 font-medium">Usage Environment</label>
-                    <Tabs
-                      fullWidth
+          {/* Fixation & Constraints */}
+          <Card className="shadow-sm flex flex-col flex-1">
+            <CardHeader className="px-3 pt-2 pb-1 flex-shrink-0">
+              <h3 className="text-xs font-semibold flex items-center gap-1.5">
+                <Icon icon="lucide:anchor" className="text-primary w-3.5 h-3.5" />
+                Fixation & Constraints
+              </h3>
+            </CardHeader>
+            <CardBody className="p-2 pt-1 flex-1 overflow-y-auto">
+              <div className="space-y-2">
+                {/* Usage Toggle */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-default-600 font-medium">Usage</label>
+                  <Tabs
+                    fullWidth
+                    size="sm"
+                    aria-label="Usage Options"
+                    selectedKey={formik.values.usageOutdoor ? "outdoor" : "indoor"}
+                    onSelectionChange={(key) => {
+                      if (key === "indoor") {
+                        formik.updateFields({
+                          usageIndoor: true,
+                          usageOutdoor: false,
+                        });
+                      } else {
+                        formik.updateFields({
+                          usageIndoor: false,
+                          usageOutdoor: true,
+                        });
+                      }
+                    }}
+                    classNames={{
+                      tabList: "gap-1 h-7",
+                      tab: "min-w-0 px-2 h-7",
+                      tabContent: "text-[10px]"
+                    }}
+                  >
+                    <Tab key="indoor" title="Indoor" />
+                    <Tab key="outdoor" title="Outdoor" />
+                  </Tabs>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-default-600 font-medium">Fixation Type</label>
+                  <Select
+                    placeholder="Select"
+                    isRequired
+                    size="sm"
+                    selectedKeys={formik.values.fixationType ? new Set([formik.values.fixationType]) : new Set()}
+                    onSelectionChange={(keys) => {
+                      const selected = Array.from(keys)[0] || "";
+                      formik.setFieldTouched("fixationType", true);
+                      formik.updateField("fixationType", selected);
+                    }}
+                    onBlur={() => formik.setFieldTouched("fixationType", true)}
+                    isInvalid={formik.touched.fixationType && !!formik.errors.fixationType}
+                    errorMessage={formik.touched.fixationType && formik.errors.fixationType}
+                    validationBehavior="aria"
+                    classNames={{
+                      trigger: "h-7 min-h-7",
+                      value: "text-[10px]"
+                    }}
+                  >
+                    <SelectItem key="ground" textValue="Ground">Ground</SelectItem>
+                    <SelectItem key="wall" textValue="Wall">Wall</SelectItem>
+                    <SelectItem key="suspended" textValue="Suspended">Suspended</SelectItem>
+                    <SelectItem key="none" textValue="None">None</SelectItem>
+                    <SelectItem key="pole_side" textValue="Pole Side">Pole (Side)</SelectItem>
+                    <SelectItem key="pole_central" textValue="Pole Central">Pole (Central)</SelectItem>
+                    <SelectItem key="special" textValue="Special">Special</SelectItem>
+                  </Select>
+                </div>
+
+                {/* Lacquered Structure */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-default-600 font-medium">Lacquered Structure</label>
+                  <div className="flex items-center gap-2">
+                    <Switch
                       size="sm"
-                      aria-label="Usage Options"
-                      selectedKey={formik.values.usageOutdoor ? "outdoor" : "indoor"}
-                      onSelectionChange={(key) => {
-                        if (key === "indoor") {
-                          formik.updateFields({
-                            usageIndoor: true,
-                            usageOutdoor: false,
-                          });
-                        } else {
-                          formik.updateFields({
-                            usageIndoor: false,
-                            usageOutdoor: true,
-                          });
-                        }
-                      }}
-                      classNames={{
-                        tabList: "gap-1",
-                        tab: "min-w-0 px-2",
-                        tabContent: "text-xs"
-                      }}
-                    >
-                      <Tab key="indoor" title="Indoor" />
-                      <Tab key="outdoor" title="Outdoor" />
-                    </Tabs>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] text-default-600 font-medium">Fixation Type</label>
-                    <Select
-                      placeholder="Select fixation"
-                      isRequired
-                      size="sm"
-                      selectedKeys={formik.values.fixationType ? new Set([formik.values.fixationType]) : new Set()}
-                      onSelectionChange={(keys) => {
-                        const selected = Array.from(keys)[0] || "";
-                        formik.setFieldTouched("fixationType", true);
-                        formik.updateField("fixationType", selected);
-                      }}
-                      onBlur={() => formik.setFieldTouched("fixationType", true)}
-                      isInvalid={formik.touched.fixationType && !!formik.errors.fixationType}
-                      errorMessage={formik.touched.fixationType && formik.errors.fixationType}
-                      validationBehavior="aria"
-                      classNames={{
-                        trigger: "h-8 min-h-8",
-                        value: "text-xs"
-                      }}
-                    >
-                      <SelectItem key="ground" textValue="Ground">Ground</SelectItem>
-                      <SelectItem key="wall" textValue="Wall">Wall</SelectItem>
-                      <SelectItem key="suspended" textValue="Suspended">Suspended</SelectItem>
-                      <SelectItem key="none" textValue="None">None</SelectItem>
-                      <SelectItem key="pole_side" textValue="Pole Side">Pole (Side)</SelectItem>
-                      <SelectItem key="pole_central" textValue="Pole Central">Pole (Central)</SelectItem>
-                      <SelectItem key="special" textValue="Special">Special</SelectItem>
-                    </Select>
-                  </div>
-
-                  {/* Lacquered Structure */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-default-600 font-medium">Lacquered Structure</label>
-                    <div className="flex items-center gap-2">
-                      <Switch
+                      isSelected={formik.values.lacqueredStructure}
+                      onValueChange={(v) => formik.updateField("lacqueredStructure", v)}
+                    />
+                    {formik.values.lacqueredStructure && (
+                      <Input
+                        placeholder="RAL Color"
                         size="sm"
-                        isSelected={formik.values.lacqueredStructure}
-                        onValueChange={(v) => formik.updateField("lacqueredStructure", v)}
+                        startContent={<Icon icon="lucide:palette" className="text-default-400 w-3.5 h-3.5" />}
+                        classNames={{
+                          input: "text-xs",
+                          inputWrapper: "h-7 min-h-7"
+                        }}
+                        value={formik.values.lacquerColor}
+                        onValueChange={(v) => formik.updateField("lacquerColor", v)}
                       />
-                      {formik.values.lacqueredStructure && (
+                    )}
+                  </div>
+                </div>
+
+                {/* Constraints */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-default-600 font-medium">Constraints</label>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        size="sm"
+                        classNames={{ label: "text-[10px]" }}
+                        isSelected={formik.values.maxWeightConstraint}
+                        onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
+                      >
+                        Max Weight
+                      </Checkbox>
+                      {formik.values.maxWeightConstraint && (
                         <Input
-                          placeholder="RAL Color"
+                          placeholder="kg"
                           size="sm"
-                          startContent={<Icon icon="lucide:palette" className="text-default-400 w-4 h-4" />}
                           classNames={{
-                            input: "text-sm",
-                            inputWrapper: "h-9 min-h-9"
+                            input: "text-xs",
+                            inputWrapper: "h-7 min-h-7 w-14"
                           }}
-                          value={formik.values.lacquerColor}
-                          onValueChange={(v) => formik.updateField("lacquerColor", v)}
+                          value={formik.values.maxWeight}
+                          onValueChange={(v) => formik.updateField("maxWeight", v)}
                         />
                       )}
                     </div>
-                  </div>
-
-                  {/* Constraints */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-default-600 font-medium">Constraints</label>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <Checkbox 
-                          size="sm" 
-                          classNames={{ label: "text-xs" }}
-                          isSelected={formik.values.maxWeightConstraint} 
-                          onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
-                        >
-                          Max Weight
-                        </Checkbox>
-                        {formik.values.maxWeightConstraint && (
-                          <Input
-                            placeholder="kg"
-                            size="sm"
-                            classNames={{
-                              input: "text-sm",
-                              inputWrapper: "h-9 min-h-9 w-16"
-                            }}
-                            value={formik.values.maxWeight}
-                            onValueChange={(v) => formik.updateField("maxWeight", v)}
-                          />
-                        )}
-                      </div>
-                      <Checkbox 
-                        size="sm" 
-                        classNames={{ label: "text-xs" }}
-                        isSelected={formik.values.ballast} 
-                        onValueChange={(v) => formik.updateField("ballast", v)}
-                      >
-                        Ballast
-                      </Checkbox>
-                      <Checkbox 
-                        size="sm" 
-                        classNames={{ label: "text-xs" }}
-                        isSelected={formik.values.controlReport} 
-                        onValueChange={(v) => formik.updateField("controlReport", v)}
-                      >
-                        Control Report
-                      </Checkbox>
-                    </div>
+                    <Checkbox
+                      size="sm"
+                      classNames={{ label: "text-[10px]" }}
+                      isSelected={formik.values.ballast}
+                      onValueChange={(v) => formik.updateField("ballast", v)}
+                    >
+                      Ballast
+                    </Checkbox>
+                    <Checkbox
+                      size="sm"
+                      classNames={{ label: "text-[10px]" }}
+                      isSelected={formik.values.controlReport}
+                      onValueChange={(v) => formik.updateField("controlReport", v)}
+                    >
+                      Control Report
+                    </Checkbox>
                   </div>
                 </div>
-              </CardBody>
-            </Card>
-          </div>
-
+              </div>
+            </CardBody>
+          </Card>
         </div>
 
-        {/* Right Column - Composition & Options */}
-        <div className="xl:col-span-4 flex flex-col min-h-0">
+        {/* Middle Column - Composition (6 cols on desktop) */}
+        <div className="lg:col-span-6 flex flex-col min-h-0">
 
           {/* Composition Card */}
           <Card className="shadow-sm flex flex-col flex-1 min-h-0">
-            <CardHeader className="px-4 pt-3 pb-2 flex-shrink-0">
-              <h3 className="text-sm font-semibold flex items-center gap-2">
-                <Icon icon="lucide:layers" className="text-primary w-4 h-4" />
+            <CardHeader className="px-3 pt-2 pb-1 flex-shrink-0">
+              <h3 className="text-xs font-semibold flex items-center gap-1.5">
+                <Icon icon="lucide:layers" className="text-primary w-3.5 h-3.5" />
                 Composition
               </h3>
             </CardHeader>
-            <CardBody className="p-4 pt-2 space-y-4 flex-1 min-h-0 overflow-y-auto">
+            <CardBody className="p-2 pt-1 space-y-2 flex-1 min-h-0 overflow-y-auto">
 
               {/* Componentes Section */}
               <div>
@@ -1611,231 +1607,224 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
             </CardBody>
           </Card>
         </div>
-      </div>
 
-      {/* 3. Details & Criteria (Full Width) */}
-      <Card ref={detailsCriteriaRef} className="shadow-sm flex-shrink-0">
-        <CardHeader className="px-4 pt-3 pb-2">
-          <h3 className="text-sm font-semibold flex items-center gap-2">
-            <Icon icon="lucide:file-text" className="text-primary w-4 h-4" />
-            Details & Criteria
-          </h3>
-        </CardHeader>
-        <CardBody className="p-4 pt-2 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input
-              label="Logo Name"
-              placeholder="Name of the logo"
-              variant="bordered"
-              size="sm"
-              isRequired
-              classNames={{
-                label: "text-xs",
-                input: "text-xs",
-                inputWrapper: "h-8 min-h-8"
-              }}
-              value={formik.values.logoName}
-              onValueChange={(v) => formik.updateField("logoName", v)}
-              onBlur={formik.handleBlur}
-              isInvalid={formik.touched.logoName && !!formik.errors.logoName}
-              errorMessage={formik.touched.logoName && formik.errors.logoName}
-              className="md:col-span-1"
-            />
-            <Textarea
-              label="Description"
-              placeholder="Detailed description of the logo..."
-              minRows={3}
-              variant="bordered"
-              size="sm"
-              classNames={{
-                label: "text-xs",
-                input: "text-sm"
-              }}
-              value={formik.values.description}
-              onValueChange={(v) => formik.updateField("description", v)}
-              className="md:col-span-2"
-            />
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-default-700">Attachments</p>
-              <Button
-                color="primary"
-                variant="flat"
+        {/* Right Column - Details & Attachments (3 cols on desktop) */}
+        <div className="lg:col-span-3 flex flex-col min-h-0">
+          {/* Details & Criteria */}
+          <Card ref={detailsCriteriaRef} className="shadow-sm flex flex-col flex-1">
+            <CardHeader className="px-3 pt-2 pb-1 flex-shrink-0">
+              <h3 className="text-xs font-semibold flex items-center gap-1.5">
+                <Icon icon="lucide:file-text" className="text-primary w-3.5 h-3.5" />
+                Details & Criteria
+              </h3>
+            </CardHeader>
+            <CardBody className="p-2 pt-1 space-y-2 flex-1 overflow-y-auto">
+              <Input
+                label="Logo Name"
+                placeholder="Name of the logo"
+                variant="bordered"
                 size="sm"
-                startContent={<Icon icon="lucide:paperclip" />}
-                onPress={() => document.getElementById('logo-file-input').click()}
-              >
-                Upload Files
-              </Button>
-            </div>
+                isRequired
+                classNames={{
+                  label: "text-[10px]",
+                  input: "text-xs",
+                  inputWrapper: "h-7 min-h-7"
+                }}
+                value={formik.values.logoName}
+                onValueChange={(v) => formik.updateField("logoName", v)}
+                onBlur={formik.handleBlur}
+                isInvalid={formik.touched.logoName && !!formik.errors.logoName}
+                errorMessage={formik.touched.logoName && formik.errors.logoName}
+              />
+              <Textarea
+                label="Description"
+                placeholder="Detailed description..."
+                minRows={2}
+                variant="bordered"
+                size="sm"
+                classNames={{
+                  label: "text-[10px]",
+                  input: "text-xs"
+                }}
+                value={formik.values.description}
+                onValueChange={(v) => formik.updateField("description", v)}
+              />
 
-            <input
-              id="logo-file-input"
-              type="file"
-              multiple
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ai,.eps"
-              className="hidden"
-              onChange={(e) => {
-                const newFiles = Array.from(e.target.files);
-                if (newFiles.length > 0) {
-                  handleFileUpload(newFiles);
-                }
-                // Reset input value to allow selecting same files again
-                e.target.value = '';
-              }}
-            />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-medium text-default-700">Attachments</p>
+                  <Button
+                    color="primary"
+                    variant="flat"
+                    size="sm"
+                    startContent={<Icon icon="lucide:paperclip" className="w-3 h-3" />}
+                    onPress={() => document.getElementById('logo-file-input').click()}
+                    classNames={{
+                      base: "h-6 min-h-6 px-2"
+                    }}
+                  >
+                    <span className="text-[10px]">Upload</span>
+                  </Button>
+                </div>
 
-            {/* Drag and Drop Area / Image Preview Grid */}
-            {/* Drag and Drop Area / Image Preview Grid */}
-            <DragAndDropZone
-              className="rounded-lg transition-colors"
-              multiple={true}
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ai,.eps"
-              onFilesSelected={handleFileUpload}
-            >
-              {(() => {
-                return (currentLogo.generatedImage || (logoDetails.attachmentFiles && logoDetails.attachmentFiles.length > 0));
-              })() ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-3">
-                  {/* AI Generated Image */}
-                  {currentLogo.generatedImage && (
-                    <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-primary group">
-                      <img
-                        src={currentLogo.generatedImage}
-                        alt="AI Generated"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          // Hide broken image and show fallback
-                          e.target.style.display = 'none';
-                          const fallback = e.target.nextElementSibling;
-                          if (fallback && fallback.classList.contains('image-fallback')) {
-                            fallback.style.display = 'flex';
-                          }
-                        }}
-                      />
-                      {/* Fallback UI for broken images */}
-                      <div className="image-fallback absolute inset-0 bg-default-100 flex-col items-center justify-center gap-2 hidden">
-                        <Icon icon="lucide:image-off" className="w-12 h-12 text-default-400" />
-                        <p className="text-xs text-default-500 text-center px-4">
-                          Image failed to load
-                        </p>
-                      </div>
-                      <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
-                        AI Generated
-                      </div>
-                      <div
-                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Button
-                          isIconOnly
-                          color="danger"
-                          variant="flat"
-                          size="sm"
-                          onPress={() => {
-                            const updatedCurrentLogo = { ...currentLogo, generatedImage: null };
-                            const updatedLogoDetails = {
-                              ...logoDetails,
-                              currentLogo: updatedCurrentLogo,
-                              logos: savedLogos,
-                            };
-                            onInputChange("logoDetails", updatedLogoDetails);
-                          }}
-                        >
-                          <Icon icon="solar:trash-bin-trash-linear" width={20} />
-                        </Button>
-                      </div>
+                <input
+                  id="logo-file-input"
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ai,.eps"
+                  className="hidden"
+                  onChange={(e) => {
+                    const newFiles = Array.from(e.target.files);
+                    if (newFiles.length > 0) {
+                      handleFileUpload(newFiles);
+                    }
+                    e.target.value = '';
+                  }}
+                />
+
+                <DragAndDropZone
+                  className="rounded-lg transition-colors"
+                  multiple={true}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ai,.eps"
+                  onFilesSelected={handleFileUpload}
+                >
+                  {(() => {
+                    return (currentLogo.generatedImage || (logoDetails.attachmentFiles && logoDetails.attachmentFiles.length > 0));
+                  })() ? (
+                    <div className="grid grid-cols-2 gap-2 p-2">
+                      {currentLogo.generatedImage && (
+                        <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-primary group">
+                          <img
+                            src={currentLogo.generatedImage}
+                            alt="AI Generated"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              const fallback = e.target.nextElementSibling;
+                              if (fallback && fallback.classList.contains('image-fallback')) {
+                                fallback.style.display = 'flex';
+                              }
+                            }}
+                          />
+                          <div className="image-fallback absolute inset-0 bg-default-100 flex-col items-center justify-center gap-2 hidden">
+                            <Icon icon="lucide:image-off" className="w-8 h-8 text-default-400" />
+                            <p className="text-[10px] text-default-500 text-center px-2">
+                              Image failed to load
+                            </p>
+                          </div>
+                          <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-[9px] px-1.5 py-0.5 rounded-full">
+                            AI
+                          </div>
+                          <div
+                            className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Button
+                              isIconOnly
+                              color="danger"
+                              variant="flat"
+                              size="sm"
+                              onPress={() => {
+                                const updatedCurrentLogo = { ...currentLogo, generatedImage: null };
+                                const updatedLogoDetails = {
+                                  ...logoDetails,
+                                  currentLogo: updatedCurrentLogo,
+                                  logos: savedLogos,
+                                };
+                                onInputChange("logoDetails", updatedLogoDetails);
+                              }}
+                            >
+                              <Icon icon="solar:trash-bin-trash-linear" width={16} />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {logoDetails.attachmentFiles && logoDetails.attachmentFiles.map((file, index) => {
+                        const isImage = file.mimetype?.startsWith('image/');
+                        const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
+                        const fileUrl = file.url || `${baseApi}${file.path}`;
+
+                        return (
+                          <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-default-200 group">
+                            {isImage ? (
+                              <>
+                                <img
+                                  src={fileUrl}
+                                  alt={file.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    const fallback = e.target.nextElementSibling;
+                                    if (fallback && fallback.classList.contains('image-fallback')) {
+                                      fallback.style.display = 'flex';
+                                    }
+                                  }}
+                                />
+                                <div className="image-fallback absolute inset-0 bg-default-100 flex-col items-center justify-center gap-2 hidden">
+                                  <Icon icon="lucide:image-off" className="w-8 h-8 text-default-400" />
+                                  <p className="text-[10px] text-default-500 text-center px-2">
+                                    Image failed to load
+                                  </p>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center bg-default-100 p-1.5">
+                                <Icon icon="lucide:file" className="w-8 h-8 text-default-400 mb-1" />
+                                <p className="text-[9px] text-center text-default-600 truncate w-full px-1">
+                                  {file.name}
+                                </p>
+                                {file.size && (
+                                  <p className="text-[9px] text-default-400 mt-0.5">
+                                    {(file.size / 1024).toFixed(1)} KB
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            <div
+                              className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button
+                                isIconOnly
+                                color="danger"
+                                variant="flat"
+                                size="sm"
+                                onPress={() => {
+                                  const updatedFiles = logoDetails.attachmentFiles.filter((_, i) => i !== index);
+                                  const updatedLogoDetails = {
+                                    ...logoDetails,
+                                    attachmentFiles: updatedFiles,
+                                    currentLogo: currentLogo,
+                                    logos: savedLogos,
+                                  };
+                                  onInputChange("logoDetails", updatedLogoDetails);
+                                }}
+                              >
+                                <Icon icon="solar:trash-bin-trash-linear" width={16} />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 border-2 border-dashed border-default-200 rounded-lg transition-colors">
+                      <Icon icon="lucide:image-plus" className="w-8 h-8 mx-auto mb-1 text-default-300" />
+                      <p className="text-[10px] text-default-400">
+                        No attachments yet
+                      </p>
+                      <p className="text-[9px] text-default-300 mt-0.5">
+                        Upload or drag & drop
+                      </p>
                     </div>
                   )}
-
-                  {/* Uploaded Files */}
-                  {logoDetails.attachmentFiles && logoDetails.attachmentFiles.map((file, index) => {
-                    const isImage = file.mimetype?.startsWith('image/');
-                    const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
-                    const fileUrl = file.url || `${baseApi}${file.path}`;
-
-                    return (
-                      <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-default-200 group">
-                        {isImage ? (
-                          <>
-                            <img
-                              src={fileUrl}
-                              alt={file.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                // Hide broken image and show fallback
-                                e.target.style.display = 'none';
-                                const fallback = e.target.nextElementSibling;
-                                if (fallback && fallback.classList.contains('image-fallback')) {
-                                  fallback.style.display = 'flex';
-                                }
-                              }}
-                            />
-                            {/* Fallback UI for broken images */}
-                            <div className="image-fallback absolute inset-0 bg-default-100 flex-col items-center justify-center gap-2 hidden">
-                              <Icon icon="lucide:image-off" className="w-12 h-12 text-default-400" />
-                              <p className="text-xs text-default-500 text-center px-4">
-                                Image failed to load
-                              </p>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center bg-default-100 p-2">
-                            <Icon icon="lucide:file" className="w-12 h-12 text-default-400 mb-2" />
-                            <p className="text-xs text-center text-default-600 truncate w-full px-2">
-                              {file.name}
-                            </p>
-                            {file.size && (
-                              <p className="text-xs text-default-400 mt-1">
-                                {(file.size / 1024).toFixed(1)} KB
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        <div
-                          className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Button
-                            isIconOnly
-                            color="danger"
-                            variant="flat"
-                            size="sm"
-                            onPress={() => {
-                              const updatedFiles = logoDetails.attachmentFiles.filter((_, i) => i !== index);
-                              const updatedLogoDetails = {
-                                ...logoDetails,
-                                attachmentFiles: updatedFiles,
-                                currentLogo: currentLogo,
-                                logos: savedLogos,
-                              };
-                              onInputChange("logoDetails", updatedLogoDetails);
-                            }}
-                          >
-                            <Icon icon="solar:trash-bin-trash-linear" width={20} />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8 border-2 border-dashed border-default-200 rounded-lg transition-colors">
-                  <Icon icon="lucide:image-plus" className="w-12 h-12 mx-auto mb-2 text-default-300" />
-                  <p className="text-sm text-default-400">
-                    No attachments yet
-                  </p>
-                  <p className="text-xs text-default-300 mt-1">
-                    Upload files, drag & drop, or generate images with AI
-                  </p>
-                </div>
-              )}
-            </DragAndDropZone>
-          </div>
-        </CardBody>
-      </Card>
+                </DragAndDropZone>
+              </div>
+            </CardBody>
+          </Card>
+        </div>
+      </div>
 
       <AIAssistantChat
         isOpen={isChatOpen}
