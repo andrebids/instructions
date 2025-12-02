@@ -294,7 +294,7 @@ const validationSchema = Yup.object({
   ),
 });
 
-export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
+export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCompact = false }) {
   const logoDetails = formData.logoDetails || {};
   // Support both old structure (direct logoDetails) and new structure (with currentLogo)
   const currentLogo = logoDetails.currentLogo || logoDetails;
@@ -492,7 +492,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
         try {
           const apiBase = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
-          const response = await fetch(`${apiBase} /api/files / upload`, {
+          const response = await fetch(`${apiBase}/api/files/upload`, {
             method: 'POST',
             body: formData,
           });
@@ -1101,9 +1101,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
   });
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background">
+    <div className={`${isCompact ? 'w-auto h-auto' : 'w-full h-full'} flex flex-col ${isCompact ? 'overflow-visible' : 'overflow-hidden'} bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background`}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 px-3 sm:px-4 lg:px-4 py-3 flex-shrink-0 bg-transparent">
+      <div className={`step-logo-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 ${isCompact ? 'px-2 sm:px-3 py-1.5' : 'px-3 sm:px-4 lg:px-4 py-3'} flex-shrink-0 bg-transparent`}>
         <div>
           <h1 className="text-base sm:text-lg lg:text-lg font-bold text-white">Logo Instructions</h1>
           <p className="text-xs text-gray-300/70 hidden sm:block">Define the technical specifications for the logo</p>
@@ -1121,21 +1121,21 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
       </div>
 
       {/* Form - Responsive Horizontal Grid */}
-      <div className="flex-1 overflow-y-auto sm:overflow-hidden p-2 sm:p-3 md:p-4 lg:p-6">
-        <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-4 md:gap-5 lg:gap-6">
+      <div className={`${isCompact ? 'flex-auto' : 'flex-1'} ${isCompact ? 'overflow-visible' : 'overflow-y-auto sm:overflow-hidden'} ${isCompact ? 'p-1 sm:p-2' : 'p-2 sm:p-3 md:p-4 lg:p-6'}`}>
+        <div className={`${isCompact ? 'h-auto' : 'h-full'} grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${isCompact ? 'gap-2 sm:gap-2' : 'gap-4 sm:gap-4 md:gap-5 lg:gap-6'}`}>
           {/* Column 1: Details & Attachments */}
-          <div className="flex flex-col gap-2 sm:gap-2.5 md:gap-3 lg:gap-3">
+          <div className={`flex flex-col ${isCompact ? 'gap-1 sm:gap-1.5' : 'gap-2 sm:gap-2.5 md:gap-3 lg:gap-3'}`}>
 
             {/* Details Section */}
-            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-white/10">
-              <div className="flex items-center gap-2 mb-1.5 sm:mb-1.5 md:mb-2 lg:mb-2 text-blue-600 dark:text-blue-400">
+            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-4'} shadow-xl border border-white/10`}>
+              <div className={`flex items-center gap-2 ${isCompact ? 'mb-1' : 'mb-1.5 sm:mb-1.5 md:mb-2 lg:mb-2'} text-blue-600 dark:text-blue-400`}>
                 <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                   <Icon icon="lucide:file-signature" className="w-4 h-4" />
                 </div>
                 <h2 className="text-sm sm:text-sm md:text-base lg:text-base font-bold">Details</h2>
               </div>
 
-              <div className="space-y-1.5 sm:space-y-2 lg:space-y-2">
+              <div className={isCompact ? 'space-y-1' : 'space-y-1.5 sm:space-y-2 lg:space-y-2'}>
                 <div>
                   <label className="text-xs sm:text-sm lg:text-sm font-semibold text-gray-700 dark:text-gray-200 block mb-0.5 sm:mb-1 lg:mb-1">Logo Name</label>
                   <Input
@@ -1172,8 +1172,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
             </div>
 
             {/* Attachments Section */}
-            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-white/10">
-              <div className="flex items-center gap-2 mb-1.5 sm:mb-1.5 md:mb-2 lg:mb-2 text-pink-600 dark:text-pink-400">
+            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-4'} shadow-xl border border-white/10`}>
+              <div className={`flex items-center gap-2 ${isCompact ? 'mb-1' : 'mb-1.5 sm:mb-1.5 md:mb-2 lg:mb-2'} text-pink-600 dark:text-pink-400`}>
                 <div className="p-1.5 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
                   <Icon icon="lucide:paperclip" className="w-4 h-4" />
                 </div>
@@ -1278,8 +1278,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
           {/* Column 2: Dimensions & Fixation */}
           <div className="flex flex-col gap-2 sm:gap-2.5 md:gap-3 lg:gap-3">
             {/* Dimensions Section */}
-            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-white/10">
-              <div className="flex items-center gap-2 mb-1.5 sm:mb-1.5 md:mb-2 lg:mb-2 text-emerald-600 dark:text-emerald-400">
+            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-4'} shadow-xl border border-white/10`}>
+              <div className={`flex items-center gap-2 ${isCompact ? 'mb-1' : 'mb-1.5 sm:mb-1.5 md:mb-2 lg:mb-2'} text-emerald-600 dark:text-emerald-400`}>
                 <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
                   <Icon icon="lucide:ruler" className="w-4 h-4" />
                 </div>
@@ -1334,8 +1334,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
             </div>
 
             {/* Fixation Section */}
-            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-white/10">
-              <div className="flex items-center gap-2 mb-1.5 sm:mb-1.5 md:mb-2 lg:mb-2 text-orange-600 dark:text-orange-400">
+            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-4'} shadow-xl border border-white/10`}>
+              <div className={`flex items-center gap-2 ${isCompact ? 'mb-1' : 'mb-1.5 sm:mb-1.5 md:mb-2 lg:mb-2'} text-orange-600 dark:text-orange-400`}>
                 <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
                   <Icon icon="lucide:hammer" className="w-4 h-4" />
                 </div>
@@ -1481,9 +1481,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
           </div>
 
           {/* Column 3: Composition (Components & Balls) */}
-          <div className="flex flex-col gap-2 sm:gap-2.5 md:gap-3 lg:gap-3">
-            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-white/10">
-              <div className="flex items-center gap-2 mb-3 text-purple-600 dark:text-purple-400">
+          <div className={`flex flex-col ${isCompact ? 'gap-1 sm:gap-1.5' : 'gap-2 sm:gap-2.5 md:gap-3 lg:gap-3'}`}>
+            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-4'} shadow-xl border border-white/10`}>
+              <div className={`flex items-center gap-2 ${isCompact ? 'mb-1.5' : 'mb-3'} text-purple-600 dark:text-purple-400`}>
                 <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                   <Icon icon="lucide:layers" className="w-4 h-4" />
                 </div>
@@ -1855,39 +1855,67 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
       <AIAssistantChat
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
-        onSaveImage={(imageUrl) => {
-          // Extract filename from URL or create a default name
-          const urlParts = imageUrl.split('/');
-          const filename = urlParts[urlParts.length - 1] || 'ai-generated-image.webp';
-          const nameWithoutExtension = filename.replace(/\.[^/.]+$/, '');
-          
-          // Create attachment object similar to uploaded files
-          const aiGeneratedAttachment = {
-            name: `AI Generated - ${nameWithoutExtension}`,
-            filename: filename,
-            url: imageUrl,
-            path: imageUrl,
-            size: 0, // Size unknown for AI generated images
-            mimetype: 'image/webp', // Default to webp for AI generated images
-            isAIGenerated: true // Flag to identify AI generated images
-          };
+        onSaveImage={async (imageUrl) => {
+          try {
+            // Extract filename from URL or create a default name
+            const urlParts = imageUrl.split('/');
+            const originalFilename = urlParts[urlParts.length - 1] || 'ai-generated-image.webp';
+            const nameWithoutExtension = originalFilename.replace(/\.[^/.]+$/, '');
+            
+            // Fetch the image from the URL and convert to File
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+            const file = new File([blob], originalFilename, { type: blob.type || 'image/webp' });
+            
+            // Upload the image to the server
+            const formData = new FormData();
+            formData.append('file', file);
 
-          // Add to attachments
-          const existingFiles = logoDetails.attachmentFiles || [];
-          const allFiles = [...existingFiles, aiGeneratedAttachment];
+            const apiBase = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
+            const uploadResponse = await fetch(`${apiBase}/api/files/upload`, {
+              method: 'POST',
+              body: formData,
+            });
 
-          const updatedCurrentLogo = {
-            ...currentLogo,
-            generatedImage: imageUrl
-          };
-          const updatedLogoDetails = {
-            ...logoDetails,
-            attachmentFiles: allFiles,
-            currentLogo: updatedCurrentLogo,
-            logos: savedLogos,
-          };
-          onInputChange("logoDetails", updatedLogoDetails);
-          setIsChatOpen(false);
+            if (!uploadResponse.ok) {
+              throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+            }
+
+            const uploadResult = await uploadResponse.json();
+            console.log('✅ AI Generated image uploaded:', uploadResult.file);
+            
+            // Create attachment object with server URL
+            const aiGeneratedAttachment = {
+              name: `AI Generated - ${nameWithoutExtension}`,
+              filename: uploadResult.file.filename,
+              url: uploadResult.file.url,
+              path: uploadResult.file.path,
+              size: uploadResult.file.size,
+              mimetype: uploadResult.file.mimetype || 'image/webp',
+              isAIGenerated: true // Flag to identify AI generated images
+            };
+
+            // Add to attachments
+            const existingFiles = logoDetails.attachmentFiles || [];
+            const allFiles = [...existingFiles, aiGeneratedAttachment];
+
+            const updatedCurrentLogo = {
+              ...currentLogo,
+              generatedImage: uploadResult.file.url
+            };
+            const updatedLogoDetails = {
+              ...logoDetails,
+              attachmentFiles: allFiles,
+              currentLogo: updatedCurrentLogo,
+              logos: savedLogos,
+            };
+            onInputChange("logoDetails", updatedLogoDetails);
+            setIsChatOpen(false);
+          } catch (error) {
+            console.error('❌ Error uploading AI generated image:', error);
+            // Show error to user or handle gracefully
+            alert('Erro ao fazer upload da imagem gerada. Por favor, tente novamente.');
+          }
         }}
       />
     </div>

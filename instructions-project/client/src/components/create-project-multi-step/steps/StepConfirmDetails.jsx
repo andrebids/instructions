@@ -156,25 +156,46 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
                           Logo {logoIndex + 1} {logo.logoName && `- ${logo.logoName}`}
                         </span>
                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="light"
-                            onPress={() => onEditLogo && onEditLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1)}
-                            title="Edit Logo"
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            aria-label="Edit Logo"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              onEditLogo && onEditLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                onEditLogo && onEditLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                              }
+                            }}
+                            className="inline-flex items-center justify-center w-8 h-8 text-default-500 rounded-lg hover:bg-default-100 active:bg-default-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                           >
                             <Icon icon="lucide:pencil" className="text-default-500" />
-                          </Button>
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="light"
-                            color="danger"
-                            onPress={() => onDeleteLogo && onDeleteLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1)}
-                            title="Delete Logo"
+                          </div>
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            aria-label="Delete Logo"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              onDeleteLogo && onDeleteLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                onDeleteLogo && onDeleteLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                              }
+                            }}
+                            className="inline-flex items-center justify-center w-8 h-8 text-danger rounded-lg hover:bg-danger-50 active:bg-danger-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
                           >
                             <Icon icon="lucide:trash" />
-                          </Button>
+                          </div>
                         </div>
                       </div>
                     }
