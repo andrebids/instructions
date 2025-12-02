@@ -1016,9 +1016,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
   });
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col overflow-hidden p-3">
       {/* Header */}
-      <div className="flex justify-between items-center gap-3 mb-2">
+      <div className="flex justify-between items-center gap-3 mb-2 flex-shrink-0">
         <div>
           <h2 className="text-lg font-bold text-default-900">Logo Instructions</h2>
           <p className="text-xs text-default-500">Define the technical specifications for the logo</p>
@@ -1035,11 +1035,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         </Button>
       </div>
 
-      {/* 3-Column Tablet Layout */}
-      <div className="grid grid-cols-3 gap-3 flex-1 min-h-0 overflow-hidden">
+      {/* Responsive Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1 min-h-0 overflow-hidden">
 
-        {/* Left Column - Dimensions + Fixation */}
-        <div className="flex flex-col gap-3 min-h-0">
+        {/* Left Column - Dimensions + Fixation (3 cols on desktop) */}
+        <div className="lg:col-span-3 flex flex-col gap-2 min-h-0 overflow-y-auto lg:overflow-visible">
           {/* Dimensions */}
           <Card className="shadow-sm flex flex-col">
             <CardHeader className="px-3 pt-2 pb-1 flex-shrink-0">
@@ -1048,8 +1048,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                 Dimensions
               </h3>
             </CardHeader>
-            <CardBody className="p-3 pt-1.5 flex-1">
-              <div className="grid grid-cols-4 gap-2">
+            <CardBody className="p-2 pt-1">
+              <div className="grid grid-cols-2 gap-2">
                 {['Height', 'Length', 'Width', 'Diameter'].map((dim) => {
                   const key = dim.toLowerCase();
                   const dimensionValue = formik.values.dimensions?.[key]?.value || "";
@@ -1061,33 +1061,34 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                       <label className="text-[10px] text-default-600 font-medium">
                         {dim}
                       </label>
-                      <Input
-                        type="number"
-                        endContent={<span className="text-default-400 text-[10px]">m</span>}
-                        variant="flat"
-                        size="sm"
-                        classNames={{
-                          input: "text-xs",
-                          inputWrapper: "h-7 min-h-7"
-                        }}
-                        value={dimensionValue}
-                        onValueChange={(v) => handleDimensionUpdate(key, "value", v ? parseFloat(v) : null)}
-                        onBlur={() => formik.setFieldTouched(`dimensions.${key}.value`, true)}
-                        isInvalid={isTouched && !!dimensionError}
-                        errorMessage={isTouched && dimensionError}
-                      />
-                      <Checkbox
-                        size="sm"
-                        color="danger"
-                        classNames={{
-                          label: "text-[10px]",
-                          base: "max-w-fit"
-                        }}
-                        isSelected={formik.values.dimensions?.[key]?.imperative || false}
-                        onValueChange={(v) => handleDimensionUpdate(key, "imperative", v)}
-                      >
-                        <span className="text-[10px]">Imp.</span>
-                      </Checkbox>
+                      <div className="flex gap-1 items-center">
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          endContent={<span className="text-default-400 text-[10px]">m</span>}
+                          variant="flat"
+                          size="sm"
+                          classNames={{
+                            input: "text-xs",
+                            inputWrapper: "h-7 min-h-7"
+                          }}
+                          value={dimensionValue}
+                          onValueChange={(v) => handleDimensionUpdate(key, "value", v ? parseFloat(v) : null)}
+                          onBlur={() => formik.setFieldTouched(`dimensions.${key}.value`, true)}
+                          isInvalid={isTouched && !!dimensionError}
+                        />
+                        <Checkbox
+                          size="sm"
+                          color="danger"
+                          classNames={{
+                            wrapper: "after:w-3 after:h-3 before:w-3 before:h-3",
+                            base: "m-0 p-0"
+                          }}
+                          isSelected={formik.values.dimensions?.[key]?.imperative || false}
+                          onValueChange={(v) => handleDimensionUpdate(key, "imperative", v)}
+                          title="Imperative"
+                        />
+                      </div>
                     </div>
                   );
                 })}
@@ -1108,8 +1109,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                 Fixation & Constraints
               </h3>
             </CardHeader>
-            <CardBody className="p-3 pt-1.5 flex-1 overflow-y-auto">
-              <div className="space-y-2.5">
+            <CardBody className="p-2 pt-1 flex-1 overflow-y-auto">
+              <div className="space-y-2">
                 {/* Usage Toggle */}
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] text-default-600 font-medium">Usage</label>
@@ -1247,8 +1248,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
           </Card>
         </div>
 
-        {/* Middle Column - Composition */}
-        <div className="flex flex-col gap-3 min-h-0">
+        {/* Middle Column - Composition (6 cols on desktop) */}
+        <div className="lg:col-span-6 flex flex-col min-h-0">
 
           {/* Composition Card */}
           <Card className="shadow-sm flex flex-col flex-1 min-h-0">
@@ -1258,7 +1259,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                 Composition
               </h3>
             </CardHeader>
-            <CardBody className="p-3 pt-1.5 space-y-3 flex-1 min-h-0 overflow-y-auto">
+            <CardBody className="p-2 pt-1 space-y-2 flex-1 min-h-0 overflow-y-auto">
 
               {/* Componentes Section */}
               <div>
@@ -1607,8 +1608,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
           </Card>
         </div>
 
-        {/* Right Column - Details & Attachments */}
-        <div className="flex flex-col gap-3 min-h-0">
+        {/* Right Column - Details & Attachments (3 cols on desktop) */}
+        <div className="lg:col-span-3 flex flex-col min-h-0">
           {/* Details & Criteria */}
           <Card ref={detailsCriteriaRef} className="shadow-sm flex flex-col flex-1">
             <CardHeader className="px-3 pt-2 pb-1 flex-shrink-0">
@@ -1617,7 +1618,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                 Details & Criteria
               </h3>
             </CardHeader>
-            <CardBody className="p-3 pt-1.5 space-y-2.5 flex-1 overflow-y-auto">
+            <CardBody className="p-2 pt-1 space-y-2 flex-1 overflow-y-auto">
               <Input
                 label="Logo Name"
                 placeholder="Name of the logo"

@@ -18,54 +18,54 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
   // Em produção, usar /api/uploads diretamente
   const mapPath = React.useCallback((path) => {
     if (!path) return path;
-    
+
     // Se já começa com /api/uploads/, retornar como está
     if (path.startsWith('/api/uploads/')) return path;
-    
+
     // Se já começa com http:// ou https://, retornar como está
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    
+
     // Se é data URL, retornar como está
     if (path.startsWith('data:')) return path;
-    
+
     // Se começa com /SHOP/, retornar como está (imagens estáticas do client/public)
     if (path.startsWith('/SHOP/')) return path;
-    
+
     // Se começa com /uploads/, converter para /api/uploads/
     // Em desenvolvimento: usar caminho relativo para passar pelo proxy do Vite
     // Em produção: usar caminho relativo também (mesma origem)
     if (path.startsWith('/uploads/')) {
       return '/api' + path;
     }
-    
+
     return path;
   }, []);
 
   const previewSrc = React.useMemo(() => {
     let imagePath = null;
-    
+
     // Verificar imagens de cores primeiro
     if (activeColor && product.images?.colors?.[activeColor]) {
       const colorImg = product.images.colors[activeColor];
       if (colorImg) imagePath = colorImg;
     }
-    
+
     // Fallback: tentar product.images?.night ou product.imagesNightUrl
     if (!imagePath) {
       imagePath = product.images?.night || product.imagesNightUrl;
     }
-    
+
     // Fallback: tentar product.images?.day ou product.imagesDayUrl ou thumbnailUrl
     if (!imagePath) {
       imagePath = product.images?.day || product.imagesDayUrl || product.thumbnailUrl;
     }
-    
+
     // Mapear o caminho se existir
     if (imagePath) {
       const mapped = mapPath(imagePath);
       return mapped;
     }
-    
+
     return null; // Retornar null para usar placeholder
   }, [activeColor, product, mapPath]);
 
@@ -124,7 +124,7 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
             onError={(e) => {
               // Prevent infinite error loop
               const attemptCount = parseInt(e.target.getAttribute('data-attempt') || '0');
-              
+
               // Log detalhado do erro em desenvolvimento
               if (import.meta.env.DEV) {
                 console.error('❌ [ProductCard] Image error:', {
@@ -135,7 +135,7 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
                   error: e.type || 'unknown'
                 });
               }
-              
+
               if (attemptCount >= 2) {
                 // Todas as tentativas falharam, usar placeholder
                 if (import.meta.env.DEV) {
@@ -144,9 +144,9 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
                 e.target.src = PLACEHOLDER_SVG;
                 return;
               }
-              
+
               e.target.setAttribute('data-attempt', String(attemptCount + 1));
-              
+
               // Tentar imagem do dia como fallback na primeira tentativa
               if (attemptCount === 0) {
                 const dayPath = product.images?.day || product.imagesDayUrl || product.thumbnailUrl;
@@ -154,17 +154,17 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
                 if (dayPath && dayPath !== originalImagePath) {
                   const fallbackSrc = mapPath(dayPath);
                   if (import.meta.env.DEV) {
-                    console.warn('⚠️ [ProductCard] Trying day image fallback:', { 
-                      productId: product.id, 
-                      tried: previewSrc, 
-                      fallback: fallbackSrc 
+                    console.warn('⚠️ [ProductCard] Trying day image fallback:', {
+                      productId: product.id,
+                      tried: previewSrc,
+                      fallback: fallbackSrc
                     });
                   }
                   e.target.src = fallbackSrc;
                   return;
                 }
               }
-              
+
               // Usar placeholder como último recurso
               if (import.meta.env.DEV) {
                 console.warn('⚠️ [ProductCard] No valid fallback, using placeholder:', { productId: product.id, tried: previewSrc });
