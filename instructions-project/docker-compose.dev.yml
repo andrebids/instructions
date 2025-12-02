@@ -23,7 +23,7 @@ services:
       - /app/server/node_modules
 
       # Bind mount for persistent uploads via UNC path
-      - \\192.168.2.22\Olimpo\.dev\web\thecore:/app/server/public/uploads
+      - //192.168.2.22/Olimpo/.dev/web/thecore:/app/server/public/uploads
 
     # Environment variables
     environment:
