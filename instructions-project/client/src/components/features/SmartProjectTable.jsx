@@ -11,7 +11,8 @@ import {
   Card,
   CardBody,
   Button,
-  Pagination
+  Pagination,
+  Skeleton
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
@@ -30,7 +31,7 @@ const statusColorMap = {
   "ordered": "primary",
 };
 
-export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, onProjectDeleted }) => {
+export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, onProjectDeleted, isLoading = false }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [page, setPage] = React.useState(1);
@@ -232,10 +233,21 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
             <TableColumn key="dates">{t('pages.dashboard.smartProjectTable.columns.timeline')}</TableColumn>
 
           </TableHeader>
-          <TableBody items={items} emptyContent={t('pages.dashboard.smartProjectTable.emptyState')}>
+          <TableBody 
+            items={isLoading ? Array(rowsPerPage).fill(null) : items} 
+            emptyContent={!isLoading ? t('pages.dashboard.smartProjectTable.emptyState') : null}
+          >
             {(item) => (
-              <TableRow key={item.id}>
-                {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+              <TableRow key={item?.id || Math.random()}>
+                {(columnKey) => (
+                  <TableCell>
+                    {isLoading ? (
+                      <SkeletonRow columnKey={columnKey} />
+                    ) : (
+                      renderCell(item, columnKey)
+                    )}
+                  </TableCell>
+                )}
               </TableRow>
             )}
           </TableBody>
@@ -245,6 +257,51 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
     </Card>
   );
 });
+
+// Skeleton row component for loading state
+const SkeletonRow = React.memo(({ columnKey }) => {
+  switch (columnKey) {
+    case "favorite":
+      return <Skeleton className="w-6 h-6 rounded-full" />;
+    case "name":
+      return (
+        <div className="flex flex-col gap-2">
+          <Skeleton className="w-32 h-4 rounded" />
+          <Skeleton className="w-24 h-3 rounded" />
+        </div>
+      );
+    case "status":
+      return <Skeleton className="w-20 h-6 rounded-full" />;
+    case "contract":
+      return <Skeleton className="w-16 h-6 rounded-full" />;
+    case "design":
+      return (
+        <div className="flex items-center gap-2">
+          <Skeleton className="w-2 h-2 rounded-full" />
+          <Skeleton className="w-16 h-4 rounded" />
+        </div>
+      );
+    case "reservation":
+      return (
+        <div className="flex items-center gap-1">
+          <Skeleton className="w-3 h-3 rounded" />
+          <Skeleton className="w-20 h-4 rounded" />
+        </div>
+      );
+    case "budget":
+      return <Skeleton className="w-24 h-4 rounded" />;
+    case "dates":
+      return (
+        <div className="flex flex-col gap-1">
+          <Skeleton className="w-28 h-3 rounded" />
+          <Skeleton className="w-28 h-3 rounded" />
+        </div>
+      );
+    default:
+      return <Skeleton className="w-full h-4 rounded" />;
+  }
+});
+SkeletonRow.displayName = 'SkeletonRow';
 
 // Extracted component for Name Cell with Tooltip to optimize rendering
 const ProjectNameCell = React.memo(({ project, navigate, t }) => {

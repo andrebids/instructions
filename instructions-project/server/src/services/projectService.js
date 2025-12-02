@@ -120,6 +120,78 @@ export async function findAllProjects(filters = {}) {
 }
 
 /**
+ * Busca todos os projetos otimizada para listagem (apenas campos necessários)
+ * Exclui campos JSON grandes para melhor performance
+ * @param {Object} filters - Filtros de busca
+ * @param {string} filters.status - Filtrar por status
+ * @param {string} filters.projectType - Filtrar por tipo de projeto
+ * @param {string} filters.favorite - Filtrar por favorito
+ * @param {string} filters.createdBy - Filtrar por criador (userId)
+ * @param {string} filters.userRole - Role do usuário (para filtrar automaticamente se comercial)
+ * @param {string} filters.userId - ID do usuário (para filtrar automaticamente se comercial)
+ * @param {number} filters.limit - Limite de resultados (opcional)
+ * @param {number} filters.offset - Offset para paginação (opcional)
+ */
+export async function findAllProjectsList(filters = {}) {
+  try {
+    const { status, projectType, favorite, createdBy, userRole, userId, limit, offset } = filters;
+    const where = {};
+
+    if (status) where.status = status;
+    if (projectType) where.projectType = projectType;
+    if (favorite) where.isFavorite = favorite === 'true';
+
+    // Se for comercial, filtrar apenas projetos criados por ele
+    // Se createdBy for explicitamente passado, usar esse valor
+    if (createdBy) {
+      where.created_by = createdBy;
+    } else if (userRole === 'comercial' && userId) {
+      // Comercial só vê seus próprios projetos
+      where.created_by = userId;
+    }
+    // Admin vê todos os projetos (não adiciona filtro createdBy)
+
+    // Selecionar apenas campos necessários para listagem
+    const attributes = [
+      'id',
+      'name',
+      'clientName',
+      'status',
+      'projectType',
+      'startDate',
+      'endDate',
+      'budget',
+      'isFavorite',
+      'createdAt',
+      'updatedAt',
+      'created_by'
+    ];
+
+    const queryOptions = {
+      where,
+      attributes,
+      order: [['createdAt', 'DESC']],
+    };
+
+    // Adicionar paginação se fornecida
+    if (limit !== undefined) {
+      queryOptions.limit = parseInt(limit, 10);
+    }
+    if (offset !== undefined) {
+      queryOptions.offset = parseInt(offset, 10);
+    }
+
+    const projects = await Project.findAll(queryOptions);
+
+    return projects;
+  } catch (error) {
+    logError('Erro em findAllProjectsList', error);
+    // Re-lançar o erro para ser tratado no controller
+    throw error;
+  }
+}
+
+/**
  * Busca projeto por ID
  */
 export async function findProjectById(id, includeElements = true) {

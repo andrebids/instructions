@@ -22,7 +22,7 @@ export async function getAll(req, res) {
       logError('Tabela "projects" não encontrada na verificação inicial');
       // Tentar uma consulta direta como fallback (pode ser problema de cache)
       try {
-        await projectService.findAllProjects({});
+        await projectService.findAllProjectsList({});
         // Se chegou aqui, a tabela existe mas a verificação falhou
         logInfo('Tabela projects existe (verificado por consulta direta)');
         tableExists = true;
@@ -57,7 +57,8 @@ export async function getAll(req, res) {
       userRole,
     };
 
-    const projects = await projectService.findAllProjects(filters);
+    // Usar função otimizada para listagem (exclui campos JSON grandes)
+    const projects = await projectService.findAllProjectsList(filters);
 
     logInfo('Projetos encontrados:', projects.length);
     logInfo('Filtros aplicados:', { userId, userRole });

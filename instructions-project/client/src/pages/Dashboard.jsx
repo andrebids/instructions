@@ -291,6 +291,7 @@ export default function Dashboard() {
                       projects={projects} 
                       onProjectsUpdate={loadData}
                       onProjectDeleted={handleProjectDeleted}
+                      isLoading={loading}
                     />
                   </div>
                 </div>

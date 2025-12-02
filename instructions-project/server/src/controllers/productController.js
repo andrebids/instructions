@@ -438,6 +438,7 @@ export async function getAll(req, res) {
           }
 
           // Validar formato E existência física de caminhos de imagens
+          // Em desenvolvimento, retorna caminho mesmo se não existir fisicamente (para volumes de rede)
           const originalImages = {
             imagesNightUrl: plainProduct.imagesNightUrl,
             imagesDayUrl: plainProduct.imagesDayUrl,
