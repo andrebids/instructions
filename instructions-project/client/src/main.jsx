@@ -297,6 +297,11 @@ if (typeof window !== 'undefined' && !window.__iconifyConfigured) {
       return originalFetch.call(this, input, init);
     }
 
+    // Log para diagnóstico: verificar se requisições de imagens estão sendo interceptadas
+    if (url.includes('/api/uploads/products/') || url.includes('/uploads/products/')) {
+      console.log('🖼️ [Fetch Intercept] Requisição de imagem de produto detectada:', url);
+    }
+
     // Ignorar requisições locais, relativas, ou do Vite
     if (url.startsWith('/') ||
       url.startsWith('http://localhost') ||

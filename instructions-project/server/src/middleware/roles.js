@@ -14,34 +14,21 @@ export async function getUserRole(req) {
     const auth = await getAuth(req);
     
     if (!auth || !auth.userId) {
-      console.debug('🔍 [Roles] getAuth retornou null ou sem userId');
       return null;
     }
     
     // Role vem da sessão do Auth.js
     const role = auth.role || auth.user?.role;
     
-    console.debug('🔍 [Roles] Extraindo role:', {
-      roleFromAuth: auth.role,
-      roleFromUser: auth.user?.role,
-      finalRole: role,
-      userId: auth.userId
-    });
-    
     if (Array.isArray(role)) {
       // Se for array, retornar o primeiro role
-      const firstRole = role[0] || null;
-      console.debug('🔍 [Roles] Role é array, retornando primeiro:', firstRole);
-      return firstRole;
+      return role[0] || null;
     }
     
-    const finalRole = role || null;
-    console.debug('🔍 [Roles] Role final:', finalRole);
-    return finalRole;
+    return role || null;
   } catch (error) {
     // Se houver erro, retornar null
     console.error('❌ [Roles] Erro ao obter role do usuário:', error.message);
-    console.error('   - Stack:', error.stack);
     return null;
   }
 }
@@ -57,16 +44,8 @@ export function requireRole(...allowedRoles) {
       const useAuthJs = process.env.USE_AUTH_JS === 'true';
       const enableAuth = process.env.ENABLE_AUTH === 'true';
       
-      console.debug('🔍 [Roles Middleware] Verificando role:', {
-        allowedRoles,
-        useAuthJs,
-        enableAuth,
-        path: req.path
-      });
-      
       // Se Auth.js não estiver configurado, permitir acesso (modo desenvolvimento)
       if (!useAuthJs || !enableAuth) {
-        console.debug('⚠️  [Roles Middleware] Auth desabilitado, permitindo acesso em modo desenvolvimento');
         // Em desenvolvimento sem auth, permitir acesso mas sem role
         req.userRole = null;
         req.userId = null;
@@ -74,13 +53,6 @@ export function requireRole(...allowedRoles) {
       }
       
       const auth = await getAuth(req);
-      
-      console.debug('🔍 [Roles Middleware] Resultado de getAuth:', {
-        hasAuth: !!auth,
-        userId: auth?.userId,
-        role: auth?.role,
-        source: auth?.source
-      });
       
       // Verificar se está autenticado
       if (!auth || !auth.userId) {
@@ -93,12 +65,6 @@ export function requireRole(...allowedRoles) {
       
       // Obter role do usuário
       const userRole = await getUserRole(req);
-      
-      console.debug('🔍 [Roles Middleware] Role do usuário:', {
-        userRole,
-        userId: auth.userId,
-        roleFromAuth: auth.role
-      });
       
       // Se não tiver role definido, negar acesso
       if (!userRole) {
@@ -130,19 +96,12 @@ export function requireRole(...allowedRoles) {
       req.userRole = userRole;
       req.userId = auth.userId;
       
-      console.log('✅ [Roles Middleware] Acesso permitido:', {
-        userId: auth.userId,
-        role: userRole,
-        path: req.path
-      });
-      
       next();
     } catch (error) {
       console.error('❌ [Roles Middleware] Erro no middleware requireRole:', error);
       console.error('   - Stack:', error.stack);
       // Se houver erro e Auth.js não estiver configurado, permitir acesso em desenvolvimento
       if (!process.env.USE_AUTH_JS || process.env.ENABLE_AUTH !== 'true') {
-        console.debug('⚠️  [Roles Middleware] Auth desabilitado, permitindo acesso após erro');
         req.userRole = null;
         req.userId = null;
         return next();

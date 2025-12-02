@@ -60,9 +60,29 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
       imagePath = product.images?.day || product.imagesDayUrl || product.thumbnailUrl;
     }
 
+    // Log para diagnóstico quando não há imagem (apenas em desenvolvimento)
+    if (!imagePath && import.meta.env.DEV) {
+      console.warn('⚠️ [ProductCard] No image path found for product:', {
+        productId: product.id,
+        productName: product.name,
+        hasImages: !!product.images,
+        hasImagesNightUrl: !!product.imagesNightUrl,
+        hasImagesDayUrl: !!product.imagesDayUrl,
+        hasThumbnailUrl: !!product.thumbnailUrl
+      });
+    }
+
     // Mapear o caminho se existir
     if (imagePath) {
       const mapped = mapPath(imagePath);
+      // Log para diagnóstico do mapeamento
+      if (imagePath !== mapped) {
+        console.log('🔄 [ProductCard] Path mapped:', {
+          productId: product.id,
+          original: imagePath,
+          mapped: mapped
+        });
+      }
       return mapped;
     }
 
@@ -129,18 +149,27 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
               if (import.meta.env.DEV) {
                 console.error('❌ [ProductCard] Image error:', {
                   productId: product.id,
+                  productName: product.name,
                   attempt: attemptCount,
                   src: e.target.src,
                   previewSrc,
+                  originalImagePath,
+                  productImages: {
+                    imagesNightUrl: product.imagesNightUrl,
+                    imagesDayUrl: product.imagesDayUrl,
+                    thumbnailUrl: product.thumbnailUrl,
+                    images: product.images
+                  },
                   error: e.type || 'unknown'
                 });
               }
 
               if (attemptCount >= 2) {
                 // Todas as tentativas falharam, usar placeholder
-                if (import.meta.env.DEV) {
-                  console.warn('⚠️ [ProductCard] All fallbacks failed, using placeholder');
-                }
+                console.warn('⚠️ [ProductCard] All fallbacks failed, using placeholder', {
+                  productId: product.id,
+                  tried: previewSrc
+                });
                 e.target.src = PLACEHOLDER_SVG;
                 return;
               }
@@ -166,9 +195,10 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
               }
 
               // Usar placeholder como último recurso
-              if (import.meta.env.DEV) {
-                console.warn('⚠️ [ProductCard] No valid fallback, using placeholder:', { productId: product.id, tried: previewSrc });
-              }
+              console.warn('⚠️ [ProductCard] No valid fallback, using placeholder:', { 
+                productId: product.id, 
+                tried: previewSrc 
+              });
               e.target.src = PLACEHOLDER_SVG;
             }}
           />

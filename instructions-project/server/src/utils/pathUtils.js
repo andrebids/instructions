@@ -81,15 +81,145 @@ export function getUploadsDir() {
  * ou: \\192.168.2.22\.dev\web\thecore\products (padrão de rede compartilhada)
  */
 export function getProductsUploadDir() {
+  // Debug: verificar todas as variáveis de ambiente relacionadas
+  console.log(`🔍 [PATHUTILS DEBUG] Verificando variáveis de ambiente:`);
+  console.log(`   PRODUCTS_UPLOAD_PATH: ${process.env.PRODUCTS_UPLOAD_PATH || '(não definida)'}`);
+  console.log(`   NODE_ENV: ${process.env.NODE_ENV || '(não definida)'}`);
+  console.log(`   Platform: ${process.platform}`);
+  
   // 1. Verificar se existe caminho específico via variável de ambiente (sobrescreve tudo)
   const envProductsPath = process.env.PRODUCTS_UPLOAD_PATH;
   if (envProductsPath) {
-    const normalizedPath = envProductsPath.replace(/\//g, '\\');
+    // Detectar se estamos dentro do Docker (verificando se /app existe)
+    const isDocker = fs.existsSync('/app');
+    
+    // Normalizar caminho: se for caminho Windows UNC, manter; se for caminho Linux/Docker, usar como está
+    // IMPORTANTE: Dentro do Docker, caminhos UNC são convertidos para o caminho montado equivalente
+    let normalizedPath;
+    if (process.platform === 'win32' && !isDocker) {
+      // Windows (não Docker): manter caminhos UNC como estão
+      normalizedPath = envProductsPath.replace(/\//g, '\\');
+    } else {
+      // Linux/Docker: se for caminho UNC, converter para caminho montado equivalente
+      // Verificar se contém o caminho UNC específico (com ou sem barras duplas)
+      console.log(`🔍 [PATHUTILS] Analisando caminho: ${envProductsPath}`);
+      const uncPathPattern = /192\.168\.2\.22[\\\/]Olimpo[\\\/]\.dev[\\\/]web[\\\/]thecore[\\\/]products/i;
+      const matchesUnc = uncPathPattern.test(envProductsPath);
+      console.log(`🔍 [PATHUTILS] Caminho UNC detectado: ${matchesUnc}`);
+      
+      if (matchesUnc) {
+        // Dentro do Docker, o caminho UNC está montado em /app/server/public/uploads
+        normalizedPath = '/app/server/public/uploads/products';
+        console.log(`🔄 [PATHUTILS] Convertendo caminho UNC para caminho Docker montado: ${normalizedPath}`);
+        
+        // Verificar se o diretório existe e listar conteúdo
+        if (fs.existsSync(normalizedPath)) {
+          try {
+            const allFiles = fs.readdirSync(normalizedPath);
+            const imageFiles = allFiles.filter(f => 
+              !f.startsWith('temp_') && 
+              (f.toLowerCase().endsWith('.webp') || f.toLowerCase().endsWith('.jpg') || f.toLowerCase().endsWith('.png'))
+            );
+            console.log(`📁 [PATHUTILS] Total de arquivos: ${allFiles.length}, Imagens (não temp): ${imageFiles.length}`);
+            if (imageFiles.length > 0) {
+              console.log(`📁 [PATHUTILS] Primeiras imagens reais: ${imageFiles.slice(0, 10).join(', ')}`);
+            }
+          } catch (e) {
+            console.warn(`⚠️ [PATHUTILS] Erro ao listar arquivos: ${e.message}`);
+          }
+        }
+      } else if (envProductsPath.startsWith('\\\\') || envProductsPath.startsWith('//')) {
+        // Outro caminho UNC: tentar usar como está (pode não funcionar no Docker)
+        normalizedPath = envProductsPath.replace(/\\/g, '/');
+      } else {
+        // Caminho normal (Linux/Docker): usar como está, apenas normalizar separadores
+        normalizedPath = envProductsPath.replace(/\\/g, '/');
+        // Se já é um caminho absoluto válido, usar diretamente
+        if (!normalizedPath.startsWith('/')) {
+          // Se não começa com /, pode ser relativo - não fazer nada por enquanto
+        }
+      }
+    }
+    
+    console.log(`🔍 [PATHUTILS] PRODUCTS_UPLOAD_PATH encontrado na variável de ambiente: ${envProductsPath}`);
+    console.log(`🔍 [PATHUTILS] Caminho normalizado: ${normalizedPath}`);
+    console.log(`🔍 [PATHUTILS] Docker detectado: ${isDocker}`);
+    
     if (fs.existsSync(normalizedPath)) {
-      console.log(`📁 [PATHUTILS] Usando PRODUCTS_UPLOAD_PATH da variável de ambiente: ${normalizedPath}`);
+      console.log(`✅ [PATHUTILS] Usando PRODUCTS_UPLOAD_PATH da variável de ambiente: ${normalizedPath}`);
+      try {
+        const files = fs.readdirSync(normalizedPath);
+        const imageFiles = files.filter(f => 
+          !f.startsWith('temp_') && 
+          (f.toLowerCase().endsWith('.webp') || f.toLowerCase().endsWith('.jpg') || f.toLowerCase().endsWith('.png') || f.toLowerCase().endsWith('.jpeg'))
+        );
+        const tempFiles = files.filter(f => f.startsWith('temp_'));
+        const dirs = files.filter(f => {
+          try {
+            return fs.statSync(path.join(normalizedPath, f)).isDirectory();
+          } catch {
+            return false;
+          }
+        });
+        
+        console.log(`📁 [PATHUTILS] Encontrados ${files.length} arquivos no diretório configurado`);
+        console.log(`📁 [PATHUTILS]   - Imagens reais (não temp): ${imageFiles.length}`);
+        console.log(`📁 [PATHUTILS]   - Arquivos temporários: ${tempFiles.length}`);
+        console.log(`📁 [PATHUTILS]   - Subdiretórios: ${dirs.length}`);
+        
+        if (imageFiles.length > 0) {
+          console.log(`📁 [PATHUTILS] Primeiras 10 imagens reais: ${imageFiles.slice(0, 10).join(', ')}`);
+        } else {
+          console.warn(`⚠️ [PATHUTILS] NENHUMA IMAGEM REAL ENCONTRADA! Apenas arquivos temporários.`);
+          if (dirs.length > 0) {
+            console.log(`📁 [PATHUTILS] Subdiretórios encontrados: ${dirs.join(', ')}`);
+            // Verificar conteúdo dos subdiretórios
+            for (const dir of dirs.slice(0, 3)) {
+              try {
+                const subFiles = fs.readdirSync(path.join(normalizedPath, dir));
+                const subImages = subFiles.filter(f => 
+                  !f.startsWith('temp_') && 
+                  (f.toLowerCase().endsWith('.webp') || f.toLowerCase().endsWith('.jpg') || f.toLowerCase().endsWith('.png'))
+                );
+                if (subImages.length > 0) {
+                  console.log(`📁 [PATHUTILS]   Subdiretório "${dir}" tem ${subImages.length} imagens: ${subImages.slice(0, 5).join(', ')}`);
+                }
+              } catch (e) {
+                // Ignorar erros ao listar subdiretórios
+              }
+            }
+          }
+          
+          // Verificar também o diretório pai para ver se há outras pastas
+          const parentDir = path.dirname(normalizedPath);
+          if (fs.existsSync(parentDir)) {
+            try {
+              const parentFiles = fs.readdirSync(parentDir);
+              const parentDirs = parentFiles.filter(f => {
+                try {
+                  return fs.statSync(path.join(parentDir, f)).isDirectory();
+                } catch {
+                  return false;
+                }
+              });
+              console.log(`📁 [PATHUTILS] Diretório pai "${parentDir}" tem ${parentDirs.length} subdiretórios: ${parentDirs.join(', ')}`);
+            } catch (e) {
+              // Ignorar erros
+            }
+          }
+        }
+      } catch (listError) {
+        console.warn(`⚠️ [PATHUTILS] Erro ao listar arquivos: ${listError.message}`);
+      }
       return normalizedPath;
     } else {
       console.warn(`⚠️ [PATHUTILS] PRODUCTS_UPLOAD_PATH configurado mas não existe: ${normalizedPath}`);
+      // Tentar o caminho Docker equivalente se estivermos no Docker
+      const dockerPath = '/app/server/public/uploads/products';
+      if (isDocker && fs.existsSync(dockerPath)) {
+        console.log(`✅ [PATHUTILS] Usando caminho Docker equivalente: ${dockerPath}`);
+        return dockerPath;
+      }
       console.warn(`⚠️ [PATHUTILS] Tentando criar diretório...`);
       try {
         fs.mkdirSync(normalizedPath, { recursive: true });
@@ -97,25 +227,115 @@ export function getProductsUploadDir() {
         return normalizedPath;
       } catch (error) {
         console.error(`❌ [PATHUTILS] Erro ao criar diretório: ${error.message}`);
+        console.error(`❌ [PATHUTILS] Stack: ${error.stack}`);
       }
     }
   }
 
-  // 2. Caminho padrão de rede compartilhada para produtos (hardcoded - sempre o mesmo)
+  // 2. Verificar caminho padrão de rede compartilhada para produtos (hardcoded - sempre o mesmo)
+  // PRIORIDADE: Verificar primeiro o caminho com "Olimpo" que o usuário especificou
+  const preferredNetworkPath = '\\\\192.168.2.22\\Olimpo\\.dev\\web\\thecore\\products';
   const defaultNetworkProductsPath = '\\\\192.168.2.22\\.dev\\web\\thecore\\products';
-  if (fs.existsSync(defaultNetworkProductsPath)) {
-    console.log(`📁 [PATHUTILS] Usando caminho padrão de rede compartilhada para produtos: ${defaultNetworkProductsPath}`);
+  
+  // Verificar caminho preferido primeiro (com "Olimpo")
+  if (process.platform === 'win32' && fs.existsSync(preferredNetworkPath)) {
+    console.log(`✅ [PATHUTILS] Usando caminho preferido de rede compartilhada para produtos: ${preferredNetworkPath}`);
+    try {
+      const files = fs.readdirSync(preferredNetworkPath);
+      console.log(`📁 [PATHUTILS] Encontrados ${files.length} arquivos no diretório`);
+      if (files.length > 0) {
+        console.log(`📁 [PATHUTILS] Primeiros 5 arquivos: ${files.slice(0, 5).join(', ')}`);
+      }
+    } catch (listError) {
+      console.warn(`⚠️ [PATHUTILS] Erro ao listar arquivos: ${listError.message}`);
+    }
+    return preferredNetworkPath;
+  }
+  
+  // Verificar caminho alternativo (sem "Olimpo")
+  if (process.platform === 'win32' && fs.existsSync(defaultNetworkProductsPath)) {
+    console.log(`✅ [PATHUTILS] Usando caminho padrão de rede compartilhada para produtos: ${defaultNetworkProductsPath}`);
+    try {
+      const files = fs.readdirSync(defaultNetworkProductsPath);
+      console.log(`📁 [PATHUTILS] Encontrados ${files.length} arquivos no diretório`);
+      if (files.length > 0) {
+        console.log(`📁 [PATHUTILS] Primeiros 5 arquivos: ${files.slice(0, 5).join(', ')}`);
+      }
+    } catch (listError) {
+      console.warn(`⚠️ [PATHUTILS] Erro ao listar arquivos: ${listError.message}`);
+    }
     return defaultNetworkProductsPath;
   }
 
-  // 3. Fallback: produtos dentro do diretório de uploads base
+  // 3. Verificar se estamos dentro do Docker (caminho montado em /app/server/public/uploads)
+  // O Docker monta \\192.168.2.22\Olimpo\.dev\web\thecore em /app/server/public/uploads
+  // Então produtos devem estar em /app/server/public/uploads/products
+  const dockerProductsPath = '/app/server/public/uploads/products';
+  if (fs.existsSync(dockerProductsPath)) {
+    console.log(`✅ [PATHUTILS] Detectado Docker - usando caminho montado: ${dockerProductsPath}`);
+    try {
+      const files = fs.readdirSync(dockerProductsPath);
+      const imageFiles = files.filter(f => 
+        !f.startsWith('temp_') && 
+        (f.toLowerCase().endsWith('.webp') || f.toLowerCase().endsWith('.jpg') || f.toLowerCase().endsWith('.png') || f.toLowerCase().endsWith('.jpeg'))
+      );
+      const tempFiles = files.filter(f => f.startsWith('temp_'));
+      const dirs = files.filter(f => {
+        try {
+          return fs.statSync(path.join(dockerProductsPath, f)).isDirectory();
+        } catch {
+          return false;
+        }
+      });
+      
+      console.log(`📁 [PATHUTILS] Encontrados ${files.length} arquivos no diretório Docker`);
+      console.log(`📁 [PATHUTILS]   - Imagens reais (não temp): ${imageFiles.length}`);
+      console.log(`📁 [PATHUTILS]   - Arquivos temporários: ${tempFiles.length}`);
+      console.log(`📁 [PATHUTILS]   - Subdiretórios: ${dirs.length}`);
+      
+      if (imageFiles.length > 0) {
+        console.log(`📁 [PATHUTILS] Primeiras 10 imagens reais: ${imageFiles.slice(0, 10).join(', ')}`);
+      } else {
+        console.warn(`⚠️ [PATHUTILS] NENHUMA IMAGEM REAL ENCONTRADA no diretório Docker!`);
+        console.warn(`⚠️ [PATHUTILS] Apenas arquivos temporários encontrados.`);
+        if (dirs.length > 0) {
+          console.log(`📁 [PATHUTILS] Subdiretórios encontrados: ${dirs.join(', ')}`);
+        }
+        
+        // Verificar também o diretório pai
+        const parentDir = '/app/server/public/uploads';
+        if (fs.existsSync(parentDir)) {
+          try {
+            const parentFiles = fs.readdirSync(parentDir);
+            const parentDirs = parentFiles.filter(f => {
+              try {
+                return fs.statSync(path.join(parentDir, f)).isDirectory();
+              } catch {
+                return false;
+              }
+            });
+            console.log(`📁 [PATHUTILS] Diretório pai "${parentDir}" tem ${parentDirs.length} subdiretórios: ${parentDirs.join(', ')}`);
+          } catch (e) {
+            // Ignorar erros
+          }
+        }
+      }
+    } catch (listError) {
+      console.warn(`⚠️ [PATHUTILS] Erro ao listar arquivos no Docker: ${listError.message}`);
+    }
+    return dockerProductsPath;
+  }
+
+  // 4. Fallback: produtos dentro do diretório de uploads base
   const dir = path.join(getUploadsDir(), 'products');
   const normalizedDir = dir.replace(/\//g, path.sep);
+  console.log(`🔍 [PATHUTILS] Usando fallback: ${normalizedDir}`);
 
   // Garantir que o diretório existe
   if (!fs.existsSync(normalizedDir)) {
     try {
       fs.mkdirSync(normalizedDir, { recursive: true });
+      console.log(`✅ [PATHUTILS] Diretório de fallback criado: ${normalizedDir}`);
     } catch (error) {
       console.error(`❌ [PATHUTILS] Erro ao criar diretório de produtos: ${error.message}`);
     }
@@ -258,11 +478,15 @@ export function getEditorUploadDir() {
  * @returns {string} Caminho absoluto completo
  */
 export function resolvePublicPath(relativePath) {
-  // Se for caminho de produtos e existir PRODUCTS_UPLOAD_PATH configurado
-  if (relativePath.startsWith('/uploads/products/') && process.env.PRODUCTS_UPLOAD_PATH) {
+  // Se for caminho de produtos, SEMPRE usar getProductsUploadDir()
+  // (não apenas quando PRODUCTS_UPLOAD_PATH está configurado)
+  // Isso garante que produtos em rede compartilhada sejam encontrados
+  if (relativePath.startsWith('/uploads/products/')) {
     const filename = path.basename(relativePath);
     const productsDir = getProductsUploadDir();
-    return path.join(productsDir, filename);
+    const resolvedPath = path.join(productsDir, filename);
+    // Normalizar separadores para Windows
+    return resolvedPath.replace(/\//g, path.sep);
   }
 
   // Se for caminho de projetos e existir PROJECTS_UPLOAD_PATH configurado

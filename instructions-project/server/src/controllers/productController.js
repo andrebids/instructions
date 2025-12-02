@@ -6,6 +6,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { generateThumbnail, processImageToWebP } from '../utils/imageUtils.js';
 import { resolveImagePath, validateProductImages, validateProductImagesFormat } from '../utils/imagePathResolver.js';
+import { resolvePublicPath, getProductsUploadDir } from '../utils/pathUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -86,8 +87,7 @@ async function updateNewTagForProducts() {
 // GET /api/products - Listar todos os produtos
 export async function getAll(req, res) {
   try {
-    console.log('📦 [PRODUCTS API] GET /api/products - Iniciando busca');
-    console.log('📦 [PRODUCTS API] Query params:', JSON.stringify(req.query));
+    const isDevelopment = process.env.NODE_ENV !== 'production';
 
     var where = {};
     var query = req.query;
@@ -233,8 +233,6 @@ export async function getAll(req, res) {
       where.diameter = diameterConditions;
     }
 
-    console.log('📦 [PRODUCTS API] Where clause:', JSON.stringify(where));
-
     var products;
     try {
       products = await Product.findAll({
@@ -242,7 +240,6 @@ export async function getAll(req, res) {
         order: [['name', 'ASC']],
         attributes: { exclude: ['isSourceImage', 'usage'] },
       });
-      console.log('✅ [PRODUCTS API] Query executada com sucesso');
     } catch (queryError) {
       console.error('❌ [PRODUCTS API] Erro ao executar query:', queryError);
       console.error('❌ [PRODUCTS API] Query Error Stack:', queryError.stack);
@@ -261,12 +258,10 @@ export async function getAll(req, res) {
           );
 
           if (!checkColumn || checkColumn.length === 0) {
-            console.log('🔄 [PRODUCTS API] Adicionando campo animationSimulationUrl...');
             await sequelize.query(
               `ALTER TABLE products ADD COLUMN IF NOT EXISTS "animationSimulationUrl" VARCHAR(255) NULL;`,
               { type: QueryTypes.RAW }
             );
-            console.log('✅ [PRODUCTS API] Campo animationSimulationUrl adicionado!');
 
             // Tentar novamente a query
             products = await Product.findAll({
@@ -287,33 +282,8 @@ export async function getAll(req, res) {
       }
     }
 
-    console.log('📦 [PRODUCTS API] Produtos encontrados:', products.length);
-    if (products.length > 0) {
-      console.log('📦 [PRODUCTS API] Primeiros 3 produtos:', products.slice(0, 3).map(function (p) {
-        return { id: p.id, name: p.name, isActive: p.isActive };
-      }));
-    } else {
-      console.log('⚠️  [PRODUCTS API] NENHUM PRODUTO ENCONTRADO! Where clause:', JSON.stringify(where));
-      // Fazer uma busca sem filtros para debug
-      var allProductsCount = await Product.count();
-      console.log('📦 [PRODUCTS API] Total de produtos na BD (sem filtros):', allProductsCount);
-
-      // Verificar especificamente o IPL317R
-      var ipl317r = await Product.findOne({ where: { id: 'IPL317R' } });
-      if (ipl317r) {
-        console.log('🔍 [PRODUCTS API] IPL317R encontrado na BD:', {
-          id: ipl317r.id,
-          name: ipl317r.name,
-          isActive: ipl317r.isActive,
-        });
-        console.log('🔍 [PRODUCTS API] IPL317R não aparece porque:', {
-          showArchived: query.showArchived,
-          isActive: ipl317r.isActive,
-          whereIsActive: where.isActive
-        });
-      } else {
-        console.log('⚠️  [PRODUCTS API] IPL317R NÃO encontrado na BD - pode ter sido deletado');
-      }
+    if (isDevelopment && products.length === 0) {
+      console.warn('⚠️  [PRODUCTS API] NENHUM PRODUTO ENCONTRADO! Where clause:', JSON.stringify(where));
     }
 
     // Converter produtos para objetos simples para evitar problemas de serialização
@@ -457,11 +427,18 @@ export async function getAll(req, res) {
 
           // Validar formato de caminhos de imagens (sem verificar filesystem)
           // Confia na base de dados e filtra apenas imagens temporárias problemáticas
+          
           const validatedImages = validateProductImagesFormat({
             imagesNightUrl: plainProduct.imagesNightUrl,
             imagesDayUrl: plainProduct.imagesDayUrl,
             thumbnailUrl: plainProduct.thumbnailUrl,
           });
+
+          // IMPORTANTE: As imagens com prefixo "temp_" são VÁLIDAS!
+          // Elas são imagens reais dos produtos que foram convertidas para WebP
+          // O prefixo "temp_" aparece quando o productId não foi fornecido durante o upload
+          // Não precisamos verificar existência física aqui - confiamos na validação de formato
+          // que já permite arquivos WebP com temp_ como válidos
 
           // Atualizar apenas com imagens válidas
           plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
@@ -475,8 +452,6 @@ export async function getAll(req, res) {
           // Continuar mesmo se um produto falhar
         }
       }
-
-      console.log('✅ [PRODUCTS API] Produtos serializados com sucesso:', productsData.length);
 
       // Verificar se a resposta já foi enviada
       if (!res.headersSent) {
@@ -557,27 +532,29 @@ export function clearTrendingCache() {
 // GET /api/products/trending - Listar produtos trending (otimizado para performance)
 export async function getTrending(req, res) {
   try {
-    console.log('🔥 [TRENDING API] GET /api/products/trending - Iniciando busca');
-
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    
     // Check cache first
     const now = Date.now();
     if (trendingCache.data && trendingCache.timestamp && (now - trendingCache.timestamp < trendingCache.ttl)) {
-      console.log('✅ [TRENDING API] Retornando dados do cache');
+      console.log('📦 [TRENDING API] Retornando dados do cache');
       return res.json(trendingCache.data);
     }
 
-    console.log('🔄 [TRENDING API] Cache expirado ou vazio, buscando do banco');
-
     let products = [];
+    
+    // Tentativa 1: Buscar produtos trending com qualquer imagem válida
     try {
-      // Tentativa 1: Query otimizada com filtro de imagem e APENAS trending
+      console.log('🔍 [TRENDING API] Buscando produtos trending...');
       products = await Product.findAll({
         where: {
           isActive: true,
-          isTrending: true, // Apenas produtos marcados como trending
-          imagesNightUrl: {
-            [Op.ne]: null
-          }
+          isTrending: true,
+          [Op.or]: [
+            { imagesNightUrl: { [Op.ne]: null } },
+            { imagesDayUrl: { [Op.ne]: null } },
+            { thumbnailUrl: { [Op.ne]: null } }
+          ]
         },
         order: [
           ['name', 'ASC']
@@ -588,23 +565,27 @@ export async function getTrending(req, res) {
           'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
         ]
       });
+      console.log(`✅ [TRENDING API] Encontrados ${products.length} produtos trending com imagens`);
     } catch (queryError) {
       console.warn('⚠️ [TRENDING API] Erro na query otimizada, tentando fallback simples:', queryError.message);
       // Tentativa 2: Query simples sem filtro de imagem (mas ainda apenas trending)
-      products = await Product.findAll({
-        where: {
-          isActive: true,
-          isTrending: true
-        },
-        limit: 5,
-        attributes: [
-          'id', 'name', 'price', 'oldPrice', 'stock',
-          'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
-        ]
-      });
+      try {
+        products = await Product.findAll({
+          where: {
+            isActive: true,
+            isTrending: true
+          },
+          limit: 5,
+          attributes: [
+            'id', 'name', 'price', 'oldPrice', 'stock',
+            'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
+          ]
+        });
+        console.log(`✅ [TRENDING API] Fallback: encontrados ${products.length} produtos trending`);
+      } catch (fallbackError) {
+        console.error('❌ [TRENDING API] Erro no fallback:', fallbackError.message);
+      }
     }
-
-    console.log('📦 [TRENDING API] Produtos encontrados:', products.length);
 
     // Converter para objetos simples e processar
     var productsData = products.map(function (p) {
@@ -641,16 +622,81 @@ export async function getTrending(req, res) {
 
       return plainProduct;
     }).filter(function (p) {
-      // IMPORTANTE: Filtrar apenas produtos que têm imagem NIGHT válida
-      // O widget só precisa da versão night
-      return p.imagesNightUrl !== null;
+      // IMPORTANTE: Aceitar produtos com QUALQUER imagem válida (night, day ou thumbnail)
+      // O widget aceita fallback para day ou thumbnail se não houver night
+      return p.imagesNightUrl !== null || p.imagesDayUrl !== null || p.thumbnailUrl !== null;
     });
+
+    // Fallback: Se não houver produtos trending com imagens, buscar produtos ativos com imagens
+    if (productsData.length === 0) {
+      console.log('⚠️ [TRENDING API] Nenhum produto trending encontrado, buscando produtos ativos com imagens como fallback...');
+      try {
+        const fallbackProducts = await Product.findAll({
+          where: {
+            isActive: true,
+            [Op.or]: [
+              { imagesNightUrl: { [Op.ne]: null } },
+              { imagesDayUrl: { [Op.ne]: null } },
+              { thumbnailUrl: { [Op.ne]: null } }
+            ]
+          },
+          order: [
+            ['name', 'ASC']
+          ],
+          limit: 5,
+          attributes: [
+            'id', 'name', 'price', 'oldPrice', 'stock',
+            'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
+          ]
+        });
+
+        productsData = fallbackProducts.map(function (p) {
+          var plainProduct = p.get({ plain: true });
+
+          // Garantir que valores numéricos são números
+          if (plainProduct.price !== null && plainProduct.price !== undefined) {
+            plainProduct.price = parseFloat(plainProduct.price);
+            if (isNaN(plainProduct.price)) plainProduct.price = 0;
+          }
+
+          if (plainProduct.oldPrice !== null && plainProduct.oldPrice !== undefined) {
+            plainProduct.oldPrice = parseFloat(plainProduct.oldPrice);
+            if (isNaN(plainProduct.oldPrice)) plainProduct.oldPrice = null;
+          }
+
+          if (plainProduct.stock !== null && plainProduct.stock !== undefined) {
+            plainProduct.stock = parseInt(String(plainProduct.stock), 10);
+            if (isNaN(plainProduct.stock)) plainProduct.stock = 0;
+          }
+
+          // Validar formato de caminhos de imagens
+          const validatedImages = validateProductImagesFormat({
+            imagesNightUrl: plainProduct.imagesNightUrl,
+            imagesDayUrl: plainProduct.imagesDayUrl,
+            thumbnailUrl: plainProduct.thumbnailUrl,
+          });
+
+          plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
+          plainProduct.imagesDayUrl = validatedImages.imagesDayUrl;
+          plainProduct.thumbnailUrl = validatedImages.thumbnailUrl;
+
+          return plainProduct;
+        }).filter(function (p) {
+          return p.imagesNightUrl !== null || p.imagesDayUrl !== null || p.thumbnailUrl !== null;
+        });
+
+        console.log(`✅ [TRENDING API] Fallback: encontrados ${productsData.length} produtos ativos com imagens`);
+      } catch (fallbackError) {
+        console.error('❌ [TRENDING API] Erro no fallback de produtos ativos:', fallbackError.message);
+      }
+    }
+
+    console.log(`📊 [TRENDING API] Retornando ${productsData.length} produtos para o widget`);
 
     // Update cache
     trendingCache.data = productsData;
     trendingCache.timestamp = now;
 
-    console.log('✅ [TRENDING API] Cache atualizado');
     res.json(productsData);
   } catch (error) {
     console.error('❌ [TRENDING API] Erro crítico ao buscar produtos trending:', error);
@@ -875,17 +921,7 @@ export async function create(req, res) {
     var files = req.files || {};
     var body = req.body;
 
-    console.log('📦 [PRODUCTS API] POST /api/products - Criar produto');
-    console.log('📦 [PRODUCTS API] Body recebido:', JSON.stringify(body, null, 2));
-    console.log('📦 [PRODUCTS API] Files recebidos:', Object.keys(files));
-    try {
-      console.log('🧾 [FILES META]', {
-        dayImage: files.dayImage?.[0]?.originalname,
-        nightImage: files.nightImage?.[0]?.originalname,
-        animation: files.animation?.[0]?.originalname,
-        thumbnail: files.thumbnail?.[0]?.originalname,
-      });
-    } catch (_) { }
+    const isDevelopment = process.env.NODE_ENV !== 'production';
 
     // Processar URLs de imagens dos ficheiros enviados
     var imagesDayUrl = null;
@@ -1081,9 +1117,6 @@ export async function create(req, res) {
     };
 
     // Validar campos obrigatórios
-    console.log('📦 [PRODUCTS API] Validando campos obrigatórios...');
-    console.log('📦 [PRODUCTS API] productData.name:', productData.name);
-    console.log('📦 [PRODUCTS API] typeof productData.name:', typeof productData.name);
 
     if (!productData.name || (typeof productData.name === 'string' && productData.name.trim() === '')) {
       console.error('❌ [PRODUCTS API] Campo "name" está vazio ou não foi fornecido');
@@ -1111,10 +1144,7 @@ export async function create(req, res) {
       }
 
       productData.id = generatedId;
-      console.log('📦 [PRODUCTS API] ID gerado automaticamente:', productData.id);
     }
-
-    console.log('📦 [PRODUCTS API] Criando produto:', { id: productData.id, name: productData.name });
 
     var product = await Product.create(productData);
 
@@ -1519,22 +1549,60 @@ export async function debugMedia(req, res) {
     const id = req.params.id;
     const product = await Product.findByPk(id);
     if (!product) return res.status(404).json({ error: 'Product not found' });
+    
+    // Usar resolvePublicPath para resolver caminhos corretamente
+    const { resolvePublicPath } = await import('../utils/pathUtils.js');
+    const { getProductsUploadDir } = await import('../utils/pathUtils.js');
+    
     const build = (url) => {
       if (!url) return null;
-      const rel = url.replace(/^\//, '');
-      const abs = path.resolve(process.cwd(), 'public', rel.replace(/^public\//, ''));
-      return { url, abs, exists: fs.existsSync(abs), size: fs.existsSync(abs) ? fs.statSync(abs).size : null };
+      // Usar resolvePublicPath para resolver caminho correto (suporta rede compartilhada)
+      const abs = resolvePublicPath(url);
+      const exists = abs ? fs.existsSync(abs) : false;
+      return { 
+        url, 
+        abs, 
+        exists, 
+        size: exists ? fs.statSync(abs).size : null,
+        readable: exists ? fs.accessSync(abs, fs.constants.R_OK) === undefined : false
+      };
     };
+    
+    const productsDir = getProductsUploadDir();
     const report = {
       id: product.id,
+      name: product.name,
+      productsUploadDir: productsDir,
+      productsDirExists: fs.existsSync(productsDir),
+      productsDirReadable: fs.existsSync(productsDir) ? (() => {
+        try {
+          fs.accessSync(productsDir, fs.constants.R_OK);
+          return true;
+        } catch {
+          return false;
+        }
+      })() : false,
       day: build(product.imagesDayUrl),
       night: build(product.imagesNightUrl),
       thumb: build(product.thumbnailUrl),
     };
-    console.log('🧪 [DEBUG MEDIA]', report);
+    
+    // Tentar listar alguns arquivos do diretório de produtos
+    if (fs.existsSync(productsDir)) {
+      try {
+        const files = fs.readdirSync(productsDir);
+        report.productsDirFileCount = files.length;
+        report.productsDirSampleFiles = files.slice(0, 10);
+      } catch (listError) {
+        report.productsDirListError = listError.message;
+      }
+    }
+    
+    console.log('🧪 [DEBUG MEDIA]', JSON.stringify(report, null, 2));
     res.json(report);
   } catch (e) {
-    res.status(500).json({ error: e?.message });
+    console.error('❌ [DEBUG MEDIA] Erro:', e);
+    res.status(500).json({ error: e?.message, stack: e.stack });
   }
 }
 

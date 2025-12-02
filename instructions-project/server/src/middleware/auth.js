@@ -53,28 +53,12 @@ export async function getAuth(req) {
           role: session.user.role,
           source: 'authjs'
         };
-        console.log('✅ [Auth Middleware] Sessão obtida via getSession:', {
-          userId: authData.userId,
-          role: authData.role,
-          email: authData.user?.email
-        });
         return authData;
-      } else {
-        console.debug('🔍 [Auth Middleware] getSession retornou sessão sem usuário');
       }
     } catch (sessionError) {
       // getSession pode falhar se req.authOptions não estiver configurado corretamente
       // Isso é esperado quando chamado fora do contexto do handler do Auth.js
       // Usar requisição HTTP interna como fallback (sempre funciona)
-      const isBasePathError = sessionError.message?.includes('basePath') || 
-                              sessionError.message?.includes('authOptions');
-      if (isBasePathError) {
-        // Erro esperado - getSession precisa do handler do Auth.js configurado corretamente
-        console.debug('🔍 [Auth Middleware] getSession falhou (erro esperado), usando fallback HTTP:', sessionError.message);
-      } else {
-        console.debug('⚠️  [Auth Middleware] getSession falhou, tentando requisição HTTP interna:', sessionError.message);
-      }
-      
       try {
         // Fazer requisição HTTP interna para /auth/session
         // IMPORTANTE: Para requisições internas, sempre usar localhost e HTTP
@@ -88,28 +72,12 @@ export async function getAuth(req) {
         // Se falhar, tentar localhost
         const hostnames = ['127.0.0.1', 'localhost'];
         
-        // Log detalhado para diagnóstico
-        const cookieHeader = req.headers.cookie || '';
-        const cookieNames = cookieHeader ? cookieHeader.split(';').map(c => c.trim().split('=')[0]).filter(Boolean) : [];
-        
-        console.log('🔍 [Auth Middleware] Tentando obter sessão via requisição HTTP interna', {
-          secure: req.secure,
-          forwardedProto: req.get('x-forwarded-proto'),
-          protocol: req.protocol,
-          hasCookies: !!cookieHeader,
-          cookieCount: cookieNames.length,
-          cookieNames: cookieNames.slice(0, 5), // Mostrar primeiros 5 nomes de cookies
-          serverPort: serverPort,
-          hostnames: hostnames
-        });
-        
         // Tentar cada hostname até um funcionar
         let lastError = null;
         let sessionData = null;
         for (const hostname of hostnames) {
           try {
             const sessionUrl = `http://${hostname}:${serverPort}/auth/session`;
-            console.debug(`🔍 [Auth Middleware] Tentando ${hostname}:${serverPort}/auth/session`);
             
             // Fazer requisição HTTP interna
             sessionData = await new Promise((resolve, reject) => {
@@ -168,17 +136,11 @@ export async function getAuth(req) {
               });
               
               httpReq.on('error', (error) => {
-                console.debug(`⚠️  [Auth Middleware] Erro na requisição HTTP interna para ${hostname}:`, {
-                  message: error.message,
-                  code: error.code,
-                  port: serverPort
-                });
                 reject(error);
               });
               
               httpReq.setTimeout(3000, () => {
                 httpReq.destroy();
-                console.debug(`⏱️  [Auth Middleware] Timeout na requisição HTTP interna para ${hostname}`);
                 reject(new Error('Timeout'));
               });
               
@@ -189,7 +151,6 @@ export async function getAuth(req) {
             break;
           } catch (error) {
             lastError = error;
-            console.debug(`⚠️  [Auth Middleware] Falha ao conectar em ${hostname}, tentando próximo...`);
             // Continuar para o próximo hostname
           }
         }
@@ -211,14 +172,7 @@ export async function getAuth(req) {
             role: sessionData.user.role,
             source: 'authjs'
           };
-          console.log('✅ [Auth Middleware] Sessão obtida via requisição HTTP:', {
-            userId: authData.userId,
-            role: authData.role,
-            email: authData.user?.email
-          });
           return authData;
-        } else {
-          console.debug('🔍 [Auth Middleware] Requisição HTTP retornou sessão sem usuário');
         }
       } catch (httpError) {
         // Não logar erros comuns (timeout, basePath, etc) em modo debug
@@ -238,20 +192,12 @@ export async function getAuth(req) {
             secure: req.secure,
             forwardedProto: req.get('x-forwarded-proto')
           });
-        } else {
-          console.debug('🔍 [Auth Middleware] Erro comum ignorado:', httpError.message);
         }
       }
     }
   }
 
   // Se chegou aqui, não há sessão válida
-  console.debug('🔍 [Auth Middleware] Nenhuma sessão encontrada', {
-    useAuthJs,
-    hasAuthHandler: !!authHandler,
-    hasCookies: typeof req !== 'undefined' && !!req.headers?.cookie
-  });
-  
   return null;
 }
 

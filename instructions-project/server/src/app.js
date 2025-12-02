@@ -117,8 +117,38 @@ app.use((req, res, next) => {
 });
 
 // Servir uploads também via /api para funcionar por trás do proxy do Vite
-import { getUploadsDir } from './utils/pathUtils.js';
-app.use('/api/uploads', express.static(getUploadsDir()));
+import { getUploadsDir, getProductsUploadDir } from './utils/pathUtils.js';
+
+// Log do caminho de uploads base
+const uploadsDir = getUploadsDir();
+console.log(`📁 [APP] Diretório de uploads base configurado: ${uploadsDir}`);
+
+// Log do caminho de produtos
+const productsDir = getProductsUploadDir();
+console.log(`📁 [APP] Diretório de produtos configurado: ${productsDir}`);
+
+// Servir produtos especificamente de getProductsUploadDir()
+// IMPORTANTE: Se produtos estão em rede compartilhada diferente, precisamos de rota específica
+app.use('/api/uploads/products', express.static(productsDir, {
+  setHeaders: (res, filePath) => {
+    console.log(`📤 [APP] Servindo arquivo de produto: ${filePath}`);
+  },
+  fallthrough: false // Não passar para próximo middleware se não encontrar
+}));
+
+// Servir outros uploads via /api/uploads (projetos, editor, etc)
+// NOTA: express.static serve arquivos do diretório especificado
+// Quando uma requisição vem como /api/uploads/projects/image.jpg,
+// o express.static procura por projects/image.jpg dentro do diretório base
+app.use('/api/uploads', express.static(uploadsDir, {
+  // Adicionar headers para debug
+  setHeaders: (res, path) => {
+    // Log apenas para requisições importantes (para não poluir logs)
+    if (path.includes('projects') || path.includes('editor')) {
+      console.log(`📤 [APP] Servindo arquivo: ${path}`);
+    }
+  }
+}));
 
 // Servir também arquivos estáticos do client/public (para imagens da loja)
 // MAS: Não servir sw.js de public/ - ele deve vir de dist/ após processamento pelo VitePWA
