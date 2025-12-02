@@ -6,19 +6,21 @@
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 /**
- * Log de informação geral
+ * Log de informação geral (apenas em desenvolvimento)
  */
 export function logInfo(message, data = null) {
-  if (isDevelopment || data) {
+  if (isDevelopment) {
     console.log(`📋 [PROJECTS API] ${message}`, data || '');
   }
 }
 
 /**
- * Log de sucesso
+ * Log de sucesso (apenas em desenvolvimento)
  */
 export function logSuccess(message, data = null) {
-  console.log(`✅ [PROJECTS API] ${message}`, data || '');
+  if (isDevelopment) {
+    console.log(`✅ [PROJECTS API] ${message}`, data || '');
+  }
 }
 
 /**
@@ -122,10 +124,12 @@ export function logDebug(message, data = null) {
 }
 
 /**
- * Log de estatísticas
+ * Log de estatísticas (apenas em desenvolvimento)
  */
 export function logStats(message, data = null) {
-  console.log(`📊 [PROJECTS API] ${message}`, data || '');
+  if (isDevelopment) {
+    console.log(`📊 [PROJECTS API] ${message}`, data || '');
+  }
 }
 
 /**

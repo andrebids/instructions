@@ -40,6 +40,11 @@ services:
       # API URL for frontend (porta 5001 é mapeada do container 5000)
       - VITE_API_URL=http://localhost:5001/api
 
+      # Caminho específico para produtos (pasta de rede compartilhada)
+      # No Docker, o caminho UNC é montado em /app/server/public/uploads
+      # Então produtos estão em /app/server/public/uploads/products
+      - PRODUCTS_UPLOAD_PATH=/app/server/public/uploads/products
+
     # Load additional environment variables from .env file
     env_file:
       - .env

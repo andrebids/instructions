@@ -6,6 +6,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { generateThumbnail, processImageToWebP } from '../utils/imageUtils.js';
 import { resolveImagePath, validateProductImages, validateProductImagesFormat } from '../utils/imagePathResolver.js';
+import { resolvePublicPath, getProductsUploadDir } from '../utils/pathUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -86,8 +87,7 @@ async function updateNewTagForProducts() {
 // GET /api/products - Listar todos os produtos
 export async function getAll(req, res) {
   try {
-    console.log('📦 [PRODUCTS API] GET /api/products - Iniciando busca');
-    console.log('📦 [PRODUCTS API] Query params:', JSON.stringify(req.query));
+    const isDevelopment = process.env.NODE_ENV !== 'production';
 
     var where = {};
     var query = req.query;
@@ -233,8 +233,6 @@ export async function getAll(req, res) {
       where.diameter = diameterConditions;
     }
 
-    console.log('📦 [PRODUCTS API] Where clause:', JSON.stringify(where));
-
     var products;
     try {
       products = await Product.findAll({
@@ -242,7 +240,6 @@ export async function getAll(req, res) {
         order: [['name', 'ASC']],
         attributes: { exclude: ['isSourceImage', 'usage'] },
       });
-      console.log('✅ [PRODUCTS API] Query executada com sucesso');
     } catch (queryError) {
       console.error('❌ [PRODUCTS API] Erro ao executar query:', queryError);
       console.error('❌ [PRODUCTS API] Query Error Stack:', queryError.stack);
@@ -261,12 +258,10 @@ export async function getAll(req, res) {
           );
 
           if (!checkColumn || checkColumn.length === 0) {
-            console.log('🔄 [PRODUCTS API] Adicionando campo animationSimulationUrl...');
             await sequelize.query(
               `ALTER TABLE products ADD COLUMN IF NOT EXISTS "animationSimulationUrl" VARCHAR(255) NULL;`,
               { type: QueryTypes.RAW }
             );
-            console.log('✅ [PRODUCTS API] Campo animationSimulationUrl adicionado!');
 
             // Tentar novamente a query
             products = await Product.findAll({
@@ -287,33 +282,8 @@ export async function getAll(req, res) {
       }
     }
 
-    console.log('📦 [PRODUCTS API] Produtos encontrados:', products.length);
-    if (products.length > 0) {
-      console.log('📦 [PRODUCTS API] Primeiros 3 produtos:', products.slice(0, 3).map(function (p) {
-        return { id: p.id, name: p.name, isActive: p.isActive };
-      }));
-    } else {
-      console.log('⚠️  [PRODUCTS API] NENHUM PRODUTO ENCONTRADO! Where clause:', JSON.stringify(where));
-      // Fazer uma busca sem filtros para debug
-      var allProductsCount = await Product.count();
-      console.log('📦 [PRODUCTS API] Total de produtos na BD (sem filtros):', allProductsCount);
-
-      // Verificar especificamente o IPL317R
-      var ipl317r = await Product.findOne({ where: { id: 'IPL317R' } });
-      if (ipl317r) {
-        console.log('🔍 [PRODUCTS API] IPL317R encontrado na BD:', {
-          id: ipl317r.id,
-          name: ipl317r.name,
-          isActive: ipl317r.isActive,
-        });
-        console.log('🔍 [PRODUCTS API] IPL317R não aparece porque:', {
-          showArchived: query.showArchived,
-          isActive: ipl317r.isActive,
-          whereIsActive: where.isActive
-        });
-      } else {
-        console.log('⚠️  [PRODUCTS API] IPL317R NÃO encontrado na BD - pode ter sido deletado');
-      }
+    if (isDevelopment && products.length === 0) {
+      console.warn('⚠️  [PRODUCTS API] NENHUM PRODUTO ENCONTRADO! Where clause:', JSON.stringify(where));
     }
 
     // Converter produtos para objetos simples para evitar problemas de serialização
@@ -457,16 +427,55 @@ export async function getAll(req, res) {
 
           // Validar formato de caminhos de imagens (sem verificar filesystem)
           // Confia na base de dados e filtra apenas imagens temporárias problemáticas
+          
+          // Debug ANTES da validação para produto específico
+          const isDebugProduct = (plainProduct.id === 'prd-005' || plainProduct.name === 'GX349L');
+          if (isDevelopment && isDebugProduct) {
+            console.log(`🔍 [PRODUCTS API] ANTES da validação - produto prd-005/GX349L:`, {
+              id: plainProduct.id,
+              name: plainProduct.name,
+              originalImagesNightUrl: plainProduct.imagesNightUrl,
+              originalImagesDayUrl: plainProduct.imagesDayUrl,
+              originalThumbnailUrl: plainProduct.thumbnailUrl,
+              availableColors: plainProduct.availableColors,
+              availableColorsType: typeof plainProduct.availableColors,
+              availableColorsKeys: plainProduct.availableColors ? Object.keys(plainProduct.availableColors) : null
+            });
+          }
+          
           const validatedImages = validateProductImagesFormat({
             imagesNightUrl: plainProduct.imagesNightUrl,
             imagesDayUrl: plainProduct.imagesDayUrl,
             thumbnailUrl: plainProduct.thumbnailUrl,
           });
 
+          // IMPORTANTE: As imagens com prefixo "temp_" são VÁLIDAS!
+          // Elas são imagens reais dos produtos que foram convertidas para WebP
+          // O prefixo "temp_" aparece quando o productId não foi fornecido durante o upload
+          // Não precisamos verificar existência física aqui - confiamos na validação de formato
+          // que já permite arquivos WebP com temp_ como válidos
+
           // Atualizar apenas com imagens válidas
           plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
           plainProduct.imagesDayUrl = validatedImages.imagesDayUrl;
           plainProduct.thumbnailUrl = validatedImages.thumbnailUrl;
+          
+          // Debug DEPOIS da validação para produto específico
+          if (isDevelopment && isDebugProduct) {
+            console.log(`🔍 [PRODUCTS API] DEPOIS da validação - produto prd-005/GX349L:`, {
+              id: plainProduct.id,
+              name: plainProduct.name,
+              isActive: plainProduct.isActive,
+              validatedImagesNightUrl: validatedImages.imagesNightUrl,
+              validatedImagesDayUrl: validatedImages.imagesDayUrl,
+              validatedThumbnailUrl: validatedImages.thumbnailUrl,
+              finalImagesNightUrl: plainProduct.imagesNightUrl,
+              finalImagesDayUrl: plainProduct.imagesDayUrl,
+              finalThumbnailUrl: plainProduct.thumbnailUrl,
+              availableColors: plainProduct.availableColors,
+              willBeIncluded: true // Produto será incluído na resposta
+            });
+          }
 
           productsData.push(plainProduct);
         } catch (err) {
@@ -476,7 +485,29 @@ export async function getAll(req, res) {
         }
       }
 
-      console.log('✅ [PRODUCTS API] Produtos serializados com sucesso:', productsData.length);
+      if (isDevelopment) {
+        console.log('✅ [PRODUCTS API] Produtos serializados com sucesso:', productsData.length);
+        
+        // Verificar se GX349L está na lista
+        const gx349lInList = productsData.find(p => p.id === 'prd-005' || p.name === 'GX349L');
+        if (gx349lInList) {
+          console.log('✅ [PRODUCTS API] GX349L encontrado na lista de produtos retornados:', {
+            id: gx349lInList.id,
+            name: gx349lInList.name,
+            isActive: gx349lInList.isActive,
+            hasImagesNightUrl: !!gx349lInList.imagesNightUrl,
+            hasImagesDayUrl: !!gx349lInList.imagesDayUrl,
+            hasThumbnailUrl: !!gx349lInList.thumbnailUrl,
+            hasAvailableColors: !!(gx349lInList.availableColors && Object.keys(gx349lInList.availableColors).length > 0)
+          });
+        } else {
+          console.warn('⚠️  [PRODUCTS API] GX349L NÃO encontrado na lista de produtos retornados');
+          console.warn('   Isso pode significar que:');
+          console.warn('   1. O produto está com isActive=false no banco');
+          console.warn('   2. O produto não existe no banco');
+          console.warn('   3. Há um filtro que está excluindo o produto');
+        }
+      }
 
       // Verificar se a resposta já foi enviada
       if (!res.headersSent) {
@@ -557,16 +588,13 @@ export function clearTrendingCache() {
 // GET /api/products/trending - Listar produtos trending (otimizado para performance)
 export async function getTrending(req, res) {
   try {
-    console.log('🔥 [TRENDING API] GET /api/products/trending - Iniciando busca');
-
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    
     // Check cache first
     const now = Date.now();
     if (trendingCache.data && trendingCache.timestamp && (now - trendingCache.timestamp < trendingCache.ttl)) {
-      console.log('✅ [TRENDING API] Retornando dados do cache');
       return res.json(trendingCache.data);
     }
-
-    console.log('🔄 [TRENDING API] Cache expirado ou vazio, buscando do banco');
 
     let products = [];
     try {
@@ -604,7 +632,6 @@ export async function getTrending(req, res) {
       });
     }
 
-    console.log('📦 [TRENDING API] Produtos encontrados:', products.length);
 
     // Converter para objetos simples e processar
     var productsData = products.map(function (p) {
@@ -650,7 +677,6 @@ export async function getTrending(req, res) {
     trendingCache.data = productsData;
     trendingCache.timestamp = now;
 
-    console.log('✅ [TRENDING API] Cache atualizado');
     res.json(productsData);
   } catch (error) {
     console.error('❌ [TRENDING API] Erro crítico ao buscar produtos trending:', error);
@@ -875,17 +901,7 @@ export async function create(req, res) {
     var files = req.files || {};
     var body = req.body;
 
-    console.log('📦 [PRODUCTS API] POST /api/products - Criar produto');
-    console.log('📦 [PRODUCTS API] Body recebido:', JSON.stringify(body, null, 2));
-    console.log('📦 [PRODUCTS API] Files recebidos:', Object.keys(files));
-    try {
-      console.log('🧾 [FILES META]', {
-        dayImage: files.dayImage?.[0]?.originalname,
-        nightImage: files.nightImage?.[0]?.originalname,
-        animation: files.animation?.[0]?.originalname,
-        thumbnail: files.thumbnail?.[0]?.originalname,
-      });
-    } catch (_) { }
+    const isDevelopment = process.env.NODE_ENV !== 'production';
 
     // Processar URLs de imagens dos ficheiros enviados
     var imagesDayUrl = null;
@@ -1081,9 +1097,6 @@ export async function create(req, res) {
     };
 
     // Validar campos obrigatórios
-    console.log('📦 [PRODUCTS API] Validando campos obrigatórios...');
-    console.log('📦 [PRODUCTS API] productData.name:', productData.name);
-    console.log('📦 [PRODUCTS API] typeof productData.name:', typeof productData.name);
 
     if (!productData.name || (typeof productData.name === 'string' && productData.name.trim() === '')) {
       console.error('❌ [PRODUCTS API] Campo "name" está vazio ou não foi fornecido');
@@ -1111,10 +1124,7 @@ export async function create(req, res) {
       }
 
       productData.id = generatedId;
-      console.log('📦 [PRODUCTS API] ID gerado automaticamente:', productData.id);
     }
-
-    console.log('📦 [PRODUCTS API] Criando produto:', { id: productData.id, name: productData.name });
 
     var product = await Product.create(productData);
 
@@ -1519,22 +1529,60 @@ export async function debugMedia(req, res) {
     const id = req.params.id;
     const product = await Product.findByPk(id);
     if (!product) return res.status(404).json({ error: 'Product not found' });
+    
+    // Usar resolvePublicPath para resolver caminhos corretamente
+    const { resolvePublicPath } = await import('../utils/pathUtils.js');
+    const { getProductsUploadDir } = await import('../utils/pathUtils.js');
+    
     const build = (url) => {
       if (!url) return null;
-      const rel = url.replace(/^\//, '');
-      const abs = path.resolve(process.cwd(), 'public', rel.replace(/^public\//, ''));
-      return { url, abs, exists: fs.existsSync(abs), size: fs.existsSync(abs) ? fs.statSync(abs).size : null };
+      // Usar resolvePublicPath para resolver caminho correto (suporta rede compartilhada)
+      const abs = resolvePublicPath(url);
+      const exists = abs ? fs.existsSync(abs) : false;
+      return { 
+        url, 
+        abs, 
+        exists, 
+        size: exists ? fs.statSync(abs).size : null,
+        readable: exists ? fs.accessSync(abs, fs.constants.R_OK) === undefined : false
+      };
     };
+    
+    const productsDir = getProductsUploadDir();
     const report = {
       id: product.id,
+      name: product.name,
+      productsUploadDir: productsDir,
+      productsDirExists: fs.existsSync(productsDir),
+      productsDirReadable: fs.existsSync(productsDir) ? (() => {
+        try {
+          fs.accessSync(productsDir, fs.constants.R_OK);
+          return true;
+        } catch {
+          return false;
+        }
+      })() : false,
       day: build(product.imagesDayUrl),
       night: build(product.imagesNightUrl),
       thumb: build(product.thumbnailUrl),
     };
-    console.log('🧪 [DEBUG MEDIA]', report);
+    
+    // Tentar listar alguns arquivos do diretório de produtos
+    if (fs.existsSync(productsDir)) {
+      try {
+        const files = fs.readdirSync(productsDir);
+        report.productsDirFileCount = files.length;
+        report.productsDirSampleFiles = files.slice(0, 10);
+      } catch (listError) {
+        report.productsDirListError = listError.message;
+      }
+    }
+    
+    console.log('🧪 [DEBUG MEDIA]', JSON.stringify(report, null, 2));
     res.json(report);
   } catch (e) {
-    res.status(500).json({ error: e?.message });
+    console.error('❌ [DEBUG MEDIA] Erro:', e);
+    res.status(500).json({ error: e?.message, stack: e.stack });
   }
 }
 
