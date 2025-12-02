@@ -156,7 +156,7 @@ export const RecommendedProductsWidget = React.memo(() => {
 
       {/* Fixed Trending Badge - Top Left */}
       <div className="absolute top-6 left-6 z-20 pointer-events-none">
-        <span className="px-3 py-1 rounded-full bg-primary/90 backdrop-blur-md text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-primary/30">
+        <span className="px-3 py-1 rounded-full bg-blue-600 dark:bg-blue-500 backdrop-blur-md text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-blue-500/30">
           Trending
         </span>
       </div>

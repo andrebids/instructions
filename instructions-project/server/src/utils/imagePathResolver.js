@@ -7,6 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { resolvePublicPath } from './pathUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -243,5 +244,121 @@ export function validateProductImages(imagePaths) {
  */
 export function imageExists(imagePath) {
   return resolveImagePath(imagePath) !== null;
+}
+
+/**
+ * Valida um caminho de imagem verificando formato E existência física
+ * 
+ * @param {string} imagePath - Caminho da imagem
+ * @param {string} context - Contexto para logs (ex: "productId:123")
+ * @returns {string|null} - Caminho se válido e existir, null caso contrário
+ */
+function validateImagePathWithExistence(imagePath, context = '') {
+  if (!imagePath || typeof imagePath !== 'string') {
+    if (context && process.env.NODE_ENV !== 'production') {
+      console.log(`🔍 [ImageValidator] ${context} - Caminho vazio ou inválido`);
+    }
+    return null;
+  }
+
+  // Primeiro validar formato
+  const formatValidated = validateImagePathFormat(imagePath);
+    if (!formatValidated) {
+      if (context && process.env.NODE_ENV !== 'production') {
+        console.log(`❌ [ImageValidator] ${context} - Formato inválido: ${imagePath}`);
+      }
+      return null;
+    }
+
+    // Se passou na validação de formato, verificar existência física
+    try {
+      const resolvedPath = resolvePublicPath(formatValidated);
+      
+      if (process.env.NODE_ENV !== 'production' && context) {
+        console.log(`🔍 [ImageValidator] ${context} - Verificando existência física:`);
+        console.log(`   Caminho original: ${imagePath}`);
+        console.log(`   Caminho resolvido: ${resolvedPath}`);
+      }
+
+      if (fs.existsSync(resolvedPath)) {
+        if (process.env.NODE_ENV !== 'production' && context) {
+          console.log(`✅ [ImageValidator] ${context} - Imagem existe: ${resolvedPath}`);
+        }
+        return formatValidated;
+      } else {
+        if (process.env.NODE_ENV !== 'production' && context) {
+          console.warn(`⚠️ [ImageValidator] ${context} - Imagem NÃO existe fisicamente: ${resolvedPath}`);
+          console.warn(`   Caminho original na DB: ${imagePath}`);
+        }
+        return null;
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV !== 'production' && context) {
+        console.error(`❌ [ImageValidator] ${context} - Erro ao verificar existência:`, error.message);
+        console.error(`   Caminho: ${imagePath}`);
+      }
+      return null;
+    }
+}
+
+/**
+ * Valida múltiplos caminhos de imagem verificando formato E existência física
+ * Útil para APIs onde queremos garantir que apenas imagens que existem fisicamente sejam retornadas
+ * 
+ * @param {Object} imagePaths - Objeto com {imagesNightUrl, imagesDayUrl, thumbnailUrl}
+ * @param {string} context - Contexto para logs (ex: "productId:123")
+ * @returns {Object} - Objeto com caminhos validados por formato E existência física
+ */
+export function validateProductImagesWithExistence(imagePaths, context = '') {
+  const result = {
+    imagesNightUrl: null,
+    imagesDayUrl: null,
+    thumbnailUrl: null,
+  };
+
+  if (imagePaths.imagesNightUrl) {
+    result.imagesNightUrl = validateImagePathWithExistence(
+      imagePaths.imagesNightUrl,
+      context ? `${context} [night]` : '[night]'
+    );
+  }
+
+  if (imagePaths.imagesDayUrl) {
+    result.imagesDayUrl = validateImagePathWithExistence(
+      imagePaths.imagesDayUrl,
+      context ? `${context} [day]` : '[day]'
+    );
+  }
+
+  if (imagePaths.thumbnailUrl) {
+    result.thumbnailUrl = validateImagePathWithExistence(
+      imagePaths.thumbnailUrl,
+      context ? `${context} [thumbnail]` : '[thumbnail]'
+    );
+  }
+
+  // Se não há thumbnail mas há day image, usar day como thumbnail
+  if (!result.thumbnailUrl && result.imagesDayUrl) {
+    result.thumbnailUrl = result.imagesDayUrl;
+  }
+
+  // Se não há thumbnail nem day image, usar night image como thumbnail
+  // Isso garante que produtos com apenas imagem night válida tenham um thumbnail
+  if (!result.thumbnailUrl && result.imagesNightUrl) {
+    result.thumbnailUrl = result.imagesNightUrl;
+  }
+
+  // Log de resumo se houver contexto
+  if (context && process.env.NODE_ENV !== 'production') {
+    const hasAnyImage = result.imagesNightUrl || result.imagesDayUrl || result.thumbnailUrl;
+    if (!hasAnyImage) {
+      console.warn(`⚠️ [ImageValidator] ${context} - NENHUMA imagem válida encontrada após verificação física`);
+      console.warn(`   Original - night: ${imagePaths.imagesNightUrl || 'null'}`);
+      console.warn(`   Original - day: ${imagePaths.imagesDayUrl || 'null'}`);
+      console.warn(`   Original - thumbnail: ${imagePaths.thumbnailUrl || 'null'}`);
+    }
+  }
+
+  return result;
 }
 

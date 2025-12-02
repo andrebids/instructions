@@ -482,9 +482,12 @@ export function resolvePublicPath(relativePath) {
   // (não apenas quando PRODUCTS_UPLOAD_PATH está configurado)
   // Isso garante que produtos em rede compartilhada sejam encontrados
   if (relativePath.startsWith('/uploads/products/')) {
-    const filename = path.basename(relativePath);
+    // Preservar estrutura de subdiretórios após remover o prefixo
+    // Exemplo: /uploads/products/SHOP/TRENDING/NIGHT/image.webp
+    //          -> SHOP/TRENDING/NIGHT/image.webp
+    const subPath = relativePath.replace(/^\/uploads\/products\//, '');
     const productsDir = getProductsUploadDir();
-    const resolvedPath = path.join(productsDir, filename);
+    const resolvedPath = path.join(productsDir, subPath);
     // Normalizar separadores para Windows
     return resolvedPath.replace(/\//g, path.sep);
   }
