@@ -104,6 +104,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
     if (!logo) return false;
     const hasLogoNumber = logo.logoNumber?.trim() !== "";
     const hasLogoName = logo.logoName?.trim() !== "";
+    const hasDescription = logo.description?.trim() !== "";
     const hasRequestedBy = logo.requestedBy?.trim() !== "";
     const hasFixationType = logo.fixationType?.trim() !== "";
     const dimensions = logo.dimensions || {};
@@ -112,7 +113,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
     const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
     const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
     const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
-    return hasLogoNumber && hasLogoName && hasRequestedBy && hasFixationType && hasAtLeastOneDimension;
+    return hasLogoNumber && hasLogoName && hasDescription && hasRequestedBy && hasFixationType && hasAtLeastOneDimension;
   };
 
   const handleDeleteLogo = (index, isCurrent) => {
@@ -330,7 +331,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
             return (
               <Scroller
                 hideScrollbar
-                className={`flex-1 min-h-0 bg-default-100 ${isAIDesignerStep() || isLogoInstructionsStep
+                className={`flex-1 min-h-0 ${isLogoInstructionsStep ? '' : 'bg-default-100'} ${isAIDesignerStep() || isLogoInstructionsStep
                     ? 'overflow-hidden'
                     : 'px-4 py-6 sm:px-6 sm:py-8 lg:px-8 overflow-y-auto'
                   }`}
