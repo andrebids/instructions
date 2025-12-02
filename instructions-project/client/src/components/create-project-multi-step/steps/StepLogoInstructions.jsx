@@ -1427,8 +1427,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
           {/* Column 3: Composition (Components & Balls) */}
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2 mb-1 text-gray-600 dark:text-gray-400">
-              <div className="p-1.5 bg-gray-100 dark:bg-gray-900/30 rounded-lg">
+            <div className="flex items-center gap-2 mb-1 text-purple-600 dark:text-purple-400">
+              <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                 <Icon icon="lucide:layers" className="w-4 h-4" />
               </div>
               <h2 className="text-base font-bold">Composition</h2>
