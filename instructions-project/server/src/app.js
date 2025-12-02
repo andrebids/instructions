@@ -117,7 +117,7 @@ app.use((req, res, next) => {
 });
 
 // Servir uploads também via /api para funcionar por trás do proxy do Vite
-import { getUploadsDir, getProductsUploadDir } from './utils/pathUtils.js';
+import { getUploadsDir, getProductsUploadDir, getProjectsUploadDir } from './utils/pathUtils.js';
 
 // Log do caminho de uploads base
 const uploadsDir = getUploadsDir();
@@ -190,15 +190,75 @@ app.use('/api/uploads/products', (req, res, next) => {
   });
 });
 
-// Servir outros uploads via /api/uploads (projetos, editor, etc)
+// Servir projetos especificamente usando getProjectsUploadDir()
+// IMPORTANTE: Projetos têm estrutura hierárquica {projectId}/{subfolder}/{filename}
+// Precisamos de middleware customizado para resolver corretamente com SMB
+app.use('/api/uploads/projects', (req, res, next) => {
+  // Formato esperado: /api/uploads/projects/{projectId}/{subfolder}/{filename}
+  const pathParts = req.path.replace(/^\//, '').split('/');
+  
+  if (pathParts.length >= 3) {
+    const projectId = pathParts[0];
+    const subfolder = pathParts[1];
+    const filename = pathParts.slice(2).join('/'); // Pode ter subdiretórios
+    
+    const projectDir = getProjectsUploadDir(projectId, subfolder);
+    const filePath = path.join(projectDir, filename);
+    
+    // Verificar se arquivo existe
+    if (fs.existsSync(filePath)) {
+      // Servir arquivo diretamente
+      res.sendFile(filePath, (err) => {
+        if (err) {
+          console.error(`❌ [APP] Erro ao servir arquivo de projeto: ${err.message}`);
+          if (!res.headersSent) {
+            res.status(500).json({ error: 'Erro ao servir arquivo' });
+          }
+        }
+      });
+    } else {
+      // Arquivo não encontrado - logs detalhados
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`⚠️ [APP] Arquivo de projeto não encontrado: ${req.path}`);
+        console.warn(`   ProjectId: ${projectId}, Subfolder: ${subfolder}, Filename: ${filename}`);
+        console.warn(`   Caminho completo procurado: ${filePath}`);
+        console.warn(`   Diretório do projeto existe: ${fs.existsSync(projectDir)}`);
+        
+        if (fs.existsSync(projectDir)) {
+          try {
+            const files = fs.readdirSync(projectDir);
+            console.warn(`   Arquivos no diretório: ${files.length} total`);
+            if (files.length > 0) {
+              console.warn(`   Primeiros arquivos: ${files.slice(0, 5).join(', ')}`);
+            }
+          } catch (e) {
+            console.warn(`   Erro ao listar arquivos: ${e.message}`);
+          }
+        }
+      }
+      res.status(404).json({ 
+        error: 'Arquivo de projeto não encontrado', 
+        path: req.path,
+        projectId,
+        subfolder,
+        filename,
+        projectDir,
+        fullPath: filePath
+      });
+    }
+  } else {
+    // Caminho inválido - passar para próximo middleware
+    next();
+  }
+});
+
+// Servir outros uploads via /api/uploads (editor, etc)
 // NOTA: express.static serve arquivos do diretório especificado
-// Quando uma requisição vem como /api/uploads/projects/image.jpg,
-// o express.static procura por projects/image.jpg dentro do diretório base
 app.use('/api/uploads', express.static(uploadsDir, {
   // Adicionar headers para debug
   setHeaders: (res, path) => {
     // Log apenas para requisições importantes (para não poluir logs)
-    if (path.includes('projects') || path.includes('editor')) {
+    if (path.includes('editor')) {
       console.log(`📤 [APP] Servindo arquivo: ${path}`);
     }
   }

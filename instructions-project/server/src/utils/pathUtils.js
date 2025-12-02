@@ -369,16 +369,21 @@ export function resolvePublicPath(relativePath) {
     return resolvedPath.replace(/\//g, path.sep);
   }
 
-  // Se for caminho de projetos e existir PROJECTS_UPLOAD_PATH configurado
-  if (relativePath.startsWith('/uploads/projects/') && process.env.PROJECTS_UPLOAD_PATH) {
+  // Se for caminho de projetos, SEMPRE usar getProjectsUploadDir()
+  // (não apenas quando PROJECTS_UPLOAD_PATH está configurado)
+  // Isso garante que projetos em rede compartilhada sejam encontrados
+  if (relativePath.startsWith('/uploads/projects/')) {
     // Extrair projectId e subfolder do caminho
+    // Formato: /uploads/projects/{projectId}/{subfolder}/{filename}
     const parts = relativePath.replace('/uploads/projects/', '').split('/');
     if (parts.length >= 2) {
       const projectId = parts[0];
       const subfolder = parts[1];
       const filename = parts[parts.length - 1];
       const projectDir = getProjectsUploadDir(projectId, subfolder);
-      return path.join(projectDir, filename);
+      const resolvedPath = path.join(projectDir, filename);
+      // Normalizar separadores para Windows
+      return resolvedPath.replace(/\//g, path.sep);
     }
   }
 
