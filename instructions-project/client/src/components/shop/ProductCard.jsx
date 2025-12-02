@@ -82,9 +82,10 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
     if (imagePath) {
       const mapped = mapPath(imagePath);
       // Log para diagnóstico do mapeamento
-      if (imagePath !== mapped) {
-        console.log('🔄 [ProductCard] Path mapped:', {
+      if (imagePath !== mapped && import.meta.env.DEV) {
+        console.log(`🔄 [ProductCard] Path mapped: ${product.id || 'unknown'}`, {
           productId: product.id,
+          productName: product.name,
           original: imagePath,
           mapped: mapped
         });
@@ -153,7 +154,7 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
 
               // Log detalhado do erro em desenvolvimento
               if (import.meta.env.DEV) {
-                console.error('❌ [ProductCard] Image error:', {
+                console.error(`❌ [ProductCard] Image error: ${product.id || 'unknown'} (${product.name || 'no name'})`, {
                   productId: product.id,
                   productName: product.name,
                   attempt: attemptCount,
@@ -172,8 +173,9 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
 
               if (attemptCount >= 2) {
                 // Todas as tentativas falharam, usar placeholder
-                console.warn('⚠️ [ProductCard] All fallbacks failed, using placeholder', {
+                console.warn(`⚠️ [ProductCard] All fallbacks failed, using placeholder: ${product.id || 'unknown'} (${product.name || 'no name'})`, {
                   productId: product.id,
+                  productName: product.name,
                   tried: previewSrc
                 });
                 e.target.src = PLACEHOLDER_SVG;
@@ -189,8 +191,9 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
                 if (dayPath && dayPath !== originalImagePath) {
                   const fallbackSrc = mapPath(dayPath);
                   if (import.meta.env.DEV) {
-                    console.warn('⚠️ [ProductCard] Trying day image fallback:', {
+                    console.warn(`⚠️ [ProductCard] Trying day image fallback: ${product.id || 'unknown'} (${product.name || 'no name'})`, {
                       productId: product.id,
+                      productName: product.name,
                       tried: previewSrc,
                       fallback: fallbackSrc
                     });
@@ -201,8 +204,9 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
               }
 
               // Usar placeholder como último recurso
-              console.warn('⚠️ [ProductCard] No valid fallback, using placeholder:', { 
-                productId: product.id, 
+              console.warn(`⚠️ [ProductCard] No valid fallback, using placeholder: ${product.id || 'unknown'} (${product.name || 'no name'})`, { 
+                productId: product.id,
+                productName: product.name,
                 tried: previewSrc 
               });
               e.target.src = PLACEHOLDER_SVG;

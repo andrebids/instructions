@@ -1336,6 +1336,8 @@ export async function update(req, res) {
         }
 
         updateData.imagesDayUrl = '/uploads/products/' + processedDayImageFilename;
+        // Limpar cache de trending quando imagens são atualizadas
+        clearTrendingCache();
 
         // Verificar novamente se o arquivo existe antes de salvar
         // Usa pathUtils para garantir caminho consistente
@@ -1393,6 +1395,8 @@ export async function update(req, res) {
         var processedNightImageFilename = path.basename(processedNightImagePath);
         updateData.imagesNightUrl = '/uploads/products/' + processedNightImageFilename;
         console.log('✅ Imagem da noite convertida para WebP:', updateData.imagesNightUrl);
+        // Limpar cache de trending quando imagens são atualizadas
+        clearTrendingCache();
       } catch (webpError) {
         console.warn('⚠️  Erro ao converter imagem da noite para WebP:', webpError.message);
         // Usar imagem original em caso de erro
@@ -1996,6 +2000,156 @@ export async function getCategories(req, res) {
     res.json(categories);
   } catch (error) {
     console.error('❌ [GET CATEGORIES] Erro ao buscar categorias:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+// GET /api/debug/images/:productId - Debug de imagens de um produto
+export async function debugImages(req, res) {
+  try {
+    const productId = req.params.productId;
+    const product = await Product.findByPk(productId, {
+      attributes: ['id', 'name', 'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl']
+    });
+    
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    
+    const productData = product.get({ plain: true });
+    const productsDir = getProductsUploadDir();
+    
+    // Função para analisar um caminho de imagem
+    const analyzeImagePath = (imagePath, type) => {
+      if (!imagePath) {
+        return {
+          type,
+          pathInDatabase: null,
+          resolvedPath: null,
+          exists: false,
+          error: 'Caminho vazio na base de dados'
+        };
+      }
+      
+      const resolvedPath = resolvePublicPath(imagePath);
+      const exists = resolvedPath ? fs.existsSync(resolvedPath) : false;
+      
+      const result = {
+        type,
+        pathInDatabase: imagePath,
+        resolvedPath: resolvedPath,
+        exists: exists
+      };
+      
+      if (exists) {
+        try {
+          const stats = fs.statSync(resolvedPath);
+          result.size = stats.size;
+          result.sizeKB = (stats.size / 1024).toFixed(2);
+          result.modified = stats.mtime.toISOString();
+        } catch (e) {
+          result.error = `Erro ao ler estatísticas: ${e.message}`;
+        }
+      } else {
+        result.error = 'Arquivo não encontrado no filesystem';
+        
+        // Verificar se o diretório existe
+        if (resolvedPath) {
+          const dir = path.dirname(resolvedPath);
+          result.directoryExists = fs.existsSync(dir);
+          result.directoryPath = dir;
+          
+          // Se o diretório existe, listar arquivos similares
+          if (fs.existsSync(dir)) {
+            try {
+              const files = fs.readdirSync(dir);
+              const fileName = path.basename(resolvedPath);
+              
+              // Se é um arquivo temp_nightImage_, buscar outros arquivos com mesmo prefixo
+              if (fileName.includes('temp_')) {
+                const prefix = fileName.split('_').slice(0, 2).join('_'); // Ex: temp_nightImage
+                const similarFiles = files.filter(f => 
+                  f.startsWith(prefix) && 
+                  f.endsWith(path.extname(fileName))
+                );
+                result.similarFilesInDirectory = similarFiles.slice(0, 10);
+              }
+              
+              result.totalFilesInDirectory = files.length;
+            } catch (e) {
+              result.directoryListError = e.message;
+            }
+          }
+        }
+      }
+      
+      return result;
+    };
+    
+    const report = {
+      product: {
+        id: productData.id,
+        name: productData.name
+      },
+      productsDirectory: {
+        path: productsDir,
+        exists: fs.existsSync(productsDir),
+        readable: fs.existsSync(productsDir) ? (() => {
+          try {
+            fs.accessSync(productsDir, fs.constants.R_OK);
+            return true;
+          } catch {
+            return false;
+          }
+        })() : false
+      },
+      images: {
+        night: analyzeImagePath(productData.imagesNightUrl, 'night'),
+        day: analyzeImagePath(productData.imagesDayUrl, 'day'),
+        thumbnail: analyzeImagePath(productData.thumbnailUrl, 'thumbnail')
+      }
+    };
+    
+    // Listar alguns arquivos do diretório de produtos para referência
+    if (fs.existsSync(productsDir)) {
+      try {
+        const files = fs.readdirSync(productsDir);
+        const imageFiles = files.filter(f => 
+          f.toLowerCase().endsWith('.webp') || 
+          f.toLowerCase().endsWith('.jpg') || 
+          f.toLowerCase().endsWith('.jpeg') || 
+          f.toLowerCase().endsWith('.png')
+        );
+        
+        report.productsDirectory.sampleFiles = imageFiles.slice(0, 20);
+        report.productsDirectory.totalFiles = files.length;
+        report.productsDirectory.totalImageFiles = imageFiles.length;
+      } catch (e) {
+        report.productsDirectory.listError = e.message;
+      }
+    }
+    
+    res.json(report);
+  } catch (error) {
+    console.error('❌ [DEBUG IMAGES] Erro ao debugar imagens:', error);
+    res.status(500).json({ 
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
+  }
+}
+
+// GET /api/products/trending/clear-cache - Limpar cache de produtos trending
+export async function clearTrendingCacheRoute(req, res) {
+  try {
+    clearTrendingCache();
+    console.log('🗑️  [TRENDING API] Cache limpo manualmente');
+    res.json({ 
+      success: true, 
+      message: 'Cache de produtos trending limpo com sucesso' 
+    });
+  } catch (error) {
+    console.error('❌ [CLEAR CACHE] Erro ao limpar cache:', error);
     res.status(500).json({ error: error.message });
   }
 }

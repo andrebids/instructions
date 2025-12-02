@@ -131,10 +131,64 @@ console.log(`📁 [APP] Diretório de produtos configurado: ${productsDir}`);
 // IMPORTANTE: Se produtos estão em rede compartilhada diferente, precisamos de rota específica
 app.use('/api/uploads/products', express.static(productsDir, {
   setHeaders: (res, filePath) => {
-    console.log(`📤 [APP] Servindo arquivo de produto: ${filePath}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`📤 [APP] Servindo arquivo de produto: ${filePath}`);
+    }
   },
   fallthrough: false // Não passar para próximo middleware se não encontrar
 }));
+
+// Middleware para tratar erros quando arquivo não é encontrado em /api/uploads/products
+// Logs detalhados para diagnóstico (sem fallback UNC - usar apenas SMB montado)
+app.use('/api/uploads/products', (req, res, next) => {
+  // Se chegou aqui, o arquivo não foi encontrado pelo express.static
+  const requestedFile = req.path.replace(/^\//, ''); // Remover barra inicial
+  const fullPath = path.join(productsDir, requestedFile);
+  
+  // Logs detalhados para diagnóstico
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn(`⚠️ [APP] Arquivo de produto não encontrado: ${req.path}`);
+    console.warn(`   Arquivo solicitado: ${requestedFile}`);
+    console.warn(`   Caminho completo procurado: ${fullPath}`);
+    console.warn(`   Diretório base (SMB montado): ${productsDir}`);
+    console.warn(`   Arquivo existe fisicamente: ${fs.existsSync(fullPath)}`);
+    
+    // Verificar se o diretório existe
+    const fileDir = path.dirname(fullPath);
+    console.warn(`   Diretório do arquivo existe: ${fs.existsSync(fileDir)}`);
+    
+    // Listar alguns arquivos do diretório para debug
+    if (fs.existsSync(productsDir)) {
+      try {
+        const files = fs.readdirSync(productsDir);
+        const fileName = requestedFile.split('/').pop() || requestedFile;
+        console.warn(`   Total de arquivos no diretório: ${files.length}`);
+        console.warn(`   Procurando arquivo: ${fileName}`);
+        
+        // Listar alguns arquivos que começam com o mesmo prefixo (ex: temp_nightImage_)
+        if (fileName.includes('_')) {
+          const prefix = fileName.split('_').slice(0, 2).join('_'); // Ex: temp_nightImage
+          const similarFiles = files.filter(f => f.startsWith(prefix) && f.endsWith('.webp'));
+          if (similarFiles.length > 0) {
+            console.warn(`   Arquivos com prefixo "${prefix}": ${similarFiles.slice(0, 10).join(', ')}`);
+          }
+        }
+      } catch (e) {
+        console.warn(`   Erro ao listar arquivos: ${e.message}`);
+      }
+    } else {
+      console.error(`   ❌ Diretório de produtos não existe! Verifique se SMB está montado corretamente.`);
+    }
+  }
+  
+  res.status(404).json({ 
+    error: 'Arquivo não encontrado', 
+    path: req.path,
+    requestedFile: requestedFile,
+    productsDir: productsDir,
+    fullPath: fullPath
+  });
+});
 
 // Servir outros uploads via /api/uploads (projetos, editor, etc)
 // NOTA: express.static serve arquivos do diretório especificado
@@ -389,6 +443,13 @@ app.get('/api/files/:filename', (req, res) => {
 
 // API Routes - Registrar rotas ANTES do middleware global de autenticação
 // As rotas individuais já têm requireAuth() onde necessário
+
+// Debug route para imagens de produtos (deve vir antes das rotas de produtos)
+app.get('/api/debug/images/:productId', async (req, res) => {
+  const { debugImages } = await import('./controllers/productController.js');
+  return debugImages(req, res);
+});
+
 app.use('/api/projects', projectRoutes);
 app.use('/api/decorations', decorationRoutes);
 app.use('/api/projects', projectsRouter);

@@ -64,6 +64,52 @@ fi
 mkdir -p /app/server/public/uploads
 echo "  ✓ Uploads directory ready"
 
+# Mount SMB share from TrueNAS (if credentials provided)
+SMB_SHARE="//192.168.2.22/Olimpo/.dev/web/thecore"
+MOUNT_POINT="/app/server/public/uploads"
+SMB_USER="${SMB_USER:-guest}"
+SMB_PASS="${SMB_PASS:-}"
+
+if [ -n "$SMB_PASS" ] || [ "$SMB_USER" != "guest" ]; then
+    echo ""
+    echo "📁 Mounting SMB share from TrueNAS..."
+    echo "   Share: $SMB_SHARE"
+    echo "   Mount point: $MOUNT_POINT"
+    
+    # Unmount if already mounted
+    umount "$MOUNT_POINT" 2>/dev/null || true
+    
+    # Create credentials file if password provided
+    if [ -n "$SMB_PASS" ]; then
+        CREDS_FILE="/tmp/smb_creds"
+        echo "username=$SMB_USER" > "$CREDS_FILE"
+        echo "password=$SMB_PASS" >> "$CREDS_FILE"
+        chmod 600 "$CREDS_FILE"
+        MOUNT_OPTS="credentials=$CREDS_FILE,uid=1000,gid=1000,iocharset=utf8,file_mode=0777,dir_mode=0777"
+    else
+        MOUNT_OPTS="guest,uid=1000,gid=1000,iocharset=utf8,file_mode=0777,dir_mode=0777"
+    fi
+    
+    # Mount the SMB share
+    if mount -t cifs "$SMB_SHARE" "$MOUNT_POINT" -o "$MOUNT_OPTS"; then
+        echo "  ✅ SMB share mounted successfully"
+        # Verify products directory exists
+        if [ -d "$MOUNT_POINT/products" ]; then
+            echo "  ✅ Products directory found"
+            ls -la "$MOUNT_POINT/products" | head -5
+        else
+            echo "  ⚠️  Products directory not found in mount point"
+        fi
+    else
+        echo "  ⚠️  Failed to mount SMB share, continuing without it..."
+        echo "  💡 Tip: Set SMB_USER and SMB_PASS environment variables if authentication is required"
+    fi
+else
+    echo ""
+    echo "📁 SMB mount skipped (no credentials provided)"
+    echo "   💡 To mount TrueNAS share, set SMB_USER and SMB_PASS in docker-compose.yml or .env"
+fi
+
 echo ""
 echo "✅ Dependencies ready!"
 echo "=================================================="

@@ -1,8 +1,8 @@
 # Development Dockerfile for hot reload
 FROM node:20-alpine
 
-# Install wget for health checks
-RUN apk add --no-cache wget bash
+# Install wget for health checks and cifs-utils for SMB mounting
+RUN apk add --no-cache wget bash cifs-utils
 
 WORKDIR /app
 
