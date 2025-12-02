@@ -238,7 +238,8 @@ export function getProjectsUploadDir(projectId = null, subfolder = null) {
   let base;
 
   if (envProjectsPath) {
-    base = envProjectsPath.replace(/\//g, '\\');
+    // Normalizar separadores (manter / para Linux/Docker, converter \\ para /)
+    base = envProjectsPath.replace(/\\/g, '/');
     if (fs.existsSync(base)) {
       console.log(`📁 [PATHUTILS] Usando PROJECTS_UPLOAD_PATH da variável de ambiente: ${base}`);
     } else {

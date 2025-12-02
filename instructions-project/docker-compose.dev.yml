@@ -43,6 +43,9 @@ services:
       # Caminho específico para produtos (SMB montado pelo script de inicialização)
       - PRODUCTS_UPLOAD_PATH=/app/server/public/uploads/products
       
+      # Caminho específico para projetos (SMB montado pelo script de inicialização)
+      - PROJECTS_UPLOAD_PATH=/app/server/public/uploads/projects
+      
       # Credenciais SMB para montar o TrueNAS (opcional - deixe vazio para guest)
       # Cada usuário pode configurar no arquivo .env ou remover para usar guest
       - SMB_USER=${SMB_USER:-guest}
