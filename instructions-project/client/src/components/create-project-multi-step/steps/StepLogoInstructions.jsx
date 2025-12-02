@@ -398,7 +398,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
     // Se maxNumber é 2, significa que há L1 e L2, então o próximo é L3
     const nextNumber = maxNumber + 1;
     console.log("Next number generated:", nextNumber);
-    return `${baseName}-L${nextNumber}`;
+    return `${baseName} -L${nextNumber} `;
   }, [savedLogos]);
 
   // Função helper para filtrar componentes (não pode ser hook pois é usada dentro de map)
@@ -481,13 +481,13 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
         try {
           const apiBase = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
-          const response = await fetch(`${apiBase}/api/files/upload`, {
+          const response = await fetch(`${apiBase} /api/files / upload`, {
             method: 'POST',
             body: formData,
           });
 
           if (!response.ok) {
-            throw new Error(`Upload failed: ${response.statusText}`);
+            throw new Error(`Upload failed: ${response.statusText} `);
           }
 
           const result = await response.json();
@@ -613,7 +613,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
         if (generatedLogoNumber) {
           // Se o logo atual está vazio ou não segue o padrão, aplicar o novo número
           const isEmpty = !currentLogoNumber || currentLogoNumber.trim() === "";
-          const doesNotMatchPattern = currentLogoNumber && !currentLogoNumber.startsWith(`${projectName}-L`);
+          const doesNotMatchPattern = currentLogoNumber && !currentLogoNumber.startsWith(`${projectName} -L`);
 
           if (isEmpty || doesNotMatchPattern) {
             preservedLogoNumberRef.current = generatedLogoNumber;
@@ -1007,6 +1007,23 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
     handleUpdate("composition", newComposition);
   };
 
+  const handleFileDrop = (files) => {
+    handleFileUpload(files);
+  };
+
+  const handleRemoveAttachment = (index) => {
+    const currentAttachments = logoDetails.attachmentFiles || [];
+    const newAttachments = currentAttachments.filter((_, i) => i !== index);
+
+    const updatedLogoDetails = {
+      ...logoDetails,
+      attachmentFiles: newAttachments,
+      currentLogo: currentLogo,
+      logos: savedLogos,
+    };
+    onInputChange("logoDetails", updatedLogoDetails);
+  };
+
   // Persistência automática dos dados do logo (PWA)
   useLogoPersistence({
     logoDetails: logoDetails,
@@ -1016,40 +1033,165 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
   });
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden p-3">
+    <div className="w-full h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex justify-between items-center gap-3 mb-2 flex-shrink-0">
+      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
         <div>
-          <h2 className="text-lg font-bold text-default-900">Logo Instructions</h2>
-          <p className="text-xs text-default-500">Define the technical specifications for the logo</p>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Logo Instructions</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Define the technical specifications for the logo</p>
         </div>
         <Button
           color="primary"
           variant="shadow"
-          size="sm"
-          className="bg-gradient-to-tr from-primary-500 to-secondary-500 text-white"
-          startContent={<Icon icon="lucide:sparkles" className="w-4 h-4" />}
+          size="md"
+          className="bg-gradient-to-tr from-primary-500 to-secondary-500 text-white font-medium shadow-lg"
+          startContent={<Icon icon="lucide:sparkles" className="w-5 h-5" />}
           onPress={() => setIsChatOpen(true)}
         >
           AI Assistant
         </Button>
       </div>
 
-      {/* Responsive Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1 min-h-0 overflow-hidden">
+      {/* Form - Responsive Horizontal Grid */}
+      <div className="flex-1 overflow-hidden p-6 bg-gray-50/30 dark:bg-gray-900/10">
+        <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Column 1: Details & Attachments */}
+          <div className="flex flex-col gap-8 overflow-y-auto pr-2 custom-scrollbar">
 
-        {/* Left Column - Dimensions + Fixation (3 cols on desktop) */}
-        <div className="lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-y-auto lg:overflow-visible">
-          {/* Dimensions - Horizontal Card */}
-          <Card className="shadow-sm flex-shrink-0">
-            <CardHeader className="px-3 pt-2 pb-1 flex-shrink-0">
-              <h3 className="text-xs font-semibold flex items-center gap-1.5">
-                <Icon icon="lucide:ruler" className="text-primary w-3.5 h-3.5" />
-                Dimensions
-              </h3>
-            </CardHeader>
-            <CardBody className="p-3 pt-2">
-              <div className="grid grid-cols-4 gap-2">
+            {/* Details Section */}
+            <div>
+              <div className="flex items-center gap-3 mb-5 text-blue-600 dark:text-blue-400">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Icon icon="lucide:file-signature" className="w-6 h-6" />
+                </div>
+                <h2 className="text-xl font-bold">Details</h2>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="text-base font-semibold text-gray-700 dark:text-gray-200 block mb-2">Logo Name</label>
+                  <Input
+                    placeholder="Enter logo name"
+                    variant="bordered"
+                    size="md"
+                    isRequired
+                    value={formik.values.logoName}
+                    onValueChange={(v) => formik.updateField("logoName", v)}
+                    onBlur={formik.handleBlur}
+                    isInvalid={formik.touched.logoName && !!formik.errors.logoName}
+                    errorMessage={formik.touched.logoName && formik.errors.logoName}
+                    classNames={{ input: "text-base" }}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-base font-semibold text-gray-700 dark:text-gray-200 block mb-2">Description</label>
+                  <Textarea
+                    placeholder="Enter description..."
+                    minRows={5}
+                    variant="bordered"
+                    size="md"
+                    value={formik.values.description}
+                    onValueChange={(v) => formik.updateField("description", v)}
+                    classNames={{ input: "text-base" }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Attachments Section */}
+            <div>
+              <div className="flex items-center gap-3 mb-5 text-pink-600 dark:text-pink-400">
+                <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
+                  <Icon icon="lucide:paperclip" className="w-6 h-6" />
+                </div>
+                <h2 className="text-xl font-bold">Attachments</h2>
+              </div>
+
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 bg-white dark:bg-gray-800 hover:border-pink-300 dark:hover:border-pink-700 transition-colors">
+                {logoDetails.attachmentFiles && logoDetails.attachmentFiles.length > 0 ? (
+                  <div className="space-y-4">
+                    {logoDetails.attachmentFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600 group">
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <div className="p-2 bg-white dark:bg-gray-600 rounded-md text-pink-500 shadow-sm">
+                            <Icon icon="lucide:file" className="w-5 h-5" />
+                          </div>
+                          <span className="truncate text-sm font-medium">{file.name}</span>
+                        </div>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          onPress={() => handleRemoveAttachment(index)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Icon icon="lucide:x" className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <input
+                      type="file"
+                      id="file-upload-more"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(Array.from(e.target.files))}
+                    />
+                    <Button
+                      size="md"
+                      variant="flat"
+                      color="primary"
+                      fullWidth
+                      className="mt-2 font-medium"
+                      startContent={<Icon icon="lucide:upload" className="w-5 h-5" />}
+                      onPress={() => document.getElementById('file-upload-more').click()}
+                    >
+                      Add More Files
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-6 text-center">
+                    <div className="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-full mb-4">
+                      <Icon icon="lucide:cloud-upload" className="w-8 h-8 text-pink-500" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-1">Upload Files</h4>
+                    <p className="text-sm text-gray-500 mb-5">Drag & drop or click to upload</p>
+                    <input
+                      type="file"
+                      id="file-upload"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(Array.from(e.target.files))}
+                    />
+                    <Button
+                      size="md"
+                      color="primary"
+                      variant="flat"
+                      className="font-medium px-8"
+                      onPress={() => document.getElementById('file-upload').click()}
+                    >
+                      Select Files
+                    </Button>
+                    <p className="text-xs text-gray-400 mt-4">Supported: PNG, JPG, PDF</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Column 2: Dimensions & Fixation */}
+          <div className="flex flex-col gap-8 overflow-y-auto pr-2 custom-scrollbar">
+            {/* Dimensions Section */}
+            <div>
+              <div className="flex items-center gap-3 mb-5 text-emerald-600 dark:text-emerald-400">
+                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                  <Icon icon="lucide:ruler" className="w-6 h-6" />
+                </div>
+                <h2 className="text-xl font-bold">Dimensions</h2>
+              </div>
+
+              <div className="grid grid-cols-2 gap-5">
                 {['Height', 'Length', 'Width', 'Diameter'].map((dim) => {
                   const key = dim.toLowerCase();
                   const dimensionValue = formik.values.dimensions?.[key]?.value || "";
@@ -1057,427 +1199,266 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                   const isTouched = formik.touched.dimensions?.[key]?.value;
 
                   return (
-                    <div key={key} className="flex flex-col gap-1">
-                      <label className="text-xs text-default-700 font-semibold">
-                        {dim}
-                      </label>
+                    <div key={key} className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+                      <label className="text-sm font-bold text-gray-600 dark:text-gray-300 block mb-3 uppercase tracking-wider">{dim}</label>
                       <Input
                         type="number"
-                        placeholder="0"
-                        endContent={<span className="text-default-400 text-xs">m</span>}
+                        placeholder="0.00"
+                        endContent={<span className="text-sm text-gray-500 font-bold">m</span>}
                         variant="flat"
-                        size="sm"
-                        classNames={{
-                          input: "text-sm",
-                          inputWrapper: "h-9 min-h-9"
-                        }}
+                        size="md"
+                        classNames={{ inputWrapper: "bg-gray-50 dark:bg-gray-700" }}
                         value={dimensionValue}
                         onValueChange={(v) => handleDimensionUpdate(key, "value", v ? parseFloat(v) : null)}
                         onBlur={() => formik.setFieldTouched(`dimensions.${key}.value`, true)}
                         isInvalid={isTouched && !!dimensionError}
                       />
-                      <Checkbox
-                        size="sm"
-                        color="danger"
-                        classNames={{
-                          label: "text-xs",
-                          base: "m-0"
-                        }}
-                        isSelected={formik.values.dimensions?.[key]?.imperative || false}
-                        onValueChange={(v) => handleDimensionUpdate(key, "imperative", v)}
-                      >
-                        Imperative
-                      </Checkbox>
+                      <div className="mt-3">
+                        <Checkbox
+                          size="md"
+                          color="danger"
+                          classNames={{ label: "text-sm font-medium text-gray-600" }}
+                          isSelected={formik.values.dimensions?.[key]?.imperative || false}
+                          onValueChange={(v) => handleDimensionUpdate(key, "imperative", v)}
+                        >
+                          Imperative
+                        </Checkbox>
+                      </div>
                     </div>
                   );
                 })}
               </div>
-              {formik.errors.dimensions && typeof formik.errors.dimensions === 'string' && (
-                <div className="text-danger text-xs mt-2">
-                  {formik.errors.dimensions}
+            </div>
+
+            {/* Fixation Section */}
+            <div>
+              <div className="flex items-center gap-3 mb-5 text-orange-600 dark:text-orange-400">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                  <Icon icon="lucide:hammer" className="w-6 h-6" />
                 </div>
-              )}
-            </CardBody>
-          </Card>
+                <h2 className="text-xl font-bold">Fixation</h2>
+              </div>
 
-          {/* Fixation & Constraints - Horizontal Card */}
-          <Card className="shadow-sm flex-shrink-0">
-            <CardHeader className="px-3 pt-2 pb-1 flex-shrink-0">
-              <h3 className="text-xs font-semibold flex items-center gap-1.5">
-                <Icon icon="lucide:anchor" className="text-primary w-3.5 h-3.5" />
-                Fixation & Constraints
-              </h3>
-            </CardHeader>
-            <CardBody className="p-3 pt-2">
-              <div className="grid grid-cols-2 gap-3">
-                {/* Left side - Usage and Fixation */}
-                <div className="space-y-3">
-                  {/* Usage Toggle */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-default-700 font-semibold">Usage</label>
-                    <Tabs
-                      fullWidth
-                      size="sm"
-                      aria-label="Usage Options"
-                      selectedKey={formik.values.usageOutdoor ? "outdoor" : "indoor"}
-                      onSelectionChange={(key) => {
-                        if (key === "indoor") {
-                          formik.updateFields({
-                            usageIndoor: true,
-                            usageOutdoor: false,
-                          });
-                        } else {
-                          formik.updateFields({
-                            usageIndoor: false,
-                            usageOutdoor: true,
-                          });
-                        }
-                      }}
-                      classNames={{
-                        tabList: "gap-1 h-8",
-                        tab: "min-w-0 px-2 h-8",
-                        tabContent: "text-xs"
-                      }}
-                    >
-                      <Tab key="indoor" title="Indoor" />
-                      <Tab key="outdoor" title="Outdoor" />
-                    </Tabs>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-default-700 font-semibold">Fixation Type</label>
-                    <Select
-                      placeholder="Select"
-                      isRequired
-                      size="sm"
-                      selectedKeys={formik.values.fixationType ? new Set([formik.values.fixationType]) : new Set()}
-                      onSelectionChange={(keys) => {
-                        const selected = Array.from(keys)[0] || "";
-                        formik.setFieldTouched("fixationType", true);
-                        formik.updateField("fixationType", selected);
-                      }}
-                      onBlur={() => formik.setFieldTouched("fixationType", true)}
-                      isInvalid={formik.touched.fixationType && !!formik.errors.fixationType}
-                      errorMessage={formik.touched.fixationType && formik.errors.fixationType}
-                      classNames={{
-                        trigger: "h-9 min-h-9",
-                        value: "text-sm"
-                      }}
-                    >
-                      <SelectItem key="ground" textValue="Ground">Ground</SelectItem>
-                      <SelectItem key="wall" textValue="Wall">Wall</SelectItem>
-                      <SelectItem key="suspended" textValue="Suspended">Suspended</SelectItem>
-                      <SelectItem key="none" textValue="None">None</SelectItem>
-                      <SelectItem key="pole_side" textValue="Pole Side">Pole (Side)</SelectItem>
-                      <SelectItem key="pole_central" textValue="Pole Central">Pole (Central)</SelectItem>
-                      <SelectItem key="special" textValue="Special">Special</SelectItem>
-                    </Select>
-                  </div>
+              <div className="space-y-6 p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+                <div>
+                  <label className="text-base font-semibold text-gray-700 dark:text-gray-200 block mb-3">Usage Environment</label>
+                  <Tabs
+                    fullWidth
+                    size="md"
+                    color="primary"
+                    aria-label="Usage Environment"
+                    selectedKey={formik.values.usageOutdoor ? "outdoor" : "indoor"}
+                    onSelectionChange={(key) => {
+                      if (key === "indoor") {
+                        formik.updateFields({ usageIndoor: true, usageOutdoor: false });
+                      } else {
+                        formik.updateFields({ usageIndoor: false, usageOutdoor: true });
+                      }
+                    }}
+                    classNames={{
+                      tabList: "p-1 bg-gray-100 dark:bg-gray-700",
+                      cursor: "shadow-md",
+                      tabContent: "font-bold"
+                    }}
+                  >
+                    <Tab
+                      key="indoor"
+                      title={
+                        <div className="flex items-center gap-2 py-1">
+                          <Icon icon="lucide:home" className="w-4 h-4" />
+                          <span>Indoor</span>
+                        </div>
+                      }
+                    />
+                    <Tab
+                      key="outdoor"
+                      title={
+                        <div className="flex items-center gap-2 py-1">
+                          <Icon icon="lucide:trees" className="w-4 h-4" />
+                          <span>Outdoor</span>
+                        </div>
+                      }
+                    />
+                  </Tabs>
                 </div>
 
-                {/* Right side - Lacquered Structure and Constraints */}
-                <div className="space-y-3">
-                  {/* Lacquered Structure */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-default-700 font-semibold">Lacquered Structure</label>
-                    <div className="flex items-center gap-2">
+                <div>
+                  <label className="text-base font-semibold text-gray-700 dark:text-gray-200 block mb-3">Fixation Type</label>
+                  <Select
+                    placeholder="Select fixation type"
+                    isRequired
+                    size="md"
+                    variant="bordered"
+                    selectedKeys={formik.values.fixationType ? new Set([formik.values.fixationType]) : new Set()}
+                    onSelectionChange={(keys) => {
+                      const selected = Array.from(keys)[0] || "";
+                      formik.setFieldTouched("fixationType", true);
+                      formik.updateField("fixationType", selected);
+                    }}
+                    startContent={<Icon icon="lucide:settings-2" className="w-4 h-4 text-gray-500" />}
+                  >
+                    <SelectItem key="ground" startContent={<Icon icon="lucide:arrow-down-to-line" className="w-4 h-4" />}>Ground</SelectItem>
+                    <SelectItem key="wall" startContent={<Icon icon="lucide:brick-wall" className="w-4 h-4" />}>Wall</SelectItem>
+                    <SelectItem key="suspended" startContent={<Icon icon="lucide:arrow-up-to-line" className="w-4 h-4" />}>Suspended</SelectItem>
+                    <SelectItem key="none" startContent={<Icon icon="lucide:ban" className="w-4 h-4" />}>None</SelectItem>
+                    <SelectItem key="pole_side">Pole (Side)</SelectItem>
+                    <SelectItem key="pole_central">Pole (Central)</SelectItem>
+                    <SelectItem key="special">Special</SelectItem>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-base font-semibold text-gray-700 dark:text-gray-200 block mb-3">Structure Finish</label>
+                  <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center gap-3">
                       <Switch
-                        size="sm"
+                        size="md"
+                        color="secondary"
                         isSelected={formik.values.lacqueredStructure}
                         onValueChange={(v) => formik.updateField("lacqueredStructure", v)}
                       />
-                      {formik.values.lacqueredStructure && (
-                        <Input
-                          placeholder="RAL Color"
-                          size="sm"
-                          startContent={<Icon icon="lucide:palette" className="text-default-400 w-4 h-4" />}
-                          classNames={{
-                            input: "text-sm",
-                            inputWrapper: "h-9 min-h-9"
-                          }}
-                          value={formik.values.lacquerColor}
-                          onValueChange={(v) => formik.updateField("lacquerColor", v)}
-                        />
-                      )}
+                      <span className="text-sm font-bold">Lacquered</span>
                     </div>
+                    {formik.values.lacqueredStructure && (
+                      <Input
+                        placeholder="RAL Color Code"
+                        size="md"
+                        variant="flat"
+                        className="flex-1"
+                        startContent={<div className="w-4 h-4 rounded-full bg-gradient-to-br from-red-500 to-blue-500 ring-2 ring-white"></div>}
+                        value={formik.values.lacquerColor}
+                        onValueChange={(v) => formik.updateField("lacquerColor", v)}
+                      />
+                    )}
                   </div>
+                </div>
 
-                  {/* Constraints */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-default-700 font-semibold">Constraints</label>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          size="sm"
-                          classNames={{ label: "text-xs" }}
-                          isSelected={formik.values.maxWeightConstraint}
-                          onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
-                        >
-                          Max Weight
-                        </Checkbox>
-                        {formik.values.maxWeightConstraint && (
-                          <Input
-                            placeholder="kg"
-                            size="sm"
-                            classNames={{
-                              input: "text-sm",
-                              inputWrapper: "h-9 min-h-9 w-20"
-                            }}
-                            value={formik.values.maxWeight}
-                            onValueChange={(v) => formik.updateField("maxWeight", v)}
-                          />
-                        )}
-                      </div>
+                <div>
+                  <label className="text-base font-semibold text-gray-700 dark:text-gray-200 block mb-3">Technical Constraints</label>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className={`p - 3 rounded - lg border - 2 transition - all ${formik.values.maxWeightConstraint ? 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800' : 'bg-transparent border-gray-200 dark:border-gray-700'} `}>
                       <Checkbox
-                        size="sm"
-                        classNames={{ label: "text-xs" }}
+                        size="md"
+                        classNames={{ label: "text-sm font-medium" }}
+                        isSelected={formik.values.maxWeightConstraint}
+                        onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
+                      >
+                        Maximum Weight Constraint
+                      </Checkbox>
+                    </div>
+                    <div className={`p - 3 rounded - lg border - 2 transition - all ${formik.values.ballast ? 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800' : 'bg-transparent border-gray-200 dark:border-gray-700'} `}>
+                      <Checkbox
+                        size="md"
+                        classNames={{ label: "text-sm font-medium" }}
                         isSelected={formik.values.ballast}
                         onValueChange={(v) => formik.updateField("ballast", v)}
                       >
-                        Ballast
+                        Ballast Required
                       </Checkbox>
+                    </div>
+                    <div className={`p - 3 rounded - lg border - 2 transition - all ${formik.values.controlReport ? 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800' : 'bg-transparent border-gray-200 dark:border-gray-700'} `}>
                       <Checkbox
-                        size="sm"
-                        classNames={{ label: "text-xs" }}
+                        size="md"
+                        classNames={{ label: "text-sm font-medium" }}
                         isSelected={formik.values.controlReport}
                         onValueChange={(v) => formik.updateField("controlReport", v)}
                       >
-                        Control Report
+                        Control Report Needed
                       </Checkbox>
                     </div>
                   </div>
                 </div>
               </div>
-            </CardBody>
-          </Card>
-        </div>
+            </div>
+          </div>
 
-        {/* Middle Column - Composition (6 cols on desktop) */}
-        <div className="lg:col-span-6 flex flex-col min-h-0">
+          {/* Column 3: Composition (Components & Balls) */}
+          <div className="flex flex-col gap-8 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="flex items-center gap-3 mb-2 text-purple-600 dark:text-purple-400">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <Icon icon="lucide:layers" className="w-6 h-6" />
+              </div>
+              <h2 className="text-xl font-bold">Composition</h2>
+            </div>
 
-          {/* Composition Card */}
-          <Card className="shadow-sm flex flex-col flex-1 min-h-0">
-            <CardHeader className="px-3 pt-2 pb-1 flex-shrink-0">
-              <h3 className="text-xs font-semibold flex items-center gap-1.5">
-                <Icon icon="lucide:layers" className="text-primary w-3.5 h-3.5" />
-                Composition
-              </h3>
-            </CardHeader>
-            <CardBody className="p-2 pt-1 space-y-2 flex-1 min-h-0 overflow-y-auto">
-
-              {/* Componentes Section */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-bold text-default-900 uppercase tracking-wider">Components</p>
-                  <div className="flex items-center gap-2">
-                    {composition.componentes && composition.componentes.length > 0 && (
-                      <Button
-                        size="sm"
-                        variant="flat"
-                        color="danger"
-                        startContent={<Icon icon="lucide:trash-2" className="w-4 h-4" />}
-                        onPress={handleClearAllComponentes}
-                        className="min-w-0 px-2"
-                      >
-                        Clear
-                      </Button>
-                    )}
+            {/* Components Section */}
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800">
+                <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                  <Icon icon="lucide:box" className="w-5 h-5" />
+                  <h4 className="text-base font-bold uppercase tracking-wide">Components</h4>
+                </div>
+                <div className="flex gap-2">
+                  {composition.componentes && composition.componentes.length > 0 && (
                     <Button
                       size="sm"
-                      variant="flat"
-                      color="primary"
-                      startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
-                      onPress={handleAddComponente}
-                      className="min-w-0 px-2"
+                      variant="light"
+                      color="danger"
+                      isIconOnly
+                      onPress={handleClearAllComponentes}
+                      className="bg-white dark:bg-gray-800 shadow-sm"
                     >
-                      Add
+                      <Icon icon="lucide:trash-2" className="w-4 h-4" />
                     </Button>
-                  </div>
+                  )}
+                  <Button
+                    size="sm"
+                    color="primary"
+                    className="font-medium shadow-sm"
+                    startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
+                    onPress={handleAddComponente}
+                  >
+                    Add
+                  </Button>
                 </div>
+              </div>
 
-                <div className="space-y-4">
-                  {composition.componentes && composition.componentes.length > 0 ? (
-                    composition.componentes.map((comp, index) => {
-                      const componente = comp.componenteId ? getComponenteById(comp.componenteId) : null;
-                      const coresDisponiveis = componente && !componente.semCor
-                        ? getCoresByComponente(comp.componenteId)
-                        : [];
+              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                {composition.componentes && composition.componentes.length > 0 ? (
+                  composition.componentes.map((comp, index) => {
+                    const componente = comp.componenteId ? getComponenteById(comp.componenteId) : null;
+                    const coresDisponiveis = componente && !componente.semCor
+                      ? getCoresByComponente(comp.componenteId)
+                      : [];
+                    const completo = isComponenteCompleto(comp);
+                    const editando = componentesEditando[index];
+                    const mostrarApenasReferencia = completo && !editando;
+                    const searchValue = componenteSearchValues[index] || "";
+                    const componentesFiltrados = filterComponentes(searchValue);
+                    const displayValue = componente
+                      ? `${componente.nome}${componente.referencia ? ` (${componente.referencia})` : ""} `
+                      : "";
 
-                      // Verificar se está completo e não está em modo de edição
-                      const completo = isComponenteCompleto(comp);
-                      const editando = componentesEditando[index];
-                      const mostrarApenasReferencia = completo && !editando;
-
-                      // Filtrar componentes baseado na busca (usando função helper, não hook)
-                      const searchValue = componenteSearchValues[index] || "";
-                      const componentesFiltrados = filterComponentes(searchValue);
-
-                      // Valor de exibição do componente selecionado
-                      const displayValue = componente
-                        ? `${componente.nome}${componente.referencia ? ` (${componente.referencia})` : ""}`
-                        : "";
-
-                      // Se está completo e não editando, mostrar apenas referência
-                      if (mostrarApenasReferencia) {
-                        return (
-                          <div key={index} className="p-3 border border-default-200 rounded-lg bg-default-50 overflow-hidden">
-                            <div className="flex items-start justify-between gap-2 min-w-0">
-                              <div className="flex-1 min-w-0 space-y-2">
-                                <div className="text-sm font-semibold text-default-900">
-                                  {componente?.nome || "Component"}
-                                </div>
-                                <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden">
-                                  <span className="font-semibold">Reference: </span>
-                                  <MarqueeText hoverOnly={true} className="inline-block">
-                                    {comp.referencia}
-                                  </MarqueeText>
-                                </div>
-                              </div>
-                              <div className="flex gap-1 flex-shrink-0">
-                                <Button
-                                  size="sm"
-                                  variant="light"
-                                  color="default"
-                                  isIconOnly
-                                  onPress={() => handleToggleEditComponente(index)}
-                                  title="Edit component"
-                                  aria-label="Edit component"
-                                >
-                                  <Icon icon="lucide:pencil" className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="light"
-                                  color="danger"
-                                  isIconOnly
-                                  onPress={() => handleRemoveComponente(index)}
-                                  title="Remove component"
-                                  aria-label="Remove component"
-                                >
-                                  <Icon icon="lucide:trash-2" className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      // Modo de edição: mostrar todos os campos
+                    if (mostrarApenasReferencia) {
                       return (
-                        <div key={index} className="p-3 border border-default-200 rounded-lg space-y-3 bg-default-50 overflow-hidden">
-                          <div className="flex items-start justify-between gap-2 min-w-0">
-                            <div className="flex-1 min-w-0 space-y-3">
-                              <div className="min-w-0">
-                                <AutocompleteWithMarquee
-                                  label="Component"
-                                  placeholder="Search or select a component"
-                                  size="sm"
-                                  selectedKey={comp.componenteId ? String(comp.componenteId) : null}
-                                  inputValue={componenteSearchValues[index] || displayValue || ""}
-                                  onSelectionChange={(key) => {
-                                    const selectedId = key ? Number(key) : null;
-                                    handleCompositionUpdate("componentes", index, "componenteId", selectedId);
-                                    // Limpar busca após seleção
-                                    setComponenteSearchValues(prev => {
-                                      const newValues = { ...prev };
-                                      delete newValues[index];
-                                      return newValues;
-                                    });
-                                  }}
-                                  onInputChange={(value) => {
-                                    setComponenteSearchValues(prev => ({
-                                      ...prev,
-                                      [index]: value
-                                    }));
-                                  }}
-                                  defaultItems={componentesFiltrados}
-                                  menuTrigger="input"
-                                  startContent={<Icon icon="lucide:search" className="text-default-400 w-4 h-4" />}
-                                  allowsCustomValue={false}
-                                  classNames={{
-                                    base: "w-full min-w-0",
-                                    trigger: "min-w-0",
-                                    inputWrapper: "min-w-0",
-                                    input: "min-w-0"
-                                  }}
-                                >
-                                  {(c) => (
-                                    <AutocompleteItem key={String(c.id)} textValue={`${c.nome} ${c.referencia || ""}`}>
-                                      <div className="flex flex-col min-w-0">
-                                        <MarqueeText hoverOnly={true} className="font-medium">
-                                          {c.nome}
-                                        </MarqueeText>
-                                        {c.referencia && (
-                                          <MarqueeText hoverOnly={true} className="text-xs text-default-500">
-                                            Ref: {c.referencia}
-                                          </MarqueeText>
-                                        )}
-                                      </div>
-                                    </AutocompleteItem>
-                                  )}
-                                </AutocompleteWithMarquee>
+                        <div key={index} className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 shadow-sm hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="w-2 h-2 rounded-full bg-green-500 ring-2 ring-green-100"></div>
+                                <div className="text-base font-bold truncate text-gray-900 dark:text-white">{componente?.nome}</div>
                               </div>
-
-                              {componente && !componente.semCor && (
-                                <div className="min-w-0">
-                                  <SelectWithMarquee
-                                    label="Color"
-                                    placeholder="Select a color"
-                                    size="sm"
-                                    selectedKeys={comp.corId ? new Set([String(comp.corId)]) : new Set()}
-                                    onSelectionChange={(keys) => {
-                                      const selectedId = Array.from(keys)[0];
-                                      handleCompositionUpdate("componentes", index, "corId", selectedId ? Number(selectedId) : null);
-                                    }}
-                                    classNames={{
-                                      base: "w-full",
-                                      trigger: "min-w-0",
-                                      value: "overflow-hidden"
-                                    }}
-                                  >
-                                    {coresDisponiveis.map((cor) => (
-                                      <SelectItem key={String(cor.id)} value={String(cor.id)} textValue={cor.nome}>
-                                        <MarqueeText hoverOnly={true}>
-                                          {cor.nome}
-                                        </MarqueeText>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectWithMarquee>
-                                </div>
-                              )}
-
-                              {comp.referencia && (
-                                <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden min-w-0">
-                                  <span className="font-semibold">Reference: </span>
-                                  <MarqueeText hoverOnly={true} className="inline-block">
-                                    {comp.referencia}
-                                  </MarqueeText>
-                                </div>
-                              )}
+                              <div className="text-sm text-gray-500 dark:text-gray-400 truncate pl-4">
+                                Ref: <span className="font-mono bg-gray-100 dark:bg-gray-600 px-2 py-0.5 rounded text-xs">{comp.referencia}</span>
+                              </div>
                             </div>
-
-                            <div className="flex flex-col gap-1 flex-shrink-0">
-                              {completo && (
-                                <Button
-                                  size="sm"
-                                  variant="light"
-                                  color="default"
-                                  isIconOnly
-                                  onPress={() => handleToggleEditComponente(index)}
-                                  title="Close edition"
-                                  aria-label="Close edition"
-                                >
-                                  <Icon icon="lucide:check" className="w-4 h-4" />
-                                </Button>
-                              )}
+                            <div className="flex gap-1">
                               <Button
                                 size="sm"
-                                variant="light"
+                                variant="flat"
+                                isIconOnly
+                                onPress={() => handleToggleEditComponente(index)}
+                                className="h-8 w-8 min-w-8"
+                              >
+                                <Icon icon="lucide:pencil" className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="flat"
                                 color="danger"
                                 isIconOnly
                                 onPress={() => handleRemoveComponente(index)}
-                                title="Remove component"
-                                aria-label="Remove component"
+                                className="h-8 w-8 min-w-8"
                               >
                                 <Icon icon="lucide:trash-2" className="w-4 h-4" />
                               </Button>
@@ -1485,357 +1466,219 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
                           </div>
                         </div>
                       );
-                    })
-                  ) : (
-                    <p className="text-sm text-default-400 text-center py-4">No components added</p>
-                  )}
-                </div>
-              </div>
+                    }
 
-              <Divider />
+                    return (
+                      <div key={index} className="p-4 border border-purple-200 dark:border-purple-800 rounded-xl bg-purple-50/30 dark:bg-purple-900/10 space-y-4 shadow-sm">
+                        <AutocompleteWithMarquee
+                          label="Component"
+                          placeholder="Search component"
+                          size="md"
+                          variant="bordered"
+                          selectedKey={comp.componenteId ? String(comp.componenteId) : null}
+                          inputValue={componenteSearchValues[index] || displayValue || ""}
+                          onSelectionChange={(key) => {
+                            const selectedId = key ? Number(key) : null;
+                            handleCompositionUpdate("componentes", index, "componenteId", selectedId);
+                            setComponenteSearchValues(prev => {
+                              const newValues = { ...prev };
+                              delete newValues[index];
+                              return newValues;
+                            });
+                          }}
+                          onInputChange={(value) => {
+                            setComponenteSearchValues(prev => ({
+                              ...prev,
+                              [index]: value
+                            }));
+                          }}
+                          defaultItems={componentesFiltrados}
+                          menuTrigger="input"
+                          startContent={<Icon icon="lucide:search" className="w-4 h-4 text-gray-500" />}
+                          allowsCustomValue={false}
+                          classNames={{ listboxWrapper: "max-h-[300px]" }}
+                        >
+                          {(c) => (
+                            <AutocompleteItem key={String(c.id)} textValue={`${c.nome} ${c.referencia || ""} `}>
+                              <div className="text-sm font-medium">{c.nome}</div>
+                              {c.referencia && <div className="text-xs text-gray-500">Ref: {c.referencia}</div>}
+                            </AutocompleteItem>
+                          )}
+                        </AutocompleteWithMarquee>
 
-              {/* Bolas Section */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-bold text-default-900 uppercase tracking-wider">Balls</p>
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    color="primary"
-                    startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
-                    onPress={handleAddBola}
-                    className="min-w-0 px-2"
-                  >
-                    Add
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  {composition.bolas && composition.bolas.length > 0 ? (
-                    composition.bolas.map((bola, index) => {
-                      const coresDisponiveis = getCoresDisponiveisBolas();
-                      const acabamentosDisponiveis = bola.corId
-                        ? getAcabamentosByCorBola(bola.corId)
-                        : materialsData.acabamentos;
-                      const tamanhosDisponiveis = bola.corId && bola.acabamentoId
-                        ? getTamanhosByCorEAcabamentoBola(bola.corId, bola.acabamentoId)
-                        : materialsData.tamanhos;
-
-                      return (
-                        <div key={index} className="p-3 border border-default-200 rounded-lg space-y-3 bg-default-50">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 space-y-3">
-                              <Select
-                                label="Color"
-                                placeholder="Select a color"
-                                size="sm"
-                                selectedKeys={bola.corId ? [String(bola.corId)] : []}
-                                onSelectionChange={(keys) => {
-                                  const selectedId = Array.from(keys)[0];
-                                  handleBolaUpdate(index, "corId", selectedId ? Number(selectedId) : null);
-                                }}
-                              >
-                                {coresDisponiveis.map((cor) => (
-                                  <SelectItem key={String(cor.id)} value={String(cor.id)}>
-                                    {cor.nome}
-                                  </SelectItem>
-                                ))}
-                              </Select>
-
-                              <Select
-                                label="Finish"
-                                placeholder="Select a finish"
-                                size="sm"
-                                selectedKeys={bola.acabamentoId ? [String(bola.acabamentoId)] : []}
-                                onSelectionChange={(keys) => {
-                                  const selectedId = Array.from(keys)[0];
-                                  handleBolaUpdate(index, "acabamentoId", selectedId ? Number(selectedId) : null);
-                                }}
-                                isDisabled={!bola.corId}
-                              >
-                                {acabamentosDisponiveis.map((acabamento) => (
-                                  <SelectItem key={String(acabamento.id)} value={String(acabamento.id)}>
-                                    {acabamento.nome}
-                                  </SelectItem>
-                                ))}
-                              </Select>
-
-                              <Select
-                                label="Size"
-                                placeholder="Select a size"
-                                size="sm"
-                                selectedKeys={bola.tamanhoId ? [String(bola.tamanhoId)] : []}
-                                onSelectionChange={(keys) => {
-                                  const selectedId = Array.from(keys)[0];
-                                  handleBolaUpdate(index, "tamanhoId", selectedId ? Number(selectedId) : null);
-                                }}
-                                isDisabled={!bola.corId || !bola.acabamentoId}
-                              >
-                                {tamanhosDisponiveis.map((tamanho) => (
-                                  <SelectItem key={String(tamanho.id)} value={String(tamanho.id)}>
-                                    {tamanho.nome}
-                                  </SelectItem>
-                                ))}
-                              </Select>
-
-                              {bola.referencia && (
-                                <div className="text-xs text-default-600 bg-default-100 p-2 rounded overflow-hidden min-w-0">
-                                  <span className="font-semibold">Reference: </span>
-                                  <MarqueeText hoverOnly={true} className="inline-block">
-                                    {bola.referencia}
-                                  </MarqueeText>
-                                </div>
-                              )}
-                            </div>
-
-                            <Button
-                              size="sm"
-                              variant="light"
-                              color="danger"
-                              isIconOnly
-                              onPress={() => handleRemoveBola(index)}
-                              aria-label="Remove ball"
-                            >
-                              <Icon icon="lucide:trash-2" className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="text-sm text-default-400 text-center py-4">No balls added</p>
-                  )}
-                </div>
-              </div>
-
-            </CardBody>
-          </Card>
-        </div>
-
-        {/* Right Column - Details & Attachments (3 cols on desktop) */}
-        <div className="lg:col-span-3 flex flex-col min-h-0">
-          {/* Details & Criteria */}
-          <Card ref={detailsCriteriaRef} className="shadow-sm flex flex-col flex-1 min-h-0">
-            <CardHeader className="px-3 pt-2 pb-1 flex-shrink-0">
-              <h3 className="text-xs font-semibold flex items-center gap-1.5">
-                <Icon icon="lucide:file-text" className="text-primary w-3.5 h-3.5" />
-                Details & Criteria
-              </h3>
-            </CardHeader>
-            <CardBody className="p-3 pt-2 flex-1 overflow-y-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 h-full">
-                {/* Left side - Form fields */}
-                <div className="flex flex-col gap-3">
-                  <Input
-                    label="Logo Name"
-                    placeholder="Name of the logo"
-                    variant="bordered"
-                    size="sm"
-                    isRequired
-                    classNames={{
-                      label: "text-xs font-semibold",
-                      input: "text-sm",
-                      inputWrapper: "h-9 min-h-9"
-                    }}
-                    value={formik.values.logoName}
-                    onValueChange={(v) => formik.updateField("logoName", v)}
-                    onBlur={formik.handleBlur}
-                    isInvalid={formik.touched.logoName && !!formik.errors.logoName}
-                    errorMessage={formik.touched.logoName && formik.errors.logoName}
-                  />
-                  <Textarea
-                    label="Description"
-                    placeholder="Detailed description..."
-                    minRows={8}
-                    variant="bordered"
-                    size="sm"
-                    classNames={{
-                      label: "text-xs font-semibold",
-                      input: "text-sm"
-                    }}
-                    value={formik.values.description}
-                    onValueChange={(v) => formik.updateField("description", v)}
-                  />
-                </div>
-
-                {/* Right side - Attachments */}
-                <div className="flex flex-col gap-2 min-h-0">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-default-700">Attachments</p>
-                    <Button
-                      color="primary"
-                      variant="flat"
-                      size="sm"
-                      startContent={<Icon icon="lucide:paperclip" className="w-3.5 h-3.5" />}
-                      onPress={() => document.getElementById('logo-file-input').click()}
-                      classNames={{
-                        base: "h-7 min-h-7 px-2"
-                      }}
-                    >
-                      <span className="text-xs">Upload</span>
-                    </Button>
-                  </div>
-
-                  <input
-                    id="logo-file-input"
-                    type="file"
-                    multiple
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ai,.eps"
-                    className="hidden"
-                    onChange={(e) => {
-                      const newFiles = Array.from(e.target.files);
-                      if (newFiles.length > 0) {
-                        handleFileUpload(newFiles);
-                      }
-                      e.target.value = '';
-                    }}
-                  />
-
-                  <DragAndDropZone
-                    className="rounded-lg transition-colors flex-1 min-h-[200px] overflow-y-auto border border-dashed border-default-200"
-                    multiple={true}
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ai,.eps"
-                    onFilesSelected={handleFileUpload}
-                  >
-                    {(() => {
-                      return (currentLogo.generatedImage || (logoDetails.attachmentFiles && logoDetails.attachmentFiles.length > 0));
-                    })() ? (
-                      <div className="grid grid-cols-2 gap-2 p-2">
-                        {currentLogo.generatedImage && (
-                          <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-primary group">
-                            <img
-                              src={currentLogo.generatedImage}
-                              alt="AI Generated"
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                const fallback = e.target.nextElementSibling;
-                                if (fallback && fallback.classList.contains('image-fallback')) {
-                                  fallback.style.display = 'flex';
-                                }
-                              }}
-                            />
-                            <div className="image-fallback absolute inset-0 bg-default-100 flex-col items-center justify-center gap-2 hidden">
-                              <Icon icon="lucide:image-off" className="w-8 h-8 text-default-400" />
-                              <p className="text-[10px] text-default-500 text-center px-2">
-                                Image failed to load
-                              </p>
-                            </div>
-                            <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-[9px] px-1.5 py-0.5 rounded-full">
-                              AI
-                            </div>
-                            <div
-                              className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Button
-                                isIconOnly
-                                color="danger"
-                                variant="flat"
-                                size="sm"
-                                onPress={() => {
-                                  const updatedCurrentLogo = { ...currentLogo, generatedImage: null };
-                                  const updatedLogoDetails = {
-                                    ...logoDetails,
-                                    currentLogo: updatedCurrentLogo,
-                                    logos: savedLogos,
-                                  };
-                                  onInputChange("logoDetails", updatedLogoDetails);
-                                }}
-                              >
-                                <Icon icon="solar:trash-bin-trash-linear" width={16} />
-                              </Button>
-                            </div>
-                          </div>
+                        {componente && !componente.semCor && (
+                          <SelectWithMarquee
+                            label="Color"
+                            placeholder="Select color"
+                            size="md"
+                            variant="bordered"
+                            selectedKeys={comp.corId ? new Set([String(comp.corId)]) : new Set()}
+                            onSelectionChange={(keys) => {
+                              const selectedId = Array.from(keys)[0];
+                              handleCompositionUpdate("componentes", index, "corId", selectedId ? Number(selectedId) : null);
+                            }}
+                            startContent={<Icon icon="lucide:palette" className="w-4 h-4 text-gray-500" />}
+                          >
+                            {coresDisponiveis.map((cor) => (
+                              <SelectItem key={String(cor.id)} textValue={cor.nome}>
+                                {cor.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectWithMarquee>
                         )}
 
-                        {logoDetails.attachmentFiles && logoDetails.attachmentFiles.map((file, index) => {
-                          const isImage = file.mimetype?.startsWith('image/');
-                          const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
-                          const fileUrl = file.url || `${baseApi}${file.path}`;
-
-                          return (
-                            <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-default-200 group">
-                              {isImage ? (
-                                <>
-                                  <img
-                                    src={fileUrl}
-                                    alt={file.name}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      e.target.style.display = 'none';
-                                      const fallback = e.target.nextElementSibling;
-                                      if (fallback && fallback.classList.contains('image-fallback')) {
-                                        fallback.style.display = 'flex';
-                                      }
-                                    }}
-                                  />
-                                  <div className="image-fallback absolute inset-0 bg-default-100 flex-col items-center justify-center gap-2 hidden">
-                                    <Icon icon="lucide:image-off" className="w-8 h-8 text-default-400" />
-                                    <p className="text-[10px] text-default-500 text-center px-2">
-                                      Image failed to load
-                                    </p>
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center bg-default-100 p-1.5">
-                                  <Icon icon="lucide:file" className="w-8 h-8 text-default-400 mb-1" />
-                                  <p className="text-[9px] text-center text-default-600 truncate w-full px-1">
-                                    {file.name}
-                                  </p>
-                                  {file.size && (
-                                    <p className="text-[9px] text-default-400 mt-0.5">
-                                      {(file.size / 1024).toFixed(1)} KB
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-                              <div
-                                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Button
-                                  isIconOnly
-                                  color="danger"
-                                  variant="flat"
-                                  size="sm"
-                                  onPress={() => {
-                                    const updatedFiles = logoDetails.attachmentFiles.filter((_, i) => i !== index);
-                                    const updatedLogoDetails = {
-                                      ...logoDetails,
-                                      attachmentFiles: updatedFiles,
-                                      currentLogo: currentLogo,
-                                      logos: savedLogos,
-                                    };
-                                    onInputChange("logoDetails", updatedLogoDetails);
-                                  }}
-                                >
-                                  <Icon icon="solar:trash-bin-trash-linear" width={16} />
-                                </Button>
-                              </div>
-                            </div>
-                          );
-                        })}
+                        <div className="flex gap-2 justify-end mt-2">
+                          {completo && (
+                            <Button
+                              size="sm"
+                              color="success"
+                              variant="flat"
+                              className="font-medium"
+                              startContent={<Icon icon="lucide:check" className="w-4 h-4" />}
+                              onPress={() => handleToggleEditComponente(index)}
+                            >
+                              Done
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            color="danger"
+                            isIconOnly
+                            onPress={() => handleRemoveComponente(index)}
+                          >
+                            <Icon icon="lucide:trash-2" className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center text-center py-4">
-                        <Icon icon="lucide:image-plus" className="w-8 h-8 mx-auto mb-1 text-default-300" />
-                        <p className="text-xs text-default-400">
-                          No attachments yet
-                        </p>
-                        <p className="text-[10px] text-default-300 mt-0.5">
-                          Upload or drag & drop
-                        </p>
-                      </div>
-                    )}
-                  </DragAndDropZone>
-                </div>
+                    );
+                  })
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-800/50">
+                    <Icon icon="lucide:box" className="w-10 h-10 text-gray-300 mb-2" />
+                    <p className="text-sm text-gray-400">No components added yet</p>
+                  </div>
+                )}
               </div>
-            </CardBody>
-          </Card>
+            </div>
+
+            {/* Balls Section */}
+            <div className="flex flex-col gap-4 border-t-2 border-gray-100 dark:border-gray-700 pt-6 mt-2">
+              <div className="flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+                  <Icon icon="lucide:circle-dot" className="w-5 h-5" />
+                  <h4 className="text-base font-bold uppercase tracking-wide">Balls</h4>
+                </div>
+                <Button
+                  size="sm"
+                  color="primary"
+                  className="font-medium shadow-sm"
+                  startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
+                  onPress={handleAddBola}
+                >
+                  Add
+                </Button>
+              </div>
+
+              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                {composition.bolas && composition.bolas.length > 0 ? (
+                  composition.bolas.map((bola, index) => {
+                    const coresDisponiveis = getCoresDisponiveisBolas();
+                    const acabamentosDisponiveis = bola.corId
+                      ? getAcabamentosByCorBola(bola.corId)
+                      : materialsData.acabamentos;
+                    const tamanhosDisponiveis = bola.corId && bola.acabamentoId
+                      ? getTamanhosByCorEAcabamentoBola(bola.corId, bola.acabamentoId)
+                      : materialsData.tamanhos;
+
+                    return (
+                      <div key={index} className="p-4 border border-indigo-200 dark:border-indigo-800 rounded-xl bg-indigo-50/30 dark:bg-indigo-900/10 space-y-4 shadow-sm">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center text-xs font-bold text-indigo-600 dark:text-indigo-300 ring-2 ring-white dark:ring-gray-700">
+                            {index + 1}
+                          </div>
+                          <span className="text-sm font-bold text-gray-600 dark:text-gray-300">Ball Configuration</span>
+                        </div>
+
+                        <Select
+                          label="Color"
+                          placeholder="Select color"
+                          size="md"
+                          variant="bordered"
+                          selectedKeys={bola.corId ? [String(bola.corId)] : []}
+                          onSelectionChange={(keys) => {
+                            const selectedId = Array.from(keys)[0];
+                            handleBolaUpdate(index, "corId", selectedId ? Number(selectedId) : null);
+                          }}
+                        >
+                          {coresDisponiveis.map((cor) => (
+                            <SelectItem key={String(cor.id)}>{cor.nome}</SelectItem>
+                          ))}
+                        </Select>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <Select
+                            label="Finish"
+                            placeholder="Finish"
+                            size="md"
+                            variant="bordered"
+                            selectedKeys={bola.acabamentoId ? [String(bola.acabamentoId)] : []}
+                            onSelectionChange={(keys) => {
+                              const selectedId = Array.from(keys)[0];
+                              handleBolaUpdate(index, "acabamentoId", selectedId ? Number(selectedId) : null);
+                            }}
+                            isDisabled={!bola.corId}
+                          >
+                            {acabamentosDisponiveis.map((acabamento) => (
+                              <SelectItem key={String(acabamento.id)}>{acabamento.nome}</SelectItem>
+                            ))}
+                          </Select>
+
+                          <Select
+                            label="Size"
+                            placeholder="Size"
+                            size="md"
+                            variant="bordered"
+                            selectedKeys={bola.tamanhoId ? [String(bola.tamanhoId)] : []}
+                            onSelectionChange={(keys) => {
+                              const selectedId = Array.from(keys)[0];
+                              handleBolaUpdate(index, "tamanhoId", selectedId ? Number(selectedId) : null);
+                            }}
+                            isDisabled={!bola.corId || !bola.acabamentoId}
+                          >
+                            {tamanhosDisponiveis.map((tamanho) => (
+                              <SelectItem key={String(tamanho.id)}>{tamanho.nome}</SelectItem>
+                            ))}
+                          </Select>
+                        </div>
+
+                        <div className="flex justify-end mt-1">
+                          <Button
+                            size="sm"
+                            variant="light"
+                            color="danger"
+                            startContent={<Icon icon="lucide:trash-2" className="w-4 h-4" />}
+                            onPress={() => handleRemoveBola(index)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-800/50">
+                    <Icon icon="lucide:circle-dashed" className="w-10 h-10 text-gray-300 mb-2" />
+                    <p className="text-sm text-gray-400">No balls added yet</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* AI Assistant Chat */}
       <AIAssistantChat
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
@@ -1853,6 +1696,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
           setIsChatOpen(false);
         }}
       />
-    </div >
+    </div>
   );
 }
+
+export default StepLogoInstructions;
+
