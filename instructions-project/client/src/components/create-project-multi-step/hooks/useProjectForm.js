@@ -7,7 +7,7 @@ import { getLocalTimeZone, parseDate } from "@internationalized/date";
 // 🧪 Breakpoint de Teste 2
 export const TEST_BREAKPOINT_2 = false;
 
-export const useProjectForm = (onClose, projectId = null, saveStatus = null) => {
+export const useProjectForm = (onClose, projectId = null, saveStatus = null, logoIndex = null) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -107,10 +107,57 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
             logoDetails: project.logoDetails || {},
           });
 
+          // Se logoIndex foi fornecido, carregar esse logo específico para currentLogo
+          if (logoIndex !== null && logoIndex !== undefined && project.logoDetails) {
+            const savedLogos = project.logoDetails.logos || [];
+            const hasCurrentLogo = project.logoDetails.currentLogo?.logoNumber || project.logoDetails.logoNumber;
+            const logoInstructions = savedLogos.length > 0 ? savedLogos : (hasCurrentLogo ? [project.logoDetails.currentLogo || project.logoDetails] : []);
+            
+            if (logoInstructions[logoIndex]) {
+              const logoToEdit = logoInstructions[logoIndex];
+              
+              // Remove o logo do array de savedLogos se estiver lá
+              let newSavedLogos = savedLogos.filter((logo, idx) => {
+                // Comparar por logoNumber ou ID para encontrar o logo correto
+                return logo.logoNumber !== logoToEdit.logoNumber;
+              });
+              
+              // Se currentLogo é válido e diferente do logo a editar, adicionar aos savedLogos
+              const currentLogo = project.logoDetails.currentLogo || project.logoDetails;
+              const isCurrentLogoValid = currentLogo?.logoNumber && currentLogo.logoNumber !== logoToEdit.logoNumber;
+              
+              if (isCurrentLogoValid && currentLogo.logoNumber) {
+                const logoToSave = {
+                  ...currentLogo,
+                  id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                  savedAt: new Date().toISOString()
+                };
+                newSavedLogos.push(logoToSave);
+              }
+              
+              // Atualizar logoDetails com o logo a editar como currentLogo
+              setFormData(prev => ({
+                ...prev,
+                logoDetails: {
+                  ...prev.logoDetails,
+                  logos: newSavedLogos,
+                  currentLogo: logoToEdit
+                }
+              }));
+              
+              logger.lifecycle('useProjectForm', 'Logo loaded for editing', {
+                logoIndex,
+                logoNumber: logoToEdit.logoNumber,
+                logoName: logoToEdit.logoName
+              });
+            }
+          }
+
           logger.lifecycle('useProjectForm', 'Project loaded successfully', {
             projectId: project.id,
             name: project.name,
-            hasCanvasData: !!(project.canvasDecorations?.length || project.canvasImages?.length)
+            hasCanvasData: !!(project.canvasDecorations?.length || project.canvasImages?.length),
+            logoIndex
           });
         }
       } catch (err) {
@@ -122,7 +169,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null) => 
     };
 
     loadProject();
-  }, [projectId]);
+  }, [projectId, logoIndex]);
 
   // Handler genérico de input - usando useCallback para evitar re-renders desnecessários
   const handleInputChange = useCallback((field, value) => {

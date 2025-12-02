@@ -492,7 +492,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
 
         try {
           const apiBase = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
-          const response = await fetch(`${apiBase} /api/files / upload`, {
+          const response = await fetch(`${apiBase}/api/files/upload`, {
             method: 'POST',
             body: formData,
           });
@@ -1855,39 +1855,67 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus }) {
       <AIAssistantChat
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
-        onSaveImage={(imageUrl) => {
-          // Extract filename from URL or create a default name
-          const urlParts = imageUrl.split('/');
-          const filename = urlParts[urlParts.length - 1] || 'ai-generated-image.webp';
-          const nameWithoutExtension = filename.replace(/\.[^/.]+$/, '');
-          
-          // Create attachment object similar to uploaded files
-          const aiGeneratedAttachment = {
-            name: `AI Generated - ${nameWithoutExtension}`,
-            filename: filename,
-            url: imageUrl,
-            path: imageUrl,
-            size: 0, // Size unknown for AI generated images
-            mimetype: 'image/webp', // Default to webp for AI generated images
-            isAIGenerated: true // Flag to identify AI generated images
-          };
+        onSaveImage={async (imageUrl) => {
+          try {
+            // Extract filename from URL or create a default name
+            const urlParts = imageUrl.split('/');
+            const originalFilename = urlParts[urlParts.length - 1] || 'ai-generated-image.webp';
+            const nameWithoutExtension = originalFilename.replace(/\.[^/.]+$/, '');
+            
+            // Fetch the image from the URL and convert to File
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+            const file = new File([blob], originalFilename, { type: blob.type || 'image/webp' });
+            
+            // Upload the image to the server
+            const formData = new FormData();
+            formData.append('file', file);
 
-          // Add to attachments
-          const existingFiles = logoDetails.attachmentFiles || [];
-          const allFiles = [...existingFiles, aiGeneratedAttachment];
+            const apiBase = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
+            const uploadResponse = await fetch(`${apiBase}/api/files/upload`, {
+              method: 'POST',
+              body: formData,
+            });
 
-          const updatedCurrentLogo = {
-            ...currentLogo,
-            generatedImage: imageUrl
-          };
-          const updatedLogoDetails = {
-            ...logoDetails,
-            attachmentFiles: allFiles,
-            currentLogo: updatedCurrentLogo,
-            logos: savedLogos,
-          };
-          onInputChange("logoDetails", updatedLogoDetails);
-          setIsChatOpen(false);
+            if (!uploadResponse.ok) {
+              throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+            }
+
+            const uploadResult = await uploadResponse.json();
+            console.log('✅ AI Generated image uploaded:', uploadResult.file);
+            
+            // Create attachment object with server URL
+            const aiGeneratedAttachment = {
+              name: `AI Generated - ${nameWithoutExtension}`,
+              filename: uploadResult.file.filename,
+              url: uploadResult.file.url,
+              path: uploadResult.file.path,
+              size: uploadResult.file.size,
+              mimetype: uploadResult.file.mimetype || 'image/webp',
+              isAIGenerated: true // Flag to identify AI generated images
+            };
+
+            // Add to attachments
+            const existingFiles = logoDetails.attachmentFiles || [];
+            const allFiles = [...existingFiles, aiGeneratedAttachment];
+
+            const updatedCurrentLogo = {
+              ...currentLogo,
+              generatedImage: uploadResult.file.url
+            };
+            const updatedLogoDetails = {
+              ...logoDetails,
+              attachmentFiles: allFiles,
+              currentLogo: updatedCurrentLogo,
+              logos: savedLogos,
+            };
+            onInputChange("logoDetails", updatedLogoDetails);
+            setIsChatOpen(false);
+          } catch (error) {
+            console.error('❌ Error uploading AI generated image:', error);
+            // Show error to user or handle gracefully
+            alert('Erro ao fazer upload da imagem gerada. Por favor, tente novamente.');
+          }
         }}
       />
     </div>

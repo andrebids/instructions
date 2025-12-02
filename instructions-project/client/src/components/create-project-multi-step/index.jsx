@@ -33,11 +33,11 @@ import { Scroller } from "../ui/scroller";
 // 🧪 Breakpoint de Teste 5 (Componente Principal)
 const TEST_BREAKPOINT_5 = false;
 
-export function CreateProjectMultiStep({ onClose, selectedImage, projectId, initialStep }) {
+export function CreateProjectMultiStep({ onClose, selectedImage, projectId, initialStep, logoIndex }) {
   // Initialize hooks
   const { t } = useTranslation();
   const saveStatus = useSaveStatus();
-  const formState = useProjectForm(onClose, projectId, saveStatus);
+  const formState = useProjectForm(onClose, projectId, saveStatus, logoIndex);
   const clientState = useClientManagement(formState.setFormData);
 
   // Get visible steps based on project type

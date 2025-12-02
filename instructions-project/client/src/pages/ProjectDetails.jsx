@@ -1097,28 +1097,45 @@ export default function ProjectDetails() {
                                                 key={idx}
                                                 aria-label={logo.logoName || `Logo ${idx + 1}`}
                                                 title={
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`p-2 rounded-full ${logo.isSimulation ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'}`}>
-                                                            <Icon icon={logo.isSimulation ? "lucide:sparkles" : "lucide:box"} className="text-xl" />
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="text-lg font-bold">{logo.logoName || t('pages.projectDetails.logoDefaultName', { index: idx + 1 })}</h3>
-                                                            <div className="flex items-center gap-2 text-small text-default-500">
-                                                                <span className="font-mono">{logo.logoNumber}</span>
-                                                                {logo.requestedBy && (
-                                                                    <>
-                                                                        <span>•</span>
-                                                                        <span>{t('pages.projectDetails.requestedBy')}: {logo.requestedBy}</span>
-                                                                    </>
-                                                                )}
-                                                                {logo.isSimulation && logo.canvasDecorations && (
-                                                                    <>
-                                                                        <span>•</span>
-                                                                        <span>{getTotalDecorationsQuantity(logo.canvasDecorations)} {t('pages.projectDetails.decorations', 'decorações')}</span>
-                                                                    </>
-                                                                )}
+                                                    <div className="flex items-center justify-between w-full gap-3">
+                                                        <div className="flex items-center gap-3 flex-1">
+                                                            <div className={`p-2 rounded-full ${logo.isSimulation ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'}`}>
+                                                                <Icon icon={logo.isSimulation ? "lucide:sparkles" : "lucide:box"} className="text-xl" />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <h3 className="text-lg font-bold">{logo.logoName || t('pages.projectDetails.logoDefaultName', { index: idx + 1 })}</h3>
+                                                                <div className="flex items-center gap-2 text-small text-default-500">
+                                                                    <span className="font-mono">{logo.logoNumber}</span>
+                                                                    {logo.requestedBy && (
+                                                                        <>
+                                                                            <span>•</span>
+                                                                            <span>{t('pages.projectDetails.requestedBy')}: {logo.requestedBy}</span>
+                                                                        </>
+                                                                    )}
+                                                                    {logo.isSimulation && logo.canvasDecorations && (
+                                                                        <>
+                                                                            <span>•</span>
+                                                                            <span>{getTotalDecorationsQuantity(logo.canvasDecorations)} {t('pages.projectDetails.decorations', 'decorações')}</span>
+                                                                        </>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
+                                                        {!logo.isSimulation && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="flat"
+                                                                color="primary"
+                                                                startContent={<Icon icon="lucide:edit-2" className="text-sm" />}
+                                                                onPress={(e) => {
+                                                                    e.stopPropagation();
+                                                                    navigate(`/projects/${id}/edit?step=logo-instructions&logoIndex=${idx}`);
+                                                                }}
+                                                                className="flex-shrink-0"
+                                                            >
+                                                                {t('common.edit', 'Editar')}
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 }
                                                 subtitle={
