@@ -104,54 +104,69 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
               isDayMode: true,
               conversionComplete: {}
             },
-            logoDetails: project.logoDetails || {},
-          });
-
-          // Se logoIndex foi fornecido, carregar esse logo específico para currentLogo
-          if (logoIndex !== null && logoIndex !== undefined && project.logoDetails) {
-            const savedLogos = project.logoDetails.logos || [];
-            const hasCurrentLogo = project.logoDetails.currentLogo?.logoNumber || project.logoDetails.logoNumber;
-            const logoInstructions = savedLogos.length > 0 ? savedLogos : (hasCurrentLogo ? [project.logoDetails.currentLogo || project.logoDetails] : []);
-            
-            if (logoInstructions[logoIndex]) {
-              const logoToEdit = logoInstructions[logoIndex];
-              
-              // Remove o logo do array de savedLogos se estiver lá
-              let newSavedLogos = savedLogos.filter((logo, idx) => {
-                // Comparar por logoNumber ou ID para encontrar o logo correto
-                return logo.logoNumber !== logoToEdit.logoNumber;
-              });
-              
-              // Se currentLogo é válido e diferente do logo a editar, adicionar aos savedLogos
-              const currentLogo = project.logoDetails.currentLogo || project.logoDetails;
-              const isCurrentLogoValid = currentLogo?.logoNumber && currentLogo.logoNumber !== logoToEdit.logoNumber;
-              
-              if (isCurrentLogoValid && currentLogo.logoNumber) {
-                const logoToSave = {
-                  ...currentLogo,
-                  id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                  savedAt: new Date().toISOString()
-                };
-                newSavedLogos.push(logoToSave);
+            logoDetails: (() => {
+              // Se logoIndex foi fornecido, carregar esse logo específico para currentLogo
+              if (logoIndex !== null && logoIndex !== undefined && project.logoDetails) {
+                const savedLogos = project.logoDetails.logos || [];
+                const hasCurrentLogo = project.logoDetails.currentLogo?.logoNumber || project.logoDetails.logoNumber;
+                
+                // Usar a mesma lógica do ProjectDetails para construir logoInstructions
+                const logoInstructions = savedLogos.length > 0 ? savedLogos : (hasCurrentLogo ? [project.logoDetails.currentLogo || project.logoDetails] : []);
+                
+                console.log('🔍 useProjectForm: Loading logo for editing', {
+                  logoIndex,
+                  savedLogosCount: savedLogos.length,
+                  hasCurrentLogo,
+                  logoInstructionsCount: logoInstructions.length,
+                  logoInstructions: logoInstructions.map(l => ({ logoNumber: l.logoNumber, logoName: l.logoName }))
+                });
+                
+                if (logoInstructions[logoIndex] !== undefined) {
+                  const logoToEdit = logoInstructions[logoIndex];
+                  console.log('✅ useProjectForm: Logo found for editing', {
+                    logoNumber: logoToEdit.logoNumber,
+                    logoName: logoToEdit.logoName
+                  });
+                  
+                  // Remove o logo do array de savedLogos se estiver lá
+                  let newSavedLogos = savedLogos.filter((logo) => {
+                    return logo.logoNumber !== logoToEdit.logoNumber;
+                  });
+                  
+                  // Se currentLogo é válido e diferente do logo a editar, adicionar aos savedLogos
+                  const currentLogo = project.logoDetails.currentLogo || project.logoDetails;
+                  const isCurrentLogoValid = currentLogo?.logoNumber && currentLogo.logoNumber !== logoToEdit.logoNumber;
+                  
+                  if (isCurrentLogoValid && currentLogo.logoNumber) {
+                    const logoToSave = {
+                      ...currentLogo,
+                      id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                      savedAt: new Date().toISOString()
+                    };
+                    newSavedLogos.push(logoToSave);
+                  }
+                  
+                  logger.lifecycle('useProjectForm', 'Logo loaded for editing', {
+                    logoIndex,
+                    logoNumber: logoToEdit.logoNumber,
+                    logoName: logoToEdit.logoName
+                  });
+                  
+                  // Retornar logoDetails atualizado com o logo a editar como currentLogo
+                  return {
+                    ...project.logoDetails,
+                    logos: newSavedLogos,
+                    currentLogo: { ...logoToEdit }
+                  };
+                } else {
+                  console.warn('⚠️ useProjectForm: Logo not found at index', logoIndex, 'Available logos:', logoInstructions.length);
+                }
               }
               
-              // Atualizar logoDetails com o logo a editar como currentLogo
-              setFormData(prev => ({
-                ...prev,
-                logoDetails: {
-                  ...prev.logoDetails,
-                  logos: newSavedLogos,
-                  currentLogo: logoToEdit
-                }
-              }));
-              
-              logger.lifecycle('useProjectForm', 'Logo loaded for editing', {
-                logoIndex,
-                logoNumber: logoToEdit.logoNumber,
-                logoName: logoToEdit.logoName
-              });
-            }
-          }
+              // Se não há logoIndex ou logo não encontrado, retornar logoDetails original
+              return project.logoDetails || {};
+            })(),
+          });
 
           logger.lifecycle('useProjectForm', 'Project loaded successfully', {
             projectId: project.id,

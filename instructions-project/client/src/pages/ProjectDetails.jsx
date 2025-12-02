@@ -13,6 +13,7 @@ import ProjectResultsModal, { LANDSCAPES } from "../components/projects/ProjectR
 import { ProjectObservations } from '../components/project-notes/ProjectObservations';
 import { useNotifications } from '../context/NotificationContext';
 import ProjectOrdersTab from '../components/orders/ProjectOrdersTab';
+import LogoEditModal from '../components/projects/LogoEditModal';
 
 // Helper component to display a field value
 const InfoField = ({ label, value, icon }) => (
@@ -721,6 +722,32 @@ export default function ProjectDetails() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [unreadObservationsCount, setUnreadObservationsCount] = useState(0);
     const { addNotification } = useNotifications();
+    const [logoEditModalOpen, setLogoEditModalOpen] = useState(false);
+    const [editingLogoIndex, setEditingLogoIndex] = useState(null);
+
+    // Definir todos os callbacks ANTES de qualquer useEffect (regra dos hooks)
+    const loadProject = React.useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const projectData = await projectsAPI.getById(id);
+            setProject(projectData);
+        } catch (err) {
+            console.error('❌ Error loading project:', err);
+            setError(t('pages.projectDetails.errorLoading'));
+        } finally {
+            setLoading(false);
+        }
+    }, [id, t]);
+
+    const handleLogoEditModalClose = React.useCallback(() => {
+        setLogoEditModalOpen(false);
+        setEditingLogoIndex(null);
+    }, []);
+
+    const handleLogoEditModalSave = React.useCallback(() => {
+        loadProject(); // Recarregar projeto apenas após salvar
+    }, [loadProject]);
 
     // Handle tab switching from URL query parameters
     React.useEffect(() => {
@@ -733,21 +760,7 @@ export default function ProjectDetails() {
 
     React.useEffect(() => {
         loadProject();
-    }, [id]);
-
-    const loadProject = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            const projectData = await projectsAPI.getById(id);
-            setProject(projectData);
-        } catch (err) {
-            console.error('❌ Error loading project:', err);
-            setError(t('pages.projectDetails.errorLoading'));
-        } finally {
-            setLoading(false);
-        }
-    };
+    }, [loadProject]);
 
     const handleDeleteProject = async () => {
         try {
@@ -1092,7 +1105,11 @@ export default function ProjectDetails() {
                             <div className="py-6">
                                 {displayLogos.length > 0 ? (
                                     <Accordion variant="splitted" selectionMode="multiple">
-                                        {displayLogos.map((logo, idx) => (
+                                        {displayLogos.map((logo, idx) => {
+                                            // Calcular o índice correto apenas nos logos de instrução (sem simulações)
+                                            const logoInstructionIndex = displayLogos.slice(0, idx).filter(l => !l.isSimulation).length;
+                                            
+                                            return (
                                             <AccordionItem
                                                 key={idx}
                                                 aria-label={logo.logoName || `Logo ${idx + 1}`}
@@ -1122,19 +1139,30 @@ export default function ProjectDetails() {
                                                             </div>
                                                         </div>
                                                         {!logo.isSimulation && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="flat"
-                                                                color="primary"
-                                                                startContent={<Icon icon="lucide:edit-2" className="text-sm" />}
-                                                                onPress={(e) => {
+                                                            <div
+                                                                role="button"
+                                                                tabIndex={0}
+                                                                onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    navigate(`/projects/${id}/edit?step=logo-instructions&logoIndex=${idx}`);
+                                                                    e.preventDefault();
+                                                                    console.log('🔗 Edit logo button clicked:', { logoInstructionIndex, idx, logoNumber: logo.logoNumber });
+                                                                    setEditingLogoIndex(logoInstructionIndex);
+                                                                    setLogoEditModalOpen(true);
                                                                 }}
-                                                                className="flex-shrink-0"
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                                        e.stopPropagation();
+                                                                        e.preventDefault();
+                                                                        console.log('🔗 Edit logo button clicked:', { logoInstructionIndex, idx, logoNumber: logo.logoNumber });
+                                                                        setEditingLogoIndex(logoInstructionIndex);
+                                                                        setLogoEditModalOpen(true);
+                                                                    }
+                                                                }}
+                                                                className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-3 py-1.5 h-8 text-sm font-medium rounded-lg bg-primary-50 text-primary hover:bg-primary-100 active:bg-primary-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                                                             >
-                                                                {t('common.edit', 'Editar')}
-                                                            </Button>
+                                                                <Icon icon="lucide:edit-2" className="text-sm" />
+                                                                <span>{t('common.edit', 'Editar')}</span>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 }
@@ -1158,7 +1186,8 @@ export default function ProjectDetails() {
                                                     )}
                                                 </div>
                                             </AccordionItem>
-                                        ))}
+                                            );
+                                        })}
                                     </Accordion>
                                 ) : (
                                     <div className="text-center py-12 text-default-500">
@@ -1236,6 +1265,15 @@ export default function ProjectDetails() {
                     onOpenChange={setIsResultsModalOpen}
                     projectId={id}
                     onModificationSubmitted={handleModificationSubmitted}
+                />
+
+                {/* Logo Edit Modal */}
+                <LogoEditModal
+                    isOpen={logoEditModalOpen}
+                    onClose={handleLogoEditModalClose}
+                    projectId={id}
+                    logoIndex={editingLogoIndex}
+                    onSave={handleLogoEditModalSave}
                 />
 
                 {/* Delete Confirmation Modal */}

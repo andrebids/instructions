@@ -40,12 +40,20 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
   const formState = useProjectForm(onClose, projectId, saveStatus, logoIndex);
   const clientState = useClientManagement(formState.setFormData);
 
+  // Verificar se estamos editando apenas um logo (modo simplificado)
+  const isLogoEditOnlyMode = useMemo(() => {
+    return initialStep === 'logo-instructions' && logoIndex !== null && logoIndex !== undefined;
+  }, [initialStep, logoIndex]);
+
   // Get visible steps based on project type
-  // Usar formState.formData completo para corresponder às dependências inferidas pelo React Compiler
-  const visibleSteps = useMemo(() =>
-    getVisibleSteps(formState.formData, STEPS),
-    [formState.formData]
-  );
+  // Se estamos no modo de edição apenas de logo, mostrar apenas esse passo
+  const visibleSteps = useMemo(() => {
+    if (isLogoEditOnlyMode) {
+      // Retornar apenas o passo logo-instructions
+      return STEPS.filter(step => step.id === 'logo-instructions');
+    }
+    return getVisibleSteps(formState.formData, STEPS);
+  }, [formState.formData, isLogoEditOnlyMode]);
 
   // Debug: verificar initialStep e visibleSteps (apenas uma vez quando initialStep é fornecido)
   const initialStepCheckedRef = useRef(false);
@@ -66,7 +74,8 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
     logger.lifecycle('CreateProjectMultiStep', 'Component mounted', {
       hasOnClose: !!onClose,
       totalSteps: STEPS.length,
-      visibleSteps: visibleSteps.length
+      visibleSteps: visibleSteps.length,
+      isLogoEditOnlyMode
     });
 
     // Logs de teste removidos
@@ -74,7 +83,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
     return () => {
       logger.lifecycle('CreateProjectMultiStep', 'Component unmounting');
     };
-  }, []);
+  }, [isLogoEditOnlyMode]);
 
   // Log quando steps visíveis mudam
   useEffect(() => {
@@ -299,21 +308,40 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
           <div className="w-full bg-content1 px-4 py-2 sm:px-6 sm:py-3 border-b border-divider flex-shrink-0">
             <div className="flex items-center gap-4 justify-between">
               <div className="flex items-center gap-4 flex-1 min-w-0">
-                <Button
-                  variant="light"
-                  className="text-default-600 shrink-0"
-                  startContent={<Icon icon="lucide:arrow-left" />}
-                  as="a"
-                  href="/"
-                >
-                  {t('pages.createProject.backToDashboard')}
-                </Button>
+                {isLogoEditOnlyMode ? (
+                  <Button
+                    variant="light"
+                    className="text-default-600 shrink-0"
+                    startContent={<Icon icon="lucide:arrow-left" />}
+                    onPress={() => {
+                      if (projectId) {
+                        window.location.href = `/projects/${projectId}?tab=instructions`;
+                      } else {
+                        window.location.href = "/";
+                      }
+                    }}
+                  >
+                    {t('common.back', 'Voltar')}
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="light"
+                      className="text-default-600 shrink-0"
+                      startContent={<Icon icon="lucide:arrow-left" />}
+                      as="a"
+                      href="/"
+                    >
+                      {t('pages.createProject.backToDashboard')}
+                    </Button>
 
-                <StepIndicator
-                  steps={visibleSteps}
-                  currentStep={navigation.currentStep}
-                  onStepClick={(stepNumber) => navigation.setCurrentStep(stepNumber)}
-                />
+                    <StepIndicator
+                      steps={visibleSteps}
+                      currentStep={navigation.currentStep}
+                      onStepClick={(stepNumber) => navigation.setCurrentStep(stepNumber)}
+                    />
+                  </>
+                )}
               </div>
 
               {/* Status de salvamento à direita */}
@@ -349,74 +377,94 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
 
 
           {/* Navigation Footer */}
-          <div className="flex-shrink-0">
-            <NavigationFooter
-              currentStep={navigation.currentStep}
-              totalSteps={visibleSteps.length}
-              currentStepId={visibleSteps[navigation.currentStep - 1]?.id}
-              onNext={navigation.nextStep}
-              onPrev={navigation.prevStep}
-              onSubmit={formState.handleSubmit}
-              onSave={formState.handleSave}
-              isValid={navigation.canProceed()}
-              loading={formState.loading}
-              isNavigating={navigation.isNavigating}
-              projectId={projectId}
-              isSaving={saveStatus.status === 'saving'}
-              onResetLogo={() => {
-                // Get current logoDetails structure
-                const currentLogoDetails = formState.formData.logoDetails || {};
-                const currentLogo = currentLogoDetails.currentLogo || currentLogoDetails; // Support both old and new structure
-                const savedLogos = currentLogoDetails.logos || [];
+          {!isLogoEditOnlyMode && (
+            <div className="flex-shrink-0">
+              <NavigationFooter
+                currentStep={navigation.currentStep}
+                totalSteps={visibleSteps.length}
+                currentStepId={visibleSteps[navigation.currentStep - 1]?.id}
+                onNext={navigation.nextStep}
+                onPrev={navigation.prevStep}
+                onSubmit={formState.handleSubmit}
+                onSave={formState.handleSave}
+                isValid={navigation.canProceed()}
+                loading={formState.loading}
+                isNavigating={navigation.isNavigating}
+                projectId={projectId}
+                isSaving={saveStatus.status === 'saving'}
+                onResetLogo={() => {
+                  // Get current logoDetails structure
+                  const currentLogoDetails = formState.formData.logoDetails || {};
+                  const currentLogo = currentLogoDetails.currentLogo || currentLogoDetails; // Support both old and new structure
+                  const savedLogos = currentLogoDetails.logos || [];
 
-                // Check if current logo is valid using the helper function
-                const isCurrentLogoValid = isLogoValid(currentLogo);
+                  // Check if current logo is valid using the helper function
+                  const isCurrentLogoValid = isLogoValid(currentLogo);
 
-                // Only save if logo is valid - button should be disabled if not valid
-                if (isCurrentLogoValid) {
-                  const logoToSave = {
-                    ...currentLogo,
-                    id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                    savedAt: new Date().toISOString()
-                  };
+                  // Only save if logo is valid - button should be disabled if not valid
+                  if (isCurrentLogoValid) {
+                    const logoToSave = {
+                      ...currentLogo,
+                      id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                      savedAt: new Date().toISOString()
+                    };
 
-                  // Update logoDetails with saved logos and new empty currentLogo
-                  formState.handleInputChange("logoDetails", {
-                    ...currentLogoDetails,
-                    logos: [...savedLogos, logoToSave],
-                    currentLogo: {
-                      logoNumber: "",
-                      logoName: "",
-                      requestedBy: "",
-                      dimensions: {},
-                      usageOutdoor: false,
-                      usageIndoor: true,
-                      fixationType: "",
-                      lacqueredStructure: false,
-                      lacquerColor: "",
-                      mastDiameter: "",
-                      maxWeightConstraint: false,
-                      maxWeight: "",
-                      ballast: false,
-                      controlReport: false,
-                      criteria: "",
-                      description: "",
-                      composition: {
-                        componentes: [],
-                        bolas: []
+                    // Update logoDetails with saved logos and new empty currentLogo
+                    formState.handleInputChange("logoDetails", {
+                      ...currentLogoDetails,
+                      logos: [...savedLogos, logoToSave],
+                      currentLogo: {
+                        logoNumber: "",
+                        logoName: "",
+                        requestedBy: "",
+                        dimensions: {},
+                        usageOutdoor: false,
+                        usageIndoor: true,
+                        fixationType: "",
+                        lacqueredStructure: false,
+                        lacquerColor: "",
+                        mastDiameter: "",
+                        maxWeightConstraint: false,
+                        maxWeight: "",
+                        ballast: false,
+                        controlReport: false,
+                        criteria: "",
+                        description: "",
+                        composition: {
+                          componentes: [],
+                          bolas: []
+                        }
                       }
-                    }
-                  });
-                }
-                // If logo is not valid, do nothing - button should be disabled
-              }}
-              isCurrentLogoValid={(() => {
-                const currentLogoDetails = formState.formData.logoDetails || {};
-                const currentLogo = currentLogoDetails.currentLogo || currentLogoDetails;
-                return isLogoValid(currentLogo);
-              })()}
-            />
-          </div>
+                    });
+                  }
+                  // If logo is not valid, do nothing - button should be disabled
+                }}
+                isCurrentLogoValid={(() => {
+                  const currentLogoDetails = formState.formData.logoDetails || {};
+                  const currentLogo = currentLogoDetails.currentLogo || currentLogoDetails;
+                  return isLogoValid(currentLogo);
+                })()}
+              />
+            </div>
+          )}
+          
+          {/* Footer simplificado para edição de logo apenas */}
+          {isLogoEditOnlyMode && (
+            <div className="flex-shrink-0 w-full bg-content1 border-t border-divider px-4 py-4 sm:px-6 sm:py-6">
+              <div className="max-w-6xl mx-auto flex justify-end items-center gap-4">
+                <Button
+                  color="secondary"
+                  variant="flat"
+                  onPress={formState.handleSave}
+                  isLoading={saveStatus.status === 'saving'}
+                  isDisabled={formState.loading || saveStatus.status === 'saving'}
+                  startContent={<Icon icon="lucide:save" />}
+                >
+                  {saveStatus.status === 'saving' ? t('common.saving', 'A guardar...') : t('common.save', 'Guardar')}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 

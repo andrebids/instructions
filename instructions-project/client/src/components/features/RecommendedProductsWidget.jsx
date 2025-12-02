@@ -42,6 +42,15 @@ const getImageUrl = (imagePath) => {
   return path;
 };
 
+// Helper function to filter out temporary image URLs
+const filterTempImageUrl = (url) => {
+  if (!url) return null;
+  if (url.includes('temp_') || url.includes('temp_nightImage_')) {
+    return null;
+  }
+  return url;
+};
+
 export const RecommendedProductsWidget = React.memo(() => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -88,9 +97,12 @@ export const RecommendedProductsWidget = React.memo(() => {
   useEffect(() => {
     if (products.length > 0) {
       products.forEach((product) => {
-        const imageUrl = getImageUrl(product.imagesNightUrl) || 
-                        getImageUrl(product.imagesDayUrl) || 
-                        getImageUrl(product.thumbnailUrl);
+        // Filtrar URLs temporárias antes de tentar preload
+        const nightUrl = filterTempImageUrl(getImageUrl(product.imagesNightUrl));
+        const dayUrl = filterTempImageUrl(getImageUrl(product.imagesDayUrl));
+        const thumbnailUrl = filterTempImageUrl(getImageUrl(product.thumbnailUrl));
+        
+        const imageUrl = nightUrl || dayUrl || thumbnailUrl;
         if (imageUrl) {
           const img = new Image();
           img.onload = () => handleImageLoad(product.id);
@@ -172,10 +184,13 @@ export const RecommendedProductsWidget = React.memo(() => {
         className="h-full w-full"
       >
         {products.map((product, index) => {
-          const imageUrl = getImageUrl(product.imagesNightUrl) || 
-                          getImageUrl(product.imagesDayUrl) || 
-                          getImageUrl(product.thumbnailUrl) || 
-                          'https://placehold.co/600x400?text=Product';
+          // Filtrar URLs temporárias antes de usar
+          const nightUrl = filterTempImageUrl(getImageUrl(product.imagesNightUrl));
+          const dayUrl = filterTempImageUrl(getImageUrl(product.imagesDayUrl));
+          const thumbnailUrl = filterTempImageUrl(getImageUrl(product.thumbnailUrl));
+          
+          const imageUrl = nightUrl || dayUrl || thumbnailUrl || '/demo-images/placeholder.png';
+          const fallbackUrl = dayUrl || thumbnailUrl || '/demo-images/placeholder.png';
           const isImageLoaded = loadedImages.has(product.id);
           
           return (
@@ -195,6 +210,25 @@ export const RecommendedProductsWidget = React.memo(() => {
                   src={imageUrl}
                   alt={product.name}
                   onLoad={() => handleImageLoad(product.id)}
+                  onError={(e) => {
+                    // Prevenir loop infinito de erros
+                    if (e.target.dataset.fallback === '1') {
+                      e.target.src = '/demo-images/placeholder.png';
+                      handleImageLoad(product.id);
+                      return;
+                    }
+                    
+                    // Tentar fallback se ainda não tentamos
+                    if (e.target.src !== fallbackUrl && fallbackUrl !== imageUrl) {
+                      e.target.dataset.fallback = '1';
+                      e.target.src = fallbackUrl;
+                    } else {
+                      // Se fallback também falhou, usar placeholder
+                      e.target.dataset.fallback = '1';
+                      e.target.src = '/demo-images/placeholder.png';
+                      handleImageLoad(product.id);
+                    }
+                  }}
                   className={`w-full h-full object-contain transition-opacity duration-500 ease-out ${
                     isImageLoaded ? 'opacity-100 animate-subtle-zoom' : 'opacity-0'
                   }`}
