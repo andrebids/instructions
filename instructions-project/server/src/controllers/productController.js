@@ -1206,7 +1206,9 @@ export async function update(req, res) {
         updateData.imagesDayUrl = '/uploads/products/' + processedDayImageFilename;
 
         // Verificar novamente se o arquivo existe antes de salvar
-        var finalFilePath = path.resolve(process.cwd(), 'public', 'uploads', 'products', processedDayImageFilename);
+        // Usa pathUtils para garantir caminho consistente
+        const { getProductsUploadDir } = await import('../utils/pathUtils.js');
+        var finalFilePath = path.join(getProductsUploadDir(), processedDayImageFilename);
         if (!fs.existsSync(finalFilePath)) {
           console.error('❌ [UPDATE] Arquivo não encontrado no caminho final:', finalFilePath);
           // Tentar usar o caminho processado diretamente
@@ -1597,12 +1599,14 @@ export async function deleteProduct(req, res) {
     });
 
     // Coletar todos os ficheiros de imagem/vídeo para apagar
+    // Usa pathUtils para garantir caminho consistente
+    const { getProductsUploadDir, resolvePublicPath } = await import('../utils/pathUtils.js');
     var filesToDelete = [];
-    var uploadDir = path.resolve(process.cwd(), 'public/uploads/products');
+    var uploadDir = getProductsUploadDir();
 
     // Adicionar imagem de dia
     if (product.imagesDayUrl) {
-      var dayImagePath = path.join(process.cwd(), 'public', product.imagesDayUrl);
+      var dayImagePath = resolvePublicPath(product.imagesDayUrl);
       if (fs.existsSync(dayImagePath)) {
         filesToDelete.push({ path: dayImagePath, type: 'imagesDayUrl' });
         console.log('📸 [DELETE PRODUCT] Ficheiro de dia encontrado:', dayImagePath);
@@ -1613,7 +1617,7 @@ export async function deleteProduct(req, res) {
 
     // Adicionar imagem de noite
     if (product.imagesNightUrl) {
-      var nightImagePath = path.join(process.cwd(), 'public', product.imagesNightUrl);
+      var nightImagePath = resolvePublicPath(product.imagesNightUrl);
       if (fs.existsSync(nightImagePath)) {
         filesToDelete.push({ path: nightImagePath, type: 'imagesNightUrl' });
         console.log('🌙 [DELETE PRODUCT] Ficheiro de noite encontrado:', nightImagePath);
@@ -1624,7 +1628,7 @@ export async function deleteProduct(req, res) {
 
     // Adicionar animação
     if (product.animationUrl) {
-      var animationPath = path.join(process.cwd(), 'public', product.animationUrl);
+      var animationPath = resolvePublicPath(product.animationUrl);
       if (fs.existsSync(animationPath)) {
         filesToDelete.push({ path: animationPath, type: 'animationUrl' });
         console.log('🎬 [DELETE PRODUCT] Ficheiro de animação encontrado:', animationPath);
@@ -1635,7 +1639,7 @@ export async function deleteProduct(req, res) {
 
     // Adicionar vídeo de simulação animada
     if (product.animationSimulationUrl) {
-      var animationSimulationPath = path.join(process.cwd(), 'public', product.animationSimulationUrl);
+      var animationSimulationPath = resolvePublicPath(product.animationSimulationUrl);
       if (fs.existsSync(animationSimulationPath)) {
         filesToDelete.push({ path: animationSimulationPath, type: 'animationSimulationUrl' });
         console.log('🎬 [DELETE PRODUCT] Ficheiro de simulação animada encontrado:', animationSimulationPath);
@@ -1646,7 +1650,7 @@ export async function deleteProduct(req, res) {
 
     // Adicionar thumbnail
     if (product.thumbnailUrl) {
-      var thumbnailPath = path.join(process.cwd(), 'public', product.thumbnailUrl);
+      var thumbnailPath = resolvePublicPath(product.thumbnailUrl);
       if (fs.existsSync(thumbnailPath)) {
         filesToDelete.push({ path: thumbnailPath, type: 'thumbnailUrl' });
         console.log('🖼️  [DELETE PRODUCT] Ficheiro de thumbnail encontrado:', thumbnailPath);
@@ -1662,7 +1666,7 @@ export async function deleteProduct(req, res) {
         if (product.availableColors.hasOwnProperty(colorKey)) {
           var colorUrl = product.availableColors[colorKey];
           if (colorUrl && typeof colorUrl === 'string') {
-            var colorImagePath = path.join(process.cwd(), 'public', colorUrl);
+            var colorImagePath = resolvePublicPath(colorUrl);
             if (fs.existsSync(colorImagePath)) {
               filesToDelete.push({ path: colorImagePath, type: 'availableColors.' + colorKey });
               console.log('🎨 [DELETE PRODUCT] Ficheiro de cor encontrado:', colorImagePath, '(' + colorKey + ')');

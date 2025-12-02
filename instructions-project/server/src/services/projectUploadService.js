@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { Project } from '../models/index.js';
 import { logUpload, logDebug, logError } from '../utils/projectLogger.js';
+import { getProjectsUploadDir, getPublicDir, getUploadsDir } from '../utils/pathUtils.js';
 
 /**
  * Processa arquivos uploadados e retorna informações das imagens
@@ -17,7 +18,9 @@ export function processUploadedFiles(files, projectId, cartouche = null) {
     const imageUrl = `/uploads/projects/${projectId}/day/${file.filename}`;
     
     // Verificar se arquivo foi realmente salvo
-    const filePath = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day/${file.filename}`);
+    // Usa pathUtils para garantir caminho consistente
+    const dayDir = getProjectsUploadDir(projectId, 'day');
+    const filePath = path.join(dayDir, file.filename);
     const fileExists = fs.existsSync(filePath);
     
     // Verificar também o caminho completo do multer (file.path)
@@ -33,7 +36,7 @@ export function processUploadedFiles(files, projectId, cartouche = null) {
       expectedPathExists: fileExists,
       size: file.size,
       url: imageUrl,
-      cwd: process.cwd()
+      serverBaseDir: getPublicDir()
     };
     
     logUpload('Arquivo:', fileInfo);
@@ -45,7 +48,7 @@ export function processUploadedFiles(files, projectId, cartouche = null) {
       logError('Arquivo não encontrado após upload!');
       logError('   Multer path:', multerPath);
       logError('   Expected path:', filePath);
-      logError('   CWD:', process.cwd());
+      logError('   Server base dir:', getPublicDir());
       logError('   File object:', JSON.stringify({
         filename: file.filename,
         originalname: file.originalname,
@@ -56,7 +59,7 @@ export function processUploadedFiles(files, projectId, cartouche = null) {
       }, null, 2));
       
       // Tentar listar o diretório para debug
-      const dirPath = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`);
+      const dirPath = getProjectsUploadDir(projectId, 'day');
       if (fs.existsSync(dirPath)) {
         const files = fs.readdirSync(dirPath);
         logDebug('   Arquivos no diretório:', files);
@@ -78,7 +81,8 @@ export function processUploadedFiles(files, projectId, cartouche = null) {
       logUpload('   Usando caminho do multer para URL');
       
       // Ajustar URL para usar o caminho relativo do multer
-      const relativePath = multerPath.replace(path.resolve(process.cwd(), 'public'), '');
+      const publicDir = getPublicDir();
+      const relativePath = multerPath.replace(publicDir, '');
       const adjustedUrl = relativePath.replace(/\\/g, '/'); // Normalizar separadores
       return {
         id: imageId,
@@ -113,30 +117,34 @@ export function processUploadedFiles(files, projectId, cartouche = null) {
  * Coleta informações de debug do upload
  */
 export function collectUploadDebugInfo(files, projectId) {
+  const dayDir = getProjectsUploadDir(projectId, 'day');
   const uploadDebugInfo = files.map((f) => {
+    const expectedPath = path.join(dayDir, f.filename);
     const fileDebug = f._uploadDebug || {
       filename: f.filename,
       originalname: f.originalname,
       multerPath: f.path,
       multerPathExists: f.path ? fs.existsSync(f.path) : false,
-      expectedPath: path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day/${f.filename}`),
-      expectedPathExists: fs.existsSync(path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day/${f.filename}`)),
+      expectedPath: expectedPath,
+      expectedPathExists: fs.existsSync(expectedPath),
       size: f.size,
       url: `/uploads/projects/${projectId}/day/${f.filename}`,
-      cwd: process.cwd()
+      serverBaseDir: getPublicDir()
     };
     return fileDebug;
   });
 
   // Incluir informações de debug na resposta (sempre incluir para diagnóstico)
-  const projectDayDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`);
+  const projectDayDir = getProjectsUploadDir(projectId, 'day');
+  const publicDir = getPublicDir();
+  const uploadsDir = getUploadsDir();
   const debugInfo = {
     uploadDebug: uploadDebugInfo,
-    cwd: process.cwd(),
-    publicDir: path.resolve(process.cwd(), 'public'),
-    publicDirExists: fs.existsSync(path.resolve(process.cwd(), 'public')),
-    uploadsDir: path.resolve(process.cwd(), 'public/uploads'),
-    uploadsDirExists: fs.existsSync(path.resolve(process.cwd(), 'public/uploads')),
+    serverBaseDir: publicDir,
+    publicDir: publicDir,
+    publicDirExists: fs.existsSync(publicDir),
+    uploadsDir: uploadsDir,
+    uploadsDirExists: fs.existsSync(uploadsDir),
     projectDayDir: projectDayDir,
     projectDayDirExists: fs.existsSync(projectDayDir),
     filesInDayDir: fs.existsSync(projectDayDir) 
@@ -182,10 +190,10 @@ export async function handleImageUpload(projectId, files, cartouche = null) {
  * Debug: verifica arquivos de imagens de um projeto
  */
 export function debugProjectImageFiles(projectId) {
-  const dayDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`);
-  const nightDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/night`);
-  const publicDir = path.resolve(process.cwd(), 'public');
-  const uploadsDir = path.resolve(process.cwd(), 'public/uploads');
+  const dayDir = getProjectsUploadDir(projectId, 'day');
+  const nightDir = getProjectsUploadDir(projectId, 'night');
+  const publicDir = getPublicDir();
+  const uploadsDir = getUploadsDir();
   
   const dayFiles = fs.existsSync(dayDir) ? fs.readdirSync(dayDir).map(f => {
     const filePath = path.join(dayDir, f);
@@ -202,7 +210,7 @@ export function debugProjectImageFiles(projectId) {
   
   return {
     projectId,
-    cwd: process.cwd(),
+    serverBaseDir: publicDir,
     dayDir,
     dayDirExists: fs.existsSync(dayDir),
     dayFiles,

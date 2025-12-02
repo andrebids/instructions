@@ -10,8 +10,9 @@ WORKDIR /app/client
 # Copy client package files
 COPY client/package*.json ./
 
-# Install client dependencies
-RUN npm ci --only=production --ignore-scripts
+# Clear npm cache and install client dependencies (including devDependencies for build)
+RUN npm cache clean --force && \
+    npm ci --ignore-scripts
 
 # Copy client source code
 COPY client/ ./
@@ -29,8 +30,9 @@ WORKDIR /app/server
 # Copy server package files
 COPY server/package*.json ./
 
-# Install server production dependencies only
-RUN npm ci --only=production --ignore-scripts
+# Clear npm cache and install server production dependencies only
+RUN npm cache clean --force && \
+    npm ci --only=production --ignore-scripts
 
 # ============================================
 # Stage 3: Production Runtime
@@ -48,7 +50,8 @@ WORKDIR /app
 
 # Copy root package.json (for shared dependencies if any)
 COPY package*.json ./
-RUN npm ci --only=production --ignore-scripts || true
+# Only install if package.json exists and has dependencies
+RUN if [ -f package.json ] && [ -s package.json ]; then npm ci --only=production --ignore-scripts || true; fi
 
 # Copy server code and dependencies
 COPY --from=server-builder /app/server/node_modules ./server/node_modules

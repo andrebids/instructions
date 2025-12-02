@@ -2,15 +2,14 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { getProductsUploadDir } from '../utils/pathUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Diretório de destino para uploads de produtos
-var uploadDir = path.resolve(process.cwd(), 'public/uploads/products');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Usa pathUtils para garantir caminho consistente independentemente de onde o servidor é iniciado
+var uploadDir = getProductsUploadDir();
 
 // Configuração de storage
 var storage = multer.diskStorage({

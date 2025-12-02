@@ -117,7 +117,8 @@ app.use((req, res, next) => {
 });
 
 // Servir uploads também via /api para funcionar por trás do proxy do Vite
-app.use('/api/uploads', express.static(path.resolve(process.cwd(), 'public/uploads')));
+import { getUploadsDir } from './utils/pathUtils.js';
+app.use('/api/uploads', express.static(getUploadsDir()));
 
 // Servir também arquivos estáticos do client/public (para imagens da loja)
 // MAS: Não servir sw.js de public/ - ele deve vir de dist/ após processamento pelo VitePWA

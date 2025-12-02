@@ -2,6 +2,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { getProjectsUploadDir } from '../utils/pathUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,17 +13,12 @@ const __dirname = path.dirname(__filename);
  */
 export function createProjectImageUpload(projectId) {
   // Criar diretório específico do projeto para imagens de dia
-  const projectUploadDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/day`);
-  if (!fs.existsSync(projectUploadDir)) {
-    fs.mkdirSync(projectUploadDir, { recursive: true });
-  }
+  // Usa pathUtils para garantir caminho consistente independentemente de onde o servidor é iniciado
+  const projectUploadDir = getProjectsUploadDir(projectId, 'day');
 
   // Criar também a pasta night para preparar estrutura futura
-  const projectNightDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/night`);
-  if (!fs.existsSync(projectNightDir)) {
-    fs.mkdirSync(projectNightDir, { recursive: true });
-    console.log('📁 [PROJECT UPLOAD] Pasta night criada:', projectNightDir);
-  }
+  const projectNightDir = getProjectsUploadDir(projectId, 'night');
+  console.log('📁 [PROJECT UPLOAD] Pasta night criada:', projectNightDir);
 
   // Configuração de storage específica para projetos
   const storage = multer.diskStorage({
@@ -75,10 +71,8 @@ export function createProjectImageUpload(projectId) {
  */
 export function createProjectNightImageUpload(projectId) {
   // Criar diretório específico do projeto para imagens de noite
-  const projectNightDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/night`);
-  if (!fs.existsSync(projectNightDir)) {
-    fs.mkdirSync(projectNightDir, { recursive: true });
-  }
+  // Usa pathUtils para garantir caminho consistente independentemente de onde o servidor é iniciado
+  const projectNightDir = getProjectsUploadDir(projectId, 'night');
 
   // Configuração de storage específica para imagens de noite
   const storage = multer.diskStorage({

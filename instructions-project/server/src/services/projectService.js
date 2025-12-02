@@ -7,6 +7,7 @@ import { QueryTypes } from 'sequelize';
 import { logInfo, logSuccess, logError, logServerOperation, logStats, logDelete, formatErrorMessage } from '../utils/projectLogger.js';
 import fs from 'fs';
 import path from 'path';
+import { getProjectsUploadDir } from '../utils/pathUtils.js';
 
 /**
  * Verifica se a tabela projects existe
@@ -377,11 +378,9 @@ async function saveCanvasPreviewImage(projectId, base64DataUrl) {
     const base64Data = base64Match[2];
 
     // Criar diretório de preview se não existir
-    const previewDir = path.resolve(process.cwd(), `public/uploads/projects/${projectId}/preview`);
-    if (!fs.existsSync(previewDir)) {
-      fs.mkdirSync(previewDir, { recursive: true });
-      logInfo('CanvasPreviewImage: Diretório criado:', previewDir);
-    }
+    // Usa pathUtils para garantir caminho consistente independentemente de onde o servidor é iniciado
+    const previewDir = getProjectsUploadDir(projectId, 'preview');
+    logInfo('CanvasPreviewImage: Diretório criado:', previewDir);
 
     // Nome do ficheiro
     const timestamp = Date.now();

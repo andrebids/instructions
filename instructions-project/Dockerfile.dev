@@ -15,19 +15,25 @@ COPY server/package*.json ./server/
 # Remove any existing node_modules to avoid conflicts
 RUN rm -rf node_modules client/node_modules server/node_modules || true
 
-# Install root dependencies
-RUN npm install || true
+# Clear npm cache to avoid stale dependencies
+RUN npm cache clean --force
+
+# Install root dependencies (only if package.json has dependencies)
+RUN if [ -f package.json ] && [ -s package.json ]; then npm install || true; fi
 
 # Install client dependencies and ensure musl binaries are installed
 # This is critical for Alpine Linux (musl libc)
 RUN cd client && \
+    npm cache clean --force && \
     npm install && \
     npm install @rollup/rollup-linux-x64-musl --save-optional || true && \
     npm install lightningcss-linux-x64-musl --save-optional || true && \
     npm install @tailwindcss/oxide-linux-x64-musl --save-optional || true
 
 # Install server dependencies
-RUN cd server && npm install
+RUN cd server && \
+    npm cache clean --force && \
+    npm install
 
 # Copy startup script
 COPY scripts/docker-dev-start.sh /usr/local/bin/docker-dev-start.sh

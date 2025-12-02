@@ -3,15 +3,14 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { getEditorUploadDir } from '../utils/pathUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Directory for editor image uploads
-const uploadDir = path.resolve(process.cwd(), 'public/uploads/editor');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Usa pathUtils para garantir caminho consistente independentemente de onde o servidor é iniciado
+const uploadDir = getEditorUploadDir();
 
 // Configure storage - sempre usar armazenamento local
 const storage = multer.diskStorage({
