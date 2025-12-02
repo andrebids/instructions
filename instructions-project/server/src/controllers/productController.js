@@ -5,7 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { generateThumbnail, processImageToWebP } from '../utils/imageUtils.js';
-import { resolveImagePath, validateProductImages, validateProductImagesFormat } from '../utils/imagePathResolver.js';
+import { resolveImagePath, validateProductImages, validateProductImagesFormat, validateProductImagesWithExistence } from '../utils/imagePathResolver.js';
 import { resolvePublicPath, getProductsUploadDir } from '../utils/pathUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -288,6 +288,18 @@ export async function getAll(req, res) {
 
     // Converter produtos para objetos simples para evitar problemas de serialização
     var productsData = [];
+    
+    // Log antes de validar imagens
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🔍 [PRODUCTS API] Processando ${products.length} produtos para validação de imagens...`);
+    }
+    
+    var stats = {
+      total: products.length,
+      filtered: 0,
+      noImages: 0
+    };
+    
     try {
       for (var i = 0; i < products.length; i++) {
         try {
@@ -425,20 +437,35 @@ export async function getAll(req, res) {
             plainProduct.updatedAt = plainProduct.updatedAt.toISOString();
           }
 
-          // Validar formato de caminhos de imagens (sem verificar filesystem)
-          // Confia na base de dados e filtra apenas imagens temporárias problemáticas
-          
-          const validatedImages = validateProductImagesFormat({
+          // Validar formato E existência física de caminhos de imagens
+          const originalImages = {
             imagesNightUrl: plainProduct.imagesNightUrl,
             imagesDayUrl: plainProduct.imagesDayUrl,
             thumbnailUrl: plainProduct.thumbnailUrl,
-          });
+          };
+          
+          const validatedImages = validateProductImagesWithExistence(
+            originalImages,
+            `productId:${plainProduct.id}`
+          );
 
-          // IMPORTANTE: As imagens com prefixo "temp_" são VÁLIDAS!
-          // Elas são imagens reais dos produtos que foram convertidas para WebP
-          // O prefixo "temp_" aparece quando o productId não foi fornecido durante o upload
-          // Não precisamos verificar existência física aqui - confiamos na validação de formato
-          // que já permite arquivos WebP com temp_ como válidos
+          // Verificar se houve filtragem de imagens
+          const hadImagesBefore = !!(originalImages.imagesNightUrl || originalImages.imagesDayUrl || originalImages.thumbnailUrl);
+          const hasImagesAfter = !!(validatedImages.imagesNightUrl || validatedImages.imagesDayUrl || validatedImages.thumbnailUrl);
+          
+          if (hadImagesBefore && !hasImagesAfter) {
+            stats.noImages++;
+            if (process.env.NODE_ENV !== 'production') {
+              console.warn(`⚠️ [PRODUCTS API] Produto ${plainProduct.id} perdeu todas as imagens após validação física`);
+            }
+          } else if (hadImagesBefore && (originalImages.imagesNightUrl !== validatedImages.imagesNightUrl || 
+                                        originalImages.imagesDayUrl !== validatedImages.imagesDayUrl || 
+                                        originalImages.thumbnailUrl !== validatedImages.thumbnailUrl)) {
+            stats.filtered++;
+            if (process.env.NODE_ENV !== 'production') {
+              console.log(`🔄 [PRODUCTS API] Produto ${plainProduct.id} teve imagens filtradas`);
+            }
+          }
 
           // Atualizar apenas com imagens válidas
           plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
@@ -451,6 +478,14 @@ export async function getAll(req, res) {
           console.error('❌ [PRODUCTS API] Stack do erro de serialização:', err.stack);
           // Continuar mesmo se um produto falhar
         }
+      }
+
+      // Log de estatísticas
+      if (process.env.NODE_ENV !== 'production' && (stats.filtered > 0 || stats.noImages > 0)) {
+        console.log(`📊 [PRODUCTS API] Estatísticas de validação de imagens:`);
+        console.log(`   Total de produtos: ${stats.total}`);
+        console.log(`   Produtos com imagens filtradas: ${stats.filtered}`);
+        console.log(`   Produtos sem imagens válidas: ${stats.noImages}`);
       }
 
       // Verificar se a resposta já foi enviada
@@ -587,6 +622,17 @@ export async function getTrending(req, res) {
       }
     }
 
+    // Log antes de validar imagens
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🔍 [TRENDING API] Processando ${products.length} produtos trending para validação de imagens...`);
+    }
+    
+    var stats = {
+      total: products.length,
+      filtered: 0,
+      noImages: 0
+    };
+
     // Converter para objetos simples e processar
     var productsData = products.map(function (p) {
       var plainProduct = p.get({ plain: true });
@@ -607,13 +653,35 @@ export async function getTrending(req, res) {
         if (isNaN(plainProduct.stock)) plainProduct.stock = 0;
       }
 
-      // Validar formato de caminhos de imagens (sem verificar filesystem)
-      // Confia na base de dados e filtra apenas imagens temporárias problemáticas
-      const validatedImages = validateProductImagesFormat({
+      // Validar formato E existência física de caminhos de imagens
+      const originalImages = {
         imagesNightUrl: plainProduct.imagesNightUrl,
         imagesDayUrl: plainProduct.imagesDayUrl,
         thumbnailUrl: plainProduct.thumbnailUrl,
-      });
+      };
+      
+      const validatedImages = validateProductImagesWithExistence(
+        originalImages,
+        `trending productId:${plainProduct.id}`
+      );
+
+      // Verificar se houve filtragem de imagens
+      const hadImagesBefore = !!(originalImages.imagesNightUrl || originalImages.imagesDayUrl || originalImages.thumbnailUrl);
+      const hasImagesAfter = !!(validatedImages.imagesNightUrl || validatedImages.imagesDayUrl || validatedImages.thumbnailUrl);
+      
+      if (hadImagesBefore && !hasImagesAfter) {
+        stats.noImages++;
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn(`⚠️ [TRENDING API] Produto trending ${plainProduct.id} perdeu todas as imagens após validação física`);
+        }
+      } else if (hadImagesBefore && (originalImages.imagesNightUrl !== validatedImages.imagesNightUrl || 
+                                    originalImages.imagesDayUrl !== validatedImages.imagesDayUrl || 
+                                    originalImages.thumbnailUrl !== validatedImages.thumbnailUrl)) {
+        stats.filtered++;
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`🔄 [TRENDING API] Produto trending ${plainProduct.id} teve imagens filtradas`);
+        }
+      }
 
       // Atualizar apenas com imagens válidas
       plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
@@ -626,6 +694,14 @@ export async function getTrending(req, res) {
       // O widget aceita fallback para day ou thumbnail se não houver night
       return p.imagesNightUrl !== null || p.imagesDayUrl !== null || p.thumbnailUrl !== null;
     });
+
+    // Log de estatísticas
+    if (process.env.NODE_ENV !== 'production' && (stats.filtered > 0 || stats.noImages > 0)) {
+      console.log(`📊 [TRENDING API] Estatísticas de validação de imagens:`);
+      console.log(`   Total de produtos: ${stats.total}`);
+      console.log(`   Produtos com imagens filtradas: ${stats.filtered}`);
+      console.log(`   Produtos sem imagens válidas: ${stats.noImages}`);
+    }
 
     // Fallback: Se não houver produtos trending com imagens, buscar produtos ativos com imagens
     if (productsData.length === 0) {
@@ -669,12 +745,15 @@ export async function getTrending(req, res) {
             if (isNaN(plainProduct.stock)) plainProduct.stock = 0;
           }
 
-          // Validar formato de caminhos de imagens
-          const validatedImages = validateProductImagesFormat({
-            imagesNightUrl: plainProduct.imagesNightUrl,
-            imagesDayUrl: plainProduct.imagesDayUrl,
-            thumbnailUrl: plainProduct.thumbnailUrl,
-          });
+          // Validar formato E existência física de caminhos de imagens
+          const validatedImages = validateProductImagesWithExistence(
+            {
+              imagesNightUrl: plainProduct.imagesNightUrl,
+              imagesDayUrl: plainProduct.imagesDayUrl,
+              thumbnailUrl: plainProduct.thumbnailUrl,
+            },
+            `fallback productId:${plainProduct.id}`
+          );
 
           plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
           plainProduct.imagesDayUrl = validatedImages.imagesDayUrl;
@@ -743,13 +822,15 @@ export async function search(req, res) {
     var productsData = products.map(function (p) {
       var plainProduct = p.get({ plain: true });
 
-      // Validar formato de caminhos de imagens (sem verificar filesystem)
-      // Confia na base de dados e filtra apenas imagens temporárias problemáticas
-      const validatedImages = validateProductImagesFormat({
-        imagesNightUrl: plainProduct.imagesNightUrl,
-        imagesDayUrl: plainProduct.imagesDayUrl,
-        thumbnailUrl: plainProduct.thumbnailUrl,
-      });
+      // Validar formato E existência física de caminhos de imagens
+      const validatedImages = validateProductImagesWithExistence(
+        {
+          imagesNightUrl: plainProduct.imagesNightUrl,
+          imagesDayUrl: plainProduct.imagesDayUrl,
+          thumbnailUrl: plainProduct.thumbnailUrl,
+        },
+        `sourceImages productId:${plainProduct.id}`
+      );
 
       // Atualizar apenas com imagens válidas
       plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
@@ -895,13 +976,33 @@ export async function getById(req, res) {
       productData.updatedAt = productData.updatedAt.toISOString();
     }
 
-    // Validar formato de caminhos de imagens (sem verificar filesystem)
-    // Confia na base de dados e filtra apenas imagens temporárias problemáticas
-    const validatedImages = validateProductImagesFormat({
+    // Validar formato E existência física de caminhos de imagens
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🔍 [PRODUCTS API] Validando imagens para produto ${productData.id}...`);
+    }
+    
+    const originalImages = {
       imagesNightUrl: productData.imagesNightUrl,
       imagesDayUrl: productData.imagesDayUrl,
       thumbnailUrl: productData.thumbnailUrl,
-    });
+    };
+    
+    const validatedImages = validateProductImagesWithExistence(
+      originalImages,
+      `getById productId:${productData.id}`
+    );
+
+    // Verificar se houve filtragem
+    const hadImagesBefore = !!(originalImages.imagesNightUrl || originalImages.imagesDayUrl || originalImages.thumbnailUrl);
+    const hasImagesAfter = !!(validatedImages.imagesNightUrl || validatedImages.imagesDayUrl || validatedImages.thumbnailUrl);
+    
+    if (hadImagesBefore && !hasImagesAfter && process.env.NODE_ENV !== 'production') {
+      console.warn(`⚠️ [PRODUCTS API] Produto ${productData.id} perdeu todas as imagens após validação física`);
+    } else if (hadImagesBefore && (originalImages.imagesNightUrl !== validatedImages.imagesNightUrl || 
+                                  originalImages.imagesDayUrl !== validatedImages.imagesDayUrl || 
+                                  originalImages.thumbnailUrl !== validatedImages.thumbnailUrl) && process.env.NODE_ENV !== 'production') {
+      console.log(`🔄 [PRODUCTS API] Produto ${productData.id} teve imagens filtradas`);
+    }
 
     // Atualizar apenas com imagens válidas
     productData.imagesNightUrl = validatedImages.imagesNightUrl;
