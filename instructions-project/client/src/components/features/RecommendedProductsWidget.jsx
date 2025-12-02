@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Card, Button, Skeleton } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -46,6 +46,7 @@ export const RecommendedProductsWidget = React.memo(() => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [loadedImages, setLoadedImages] = useState(new Set());
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -74,6 +75,35 @@ export const RecommendedProductsWidget = React.memo(() => {
     fetchProducts();
   }, []);
 
+  // Handle image load - memoized to avoid recreating on each render
+  const handleImageLoad = useCallback((productId) => {
+    setLoadedImages(prev => {
+      const newSet = new Set(prev);
+      newSet.add(productId);
+      return newSet;
+    });
+  }, []);
+
+  // Preload all images when products are loaded
+  useEffect(() => {
+    if (products.length > 0) {
+      products.forEach((product) => {
+        const imageUrl = getImageUrl(product.imagesNightUrl) || 
+                        getImageUrl(product.imagesDayUrl) || 
+                        getImageUrl(product.thumbnailUrl);
+        if (imageUrl) {
+          const img = new Image();
+          img.onload = () => handleImageLoad(product.id);
+          img.onerror = () => {
+            // Se a imagem falhar ao carregar, ainda marcamos como "carregada" para não ficar no loading infinito
+            handleImageLoad(product.id);
+          };
+          img.src = imageUrl;
+        }
+      });
+    }
+  }, [products, handleImageLoad]);
+
   // Preload next image for smoother transitions
   useEffect(() => {
     if (products.length > 0) {
@@ -84,12 +114,19 @@ export const RecommendedProductsWidget = React.memo(() => {
                             getImageUrl(nextProduct.imagesDayUrl) || 
                             getImageUrl(nextProduct.thumbnailUrl);
         if (nextImageUrl) {
-          const img = new Image();
-          img.src = nextImageUrl;
+          // Verificar se já está carregada antes de criar nova imagem
+          setLoadedImages(prev => {
+            if (prev.has(nextProduct.id)) return prev;
+            // Criar imagem em background para preload
+            const img = new Image();
+            img.onload = () => handleImageLoad(nextProduct.id);
+            img.src = nextImageUrl;
+            return prev;
+          });
         }
       }
     }
-  }, [activeIndex, products]);
+  }, [activeIndex, products, handleImageLoad]);
 
   // Memoize current product to avoid recalculation
   const currentProduct = React.useMemo(() => {
@@ -99,7 +136,9 @@ export const RecommendedProductsWidget = React.memo(() => {
   if (loading) {
     return (
       <Card className="h-full w-full bg-default-100 border-none shadow-none">
-        <Skeleton className="rounded-lg w-full h-full" />
+        <div className="relative h-full w-full overflow-hidden">
+          <Skeleton className="rounded-lg w-full h-full" />
+        </div>
       </Card>
     );
   }
@@ -132,26 +171,46 @@ export const RecommendedProductsWidget = React.memo(() => {
         }}
         className="h-full w-full"
       >
-        {products.map((product, index) => (
-          <SwiperSlide key={product.id} className="relative h-full w-full overflow-hidden">
-            {/* Background with padding for full product visibility */}
-            <div className="absolute inset-0 p-8 flex items-center justify-center">
-              <img 
-                key={`${product.id}-${index === activeIndex ? activeIndex : 'inactive'}`}
-                src={
-                  getImageUrl(product.imagesNightUrl) || 
-                  getImageUrl(product.imagesDayUrl) || 
-                  getImageUrl(product.thumbnailUrl) || 
-                  'https://placehold.co/600x400?text=Product'
-                } 
-                alt={product.name}
-                className="w-full h-full object-contain transition-transform duration-500 ease-out animate-subtle-zoom"
-              />
-            </div>
-            {/* Dark gradient overlay for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-          </SwiperSlide>
-        ))}
+        {products.map((product, index) => {
+          const imageUrl = getImageUrl(product.imagesNightUrl) || 
+                          getImageUrl(product.imagesDayUrl) || 
+                          getImageUrl(product.thumbnailUrl) || 
+                          'https://placehold.co/600x400?text=Product';
+          const isImageLoaded = loadedImages.has(product.id);
+          
+          return (
+            <SwiperSlide key={product.id} className="relative h-full w-full overflow-hidden">
+              {/* Background with padding for full product visibility */}
+              <div className="absolute inset-0 p-8 flex items-center justify-center">
+                {/* Placeholder skeleton que mantém a proporção durante o loading */}
+                {!isImageLoaded && (
+                  <div className="absolute inset-0 p-8 flex items-center justify-center z-10">
+                    <div className="w-full h-full bg-gradient-to-br from-default-200 to-default-300 dark:from-default-800 dark:to-default-900 rounded-lg animate-pulse" 
+                         style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                  </div>
+                )}
+                {/* Imagem com transição suave */}
+                <img 
+                  key={`${product.id}-${index === activeIndex ? activeIndex : 'inactive'}`}
+                  src={imageUrl}
+                  alt={product.name}
+                  onLoad={() => handleImageLoad(product.id)}
+                  className={`w-full h-full object-contain transition-opacity duration-500 ease-out ${
+                    isImageLoaded ? 'opacity-100 animate-subtle-zoom' : 'opacity-0'
+                  }`}
+                  style={{ 
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    position: 'relative',
+                    zIndex: isImageLoaded ? 1 : 0
+                  }}
+                />
+              </div>
+              {/* Dark gradient overlay for text readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none z-20" />
+            </SwiperSlide>
+          );
+        })}
       </Swiper>
 
       {/* Fixed Trending Badge - Top Left */}

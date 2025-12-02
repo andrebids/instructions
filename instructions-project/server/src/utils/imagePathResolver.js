@@ -274,21 +274,48 @@ function validateImagePathWithExistence(imagePath, context = '') {
     try {
       const resolvedPath = resolvePublicPath(formatValidated);
       
-      if (process.env.NODE_ENV !== 'production' && context) {
+      // Log detalhado apenas para os primeiros produtos ou quando há erro
+      const shouldLog = process.env.NODE_ENV !== 'production' && (
+        !context.includes('productId:') || 
+        context.includes('productId:prd-') && context.split('productId:')[1]?.startsWith('prd-005')
+      );
+      
+      if (shouldLog && context) {
         console.log(`🔍 [ImageValidator] ${context} - Verificando existência física:`);
         console.log(`   Caminho original: ${imagePath}`);
         console.log(`   Caminho resolvido: ${resolvedPath}`);
+        console.log(`   Arquivo existe: ${fs.existsSync(resolvedPath)}`);
       }
 
       if (fs.existsSync(resolvedPath)) {
-        if (process.env.NODE_ENV !== 'production' && context) {
-          console.log(`✅ [ImageValidator] ${context} - Imagem existe: ${resolvedPath}`);
-        }
         return formatValidated;
       } else {
-        if (process.env.NODE_ENV !== 'production' && context) {
+        // Em desenvolvimento, logar apenas alguns casos para não poluir
+        if (shouldLog && context) {
           console.warn(`⚠️ [ImageValidator] ${context} - Imagem NÃO existe fisicamente: ${resolvedPath}`);
           console.warn(`   Caminho original na DB: ${imagePath}`);
+          
+          // Verificar se o diretório pai existe
+          const parentDir = path.dirname(resolvedPath);
+          console.warn(`   Diretório pai existe: ${fs.existsSync(parentDir)}`);
+          if (fs.existsSync(parentDir)) {
+            try {
+              const files = fs.readdirSync(parentDir);
+              console.warn(`   Arquivos no diretório: ${files.length} arquivos`);
+              const matchingFiles = files.filter(f => f.includes(path.basename(formatValidated)));
+              if (matchingFiles.length > 0) {
+                console.warn(`   Arquivos similares encontrados: ${matchingFiles.join(', ')}`);
+              }
+            } catch (e) {
+              console.warn(`   Erro ao listar diretório: ${e.message}`);
+            }
+          }
+        }
+        // IMPORTANTE: Em desenvolvimento, retornar o caminho mesmo se não existir fisicamente
+        // porque pode ser um problema de montagem de volume ou sincronização
+        // O frontend vai lidar com imagens quebradas mostrando placeholder
+        if (process.env.NODE_ENV === 'development') {
+          return formatValidated;
         }
         return null;
       }
@@ -296,6 +323,10 @@ function validateImagePathWithExistence(imagePath, context = '') {
       if (process.env.NODE_ENV !== 'production' && context) {
         console.error(`❌ [ImageValidator] ${context} - Erro ao verificar existência:`, error.message);
         console.error(`   Caminho: ${imagePath}`);
+      }
+      // Em desenvolvimento, retornar o caminho mesmo com erro
+      if (process.env.NODE_ENV === 'development') {
+        return formatValidated;
       }
       return null;
     }

@@ -62,13 +62,19 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
 
     // Log para diagnóstico quando não há imagem (apenas em desenvolvimento)
     if (!imagePath && import.meta.env.DEV) {
-      console.warn('⚠️ [ProductCard] No image path found for product:', {
+      console.warn(`⚠️ [ProductCard] No image path found for product: ${product.id || 'unknown'} (${product.name || 'no name'})`, {
         productId: product.id,
         productName: product.name,
         hasImages: !!product.images,
+        imagesNight: product.images?.night,
+        imagesDay: product.images?.day,
+        imagesColors: product.images?.colors ? Object.keys(product.images.colors).length : 0,
         hasImagesNightUrl: !!product.imagesNightUrl,
         hasImagesDayUrl: !!product.imagesDayUrl,
-        hasThumbnailUrl: !!product.thumbnailUrl
+        hasThumbnailUrl: !!product.thumbnailUrl,
+        imagesNightUrl: product.imagesNightUrl,
+        imagesDayUrl: product.imagesDayUrl,
+        thumbnailUrl: product.thumbnailUrl
       });
     }
 
