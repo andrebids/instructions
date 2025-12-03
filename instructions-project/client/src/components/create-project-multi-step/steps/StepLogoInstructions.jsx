@@ -496,7 +496,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     // IMPORTANTE: Se o currentLogo já tem um logoNumber válido e estamos editando, NÃO gerar novo número
     // Verificar se o currentLogo tem um ID (indica que é um logo existente sendo editado)
     if (currentLogo.id && currentLogo.logoNumber && currentLogo.logoNumber.trim() !== "") {
-      const match = currentLogo.logoNumber.match(/-L\s*(\d+)$/i);
+      const match = currentLogo.logoNumber.match(/-L\s*(\d+)/i);
       if (match) {
         console.log("Logo has ID and valid logoNumber (editing existing logo). Preserving:", currentLogo.logoNumber);
         return currentLogo.logoNumber; // Preservar o número existente
@@ -508,19 +508,22 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     let maxNumber = 0;
     const usedNumbers = new Set();
 
-    // Verificar nos logos salvos - contar todos os logos que começam com o nome do projeto
+    // Verificar nos logos salvos - contar todos os logos que têm o padrão -L<número>
     console.log("Generating Logo Number. SavedLogos:", savedLogos);
     savedLogos.forEach((logo) => {
       if (logo.logoNumber) {
-        // Tentar encontrar o padrão -L<número> no final da string
-        // Isso é mais robusto do que startsWith, pois o usuário pode ter alterado o prefixo levemente
-        const match = logo.logoNumber.match(/-L\s*(\d+)$/i);
+        // Limpar espaços extras e tentar encontrar o padrão -L<número>
+        // Pode estar no meio ou no final, com ou sem espaços
+        const cleanedLogoNumber = logo.logoNumber.trim();
+        const match = cleanedLogoNumber.match(/-L\s*(\d+)/i);
         if (match) {
           const num = parseInt(match[1], 10);
-          console.log("Found logo number:", num, "in", logo.logoNumber);
-          usedNumbers.add(num);
-          if (num > maxNumber) {
-            maxNumber = num;
+          if (!isNaN(num) && num > 0) {
+            console.log("Found logo number:", num, "in", logo.logoNumber);
+            usedNumbers.add(num);
+            if (num > maxNumber) {
+              maxNumber = num;
+            }
           }
         }
       }
@@ -535,34 +538,40 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         currentLogo.logoNumber.trim() !== "" && 
         currentLogo.logoNumber !== currentLogoNumber &&
         !currentLogo.id) { // Não contar se tem ID (logo existente)
-      const match = currentLogo.logoNumber.match(/-L\s*(\d+)$/i);
+      const cleanedCurrentLogoNumber = currentLogo.logoNumber.trim();
+      const match = cleanedCurrentLogoNumber.match(/-L\s*(\d+)/i);
       if (match) {
         const num = parseInt(match[1], 10);
-        console.log("Found logo number in currentLogo:", num, "in", currentLogo.logoNumber);
-        usedNumbers.add(num);
-        if (num > maxNumber) {
-          maxNumber = num;
+        if (!isNaN(num) && num > 0) {
+          console.log("Found logo number in currentLogo:", num, "in", currentLogo.logoNumber);
+          usedNumbers.add(num);
+          if (num > maxNumber) {
+            maxNumber = num;
+          }
         }
       }
     }
     
-    console.log("Max number found:", maxNumber);
+    console.log("Max number found:", maxNumber, "from", savedLogos.length, "saved logos");
 
     // Se o logo atual já tem um número válido, não contar ele mesmo (estamos editando)
     // Mas se não tem número ou tem um número diferente, precisamos gerar um novo
-    if (currentLogoNumber) {
-      const match = currentLogoNumber.match(/-L\s*(\d+)$/i);
+    if (currentLogoNumber && currentLogoNumber.trim() !== "") {
+      const cleanedCurrentLogoNumber = currentLogoNumber.trim();
+      const match = cleanedCurrentLogoNumber.match(/-L\s*(\d+)/i);
       if (match) {
         const num = parseInt(match[1], 10);
-        // Se este número já está nos logos salvos ou no currentLogo, significa que estamos editando este logo
-        // Nesse caso, não devemos gerar um novo número, devemos manter o atual
-        if (usedNumbers.has(num)) {
-          console.log("Current logo number exists in saved logos or currentLogo (editing). Returning:", currentLogoNumber);
-          return currentLogoNumber; // Retornar o número atual se já existe
-        }
-        // Se não está nos salvos mas tem um número, considerar para o máximo
-        if (num > maxNumber) {
-          maxNumber = num;
+        if (!isNaN(num) && num > 0) {
+          // Se este número já está nos logos salvos ou no currentLogo, significa que estamos editando este logo
+          // Nesse caso, não devemos gerar um novo número, devemos manter o atual
+          if (usedNumbers.has(num)) {
+            console.log("Current logo number exists in saved logos or currentLogo (editing). Returning:", currentLogoNumber);
+            return currentLogoNumber.trim(); // Retornar o número atual se já existe (sem espaços extras)
+          }
+          // Se não está nos salvos mas tem um número, considerar para o máximo
+          if (num > maxNumber) {
+            maxNumber = num;
+          }
         }
       }
     }
@@ -572,8 +581,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     // Se maxNumber é 1, significa que há L1, então o próximo é L2
     // Se maxNumber é 2, significa que há L1 e L2, então o próximo é L3
     const nextNumber = maxNumber + 1;
-    console.log("Next number generated:", nextNumber);
-    return `${baseName} -L${nextNumber} `;
+    console.log("Next number generated:", nextNumber, "for project:", baseName);
+    return `${baseName} -L${nextNumber}`;
   }, [savedLogos, currentLogo]);
 
   // Função helper para filtrar componentes (não pode ser hook pois é usada dentro de map)
