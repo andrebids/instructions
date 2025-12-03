@@ -481,53 +481,56 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
               isCurrentLogoValid
             });
             
-            // Se currentLogo é válido e ainda não está nos savedLogos, adicioná-lo
+            // Se currentLogo é válido, atualizar ou adicionar aos savedLogos
             if (isCurrentLogoValid) {
-              // Verificar se o currentLogo já está nos savedLogos
-              // IMPORTANTE: Comparar por ID primeiro (mais confiável)
-              // Se o currentLogo tem ID, só considerar como "já salvo" se encontrar um logo salvo com o mesmo ID
-              // Se o currentLogo não tem ID, comparar por logoNumber (mas só se ambos existirem e forem iguais)
-              const alreadySaved = savedLogos.some(logo => {
-                // Se currentLogo tem ID, só considerar como "já salvo" se o ID for igual
-                if (currentLogo.id) {
+              // Verificar se o currentLogo já está nos savedLogos (por ID ou logoNumber)
+              const existingLogoIndex = savedLogos.findIndex(logo => {
+                // Se currentLogo tem ID, comparar por ID
+                if (currentLogo.id && logo.id) {
                   return logo.id === currentLogo.id;
                 }
-                // Se currentLogo não tem ID, comparar por logoNumber (mas só se ambos existirem e forem iguais)
-                // E também verificar se o logo salvo não tem ID (para evitar falsos positivos)
-                if (logo.logoNumber && currentLogo.logoNumber && !logo.id) {
+                // Se não tem ID, comparar por logoNumber
+                if (logo.logoNumber && currentLogo.logoNumber) {
                   return logo.logoNumber.trim() === currentLogo.logoNumber.trim();
                 }
                 return false;
               });
               
-              console.log('🔍 [handleSave] currentLogo já está salvo?', alreadySaved, {
-                currentLogoId: currentLogo.id,
-                currentLogoNumber: currentLogo.logoNumber,
-                savedLogosIds: savedLogos.map(l => l.id),
-                savedLogosNumbers: savedLogos.map(l => l.logoNumber)
-              });
+              const logoToSave = {
+                ...currentLogo,
+                id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                savedAt: currentLogo.savedAt || new Date().toISOString()
+              };
               
-              if (!alreadySaved) {
-                const logoToSave = {
-                  ...currentLogo,
-                  id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                  savedAt: currentLogo.savedAt || new Date().toISOString()
-                };
+              let updatedSavedLogos;
+              
+              if (existingLogoIndex >= 0) {
+                // Logo já existe - ATUALIZAR em vez de criar novo
+                updatedSavedLogos = [...savedLogos];
+                updatedSavedLogos[existingLogoIndex] = logoToSave;
                 
-                console.log('✅ [handleSave] Adicionando currentLogo aos savedLogos:', {
+                console.log('✅ [handleSave] Atualizando logo existente nos savedLogos:', {
                   logoNumber: logoToSave.logoNumber,
                   logoName: logoToSave.logoName,
-                  totalLogos: savedLogos.length + 1
+                  index: existingLogoIndex,
+                  totalLogos: updatedSavedLogos.length
                 });
-                
-                return {
-                  ...logoDetails,
-                  logos: [...savedLogos, logoToSave],
-                  currentLogo: currentLogo // Manter currentLogo também
-                };
               } else {
-                console.log('⏭️ [handleSave] currentLogo já está nos savedLogos, mantendo como está');
+                // Logo não existe - ADICIONAR como novo
+                updatedSavedLogos = [...savedLogos, logoToSave];
+                
+                console.log('✅ [handleSave] Adicionando novo logo aos savedLogos:', {
+                  logoNumber: logoToSave.logoNumber,
+                  logoName: logoToSave.logoName,
+                  totalLogos: updatedSavedLogos.length
+                });
               }
+              
+              return {
+                ...logoDetails,
+                logos: updatedSavedLogos,
+                currentLogo: currentLogo // Manter currentLogo também
+              };
             } else {
               console.log('⚠️ [handleSave] currentLogo não é válido, não será adicionado aos savedLogos');
             }

@@ -161,7 +161,7 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
               <Accordion selectionMode="multiple" variant="splitted" className="px-0">
                 {allLogos.map((logo, logoIndex) => (
                   <AccordionItem
-                    key={logo.id || logoIndex}
+                    key={logo.id ? `logo-${logo.id}-${logoIndex}` : `logo-index-${logoIndex}-${logo.logoNumber || ''}`}
                     aria-label={`Logo ${logoIndex + 1}`}
                     title={
                       <div className="flex justify-between items-center flex-1 mr-4">
@@ -196,18 +196,23 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
-                              onDeleteLogo && onDeleteLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                              if (window.confirm(`Tem certeza que deseja eliminar o logo "${logo.logoName || logo.logoNumber || `Logo ${logoIndex + 1}`}"?`)) {
+                                onDeleteLogo && onDeleteLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                              }
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                onDeleteLogo && onDeleteLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                                if (window.confirm(`Tem certeza que deseja eliminar o logo "${logo.logoName || logo.logoNumber || `Logo ${logoIndex + 1}`}"?`)) {
+                                  onDeleteLogo && onDeleteLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                                }
                               }
                             }}
                             className="inline-flex items-center justify-center w-8 h-8 text-danger rounded-lg hover:bg-danger-50 active:bg-danger-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
+                            title="Eliminar logo"
                           >
-                            <Icon icon="lucide:trash" />
+                            <Icon icon="lucide:trash-2" className="w-4 h-4" />
                           </div>
                         </div>
                       </div>

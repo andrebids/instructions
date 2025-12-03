@@ -23,6 +23,8 @@ export const useFormikStep = ({
   // Ref para rastrear se estamos sincronizando para evitar loops
   const isSyncingRef = useRef(false);
   const lastSyncedValuesRef = useRef({});
+  // Ref para rastrear campos que foram modificados pelo usuário (para evitar sobrescrever durante digitação)
+  const userModifiedFieldsRef = useRef(new Set());
 
   // Criar instância do Formik
   const formik = useFormik({
@@ -33,6 +35,8 @@ export const useFormikStep = ({
   });
 
   // Sincronizar valores do Formik com formData global quando formData mudar externamente
+  // IMPORTANTE: Não incluir initialValues nas dependências para evitar loops infinitos
+  // O enableReinitialize do Formik já cuida da reinicialização quando initialValues mudam
   useEffect(() => {
     if (!formData || isSyncingRef.current) return;
 
@@ -46,8 +50,22 @@ export const useFormikStep = ({
       
       // Comparar valores (incluindo null/undefined)
       if (formDataValue !== undefined && formDataValue !== currentValue) {
+        // IMPORTANTE: Não atualizar campos que foram modificados pelo usuário recentemente
+        // Isso evita sobrescrever o que o usuário está digitando
+        if (userModifiedFieldsRef.current.has(key)) {
+          // Se o valor do formData corresponde ao valor atual do formik, significa que a mudança
+          // do usuário já foi sincronizada, então podemos limpar a flag
+          if (formDataValue === currentValue) {
+            userModifiedFieldsRef.current.delete(key);
+            lastSyncedValuesRef.current[key] = formDataValue;
+          }
+          // Não atualizar campos que o usuário está editando
+          return;
+        }
+        
         // Evitar atualizar se já foi sincronizado recentemente
-        if (lastSyncedValuesRef.current[key] !== formDataValue) {
+        // Comparar também com o valor atual do formik para evitar loops
+        if (lastSyncedValuesRef.current[key] !== formDataValue && currentValue !== formDataValue) {
           updates[key] = formDataValue;
           hasChanges = true;
         }
@@ -66,12 +84,15 @@ export const useFormikStep = ({
         isSyncingRef.current = false;
       }, 0);
     }
-  }, [formData, initialValues]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData]); // Removido initialValues das dependências para evitar loops
 
   return {
     ...formik,
     // Helper para atualizar campo específico e sincronizar
     updateField: (field, value) => {
+      // Marcar campo como modificado pelo usuário
+      userModifiedFieldsRef.current.add(field);
       formik.setFieldValue(field, value);
       if (onChange && !isSyncingRef.current) {
         isSyncingRef.current = true;
@@ -79,6 +100,12 @@ export const useFormikStep = ({
         lastSyncedValuesRef.current[field] = value;
         setTimeout(() => {
           isSyncingRef.current = false;
+          // Limpar flag após um delay para permitir sincronização futura
+          setTimeout(() => {
+            if (formik.values[field] === value) {
+              userModifiedFieldsRef.current.delete(field);
+            }
+          }, 100);
         }, 0);
       }
     },

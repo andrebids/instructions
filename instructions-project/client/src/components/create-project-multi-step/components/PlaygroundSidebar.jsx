@@ -10,18 +10,51 @@ import { Icon } from "@iconify/react";
 import PromptInput from "./PromptInput";
 import ShinyText from "./ShinyText";
 
-export default function PlaygroundSidebar({ onGenerate, clearPromptTrigger }) {
-    const [prompt, setPrompt] = React.useState("");
-    const [selectedImage, setSelectedImage] = React.useState(null);
+export default function PlaygroundSidebar({ 
+    onGenerate, 
+    clearPromptTrigger,
+    // Props para persistência de estado
+    initialPrompt = "",
+    initialReferenceImage = null,
+    initialNegativePrompt = "",
+    onPromptChange = null,
+    onReferenceImageChange = null,
+    onNegativePromptChange = null
+}) {
+    const [prompt, setPrompt] = React.useState(initialPrompt);
+    const [selectedImage, setSelectedImage] = React.useState(initialReferenceImage);
+    const [negativePrompt, setNegativePrompt] = React.useState(initialNegativePrompt);
     const [isDragging, setIsDragging] = React.useState(false);
     const fileInputRef = React.useRef(null);
+
+    // Carregar estado inicial quando as props mudam
+    React.useEffect(() => {
+        if (initialPrompt !== undefined) {
+            setPrompt(initialPrompt);
+        }
+    }, [initialPrompt]);
+
+    React.useEffect(() => {
+        if (initialReferenceImage !== undefined) {
+            setSelectedImage(initialReferenceImage);
+        }
+    }, [initialReferenceImage]);
+
+    React.useEffect(() => {
+        if (initialNegativePrompt !== undefined) {
+            setNegativePrompt(initialNegativePrompt);
+        }
+    }, [initialNegativePrompt]);
 
     // Clear prompt when clearPromptTrigger changes
     React.useEffect(() => {
         if (clearPromptTrigger > 0) {
             setPrompt("");
+            if (onPromptChange) {
+                onPromptChange("");
+            }
         }
-    }, [clearPromptTrigger]);
+    }, [clearPromptTrigger, onPromptChange]);
 
     const handleFileSelect = (e) => {
         const file = e.target.files?.[0];
@@ -29,6 +62,9 @@ export default function PlaygroundSidebar({ onGenerate, clearPromptTrigger }) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 setSelectedImage(e.target.result);
+                if (onReferenceImageChange) {
+                    onReferenceImageChange(e.target.result);
+                }
             };
             reader.readAsDataURL(file);
         }
@@ -59,6 +95,9 @@ export default function PlaygroundSidebar({ onGenerate, clearPromptTrigger }) {
 
     const handleRemoveImage = () => {
         setSelectedImage(null);
+        if (onReferenceImageChange) {
+            onReferenceImageChange(null);
+        }
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
@@ -95,7 +134,12 @@ export default function PlaygroundSidebar({ onGenerate, clearPromptTrigger }) {
                         radius="lg"
                         value={prompt}
                         variant="flat"
-                        onValueChange={setPrompt}
+                        onValueChange={(value) => {
+                            setPrompt(value);
+                            if (onPromptChange) {
+                                onPromptChange(value);
+                            }
+                        }}
                         placeholder="Describe the image you want to generate..."
                     />
 
@@ -148,6 +192,9 @@ export default function PlaygroundSidebar({ onGenerate, clearPromptTrigger }) {
                                 const randomPrompts = ["Coelho azul", "Pai Natal"];
                                 const randomPrompt = randomPrompts[Math.floor(Math.random() * randomPrompts.length)];
                                 setPrompt(randomPrompt);
+                                if (onPromptChange) {
+                                    onPromptChange(randomPrompt);
+                                }
                             }}
                         >
                             Random
@@ -162,6 +209,13 @@ export default function PlaygroundSidebar({ onGenerate, clearPromptTrigger }) {
                         placeholder="Enter negative prompt or system instructions..."
                         variant="faded"
                         minRows={2}
+                        value={negativePrompt}
+                        onValueChange={(value) => {
+                            setNegativePrompt(value);
+                            if (onNegativePromptChange) {
+                                onNegativePromptChange(value);
+                            }
+                        }}
                     />
                     <Button
                         color="primary"

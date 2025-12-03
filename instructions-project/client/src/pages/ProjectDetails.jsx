@@ -804,6 +804,133 @@ export default function ProjectDetails() {
         loadProject(); // Recarregar projeto apenas após salvar
     }, [loadProject]);
 
+    const handleDeleteLogo = React.useCallback(async (logoIndex, isCurrent) => {
+        try {
+            const currentProject = await projectsAPI.getById(id);
+            const logoDetails = currentProject.logoDetails || {};
+            const savedLogos = logoDetails.logos || [];
+            const currentLogo = logoDetails.currentLogo || {};
+
+            if (isCurrent) {
+                // Reset current logo
+                const updatedLogoDetails = {
+                    ...logoDetails,
+                    currentLogo: {
+                        logoNumber: "",
+                        logoName: "",
+                        requestedBy: "",
+                        dimensions: {},
+                        usageOutdoor: false,
+                        usageIndoor: true,
+                        fixationType: "",
+                        lacqueredStructure: false,
+                        lacquerColor: "",
+                        mastDiameter: "",
+                        maxWeightConstraint: false,
+                        maxWeight: "",
+                        ballast: false,
+                        controlReport: false,
+                        criteria: "",
+                        description: "",
+                        composition: {
+                            componentes: [],
+                            bolas: []
+                        },
+                        attachmentFiles: []
+                    }
+                };
+                await projectsAPI.updateCanvas(id, { logoDetails: updatedLogoDetails });
+            } else {
+                // Remove from saved logos
+                const newSavedLogos = savedLogos.filter((_, i) => i !== logoIndex);
+                const updatedLogoDetails = {
+                    ...logoDetails,
+                    logos: newSavedLogos
+                };
+                await projectsAPI.updateCanvas(id, { logoDetails: updatedLogoDetails });
+            }
+
+            // Recarregar projeto
+            loadProject();
+        } catch (error) {
+            console.error('Erro ao eliminar logo:', error);
+            addNotification({
+                type: 'error',
+                message: t('pages.projectDetails.errorDeleteLogo', 'Erro ao eliminar logo'),
+            });
+        }
+    }, [id, loadProject, addNotification, t]);
+
+    const handleEditLogoFromOrders = React.useCallback((logoIndex, isCurrent) => {
+        const currentProject = project;
+        const logoDetails = currentProject?.logoDetails || {};
+        const savedLogos = logoDetails.logos || [];
+        const currentLogo = logoDetails.currentLogo || {};
+        
+        // Construir logoInstructions da mesma forma que é feito na exibição (linha 1058)
+        let logoInstructions = [...savedLogos];
+        const isCurrentLogoValid = currentLogo?.logoNumber?.trim() && currentLogo?.logoName?.trim();
+        if (isCurrentLogoValid && currentLogo) {
+            const alreadyInSaved = savedLogos.some(logo => 
+                (logo.id && currentLogo.id && logo.id === currentLogo.id) ||
+                (logo.logoNumber && currentLogo.logoNumber && logo.logoNumber === currentLogo.logoNumber)
+            );
+            if (!alreadyInSaved) {
+                logoInstructions.push(currentLogo);
+            }
+        }
+        
+        if (isCurrent) {
+            // Se é o currentLogo, encontrar o índice nos logoInstructions
+            const foundIndex = logoInstructions.findIndex((logo, idx) => {
+                // Comparar por ID primeiro (mais confiável)
+                if (logo.id && currentLogo.id) {
+                    return logo.id === currentLogo.id;
+                }
+                // Comparar por logoNumber
+                if (logo.logoNumber && currentLogo.logoNumber) {
+                    return logo.logoNumber.trim() === currentLogo.logoNumber.trim();
+                }
+                return false;
+            });
+            
+            if (foundIndex >= 0) {
+                setEditingLogoIndex(foundIndex);
+                setLogoEditModalOpen(true);
+            } else {
+                // Se não encontrou, usar o último índice (onde o currentLogo deveria estar)
+                setEditingLogoIndex(logoInstructions.length - 1);
+                setLogoEditModalOpen(true);
+            }
+        } else {
+            // Se é um logo salvo, o índice já corresponde diretamente
+            if (logoIndex < savedLogos.length) {
+                const logoToEdit = savedLogos[logoIndex];
+                // Encontrar o índice nos logoInstructions
+                const foundIndex = logoInstructions.findIndex((logo, idx) => {
+                    // Comparar por ID primeiro (mais confiável)
+                    if (logo.id && logoToEdit.id) {
+                        return logo.id === logoToEdit.id;
+                    }
+                    // Comparar por logoNumber
+                    if (logo.logoNumber && logoToEdit.logoNumber) {
+                        return logo.logoNumber.trim() === logoToEdit.logoNumber.trim();
+                    }
+                    return false;
+                });
+                
+                if (foundIndex >= 0) {
+                    setEditingLogoIndex(foundIndex);
+                    setLogoEditModalOpen(true);
+                } else {
+                    // Se não encontrou, usar o índice original (deve ser o mesmo)
+                    setEditingLogoIndex(logoIndex);
+                    setLogoEditModalOpen(true);
+                }
+            }
+        }
+    }, [project]);
+
     // Handle tab switching from URL query parameters
     React.useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -1223,29 +1350,77 @@ export default function ProjectDetails() {
                                                             </div>
                                                         </div>
                                                         {!logo.isSimulation && (
-                                                            <div
-                                                                role="button"
-                                                                tabIndex={0}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    e.preventDefault();
-                                                                    console.log('🔗 Edit logo button clicked:', { logoInstructionIndex, idx, logoNumber: logo.logoNumber });
-                                                                    setEditingLogoIndex(logoInstructionIndex);
-                                                                    setLogoEditModalOpen(true);
-                                                                }}
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter' || e.key === ' ') {
-                                                                    e.stopPropagation();
+                                                            <div className="flex items-center gap-2">
+                                                                <div
+                                                                    role="button"
+                                                                    tabIndex={0}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
                                                                         e.preventDefault();
-                                                                    console.log('🔗 Edit logo button clicked:', { logoInstructionIndex, idx, logoNumber: logo.logoNumber });
+                                                                        console.log('🔗 Edit logo button clicked:', { logoInstructionIndex, idx, logoNumber: logo.logoNumber });
                                                                         setEditingLogoIndex(logoInstructionIndex);
                                                                         setLogoEditModalOpen(true);
-                                                                    }
-                                                                }}
-                                                                className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-3 py-1.5 h-8 text-sm font-medium rounded-lg bg-primary-50 text-primary hover:bg-primary-100 active:bg-primary-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                                                            >
-                                                                <Icon icon="lucide:edit-2" className="text-sm" />
-                                                                <span>{t('common.edit', 'Editar')}</span>
+                                                                    }}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                                        e.stopPropagation();
+                                                                            e.preventDefault();
+                                                                        console.log('🔗 Edit logo button clicked:', { logoInstructionIndex, idx, logoNumber: logo.logoNumber });
+                                                                            setEditingLogoIndex(logoInstructionIndex);
+                                                                            setLogoEditModalOpen(true);
+                                                                        }
+                                                                    }}
+                                                                    className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-3 py-1.5 h-8 text-sm font-medium rounded-lg bg-primary-50 text-primary hover:bg-primary-100 active:bg-primary-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                                                >
+                                                                    <Icon icon="lucide:edit-2" className="text-sm" />
+                                                                    <span>{t('common.edit', 'Editar')}</span>
+                                                                </div>
+                                                                <div
+                                                                    role="button"
+                                                                    tabIndex={0}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        e.preventDefault();
+                                                                        // Determinar se é currentLogo ou savedLogo
+                                                                        const savedLogos = project.logoDetails?.logos || [];
+                                                                        const currentLogo = project.logoDetails?.currentLogo || {};
+                                                                        const isCurrentLogo = logoInstructionIndex >= savedLogos.length;
+                                                                        
+                                                                        if (window.confirm(t('pages.projectDetails.confirmDeleteLogo', `Tem certeza que deseja eliminar o logo "${logo.logoName || logo.logoNumber || `Logo ${logoInstructionIndex + 1}`}"?`))) {
+                                                                            if (isCurrentLogo) {
+                                                                                // É o currentLogo
+                                                                                handleDeleteLogo(0, true);
+                                                                            } else {
+                                                                                // É um savedLogo
+                                                                                handleDeleteLogo(logoInstructionIndex, false);
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                                            e.stopPropagation();
+                                                                            e.preventDefault();
+                                                                            // Determinar se é currentLogo ou savedLogo
+                                                                            const savedLogos = project.logoDetails?.logos || [];
+                                                                            const currentLogo = project.logoDetails?.currentLogo || {};
+                                                                            const isCurrentLogo = logoInstructionIndex >= savedLogos.length;
+                                                                            
+                                                                            if (window.confirm(t('pages.projectDetails.confirmDeleteLogo', `Tem certeza que deseja eliminar o logo "${logo.logoName || logo.logoNumber || `Logo ${logoInstructionIndex + 1}`}"?`))) {
+                                                                                if (isCurrentLogo) {
+                                                                                    // É o currentLogo
+                                                                                    handleDeleteLogo(0, true);
+                                                                                } else {
+                                                                                    // É um savedLogo
+                                                                                    handleDeleteLogo(logoInstructionIndex, false);
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-3 py-1.5 h-8 text-sm font-medium rounded-lg bg-danger-50 text-danger hover:bg-danger-100 active:bg-danger-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
+                                                                >
+                                                                    <Icon icon="lucide:trash-2" className="text-sm" />
+                                                                    <span>{t('common.delete', 'Eliminar')}</span>
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </div>
@@ -1298,6 +1473,8 @@ export default function ProjectDetails() {
                                 decorationsByImage={project.decorationsByImage || {}}
                                 projectType={project.projectType}
                                 logoDetails={project.logoDetails}
+                                onEditLogo={handleEditLogoFromOrders}
+                                onDeleteLogo={handleDeleteLogo}
                             />
                         </Tab>
 

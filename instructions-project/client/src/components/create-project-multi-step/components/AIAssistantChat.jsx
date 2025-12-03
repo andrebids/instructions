@@ -10,13 +10,93 @@ import { Icon } from "@iconify/react";
 
 import PlaygroundSidebar from "./PlaygroundSidebar";
 
-export function AIAssistantChat({ isOpen, onClose, onSaveImage }) {
-    const [generationStatus, setGenerationStatus] = React.useState('idle'); // 'idle', 'generating', 'complete'
-    const [generatedImageUrl, setGeneratedImageUrl] = React.useState(null);
-    const [generationType, setGenerationType] = React.useState(null); // 'video' or 'reveal'
+export function AIAssistantChat({ 
+    isOpen, 
+    onClose, 
+    onSaveImage,
+    // Props para persistência de estado
+    initialAIState = null,
+    onAIStateChange = null
+}) {
+    // Estado inicial do AI Assistant (carregado do currentLogo se disponível)
+    const [generationStatus, setGenerationStatus] = React.useState(
+        initialAIState?.generationStatus || 'idle'
+    );
+    const [generatedImageUrl, setGeneratedImageUrl] = React.useState(
+        initialAIState?.generatedImageUrl || null
+    );
+    const [generationType, setGenerationType] = React.useState(
+        initialAIState?.generationType || null
+    );
     const [revealProgress, setRevealProgress] = React.useState(0);
     const [clearPromptTrigger, setClearPromptTrigger] = React.useState(0);
     const videoRef = React.useRef(null);
+
+    // Refs para manter valores atualizados do estado
+    const generationStatusRef = React.useRef(generationStatus);
+    const generatedImageUrlRef = React.useRef(generatedImageUrl);
+    const generationTypeRef = React.useRef(generationType);
+    
+    // Atualizar refs quando o estado muda
+    React.useEffect(() => {
+        generationStatusRef.current = generationStatus;
+    }, [generationStatus]);
+    
+    React.useEffect(() => {
+        generatedImageUrlRef.current = generatedImageUrl;
+    }, [generatedImageUrl]);
+    
+    React.useEffect(() => {
+        generationTypeRef.current = generationType;
+    }, [generationType]);
+
+    // Função helper para salvar estado - usa refs para sempre ter valores atualizados
+    const saveAIState = React.useCallback((updates) => {
+        if (onAIStateChange) {
+            const newState = {
+                generationStatus: updates.generationStatus !== undefined ? updates.generationStatus : generationStatusRef.current,
+                generatedImageUrl: updates.generatedImageUrl !== undefined ? updates.generatedImageUrl : generatedImageUrlRef.current,
+                generationType: updates.generationType !== undefined ? updates.generationType : generationTypeRef.current,
+                // Preservar outros campos do estado inicial se existirem
+                prompt: initialAIState?.prompt || "",
+                referenceImage: initialAIState?.referenceImage || null,
+                negativePrompt: initialAIState?.negativePrompt || "",
+                ...updates
+            };
+            onAIStateChange(newState);
+        }
+    }, [onAIStateChange, initialAIState]);
+
+    // Carregar estado inicial quando o modal abre ou quando initialAIState muda
+    React.useEffect(() => {
+        if (isOpen && initialAIState) {
+            setGenerationStatus(initialAIState.generationStatus || 'idle');
+            setGeneratedImageUrl(initialAIState.generatedImageUrl || null);
+            setGenerationType(initialAIState.generationType || null);
+        } else if (isOpen && !initialAIState) {
+            // Se não há estado inicial, resetar para valores padrão
+            setGenerationStatus('idle');
+            setGeneratedImageUrl(null);
+            setGenerationType(null);
+        }
+    }, [isOpen, initialAIState?.generatedImageUrl, initialAIState?.generationStatus, initialAIState?.generationType]);
+
+    // Salvar estado quando o modal fecha
+    React.useEffect(() => {
+        if (!isOpen && onAIStateChange) {
+            // Salvar estado atual antes de fechar
+            const currentState = {
+                generationStatus: generationStatusRef.current,
+                generatedImageUrl: generatedImageUrlRef.current,
+                generationType: generationTypeRef.current,
+                // Preservar outros campos do estado inicial se existirem
+                prompt: initialAIState?.prompt || "",
+                referenceImage: initialAIState?.referenceImage || null,
+                negativePrompt: initialAIState?.negativePrompt || "",
+            };
+            onAIStateChange(currentState);
+        }
+    }, [isOpen, onAIStateChange, initialAIState]);
 
     const handleGenerate = (prompt, referenceImage) => {
         const normalizedPrompt = prompt?.trim().toLowerCase() || '';
@@ -26,16 +106,19 @@ export function AIAssistantChat({ isOpen, onClose, onSaveImage }) {
             setGenerationType('video');
             setGenerationStatus('generating');
             setGeneratedImageUrl('/AIGENERATOR/coelho.webp');
+            saveAIState({ generationType: 'video', generationStatus: 'generating', generatedImageUrl: '/AIGENERATOR/coelho.webp' });
 
             // Fallback timeout if video doesn't trigger
             setTimeout(() => {
                 setGenerationStatus('complete');
+                saveAIState({ generationStatus: 'complete' });
             }, 3000);
         } else if (['pai natal', 'santa claus', 'pere noel', 'santa', 'noel'].includes(normalizedPrompt)) {
             setGenerationType('reveal');
             setGenerationStatus('generating');
             setGeneratedImageUrl('/AIGENERATOR/PAINATAL.webp');
             setRevealProgress(0);
+            saveAIState({ generationType: 'reveal', generationStatus: 'generating', generatedImageUrl: '/AIGENERATOR/PAINATAL.webp' });
 
             // Progressive reveal animation
             let progress = 0;
@@ -47,6 +130,7 @@ export function AIAssistantChat({ isOpen, onClose, onSaveImage }) {
                     clearInterval(interval);
                     setTimeout(() => {
                         setGenerationStatus('complete');
+                        saveAIState({ generationStatus: 'complete' });
                     }, 200);
                 }
             }, 30); // Update every 30ms for smooth animation
@@ -58,6 +142,7 @@ export function AIAssistantChat({ isOpen, onClose, onSaveImage }) {
 
     const handleVideoEnded = () => {
         setGenerationStatus('complete');
+        saveAIState({ generationStatus: 'complete' });
     };
 
     const handleReset = () => {
@@ -66,6 +151,7 @@ export function AIAssistantChat({ isOpen, onClose, onSaveImage }) {
         setGenerationType(null);
         setRevealProgress(0);
         setClearPromptTrigger(prev => prev + 1); // Trigger prompt clear in sidebar
+        saveAIState({ generationStatus: 'idle', generatedImageUrl: null, generationType: null });
     };
 
     return (
@@ -83,7 +169,16 @@ export function AIAssistantChat({ isOpen, onClose, onSaveImage }) {
             <ModalContent>
                 {(onClose) => (
                     <div className="flex h-[85vh] w-full overflow-hidden">
-                        <PlaygroundSidebar onGenerate={handleGenerate} clearPromptTrigger={clearPromptTrigger} />
+                        <PlaygroundSidebar 
+                            onGenerate={handleGenerate} 
+                            clearPromptTrigger={clearPromptTrigger}
+                            initialPrompt={initialAIState?.prompt || ""}
+                            initialReferenceImage={initialAIState?.referenceImage || null}
+                            initialNegativePrompt={initialAIState?.negativePrompt || ""}
+                            onPromptChange={(prompt) => saveAIState({ prompt })}
+                            onReferenceImageChange={(referenceImage) => saveAIState({ referenceImage })}
+                            onNegativePromptChange={(negativePrompt) => saveAIState({ negativePrompt })}
+                        />
                         <div className="flex flex-1 flex-col">
                             <ModalHeader className="flex flex-col gap-1 px-6 py-4 border-b border-default-100">
                                 <div className="flex items-center justify-between w-full">

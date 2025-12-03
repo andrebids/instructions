@@ -91,10 +91,12 @@ export const validateStepLogoInstructions = (formData) => {
   const dimensions = currentLogo.dimensions || {};
 
   // Verificar se pelo menos um campo de dimensões está preenchido
-  const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
-  const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
-  const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
-  const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
+  // Aceitar valores numéricos válidos (incluindo 0)
+  // Verificar se o valor existe, não é null, não é string vazia, e é um número válido >= 0
+  const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "" && !isNaN(parseFloat(dimensions.height.value)) && parseFloat(dimensions.height.value) >= 0;
+  const hasLength = dimensions.length?.value != null && dimensions.length.value !== "" && !isNaN(parseFloat(dimensions.length.value)) && parseFloat(dimensions.length.value) >= 0;
+  const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "" && !isNaN(parseFloat(dimensions.width.value)) && parseFloat(dimensions.width.value) >= 0;
+  const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "" && !isNaN(parseFloat(dimensions.diameter.value)) && parseFloat(dimensions.diameter.value) >= 0;
   const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
 
   // Verificar se o logo atual está completamente vazio (permitir prosseguir apenas com logos salvos)
@@ -135,6 +137,30 @@ export const validateStepLogoInstructions = (formData) => {
       length: hasLength,
       width: hasWidth,
       diameter: hasDiameter
+    },
+    dimensionValues: {
+      height: dimensions.height?.value,
+      length: dimensions.length?.value,
+      width: dimensions.width?.value,
+      diameter: dimensions.diameter?.value
+    }
+  });
+
+  // Debug: Log detalhado para entender o problema
+  console.log("🔍 [validateStepLogoInstructions] Validation check:", {
+    isValid,
+    isCurrentLogoValid,
+    isCurrentLogoEmpty,
+    savedLogosCount: savedLogos.length,
+    hasAtLeastOneDimension,
+    dimensions: dimensions,
+    dimensionChecks: { hasHeight, hasLength, hasWidth, hasDiameter },
+    requiredFields: {
+      logoNumber: !!currentLogo.logoNumber?.trim(),
+      logoName: !!currentLogo.logoName?.trim(),
+      description: !!currentLogo.description?.trim(),
+      requestedBy: !!currentLogo.requestedBy?.trim(),
+      fixationType: !!currentLogo.fixationType?.trim()
     }
   });
 
