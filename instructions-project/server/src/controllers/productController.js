@@ -463,9 +463,7 @@ export async function getAll(req, res) {
                                         originalImages.imagesDayUrl !== validatedImages.imagesDayUrl || 
                                         originalImages.thumbnailUrl !== validatedImages.thumbnailUrl)) {
             stats.filtered++;
-            if (process.env.NODE_ENV !== 'production') {
-              console.log(`🔄 [PRODUCTS API] Produto ${plainProduct.id} teve imagens filtradas`);
-            }
+            // Não logar individualmente - apenas estatísticas no final
           }
 
           // Atualizar apenas com imagens válidas
@@ -481,12 +479,9 @@ export async function getAll(req, res) {
         }
       }
 
-      // Log de estatísticas
-      if (process.env.NODE_ENV !== 'production' && (stats.filtered > 0 || stats.noImages > 0)) {
-        console.log(`📊 [PRODUCTS API] Estatísticas de validação de imagens:`);
-        console.log(`   Total de produtos: ${stats.total}`);
-        console.log(`   Produtos com imagens filtradas: ${stats.filtered}`);
-        console.log(`   Produtos sem imagens válidas: ${stats.noImages}`);
+      // Log de estatísticas apenas se houver produtos sem imagens (erro crítico)
+      if (stats.noImages > 0) {
+        console.warn(`⚠️ [PRODUCTS API] ${stats.noImages} produtos sem imagens válidas de ${stats.total} total (${stats.filtered} com algumas imagens filtradas)`);
       }
 
       // Verificar se a resposta já foi enviada
@@ -679,9 +674,7 @@ export async function getTrending(req, res) {
                                     originalImages.imagesDayUrl !== validatedImages.imagesDayUrl || 
                                     originalImages.thumbnailUrl !== validatedImages.thumbnailUrl)) {
         stats.filtered++;
-        if (process.env.NODE_ENV !== 'production') {
-          console.log(`🔄 [TRENDING API] Produto trending ${plainProduct.id} teve imagens filtradas`);
-        }
+        // Não logar individualmente - apenas estatísticas no final
       }
 
       // Atualizar apenas com imagens válidas
@@ -696,13 +689,10 @@ export async function getTrending(req, res) {
       return p.imagesNightUrl !== null || p.imagesDayUrl !== null || p.thumbnailUrl !== null;
     });
 
-    // Log de estatísticas
-    if (process.env.NODE_ENV !== 'production' && (stats.filtered > 0 || stats.noImages > 0)) {
-      console.log(`📊 [TRENDING API] Estatísticas de validação de imagens:`);
-      console.log(`   Total de produtos: ${stats.total}`);
-      console.log(`   Produtos com imagens filtradas: ${stats.filtered}`);
-      console.log(`   Produtos sem imagens válidas: ${stats.noImages}`);
-    }
+      // Log de estatísticas apenas se houver produtos sem imagens (erro crítico)
+      if (stats.noImages > 0) {
+        console.warn(`⚠️ [TRENDING API] ${stats.noImages} produtos sem imagens válidas de ${stats.total} total`);
+      }
 
     // Fallback: Se não houver produtos trending com imagens, buscar produtos ativos com imagens
     if (productsData.length === 0) {
@@ -1053,7 +1043,13 @@ export async function create(req, res) {
       // Auto-gerar thumbnail se não foi fornecido
       if (!files.thumbnail || !files.thumbnail[0]) {
         try {
-          var thumbnailFilename = 'thumb_' + path.basename(processedDayImagePath).replace(/\.[^/.]+$/, '.webp');
+          // Remover qualquer extensão do arquivo antes de adicionar .webp
+          // Isso funciona tanto se o arquivo já foi convertido para WebP quanto se ainda tem extensão original
+          var fileBasename = path.basename(processedDayImagePath);
+          var baseName = path.parse(fileBasename).name; // Remove extensão (seja .webp ou .jpg, etc)
+          // Adicionar timestamp para evitar conflitos quando múltiplos arquivos com mesmo nome base existem
+          var timestamp = Date.now();
+          var thumbnailFilename = 'thumb_' + baseName + '_' + timestamp + '.webp';
           var thumbnailPath = path.join(path.dirname(processedDayImagePath), thumbnailFilename);
           await generateThumbnail(processedDayImagePath, thumbnailPath, 300, 300);
           thumbnailUrl = '/uploads/products/' + thumbnailFilename;
@@ -1246,6 +1242,9 @@ export async function create(req, res) {
       }
 
       productData.id = generatedId;
+      console.log('✅ [PRODUCTS API CREATE] ProductId gerado automaticamente:', generatedId);
+    } else {
+      console.log('✅ [PRODUCTS API CREATE] ProductId fornecido:', productData.id);
     }
 
     var product = await Product.create(productData);
@@ -1372,7 +1371,11 @@ export async function update(req, res) {
       // Auto-gerar thumbnail se não foi fornecido e a imagem de dia mudou
       if (!files.thumbnail || !files.thumbnail[0]) {
         try {
-          var thumbnailFilename = 'thumb_' + path.basename(finalDayImagePath).replace(/\.[^/.]+$/, '.webp');
+          var fileBasename = path.basename(finalDayImagePath);
+          var baseName = path.parse(fileBasename).name; // Remove extensão
+          // Adicionar timestamp para evitar conflitos quando múltiplos arquivos com mesmo nome base existem
+          var timestamp = Date.now();
+          var thumbnailFilename = 'thumb_' + baseName + '_' + timestamp + '.webp';
           var thumbnailPath = path.join(path.dirname(finalDayImagePath), thumbnailFilename);
           await generateThumbnail(finalDayImagePath, thumbnailPath, 300, 300);
           updateData.thumbnailUrl = '/uploads/products/' + thumbnailFilename;

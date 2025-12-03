@@ -23,16 +23,21 @@ var storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    var productId = req.body.productId || req.params.productId || 'temp';
     var timestamp = Date.now();
     var ext = path.extname(file.originalname);
     var baseName = path.basename(file.originalname, ext);
-    var fieldName = file.fieldname;
-    var fileName = productId + '_' + fieldName + '_' + timestamp + ext;
+    // Sanitizar nome: remover caracteres especiais, manter apenas letras, números, hífens e underscores
+    var sanitizedName = baseName.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    // Se o nome sanitizado ficar vazio, usar um nome padrão baseado no fieldname
+    if (!sanitizedName || sanitizedName.length === 0) {
+      sanitizedName = file.fieldname || 'file';
+    }
+    var fileName = sanitizedName + '-' + timestamp + ext;
     try {
       console.log('📝 [UPLOAD] Gerando nome de arquivo:', {
-        field: fieldName,
+        field: file.fieldname,
         original: file.originalname,
+        sanitized: sanitizedName,
         mime: file.mimetype,
         size: file.size,
         savedAs: fileName,

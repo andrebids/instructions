@@ -139,8 +139,12 @@ function validateImagePathFormat(imagePath) {
   }
 
   // IMPORTANTE: Permitir arquivos WebP com prefixo temp_ porque são arquivos convertidos válidos
-  // O processImageToWebP converte para WebP mas mantém o prefixo temp_ no nome
-  // Exemplo: /uploads/products/temp_dayImage_1761908607230.webp é um arquivo válido
+  // (compatibilidade com formato antigo: temp_dayImage_timestamp.webp)
+  // Novos uploads usam formato: nomeOriginal-timestamp.webp (sem temp_)
+  // O processImageToWebP converte para WebP mas mantém o nome original
+  // Exemplo válidos: 
+  //   - /uploads/products/temp_dayImage_1761908607230.webp (formato antigo)
+  //   - /uploads/products/minha-imagem-1761908607230.webp (formato novo)
   const isWebP = imagePath.toLowerCase().endsWith('.webp');
   const hasTemp = imagePath.includes('temp_');
 
@@ -270,63 +274,31 @@ function validateImagePathWithExistence(imagePath, context = '') {
       return null;
     }
 
-    // Se passou na validação de formato, verificar existência física
+    // Em desenvolvimento, apenas validar formato (não verificar filesystem)
+    // Isso evita logs excessivos e problemas com volumes de rede/SMB
+    // O frontend lida com imagens quebradas mostrando placeholder
+    if (process.env.NODE_ENV === 'development') {
+      return formatValidated;
+    }
+
+    // Em produção, verificar existência física para evitar retornar caminhos quebrados
     try {
       const resolvedPath = resolvePublicPath(formatValidated);
-      
-      // Log detalhado apenas para os primeiros produtos ou quando há erro
-      const shouldLog = process.env.NODE_ENV !== 'production' && (
-        !context.includes('productId:') || 
-        context.includes('productId:prd-') && context.split('productId:')[1]?.startsWith('prd-005')
-      );
-      
-      if (shouldLog && context) {
-        console.log(`🔍 [ImageValidator] ${context} - Verificando existência física:`);
-        console.log(`   Caminho original: ${imagePath}`);
-        console.log(`   Caminho resolvido: ${resolvedPath}`);
-        console.log(`   Arquivo existe: ${fs.existsSync(resolvedPath)}`);
-      }
 
       if (fs.existsSync(resolvedPath)) {
         return formatValidated;
       } else {
-        // Em desenvolvimento, logar apenas alguns casos para não poluir
-        if (shouldLog && context) {
-          console.warn(`⚠️ [ImageValidator] ${context} - Imagem NÃO existe fisicamente: ${resolvedPath}`);
-          console.warn(`   Caminho original na DB: ${imagePath}`);
-          
-          // Verificar se o diretório pai existe
-          const parentDir = path.dirname(resolvedPath);
-          console.warn(`   Diretório pai existe: ${fs.existsSync(parentDir)}`);
-          if (fs.existsSync(parentDir)) {
-            try {
-              const files = fs.readdirSync(parentDir);
-              console.warn(`   Arquivos no diretório: ${files.length} arquivos`);
-              const matchingFiles = files.filter(f => f.includes(path.basename(formatValidated)));
-              if (matchingFiles.length > 0) {
-                console.warn(`   Arquivos similares encontrados: ${matchingFiles.join(', ')}`);
-              }
-            } catch (e) {
-              console.warn(`   Erro ao listar diretório: ${e.message}`);
-            }
-          }
-        }
-        // IMPORTANTE: Em desenvolvimento, retornar o caminho mesmo se não existir fisicamente
-        // porque pode ser um problema de montagem de volume ou sincronização
-        // O frontend vai lidar com imagens quebradas mostrando placeholder
-        if (process.env.NODE_ENV === 'development') {
-          return formatValidated;
+        // Em produção, apenas logar se for um erro crítico (sem imagens válidas)
+        // Logs detalhados apenas quando necessário para debug
+        if (context && process.env.NODE_ENV === 'production') {
+          console.warn(`⚠️ [ImageValidator] ${context} - Imagem não existe: ${imagePath}`);
         }
         return null;
       }
     } catch (error) {
-      if (process.env.NODE_ENV !== 'production' && context) {
+      // Em produção, retornar null em caso de erro
+      if (process.env.NODE_ENV === 'production' && context) {
         console.error(`❌ [ImageValidator] ${context} - Erro ao verificar existência:`, error.message);
-        console.error(`   Caminho: ${imagePath}`);
-      }
-      // Em desenvolvimento, retornar o caminho mesmo com erro
-      if (process.env.NODE_ENV === 'development') {
-        return formatValidated;
       }
       return null;
     }
@@ -379,14 +351,12 @@ export function validateProductImagesWithExistence(imagePaths, context = '') {
     result.thumbnailUrl = result.imagesNightUrl;
   }
 
-  // Log de resumo se houver contexto
-  if (context && process.env.NODE_ENV !== 'production') {
+  // Log de resumo apenas em produção quando não há imagens válidas (erro crítico)
+  // Em desenvolvimento, não logar para evitar poluição de logs
+  if (context && process.env.NODE_ENV === 'production') {
     const hasAnyImage = result.imagesNightUrl || result.imagesDayUrl || result.thumbnailUrl;
     if (!hasAnyImage) {
-      console.warn(`⚠️ [ImageValidator] ${context} - NENHUMA imagem válida encontrada após verificação física`);
-      console.warn(`   Original - night: ${imagePaths.imagesNightUrl || 'null'}`);
-      console.warn(`   Original - day: ${imagePaths.imagesDayUrl || 'null'}`);
-      console.warn(`   Original - thumbnail: ${imagePaths.thumbnailUrl || 'null'}`);
+      console.warn(`⚠️ [ImageValidator] ${context} - NENHUMA imagem válida encontrada`);
     }
   }
 

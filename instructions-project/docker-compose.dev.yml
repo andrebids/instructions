@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -12,15 +10,15 @@ services:
       - "5001:5000" # Backend API (mapped to 5001 to avoid conflict)
       - "3003:3003" # Vite dev server
 
-    # Volume mappings
+    # Named volumes for better management and persistence
     volumes:
       # Bind mount source code for hot reload
       - ./:/app
 
-      # Anonymous volumes to isolate node_modules from Windows
-      - /app/node_modules
-      - /app/client/node_modules
-      - /app/server/node_modules
+      # Named volumes to isolate node_modules from Windows and improve performance
+      - node_modules_root:/app/node_modules
+      - node_modules_client:/app/client/node_modules
+      - node_modules_server:/app/server/node_modules
 
       # Uploads directory será montado pelo SMB no script de inicialização
       # NÃO usar bind mount aqui para não sobrescrever o SMB montado
@@ -67,13 +65,46 @@ services:
     devices:
       - /dev/fuse:/dev/fuse
     
+    # Resource limits to prevent excessive resource usage
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    
+    # Network optimization
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    
+    # Logging configuration with rotation
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+    
     # Restart policy
     restart: unless-stopped
 
     # Health check
+    # Verifica o endpoint /health que testa a conexão com a base de dados
     healthcheck:
-      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/api/health" ]
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+
+# Named volumes definition
+volumes:
+  node_modules_root:
+    driver: local
+  node_modules_client:
+    driver: local
+  node_modules_server:
+    driver: local
