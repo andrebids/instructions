@@ -247,6 +247,140 @@ const AutocompleteWithMarquee = React.forwardRef((props, ref) => {
 
 AutocompleteWithMarquee.displayName = 'AutocompleteWithMarquee';
 
+// Componente para exibir um item de attachment com preview de imagem
+const AttachmentItem = ({ file, index, onRemove }) => {
+  const [imageError, setImageError] = React.useState(false);
+  const [imageLoading, setImageLoading] = React.useState(true);
+  
+  const isImage = file.mimetype?.startsWith('image/') || file.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+  const isAIGenerated = file.isAIGenerated;
+  
+  // Construir URL completa se necessário
+  const imageUrl = React.useMemo(() => {
+    if (!file.url && !file.path) return null;
+    
+    // Preferir file.url se disponível, caso contrário usar file.path
+    let url = file.url || file.path;
+    
+    // Detectar caminhos UNC do Windows (começam com \\)
+    // Exemplo: \\192.168.2.22\Olimpo\.dev\web\thecore\coelho-1764760019198-615688862.webp
+    if (url.startsWith('\\\\') || url.startsWith('//')) {
+      // Extrair apenas o nome do arquivo do caminho UNC
+      const filename = url.split(/[\\/]/).pop();
+      if (filename) {
+        // Construir URL HTTP usando o nome do arquivo
+        return `/api/files/${filename}`;
+      }
+      console.warn('Could not extract filename from UNC path:', url);
+      return null;
+    }
+    
+    // Se a URL já é absoluta (começa com http://, https:// ou data:)
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+      try {
+        const urlObj = new URL(url);
+        const pathname = urlObj.pathname;
+        
+        // SEMPRE usar caminho relativo para que o proxy do Vite funcione
+        // Se o caminho começa com /api/files/, usar diretamente (será resolvido pelo proxy)
+        if (pathname.startsWith('/api/files/')) {
+          return pathname;
+        }
+        
+        // Se o caminho começa com /api/, usar diretamente
+        if (pathname.startsWith('/api/')) {
+          return pathname;
+        }
+        
+        // Se não começa com /api/, adicionar /api antes
+        return `/api${pathname}`;
+      } catch (e) {
+        // Se não conseguir fazer parse da URL, tentar extrair o caminho manualmente
+        const match = url.match(/\/api\/files\/[^\/\s]+/);
+        if (match) {
+          return match[0];
+        }
+        console.warn('Could not parse URL:', url, e);
+        return url;
+      }
+    }
+    
+    // Se a URL já começa com /api/, usar diretamente (será resolvida pelo proxy do Vite)
+    if (url.startsWith('/api/')) {
+      return url;
+    }
+    
+    // Se começa com /, é um caminho relativo ao servidor
+    if (url.startsWith('/')) {
+      // Se não começa com /api/, adicionar /api antes
+      if (!url.startsWith('/api/')) {
+        return `/api${url}`;
+      }
+      return url;
+    }
+    
+    // Caso contrário, assumir que é um nome de arquivo e construir caminho completo
+    return `/api/files/${url}`;
+  }, [file.url, file.path]);
+  
+  return (
+    <div className="flex items-center justify-between p-2 bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm rounded-lg border border-white/20 dark:border-gray-600/30 group">
+      <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
+        {isImage ? (
+          <div className="relative w-10 h-10 flex-shrink-0 rounded-md overflow-hidden border border-gray-200 dark:border-gray-600">
+            {imageLoading && !imageError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+                <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
+            {!imageError && imageUrl ? (
+              <img 
+                src={imageUrl} 
+                alt={file.name}
+                className="w-full h-full object-cover"
+                onLoad={() => setImageLoading(false)}
+                onError={(e) => {
+                  console.error('❌ Error loading image:', imageUrl, file);
+                  setImageError(true);
+                  setImageLoading(false);
+                  e.target.style.display = 'none';
+                }}
+                style={{ display: imageLoading ? 'none' : 'block' }}
+              />
+            ) : null}
+            {(imageError || !imageUrl) && (
+              <div className={`w-full h-full flex items-center justify-center ${isAIGenerated ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-pink-100 dark:bg-pink-900/30'}`}>
+                <Icon icon={isAIGenerated ? "lucide:sparkles" : "lucide:image"} className={`w-5 h-5 ${isAIGenerated ? 'text-purple-500' : 'text-pink-500'}`} />
+              </div>
+            )}
+            {isAIGenerated && !imageError && imageUrl && (
+              <div className="absolute top-0 right-0 bg-purple-500 text-white text-[8px] px-1 py-0.5 rounded-bl-md font-bold">
+                AI
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className={`p-1.5 bg-white dark:bg-gray-600 rounded-md ${isAIGenerated ? 'text-purple-500' : 'text-pink-500'} shadow-sm`}>
+            <Icon icon={isAIGenerated ? "lucide:sparkles" : "lucide:file"} className="w-4 h-4" />
+          </div>
+        )}
+        <span className="truncate text-xs font-medium flex-1">{file.name}</span>
+      </div>
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        color="danger"
+        onPress={() => onRemove(index)}
+        className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 min-w-6 flex-shrink-0"
+        aria-label={`Remove attachment ${file.name}`}
+      >
+        <Icon icon="lucide:x" className="w-3 h-3" />
+      </Button>
+    </div>
+  );
+};
+
 // Schema de validação para Logo Instructions
 const validationSchema = Yup.object({
   logoNumber: Yup.string()
@@ -526,18 +660,22 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       const successfulUploads = uploadedFiles.filter(f => f !== null);
 
       if (successfulUploads.length > 0) {
-        const existingFiles = logoDetails.attachmentFiles || [];
+        // Save attachments to currentLogo, not logoDetails (each logo has its own attachments)
+        const existingFiles = currentLogo.attachmentFiles || [];
         const allFiles = [...existingFiles, ...successfulUploads];
 
-        // Save file metadata to logoDetails
+        // Save file metadata to currentLogo
+        const updatedCurrentLogo = {
+          ...currentLogo,
+          attachmentFiles: allFiles,
+        };
         const updatedLogoDetails = {
           ...logoDetails,
-          attachmentFiles: allFiles,
-          currentLogo: currentLogo,
+          currentLogo: updatedCurrentLogo,
           logos: savedLogos,
         };
         onInputChange("logoDetails", updatedLogoDetails);
-        console.log('✅ Files uploaded and metadata saved:', successfulUploads);
+        console.log('✅ Files uploaded and metadata saved to currentLogo:', successfulUploads);
       }
     }
   };
@@ -1082,13 +1220,17 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   };
 
   const handleRemoveAttachment = (index) => {
-    const currentAttachments = logoDetails.attachmentFiles || [];
+    // Remove attachments from currentLogo, not logoDetails (each logo has its own attachments)
+    const currentAttachments = currentLogo.attachmentFiles || [];
     const newAttachments = currentAttachments.filter((_, i) => i !== index);
 
+    const updatedCurrentLogo = {
+      ...currentLogo,
+      attachmentFiles: newAttachments,
+    };
     const updatedLogoDetails = {
       ...logoDetails,
-      attachmentFiles: newAttachments,
-      currentLogo: currentLogo,
+      currentLogo: updatedCurrentLogo,
       logos: savedLogos,
     };
     onInputChange("logoDetails", updatedLogoDetails);
@@ -1250,52 +1392,16 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
               </div>
 
               <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-2 sm:p-2.5 md:p-4 lg:p-3 bg-gray-50/50 dark:bg-gray-700/50 hover:border-pink-300 dark:hover:border-pink-700 transition-colors">
-                {logoDetails.attachmentFiles && logoDetails.attachmentFiles.length > 0 ? (
+                {currentLogo.attachmentFiles && currentLogo.attachmentFiles.length > 0 ? (
                   <div className="space-y-2">
-                    {logoDetails.attachmentFiles.map((file, index) => {
-                      const isImage = file.mimetype?.startsWith('image/') || file.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
-                      const isAIGenerated = file.isAIGenerated;
-                      
-                      return (
-                        <div key={index} className="flex items-center justify-between p-2 bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm rounded-lg border border-white/20 dark:border-gray-600/30 group">
-                          <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
-                            {isImage ? (
-                              <div className="relative w-10 h-10 flex-shrink-0 rounded-md overflow-hidden border border-gray-200 dark:border-gray-600">
-                                <img 
-                                  src={file.url || file.path} 
-                                  alt={file.name}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    // Fallback to icon if image fails to load
-                                    e.target.style.display = 'none';
-                                    e.target.nextSibling.style.display = 'flex';
-                                  }}
-                                />
-                                <div className="w-full h-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center hidden">
-                                  <Icon icon={isAIGenerated ? "lucide:sparkles" : "lucide:image"} className="w-5 h-5 text-pink-500" />
-                                </div>
-                              </div>
-                            ) : (
-                              <div className={`p-1.5 bg-white dark:bg-gray-600 rounded-md ${isAIGenerated ? 'text-purple-500' : 'text-pink-500'} shadow-sm`}>
-                                <Icon icon={isAIGenerated ? "lucide:sparkles" : "lucide:file"} className="w-4 h-4" />
-                              </div>
-                            )}
-                            <span className="truncate text-xs font-medium flex-1">{file.name}</span>
-                          </div>
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="light"
-                            color="danger"
-                            onPress={() => handleRemoveAttachment(index)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 min-w-6 flex-shrink-0"
-                            aria-label={`Remove attachment ${file.name}`}
-                          >
-                            <Icon icon="lucide:x" className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      );
-                    })}
+                    {currentLogo.attachmentFiles.map((file, index) => (
+                      <AttachmentItem
+                        key={index}
+                        file={file}
+                        index={index}
+                        onRemove={handleRemoveAttachment}
+                      />
+                    ))}
                     <input
                       type="file"
                       id="file-upload-more"
@@ -1976,17 +2082,17 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
               isAIGenerated: true // Flag to identify AI generated images
             };
 
-            // Add to attachments
-            const existingFiles = logoDetails.attachmentFiles || [];
+            // Add to attachments in currentLogo, not logoDetails (each logo has its own attachments)
+            const existingFiles = currentLogo.attachmentFiles || [];
             const allFiles = [...existingFiles, aiGeneratedAttachment];
 
             const updatedCurrentLogo = {
               ...currentLogo,
+              attachmentFiles: allFiles,
               generatedImage: uploadResult.file.url
             };
             const updatedLogoDetails = {
               ...logoDetails,
-              attachmentFiles: allFiles,
               currentLogo: updatedCurrentLogo,
               logos: savedLogos,
             };

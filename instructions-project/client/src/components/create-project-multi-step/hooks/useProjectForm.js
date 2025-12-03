@@ -233,7 +233,97 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
           conversionComplete: {}
         },
         // Dados das instruções do logo (apenas para projetos tipo logo)
-        logoDetails: formData.logoDetails || {},
+        // Garantir que o currentLogo válido seja incluído nos savedLogos antes de salvar
+        logoDetails: (() => {
+          const logoDetails = formData.logoDetails || {};
+          if (formData.projectType === 'logo' && logoDetails) {
+            const savedLogos = logoDetails.logos || [];
+            const currentLogo = logoDetails.currentLogo || logoDetails;
+            
+            console.log('🔍 [handleSubmit] Verificando logoDetails:', {
+              savedLogosCount: savedLogos.length,
+              hasCurrentLogo: !!currentLogo,
+              currentLogoNumber: currentLogo.logoNumber,
+              currentLogoName: currentLogo.logoName
+            });
+            
+            // Verificar se currentLogo é válido (mesma validação que isLogoValid)
+            const hasLogoNumber = currentLogo.logoNumber?.trim() !== "";
+            const hasLogoName = currentLogo.logoName?.trim() !== "";
+            const hasDescription = currentLogo.description?.trim() !== "";
+            const hasRequestedBy = currentLogo.requestedBy?.trim() !== "";
+            const hasFixationType = currentLogo.fixationType?.trim() !== "";
+            const dimensions = currentLogo.dimensions || {};
+            const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
+            const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
+            const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
+            const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
+            const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
+            const isCurrentLogoValid = hasLogoNumber && hasLogoName && hasDescription && hasRequestedBy && hasFixationType && hasAtLeastOneDimension;
+            
+            console.log('🔍 [handleSubmit] Validação do currentLogo:', {
+              hasLogoNumber,
+              hasLogoName,
+              hasDescription,
+              hasRequestedBy,
+              hasFixationType,
+              hasAtLeastOneDimension,
+              isCurrentLogoValid
+            });
+            
+            // Se currentLogo é válido e ainda não está nos savedLogos, adicioná-lo
+            if (isCurrentLogoValid) {
+              // Verificar se o currentLogo já está nos savedLogos
+              // IMPORTANTE: Comparar por ID primeiro (mais confiável)
+              // Se o currentLogo tem ID, só considerar como "já salvo" se encontrar um logo salvo com o mesmo ID
+              // Se o currentLogo não tem ID, comparar por logoNumber (mas só se ambos existirem e forem iguais)
+              const alreadySaved = savedLogos.some(logo => {
+                // Se currentLogo tem ID, só considerar como "já salvo" se o ID for igual
+                if (currentLogo.id) {
+                  return logo.id === currentLogo.id;
+                }
+                // Se currentLogo não tem ID, comparar por logoNumber (mas só se ambos existirem e forem iguais)
+                // E também verificar se o logo salvo não tem ID (para evitar falsos positivos)
+                if (logo.logoNumber && currentLogo.logoNumber && !logo.id) {
+                  return logo.logoNumber.trim() === currentLogo.logoNumber.trim();
+                }
+                return false;
+              });
+              
+              console.log('🔍 [handleSubmit] currentLogo já está salvo?', alreadySaved, {
+                currentLogoId: currentLogo.id,
+                currentLogoNumber: currentLogo.logoNumber,
+                savedLogosIds: savedLogos.map(l => l.id),
+                savedLogosNumbers: savedLogos.map(l => l.logoNumber)
+              });
+              
+              if (!alreadySaved) {
+                const logoToSave = {
+                  ...currentLogo,
+                  id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                  savedAt: currentLogo.savedAt || new Date().toISOString()
+                };
+                
+                console.log('✅ [handleSubmit] Adicionando currentLogo aos savedLogos:', {
+                  logoNumber: logoToSave.logoNumber,
+                  logoName: logoToSave.logoName,
+                  totalLogos: savedLogos.length + 1
+                });
+                
+                return {
+                  ...logoDetails,
+                  logos: [...savedLogos, logoToSave],
+                  currentLogo: currentLogo // Manter currentLogo também
+                };
+              } else {
+                console.log('⏭️ [handleSubmit] currentLogo já está nos savedLogos, mantendo como está');
+              }
+            } else {
+              console.log('⚠️ [handleSubmit] currentLogo não é válido, não será adicionado aos savedLogos');
+            }
+          }
+          return logoDetails;
+        })(),
       };
 
       // Log detalhado das zonas incluídas na criação
@@ -250,6 +340,15 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
         // Log removido
       }
 
+      // Log detalhado do logoDetails antes de enviar
+      console.log('📤 [handleSubmit] Dados do projeto a serem enviados:', {
+        projectType: projectData.projectType,
+        logoDetails: projectData.logoDetails,
+        savedLogosCount: projectData.logoDetails?.logos?.length || 0,
+        hasCurrentLogo: !!projectData.logoDetails?.currentLogo,
+        currentLogoNumber: projectData.logoDetails?.currentLogo?.logoNumber
+      });
+      
       logger.api('projects', 'POST', projectData);
       logger.lifecycle('useProjectForm', 'Submitting project', projectData);
 
@@ -343,7 +442,98 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
           isDayMode: true,
           conversionComplete: {}
         },
-        logoDetails: formData.logoDetails || {},
+        // Dados das instruções do logo (apenas para projetos tipo logo)
+        // Garantir que o currentLogo válido seja incluído nos savedLogos antes de salvar
+        logoDetails: (() => {
+          const logoDetails = formData.logoDetails || {};
+          if (formData.projectType === 'logo' && logoDetails) {
+            const savedLogos = logoDetails.logos || [];
+            const currentLogo = logoDetails.currentLogo || logoDetails;
+            
+            console.log('🔍 [handleSave] Verificando logoDetails:', {
+              savedLogosCount: savedLogos.length,
+              hasCurrentLogo: !!currentLogo,
+              currentLogoNumber: currentLogo.logoNumber,
+              currentLogoName: currentLogo.logoName
+            });
+            
+            // Verificar se currentLogo é válido (mesma validação que isLogoValid)
+            const hasLogoNumber = currentLogo.logoNumber?.trim() !== "";
+            const hasLogoName = currentLogo.logoName?.trim() !== "";
+            const hasDescription = currentLogo.description?.trim() !== "";
+            const hasRequestedBy = currentLogo.requestedBy?.trim() !== "";
+            const hasFixationType = currentLogo.fixationType?.trim() !== "";
+            const dimensions = currentLogo.dimensions || {};
+            const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
+            const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
+            const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
+            const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
+            const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
+            const isCurrentLogoValid = hasLogoNumber && hasLogoName && hasDescription && hasRequestedBy && hasFixationType && hasAtLeastOneDimension;
+            
+            console.log('🔍 [handleSave] Validação do currentLogo:', {
+              hasLogoNumber,
+              hasLogoName,
+              hasDescription,
+              hasRequestedBy,
+              hasFixationType,
+              hasAtLeastOneDimension,
+              isCurrentLogoValid
+            });
+            
+            // Se currentLogo é válido e ainda não está nos savedLogos, adicioná-lo
+            if (isCurrentLogoValid) {
+              // Verificar se o currentLogo já está nos savedLogos
+              // IMPORTANTE: Comparar por ID primeiro (mais confiável)
+              // Se o currentLogo tem ID, só considerar como "já salvo" se encontrar um logo salvo com o mesmo ID
+              // Se o currentLogo não tem ID, comparar por logoNumber (mas só se ambos existirem e forem iguais)
+              const alreadySaved = savedLogos.some(logo => {
+                // Se currentLogo tem ID, só considerar como "já salvo" se o ID for igual
+                if (currentLogo.id) {
+                  return logo.id === currentLogo.id;
+                }
+                // Se currentLogo não tem ID, comparar por logoNumber (mas só se ambos existirem e forem iguais)
+                // E também verificar se o logo salvo não tem ID (para evitar falsos positivos)
+                if (logo.logoNumber && currentLogo.logoNumber && !logo.id) {
+                  return logo.logoNumber.trim() === currentLogo.logoNumber.trim();
+                }
+                return false;
+              });
+              
+              console.log('🔍 [handleSave] currentLogo já está salvo?', alreadySaved, {
+                currentLogoId: currentLogo.id,
+                currentLogoNumber: currentLogo.logoNumber,
+                savedLogosIds: savedLogos.map(l => l.id),
+                savedLogosNumbers: savedLogos.map(l => l.logoNumber)
+              });
+              
+              if (!alreadySaved) {
+                const logoToSave = {
+                  ...currentLogo,
+                  id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                  savedAt: currentLogo.savedAt || new Date().toISOString()
+                };
+                
+                console.log('✅ [handleSave] Adicionando currentLogo aos savedLogos:', {
+                  logoNumber: logoToSave.logoNumber,
+                  logoName: logoToSave.logoName,
+                  totalLogos: savedLogos.length + 1
+                });
+                
+                return {
+                  ...logoDetails,
+                  logos: [...savedLogos, logoToSave],
+                  currentLogo: currentLogo // Manter currentLogo também
+                };
+              } else {
+                console.log('⏭️ [handleSave] currentLogo já está nos savedLogos, mantendo como está');
+              }
+            } else {
+              console.log('⚠️ [handleSave] currentLogo não é válido, não será adicionado aos savedLogos');
+            }
+          }
+          return logoDetails;
+        })(),
       };
 
       const projectIdToUpdate = projectId || formData.tempProjectId;

@@ -166,6 +166,84 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
     }
   };
 
+  const handleAddLogo = () => {
+    const logoDetails = formState.formData.logoDetails || {};
+    const savedLogos = logoDetails.logos || [];
+    const currentLogo = logoDetails.currentLogo || logoDetails;
+
+    // Se o currentLogo é válido, salvá-lo antes de criar um novo
+    if (isLogoValid(currentLogo)) {
+      const logoToSave = {
+        ...currentLogo,
+        id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        savedAt: new Date().toISOString()
+      };
+
+      // Atualizar estado com logo salvo e novo currentLogo vazio
+      formState.handleInputChange("logoDetails", {
+        ...logoDetails,
+        logos: [...savedLogos, logoToSave],
+        currentLogo: {
+          logoNumber: "",
+          logoName: "",
+          requestedBy: "",
+          dimensions: {},
+          usageOutdoor: false,
+          usageIndoor: true,
+          fixationType: "",
+          lacqueredStructure: false,
+          lacquerColor: "",
+          mastDiameter: "",
+          maxWeightConstraint: false,
+          maxWeight: "",
+          ballast: false,
+          controlReport: false,
+          criteria: "",
+          description: "",
+          composition: {
+            componentes: [],
+            bolas: []
+          },
+          attachmentFiles: []
+        }
+      });
+    } else {
+      // Se currentLogo não é válido, apenas limpar para criar novo
+      formState.handleInputChange("logoDetails", {
+        ...logoDetails,
+        currentLogo: {
+          logoNumber: "",
+          logoName: "",
+          requestedBy: "",
+          dimensions: {},
+          usageOutdoor: false,
+          usageIndoor: true,
+          fixationType: "",
+          lacqueredStructure: false,
+          lacquerColor: "",
+          mastDiameter: "",
+          maxWeightConstraint: false,
+          maxWeight: "",
+          ballast: false,
+          controlReport: false,
+          criteria: "",
+          description: "",
+          composition: {
+            componentes: [],
+            bolas: []
+          },
+          attachmentFiles: []
+        }
+      });
+    }
+
+    // Navegar para o step de logo-instructions
+    const logoStepIndex = visibleSteps.findIndex(s => s.id === 'logo-instructions');
+    if (logoStepIndex >= 0) {
+      navigation.setCurrentStep(logoStepIndex + 1);
+    }
+  };
+
   const handleEditLogo = (index, isCurrent) => {
     const logoDetails = formState.formData.logoDetails || {};
     const savedLogos = logoDetails.logos || [];
@@ -278,6 +356,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
             error={formState.error}
             onEditLogo={handleEditLogo}
             onDeleteLogo={handleDeleteLogo}
+            onAddLogo={handleAddLogo}
           />
         );
 
@@ -433,7 +512,8 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
                       composition: {
                         componentes: [],
                         bolas: []
-                      }
+                      },
+                      attachmentFiles: [] // Reset attachments for new logo
                     }
                   });
                 }

@@ -97,7 +97,17 @@ export const validateStepLogoInstructions = (formData) => {
   const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
   const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
 
-  // Step is valid if current logo is valid OR if there are saved logos (user can proceed with saved logos)
+  // Verificar se o logo atual está completamente vazio (permitir prosseguir apenas com logos salvos)
+  const isCurrentLogoEmpty = (
+    (!currentLogo.logoNumber || currentLogo.logoNumber.trim() === "") &&
+    (!currentLogo.logoName || currentLogo.logoName.trim() === "") &&
+    (!currentLogo.description || currentLogo.description.trim() === "") &&
+    (!currentLogo.requestedBy || currentLogo.requestedBy.trim() === "") &&
+    (!currentLogo.fixationType || currentLogo.fixationType.trim() === "") &&
+    !hasAtLeastOneDimension
+  );
+
+  // Step is valid if current logo is valid OR if current logo is empty AND there are saved logos
   const isCurrentLogoValid = (
     currentLogo.logoNumber?.trim() !== "" &&
     currentLogo.logoName?.trim() !== "" &&
@@ -107,7 +117,8 @@ export const validateStepLogoInstructions = (formData) => {
     hasAtLeastOneDimension
   );
 
-  const isValid = isCurrentLogoValid || savedLogos.length > 0;
+  // Valid if: current logo is valid OR (current logo is empty AND there are saved logos)
+  const isValid = isCurrentLogoValid || (isCurrentLogoEmpty && savedLogos.length > 0);
 
   logger.validation("logo-instructions", isValid, {
     hasLogoNumber: !!currentLogo.logoNumber,
@@ -118,6 +129,7 @@ export const validateStepLogoInstructions = (formData) => {
     hasAtLeastOneDimension: hasAtLeastOneDimension,
     savedLogosCount: savedLogos.length,
     isCurrentLogoValid: isCurrentLogoValid,
+    isCurrentLogoEmpty: isCurrentLogoEmpty,
     dimensions: {
       height: hasHeight,
       length: hasLength,
