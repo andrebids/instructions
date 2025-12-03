@@ -295,13 +295,12 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
         tempProjectId: finalProject.id
       }));
 
-      // Fechar modal e redirecionar para o dashboard (não redirecionar para notas)
+      // Fechar modal se houver e redirecionar para a página de overview do projeto
       if (onClose) {
         onClose();  // Fecha modal e recarrega dados
-      } else {
-        // Se não há onClose, redirecionar para o dashboard
-        navigate('/');
       }
+      // Redirecionar para a página de overview do projeto criado
+      navigate(`/projects/${finalProject.id}`);
     } catch (err) {
       logger.error('useProjectForm.handleSubmit', err);
 

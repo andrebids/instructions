@@ -109,6 +109,7 @@ export default function PlaygroundSidebar({ onGenerate, clearPromptTrigger }) {
                                     variant="flat"
                                     size="sm"
                                     onPress={handleRemoveImage}
+                                    aria-label="Remove image"
                                 >
                                     <Icon icon="solar:trash-bin-trash-linear" width={20} />
                                 </Button>

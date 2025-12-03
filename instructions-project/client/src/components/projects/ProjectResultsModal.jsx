@@ -202,6 +202,7 @@ export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, o
                                             radius="full"
                                             className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-black/20 text-white hover:bg-black/40 hidden md:flex"
                                             onPress={() => swiperRef.current?.slidePrev()}
+                                            aria-label="Previous image"
                                         >
                                             <Icon icon="lucide:chevron-left" className="text-2xl" />
                                         </Button>
@@ -212,6 +213,7 @@ export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, o
                                             radius="full"
                                             className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-black/20 text-white hover:bg-black/40 hidden md:flex"
                                             onPress={() => swiperRef.current?.slideNext()}
+                                            aria-label="Next image"
                                         >
                                             <Icon icon="lucide:chevron-right" className="text-2xl" />
                                         </Button>

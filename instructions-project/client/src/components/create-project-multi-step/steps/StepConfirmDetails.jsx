@@ -407,22 +407,49 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
 
                             {/* Uploaded Files */}
                             {formData.logoDetails?.attachmentFiles && formData.logoDetails.attachmentFiles.map((file, index) => {
-                              const isImage = file.type?.startsWith('image/');
-                              const fileUrl = URL.createObjectURL(file);
+                              const isImage = file.type?.startsWith('image/') || file.mimetype?.startsWith('image/') || file.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                              // Se o file já tem uma URL, usar ela. Caso contrário, tentar criar ObjectURL apenas se for um File/Blob válido
+                              let fileUrl = file.url || file.path;
+                              let needsCleanup = false;
+                              if (!fileUrl && (file instanceof File || file instanceof Blob)) {
+                                try {
+                                  fileUrl = URL.createObjectURL(file);
+                                  needsCleanup = true;
+                                } catch (e) {
+                                  console.warn('Error creating object URL:', e);
+                                  fileUrl = null;
+                                }
+                              }
+
+                              // Mapear caminho de imagem se necessário
+                              if (fileUrl && !fileUrl.startsWith('http') && !fileUrl.startsWith('blob:')) {
+                                const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || '';
+                                if (baseApi && fileUrl.indexOf('/uploads/') === 0) {
+                                  fileUrl = baseApi + fileUrl;
+                                } else if (fileUrl.indexOf('/uploads/') === 0) {
+                                  fileUrl = '/api' + fileUrl;
+                                }
+                              }
 
                               return (
                                 <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-default-200">
-                                  {isImage ? (
+                                  {isImage && fileUrl ? (
                                     <img
                                       src={fileUrl}
-                                      alt={file.name}
+                                      alt={file.name || 'Attachment'}
                                       className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        if (needsCleanup && fileUrl) {
+                                          URL.revokeObjectURL(fileUrl);
+                                        }
+                                        e.target.style.display = 'none';
+                                      }}
                                     />
                                   ) : (
                                     <div className="w-full h-full flex flex-col items-center justify-center bg-default-100 p-2">
                                       <Icon icon="lucide:file" className="w-8 h-8 text-default-400 mb-2" />
                                       <p className="text-xs text-center text-default-600 truncate w-full px-2">
-                                        {file.name}
+                                        {file.name || 'File'}
                                       </p>
                                     </div>
                                   )}

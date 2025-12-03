@@ -26,6 +26,7 @@ export default function PromptInputWithBottomActions() {
                                     isDisabled={!prompt}
                                     radius="lg"
                                     size="sm"
+                                    aria-label="Send message"
                                     variant="solid"
                                 >
                                     <Icon

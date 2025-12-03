@@ -196,6 +196,7 @@ export const AIAssistantChat = ({ onClose, initialMessages }) => {
                 isDisabled={!inputValue.trim() || isLoading}
                 onPress={handleSendMessage}
                 aria-label="Send message"
+                aria-label="Send message"
               >
                 <Icon icon="lucide:send" className="text-lg" />
               </Button>

@@ -262,6 +262,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
                             variant={editor.isActive('bold') ? 'solid' : 'light'}
                             color={editor.isActive('bold') ? 'primary' : 'default'}
                             onPress={toggleBold}
+                            aria-label="Bold"
                         >
                             <Icon icon="lucide:bold" />
                         </Button>
@@ -271,6 +272,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
                             variant={editor.isActive('italic') ? 'solid' : 'light'}
                             color={editor.isActive('italic') ? 'primary' : 'default'}
                             onPress={toggleItalic}
+                            aria-label="Italic"
                         >
                             <Icon icon="lucide:italic" />
                         </Button>
@@ -280,6 +282,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
                             variant={editor.isActive('underline') ? 'solid' : 'light'}
                             color={editor.isActive('underline') ? 'primary' : 'default'}
                             onPress={toggleUnderline}
+                            aria-label="Underline"
                         >
                             <Icon icon="lucide:underline" />
                         </Button>
@@ -293,6 +296,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
                             variant={editor.isActive('bulletList') ? 'solid' : 'light'}
                             color={editor.isActive('bulletList') ? 'primary' : 'default'}
                             onPress={toggleBulletList}
+                            aria-label="Bullet list"
                         >
                             <Icon icon="lucide:list" />
                         </Button>
@@ -302,6 +306,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
                             variant={editor.isActive('orderedList') ? 'solid' : 'light'}
                             color={editor.isActive('orderedList') ? 'primary' : 'default'}
                             onPress={toggleOrderedList}
+                            aria-label="Ordered list"
                         >
                             <Icon icon="lucide:list-ordered" />
                         </Button>
@@ -311,6 +316,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
                             variant={editor.isActive('taskList') ? 'solid' : 'light'}
                             color={editor.isActive('taskList') ? 'primary' : 'default'}
                             onPress={toggleTaskList}
+                            aria-label="Task list"
                         >
                             <Icon icon="lucide:check-square" />
                         </Button>

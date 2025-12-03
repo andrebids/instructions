@@ -1212,6 +1212,8 @@ export default function ProjectDetails() {
                                 budget={project.budget}
                                 canvasDecorations={project.canvasDecorations || []}
                                 decorationsByImage={project.decorationsByImage || {}}
+                                projectType={project.projectType}
+                                logoDetails={project.logoDetails}
                             />
                         </Tab>
 

@@ -17,6 +17,8 @@ export default React.memo(function LogoEditModal({
     const saveStatus = useSaveStatus();
     const hasUnsavedChangesRef = useRef(false);
     const savedFormDataRef = useRef(null);
+    const autosaveTimeoutRef = useRef(null);
+    const isSavingRef = useRef(false);
 
     // Usar useProjectForm para gerenciar o formulário - ele já carrega o logo específico automaticamente
     const formState = useProjectForm(
@@ -36,22 +38,93 @@ export default React.memo(function LogoEditModal({
         prevIsOpenRef.current = isOpen;
     }, [isOpen, formState.formData?.logoDetails, formState.isLoadingProject]);
 
-    const handleClose = useCallback(async () => {
-        // Salvar apenas se houver alterações não salvas
-        if (hasUnsavedChangesRef.current && formState.formData && projectId) {
+    // Autosave quando houver mudanças (debounce de 2 segundos)
+    React.useEffect(() => {
+        if (!isOpen || !formState.formData?.logoDetails || formState.isLoadingProject || isSavingRef.current) {
+            return;
+        }
+
+        const currentData = JSON.stringify(formState.formData.logoDetails);
+        
+        // Verificar se há mudanças reais
+        if (currentData === savedFormDataRef.current) {
+            return; // Sem mudanças, não precisa salvar
+        }
+
+        hasUnsavedChangesRef.current = true;
+
+        // Limpar timeout anterior
+        if (autosaveTimeoutRef.current) {
+            clearTimeout(autosaveTimeoutRef.current);
+        }
+
+        // Criar novo timeout com debounce de 2 segundos
+        autosaveTimeoutRef.current = setTimeout(async () => {
+            if (!formState.formData || !projectId || isSavingRef.current) {
+                return;
+            }
+
             try {
+                isSavingRef.current = true;
+                saveStatus.setSaving();
+                
+                await formState.handleSave();
+                
+                // Atualizar referência do último conteúdo salvo
+                savedFormDataRef.current = JSON.stringify(formState.formData.logoDetails);
+                hasUnsavedChangesRef.current = false;
+                
+                saveStatus.setSaved();
+                
+                // Recarregar projeto após salvar (silenciosamente)
+                if (onSave) {
+                    await onSave();
+                }
+            } catch (error) {
+                console.error('Error autosaving logo:', error);
+                saveStatus.setError();
+            } finally {
+                isSavingRef.current = false;
+            }
+        }, 2000); // 2 segundos de debounce
+
+        // Cleanup
+        return () => {
+            if (autosaveTimeoutRef.current) {
+                clearTimeout(autosaveTimeoutRef.current);
+            }
+        };
+    }, [formState.formData?.logoDetails, isOpen, projectId, formState, saveStatus, onSave]);
+
+    const handleClose = useCallback(async () => {
+        // Cancelar autosave pendente
+        if (autosaveTimeoutRef.current) {
+            clearTimeout(autosaveTimeoutRef.current);
+            autosaveTimeoutRef.current = null;
+        }
+
+        // Salvar imediatamente se houver alterações não salvas
+        if (hasUnsavedChangesRef.current && formState.formData && projectId && !isSavingRef.current) {
+            try {
+                isSavingRef.current = true;
+                saveStatus.setSaving();
                 await formState.handleSave();
                 hasUnsavedChangesRef.current = false;
+                savedFormDataRef.current = JSON.stringify(formState.formData.logoDetails);
+                saveStatus.setSaved();
                 // Recarregar projeto após salvar
                 if (onSave) {
                     await onSave();
                 }
             } catch (error) {
                 console.error('Error saving logo:', error);
+                saveStatus.setError();
+            } finally {
+                isSavingRef.current = false;
             }
         }
         onClose();
-    }, [formState, projectId, onSave, onClose]);
+    }, [formState, projectId, onSave, onClose, saveStatus]);
 
     const isLoading = useMemo(() => {
         return formState.isLoadingProject || !formState.formData?.logoDetails;
@@ -113,7 +186,27 @@ export default React.memo(function LogoEditModal({
                 {(onModalClose) => (
                     <>
                         <ModalHeader className="flex items-center justify-between bg-white/15 dark:bg-white/10 backdrop-blur-md rounded-t-lg border-b border-white/30 dark:border-white/20">
-                            <span className="text-xl font-semibold text-foreground">Logo Instructions</span>
+                            <div className="flex items-center gap-3">
+                                <span className="text-xl font-semibold text-foreground">Logo Instructions</span>
+                                {saveStatus.status === 'saving' && (
+                                    <div className="flex items-center gap-2 text-xs text-default-500">
+                                        <Spinner size="sm" />
+                                        <span>Saving...</span>
+                                    </div>
+                                )}
+                                {saveStatus.status === 'saved' && (
+                                    <div className="flex items-center gap-2 text-xs text-success">
+                                        <Icon icon="lucide:check-circle" className="w-4 h-4" />
+                                        <span>Saved</span>
+                                    </div>
+                                )}
+                                {saveStatus.status === 'error' && (
+                                    <div className="flex items-center gap-2 text-xs text-danger">
+                                        <Icon icon="lucide:alert-circle" className="w-4 h-4" />
+                                        <span>Error saving</span>
+                                    </div>
+                                )}
+                            </div>
                             <Button
                                 isIconOnly
                                 variant="light"

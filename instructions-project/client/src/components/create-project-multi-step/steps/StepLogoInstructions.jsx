@@ -258,6 +258,7 @@ const validationSchema = Yup.object({
   description: Yup.string()
     .required("Description is required")
     .min(3, "Description must be at least 3 characters"),
+  budget: Yup.string(),
   requestedBy: Yup.string()
     .required("Requested by is required"),
   fixationType: Yup.string()
@@ -444,6 +445,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       logoNumber: currentLogo.logoNumber || "",
       logoName: currentLogo.logoName || "",
       requestedBy: currentLogo.requestedBy || "",
+      budget: currentLogo.budget || "",
       dimensions: currentLogo.dimensions || {},
       // Manter outros campos para compatibilidade
       usageOutdoor: currentLogo.usageOutdoor || false,
@@ -1170,6 +1172,71 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                     classNames={{ input: "text-xs sm:text-sm md:text-base lg:text-sm" }}
                   />
                 </div>
+
+                <div>
+                  <label className="text-xs sm:text-sm md:text-base lg:text-sm font-semibold text-gray-700 dark:text-gray-200 block mb-0.5 sm:mb-1 md:mb-1.5 lg:mb-1">
+                    Budget (EUR)
+                  </label>
+                  <Input
+                    placeholder="0,00"
+                    variant="bordered"
+                    size="sm"
+                    type="text"
+                    startContent={<span className="text-gray-500 dark:text-gray-400 font-medium">€</span>}
+                    value={formik.values.budget || ""}
+                    onValueChange={(v) => {
+                      // Remover todos os caracteres não numéricos exceto vírgula
+                      let cleaned = v.replace(/[^\d,]/g, '');
+                      // Substituir ponto por vírgula para formato europeu
+                      cleaned = cleaned.replace(/\./g, ',');
+                      // Permitir apenas uma vírgula
+                      const parts = cleaned.split(',');
+                      if (parts.length > 2) {
+                        cleaned = parts[0] + ',' + parts.slice(1).join('');
+                      }
+                      // Limitar a 2 casas decimais após a vírgula
+                      if (parts.length === 2 && parts[1].length > 2) {
+                        cleaned = parts[0] + ',' + parts[1].substring(0, 2);
+                      }
+                      // Formatar com separadores de milhar (espaços ou pontos) antes da vírgula
+                      if (parts[0] && parts[0].length > 3) {
+                        const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                        cleaned = parts.length > 1 ? integerPart + ',' + parts[1] : integerPart;
+                      }
+                      formik.updateField("budget", cleaned);
+                    }}
+                    onBlur={(e) => {
+                      // Ao perder o foco, garantir formatação correta
+                      const value = formik.values.budget || "";
+                      if (value) {
+                        // Remover espaços e garantir formato correto
+                        let cleaned = value.replace(/\s/g, '');
+                        const parts = cleaned.split(',');
+                        if (parts.length === 1 && parts[0]) {
+                          // Se não tem vírgula, adicionar ,00
+                          cleaned = parts[0] + ',00';
+                        } else if (parts.length === 2 && parts[1].length === 1) {
+                          // Se tem apenas 1 decimal, adicionar 0
+                          cleaned = parts[0] + ',' + parts[1] + '0';
+                        } else if (parts.length === 2 && parts[1].length === 0) {
+                          // Se vírgula sem decimais, adicionar 00
+                          cleaned = parts[0] + ',00';
+                        }
+                        // Formatar com separadores de milhar
+                        const finalParts = cleaned.split(',');
+                        if (finalParts[0] && finalParts[0].length > 3) {
+                          const integerPart = finalParts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                          cleaned = finalParts.length > 1 ? integerPart + ',' + finalParts[1] : integerPart;
+                        }
+                        formik.updateField("budget", cleaned);
+                      }
+                      formik.handleBlur(e);
+                    }}
+                    isInvalid={formik.touched.budget && !!formik.errors.budget}
+                    errorMessage={formik.touched.budget && formik.errors.budget}
+                    classNames={{ input: "text-xs sm:text-sm md:text-base lg:text-sm", inputWrapper: "h-9 sm:h-9 md:h-10 lg:h-9" }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -1222,6 +1289,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                             color="danger"
                             onPress={() => handleRemoveAttachment(index)}
                             className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 min-w-6 flex-shrink-0"
+                            aria-label={`Remove attachment ${file.name}`}
                           >
                             <Icon icon="lucide:x" className="w-3 h-3" />
                           </Button>
@@ -1512,6 +1580,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                       isIconOnly
                       onPress={handleClearAllComponentes}
                       className="bg-white dark:bg-gray-800 h-7 w-7 min-w-7"
+                      aria-label="Clear all components"
                     >
                       <Icon icon="lucide:trash-2" className="w-3 h-3" />
                     </Button>
@@ -1563,6 +1632,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                                 isIconOnly
                                 onPress={() => handleToggleEditComponente(index)}
                                 className="h-6 w-6 min-w-6"
+                                aria-label={`Edit component ${index + 1}`}
                               >
                                 <Icon icon="lucide:pencil" className="w-3 h-3" />
                               </Button>
@@ -1573,6 +1643,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                                 isIconOnly
                                 onPress={() => handleRemoveComponente(index)}
                                 className="h-6 w-6 min-w-6"
+                                aria-label={`Remove component ${index + 1}`}
                               >
                                 <Icon icon="lucide:trash-2" className="w-3 h-3" />
                               </Button>
@@ -1662,6 +1733,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                             isIconOnly
                             className="h-6 w-6 min-w-6"
                             onPress={() => handleRemoveComponente(index)}
+                            aria-label={`Remove component ${index + 1}`}
                           >
                             <Icon icon="lucide:trash-2" className="w-3 h-3" />
                           </Button>
@@ -1734,6 +1806,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                                 isIconOnly
                                 onPress={() => handleToggleEditBola(index)}
                                 className="h-6 w-6 min-w-6"
+                                aria-label={`Edit ball ${index + 1}`}
                               >
                                 <Icon icon="lucide:pencil" className="w-3 h-3" />
                               </Button>
@@ -1744,6 +1817,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                                 isIconOnly
                                 onPress={() => handleRemoveBola(index)}
                                 className="h-6 w-6 min-w-6"
+                                aria-label={`Remove ball ${index + 1}`}
                               >
                                 <Icon icon="lucide:trash-2" className="w-3 h-3" />
                               </Button>
@@ -1837,6 +1911,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                             isIconOnly
                             className="h-6 w-6 min-w-6"
                             onPress={() => handleRemoveBola(index)}
+                            aria-label={`Remove ball ${index + 1}`}
                           >
                             <Icon icon="lucide:trash-2" className="w-3 h-3" />
                           </Button>
