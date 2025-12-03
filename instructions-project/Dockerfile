@@ -14,8 +14,16 @@ COPY client/package*.json ./
 RUN npm cache clean --force && \
     npm ci --ignore-scripts
 
+# Install musl binaries for Alpine Linux (required for rollup and other native modules)
+RUN npm install @rollup/rollup-linux-x64-musl --save-optional || true && \
+    npm install lightningcss-linux-x64-musl --save-optional || true && \
+    npm install @tailwindcss/oxide-linux-x64-musl --save-optional || true
+
 # Copy client source code
 COPY client/ ./
+
+# Reinstall native dependencies for Linux (esbuild, etc.) to avoid Windows binaries
+RUN npm rebuild esbuild || npm install esbuild --save-dev || true
 
 # Build client for production
 RUN npm run build

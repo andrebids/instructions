@@ -1151,9 +1151,9 @@ export default function ProjectDetails() {
                                                                 }}
                                                                 onKeyDown={(e) => {
                                                                     if (e.key === 'Enter' || e.key === ' ') {
-                                                                        e.stopPropagation();
+                                                                    e.stopPropagation();
                                                                         e.preventDefault();
-                                                                        console.log('🔗 Edit logo button clicked:', { logoInstructionIndex, idx, logoNumber: logo.logoNumber });
+                                                                    console.log('🔗 Edit logo button clicked:', { logoInstructionIndex, idx, logoNumber: logo.logoNumber });
                                                                         setEditingLogoIndex(logoInstructionIndex);
                                                                         setLogoEditModalOpen(true);
                                                                     }
