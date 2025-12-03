@@ -176,14 +176,17 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
+        timeout: 30000, // 30 segundos para evitar timeouts em arquivos grandes
       },
       '/uploads': {
         target: 'http://localhost:5000',
         changeOrigin: true,
+        timeout: 60000, // 60 segundos para uploads/imagens (podem ser grandes ou em SMB lento)
       },
       '/health': {
         target: 'http://localhost:5000',
         changeOrigin: true,
+        timeout: 5000, // 5 segundos para health check (deve ser rápido)
       },
     },
     hmr: process.env.NODE_ENV === 'development' ? {

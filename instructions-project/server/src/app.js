@@ -19,6 +19,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { requireAuth } from './middleware/auth.js';
+import { runMigrations } from './utils/migrationRunner.js';
 
 const app = express();
 
@@ -127,95 +128,217 @@ console.log(`📁 [APP] Diretório de uploads base configurado: ${uploadsDir}`);
 const productsDir = getProductsUploadDir();
 console.log(`📁 [APP] Diretório de produtos configurado: ${productsDir}`);
 
+/**
+ * Valida se o caminho resolvido está dentro do diretório base
+ * Previne ataques de path traversal (ex: ../../etc/passwd)
+ * @param {string} baseDir - Diretório base permitido
+ * @param {string} requestedPath - Caminho solicitado pelo usuário
+ * @returns {string|null} - Caminho resolvido e validado, ou null se inválido
+ */
+function validatePath(baseDir, requestedPath) {
+  try {
+    // Normalizar o diretório base para caminho absoluto
+    const normalizedBase = path.resolve(baseDir);
+    
+    // Resolver o caminho completo solicitado
+    const resolvedPath = path.resolve(baseDir, requestedPath);
+    
+    // Verificar se o caminho resolvido está dentro do diretório base
+    // Usar startsWith para garantir que não saia do diretório
+    if (!resolvedPath.startsWith(normalizedBase + path.sep) && resolvedPath !== normalizedBase) {
+      console.warn(`⚠️ [APP] Tentativa de path traversal bloqueada: ${requestedPath}`);
+      return null;
+    }
+    
+    return resolvedPath;
+  } catch (error) {
+    console.error(`❌ [APP] Erro ao validar caminho: ${error.message}`);
+    return null;
+  }
+}
+
 // Servir produtos especificamente de getProductsUploadDir()
 // IMPORTANTE: Se produtos estão em rede compartilhada diferente, precisamos de rota específica
-app.use('/api/uploads/products', express.static(productsDir, {
-  setHeaders: (res, filePath) => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`📤 [APP] Servindo arquivo de produto: ${filePath}`);
-    }
-  },
-  fallthrough: false // Não passar para próximo middleware se não encontrar
-}));
-
-// Middleware para tratar erros quando arquivo não é encontrado em /api/uploads/products
-// Logs detalhados para diagnóstico (sem fallback UNC - usar apenas SMB montado)
 app.use('/api/uploads/products', (req, res, next) => {
-  // Se chegou aqui, o arquivo não foi encontrado pelo express.static
-  const requestedFile = req.path.replace(/^\//, ''); // Remover barra inicial
-  const fullPath = path.join(productsDir, requestedFile);
-  
-  // Logs detalhados para diagnóstico
-  if (process.env.NODE_ENV !== 'production') {
-    console.warn(`⚠️ [APP] Arquivo de produto não encontrado: ${req.path}`);
-    console.warn(`   Arquivo solicitado: ${requestedFile}`);
-    console.warn(`   Caminho completo procurado: ${fullPath}`);
-    console.warn(`   Diretório base (SMB montado): ${productsDir}`);
-    console.warn(`   Arquivo existe fisicamente: ${fs.existsSync(fullPath)}`);
+  try {
+    const requestedFile = req.path.replace(/^\//, ''); // Remover barra inicial
     
-    // Verificar se o diretório existe
-    const fileDir = path.dirname(fullPath);
-    console.warn(`   Diretório do arquivo existe: ${fs.existsSync(fileDir)}`);
+    // Validar path traversal antes de processar
+    const fullPath = validatePath(productsDir, requestedFile);
+    if (!fullPath) {
+      res.status(403).json({ 
+        error: 'Caminho inválido', 
+        path: req.path 
+      });
+      return;
+    }
     
-    // Listar alguns arquivos do diretório para debug
-    if (fs.existsSync(productsDir)) {
-      try {
-        const files = fs.readdirSync(productsDir);
-        const fileName = requestedFile.split('/').pop() || requestedFile;
-        console.warn(`   Total de arquivos no diretório: ${files.length}`);
-        console.warn(`   Procurando arquivo: ${fileName}`);
-        
-        // Listar alguns arquivos que começam com o mesmo prefixo (ex: temp_nightImage_)
-        if (fileName.includes('_')) {
-          const prefix = fileName.split('_').slice(0, 2).join('_'); // Ex: temp_nightImage
-          const similarFiles = files.filter(f => f.startsWith(prefix) && f.endsWith('.webp'));
-          if (similarFiles.length > 0) {
-            console.warn(`   Arquivos com prefixo "${prefix}": ${similarFiles.slice(0, 10).join(', ')}`);
+    // Verificar se arquivo existe antes de tentar servir
+    if (fs.existsSync(fullPath)) {
+      // Verificar se é um arquivo (não diretório)
+      const stats = fs.statSync(fullPath);
+      if (!stats.isFile()) {
+        res.status(403).json({ 
+          error: 'Caminho não é um arquivo', 
+          path: req.path 
+        });
+        return;
+      }
+      
+      // Servir arquivo diretamente com sendFile
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`📤 [APP] Servindo arquivo de produto: ${fullPath}`);
+      }
+      
+      // Determinar content-type baseado na extensão
+      const ext = path.extname(fullPath).toLowerCase();
+      const contentType = ext === '.webp' ? 'image/webp' : 
+                         ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+                         ext === '.png' ? 'image/png' : 'application/octet-stream';
+      
+      // Definir Content-Type apenas se headers ainda não foram enviados
+      // sendFile pode definir automaticamente, mas garantimos o tipo correto
+      res.setHeader('Content-Type', contentType);
+      res.sendFile(fullPath, (err) => {
+        if (err) {
+          console.error(`❌ [APP] Erro ao servir arquivo de produto: ${err.message}`);
+          // Se headers já foram enviados, não podemos enviar JSON
+          if (!res.headersSent) {
+            res.status(500).json({ 
+              error: 'Erro ao servir arquivo', 
+              path: req.path 
+            });
           }
         }
-      } catch (e) {
-        console.warn(`   Erro ao listar arquivos: ${e.message}`);
-      }
+      });
     } else {
-      console.error(`   ❌ Diretório de produtos não existe! Verifique se SMB está montado corretamente.`);
+      // Arquivo não encontrado - logs detalhados para diagnóstico
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`⚠️ [APP] Arquivo de produto não encontrado: ${req.path}`);
+        console.warn(`   Arquivo solicitado: ${requestedFile}`);
+        console.warn(`   Caminho completo procurado: ${fullPath}`);
+        console.warn(`   Diretório base (SMB montado): ${productsDir}`);
+        
+        try {
+          console.warn(`   Arquivo existe fisicamente: ${fs.existsSync(fullPath)}`);
+          
+          // Verificar se o diretório existe
+          const fileDir = path.dirname(fullPath);
+          console.warn(`   Diretório do arquivo existe: ${fs.existsSync(fileDir)}`);
+          
+          // Listar alguns arquivos do diretório para debug
+          if (fs.existsSync(productsDir)) {
+            try {
+              const files = fs.readdirSync(productsDir);
+              const fileName = requestedFile.split('/').pop() || requestedFile;
+              console.warn(`   Total de arquivos no diretório: ${files.length}`);
+              console.warn(`   Procurando arquivo: ${fileName}`);
+              
+              // Listar alguns arquivos que começam com o mesmo prefixo (ex: temp_nightImage_)
+              if (fileName.includes('_')) {
+                const prefix = fileName.split('_').slice(0, 2).join('_'); // Ex: temp_nightImage
+                const similarFiles = files.filter(f => f.startsWith(prefix) && f.endsWith('.webp'));
+                if (similarFiles.length > 0) {
+                  console.warn(`   Arquivos com prefixo "${prefix}": ${similarFiles.slice(0, 10).join(', ')}`);
+                }
+              }
+            } catch (e) {
+              console.warn(`   Erro ao listar arquivos: ${e.message}`);
+            }
+          } else {
+            console.error(`   ❌ Diretório de produtos não existe! Verifique se SMB está montado corretamente.`);
+          }
+        } catch (e) {
+          console.warn(`   Erro ao verificar arquivo: ${e.message}`);
+        }
+      }
+      
+      res.status(404).json({ 
+        error: 'Arquivo não encontrado', 
+        path: req.path,
+        requestedFile: requestedFile,
+        productsDir: productsDir,
+        fullPath: fullPath
+      });
+    }
+  } catch (error) {
+    console.error(`❌ [APP] Erro crítico no middleware de produtos: ${error.message}`);
+    console.error(`❌ [APP] Stack: ${error.stack}`);
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Erro interno do servidor', 
+        path: req.path 
+      });
     }
   }
-  
-  res.status(404).json({ 
-    error: 'Arquivo não encontrado', 
-    path: req.path,
-    requestedFile: requestedFile,
-    productsDir: productsDir,
-    fullPath: fullPath
-  });
 });
 
 // Servir projetos especificamente usando getProjectsUploadDir()
 // IMPORTANTE: Projetos têm estrutura hierárquica {projectId}/{subfolder}/{filename}
 // Precisamos de middleware customizado para resolver corretamente com SMB
 app.use('/api/uploads/projects', (req, res, next) => {
-  // Formato esperado: /api/uploads/projects/{projectId}/{subfolder}/{filename}
-  const pathParts = req.path.replace(/^\//, '').split('/');
-  
-  if (pathParts.length >= 3) {
-    const projectId = pathParts[0];
-    const subfolder = pathParts[1];
-    const filename = pathParts.slice(2).join('/'); // Pode ter subdiretórios
+  try {
+    // Formato esperado: /api/uploads/projects/{projectId}/{subfolder}/{filename}
+    const pathParts = req.path.replace(/^\//, '').split('/');
     
-    const projectDir = getProjectsUploadDir(projectId, subfolder);
-    const filePath = path.join(projectDir, filename);
-    
-    // Verificar se arquivo existe
-    if (fs.existsSync(filePath)) {
-      // Servir arquivo diretamente
-      res.sendFile(filePath, (err) => {
-        if (err) {
-          console.error(`❌ [APP] Erro ao servir arquivo de projeto: ${err.message}`);
-          if (!res.headersSent) {
-            res.status(500).json({ error: 'Erro ao servir arquivo' });
-          }
+    if (pathParts.length >= 3) {
+      const projectId = pathParts[0];
+      const subfolder = pathParts[1];
+      const filename = pathParts.slice(2).join('/'); // Pode ter subdiretórios
+      
+      // Validar projectId e subfolder para prevenir path traversal
+      // Estes devem ser valores simples, não caminhos relativos
+      if (projectId.includes('..') || subfolder.includes('..') || filename.includes('..')) {
+        console.warn(`⚠️ [APP] Tentativa de path traversal bloqueada em projeto: ${req.path}`);
+        res.status(403).json({ error: 'Caminho inválido' });
+        return;
+      }
+      
+      const projectDir = getProjectsUploadDir(projectId, subfolder);
+      
+      // Validar path traversal usando função helper
+      const filePath = validatePath(projectDir, filename);
+      if (!filePath) {
+        res.status(403).json({ 
+          error: 'Caminho inválido', 
+          path: req.path 
+        });
+        return;
+      }
+      
+      // Verificar se arquivo existe
+      if (fs.existsSync(filePath)) {
+        // Verificar se é um arquivo (não diretório)
+        const stats = fs.statSync(filePath);
+        if (!stats.isFile()) {
+          res.status(403).json({ 
+            error: 'Caminho não é um arquivo', 
+            path: req.path 
+          });
+          return;
         }
-      });
+        
+        // Determinar content-type baseado na extensão
+        const ext = path.extname(filePath).toLowerCase();
+        const contentType = ext === '.webp' ? 'image/webp' : 
+                           ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+                           ext === '.png' ? 'image/png' : 
+                           ext === '.pdf' ? 'application/pdf' :
+                           'application/octet-stream';
+        
+        // Definir Content-Type apenas se headers ainda não foram enviados
+        res.setHeader('Content-Type', contentType);
+        
+        // Servir arquivo diretamente
+        res.sendFile(filePath, (err) => {
+          if (err) {
+            console.error(`❌ [APP] Erro ao servir arquivo de projeto: ${err.message}`);
+            // Se headers já foram enviados, não podemos enviar JSON
+            if (!res.headersSent) {
+              res.status(500).json({ error: 'Erro ao servir arquivo' });
+            }
+          }
+        });
     } else {
       // Arquivo não encontrado - logs detalhados
       if (process.env.NODE_ENV !== 'production') {
@@ -249,6 +372,16 @@ app.use('/api/uploads/projects', (req, res, next) => {
   } else {
     // Caminho inválido - passar para próximo middleware
     next();
+  }
+  } catch (error) {
+    console.error(`❌ [APP] Erro crítico no middleware de projetos: ${error.message}`);
+    console.error(`❌ [APP] Stack: ${error.stack}`);
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Erro interno do servidor', 
+        path: req.path 
+      });
+    }
   }
 });
 
@@ -858,16 +991,34 @@ async function startServer() {
     await import('./models/index.js');
     console.log('✅ Modelos carregados');
 
-    // Sincronizar modelos (com alter: false para evitar problemas com ENUMs)
-    // Nota: Usar migrations para alterações de schema em produção
-    console.log('🔄 Sincronizando modelos...');
-    try {
-      await sequelize.sync({ alter: true }); // TEMPORARY: alter true to add notes column
-      console.log('✅ Modelos sincronizados');
-    } catch (syncError) {
-      console.warn('⚠️  Aviso durante sincronização:', syncError.message);
-      console.log('💡 Continuando mesmo assim (migrations devem ser executadas separadamente)');
+    // Executar migrations pendentes (se habilitado)
+    // Controlado pela variável de ambiente RUN_MIGRATIONS (padrão: true)
+    const shouldRunMigrations = process.env.RUN_MIGRATIONS !== 'false';
+    if (shouldRunMigrations) {
+      console.log('🔄 Executando migrations pendentes...');
+      try {
+        const migrationResults = await runMigrations({ verbose: false });
+        if (migrationResults.executed > 0) {
+          console.log(`✅ ${migrationResults.executed} migration(s) executada(s) com sucesso`);
+        } else if (migrationResults.executed === 0 && (!migrationResults.errors || migrationResults.errors.length === 0)) {
+          // Quando não há migrations pendentes, runMigrations() retorna sem a propriedade 'pending'
+          // Verificamos executed === 0 e sem erros para detectar este caso
+          console.log('✅ Nenhuma migration pendente');
+        }
+        if (migrationResults.errors && migrationResults.errors.length > 0) {
+          console.warn(`⚠️  ${migrationResults.errors.length} migration(s) com erro(s)`);
+          // Continuar mesmo com erros (fail-safe)
+        }
+      } catch (migrationError) {
+        console.error('❌ Erro ao executar migrations:', migrationError.message);
+        console.warn('⚠️  Continuando mesmo assim (servidor iniciará sem migrations)');
+      }
+    } else {
+      console.log('⏭️  Execução de migrations desabilitada (RUN_MIGRATIONS=false)');
     }
+
+    // Schema da base de dados é gerenciado exclusivamente por migrations
+    // Não é necessário sequelize.sync() pois migrations já criam/modificam todas as tabelas necessárias
 
     // Iniciar servidor Express
     app.listen(PORT, '0.0.0.0', () => {

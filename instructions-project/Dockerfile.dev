@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.4
+
 # Development Dockerfile for hot reload
 FROM node:20-alpine
 
@@ -6,36 +8,38 @@ RUN apk add --no-cache wget bash cifs-utils
 
 WORKDIR /app
 
-# Copy package files for dependency installation
+# Copy package files for dependency installation (better layer caching)
 COPY package*.json ./
 COPY client/package*.json ./client/
 COPY server/package*.json ./server/
 
-# Install dependencies
+# Install dependencies with BuildKit cache mounts for faster rebuilds
 # Remove any existing node_modules to avoid conflicts
 RUN rm -rf node_modules client/node_modules server/node_modules || true
 
-# Clear npm cache to avoid stale dependencies
-RUN npm cache clean --force
-
 # Install root dependencies (only if package.json has dependencies)
-RUN if [ -f package.json ] && [ -s package.json ]; then npm install || true; fi
+# Using cache mount for npm cache to speed up subsequent builds
+RUN --mount=type=cache,target=/root/.npm \
+    if [ -f package.json ] && [ -s package.json ]; then \
+        npm install || true; \
+    fi
 
 # Install client dependencies and ensure musl binaries are installed
 # This is critical for Alpine Linux (musl libc)
-RUN cd client && \
-    npm cache clean --force && \
+# Using cache mount for npm cache and combining installs to reduce layers
+RUN --mount=type=cache,target=/root/.npm \
+    cd client && \
     npm install && \
     npm install @rollup/rollup-linux-x64-musl --save-optional || true && \
     npm install lightningcss-linux-x64-musl --save-optional || true && \
     npm install @tailwindcss/oxide-linux-x64-musl --save-optional || true
 
-# Install server dependencies
-RUN cd server && \
-    npm cache clean --force && \
+# Install server dependencies with cache mount
+RUN --mount=type=cache,target=/root/.npm \
+    cd server && \
     npm install
 
-# Copy startup script
+# Copy startup script and set permissions in one layer
 COPY scripts/docker-dev-start.sh /usr/local/bin/docker-dev-start.sh
 RUN chmod +x /usr/local/bin/docker-dev-start.sh
 

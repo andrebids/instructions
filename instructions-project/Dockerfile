@@ -1,57 +1,76 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.4
 
 # ============================================
 # Stage 1: Build Client (Vite/React Frontend)
 # ============================================
-FROM node:20-alpine AS client-builder
+FROM node:20-slim AS client-builder
 
 WORKDIR /app/client
 
-# Copy client package files
+# Copy ONLY package files first (node_modules excluded by .dockerignore)
+# This ensures dependencies are installed inside the container, not copied from host
 COPY client/package*.json ./
 
-# Clear npm cache and install client dependencies (including devDependencies for build)
-RUN npm cache clean --force && \
-    npm ci --ignore-scripts
+# Install client dependencies with BuildKit cache mounts
+# Dependencies are installed inside container, ensuring correct Linux binaries
+# Note: --ignore-scripts is removed to allow postinstall scripts that may install platform-specific binaries
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci && \
+    npm install @rollup/rollup-linux-x64-gnu --save-optional --force || true
 
-# Copy client source code
+# Copy client source code AFTER dependencies are installed
+# node_modules is excluded by .dockerignore, so only source code is copied
 COPY client/ ./
 
 # Build client for production
-RUN npm run build
+RUN --mount=type=cache,target=/root/.npm \
+    npm run build
 
 # ============================================
 # Stage 2: Prepare Server Dependencies
 # ============================================
-FROM node:20-alpine AS server-builder
+FROM node:20-slim AS server-builder
 
 WORKDIR /app/server
 
-# Copy server package files
+# Copy ONLY package files first (node_modules excluded by .dockerignore)
 COPY server/package*.json ./
 
-# Clear npm cache and install server production dependencies only
-RUN npm cache clean --force && \
+# Install server production dependencies with BuildKit cache mounts
+# Dependencies installed inside container, ensuring correct Linux binaries
+RUN --mount=type=cache,target=/root/.npm \
     npm ci --only=production --ignore-scripts
 
 # ============================================
 # Stage 3: Production Runtime
 # ============================================
-FROM node:20-alpine AS production
+FROM node:20-slim AS production
+
+# Labels for metadata and versioning
+LABEL org.opencontainers.image.title="Instructions Project"
+LABEL org.opencontainers.image.description="Fullstack application with React frontend and Express backend"
+LABEL org.opencontainers.image.vendor="Instructions Project"
 
 # Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends dumb-init && \
+    rm -rf /var/lib/apt/lists/*
 
-# Create app user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+# Create app user for security (combine RUN commands to reduce layers)
+RUN groupadd -r -g 1001 nodejs && \
+    useradd -r -u 1001 -g nodejs nodejs
 
 WORKDIR /app
 
 # Copy root package.json (for shared dependencies if any)
 COPY package*.json ./
-# Only install if package.json exists and has dependencies
-RUN if [ -f package.json ] && [ -s package.json ]; then npm ci --only=production --ignore-scripts || true; fi
+
+# Install root dependencies if needed (with cache mount)
+# Skip if package.json has no dependencies (empty or only metadata)
+RUN --mount=type=cache,target=/root/.npm \
+    if [ -f package.json ] && [ -f package-lock.json ]; then \
+        npm ci --only=production --ignore-scripts || true; \
+    fi
 
 # Copy server code and dependencies
 COPY --from=server-builder /app/server/node_modules ./server/node_modules
@@ -60,7 +79,7 @@ COPY server/ ./server/
 # Copy built client to server's public directory
 COPY --from=client-builder /app/client/dist ./server/public/client
 
-# Create uploads directory with proper permissions
+# Create uploads directory with proper permissions (combine with chown)
 RUN mkdir -p ./server/public/uploads && \
     chown -R nodejs:nodejs /app
 
@@ -70,7 +89,7 @@ USER nodejs
 # Expose application port
 EXPOSE 5000
 
-# Health check
+# Health check (using node as it's already available)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
     CMD node -e "require('http').get('http://localhost:5000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 

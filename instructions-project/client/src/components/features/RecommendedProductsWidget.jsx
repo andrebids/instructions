@@ -43,11 +43,21 @@ const getImageUrl = (imagePath) => {
 };
 
 // Helper function to filter out temporary image URLs
+// IMPORTANTE: Permitir arquivos WebP com prefixo temp_ porque são arquivos convertidos válidos
+// O processImageToWebP converte para WebP mas mantém o prefixo temp_ no nome
+// Exemplo: /uploads/products/temp_dayImage_1761908607230.webp é um arquivo válido
 const filterTempImageUrl = (url) => {
   if (!url) return null;
-  if (url.includes('temp_') || url.includes('temp_nightImage_')) {
+  
+  // Filtrar apenas arquivos temporários que NÃO são WebP
+  // Estes são uploads em progresso que nunca foram convertidos
+  const isWebP = url.toLowerCase().endsWith('.webp');
+  const hasTemp = url.includes('temp_');
+  
+  if (hasTemp && !isWebP) {
     return null;
   }
+  
   return url;
 };
 
