@@ -1101,28 +1101,30 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   });
 
   return (
-    <div className={`${isCompact ? 'w-auto h-auto' : 'w-full h-full'} flex flex-col ${isCompact ? 'overflow-visible' : 'overflow-hidden'} bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background`}>
-      {/* Header */}
-      <div className={`step-logo-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 ${isCompact ? 'px-2 sm:px-3 py-1.5' : 'px-3 sm:px-4 lg:px-4 py-3'} flex-shrink-0 bg-transparent`}>
-        <div>
-          <h1 className="text-base sm:text-lg lg:text-lg font-bold text-white">Logo Instructions</h1>
-          <p className="text-xs text-gray-300/70 hidden sm:block">Define the technical specifications for the logo</p>
+    <div className={`${isCompact ? 'w-auto h-auto' : 'w-full h-full'} flex flex-col ${isCompact ? 'overflow-visible' : 'overflow-hidden'} ${isCompact ? 'bg-transparent' : 'bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background'}`}>
+      {/* Header - escondido no modo compacto (quando usado em modal) */}
+      {!isCompact && (
+        <div className={`step-logo-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 px-3 sm:px-4 lg:px-4 py-3 flex-shrink-0 bg-transparent`}>
+          <div>
+            <h1 className="text-base sm:text-lg lg:text-lg font-bold text-white">Logo Instructions</h1>
+            <p className="text-xs text-gray-300/70 hidden sm:block">Define the technical specifications for the logo</p>
+          </div>
+          <Button
+            color="primary"
+            variant="solid"
+            size="sm"
+            className="bg-gradient-to-tr from-primary-500 to-secondary-500 text-white font-medium text-xs w-full sm:w-auto shadow-lg"
+            startContent={<Icon icon="lucide:sparkles" className="w-4 h-4" />}
+            onPress={() => setIsChatOpen(true)}
+          >
+            AI Assistant
+          </Button>
         </div>
-        <Button
-          color="primary"
-          variant="solid"
-          size="sm"
-          className="bg-gradient-to-tr from-primary-500 to-secondary-500 text-white font-medium text-xs w-full sm:w-auto shadow-lg"
-          startContent={<Icon icon="lucide:sparkles" className="w-4 h-4" />}
-          onPress={() => setIsChatOpen(true)}
-        >
-          AI Assistant
-        </Button>
-      </div>
+      )}
 
       {/* Form - Responsive Horizontal Grid */}
       <div className={`${isCompact ? 'flex-auto' : 'flex-1'} ${isCompact ? 'overflow-visible' : 'overflow-y-auto sm:overflow-hidden'} ${isCompact ? 'p-1 sm:p-2' : 'p-2 sm:p-3 md:p-4 lg:p-6'}`}>
-        <div className={`${isCompact ? 'h-auto' : 'h-full'} grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${isCompact ? 'gap-2 sm:gap-2' : 'gap-4 sm:gap-4 md:gap-5 lg:gap-6'}`}>
+        <div className={`${isCompact ? 'h-auto' : 'h-full'} grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${isCompact ? 'gap-[50px] sm:gap-[50px]' : 'gap-4 sm:gap-4 md:gap-5 lg:gap-6'}`}>
           {/* Column 1: Details & Attachments */}
           <div className={`flex flex-col ${isCompact ? 'gap-1 sm:gap-1.5' : 'gap-2 sm:gap-2.5 md:gap-3 lg:gap-3'}`}>
 
@@ -1300,7 +1302,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                         <Checkbox
                           size="sm"
                           color="danger"
-                          classNames={{ label: "text-xs md:text-sm lg:text-xs font-medium text-gray-600" }}
+                          classNames={{ 
+                            label: "text-xs md:text-sm lg:text-xs font-semibold text-gray-800 dark:text-gray-100",
+                            wrapper: "before:border-2 before:border-gray-400 dark:before:border-gray-500",
+                            icon: "text-white"
+                          }}
                           isSelected={formik.values.dimensions?.[key]?.imperative || false}
                           onValueChange={(v) => handleDimensionUpdate(key, "imperative", v)}
                         >
@@ -1310,7 +1316,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                       <Input
                         type="number"
                         placeholder="0.00"
-                        endContent={<span className="text-xs md:text-sm lg:text-xs text-gray-500 font-bold">m</span>}
+                        endContent={<span className="text-xs md:text-sm lg:text-xs text-gray-700 dark:text-gray-200 font-bold">m</span>}
                         variant="flat"
                         size="sm"
                         classNames={{ inputWrapper: "bg-gray-50 dark:bg-gray-700 h-9 md:h-10 lg:h-9", input: "text-xs sm:text-sm md:text-base lg:text-sm" }}

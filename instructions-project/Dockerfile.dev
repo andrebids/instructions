@@ -32,7 +32,8 @@ RUN --mount=type=cache,target=/root/.npm \
     npm install && \
     npm install @rollup/rollup-linux-x64-musl --save-optional || true && \
     npm install lightningcss-linux-x64-musl --save-optional || true && \
-    npm install @tailwindcss/oxide-linux-x64-musl --save-optional || true
+    npm install @tailwindcss/oxide-linux-x64-musl --save-optional || true && \
+    npm rebuild esbuild || npm install esbuild --save-dev || true
 
 # Install server dependencies with cache mount
 RUN --mount=type=cache,target=/root/.npm \

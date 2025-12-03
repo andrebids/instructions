@@ -22,6 +22,9 @@ RUN --mount=type=cache,target=/root/.npm \
 # node_modules is excluded by .dockerignore, so only source code is copied
 COPY client/ ./
 
+# Reinstall native dependencies for Linux (esbuild, etc.) to avoid Windows binaries
+RUN npm rebuild esbuild || npm install esbuild --save-dev || true
+
 # Build client for production
 RUN --mount=type=cache,target=/root/.npm \
     npm run build
