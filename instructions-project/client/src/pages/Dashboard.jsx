@@ -187,7 +187,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <Scroller className="flex-1 min-h-0" hideScrollbar>
-          <div className="p-6 max-w-[1920px] mx-auto space-y-6">
+          <div className="p-6 max-w-[1920px] mx-auto space-y-6 bg-transparent">
             
             {/* Header Section */}
             <div className="flex justify-between items-center">
