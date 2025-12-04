@@ -598,7 +598,7 @@ export function Header() {
                       isLoading={isSaving}
                       size="sm"
                       startContent={!isSaving && <Icon icon="lucide:save" className="text-sm" />}
-                      className="flex-1 sm:flex-initial"
+                      className="flex-1 sm:flex-initial bg-blue-600 text-white"
                     >
                       Salvar
                     </Button>

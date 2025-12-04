@@ -143,7 +143,7 @@ export function SidebarNavigation() {
                 className={({ isActive }) =>
                   `w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-all active:scale-95 ` +
                   (isActive || isClicked
-                    ? `bg-primary/50 hover:bg-primary/60`
+                    ? `bg-blue-600 hover:bg-blue-700`
                     : `bg-content2/70 dark:bg-content2 hover:bg-content3`)
                 }
               >
