@@ -31,7 +31,7 @@ const statusConfig = {
   cancelled: { color: 'danger', icon: 'lucide:x-circle', label: 'cancelled' },
 };
 
-export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorations = [], decorationsByImage = {} }) {
+export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorations = [], decorationsByImage = {}, projectType, logoDetails, onEditLogo, onDeleteLogo }) {
   const { t } = useTranslation();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -199,11 +199,46 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
     }
   }, [items]);
   
+  // Calcular total dos budgets dos logos (apenas para projetos de logos)
+  const logosBudgetTotal = useMemo(() => {
+    if (projectType !== 'logo' || !logoDetails) return 0;
+    
+    let total = 0;
+    
+    // Budget do logo atual
+    if (logoDetails.currentLogo?.budget) {
+      const budgetValue = logoDetails.currentLogo.budget;
+      // Remover espaços e converter vírgula para ponto
+      const cleaned = budgetValue.toString().replace(/\s/g, '').replace(',', '.');
+      const parsed = parseFloat(cleaned);
+      if (!isNaN(parsed)) {
+        total += parsed;
+      }
+    }
+    
+    // Budgets dos logos salvos
+    if (logoDetails.logos && Array.isArray(logoDetails.logos)) {
+      logoDetails.logos.forEach(logo => {
+        if (logo.budget) {
+          const budgetValue = logo.budget;
+          const cleaned = budgetValue.toString().replace(/\s/g, '').replace(',', '.');
+          const parsed = parseFloat(cleaned);
+          if (!isNaN(parsed)) {
+            total += parsed;
+          }
+        }
+      });
+    }
+    
+    return total;
+  }, [projectType, logoDetails]);
+  
   const total = parseFloat(order?.total) || 0;
+  const totalWithLogos = total + logosBudgetTotal;
   const effectiveBudget = parseFloat(budget) || 0;
-  const remainingBudget = Math.max(0, effectiveBudget - total);
-  const budgetPercentage = effectiveBudget > 0 ? Math.min(100, (total / effectiveBudget) * 100) : 0;
-  const isOverBudget = total > effectiveBudget;
+  const remainingBudget = Math.max(0, effectiveBudget - totalWithLogos);
+  const budgetPercentage = effectiveBudget > 0 ? Math.min(100, (totalWithLogos / effectiveBudget) * 100) : 0;
+  const isOverBudget = totalWithLogos > effectiveBudget;
   const piecesCount = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
   // Separar items por tipo
@@ -349,7 +384,12 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
                 variant="flat"
                 startContent={<Icon icon="lucide:euro" className="text-xs" />}
               >
-                €{total.toLocaleString()}
+                €{totalWithLogos.toLocaleString()}
+                {logosBudgetTotal > 0 && (
+                  <span className="text-xs opacity-75 ml-1">
+                    ({total.toLocaleString()} + {logosBudgetTotal.toLocaleString()})
+                  </span>
+                )}
               </Chip>
               {effectiveBudget > 0 && (
                 <Chip size="sm" variant="flat">
@@ -367,7 +407,12 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
                   {t('pages.projectDetails.orders.budgetUsage', 'Utilização do budget')}
                 </span>
                 <span className={isOverBudget ? 'text-danger font-medium' : 'text-default-600'}>
-                  €{total.toLocaleString()} / €{effectiveBudget.toLocaleString()}
+                  €{totalWithLogos.toLocaleString()} / €{effectiveBudget.toLocaleString()}
+                  {logosBudgetTotal > 0 && (
+                    <span className="text-xs opacity-75 ml-1">
+                      (items: €{total.toLocaleString()} + logos: €{logosBudgetTotal.toLocaleString()})
+                    </span>
+                  )}
                 </span>
               </div>
               <Progress
@@ -386,6 +431,300 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
           )}
         </CardBody>
       </Card>
+
+      {/* Logos Section - apenas para projetos de logos */}
+      {projectType === 'logo' && logoDetails && (
+        <Card>
+          <CardHeader className="px-6 py-4">
+            <h3 className="text-lg font-semibold">
+              {t('pages.projectDetails.orders.logos', 'Logos')}
+            </h3>
+          </CardHeader>
+          <Divider />
+          <CardBody className="p-0">
+            <div className="divide-y divide-divider">
+              {/* Current Logo */}
+              {logoDetails.currentLogo && (() => {
+                const logo = logoDetails.currentLogo;
+                // Priorizar: generatedImage > AI generated attachment > primeira imagem dos attachments
+                const rawLogoImage = logo.generatedImage || 
+                  (logo.attachmentFiles?.find(f => f.isAIGenerated)?.url) ||
+                  (logo.attachmentFiles?.find(f => {
+                    const isImage = f.type?.startsWith('image/') || f.mimetype?.startsWith('image/') || 
+                                   f.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i) || 
+                                   f.path?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                    return isImage;
+                  })?.url || logo.attachmentFiles?.find(f => {
+                    const isImage = f.type?.startsWith('image/') || f.mimetype?.startsWith('image/') || 
+                                   f.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i) || 
+                                   f.path?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                    return isImage;
+                  })?.path);
+                const logoBudget = logo.budget || '';
+                
+                // Construir URL da imagem - sempre usar caminhos relativos para o proxy do Vite funcionar
+                const logoImage = (() => {
+                  if (!rawLogoImage) return null;
+                  
+                  let imageUrl = rawLogoImage;
+                  
+                  // Se for URL absoluta, extrair apenas o caminho
+                  if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+                    try {
+                      const urlObj = new URL(imageUrl);
+                      imageUrl = urlObj.pathname; // Usar apenas o caminho (proxy do Vite resolve)
+                    } catch (e) {
+                      const match = imageUrl.match(/\/api\/[^\s]+/);
+                      if (match) imageUrl = match[0];
+                    }
+                  }
+                  
+                  // Se for caminho UNC do Windows, extrair nome do arquivo
+                  if (imageUrl && (imageUrl.startsWith('\\\\') || imageUrl.startsWith('//'))) {
+                    const filename = imageUrl.split(/[\\/]/).pop();
+                    if (filename) imageUrl = `/api/files/${filename}`;
+                  }
+                  
+                  // Garantir que começa com /api/
+                  if (imageUrl && !imageUrl.startsWith('/api/') && imageUrl.startsWith('/')) {
+                    imageUrl = `/api${imageUrl}`;
+                  } else if (imageUrl && !imageUrl.startsWith('/')) {
+                    imageUrl = `/api/files/${imageUrl}`;
+                  }
+                  
+                  return imageUrl;
+                })();
+                
+                return (
+                  <div key="current" className="px-6 py-4 flex items-center gap-4">
+                    {/* Preview da imagem */}
+                    <div className="w-20 h-20 rounded-lg bg-default-100 flex-shrink-0 overflow-hidden relative">
+                      {logoImage ? (
+                        <img
+                          src={logoImage}
+                          alt={logo.logoName || 'Logo'}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.warn('Erro ao carregar imagem do logo:', logoImage);
+                            e.target.style.display = 'none';
+                            if (e.target.nextElementSibling) {
+                              e.target.nextElementSibling.style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
+                      {!logoImage && (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Icon icon="lucide:image" className="text-2xl text-default-400" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Info do logo */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-foreground">
+                          {logo.logoName || t('pages.projectDetails.orders.unnamedLogo', 'Unnamed Logo')}
+                        </h4>
+                        {logo.logoNumber && (
+                          <Chip size="sm" variant="flat" className="text-xs">
+                            #{logo.logoNumber}
+                          </Chip>
+                        )}
+                      </div>
+                      {logoBudget && (
+                        <div className="mt-1">
+                          <span className="text-sm text-default-500">
+                            {t('pages.projectDetails.orders.budget', 'Budget')}: 
+                          </span>
+                          <span className="text-sm font-medium text-foreground ml-1">
+                            {logoBudget}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Botões de ação */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {onEditLogo && (
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="primary"
+                          onPress={() => {
+                            // currentLogo está no índice -1 (não está nos savedLogos)
+                            const allLogos = logoDetails.logos || [];
+                            const currentLogoIndex = allLogos.length; // Índice após todos os savedLogos
+                            onEditLogo(currentLogoIndex, true);
+                          }}
+                          aria-label={t('common.edit', 'Editar')}
+                        >
+                          <Icon icon="lucide:pencil" className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {onDeleteLogo && (
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          onPress={() => {
+                            // currentLogo está no índice -1 (não está nos savedLogos)
+                            const allLogos = logoDetails.logos || [];
+                            const currentLogoIndex = allLogos.length; // Índice após todos os savedLogos
+                            if (window.confirm(t('pages.projectDetails.confirmDeleteLogo', 'Tem certeza que deseja eliminar este logo?'))) {
+                              onDeleteLogo(currentLogoIndex, true);
+                            }
+                          }}
+                          aria-label={t('common.delete', 'Eliminar')}
+                        >
+                          <Icon icon="lucide:trash-2" className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+              
+              {/* Saved Logos */}
+              {logoDetails.logos && logoDetails.logos.map((logo, index) => {
+                // Priorizar: generatedImage > AI generated attachment > primeira imagem dos attachments
+                const rawLogoImage = logo.generatedImage || 
+                  (logo.attachmentFiles?.find(f => f.isAIGenerated)?.url) ||
+                  (logo.attachmentFiles?.find(f => {
+                    const isImage = f.type?.startsWith('image/') || f.mimetype?.startsWith('image/') || 
+                                   f.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i) || 
+                                   f.path?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                    return isImage;
+                  })?.url || logo.attachmentFiles?.find(f => {
+                    const isImage = f.type?.startsWith('image/') || f.mimetype?.startsWith('image/') || 
+                                   f.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i) || 
+                                   f.path?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                    return isImage;
+                  })?.path);
+                const logoBudget = logo.budget || '';
+                
+                // Construir URL da imagem - sempre usar caminhos relativos para o proxy do Vite funcionar
+                const logoImage = (() => {
+                  if (!rawLogoImage) return null;
+                  
+                  let imageUrl = rawLogoImage;
+                  
+                  // Se for URL absoluta, extrair apenas o caminho
+                  if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+                    try {
+                      const urlObj = new URL(imageUrl);
+                      imageUrl = urlObj.pathname; // Usar apenas o caminho (proxy do Vite resolve)
+                    } catch (e) {
+                      const match = imageUrl.match(/\/api\/[^\s]+/);
+                      if (match) imageUrl = match[0];
+                    }
+                  }
+                  
+                  // Se for caminho UNC do Windows, extrair nome do arquivo
+                  if (imageUrl && (imageUrl.startsWith('\\\\') || imageUrl.startsWith('//'))) {
+                    const filename = imageUrl.split(/[\\/]/).pop();
+                    if (filename) imageUrl = `/api/files/${filename}`;
+                  }
+                  
+                  // Garantir que começa com /api/
+                  if (imageUrl && !imageUrl.startsWith('/api/') && imageUrl.startsWith('/')) {
+                    imageUrl = `/api${imageUrl}`;
+                  } else if (imageUrl && !imageUrl.startsWith('/')) {
+                    imageUrl = `/api/files/${imageUrl}`;
+                  }
+                  
+                  return imageUrl;
+                })();
+                
+                return (
+                  <div key={logo.id || index} className="px-6 py-4 flex items-center gap-4">
+                    {/* Preview da imagem */}
+                    <div className="w-20 h-20 rounded-lg bg-default-100 flex-shrink-0 overflow-hidden relative">
+                      {logoImage ? (
+                        <img
+                          src={logoImage}
+                          alt={logo.logoName || 'Logo'}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.warn('Erro ao carregar imagem do logo:', logoImage);
+                            e.target.style.display = 'none';
+                            if (e.target.nextElementSibling) {
+                              e.target.nextElementSibling.style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
+                      {!logoImage && (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Icon icon="lucide:image" className="text-2xl text-default-400" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Info do logo */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-foreground">
+                          {logo.logoName || t('pages.projectDetails.orders.unnamedLogo', 'Unnamed Logo')}
+                        </h4>
+                        {logo.logoNumber && (
+                          <Chip size="sm" variant="flat" className="text-xs">
+                            #{logo.logoNumber}
+                          </Chip>
+                        )}
+                      </div>
+                      {logoBudget && (
+                        <div className="mt-1">
+                          <span className="text-sm text-default-500">
+                            {t('pages.projectDetails.orders.budget', 'Budget')}: 
+                          </span>
+                          <span className="text-sm font-medium text-foreground ml-1">
+                            {logoBudget}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Botões de ação */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {onEditLogo && (
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="primary"
+                          onPress={() => onEditLogo(index, false)}
+                          aria-label={t('common.edit', 'Editar')}
+                        >
+                          <Icon icon="lucide:pencil" className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {onDeleteLogo && (
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          onPress={() => {
+                            if (window.confirm(t('pages.projectDetails.confirmDeleteLogo', 'Tem certeza que deseja eliminar este logo?'))) {
+                              onDeleteLogo(index, false);
+                            }
+                          }}
+                          aria-label={t('common.delete', 'Eliminar')}
+                        >
+                          <Icon icon="lucide:trash-2" className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       {/* Lista de Items */}
       <Card>
@@ -546,6 +885,7 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
                               variant="flat"
                               isDisabled={isUpdating || item.quantity <= 1}
                               onPress={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                              aria-label={t('pages.projectDetails.orders.decrease', 'Decrease quantity')}
                             >
                               <Icon icon="lucide:minus" />
                             </Button>
@@ -570,6 +910,7 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
                               variant="flat"
                               isDisabled={isUpdating}
                               onPress={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                              aria-label={t('pages.projectDetails.orders.increase', 'Increase quantity')}
                             >
                               <Icon icon="lucide:plus" />
                             </Button>
@@ -598,6 +939,7 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
                           variant="light"
                           color="danger"
                           isDisabled={isUpdating}
+                          aria-label={t('pages.projectDetails.orders.remove', 'Remove item')}
                           onPress={() => handleRemoveItem(item.id)}
                         >
                           <Icon icon="lucide:trash-2" />
@@ -623,7 +965,12 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
                 <div className="flex items-center gap-4">
                   <span className="text-default-500">Total:</span>
                   <span className={`text-xl font-bold ${isOverBudget ? 'text-danger' : 'text-foreground'}`}>
-                    €{total.toLocaleString()}
+                    €{totalWithLogos.toLocaleString()}
+                    {logosBudgetTotal > 0 && (
+                      <span className="text-sm font-normal opacity-75 ml-2">
+                        (items: €{total.toLocaleString()} + logos: €{logosBudgetTotal.toLocaleString()})
+                      </span>
+                    )}
                   </span>
                 </div>
               </div>

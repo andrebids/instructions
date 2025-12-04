@@ -653,6 +653,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                         size="sm"
                                                         variant="light"
                                                         className={`opacity-0 group-hover:opacity-100 transition-opacity ${obs.author.name === user?.name ? 'text-primary-foreground' : 'text-default-500'}`}
+                                                        aria-label="Message options"
                                                     >
                                                         <Icon icon="lucide:more-vertical" width={16} />
                                                     </Button>
@@ -801,6 +802,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                 size="sm"
                                                 radius="full"
                                                 className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-danger text-white"
+                                                aria-label="Remove attachment"
                                                 onPress={() => removeAttachment(idx)}
                                             >
                                                 <Icon icon="lucide:x" className="text-sm" />
@@ -1165,6 +1167,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                 className="self-end"
                                 onPress={handleSendMessage}
                                 isLoading={isSubmitting}
+                                aria-label="Send message"
                             >
                                 <Icon icon="lucide:send" />
                             </Button>

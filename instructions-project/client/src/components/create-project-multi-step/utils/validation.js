@@ -91,13 +91,25 @@ export const validateStepLogoInstructions = (formData) => {
   const dimensions = currentLogo.dimensions || {};
 
   // Verificar se pelo menos um campo de dimensões está preenchido
-  const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
-  const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
-  const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
-  const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
+  // Aceitar valores numéricos válidos (incluindo 0)
+  // Verificar se o valor existe, não é null, não é string vazia, e é um número válido >= 0
+  const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "" && !isNaN(parseFloat(dimensions.height.value)) && parseFloat(dimensions.height.value) >= 0;
+  const hasLength = dimensions.length?.value != null && dimensions.length.value !== "" && !isNaN(parseFloat(dimensions.length.value)) && parseFloat(dimensions.length.value) >= 0;
+  const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "" && !isNaN(parseFloat(dimensions.width.value)) && parseFloat(dimensions.width.value) >= 0;
+  const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "" && !isNaN(parseFloat(dimensions.diameter.value)) && parseFloat(dimensions.diameter.value) >= 0;
   const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
 
-  // Step is valid if current logo is valid OR if there are saved logos (user can proceed with saved logos)
+  // Verificar se o logo atual está completamente vazio (permitir prosseguir apenas com logos salvos)
+  const isCurrentLogoEmpty = (
+    (!currentLogo.logoNumber || currentLogo.logoNumber.trim() === "") &&
+    (!currentLogo.logoName || currentLogo.logoName.trim() === "") &&
+    (!currentLogo.description || currentLogo.description.trim() === "") &&
+    (!currentLogo.requestedBy || currentLogo.requestedBy.trim() === "") &&
+    (!currentLogo.fixationType || currentLogo.fixationType.trim() === "") &&
+    !hasAtLeastOneDimension
+  );
+
+  // Step is valid if current logo is valid OR if current logo is empty AND there are saved logos
   const isCurrentLogoValid = (
     currentLogo.logoNumber?.trim() !== "" &&
     currentLogo.logoName?.trim() !== "" &&
@@ -107,7 +119,8 @@ export const validateStepLogoInstructions = (formData) => {
     hasAtLeastOneDimension
   );
 
-  const isValid = isCurrentLogoValid || savedLogos.length > 0;
+  // Valid if: current logo is valid OR (current logo is empty AND there are saved logos)
+  const isValid = isCurrentLogoValid || (isCurrentLogoEmpty && savedLogos.length > 0);
 
   logger.validation("logo-instructions", isValid, {
     hasLogoNumber: !!currentLogo.logoNumber,
@@ -118,11 +131,36 @@ export const validateStepLogoInstructions = (formData) => {
     hasAtLeastOneDimension: hasAtLeastOneDimension,
     savedLogosCount: savedLogos.length,
     isCurrentLogoValid: isCurrentLogoValid,
+    isCurrentLogoEmpty: isCurrentLogoEmpty,
     dimensions: {
       height: hasHeight,
       length: hasLength,
       width: hasWidth,
       diameter: hasDiameter
+    },
+    dimensionValues: {
+      height: dimensions.height?.value,
+      length: dimensions.length?.value,
+      width: dimensions.width?.value,
+      diameter: dimensions.diameter?.value
+    }
+  });
+
+  // Debug: Log detalhado para entender o problema
+  console.log("🔍 [validateStepLogoInstructions] Validation check:", {
+    isValid,
+    isCurrentLogoValid,
+    isCurrentLogoEmpty,
+    savedLogosCount: savedLogos.length,
+    hasAtLeastOneDimension,
+    dimensions: dimensions,
+    dimensionChecks: { hasHeight, hasLength, hasWidth, hasDiameter },
+    requiredFields: {
+      logoNumber: !!currentLogo.logoNumber?.trim(),
+      logoName: !!currentLogo.logoName?.trim(),
+      description: !!currentLogo.description?.trim(),
+      requestedBy: !!currentLogo.requestedBy?.trim(),
+      fixationType: !!currentLogo.fixationType?.trim()
     }
   });
 

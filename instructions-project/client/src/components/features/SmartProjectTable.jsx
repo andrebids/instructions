@@ -103,6 +103,7 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
             isIconOnly
             size="sm"
             variant="light"
+            aria-label={project.isFavorite ? "Remove from favorites" : "Add to favorites"}
             onPress={() => {
               // Chamar handleToggleFavorite diretamente sem incluí-lo nas dependências
               // para evitar dependência circular

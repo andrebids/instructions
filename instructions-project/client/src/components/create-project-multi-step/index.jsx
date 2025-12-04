@@ -117,10 +117,12 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
     const hasRequestedBy = logo.requestedBy?.trim() !== "";
     const hasFixationType = logo.fixationType?.trim() !== "";
     const dimensions = logo.dimensions || {};
-    const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
-    const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
-    const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
-    const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
+    // Aceitar valores numéricos válidos (incluindo 0)
+    // Verificar se o valor existe, não é null, não é string vazia, e é um número válido >= 0
+    const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "" && !isNaN(parseFloat(dimensions.height.value)) && parseFloat(dimensions.height.value) >= 0;
+    const hasLength = dimensions.length?.value != null && dimensions.length.value !== "" && !isNaN(parseFloat(dimensions.length.value)) && parseFloat(dimensions.length.value) >= 0;
+    const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "" && !isNaN(parseFloat(dimensions.width.value)) && parseFloat(dimensions.width.value) >= 0;
+    const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "" && !isNaN(parseFloat(dimensions.diameter.value)) && parseFloat(dimensions.diameter.value) >= 0;
     const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
     return hasLogoNumber && hasLogoName && hasDescription && hasRequestedBy && hasFixationType && hasAtLeastOneDimension;
   };
@@ -166,6 +168,84 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
     }
   };
 
+  const handleAddLogo = () => {
+    const logoDetails = formState.formData.logoDetails || {};
+    const savedLogos = logoDetails.logos || [];
+    const currentLogo = logoDetails.currentLogo || logoDetails;
+
+    // Se o currentLogo é válido, salvá-lo antes de criar um novo
+    if (isLogoValid(currentLogo)) {
+      const logoToSave = {
+        ...currentLogo,
+        id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        savedAt: new Date().toISOString()
+      };
+
+      // Atualizar estado com logo salvo e novo currentLogo vazio
+      formState.handleInputChange("logoDetails", {
+        ...logoDetails,
+        logos: [...savedLogos, logoToSave],
+        currentLogo: {
+          logoNumber: "",
+          logoName: "",
+          requestedBy: "",
+          dimensions: {},
+          usageOutdoor: false,
+          usageIndoor: true,
+          fixationType: "",
+          lacqueredStructure: false,
+          lacquerColor: "",
+          mastDiameter: "",
+          maxWeightConstraint: false,
+          maxWeight: "",
+          ballast: false,
+          controlReport: false,
+          criteria: "",
+          description: "",
+          composition: {
+            componentes: [],
+            bolas: []
+          },
+          attachmentFiles: []
+        }
+      });
+    } else {
+      // Se currentLogo não é válido, apenas limpar para criar novo
+      formState.handleInputChange("logoDetails", {
+        ...logoDetails,
+        currentLogo: {
+          logoNumber: "",
+          logoName: "",
+          requestedBy: "",
+          dimensions: {},
+          usageOutdoor: false,
+          usageIndoor: true,
+          fixationType: "",
+          lacqueredStructure: false,
+          lacquerColor: "",
+          mastDiameter: "",
+          maxWeightConstraint: false,
+          maxWeight: "",
+          ballast: false,
+          controlReport: false,
+          criteria: "",
+          description: "",
+          composition: {
+            componentes: [],
+            bolas: []
+          },
+          attachmentFiles: []
+        }
+      });
+    }
+
+    // Navegar para o step de logo-instructions
+    const logoStepIndex = visibleSteps.findIndex(s => s.id === 'logo-instructions');
+    if (logoStepIndex >= 0) {
+      navigation.setCurrentStep(logoStepIndex + 1);
+    }
+  };
+
   const handleEditLogo = (index, isCurrent) => {
     const logoDetails = formState.formData.logoDetails || {};
     const savedLogos = logoDetails.logos || [];
@@ -182,20 +262,41 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
       let newSavedLogos = [...savedLogos];
       const logoToEdit = savedLogos[index];
 
-      // Remove logoToEdit from newSavedLogos
+      // Remove logoToEdit from newSavedLogos (vai ser editado no currentLogo)
       newSavedLogos = newSavedLogos.filter((_, i) => i !== index);
 
-      // If currentLogo is valid, add it to newSavedLogos so we don't lose it
+      // IMPORTANTE: Só salvar o currentLogo anterior se ele for válido E diferente do logo que está sendo editado
+      // Isso evita criar logos duplicados quando você está apenas editando
       if (isLogoValid(currentLogo)) {
-        const logoToSave = {
-          ...currentLogo,
-          id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          savedAt: new Date().toISOString()
-        };
-        newSavedLogos.push(logoToSave);
+        // Verificar se o currentLogo já está nos savedLogos (para evitar duplicados)
+        const currentLogoAlreadySaved = newSavedLogos.some(logo => {
+          if (currentLogo.id && logo.id) {
+            return logo.id === currentLogo.id;
+          }
+          if (logo.logoNumber && currentLogo.logoNumber) {
+            return logo.logoNumber.trim() === currentLogo.logoNumber.trim();
+          }
+          return false;
+        });
+        
+        // Verificar se o currentLogo é diferente do logo que está sendo editado
+        const isDifferentFromLogoToEdit = 
+          (currentLogo.id && logoToEdit.id && currentLogo.id !== logoToEdit.id) ||
+          (!currentLogo.id && !logoToEdit.id && currentLogo.logoNumber && logoToEdit.logoNumber && 
+           currentLogo.logoNumber.trim() !== logoToEdit.logoNumber.trim());
+        
+        // Só salvar se não estiver já salvo E for diferente do logo a editar
+        if (!currentLogoAlreadySaved && isDifferentFromLogoToEdit) {
+          const logoToSave = {
+            ...currentLogo,
+            id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            savedAt: new Date().toISOString()
+          };
+          newSavedLogos.push(logoToSave);
+        }
       }
 
-      // Update state
+      // Update state - mover logo a editar para currentLogo
       formState.handleInputChange("logoDetails", {
         ...logoDetails,
         logos: newSavedLogos,
@@ -278,6 +379,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
             error={formState.error}
             onEditLogo={handleEditLogo}
             onDeleteLogo={handleDeleteLogo}
+            onAddLogo={handleAddLogo}
           />
         );
 
@@ -433,7 +535,8 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
                       composition: {
                         componentes: [],
                         bolas: []
-                      }
+                      },
+                      attachmentFiles: [] // Reset attachments for new logo
                     }
                   });
                 }

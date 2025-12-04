@@ -173,6 +173,7 @@ export const SnapZonesPanel = ({
                       size="sm"
                       color="danger"
                       variant="light"
+                      aria-label={`Remove zone ${zone.label || zone.id}`}
                       onPress={function() {
                         if (onRemoveZone) {
                           onRemoveZone(zone.id);

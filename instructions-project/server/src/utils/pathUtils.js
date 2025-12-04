@@ -57,6 +57,14 @@ export function getUploadsDir() {
   }
 
   // 2. Caminho padrão de rede compartilhada (hardcoded - sempre o mesmo para todos)
+  // Verificar primeiro o caminho com "Olimpo" (preferido)
+  const preferredNetworkPath = '\\\\192.168.2.22\\Olimpo\\.dev\\web\\thecore';
+  if (fs.existsSync(preferredNetworkPath)) {
+    console.log(`📁 [PATHUTILS] Usando caminho preferido de rede compartilhada: ${preferredNetworkPath}`);
+    return preferredNetworkPath;
+  }
+  
+  // Verificar caminho alternativo (sem "Olimpo")
   const defaultNetworkPath = '\\\\192.168.2.22\\.dev\\web\\thecore';
   if (fs.existsSync(defaultNetworkPath)) {
     console.log(`📁 [PATHUTILS] Usando caminho padrão de rede compartilhada: ${defaultNetworkPath}`);

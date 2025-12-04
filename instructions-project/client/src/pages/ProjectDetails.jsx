@@ -87,7 +87,36 @@ const LogoDetailsContent = ({ logo }) => {
                     <CardBody>
                         <div className="relative aspect-video max-w-md mx-auto rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50">
                             <img
-                                src={logo.generatedImage}
+                                src={(() => {
+                                    // Construir URL - sempre usar caminhos relativos para o proxy do Vite funcionar
+                                    let imageUrl = logo.generatedImage;
+                                    
+                                    // Se for URL absoluta, extrair apenas o caminho
+                                    if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+                                        try {
+                                            const urlObj = new URL(imageUrl);
+                                            imageUrl = urlObj.pathname; // Usar apenas o caminho (proxy do Vite resolve)
+                                        } catch (e) {
+                                            const match = imageUrl.match(/\/api\/[^\s]+/);
+                                            if (match) imageUrl = match[0];
+                                        }
+                                    }
+                                    
+                                    // Se for caminho UNC do Windows, extrair nome do arquivo
+                                    if (imageUrl && (imageUrl.startsWith('\\\\') || imageUrl.startsWith('//'))) {
+                                        const filename = imageUrl.split(/[\\/]/).pop();
+                                        if (filename) imageUrl = `/api/files/${filename}`;
+                                    }
+                                    
+                                    // Garantir que começa com /api/
+                                    if (imageUrl && !imageUrl.startsWith('/api/') && imageUrl.startsWith('/')) {
+                                        imageUrl = `/api${imageUrl}`;
+                                    } else if (imageUrl && !imageUrl.startsWith('/')) {
+                                        imageUrl = `/api/files/${imageUrl}`;
+                                    }
+                                    
+                                    return imageUrl;
+                                })()}
                                 alt={logo.logoName || 'AI Generated Logo'}
                                 className="w-full h-full object-contain"
                             />
@@ -359,8 +388,34 @@ const LogoDetailsContent = ({ logo }) => {
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                                             {logo.attachmentFiles.map((attachment, idx) => {
                                                 const isImage = attachment.mimetype?.startsWith('image/');
-                                                const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
-                                                const fileUrl = attachment.url || `${baseApi}${attachment.path}`;
+                                                
+                                                // Construir URL - sempre usar caminhos relativos para o proxy do Vite funcionar
+                                                let fileUrl = attachment.url || attachment.path;
+                                                
+                                                // Se for URL absoluta com localhost:5000, extrair apenas o caminho
+                                                if (fileUrl && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://'))) {
+                                                    try {
+                                                        const urlObj = new URL(fileUrl);
+                                                        fileUrl = urlObj.pathname; // Usar apenas o caminho (proxy do Vite resolve)
+                                                    } catch (e) {
+                                                        // Se falhar, tentar extrair manualmente
+                                                        const match = fileUrl.match(/\/api\/[^\s]+/);
+                                                        if (match) fileUrl = match[0];
+                                                    }
+                                                }
+                                                
+                                                // Se for caminho UNC do Windows, extrair nome do arquivo
+                                                if (fileUrl && (fileUrl.startsWith('\\\\') || fileUrl.startsWith('//'))) {
+                                                    const filename = fileUrl.split(/[\\/]/).pop();
+                                                    if (filename) fileUrl = `/api/files/${filename}`;
+                                                }
+                                                
+                                                // Garantir que começa com /api/
+                                                if (fileUrl && !fileUrl.startsWith('/api/') && fileUrl.startsWith('/')) {
+                                                    fileUrl = `/api${fileUrl}`;
+                                                } else if (fileUrl && !fileUrl.startsWith('/')) {
+                                                    fileUrl = `/api/files/${fileUrl}`;
+                                                }
 
                                                 return (
                                                     <a
@@ -749,6 +804,133 @@ export default function ProjectDetails() {
         loadProject(); // Recarregar projeto apenas após salvar
     }, [loadProject]);
 
+    const handleDeleteLogo = React.useCallback(async (logoIndex, isCurrent) => {
+        try {
+            const currentProject = await projectsAPI.getById(id);
+            const logoDetails = currentProject.logoDetails || {};
+            const savedLogos = logoDetails.logos || [];
+            const currentLogo = logoDetails.currentLogo || {};
+
+            if (isCurrent) {
+                // Reset current logo
+                const updatedLogoDetails = {
+                    ...logoDetails,
+                    currentLogo: {
+                        logoNumber: "",
+                        logoName: "",
+                        requestedBy: "",
+                        dimensions: {},
+                        usageOutdoor: false,
+                        usageIndoor: true,
+                        fixationType: "",
+                        lacqueredStructure: false,
+                        lacquerColor: "",
+                        mastDiameter: "",
+                        maxWeightConstraint: false,
+                        maxWeight: "",
+                        ballast: false,
+                        controlReport: false,
+                        criteria: "",
+                        description: "",
+                        composition: {
+                            componentes: [],
+                            bolas: []
+                        },
+                        attachmentFiles: []
+                    }
+                };
+                await projectsAPI.updateCanvas(id, { logoDetails: updatedLogoDetails });
+            } else {
+                // Remove from saved logos
+                const newSavedLogos = savedLogos.filter((_, i) => i !== logoIndex);
+                const updatedLogoDetails = {
+                    ...logoDetails,
+                    logos: newSavedLogos
+                };
+                await projectsAPI.updateCanvas(id, { logoDetails: updatedLogoDetails });
+            }
+
+            // Recarregar projeto
+            loadProject();
+        } catch (error) {
+            console.error('Erro ao eliminar logo:', error);
+            addNotification({
+                type: 'error',
+                message: t('pages.projectDetails.errorDeleteLogo', 'Erro ao eliminar logo'),
+            });
+        }
+    }, [id, loadProject, addNotification, t]);
+
+    const handleEditLogoFromOrders = React.useCallback((logoIndex, isCurrent) => {
+        const currentProject = project;
+        const logoDetails = currentProject?.logoDetails || {};
+        const savedLogos = logoDetails.logos || [];
+        const currentLogo = logoDetails.currentLogo || {};
+        
+        // Construir logoInstructions da mesma forma que é feito na exibição (linha 1058)
+        let logoInstructions = [...savedLogos];
+        const isCurrentLogoValid = currentLogo?.logoNumber?.trim() && currentLogo?.logoName?.trim();
+        if (isCurrentLogoValid && currentLogo) {
+            const alreadyInSaved = savedLogos.some(logo => 
+                (logo.id && currentLogo.id && logo.id === currentLogo.id) ||
+                (logo.logoNumber && currentLogo.logoNumber && logo.logoNumber === currentLogo.logoNumber)
+            );
+            if (!alreadyInSaved) {
+                logoInstructions.push(currentLogo);
+            }
+        }
+        
+        if (isCurrent) {
+            // Se é o currentLogo, encontrar o índice nos logoInstructions
+            const foundIndex = logoInstructions.findIndex((logo, idx) => {
+                // Comparar por ID primeiro (mais confiável)
+                if (logo.id && currentLogo.id) {
+                    return logo.id === currentLogo.id;
+                }
+                // Comparar por logoNumber
+                if (logo.logoNumber && currentLogo.logoNumber) {
+                    return logo.logoNumber.trim() === currentLogo.logoNumber.trim();
+                }
+                return false;
+            });
+            
+            if (foundIndex >= 0) {
+                setEditingLogoIndex(foundIndex);
+                setLogoEditModalOpen(true);
+            } else {
+                // Se não encontrou, usar o último índice (onde o currentLogo deveria estar)
+                setEditingLogoIndex(logoInstructions.length - 1);
+                setLogoEditModalOpen(true);
+            }
+        } else {
+            // Se é um logo salvo, o índice já corresponde diretamente
+            if (logoIndex < savedLogos.length) {
+                const logoToEdit = savedLogos[logoIndex];
+                // Encontrar o índice nos logoInstructions
+                const foundIndex = logoInstructions.findIndex((logo, idx) => {
+                    // Comparar por ID primeiro (mais confiável)
+                    if (logo.id && logoToEdit.id) {
+                        return logo.id === logoToEdit.id;
+                    }
+                    // Comparar por logoNumber
+                    if (logo.logoNumber && logoToEdit.logoNumber) {
+                        return logo.logoNumber.trim() === logoToEdit.logoNumber.trim();
+                    }
+                    return false;
+                });
+                
+                if (foundIndex >= 0) {
+                    setEditingLogoIndex(foundIndex);
+                    setLogoEditModalOpen(true);
+                } else {
+                    // Se não encontrou, usar o índice original (deve ser o mesmo)
+                    setEditingLogoIndex(logoIndex);
+                    setLogoEditModalOpen(true);
+                }
+            }
+        }
+    }, [project]);
+
     // Handle tab switching from URL query parameters
     React.useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -861,9 +1043,38 @@ export default function ProjectDetails() {
     }
 
     const savedLogos = project.logoDetails?.logos || [];
-    // If no saved logos but we have currentLogo details, show that
-    const hasCurrentLogo = project.logoDetails?.currentLogo?.logoNumber || project.logoDetails?.logoNumber;
-    const logoInstructions = savedLogos.length > 0 ? savedLogos : (hasCurrentLogo ? [project.logoDetails.currentLogo || project.logoDetails] : []);
+    const currentLogo = project.logoDetails?.currentLogo || project.logoDetails;
+    
+    // Verificar se currentLogo é válido
+    const hasLogoNumber = currentLogo?.logoNumber?.trim() !== "";
+    const hasLogoName = currentLogo?.logoName?.trim() !== "";
+    const hasRequestedBy = currentLogo?.requestedBy?.trim() !== "";
+    const dimensions = currentLogo?.dimensions || {};
+    const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
+    const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
+    const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
+    const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
+    const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
+    const isCurrentLogoValid = hasLogoNumber && hasLogoName && hasRequestedBy && hasAtLeastOneDimension;
+    
+    // Combinar savedLogos com currentLogo válido (se não estiver já nos savedLogos)
+    let logoInstructions = [...savedLogos];
+    if (isCurrentLogoValid && currentLogo) {
+      // Verificar se currentLogo já está nos savedLogos
+      const alreadyInSaved = savedLogos.some(logo => 
+        (logo.id && currentLogo.id && logo.id === currentLogo.id) ||
+        (logo.logoNumber && currentLogo.logoNumber && logo.logoNumber === currentLogo.logoNumber)
+      );
+      
+      if (!alreadyInSaved) {
+        logoInstructions.push(currentLogo);
+      }
+    }
+    
+    // Fallback: se não há logos salvos nem currentLogo válido, mas há currentLogo com dados, mostrar
+    if (logoInstructions.length === 0 && currentLogo && (currentLogo.logoNumber || currentLogo.logoName)) {
+      logoInstructions = [currentLogo];
+    }
     
     // Also check for simulation data (AI Designer) - create a "simulation instruction" if there are decorations
     const hasSimulation = (project.canvasDecorations && project.canvasDecorations.length > 0) ||
@@ -1139,29 +1350,77 @@ export default function ProjectDetails() {
                                                             </div>
                                                         </div>
                                                         {!logo.isSimulation && (
-                                                            <div
-                                                                role="button"
-                                                                tabIndex={0}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    e.preventDefault();
-                                                                    console.log('🔗 Edit logo button clicked:', { logoInstructionIndex, idx, logoNumber: logo.logoNumber });
-                                                                    setEditingLogoIndex(logoInstructionIndex);
-                                                                    setLogoEditModalOpen(true);
-                                                                }}
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter' || e.key === ' ') {
-                                                                    e.stopPropagation();
+                                                            <div className="flex items-center gap-2">
+                                                                <div
+                                                                    role="button"
+                                                                    tabIndex={0}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
                                                                         e.preventDefault();
-                                                                    console.log('🔗 Edit logo button clicked:', { logoInstructionIndex, idx, logoNumber: logo.logoNumber });
+                                                                        console.log('🔗 Edit logo button clicked:', { logoInstructionIndex, idx, logoNumber: logo.logoNumber });
                                                                         setEditingLogoIndex(logoInstructionIndex);
                                                                         setLogoEditModalOpen(true);
-                                                                    }
-                                                                }}
-                                                                className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-3 py-1.5 h-8 text-sm font-medium rounded-lg bg-primary-50 text-primary hover:bg-primary-100 active:bg-primary-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                                                            >
-                                                                <Icon icon="lucide:edit-2" className="text-sm" />
-                                                                <span>{t('common.edit', 'Editar')}</span>
+                                                                    }}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                                        e.stopPropagation();
+                                                                            e.preventDefault();
+                                                                        console.log('🔗 Edit logo button clicked:', { logoInstructionIndex, idx, logoNumber: logo.logoNumber });
+                                                                            setEditingLogoIndex(logoInstructionIndex);
+                                                                            setLogoEditModalOpen(true);
+                                                                        }
+                                                                    }}
+                                                                    className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-3 py-1.5 h-8 text-sm font-medium rounded-lg bg-primary-50 text-primary hover:bg-primary-100 active:bg-primary-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                                                >
+                                                                    <Icon icon="lucide:edit-2" className="text-sm" />
+                                                                    <span>{t('common.edit', 'Editar')}</span>
+                                                                </div>
+                                                                <div
+                                                                    role="button"
+                                                                    tabIndex={0}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        e.preventDefault();
+                                                                        // Determinar se é currentLogo ou savedLogo
+                                                                        const savedLogos = project.logoDetails?.logos || [];
+                                                                        const currentLogo = project.logoDetails?.currentLogo || {};
+                                                                        const isCurrentLogo = logoInstructionIndex >= savedLogos.length;
+                                                                        
+                                                                        if (window.confirm(t('pages.projectDetails.confirmDeleteLogo', `Tem certeza que deseja eliminar o logo "${logo.logoName || logo.logoNumber || `Logo ${logoInstructionIndex + 1}`}"?`))) {
+                                                                            if (isCurrentLogo) {
+                                                                                // É o currentLogo
+                                                                                handleDeleteLogo(0, true);
+                                                                            } else {
+                                                                                // É um savedLogo
+                                                                                handleDeleteLogo(logoInstructionIndex, false);
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                                            e.stopPropagation();
+                                                                            e.preventDefault();
+                                                                            // Determinar se é currentLogo ou savedLogo
+                                                                            const savedLogos = project.logoDetails?.logos || [];
+                                                                            const currentLogo = project.logoDetails?.currentLogo || {};
+                                                                            const isCurrentLogo = logoInstructionIndex >= savedLogos.length;
+                                                                            
+                                                                            if (window.confirm(t('pages.projectDetails.confirmDeleteLogo', `Tem certeza que deseja eliminar o logo "${logo.logoName || logo.logoNumber || `Logo ${logoInstructionIndex + 1}`}"?`))) {
+                                                                                if (isCurrentLogo) {
+                                                                                    // É o currentLogo
+                                                                                    handleDeleteLogo(0, true);
+                                                                                } else {
+                                                                                    // É um savedLogo
+                                                                                    handleDeleteLogo(logoInstructionIndex, false);
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-3 py-1.5 h-8 text-sm font-medium rounded-lg bg-danger-50 text-danger hover:bg-danger-100 active:bg-danger-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
+                                                                >
+                                                                    <Icon icon="lucide:trash-2" className="text-sm" />
+                                                                    <span>{t('common.delete', 'Eliminar')}</span>
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </div>
@@ -1212,6 +1471,10 @@ export default function ProjectDetails() {
                                 budget={project.budget}
                                 canvasDecorations={project.canvasDecorations || []}
                                 decorationsByImage={project.decorationsByImage || {}}
+                                projectType={project.projectType}
+                                logoDetails={project.logoDetails}
+                                onEditLogo={handleEditLogoFromOrders}
+                                onDeleteLogo={handleDeleteLogo}
                             />
                         </Tab>
 

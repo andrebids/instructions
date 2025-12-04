@@ -61,13 +61,13 @@ export function NavigationFooter({
               </Button>
               <Button
                 color="primary"
-                onPress={onNext}
-                isLoading={isNavigating}
+                onPress={currentStep >= totalSteps ? onSubmit : onNext}
+                isLoading={loading || isNavigating}
                 isDisabled={!isValid || loading || isNavigating}
                 endContent={<Icon icon="lucide:check" />}
                 className="bg-blue-600 text-white"
               >
-                {isNavigating ? "Creating..." : "Finish"}
+                {loading || isNavigating ? "Creating..." : "Finish"}
               </Button>
             </>
           ) : currentStep < totalSteps ? (

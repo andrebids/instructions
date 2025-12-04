@@ -4,7 +4,7 @@ import { Icon } from "@iconify/react";
 import { getLocalTimeZone } from "@internationalized/date";
 import { SimulationCarousel } from "./SimulationCarousel";
 
-export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }) {
+export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, onAddLogo }) {
   const hasSimulations = formData.canvasImages && formData.canvasImages.length > 0;
   const simulationCount = formData.canvasImages?.length || 0;
 
@@ -141,14 +141,27 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
 
           return (
             <Card className="p-4">
-              <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                <Icon icon="lucide:package" className="text-primary" />
-                Logo Specifications {allLogos.length > 1 && `(${allLogos.length} logos)`}
-              </h3>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <Icon icon="lucide:package" className="text-primary" />
+                  Logo Specifications {allLogos.length > 1 && `(${allLogos.length} logos)`}
+                </h3>
+                {onAddLogo && (
+                  <Button
+                    size="sm"
+                    color="primary"
+                    variant="flat"
+                    startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
+                    onPress={onAddLogo}
+                  >
+                    Add Logo
+                  </Button>
+                )}
+              </div>
               <Accordion selectionMode="multiple" variant="splitted" className="px-0">
                 {allLogos.map((logo, logoIndex) => (
                   <AccordionItem
-                    key={logo.id || logoIndex}
+                    key={logo.id ? `logo-${logo.id}-${logoIndex}` : `logo-index-${logoIndex}-${logo.logoNumber || ''}`}
                     aria-label={`Logo ${logoIndex + 1}`}
                     title={
                       <div className="flex justify-between items-center flex-1 mr-4">
@@ -183,18 +196,23 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
-                              onDeleteLogo && onDeleteLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                              if (window.confirm(`Tem certeza que deseja eliminar o logo "${logo.logoName || logo.logoNumber || `Logo ${logoIndex + 1}`}"?`)) {
+                                onDeleteLogo && onDeleteLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                              }
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                onDeleteLogo && onDeleteLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                                if (window.confirm(`Tem certeza que deseja eliminar o logo "${logo.logoName || logo.logoNumber || `Logo ${logoIndex + 1}`}"?`)) {
+                                  onDeleteLogo && onDeleteLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                                }
                               }
                             }}
                             className="inline-flex items-center justify-center w-8 h-8 text-danger rounded-lg hover:bg-danger-50 active:bg-danger-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
+                            title="Eliminar logo"
                           >
-                            <Icon icon="lucide:trash" />
+                            <Icon icon="lucide:trash-2" className="w-4 h-4" />
                           </div>
                         </div>
                       </div>
@@ -387,7 +405,7 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
                       )}
 
                       {/* Attachments */}
-                      {((logo.generatedImage) || (formData.logoDetails?.attachmentFiles && formData.logoDetails.attachmentFiles.length > 0)) && (
+                      {((logo.generatedImage) || (logo.attachmentFiles && logo.attachmentFiles.length > 0)) && (
                         <div>
                           <h4 className="font-medium text-sm text-default-700 mb-2">Attachments</h4>
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -395,7 +413,36 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
                             {logo.generatedImage && (
                               <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-primary">
                                 <img
-                                  src={logo.generatedImage}
+                                  src={(() => {
+                                    // Construir URL - sempre usar caminhos relativos para o proxy do Vite funcionar
+                                    let imageUrl = logo.generatedImage;
+                                    
+                                    // Se for URL absoluta, extrair apenas o caminho
+                                    if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+                                      try {
+                                        const urlObj = new URL(imageUrl);
+                                        imageUrl = urlObj.pathname; // Usar apenas o caminho (proxy do Vite resolve)
+                                      } catch (e) {
+                                        const match = imageUrl.match(/\/api\/[^\s]+/);
+                                        if (match) imageUrl = match[0];
+                                      }
+                                    }
+                                    
+                                    // Se for caminho UNC do Windows, extrair nome do arquivo
+                                    if (imageUrl && (imageUrl.startsWith('\\\\') || imageUrl.startsWith('//'))) {
+                                      const filename = imageUrl.split(/[\\/]/).pop();
+                                      if (filename) imageUrl = `/api/files/${filename}`;
+                                    }
+                                    
+                                    // Garantir que começa com /api/
+                                    if (imageUrl && !imageUrl.startsWith('/api/') && imageUrl.startsWith('/')) {
+                                      imageUrl = `/api${imageUrl}`;
+                                    } else if (imageUrl && !imageUrl.startsWith('/')) {
+                                      imageUrl = `/api/files/${imageUrl}`;
+                                    }
+                                    
+                                    return imageUrl;
+                                  })()}
                                   alt="AI Generated"
                                   className="w-full h-full object-cover"
                                 />
@@ -406,23 +453,66 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo }
                             )}
 
                             {/* Uploaded Files */}
-                            {formData.logoDetails?.attachmentFiles && formData.logoDetails.attachmentFiles.map((file, index) => {
-                              const isImage = file.type?.startsWith('image/');
-                              const fileUrl = URL.createObjectURL(file);
+                            {logo.attachmentFiles && logo.attachmentFiles.map((file, index) => {
+                              const isImage = file.type?.startsWith('image/') || file.mimetype?.startsWith('image/') || file.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                              
+                              // Construir URL - sempre usar caminhos relativos para o proxy do Vite funcionar
+                              let fileUrl = file.url || file.path;
+                              let needsCleanup = false;
+                              
+                              if (!fileUrl && (file instanceof File || file instanceof Blob)) {
+                                try {
+                                  fileUrl = URL.createObjectURL(file);
+                                  needsCleanup = true;
+                                } catch (e) {
+                                  console.warn('Error creating object URL:', e);
+                                  fileUrl = null;
+                                }
+                              }
+                              
+                              // Se for URL absoluta, extrair apenas o caminho
+                              if (fileUrl && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://'))) {
+                                try {
+                                  const urlObj = new URL(fileUrl);
+                                  fileUrl = urlObj.pathname; // Usar apenas o caminho (proxy do Vite resolve)
+                                } catch (e) {
+                                  const match = fileUrl.match(/\/api\/[^\s]+/);
+                                  if (match) fileUrl = match[0];
+                                }
+                              }
+                              
+                              // Se for caminho UNC do Windows, extrair nome do arquivo
+                              if (fileUrl && (fileUrl.startsWith('\\\\') || fileUrl.startsWith('//'))) {
+                                const filename = fileUrl.split(/[\\/]/).pop();
+                                if (filename) fileUrl = `/api/files/${filename}`;
+                              }
+                              
+                              // Garantir que começa com /api/
+                              if (fileUrl && !fileUrl.startsWith('/api/') && fileUrl.startsWith('/') && !fileUrl.startsWith('blob:')) {
+                                fileUrl = `/api${fileUrl}`;
+                              } else if (fileUrl && !fileUrl.startsWith('/') && !fileUrl.startsWith('blob:')) {
+                                fileUrl = `/api/files/${fileUrl}`;
+                              }
 
                               return (
                                 <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-default-200">
-                                  {isImage ? (
+                                  {isImage && fileUrl ? (
                                     <img
                                       src={fileUrl}
-                                      alt={file.name}
+                                      alt={file.name || 'Attachment'}
                                       className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        if (needsCleanup && fileUrl) {
+                                          URL.revokeObjectURL(fileUrl);
+                                        }
+                                        e.target.style.display = 'none';
+                                      }}
                                     />
                                   ) : (
                                     <div className="w-full h-full flex flex-col items-center justify-center bg-default-100 p-2">
                                       <Icon icon="lucide:file" className="w-8 h-8 text-default-400 mb-2" />
                                       <p className="text-xs text-center text-default-600 truncate w-full px-2">
-                                        {file.name}
+                                        {file.name || 'File'}
                                       </p>
                                     </div>
                                   )}

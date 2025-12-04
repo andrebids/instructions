@@ -214,6 +214,7 @@ export const OrderManagementWidget = React.memo(() => {
             isIconOnly 
             variant="light" 
             className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+            aria-label="More options"
           >
             <Icon icon="lucide:more-horizontal" className="w-5 h-5" />
           </Button>

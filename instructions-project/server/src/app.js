@@ -613,24 +613,29 @@ app.post('/api/files/upload', upload.single('file'), (req, res) => {
 app.get('/api/files/:filename', (req, res) => {
   try {
     const filename = req.params.filename;
-    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    // Usar getUploadsDir() para suportar caminhos SMB
+    const uploadsDir = getUploadsDir();
     const filePath = path.join(uploadsDir, filename);
 
     // Security: prevent directory traversal
-    if (!filePath.startsWith(uploadsDir)) {
+    // Normalizar caminhos para comparação (importante para Windows/SMB)
+    const normalizedFilePath = path.normalize(filePath);
+    const normalizedUploadsDir = path.normalize(uploadsDir);
+    if (!normalizedFilePath.startsWith(normalizedUploadsDir)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
     // Check if file exists
     if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'File not found' });
+      console.warn(`⚠️ [FILES] Arquivo não encontrado: ${filePath}`);
+      return res.status(404).json({ error: 'File not found', path: filePath });
     }
 
     // Serve the file
     res.sendFile(filePath);
   } catch (error) {
     console.error('Error serving file:', error);
-    res.status(500).json({ error: 'Failed to serve file' });
+    res.status(500).json({ error: 'Failed to serve file', message: error.message });
   }
 });
 

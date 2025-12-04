@@ -85,6 +85,7 @@ export function NotificationToast({ notification, onClose }) {
                     variant="light"
                     onPress={onClose}
                     className="hover:bg-default-100 dark:hover:bg-default-200 transition-colors flex-shrink-0"
+                    aria-label="Close notification"
                 >
                     <Iconify icon="lucide:x" width={16} />
                 </Button>
