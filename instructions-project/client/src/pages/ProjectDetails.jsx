@@ -1177,6 +1177,9 @@ export default function ProjectDetails() {
     
     // Combine logo instructions with simulation instructions
     const displayLogos = [...logoInstructions, ...simulationInstruction];
+    
+    // Calculate total instructions count for badge
+    const instructionsCount = displayLogos.length;
 
     return (
         <div className="flex flex-col h-full">
@@ -1392,6 +1395,11 @@ export default function ProjectDetails() {
                                 <div className="flex items-center gap-2">
                                     <Icon icon="lucide:file-text" />
                                     <span>{t('pages.projectDetails.tabs.instructions', 'Instruções')}</span>
+                                    {instructionsCount > 0 && (
+                                        <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-default-200 dark:bg-default-100 text-default-700 dark:text-default-600 text-xs font-medium">
+                                            {instructionsCount}
+                                        </span>
+                                    )}
                                 </div>
                             }
                         >

@@ -77,7 +77,8 @@ export function useAuth() {
       const baseUrl = getServerBaseUrl();
 
       // Auth.js Credentials provider usa /auth/callback/credentials
-      const response = await fetch(`${baseUrl}/auth/callback/credentials`, {
+      const credentialsUrl = baseUrl ? `${baseUrl}/auth/callback/credentials` : '/auth/callback/credentials';
+      const response = await fetch(credentialsUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -95,7 +96,7 @@ export function useAuth() {
       if (response.ok) {
         // Atualizar sessão após login bem-sucedido
         const fetchSession = async () => {
-          const sessionUrl = `${baseUrl}/auth/session`;
+          const sessionUrl = baseUrl ? `${baseUrl}/auth/session` : '/auth/session';
           const sessionResponse = await fetch(sessionUrl, { 
             credentials: 'include',
             cache: import.meta.env.DEV ? 'no-store' : 'default',
@@ -122,26 +123,18 @@ export function useAuth() {
 
   const signOut = async () => {
     try {
-      // Usar caminho relativo em produção para evitar problemas de CSP
-      const isDev = import.meta.env.DEV;
-      let baseUrl;
-
-      if (isDev && import.meta.env.VITE_API_URL) {
-        const apiUrl = import.meta.env.VITE_API_URL;
-        baseUrl = apiUrl.replace('/api', '');
-      } else {
-        // Em produção, usar caminho relativo (mesma origem)
-        baseUrl = '';
-      }
+      const baseUrl = getServerBaseUrl();
 
       // Obter token CSRF antes de fazer logout
-      const csrfResponse = await fetch(`${baseUrl}/auth/csrf`, { 
+      const csrfUrl = baseUrl ? `${baseUrl}/auth/csrf` : '/auth/csrf';
+      const csrfResponse = await fetch(csrfUrl, { 
         credentials: 'include',
         cache: import.meta.env.DEV ? 'no-store' : 'default',
       });
       const { csrfToken } = await csrfResponse.json();
 
-      await fetch(`${baseUrl}/auth/signout`, {
+      const signoutUrl = baseUrl ? `${baseUrl}/auth/signout` : '/auth/signout';
+      await fetch(signoutUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

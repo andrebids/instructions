@@ -67,11 +67,24 @@ export function AIAssistantChat({
         }
     }, [onAIStateChange, initialAIState]);
 
+    // Função para normalizar caminhos antigos para os novos
+    const normalizeImageUrl = React.useCallback((url) => {
+        if (!url) return null;
+        // Converter caminhos antigos /AIGENERATOR/ ou /api/AIGENERATOR/ para /api/files/
+        if (url.includes('AIGENERATOR/')) {
+            const filename = url.split('AIGENERATOR/')[1];
+            return `/api/files/${filename}`;
+        }
+        return url;
+    }, []);
+
     // Carregar estado inicial quando o modal abre ou quando initialAIState muda
     React.useEffect(() => {
         if (isOpen && initialAIState) {
             setGenerationStatus(initialAIState.generationStatus || 'idle');
-            setGeneratedImageUrl(initialAIState.generatedImageUrl || null);
+            // Normalizar URL se necessário (converter caminhos antigos)
+            const normalizedUrl = normalizeImageUrl(initialAIState.generatedImageUrl);
+            setGeneratedImageUrl(normalizedUrl);
             setGenerationType(initialAIState.generationType || null);
         } else if (isOpen && !initialAIState) {
             // Se não há estado inicial, resetar para valores padrão
@@ -79,7 +92,7 @@ export function AIAssistantChat({
             setGeneratedImageUrl(null);
             setGenerationType(null);
         }
-    }, [isOpen, initialAIState?.generatedImageUrl, initialAIState?.generationStatus, initialAIState?.generationType]);
+    }, [isOpen, initialAIState?.generatedImageUrl, initialAIState?.generationStatus, initialAIState?.generationType, normalizeImageUrl]);
 
     // Salvar estado quando o modal fecha
     React.useEffect(() => {
@@ -105,8 +118,8 @@ export function AIAssistantChat({
         if (['coelho azul', 'blue rabbit', 'lapin', 'lapin bleu', 'rabbit', 'coelho'].includes(normalizedPrompt)) {
             setGenerationType('video');
             setGenerationStatus('generating');
-            setGeneratedImageUrl('/AIGENERATOR/coelho.webp');
-            saveAIState({ generationType: 'video', generationStatus: 'generating', generatedImageUrl: '/AIGENERATOR/coelho.webp' });
+            setGeneratedImageUrl('/api/files/coelho.webp');
+            saveAIState({ generationType: 'video', generationStatus: 'generating', generatedImageUrl: '/api/files/coelho.webp' });
 
             // Fallback timeout if video doesn't trigger
             setTimeout(() => {
@@ -116,9 +129,9 @@ export function AIAssistantChat({
         } else if (['pai natal', 'santa claus', 'pere noel', 'santa', 'noel'].includes(normalizedPrompt)) {
             setGenerationType('reveal');
             setGenerationStatus('generating');
-            setGeneratedImageUrl('/AIGENERATOR/PAINATAL.webp');
+            setGeneratedImageUrl('/api/files/PAINATAL.webp');
             setRevealProgress(0);
-            saveAIState({ generationType: 'reveal', generationStatus: 'generating', generatedImageUrl: '/AIGENERATOR/PAINATAL.webp' });
+            saveAIState({ generationType: 'reveal', generationStatus: 'generating', generatedImageUrl: '/api/files/PAINATAL.webp' });
 
             // Progressive reveal animation
             let progress = 0;
@@ -212,7 +225,7 @@ export function AIAssistantChat({
                                             onEnded={handleVideoEnded}
                                             className="max-w-full max-h-full object-contain"
                                         >
-                                            <source src="/AIGENERATOR/coelho.webm" type="video/webm" />
+                                            <source src="/api/files/coelho.webm" type="video/webm" />
                                         </video>
                                     </div>
                                 )}
@@ -221,12 +234,16 @@ export function AIAssistantChat({
                                     <div className="flex h-full w-full items-center justify-center">
                                         <div className="relative max-w-full max-h-full">
                                             <img
-                                                src={generatedImageUrl}
+                                                src={normalizeImageUrl(generatedImageUrl)}
                                                 alt="Generating"
                                                 className="max-w-full max-h-full object-contain"
                                                 style={{
                                                     filter: `blur(${20 - (revealProgress * 0.2)}px)`,
                                                     clipPath: `inset(0 0 ${100 - revealProgress}% 0)`
+                                                }}
+                                                onError={(e) => {
+                                                    console.warn('Failed to load image:', normalizeImageUrl(generatedImageUrl));
+                                                    e.target.style.display = 'none';
                                                 }}
                                             />
                                         </div>
@@ -237,9 +254,13 @@ export function AIAssistantChat({
                                     <div className="flex h-full w-full flex-col gap-4">
                                         <div className="flex-1 flex items-center justify-center overflow-hidden">
                                             <img
-                                                src={generatedImageUrl}
+                                                src={normalizeImageUrl(generatedImageUrl)}
                                                 alt="Generated"
                                                 className="max-w-full max-h-full object-contain rounded-lg"
+                                                onError={(e) => {
+                                                    console.warn('Failed to load image:', normalizeImageUrl(generatedImageUrl));
+                                                    e.target.style.display = 'none';
+                                                }}
                                             />
                                         </div>
                                         <div className="flex justify-center gap-2">
