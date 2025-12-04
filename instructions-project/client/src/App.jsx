@@ -94,10 +94,10 @@ function AppLayout() {
       {isDark && !showCreateProjectForm && (
         <div className="fixed inset-0 z-0 pointer-events-none">
           <Aurora
-            colorStops={["#03135F", "#1A2B79", "#03135F"]}
+            colorStops={["#0a0c47", "#0f1143"]}
             blend={1}
             amplitude={1.0}
-            speed={0.8}
+            speed={1}
           />
         </div>
       )}
@@ -187,10 +187,10 @@ export default function App() {
             {isDark && (
               <div className="fixed inset-0 z-0 pointer-events-none">
                 <Aurora
-                  colorStops={["#03135F", "#1A2B79", "#03135F"]}
+                  colorStops={["#0a0c47", "#0f1143"]}
                   blend={1}
                   amplitude={1.0}
-                  speed={0.8}
+                  speed={1}
                 />
               </div>
             )}
