@@ -660,6 +660,6 @@ ul[data-type="taskList"] li[data-checked="true"]>div {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-transparent text-foreground;
   }
 }

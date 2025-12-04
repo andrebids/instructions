@@ -19,7 +19,7 @@ const SignIn = React.lazy(() => import("./pages/SignIn"));
 const ProjectDetails = React.lazy(() => import("./pages/ProjectDetails"));
 
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center h-screen w-full bg-background/30">
+  <div className="flex items-center justify-center h-screen w-full bg-transparent">
     <Spinner size="lg" color="primary" />
   </div>
 );
@@ -90,11 +90,11 @@ function AppLayout() {
   }, []);
 
   return (
-    <div className="bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background text-foreground flex h-screen relative">
+    <div className="bg-transparent text-foreground flex h-screen relative">
       {isDark && !showCreateProjectForm && (
         <div className="fixed inset-0 z-0 pointer-events-none">
           <Aurora
-            colorStops={["#0a0c47", "#0f1143"]}
+            colorStops={["#141771", "#0d0f4f"]}
             blend={1}
             amplitude={1.0}
             speed={1}
@@ -107,7 +107,7 @@ function AppLayout() {
             <SidebarNavigation />
           </aside>
         )}
-        <main className={`flex flex-1 flex-col overflow-hidden ${isHandheld ? "pb-24" : "pb-0"}`}>
+        <main className={`flex flex-1 flex-col overflow-hidden bg-transparent ${isHandheld ? "pb-24" : "pb-0"}`}>
           <Header />
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
@@ -183,18 +183,18 @@ export default function App() {
         <OfflineReadyNotification />
         <NotificationContainer />
         <SignedOut>
-          <div className="bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background text-foreground flex h-screen relative">
+          <div className="bg-transparent text-foreground flex h-screen relative">
             {isDark && (
               <div className="fixed inset-0 z-0 pointer-events-none">
                 <Aurora
-                  colorStops={["#0a0c47", "#0f1143"]}
+                  colorStops={["#141771", "#0d0f4f"]}
                   blend={1}
                   amplitude={1.0}
                   speed={1}
                 />
               </div>
             )}
-            <main className="relative z-10 flex flex-1 flex-col overflow-hidden">
+            <main className="relative z-10 flex flex-1 flex-col overflow-hidden bg-transparent">
               <Suspense fallback={<LoadingFallback />}>
                 <Routes>
                   <Route path="/" element={<Landing />} />

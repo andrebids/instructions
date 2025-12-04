@@ -7,7 +7,7 @@ export const Scroller = React.forwardRef(({
   ...props
 }, ref) => {
   const scrollbarClass = hideScrollbar ? "scrollbar-hide" : "";
-  const combinedClassName = `overflow-auto ${scrollbarClass} ${className}`.trim();
+  const combinedClassName = `overflow-auto bg-transparent ${scrollbarClass} ${className}`.trim();
 
   return (
     <div
