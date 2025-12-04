@@ -81,22 +81,34 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-  origin: [
-    'http://localhost:3003',
-    'http://localhost:3005',
-    'http://192.168.2.16:3003',
-    'http://192.168.2.16:3005',
-    'http://192.168.2.28:3003',
-    'http://192.168.2.28:3005',
-    'http://192.168.2.108:3003',
-    'http://192.168.2.108:3005',
-    'https://thecore.dsproject.pt',
-    'http://thecore.dsproject.pt',
-    'https://test2.dsproject.pt',
-    'http://test2.dsproject.pt',
-    'https://thecore.blachere-illumination.ai',
-    'http://thecore.blachere-illumination.ai',
-  ],
+  origin: function (origin, callback) {
+    // Permitir requisições sem origin (ex: mobile apps, Postman)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Lista de origens permitidas
+    const allowedOrigins = [
+      'http://localhost:3003',
+      'http://localhost:3005',
+      'https://thecore.dsproject.pt',
+      'http://thecore.dsproject.pt',
+      'https://test2.dsproject.pt',
+      'http://test2.dsproject.pt',
+      'https://thecore.blachere-illumination.ai',
+      'http://thecore.blachere-illumination.ai',
+    ];
+    
+    // Permitir qualquer IP na rede local 192.168.2.*
+    const localNetworkRegex = /^http:\/\/192\.168\.2\.\d{1,3}:(3003|3005|5001)$/;
+    
+    if (allowedOrigins.includes(origin) || localNetworkRegex.test(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️  [CORS] Origem bloqueada: ${origin}`);
+      callback(new Error('Não permitido pelo CORS'));
+    }
+  },
   credentials: true
 }));
 // Aumentar limite de body parser para suportar uploads maiores

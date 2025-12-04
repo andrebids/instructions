@@ -26,8 +26,23 @@ export function isBackgroundSyncAvailable() {
     return isAvailable;
   }
 
+  // Verificar se Service Worker está disponível
   const hasServiceWorker = 'serviceWorker' in navigator;
-  const hasSync = 'sync' in ServiceWorkerRegistration.prototype;
+  
+  // Verificar se Background Sync API está disponível
+  // ServiceWorkerRegistration pode não estar definido em alguns contextos
+  let hasSync = false;
+  try {
+    if (typeof ServiceWorkerRegistration !== 'undefined' && 
+        ServiceWorkerRegistration.prototype && 
+        'sync' in ServiceWorkerRegistration.prototype) {
+      hasSync = true;
+    }
+  } catch (error) {
+    // ServiceWorkerRegistration não está disponível
+    hasSync = false;
+  }
+  
   const available = hasServiceWorker && hasSync;
   
   // Cache do resultado

@@ -5,6 +5,7 @@ import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 import GlassSurface from '../components/ui/GlassSurface';
 import { Input, Button } from '@heroui/react';
+import { getServerBaseUrl } from '../utils/serverUrl.js';
 
 import LoginSnippet from '../components/LoginSnippet';
 
@@ -45,17 +46,7 @@ export default function SignIn() {
     }
 
     try {
-      // Usar caminho relativo em produção para evitar problemas de CSP
-      const isDev = import.meta.env.DEV;
-      let baseUrl;
-      
-      if (isDev && import.meta.env.VITE_API_URL) {
-        const apiUrl = import.meta.env.VITE_API_URL;
-        baseUrl = apiUrl.replace('/api', '');
-      } else {
-        // Em produção, usar caminho relativo (mesma origem)
-        baseUrl = '';
-      }
+      const baseUrl = getServerBaseUrl();
       
       console.log('🔐 [SignIn] Iniciando login...');
       console.log('   - Base URL:', baseUrl || '(caminho relativo)');

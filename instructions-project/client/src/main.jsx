@@ -12,6 +12,7 @@ import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 import { setupNotificationClickListener } from './services/pushNotifications'
 import { isBackgroundSyncAvailable } from './services/backgroundSync'
+import { getServerBaseUrl } from './utils/serverUrl.js'
 import './i18n' // Inicializar i18next
 
 // Interceptar e silenciar erros do cliente Vite HMR ANTES de qualquer outro código
@@ -273,15 +274,16 @@ if (typeof window !== 'undefined' && !window.__iconifyConfigured) {
     'https://api.unisvg.com'
   ];
 
-  // Construir URL do proxy
+  // Construir URL do proxy usando detecção automática de IP da rede
   const isDev = import.meta.env.DEV;
   let proxyBaseUrl;
 
   if (isDev) {
-    // Em desenvolvimento, usar localhost se VITE_API_URL não estiver definido
-    proxyBaseUrl = import.meta.env.VITE_API_URL
-      ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') + '/api/icons'
-      : 'http://localhost:5000/api/icons';
+    // Usar getServerBaseUrl() para detectar automaticamente se está sendo acessado via IP da rede
+    const serverBaseUrl = getServerBaseUrl();
+    proxyBaseUrl = serverBaseUrl 
+      ? `${serverBaseUrl}/api/icons`
+      : '/api/icons'; // Caminho relativo quando em localhost (usa proxy do Vite)
   } else {
     // Em produção, sempre usar caminho relativo para evitar problemas de CSP
     // Isso garante que funcione com a mesma origem
