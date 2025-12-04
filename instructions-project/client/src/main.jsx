@@ -92,6 +92,24 @@ if (typeof window !== 'undefined') {
       return false;
     }
 
+    // Filtrar erros 404 de imagens (arquivos temporários ou faltantes)
+    // Esses erros são tratados pelos componentes com onError handlers
+    if (event.target && (event.target.tagName === 'IMG' || event.target.tagName === 'IMAGE')) {
+      const imgSrc = event.target.src || url;
+      if (typeof imgSrc === 'string' && (
+        imgSrc.includes('thumb_temp_') ||
+        imgSrc.includes('temp_dayImage_') ||
+        imgSrc.includes('temp_nightImage_') ||
+        imgSrc.includes('/uploads/products/') ||
+        (imgSrc.includes('/uploads/') && (message.includes('404') || message.includes('Not Found')))
+      )) {
+        // Silenciar erros 404 de imagens - os componentes já têm fallbacks
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+      }
+    }
+
     // Filtrar erros do Iconify (serão tratados pelo proxy abaixo)
     if (typeof url === 'string' && (
       url.includes('api.iconify.design') ||
@@ -205,6 +223,18 @@ console.error = function (...args) {
   const message = args.join(' ');
   const firstArg = args[0] || '';
 
+  // Filtrar erros 404 de imagens (arquivos temporários ou faltantes)
+  // Esses erros são tratados pelos componentes com onError handlers
+  if (message.includes('Failed to load resource') && (
+    message.includes('thumb_temp_') ||
+    message.includes('temp_dayImage_') ||
+    message.includes('temp_nightImage_') ||
+    message.includes('/uploads/products/') ||
+    (message.includes('/uploads/') && (message.includes('404') || message.includes('Not Found')))
+  )) {
+    return;
+  }
+
   // Filtrar erros de CORS do Iconify (serão tratados pelo proxy abaixo)
   if ((message.includes('CORS') || message.includes('Failed to load resource')) && (
     message.includes('api.iconify.design') ||
@@ -254,6 +284,17 @@ console.warn = function (...args) {
   }
   // Filtrar aviso de tag meta deprecada (não crítico)
   if (message.includes('apple-mobile-web-app-capable') && message.includes('deprecated')) {
+    return;
+  }
+  // Filtrar avisos de acessibilidade do HeroUI
+  // (alguns componentes internos do HeroUI ainda geram esses avisos mesmo com aria-label)
+  if (message.includes('aria-label') && message.includes('aria-labelledby') && message.includes('accessibility')) {
+    // Silenciar avisos de acessibilidade - os componentes principais já foram corrigidos
+    return;
+  }
+  // Filtrar logs de validação excessivos (pode vir de código em cache)
+  if ((message.includes('validateStepLogoInstructions') || message.includes('Validation check')) && 
+      (message.includes('🔍') || message.includes('Object'))) {
     return;
   }
   originalWarn.apply(console, args);

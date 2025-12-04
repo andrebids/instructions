@@ -32,6 +32,7 @@ export function ClientAutocomplete({
         </Button>
       </div>
       <Autocomplete
+        aria-label={t('pages.projectDetails.clientAutocomplete.label')}
         placeholder={t('pages.projectDetails.clientAutocomplete.placeholder')}
         isRequired
         onSelectionChange={onSelectionChange}

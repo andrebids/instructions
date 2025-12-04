@@ -178,37 +178,7 @@ export const validateStepLogoInstructions = (formData) => {
     }
   });
 
-  // Debug: Log detalhado para entender o problema
-  console.log("🔍 [validateStepLogoInstructions] Validation check:", {
-    isValid,
-    isCurrentLogoValid,
-    isCurrentLogoEmpty,
-    savedLogosCount: savedLogos.length,
-    hasAtLeastOneDimension,
-    dimensions: dimensions,
-    dimensionChecks: { hasHeight, hasLength, hasWidth, hasDiameter },
-    dimensionValues: {
-      height: dimensions.height?.value,
-      length: dimensions.length?.value,
-      width: dimensions.width?.value,
-      diameter: dimensions.diameter?.value
-    },
-    requiredFields: {
-      logoNumber: !!currentLogo.logoNumber?.trim(),
-      logoName: !!currentLogo.logoName?.trim(),
-      description: !!currentLogo.description?.trim(),
-      requestedBy: !!currentLogo.requestedBy?.trim(),
-      fixationType: !!currentLogo.fixationType?.trim()
-    },
-    requiredFieldValues: {
-      logoNumber: currentLogo.logoNumber,
-      logoName: currentLogo.logoName,
-      description: currentLogo.description,
-      requestedBy: currentLogo.requestedBy,
-      fixationType: currentLogo.fixationType
-    },
-    hasValidSavedLogo
-  });
+  // Debug log removed to prevent console spam - use logger.validation() instead for debugging
 
   return isValid;
 };

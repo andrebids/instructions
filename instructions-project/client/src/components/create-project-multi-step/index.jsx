@@ -206,7 +206,12 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
             componentes: [],
             bolas: []
           },
-          attachmentFiles: []
+          attachmentFiles: [],
+          isModification: false,
+          baseProductId: null,
+          baseProduct: null,
+          relatedProducts: [],
+          productSizes: []
         }
       });
     } else {
@@ -234,7 +239,12 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
             componentes: [],
             bolas: []
           },
-          attachmentFiles: []
+          attachmentFiles: [],
+          isModification: false,
+          baseProductId: null,
+          baseProduct: null,
+          relatedProducts: [],
+          productSizes: []
         }
       });
     }
