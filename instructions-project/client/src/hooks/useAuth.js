@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import i18n from '../i18n';
+import { getApiBaseUrl } from '../utils/apiBaseUrl.js';
 
 /**
  * Hook para gerenciar autenticação com Auth.js
@@ -11,18 +12,8 @@ export function useAuth() {
   // Buscar sessão do Auth.js
   const fetchSession = useCallback(async () => {
     try {
-      // Usar caminho relativo em produção para evitar problemas de CSP
-      const isDev = import.meta.env.DEV;
-      let sessionUrl;
-
-      if (isDev && import.meta.env.VITE_API_URL) {
-        const apiUrl = import.meta.env.VITE_API_URL;
-        const baseUrl = apiUrl.replace('/api', ''); // Remover /api para obter base URL
-        sessionUrl = `${baseUrl}/auth/session`;
-      } else {
-        // Em produção, usar caminho relativo (mesma origem)
-        sessionUrl = '/auth/session';
-      }
+      const baseUrl = getApiBaseUrl();
+      const sessionUrl = `${baseUrl}/auth/session`;
 
       const response = await fetch(sessionUrl, {
         credentials: 'include',
@@ -83,17 +74,7 @@ export function useAuth() {
 
   const signIn = async (email, password, options = {}) => {
     try {
-      // Usar caminho relativo em produção para evitar problemas de CSP
-      const isDev = import.meta.env.DEV;
-      let baseUrl;
-
-      if (isDev && import.meta.env.VITE_API_URL) {
-        const apiUrl = import.meta.env.VITE_API_URL;
-        baseUrl = apiUrl.replace('/api', '');
-      } else {
-        // Em produção, usar caminho relativo (mesma origem)
-        baseUrl = '';
-      }
+      const baseUrl = getApiBaseUrl();
 
       // Auth.js Credentials provider usa /auth/callback/credentials
       const response = await fetch(`${baseUrl}/auth/callback/credentials`, {
@@ -141,17 +122,7 @@ export function useAuth() {
 
   const signOut = async () => {
     try {
-      // Usar caminho relativo em produção para evitar problemas de CSP
-      const isDev = import.meta.env.DEV;
-      let baseUrl;
-
-      if (isDev && import.meta.env.VITE_API_URL) {
-        const apiUrl = import.meta.env.VITE_API_URL;
-        baseUrl = apiUrl.replace('/api', '');
-      } else {
-        // Em produção, usar caminho relativo (mesma origem)
-        baseUrl = '';
-      }
+      const baseUrl = getApiBaseUrl();
 
       // Obter token CSRF antes de fazer logout
       const csrfResponse = await fetch(`${baseUrl}/auth/csrf`, { 

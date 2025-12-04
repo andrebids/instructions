@@ -5,6 +5,7 @@ import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 import GlassSurface from '../components/ui/GlassSurface';
 import { Input, Button } from '@heroui/react';
+import { getApiBaseUrl } from '../utils/apiBaseUrl.js';
 
 import LoginSnippet from '../components/LoginSnippet';
 
@@ -45,28 +46,54 @@ export default function SignIn() {
     }
 
     try {
-      // Usar caminho relativo em produção para evitar problemas de CSP
-      const isDev = import.meta.env.DEV;
-      let baseUrl;
+      const baseUrl = getApiBaseUrl();
+      // Garantir que baseUrl não tenha barras duplas ou caracteres inválidos
+      let cleanBaseUrl = baseUrl ? String(baseUrl).trim() : '';
+      // Remover barras duplas (mas manter http://)
+      cleanBaseUrl = cleanBaseUrl.replace(/([^:]\/)\/+/g, '$1');
+      // Garantir que não termina com barra
+      cleanBaseUrl = cleanBaseUrl.replace(/\/$/, '');
       
-      if (isDev && import.meta.env.VITE_API_URL) {
-        const apiUrl = import.meta.env.VITE_API_URL;
-        baseUrl = apiUrl.replace('/api', '');
-      } else {
-        // Em produção, usar caminho relativo (mesma origem)
-        baseUrl = '';
-      }
+      const csrfUrl = cleanBaseUrl ? `${cleanBaseUrl}/auth/csrf` : '/auth/csrf';
       
-      console.log('🔐 [SignIn] Iniciando login...');
+      // Log visível para debug
+      const debugMsg = `Hostname=${window.location.hostname}, BaseURL=${baseUrl}, CleanURL=${cleanBaseUrl}`;
+      console.log('🔐 [SignIn] Iniciando login...', debugMsg);
+      console.log('   - Hostname original:', window.location.hostname);
       console.log('   - Base URL:', baseUrl || '(caminho relativo)');
+      console.log('   - Base URL limpa:', cleanBaseUrl || '(caminho relativo)');
+      console.log('   - CSRF URL:', csrfUrl);
       console.log('   - Email:', email.trim());
       
+      // Verificar conectividade com o servidor antes de tentar login
+      if (cleanBaseUrl) {
+        console.log('🔍 [SignIn] Verificando conectividade com o servidor...');
+        try {
+          const healthCheck = await fetch(`${cleanBaseUrl}/health`, {
+            method: 'GET',
+            credentials: 'include',
+          }).catch(() => null);
+          
+          if (healthCheck && healthCheck.ok) {
+            console.log('✅ [SignIn] Servidor está acessível');
+          } else {
+            console.warn('⚠️  [SignIn] Health check falhou ou servidor não respondeu');
+          }
+        } catch (healthError) {
+          console.warn('⚠️  [SignIn] Erro ao verificar health check:', healthError);
+        }
+      }
+      
       // Primeiro, obter o token CSRF do Auth.js
-      console.log('🔐 [SignIn] Obtendo token CSRF...');
-      const csrfResponse = await fetch(`${baseUrl}/auth/csrf`, {
+      console.log('🔐 [SignIn] Obtendo token CSRF de:', csrfUrl);
+      const csrfResponse = await fetch(csrfUrl, {
         credentials: 'include',
+        method: 'GET',
       }).catch(csrfError => {
         console.error('❌ [SignIn] Erro ao obter CSRF:', csrfError);
+        console.error('   - Tipo:', csrfError.name);
+        console.error('   - Mensagem:', csrfError.message);
+        console.error('   - URL tentada:', csrfUrl);
         throw new Error(`Erro ao conectar com o servidor: ${csrfError.message}`);
       });
       
@@ -82,7 +109,7 @@ export default function SignIn() {
       
       // Auth.js Credentials provider usa /auth/callback/credentials com CSRF token
       console.log('🔐 [SignIn] Enviando credenciais...');
-      const credentialsUrl = `${baseUrl}/auth/callback/credentials`;
+      const credentialsUrl = cleanBaseUrl ? `${cleanBaseUrl}/auth/callback/credentials` : '/auth/callback/credentials';
       console.log('   - URL:', credentialsUrl);
       
       // Usar redirect: 'manual' para capturar redirecionamentos e verificar sessão
@@ -120,7 +147,8 @@ export default function SignIn() {
           
           // Verificar se a sessão foi criada
           try {
-            const sessionResponse = await fetch(`${baseUrl}/auth/session`, {
+            const sessionUrl = cleanBaseUrl ? `${cleanBaseUrl}/auth/session` : '/auth/session';
+            const sessionResponse = await fetch(sessionUrl, {
               credentials: 'include',
             });
             
@@ -165,11 +193,13 @@ export default function SignIn() {
         console.error('   - Response url:', response?.url);
         
         // Tentar verificar se o servidor está acessível
-        try {
-          const healthCheck = await fetch(`${baseUrl}/health`, { method: 'GET' });
-          console.log('   - Health check:', healthCheck.status);
-        } catch (healthError) {
-          console.error('   - Health check falhou:', healthError);
+        if (cleanBaseUrl) {
+          try {
+            const healthCheck = await fetch(`${cleanBaseUrl}/health`, { method: 'GET' });
+            console.log('   - Health check:', healthCheck.status);
+          } catch (healthError) {
+            console.error('   - Health check falhou:', healthError);
+          }
         }
         
         setError('Erro de conexão (Status 0). Isso geralmente indica que a requisição foi bloqueada pelo navegador. Verifique: 1) Se o servidor está rodando na porta 5000, 2) Se não há problemas de CORS, 3) Se não há extensões do navegador bloqueando requisições.');
@@ -258,13 +288,42 @@ export default function SignIn() {
         }
       }
     } catch (error) {
-      console.error('Erro ao fazer login:', error);
+      console.error('❌ [SignIn] Erro completo:', error);
+      console.error('   - Nome:', error.name);
+      console.error('   - Mensagem:', error.message);
+      console.error('   - Stack:', error.stack);
+      
       if (error.message.includes('CSRF')) {
         setError('Erro de segurança. Por favor, recarregue a página e tente novamente.');
       } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        setError('Erro ao conectar com o servidor. Verifique sua conexão e tente novamente.');
+        const originalHostname = window.location.hostname;
+        let hostname = String(originalHostname);
+        
+        // Sanitizar hostname da mesma forma que na função getApiBaseUrl
+        hostname = hostname.replace(/:/g, '.');
+        hostname = hostname.replace(/[^0-9.]/g, '');
+        
+        // Reconstruir IP se válido
+        const ipParts = hostname.split('.');
+        if (ipParts.length === 4 && ipParts.every(part => /^\d{1,3}$/.test(part))) {
+          hostname = ipParts.join('.');
+        }
+        
+        const isLocalIP = /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
+        const serverUrl = isLocalIP ? `http://${hostname}:5000` : 'servidor';
+        
+        // Mostrar informações detalhadas na mensagem de erro
+        const debugInfo = `Hostname: ${originalHostname} | IP: ${hostname} | URL: ${serverUrl}`;
+        
+        console.error('❌ [SignIn] Detalhes da conexão:');
+        console.error('   - Hostname original:', originalHostname);
+        console.error('   - Hostname sanitizado:', hostname);
+        console.error('   - URL do servidor:', serverUrl);
+        console.error('   - URL completa da página:', window.location.href);
+        
+        setError(`Erro ao conectar com o servidor em ${serverUrl}. ${debugInfo} Verifique: 1) Servidor rodando na porta 5000, 2) Firewall permite porta 5000, 3) IP correto.`);
       } else {
-        setError('Erro inesperado. Por favor, tente novamente.');
+        setError(`Erro inesperado: ${error.message}. Por favor, tente novamente.`);
       }
     } finally {
       setLoading(false);
@@ -282,24 +341,34 @@ export default function SignIn() {
 
         <form onSubmit={handleSignIn} className="space-y-4">
           {error && (
-            <div className="p-4 rounded-lg bg-danger/10 border border-danger/20 text-danger text-sm flex items-start gap-2">
-              <svg 
-                className="w-5 h-5 flex-shrink-0 mt-0.5" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-                />
-              </svg>
-              <div className="flex-1">
-                <p className="font-medium mb-1">Erro no login</p>
-                <p>{error}</p>
+            <div className="p-4 rounded-lg bg-danger/10 border border-danger/20 text-danger text-sm">
+              <div className="flex items-start gap-2">
+                <svg 
+                  className="w-5 h-5 flex-shrink-0 mt-0.5" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                  />
+                </svg>
+                <div className="flex-1">
+                  <p className="font-medium mb-1">Erro no login</p>
+                  <p className="whitespace-pre-wrap break-words">{error}</p>
+                </div>
               </div>
+              {/* Mostrar informações de debug na tela */}
+              {typeof window !== 'undefined' && (
+                <div className="mt-3 pt-3 border-t border-danger/20 text-xs opacity-75">
+                  <p><strong>Debug:</strong> Hostname: {window.location.hostname}</p>
+                  <p><strong>URL:</strong> {window.location.href}</p>
+                  <p><strong>Esperado:</strong> http://{window.location.hostname.replace(/:/g, '.').replace(/[^0-9.]/g, '').split('.').filter(p => /^\d{1,3}$/.test(p)).join('.')}:5000</p>
+                </div>
+              )}
             </div>
           )}
 

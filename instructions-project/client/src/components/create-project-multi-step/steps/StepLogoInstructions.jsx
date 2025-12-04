@@ -248,7 +248,7 @@ const AutocompleteWithMarquee = React.forwardRef((props, ref) => {
 AutocompleteWithMarquee.displayName = 'AutocompleteWithMarquee';
 
 // Componente para exibir um item de attachment com preview de imagem
-const AttachmentItem = ({ file, index, onRemove }) => {
+const AttachmentItem = ({ file, index, onRemove, onEdit }) => {
   const [imageError, setImageError] = React.useState(false);
   const [imageLoading, setImageLoading] = React.useState(true);
   
@@ -366,17 +366,32 @@ const AttachmentItem = ({ file, index, onRemove }) => {
         )}
         <span className="truncate text-xs font-medium flex-1">{file.name}</span>
       </div>
-      <Button
-        isIconOnly
-        size="sm"
-        variant="light"
-        color="danger"
-        onPress={() => onRemove(index)}
-        className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 min-w-6 flex-shrink-0"
-        aria-label={`Remove attachment ${file.name}`}
-      >
-        <Icon icon="lucide:x" className="w-3 h-3" />
-      </Button>
+      <div className="flex items-center gap-1">
+        {isAIGenerated && onEdit && (
+          <Button
+            isIconOnly
+            size="sm"
+            variant="light"
+            color="primary"
+            onPress={() => onEdit(index)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 min-w-6 flex-shrink-0"
+            aria-label={`Edit AI generated image ${file.name}`}
+          >
+            <Icon icon="lucide:edit-2" className="w-3 h-3" />
+          </Button>
+        )}
+        <Button
+          isIconOnly
+          size="sm"
+          variant="light"
+          color="danger"
+          onPress={() => onRemove(index)}
+          className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 min-w-6 flex-shrink-0"
+          aria-label={`Remove attachment ${file.name}`}
+        >
+          <Icon icon="lucide:x" className="w-3 h-3" />
+        </Button>
+      </div>
     </div>
   );
 };
@@ -456,6 +471,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
   // Estado para controlar a visibilidade do chat
   const [isChatOpen, setIsChatOpen] = React.useState(false);
+
+  // Estado para rastrear qual attachment AI Generated está sendo editado
+  const [editingAttachmentIndex, setEditingAttachmentIndex] = React.useState(null);
 
   // Ref para o card Details & Criteria para fazer scroll
   const detailsCriteriaRef = React.useRef(null);
@@ -1505,6 +1523,13 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     handleFileUpload(files);
   };
 
+  const handleEditAIGenerated = (index) => {
+    // Armazenar o índice do attachment que está sendo editado
+    setEditingAttachmentIndex(index);
+    // Abrir o AI Assistant Chat
+    setIsChatOpen(true);
+  };
+
   const handleRemoveAttachment = (index) => {
     // Remove attachments from currentLogo, not logoDetails (each logo has its own attachments)
     const currentAttachments = currentLogo.attachmentFiles || [];
@@ -1575,6 +1600,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                     variant="bordered"
                     size="sm"
                     isRequired
+                    aria-label="Logo Name"
                     value={formik.values.logoName}
                     onValueChange={(v) => formik.updateField("logoName", v)}
                     onBlur={formik.handleBlur}
@@ -1592,6 +1618,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                     variant="bordered"
                     size="sm"
                     isRequired
+                    aria-label="Description"
                     value={formik.values.description}
                     onValueChange={(v) => formik.updateField("description", v)}
                     onBlur={formik.handleBlur}
@@ -1686,6 +1713,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                         file={file}
                         index={index}
                         onRemove={handleRemoveAttachment}
+                        onEdit={handleEditAIGenerated}
                       />
                     ))}
                     <input
@@ -1872,6 +1900,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                     isRequired
                     size="sm"
                     variant="bordered"
+                    aria-label="Fixation Type"
                     selectedKeys={formik.values.fixationType ? new Set([formik.values.fixationType]) : new Set()}
                     onSelectionChange={(keys) => {
                       const selected = Array.from(keys)[0] || "";
@@ -2341,7 +2370,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       {/* AI Assistant Chat */}
       <AIAssistantChat
         isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
+        onClose={() => {
+          setIsChatOpen(false);
+          // Resetar o índice de edição quando o modal fecha sem salvar
+          setEditingAttachmentIndex(null);
+        }}
         initialAIState={currentLogo.aiAssistantState || null}
         onAIStateChange={(aiState) => {
           // Evitar loops infinitos verificando se já está processando
@@ -2359,10 +2392,18 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
             isProcessingAIStateChangeRef.current = true;
             
             try {
+              // Normalizar caminhos de imagem antes de salvar
+              const normalizedAIState = aiState ? {
+                ...aiState,
+                generatedImageUrl: aiState.generatedImageUrl?.includes('AIGENERATOR/') 
+                  ? `/api/files/${aiState.generatedImageUrl.split('AIGENERATOR/')[1]}`
+                  : aiState.generatedImageUrl
+              } : aiState;
+              
               // Salvar estado do AI Assistant no currentLogo
               const updatedCurrentLogo = {
                 ...currentLogo,
-                aiAssistantState: aiState,
+                aiAssistantState: normalizedAIState,
               };
               const updatedLogoDetails = {
                 ...logoDetails,
@@ -2380,13 +2421,20 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         }}
         onSaveImage={async (imageUrl) => {
           try {
+            // Normalizar caminho se necessário (converter AIGENERATOR para /api/files/)
+            let normalizedUrl = imageUrl;
+            if (imageUrl?.includes('AIGENERATOR/')) {
+              const filename = imageUrl.split('AIGENERATOR/')[1];
+              normalizedUrl = `/api/files/${filename}`;
+            }
+            
             // Extract filename from URL or create a default name
-            const urlParts = imageUrl.split('/');
+            const urlParts = normalizedUrl.split('/');
             const originalFilename = urlParts[urlParts.length - 1] || 'ai-generated-image.webp';
             const nameWithoutExtension = originalFilename.replace(/\.[^/.]+$/, '');
             
             // Fetch the image from the URL and convert to File
-            const response = await fetch(imageUrl);
+            const response = await fetch(normalizedUrl);
             const blob = await response.blob();
             const file = new File([blob], originalFilename, { type: blob.type || 'image/webp' });
             
@@ -2420,7 +2468,17 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
             // Add to attachments in currentLogo, not logoDetails (each logo has its own attachments)
             const existingFiles = currentLogo.attachmentFiles || [];
-            const allFiles = [...existingFiles, aiGeneratedAttachment];
+            
+            // Se estamos editando um attachment existente, substituir ao invés de adicionar
+            let allFiles;
+            if (editingAttachmentIndex !== null && editingAttachmentIndex >= 0 && editingAttachmentIndex < existingFiles.length) {
+              // Substituir o attachment no índice específico
+              allFiles = [...existingFiles];
+              allFiles[editingAttachmentIndex] = aiGeneratedAttachment;
+            } else {
+              // Adicionar novo attachment (comportamento padrão)
+              allFiles = [...existingFiles, aiGeneratedAttachment];
+            }
 
             // Preservar estado do AI Assistant ao salvar imagem
             const updatedCurrentLogo = {
@@ -2437,10 +2495,14 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
             };
             onInputChange("logoDetails", updatedLogoDetails);
             setIsChatOpen(false);
+            // Resetar o índice de edição após salvar com sucesso
+            setEditingAttachmentIndex(null);
           } catch (error) {
             console.error('❌ Error uploading AI generated image:', error);
             // Show error to user or handle gracefully
             alert('Erro ao fazer upload da imagem gerada. Por favor, tente novamente.');
+            // Resetar o índice de edição mesmo em caso de erro
+            setEditingAttachmentIndex(null);
           }
         }}
       />

@@ -80,8 +80,10 @@ app.use((req, res, next) => {
   })(req, res, next);
 });
 
-app.use(cors({
-  origin: [
+// Função para validar origem (suporta IPs locais dinamicamente)
+const corsOriginValidator = (origin, callback) => {
+  // Lista de origens permitidas
+  const allowedOrigins = [
     'http://localhost:3003',
     'http://localhost:3005',
     'http://192.168.2.16:3003',
@@ -96,7 +98,30 @@ app.use(cors({
     'http://test2.dsproject.pt',
     'https://thecore.blachere-illumination.ai',
     'http://thecore.blachere-illumination.ai',
-  ],
+  ];
+
+  // Permitir requisições sem origem (ex: mobile apps, Postman)
+  if (!origin) {
+    return callback(null, true);
+  }
+
+  // Verificar se está na lista de origens permitidas
+  if (allowedOrigins.includes(origin)) {
+    return callback(null, true);
+  }
+
+  // Permitir qualquer IP local nas portas 3003 ou 3005
+  const localIPPattern = /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+):(3003|3005)$/;
+  if (localIPPattern.test(origin)) {
+    return callback(null, true);
+  }
+
+  // Rejeitar outras origens
+  callback(new Error('Not allowed by CORS'));
+};
+
+app.use(cors({
+  origin: corsOriginValidator,
   credentials: true
 }));
 // Aumentar limite de body parser para suportar uploads maiores
@@ -419,6 +444,7 @@ if (fs.existsSync(clientPublicPath)) {
     });
   });
   console.log('📁 Servindo arquivos estáticos do client/public (exceto sw.js)');
+  console.log('📁 Rota /api/AIGENERATOR configurada para servir imagens de geração AI');
 }
 
 // Servir arquivos estáticos do public do servidor (apenas para uploads e outros assets do servidor)
@@ -610,32 +636,65 @@ app.post('/api/files/upload', upload.single('file'), (req, res) => {
 });
 
 // File serving endpoint
+// Serve arquivos de uploads e também do AIGENERATOR (client/public/AIGENERATOR)
 app.get('/api/files/:filename', (req, res) => {
   try {
     const filename = req.params.filename;
-    // Usar getUploadsDir() para suportar caminhos SMB
+    let filePath = null;
+    let contentType = 'application/octet-stream';
+    
+    // Primeiro, tentar no diretório de uploads
     const uploadsDir = getUploadsDir();
-    const filePath = path.join(uploadsDir, filename);
-
+    const uploadsFilePath = path.join(uploadsDir, filename);
+    
     // Security: prevent directory traversal
-    // Normalizar caminhos para comparação (importante para Windows/SMB)
-    const normalizedFilePath = path.normalize(filePath);
+    const normalizedUploadsFilePath = path.normalize(uploadsFilePath);
     const normalizedUploadsDir = path.normalize(uploadsDir);
-    if (!normalizedFilePath.startsWith(normalizedUploadsDir)) {
-      return res.status(403).json({ error: 'Access denied' });
+    
+    if (normalizedUploadsFilePath.startsWith(normalizedUploadsDir) && fs.existsSync(uploadsFilePath)) {
+      filePath = uploadsFilePath;
+    } else {
+      // Se não encontrou em uploads, tentar no AIGENERATOR
+      const clientPublicPath = path.resolve(__dirname, '../../client/public');
+      const aigeneratorPath = path.join(clientPublicPath, 'AIGENERATOR', filename);
+      
+      // Validar path traversal para AIGENERATOR
+      const normalizedAigeneratorPath = path.normalize(aigeneratorPath);
+      const normalizedAigeneratorDir = path.normalize(path.join(clientPublicPath, 'AIGENERATOR'));
+      
+      if (normalizedAigeneratorPath.startsWith(normalizedAigeneratorDir) && fs.existsSync(aigeneratorPath)) {
+        filePath = aigeneratorPath;
+      }
     }
-
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-      console.warn(`⚠️ [FILES] Arquivo não encontrado: ${filePath}`);
-      return res.status(404).json({ error: 'File not found', path: filePath });
+    
+    // Se não encontrou em nenhum lugar
+    if (!filePath) {
+      console.warn(`⚠️ [FILES] Arquivo não encontrado: ${filename} (tentou uploads e AIGENERATOR)`);
+      return res.status(404).json({ error: 'File not found', filename });
     }
-
+    
+    // Determinar content-type baseado na extensão
+    const ext = path.extname(filePath).toLowerCase();
+    contentType = ext === '.webp' ? 'image/webp' : 
+                  ext === '.webm' ? 'video/webm' :
+                  ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+                  ext === '.png' ? 'image/png' :
+                  ext === '.pdf' ? 'application/pdf' :
+                  'application/octet-stream';
+    
     // Serve the file
-    res.sendFile(filePath);
+    res.setHeader('Content-Type', contentType);
+    res.sendFile(filePath, (err) => {
+      if (err && !res.headersSent) {
+        console.error(`❌ [FILES] Erro ao servir arquivo: ${err.message}`);
+        res.status(500).json({ error: 'Failed to serve file', message: err.message });
+      }
+    });
   } catch (error) {
     console.error('Error serving file:', error);
-    res.status(500).json({ error: 'Failed to serve file', message: error.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to serve file', message: error.message });
+    }
   }
 });
 
