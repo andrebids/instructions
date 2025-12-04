@@ -210,29 +210,81 @@ echo.
 echo [INFO] Passo 1/7: Carregando credenciais do GitHub...
 set "LOGIN_SCRIPT=%~dp0login.bat"
 echo [DEBUG] Chamando login.bat...
+echo [DEBUG] LOGIN_SCRIPT = %LOGIN_SCRIPT%
 call "%LOGIN_SCRIPT%" :load_github_credentials
-set "LOAD_CREDS_RESULT=%ERRORLEVEL%"
-echo [DEBUG] load_github_credentials retornou: %LOAD_CREDS_RESULT%
-echo [!LOG_DATE! !LOG_TIME!] Resultado do load_github_credentials: %LOAD_CREDS_RESULT% >> "%LOG_FILE%"
+set "LOAD_CREDS_RESULT=!ERRORLEVEL!"
+echo [DEBUG] load_github_credentials retornou: !LOAD_CREDS_RESULT!
+echo [DEBUG] Continuando apos chamada do login.bat...
+echo [!LOG_DATE! !LOG_TIME!] Resultado do load_github_credentials: !LOAD_CREDS_RESULT! >> "%LOG_FILE%"
+echo [!LOG_DATE! !LOG_TIME!] Continuando execucao apos load_github_credentials >> "%LOG_FILE%"
+echo [DEBUG] Verificando LOAD_CREDS_RESULT: !LOAD_CREDS_RESULT!
+echo [!LOG_DATE! !LOG_TIME!] LOAD_CREDS_RESULT: !LOAD_CREDS_RESULT! >> "%LOG_FILE%"
 
-if %LOAD_CREDS_RESULT% equ 0 (
+if !LOAD_CREDS_RESULT! equ 0 (
+    echo [DEBUG] Entrando no bloco if (LOAD_CREDS_RESULT = 0)
+    echo [!LOG_DATE! !LOG_TIME!] Entrando no bloco if >> "%LOG_FILE%"
+    echo [!LOG_DATE! !LOG_TIME!] Carregando credenciais do arquivo .env >> "%LOG_FILE%"
+    REM Read directly from .env file (simpler and more reliable)
+    set "ENV_FILE=%PROJECT_ROOT%\.env"
+    echo [DEBUG] Lendo arquivo .env: %ENV_FILE%
+    echo [!LOG_DATE! !LOG_TIME!] Lendo arquivo .env: %ENV_FILE% >> "%LOG_FILE%"
+    
+    if exist "%ENV_FILE%" (
+        echo [DEBUG] Arquivo .env encontrado, extraindo credenciais GitHub...
+        echo [!LOG_DATE! !LOG_TIME!] Arquivo .env encontrado >> "%LOG_FILE%"
+        REM Create a small temp file with only GitHub lines (avoids reading entire file)
+        set "GITHUB_TEMP=%TEMP%\github_vars_%RANDOM%.tmp"
+        findstr /b /i "GITHUB_" "%ENV_FILE%" > "%GITHUB_TEMP%" 2>nul
+        echo [DEBUG] Arquivo temporario criado: %GITHUB_TEMP%
+        echo [!LOG_DATE! !LOG_TIME!] Arquivo temporario criado >> "%LOG_FILE%"
+        
+        REM Read from the small temp file (only 3 lines)
+        if exist "%GITHUB_TEMP%" (
+            for /f "usebackq tokens=1,* delims==" %%a in ("%GITHUB_TEMP%") do (
+                if /i "%%a"=="GITHUB_USERNAME" (
+                    for /f "tokens=*" %%v in ("%%b") do set "GITHUB_USERNAME=%%v"
+                    echo [DEBUG] GITHUB_USERNAME definido: !GITHUB_USERNAME!
+                    echo [!LOG_DATE! !LOG_TIME!] GITHUB_USERNAME=!GITHUB_USERNAME! >> "%LOG_FILE%"
+                )
+                if /i "%%a"=="GITHUB_TOKEN" (
+                    for /f "tokens=*" %%v in ("%%b") do set "GITHUB_TOKEN=%%v"
+                    echo [DEBUG] GITHUB_TOKEN definido (primeiros 5): !GITHUB_TOKEN:~0,5!...
+                    echo [!LOG_DATE! !LOG_TIME!] GITHUB_TOKEN definido >> "%LOG_FILE%"
+                )
+                if /i "%%a"=="GITHUB_REPO" (
+                    for /f "tokens=*" %%v in ("%%b") do set "GITHUB_REPO=%%v"
+                    echo [DEBUG] GITHUB_REPO definido: !GITHUB_REPO!
+                    echo [!LOG_DATE! !LOG_TIME!] GITHUB_REPO=!GITHUB_REPO! >> "%LOG_FILE%"
+                )
+            )
+            del "%GITHUB_TEMP%" >nul 2>&1
+            echo [DEBUG] Arquivo temporario removido
+        )
+        echo [DEBUG] Terminando leitura do arquivo .env
+        echo [!LOG_DATE! !LOG_TIME!] Leitura do arquivo .env concluida >> "%LOG_FILE%"
+    ) else (
+        echo [ERRO] Arquivo .env nao encontrado: %ENV_FILE%
+        echo [!LOG_DATE! !LOG_TIME!] ERRO: Arquivo .env nao encontrado: %ENV_FILE% >> "%LOG_FILE%"
+        exit /b 1
+    )
+    
     echo [!LOG_DATE! !LOG_TIME!] Credenciais carregadas com sucesso >> "%LOG_FILE%"
-    echo [DEBUG] GITHUB_USERNAME = %GITHUB_USERNAME%
-    echo [DEBUG] GITHUB_REPO = %GITHUB_REPO%
-    echo [DEBUG] GITHUB_TOKEN definido = %GITHUB_TOKEN:~0,5%...
-    echo [!LOG_DATE! !LOG_TIME!] Usuario: %GITHUB_USERNAME% >> "%LOG_FILE%"
-    echo [!LOG_DATE! !LOG_TIME!] Repositorio: %GITHUB_REPO% >> "%LOG_FILE%"
-    echo [DEBUG] Credenciais OK: %GITHUB_USERNAME% / %GITHUB_REPO%
-    echo [INFO] Usuario: %GITHUB_USERNAME%
-    echo [INFO] Repositorio: %GITHUB_REPO%
+    echo [DEBUG] GITHUB_USERNAME = !GITHUB_USERNAME!
+    echo [DEBUG] GITHUB_REPO = !GITHUB_REPO!
+    echo [DEBUG] GITHUB_TOKEN definido = !GITHUB_TOKEN:~0,5!...
+    echo [!LOG_DATE! !LOG_TIME!] Usuario: !GITHUB_USERNAME! >> "%LOG_FILE%"
+    echo [!LOG_DATE! !LOG_TIME!] Repositorio: !GITHUB_REPO! >> "%LOG_FILE%"
+    echo [DEBUG] Credenciais OK: !GITHUB_USERNAME! / !GITHUB_REPO!
+    echo [INFO] Usuario: !GITHUB_USERNAME!
+    echo [INFO] Repositorio: !GITHUB_REPO!
     
     REM Verify variables are not empty
-    if "%GITHUB_USERNAME%"=="" (
+    if "!GITHUB_USERNAME!"=="" (
         echo [ERRO] GITHUB_USERNAME esta vazio apos carregar credenciais!
         echo [!LOG_DATE! !LOG_TIME!] ERRO: GITHUB_USERNAME vazio >> "%LOG_FILE%"
         exit /b 1
     )
-    if "%GITHUB_REPO%"=="" (
+    if "!GITHUB_REPO!"=="" (
         echo [ERRO] GITHUB_REPO esta vazio apos carregar credenciais!
         echo [!LOG_DATE! !LOG_TIME!] ERRO: GITHUB_REPO vazio >> "%LOG_FILE%"
         exit /b 1

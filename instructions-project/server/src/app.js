@@ -110,13 +110,14 @@ const corsOriginValidator = (origin, callback) => {
     return callback(null, true);
   }
 
-  // Permitir qualquer IP local nas portas 3003 ou 3005
-  const localIPPattern = /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+):(3003|3005)$/;
+  // Permitir qualquer IP local nas portas 3003, 3005 ou 5001
+  const localIPPattern = /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+):(3003|3005|5001)$/;
   if (localIPPattern.test(origin)) {
     return callback(null, true);
   }
 
   // Rejeitar outras origens
+  console.warn(`⚠️  [CORS] Origem bloqueada: ${origin}`);
   callback(new Error('Not allowed by CORS'));
 };
 

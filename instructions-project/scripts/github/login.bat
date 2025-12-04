@@ -106,20 +106,27 @@ if not exist "%ENV_FILE%" (
 
 REM Load .env file variables directly - read only the GitHub variables we need
 REM Process line by line, setting variables directly (no setlocal, so they persist)
+call :print_info "Lendo arquivo .env: %ENV_FILE%"
 for /f "usebackq tokens=1,* delims==" %%a in ("%ENV_FILE%") do (
-    REM Skip comments (lines starting with #)
-    echo %%a| findstr /b /c:"#" >nul 2>&1
-    if errorlevel 1 (
-        REM Not a comment, check if it's one of our variables
-        if /i "%%a"=="GITHUB_USERNAME" (
-            REM Remove leading spaces from value
-            for /f "tokens=*" %%v in ("%%b") do set "GITHUB_USERNAME=%%v"
-        )
-        if /i "%%a"=="GITHUB_TOKEN" (
-            for /f "tokens=*" %%v in ("%%b") do set "GITHUB_TOKEN=%%v"
-        )
-        if /i "%%a"=="GITHUB_REPO" (
-            for /f "tokens=*" %%v in ("%%b") do set "GITHUB_REPO=%%v"
+    REM Skip empty variable names
+    if not "%%a"=="" (
+        REM Check if it starts with # (comment)
+        echo %%a| findstr /b /c:"#" >nul 2>&1
+        if errorlevel 1 (
+            REM Not a comment, check if it's one of our variables (case insensitive)
+            REM Remove leading spaces from variable name for comparison
+            for /f "tokens=*" %%n in ("%%a") do (
+                if /i "%%n"=="GITHUB_USERNAME" (
+                    REM Remove leading spaces from value
+                    for /f "tokens=*" %%v in ("%%b") do set "GITHUB_USERNAME=%%v"
+                )
+                if /i "%%n"=="GITHUB_TOKEN" (
+                    for /f "tokens=*" %%v in ("%%b") do set "GITHUB_TOKEN=%%v"
+                )
+                if /i "%%n"=="GITHUB_REPO" (
+                    for /f "tokens=*" %%v in ("%%b") do set "GITHUB_REPO=%%v"
+                )
+            )
         )
     )
 )
@@ -145,6 +152,34 @@ if "%GITHUB_REPO%"=="" (
 )
 
 call :print_success "Credenciais GitHub carregadas do .env"
+call :print_info "Valores carregados:"
+call :print_info "  GITHUB_USERNAME=!GITHUB_USERNAME!"
+call :print_info "  GITHUB_REPO=!GITHUB_REPO!"
+call :print_info "  GITHUB_TOKEN (primeiros 5): !GITHUB_TOKEN:~0,5!..."
+
+REM Export variables to parent scope using temporary file
+REM Write to temp file in project root (known location) - this persists through endlocal
+set "TEMP_FILE=!PROJECT_ROOT!\.github_creds_temp.tmp"
+call :print_info "Escrevendo arquivo temporario: !TEMP_FILE!"
+(
+    echo GITHUB_USERNAME=!GITHUB_USERNAME!
+    echo GITHUB_TOKEN=!GITHUB_TOKEN!
+    echo GITHUB_REPO=!GITHUB_REPO!
+) > "!TEMP_FILE!"
+
+REM Verify file was created
+if exist "!TEMP_FILE!" (
+    call :print_info "Arquivo temporario criado com sucesso"
+) else (
+    call :print_error "Falha ao criar arquivo temporario"
+    endlocal
+    exit /b 1
+)
+
+REM Exit the setlocal from top of script - this closes the setlocal from line 6
+REM The temp file will be read by the calling script
+endlocal
+
 exit /b 0
 
 REM ============================================

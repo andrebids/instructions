@@ -127,13 +127,26 @@ export function getAuthConfig() {
     // IMPORTANTE: O provider Credentials requer strategy: "jwt" mesmo quando usando adapter
     // O adapter será usado para armazenar sessões, mas a estratégia deve ser JWT
     const isProduction = process.env.NODE_ENV === 'production';
-    const authConfig = ExpressAuth({
+    
+    // Configurar basePath/baseURL sem redundância
+    // Se AUTH_URL estiver definido, ele já deve incluir o caminho completo (ex: http://localhost:5001/auth)
+    // Se não estiver definido, usar apenas basePath
+    const authConfigOptions = {
       trustHost: true, // Necessário quando servido através de proxy
       secret: process.env.AUTH_SECRET,
       adapter: adapter,
-      // Configurar URL base para produção (importante para cookies)
-      basePath: '/auth',
-      ...(process.env.AUTH_URL && { baseURL: process.env.AUTH_URL }),
+    };
+    
+    if (process.env.AUTH_URL) {
+      // Se AUTH_URL está definido, usar apenas baseURL (ele já inclui o caminho)
+      authConfigOptions.baseURL = process.env.AUTH_URL;
+    } else {
+      // Se AUTH_URL não está definido, usar apenas basePath
+      authConfigOptions.basePath = '/auth';
+    }
+    
+    const authConfig = ExpressAuth({
+      ...authConfigOptions,
       session: {
         strategy: "jwt", // Credentials provider requer JWT strategy, mesmo com adapter
         // Configuração de cookies para produção

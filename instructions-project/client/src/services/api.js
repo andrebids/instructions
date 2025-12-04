@@ -1,32 +1,7 @@
 import axios from 'axios';
+import { getApiBaseUrl, getServerBaseUrl } from '../utils/serverUrl.js';
 
-// Configuração base da API
-// Preferimos caminho relativo para funcionar com o proxy do Vite
-// e evitar CORS/portas diferentes (ex.: quando o Vite alterna 3003→3005).
-// IMPORTANTE: Em produção, sempre usar caminho relativo para evitar problemas de CSP
-const isDev = import.meta.env.DEV;
-let API_BASE_URL;
-
-if (isDev) {
-  // Em desenvolvimento, usar VITE_API_URL se disponível, senão usar caminho relativo
-  API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
-
-  // Garantir que baseURL sempre termina sem barra e começa com /api se não especificado
-  if (!API_BASE_URL) {
-    API_BASE_URL = '/api';
-  } else {
-    // Remover barra final se existir
-    API_BASE_URL = API_BASE_URL.replace(/\/$/, '');
-    // Se não começar com /api e for um caminho relativo, adicionar /api
-    if (!API_BASE_URL.startsWith('http') && !API_BASE_URL.startsWith('/api')) {
-      API_BASE_URL = '/api';
-    }
-  }
-} else {
-  // Em produção, SEMPRE usar caminho relativo para evitar problemas de CSP
-  // Isso garante que funcione com a mesma origem (https://thecore.dsproject.pt)
-  API_BASE_URL = '/api';
-}
+const API_BASE_URL = getApiBaseUrl();
 
 
 const api = axios.create({
@@ -49,21 +24,8 @@ const isValidAbortSignal = (signal) => {
 // Attach authentication token to requests (Auth.js)
 api.interceptors.request.use(async (config) => {
   try {
-    // Usar caminho relativo em produção para evitar problemas de CSP
-    // Em dev, usar VITE_API_URL se disponível, senão usar caminho relativo
-    const isDev = import.meta.env.DEV;
-    let sessionUrl;
-
-    if (isDev && import.meta.env.VITE_API_URL) {
-      // Em desenvolvimento, usar VITE_API_URL se configurado
-      const apiUrl = import.meta.env.VITE_API_URL;
-      const baseUrl = apiUrl.replace('/api', ''); // Remover /api para obter base URL
-      sessionUrl = `${baseUrl}/auth/session`;
-    } else {
-      // Em produção ou quando VITE_API_URL não está definido, usar caminho relativo
-      // Isso garante que funcione com a mesma origem (evita problemas de CSP)
-      sessionUrl = '/auth/session';
-    }
+    const baseUrl = getServerBaseUrl();
+    const sessionUrl = baseUrl ? `${baseUrl}/auth/session` : '/auth/session';
 
     const response = await fetch(sessionUrl, {
       credentials: 'include',

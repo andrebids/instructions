@@ -5,7 +5,7 @@ import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 import GlassSurface from '../components/ui/GlassSurface';
 import { Input, Button } from '@heroui/react';
-import { getApiBaseUrl } from '../utils/apiBaseUrl.js';
+import { getServerBaseUrl } from '../utils/serverUrl.js';
 
 import LoginSnippet from '../components/LoginSnippet';
 
@@ -46,7 +46,7 @@ export default function SignIn() {
     }
 
     try {
-      const baseUrl = getApiBaseUrl();
+      const baseUrl = getServerBaseUrl();
       // Garantir que baseUrl não tenha barras duplas ou caracteres inválidos
       let cleanBaseUrl = baseUrl ? String(baseUrl).trim() : '';
       // Remover barras duplas (mas manter http://)

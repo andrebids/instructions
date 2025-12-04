@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import i18n from '../i18n';
-import { getApiBaseUrl } from '../utils/apiBaseUrl.js';
+import { getServerBaseUrl } from '../utils/serverUrl.js';
 
 /**
  * Hook para gerenciar autenticação com Auth.js
@@ -12,8 +12,8 @@ export function useAuth() {
   // Buscar sessão do Auth.js
   const fetchSession = useCallback(async () => {
     try {
-      const baseUrl = getApiBaseUrl();
-      const sessionUrl = `${baseUrl}/auth/session`;
+      const baseUrl = getServerBaseUrl();
+      const sessionUrl = baseUrl ? `${baseUrl}/auth/session` : '/auth/session';
 
       const response = await fetch(sessionUrl, {
         credentials: 'include',
@@ -74,10 +74,11 @@ export function useAuth() {
 
   const signIn = async (email, password, options = {}) => {
     try {
-      const baseUrl = getApiBaseUrl();
+      const baseUrl = getServerBaseUrl();
 
       // Auth.js Credentials provider usa /auth/callback/credentials
-      const response = await fetch(`${baseUrl}/auth/callback/credentials`, {
+      const credentialsUrl = baseUrl ? `${baseUrl}/auth/callback/credentials` : '/auth/callback/credentials';
+      const response = await fetch(credentialsUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -95,7 +96,7 @@ export function useAuth() {
       if (response.ok) {
         // Atualizar sessão após login bem-sucedido
         const fetchSession = async () => {
-          const sessionUrl = `${baseUrl}/auth/session`;
+          const sessionUrl = baseUrl ? `${baseUrl}/auth/session` : '/auth/session';
           const sessionResponse = await fetch(sessionUrl, { 
             credentials: 'include',
             cache: import.meta.env.DEV ? 'no-store' : 'default',
@@ -122,16 +123,18 @@ export function useAuth() {
 
   const signOut = async () => {
     try {
-      const baseUrl = getApiBaseUrl();
+      const baseUrl = getServerBaseUrl();
 
       // Obter token CSRF antes de fazer logout
-      const csrfResponse = await fetch(`${baseUrl}/auth/csrf`, { 
+      const csrfUrl = baseUrl ? `${baseUrl}/auth/csrf` : '/auth/csrf';
+      const csrfResponse = await fetch(csrfUrl, { 
         credentials: 'include',
         cache: import.meta.env.DEV ? 'no-store' : 'default',
       });
       const { csrfToken } = await csrfResponse.json();
 
-      await fetch(`${baseUrl}/auth/signout`, {
+      const signoutUrl = baseUrl ? `${baseUrl}/auth/signout` : '/auth/signout';
+      await fetch(signoutUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

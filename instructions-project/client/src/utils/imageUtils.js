@@ -3,6 +3,8 @@
  * Handles proxying and absolute/relative paths.
  */
 
+import { getServerBaseUrl } from './serverUrl.js';
+
 /**
  * SVG placeholder image as base64 data URL
  * Reusable placeholder for product images when no image is available
@@ -22,44 +24,22 @@ export const getImageUrl = (path) => {
 
     // If it's an upload path, we need to ensure it's served correctly
     if (cleanPath.startsWith('/uploads/')) {
-        // In development, we might have VITE_API_URL defined
-        const apiUrl = import.meta.env.VITE_API_URL;
-
-        if (apiUrl) {
-            // Remove trailing slash from API URL if present
-            const base = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
-            // Remove /api suffix if present, as uploads are usually served from root or /api/uploads depending on server config
-            // Based on server/src/app.js: app.use('/api/uploads', express.static(...))
-            // So we should prepend /api if we want to go through the proxy or direct to server
-
-            // If VITE_API_URL includes /api, we can use it directly if the server serves uploads at /api/uploads
-            // The server app.js has: app.use('/api/uploads', express.static(...))
-            // So /uploads/file.jpg becomes /api/uploads/file.jpg
-
-            // However, the previous logic in AdminProducts was:
-            // abs = baseApi ? (baseApi + choose) : ('/api' + choose);
-
-            // Let's standardize:
-            // If path is /uploads/image.png
-            // And we want to hit http://localhost:5000/api/uploads/image.png
-
-            // If VITE_API_URL is http://localhost:5000/api
-            // We want http://localhost:5000/api/uploads/image.png
-
-            // If we are using proxy (VITE_API_URL undefined), we want /api/uploads/image.png
-
-            // Check if path already includes /api/
+        // Usar getServerBaseUrl() para detectar automaticamente se está sendo acessado via IP da rede
+        const serverBaseUrl = getServerBaseUrl();
+        
+        if (serverBaseUrl) {
+            // Se temos uma URL base do servidor (acesso via IP da rede ou VITE_API_URL definido)
+            // Garantir que o caminho inclui /api se necessário
             if (cleanPath.startsWith('/api/')) {
-                return `${base}${cleanPath.replace('/api', '')}`;
+                return `${serverBaseUrl}${cleanPath}`;
+            } else {
+                // Se o caminho é /uploads/..., adicionar /api
+                return `${serverBaseUrl}/api${cleanPath}`;
             }
-
-            return `${base}${cleanPath}`;
         } else {
-            // No VITE_API_URL (likely using Vite proxy or production same-origin)
-            // If we are using Vite proxy, /api requests are forwarded
+            // Sem URL base (usando proxy do Vite em localhost ou produção)
             // Server serves uploads at /api/uploads
-
-            // If path is /uploads/image.png, we want /api/uploads/image.png to go through proxy/server
+            // Se path é /uploads/image.png, queremos /api/uploads/image.png
             if (!cleanPath.startsWith('/api/')) {
                 return `/api${cleanPath}`;
             }
