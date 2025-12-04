@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Card, Button, Accordion, AccordionItem } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { getLocalTimeZone } from "@internationalized/date";
@@ -7,6 +7,64 @@ import { SimulationCarousel } from "./SimulationCarousel";
 export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, onAddLogo }) {
   const hasSimulations = formData.canvasImages && formData.canvasImages.length > 0;
   const simulationCount = formData.canvasImages?.length || 0;
+
+  // Memoize logo calculations to prevent unnecessary recalculations
+  const logoData = useMemo(() => {
+    if (formData.projectType !== "logo" || !formData.logoDetails) {
+      return null;
+    }
+
+    const logoDetails = formData.logoDetails || {};
+    const savedLogos = logoDetails.logos || [];
+    const currentLogo = logoDetails.currentLogo || logoDetails;
+
+    // Check if current logo is valid
+    // IMPORTANTE: Verificar se o currentLogo não está vazio (foi limpo após salvar)
+    // Um logo vazio tem todos os campos principais vazios
+    const isCurrentLogoEmpty = (!currentLogo.logoNumber || currentLogo.logoNumber.trim() === "") && 
+                               (!currentLogo.logoName || currentLogo.logoName.trim() === "") && 
+                               (!currentLogo.requestedBy || currentLogo.requestedBy.trim() === "");
+    
+    const hasLogoNumber = currentLogo.logoNumber?.trim() !== "";
+    const hasLogoName = currentLogo.logoName?.trim() !== "";
+    const hasRequestedBy = currentLogo.requestedBy?.trim() !== "";
+    const dimensions = currentLogo.dimensions || {};
+    // Verificar se há dimensões válidas (não vazias e não null)
+    const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "" && dimensions.height.value !== 0;
+    const hasLength = dimensions.length?.value != null && dimensions.length.value !== "" && dimensions.length.value !== 0;
+    const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "" && dimensions.width.value !== 0;
+    const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "" && dimensions.diameter.value !== 0;
+    const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
+    
+    // Só considerar válido se não estiver vazio E tiver todos os campos obrigatórios
+    const isCurrentLogoValid = !isCurrentLogoEmpty && hasLogoNumber && hasLogoName && hasRequestedBy && hasAtLeastOneDimension;
+
+    // Verificar se o currentLogo já existe nos savedLogos (para evitar duplicatas)
+    const currentLogoExistsInSaved = isCurrentLogoValid && savedLogos.some(logo => {
+      // Comparar por ID se disponível (mais confiável)
+      if (currentLogo.id && logo.id) {
+        return logo.id === currentLogo.id;
+      }
+      // Se não tem ID, comparar por logoNumber
+      if (currentLogo.logoNumber && logo.logoNumber) {
+        return logo.logoNumber.trim() === currentLogo.logoNumber.trim();
+      }
+      return false;
+    });
+
+    // Combine saved logos with current logo if valid AND not already in savedLogos
+    const allLogos = isCurrentLogoValid && !currentLogoExistsInSaved 
+      ? [...savedLogos, currentLogo] 
+      : savedLogos;
+
+    return {
+      logoDetails,
+      savedLogos,
+      currentLogo,
+      isCurrentLogoValid,
+      allLogos
+    };
+  }, [formData.projectType, formData.logoDetails]);
 
   const handleCreatePresentation = () => {
     // Placeholder - será implementado depois com template
@@ -28,10 +86,10 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
       <div className="space-y-6">
         {/* Project Details Card */}
         <Card className="p-4">
-          <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-            <Icon icon="lucide:folder" className="text-primary" />
-            Project Details
-          </h3>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <Icon icon="lucide:folder" className="text-primary" aria-hidden="true" />
+                    Project Details
+                  </h3>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <span className="text-default-500">Name:</span>
@@ -95,10 +153,10 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
         {/* AI Generated Simulations Card - apenas se for AI workflow e houver simulações */}
         {formData.projectType === "simu" && formData.simuWorkflow === "ai" && hasSimulations && (
           <Card className="p-4">
-            <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-              <Icon icon="lucide:sparkles" className="text-primary" />
-              AI Generated Simulations
-            </h3>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <Icon icon="lucide:sparkles" className="text-primary" aria-hidden="true" />
+                    AI Generated Simulations
+                  </h3>
             <div className="space-y-4">
               <div>
                 <span className="text-default-500">Simulations Generated:</span>
@@ -117,52 +175,34 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
         )}
 
         {/* Logo Instructions Summary - apenas se for projeto Logo */}
-        {formData.projectType === "logo" && formData.logoDetails && (() => {
-          const logoDetails = formData.logoDetails || {};
-          const savedLogos = logoDetails.logos || [];
-          const currentLogo = logoDetails.currentLogo || logoDetails;
-
-          // Check if current logo is valid
-          const hasLogoNumber = currentLogo.logoNumber?.trim() !== "";
-          const hasLogoName = currentLogo.logoName?.trim() !== "";
-          const hasRequestedBy = currentLogo.requestedBy?.trim() !== "";
-          const dimensions = currentLogo.dimensions || {};
-          const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
-          const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
-          const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
-          const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
-          const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
-          const isCurrentLogoValid = hasLogoNumber && hasLogoName && hasRequestedBy && hasAtLeastOneDimension;
-
-          // Combine saved logos with current logo if valid
-          const allLogos = isCurrentLogoValid ? [...savedLogos, currentLogo] : savedLogos;
-
-          if (allLogos.length === 0) return null;
+        {logoData && logoData.allLogos.length > 0 && (() => {
+          const { logoDetails, isCurrentLogoValid, allLogos } = logoData;
 
           return (
             <Card className="p-4">
               <div className="flex justify-between items-center mb-3">
-                <h3 className="font-semibold text-lg flex items-center gap-2">
-                  <Icon icon="lucide:package" className="text-primary" />
-                  Logo Specifications {allLogos.length > 1 && `(${allLogos.length} logos)`}
-                </h3>
+                  <h3 className="font-semibold text-lg flex items-center gap-2">
+                    <Icon icon="lucide:package" className="text-primary" aria-hidden="true" />
+                    Logo Specifications {allLogos.length > 1 && `(${allLogos.length} logos)`}
+                  </h3>
                 {onAddLogo && (
                   <Button
                     size="sm"
                     color="primary"
                     variant="flat"
-                    startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
+                    startContent={<Icon icon="lucide:plus" className="w-4 h-4" aria-hidden="true" />}
                     onPress={onAddLogo}
+                    aria-label="Add new logo"
                   >
                     Add Logo
                   </Button>
                 )}
               </div>
-              <Accordion selectionMode="multiple" variant="splitted" className="px-0">
+              <Accordion selectionMode="multiple" variant="splitted" className="px-0" aria-label="Logo specifications list">
                 {allLogos.map((logo, logoIndex) => (
                   <AccordionItem
                     key={logo.id ? `logo-${logo.id}-${logoIndex}` : `logo-index-${logoIndex}-${logo.logoNumber || ''}`}
-                    aria-label={`Logo ${logoIndex + 1}`}
+                    aria-label={`Logo ${logoIndex + 1}: ${logo.logoName || logo.logoNumber || 'Unnamed'}`}
                     title={
                       <div className="flex justify-between items-center flex-1 mr-4">
                         <span className="font-medium text-base text-primary">
@@ -176,23 +216,29 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
-                              onEditLogo && onEditLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                              console.log("=== CLICKED EDIT BUTTON ===");
+                              console.log("Logo index:", logoIndex);
+                              console.log("Logo data:", { logoNumber: logo.logoNumber, logoName: logo.logoName, id: logo.id });
+                              console.log("AllLogos:", allLogos.map((l, i) => ({ index: i, logoNumber: l.logoNumber, logoName: l.logoName, id: l.id })));
+                              console.log("Is current:", isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                              // Passar o logo completo ou identificador único em vez de apenas o índice
+                              onEditLogo && onEditLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1, logo);
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                onEditLogo && onEditLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
+                                onEditLogo && onEditLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1, logo);
                               }
                             }}
                             className="inline-flex items-center justify-center w-8 h-8 text-default-500 rounded-lg hover:bg-default-100 active:bg-default-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                           >
-                            <Icon icon="lucide:pencil" className="text-default-500" />
+                            <Icon icon="lucide:pencil" className="text-default-500" aria-hidden="true" />
                           </div>
                           <div
                             role="button"
                             tabIndex={0}
-                            aria-label="Delete Logo"
+                            aria-label={`Delete logo: ${logo.logoName || logo.logoNumber || `Logo ${logoIndex + 1}`}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
@@ -212,7 +258,7 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
                             className="inline-flex items-center justify-center w-8 h-8 text-danger rounded-lg hover:bg-danger-50 active:bg-danger-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
                             title="Eliminar logo"
                           >
-                            <Icon icon="lucide:trash-2" className="w-4 h-4" />
+                            <Icon icon="lucide:trash-2" className="w-4 h-4" aria-hidden="true" />
                           </div>
                         </div>
                       </div>
@@ -533,18 +579,19 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
         {/* Export Options Card */}
         {formData.projectType === "simu" && formData.simuWorkflow === "ai" && (
           <Card className="p-4">
-            <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-              <Icon icon="lucide:download" className="text-primary" />
-              Export Options
-            </h3>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <Icon icon="lucide:download" className="text-primary" aria-hidden="true" />
+                    Export Options
+                  </h3>
             <div className="space-y-3">
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   color="primary"
                   variant="flat"
-                  startContent={<Icon icon="lucide:file-text" />}
+                  startContent={<Icon icon="lucide:file-text" aria-hidden="true" />}
                   onPress={handleCreatePresentation}
                   className="flex-1"
+                  aria-label="Create presentation"
                 >
                   Create Presentation
                 </Button>
@@ -552,16 +599,18 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
                   <Button
                     color="default"
                     variant="flat"
-                    startContent={<Icon icon="lucide:file" />}
+                    startContent={<Icon icon="lucide:file" aria-hidden="true" />}
                     onPress={handleCreatePresentation}
+                    aria-label="Export as PDF"
                   >
                     PDF
                   </Button>
                   <Button
                     color="default"
                     variant="flat"
-                    startContent={<Icon icon="lucide:presentation" />}
+                    startContent={<Icon icon="lucide:presentation" aria-hidden="true" />}
                     onPress={handleCreatePresentation}
+                    aria-label="Export as PowerPoint"
                   >
                     PowerPoint
                   </Button>
@@ -572,9 +621,10 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
                 <Button
                   color="secondary"
                   variant="flat"
-                  startContent={<Icon icon="lucide:video" />}
+                  startContent={<Icon icon="lucide:video" aria-hidden="true" />}
                   onPress={handleExportMovie}
                   className="w-full"
+                  aria-label="Export AI movie with simulations"
                 >
                   Export AI Movie (with simulations)
                 </Button>
@@ -586,8 +636,8 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
 
       {/* Error Display */}
       {error && (
-        <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-600">
-          <Icon icon="lucide:alert-circle" className="inline mr-2" />
+        <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-600" role="alert" aria-live="polite">
+          <Icon icon="lucide:alert-circle" className="inline mr-2" aria-hidden="true" />
           {error}
         </div>
       )}

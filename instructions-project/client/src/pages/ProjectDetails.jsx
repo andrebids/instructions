@@ -14,6 +14,8 @@ import { ProjectObservations } from '../components/project-notes/ProjectObservat
 import { useNotifications } from '../context/NotificationContext';
 import ProjectOrdersTab from '../components/orders/ProjectOrdersTab';
 import LogoEditModal from '../components/projects/LogoEditModal';
+import SimulationEditModal from '../components/projects/SimulationEditModal';
+import InstructionsTab from '../components/projects/InstructionsTab';
 
 // Helper component to display a field value
 const InfoField = ({ label, value, icon }) => (
@@ -27,7 +29,7 @@ const InfoField = ({ label, value, icon }) => (
 );
 
 // Component to display logo details content (reused inside Accordion)
-const LogoDetailsContent = ({ logo }) => {
+export const LogoDetailsContent = ({ logo }) => {
     const { t } = useTranslation();
 
     // Helper to check if section has data
@@ -532,7 +534,7 @@ const getTotalDecorationsQuantity = (decorations) => {
 };
 
 // Component to display simulation content (AI Designer)
-const SimulationContent = ({ simulation, projectId }) => {
+export const SimulationContent = ({ simulation, projectId }) => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     
@@ -779,6 +781,7 @@ export default function ProjectDetails() {
     const { addNotification } = useNotifications();
     const [logoEditModalOpen, setLogoEditModalOpen] = useState(false);
     const [editingLogoIndex, setEditingLogoIndex] = useState(null);
+    const [simulationEditModalOpen, setSimulationEditModalOpen] = useState(false);
 
     // Definir todos os callbacks ANTES de qualquer useEffect (regra dos hooks)
     const loadProject = React.useCallback(async () => {
@@ -808,8 +811,15 @@ export default function ProjectDetails() {
         try {
             const currentProject = await projectsAPI.getById(id);
             const logoDetails = currentProject.logoDetails || {};
-            const savedLogos = logoDetails.logos || [];
+            let savedLogos = logoDetails.logos || [];
             const currentLogo = logoDetails.currentLogo || {};
+
+            console.log('🔍 [handleDeleteLogo] Iniciando exclusão:', {
+                logoIndex,
+                isCurrent,
+                totalLogos: savedLogos.length,
+                logoParaExcluir: isCurrent ? currentLogo : (savedLogos[logoIndex] || null)
+            });
 
             if (isCurrent) {
                 // Reset current logo
@@ -842,16 +852,89 @@ export default function ProjectDetails() {
                 await projectsAPI.updateCanvas(id, { logoDetails: updatedLogoDetails });
             } else {
                 // Remove from saved logos
-                const newSavedLogos = savedLogos.filter((_, i) => i !== logoIndex);
+                // Verificar se o índice é válido
+                if (logoIndex < 0 || logoIndex >= savedLogos.length) {
+                    console.error('❌ [handleDeleteLogo] Índice inválido:', {
+                        logoIndex,
+                        totalLogos: savedLogos.length,
+                        savedLogos: savedLogos.map((l, i) => ({
+                            index: i,
+                            id: l.id,
+                            logoNumber: l.logoNumber,
+                            logoName: l.logoName
+                        }))
+                    });
+                    addNotification({
+                        type: 'error',
+                        message: t('pages.projectDetails.errorDeleteLogo', 'Erro ao eliminar logo: índice inválido'),
+                    });
+                    return;
+                }
+                
+                const logoParaExcluir = savedLogos[logoIndex];
+                
+                console.log('🔍 [handleDeleteLogo] Tentando excluir logo:', {
+                    logoIndex,
+                    totalLogosAntes: savedLogos.length,
+                    logoParaExcluir: {
+                        id: logoParaExcluir?.id,
+                        logoNumber: logoParaExcluir?.logoNumber,
+                        logoName: logoParaExcluir?.logoName,
+                        hasLogoName: logoParaExcluir?.logoName?.trim() !== ""
+                    }
+                });
+                
+                // IMPORTANTE: Filtrar também logos inválidos (sem logoName) ao excluir
+                // Primeiro remover o logo no índice especificado, depois filtrar logos inválidos
+                const newSavedLogos = savedLogos
+                    .filter((_, i) => i !== logoIndex)
+                    .filter(logo => {
+                        // Remover também logos inválidos (sem logoName) que possam ter sido criados por engano
+                        const hasLogoName = logo.logoName?.trim() !== "";
+                        if (!hasLogoName) {
+                            console.warn('⚠️ [handleDeleteLogo] Removendo logo inválido (sem logoName) durante exclusão:', {
+                                logoId: logo.id,
+                                logoNumber: logo.logoNumber
+                            });
+                        }
+                        return hasLogoName;
+                    });
+                
                 const updatedLogoDetails = {
                     ...logoDetails,
                     logos: newSavedLogos
                 };
-                await projectsAPI.updateCanvas(id, { logoDetails: updatedLogoDetails });
+                
+                console.log('✅ [handleDeleteLogo] Logo excluído com sucesso:', {
+                    logoIndex,
+                    totalLogosAntes: savedLogos.length,
+                    totalLogosDepois: newSavedLogos.length,
+                    logoExcluido: logoParaExcluir ? {
+                        id: logoParaExcluir.id,
+                        logoNumber: logoParaExcluir.logoNumber,
+                        logoName: logoParaExcluir.logoName
+                    } : null
+                });
+                
+                const updateResult = await projectsAPI.updateCanvas(id, { logoDetails: updatedLogoDetails });
+                
+                console.log('✅ [handleDeleteLogo] Projeto atualizado no servidor:', {
+                    success: !!updateResult,
+                    totalLogosEnviados: newSavedLogos.length
+                });
+                
+                // Verificar se a atualização foi bem-sucedida antes de recarregar
+                if (updateResult) {
+                    // Recarregar projeto para garantir sincronização
+                    await loadProject();
+                } else {
+                    console.error('❌ [handleDeleteLogo] Falha ao atualizar projeto no servidor');
+                    addNotification({
+                        type: 'error',
+                        message: t('pages.projectDetails.errorDeleteLogo', 'Erro ao eliminar logo: falha ao atualizar no servidor'),
+                    });
+                }
             }
-
-            // Recarregar projeto
-            loadProject();
         } catch (error) {
             console.error('Erro ao eliminar logo:', error);
             addNotification({
@@ -1307,154 +1390,22 @@ export default function ProjectDetails() {
                             key="instructions"
                             title={
                                 <div className="flex items-center gap-2">
-                                    <Icon icon="lucide:list-checks" />
-                                    <span>{t('pages.projectDetails.tabs.instructions')}</span>
-                                    <Chip size="sm" variant="flat">{displayLogos.length}</Chip>
+                                    <Icon icon="lucide:file-text" />
+                                    <span>{t('pages.projectDetails.tabs.instructions', 'Instruções')}</span>
                                 </div>
                             }
                         >
-                            <div className="py-6">
-                                {displayLogos.length > 0 ? (
-                                    <Accordion variant="splitted" selectionMode="multiple">
-                                        {displayLogos.map((logo, idx) => {
-                                            // Calcular o índice correto apenas nos logos de instrução (sem simulações)
-                                            const logoInstructionIndex = displayLogos.slice(0, idx).filter(l => !l.isSimulation).length;
-                                            
-                                            return (
-                                            <AccordionItem
-                                                key={idx}
-                                                aria-label={logo.logoName || `Logo ${idx + 1}`}
-                                                title={
-                                                    <div className="flex items-center justify-between w-full gap-3">
-                                                        <div className="flex items-center gap-3 flex-1">
-                                                            <div className={`p-2 rounded-full ${logo.isSimulation ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'}`}>
-                                                                <Icon icon={logo.isSimulation ? "lucide:sparkles" : "lucide:box"} className="text-xl" />
-                                                            </div>
-                                                            <div className="flex-1">
-                                                                <h3 className="text-lg font-bold">{logo.logoName || t('pages.projectDetails.logoDefaultName', { index: idx + 1 })}</h3>
-                                                                <div className="flex items-center gap-2 text-small text-default-500">
-                                                                    <span className="font-mono">{logo.logoNumber}</span>
-                                                                    {logo.requestedBy && (
-                                                                        <>
-                                                                            <span>•</span>
-                                                                            <span>{t('pages.projectDetails.requestedBy')}: {logo.requestedBy}</span>
-                                                                        </>
-                                                                    )}
-                                                                    {logo.isSimulation && logo.canvasDecorations && (
-                                                                        <>
-                                                                            <span>•</span>
-                                                                            <span>{getTotalDecorationsQuantity(logo.canvasDecorations)} {t('pages.projectDetails.decorations', 'decorações')}</span>
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        {!logo.isSimulation && (
-                                                            <div className="flex items-center gap-2">
-                                                                <div
-                                                                    role="button"
-                                                                    tabIndex={0}
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        e.preventDefault();
-                                                                        console.log('🔗 Edit logo button clicked:', { logoInstructionIndex, idx, logoNumber: logo.logoNumber });
-                                                                        setEditingLogoIndex(logoInstructionIndex);
-                                                                        setLogoEditModalOpen(true);
-                                                                    }}
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter' || e.key === ' ') {
-                                                                        e.stopPropagation();
-                                                                            e.preventDefault();
-                                                                        console.log('🔗 Edit logo button clicked:', { logoInstructionIndex, idx, logoNumber: logo.logoNumber });
-                                                                            setEditingLogoIndex(logoInstructionIndex);
-                                                                            setLogoEditModalOpen(true);
-                                                                        }
-                                                                    }}
-                                                                    className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-3 py-1.5 h-8 text-sm font-medium rounded-lg bg-primary-50 text-primary hover:bg-primary-100 active:bg-primary-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                                                                >
-                                                                    <Icon icon="lucide:edit-2" className="text-sm" />
-                                                                    <span>{t('common.edit', 'Editar')}</span>
-                                                                </div>
-                                                                <div
-                                                                    role="button"
-                                                                    tabIndex={0}
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        e.preventDefault();
-                                                                        // Determinar se é currentLogo ou savedLogo
-                                                                        const savedLogos = project.logoDetails?.logos || [];
-                                                                        const currentLogo = project.logoDetails?.currentLogo || {};
-                                                                        const isCurrentLogo = logoInstructionIndex >= savedLogos.length;
-                                                                        
-                                                                        if (window.confirm(t('pages.projectDetails.confirmDeleteLogo', `Tem certeza que deseja eliminar o logo "${logo.logoName || logo.logoNumber || `Logo ${logoInstructionIndex + 1}`}"?`))) {
-                                                                            if (isCurrentLogo) {
-                                                                                // É o currentLogo
-                                                                                handleDeleteLogo(0, true);
-                                                                            } else {
-                                                                                // É um savedLogo
-                                                                                handleDeleteLogo(logoInstructionIndex, false);
-                                                                            }
-                                                                        }
-                                                                    }}
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter' || e.key === ' ') {
-                                                                            e.stopPropagation();
-                                                                            e.preventDefault();
-                                                                            // Determinar se é currentLogo ou savedLogo
-                                                                            const savedLogos = project.logoDetails?.logos || [];
-                                                                            const currentLogo = project.logoDetails?.currentLogo || {};
-                                                                            const isCurrentLogo = logoInstructionIndex >= savedLogos.length;
-                                                                            
-                                                                            if (window.confirm(t('pages.projectDetails.confirmDeleteLogo', `Tem certeza que deseja eliminar o logo "${logo.logoName || logo.logoNumber || `Logo ${logoInstructionIndex + 1}`}"?`))) {
-                                                                                if (isCurrentLogo) {
-                                                                                    // É o currentLogo
-                                                                                    handleDeleteLogo(0, true);
-                                                                                } else {
-                                                                                    // É um savedLogo
-                                                                                    handleDeleteLogo(logoInstructionIndex, false);
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }}
-                                                                    className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-3 py-1.5 h-8 text-sm font-medium rounded-lg bg-danger-50 text-danger hover:bg-danger-100 active:bg-danger-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
-                                                                >
-                                                                    <Icon icon="lucide:trash-2" className="text-sm" />
-                                                                    <span>{t('common.delete', 'Eliminar')}</span>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                }
-                                                subtitle={
-                                                    logo.isSimulation ? (
-                                                        <Chip size="sm" variant="flat" color="secondary" className="mt-2">
-                                                            {t('pages.projectDetails.simulationType', 'Simulação')}
-                                                        </Chip>
-                                                    ) : (
-                                                    <Chip size="sm" variant="flat" color="primary" className="mt-2">
-                                                        {logo.usageOutdoor ? t('pages.projectDetails.outdoor') : t('pages.projectDetails.indoor')}
-                                                    </Chip>
-                                                    )
-                                                }
-                                            >
-                                                <div className="py-2">
-                                                    {logo.isSimulation ? (
-                                                        <SimulationContent simulation={logo} projectId={id} />
-                                                    ) : (
-                                                    <LogoDetailsContent logo={logo} />
-                                                    )}
-                                                </div>
-                                            </AccordionItem>
-                                            );
-                                        })}
-                                    </Accordion>
-                                ) : (
-                                    <div className="text-center py-12 text-default-500">
-                                        <Icon icon="lucide:clipboard-list" className="text-5xl mx-auto mb-4 opacity-20" />
-                                        <p className="text-lg">{t('pages.projectDetails.noInstructions')}</p>
-                                    </div>
-                                )}
-                            </div>
+                            <InstructionsTab
+                                project={project}
+                                onEditLogo={(logoIndex, isCurrent, logo) => {
+                                    handleEditLogoFromOrders(logoIndex, isCurrent);
+                                }}
+                                onEditSimulation={() => {
+                                    setSimulationEditModalOpen(true);
+                                }}
+                                onDeleteLogo={handleDeleteLogo}
+                                onSave={loadProject}
+                            />
                         </Tab>
 
                         <Tab
@@ -1537,6 +1488,13 @@ export default function ProjectDetails() {
                     projectId={id}
                     logoIndex={editingLogoIndex}
                     onSave={handleLogoEditModalSave}
+                />
+
+                {/* Simulation Edit Modal */}
+                <SimulationEditModal
+                    isOpen={simulationEditModalOpen}
+                    onClose={() => setSimulationEditModalOpen(false)}
+                    projectId={id}
                 />
 
                 {/* Delete Confirmation Modal */}

@@ -583,6 +583,17 @@
         "notes": "Notes",
         "observations": "Chat du Projet"
       },
+      "instructions": {
+        "selectInstruction": "Sélectionner une instruction",
+        "selectInstructionPlaceholder": "Choisir une instruction",
+        "noInstructions": "Aucune instruction disponible",
+        "noInstructionsDescription": "Ajoutez des instructions de logo ou de simulation au projet.",
+        "editSimulation": "Modifier la simulation",
+        "editSimulationDescription": "Pour modifier la simulation, vous serez redirigé vers l'éditeur AI Designer où vous pourrez modifier les décorations et les images.",
+        "goToEditor": "Aller à l'éditeur",
+        "confirmDelete": "Êtes-vous sûr de vouloir supprimer \"{{name}}\"?",
+        "thisInstruction": "cette instruction"
+      },
       "orders": {
         "title": "Commandes",
         "status": "Statut",

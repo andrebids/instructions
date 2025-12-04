@@ -34,20 +34,6 @@ export function NavigationFooter({
         </Button>
 
         <div className="flex gap-2">
-          {/* Save button - only show when editing existing project */}
-          {projectId && currentStep < totalSteps && (
-            <Button
-              color="secondary"
-              variant="flat"
-              onPress={onSave}
-              isLoading={isSaving}
-              isDisabled={loading || isNavigating || isSaving}
-              startContent={<Icon icon="lucide:save" />}
-            >
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
-          )}
-
           {isLogoInstructionsStep ? (
             <>
               <Button
@@ -61,12 +47,34 @@ export function NavigationFooter({
               </Button>
               <Button
                 color="primary"
-                onPress={currentStep >= totalSteps ? onSubmit : onNext}
-                isLoading={loading || isNavigating}
-                isDisabled={!isValid || loading || isNavigating}
+                onPress={async () => {
+                  try {
+                    // Save before submitting if editing existing project
+                    if (projectId && onSave) {
+                      try {
+                        await onSave();
+                      } catch (saveError) {
+                        console.error('❌ Erro ao salvar antes de avançar:', saveError);
+                        // Continuar mesmo se houver erro no save (pode ser um problema temporário)
+                        // O erro já foi mostrado no saveStatus
+                      }
+                    }
+                    // Then submit or go to next step
+                    if (currentStep >= totalSteps) {
+                      onSubmit();
+                    } else {
+                      onNext();
+                    }
+                  } catch (error) {
+                    console.error('❌ Erro ao processar Finish:', error);
+                    // Não bloquear a UI, o erro já foi mostrado
+                  }
+                }}
+                isLoading={loading || isNavigating || isSaving}
+                isDisabled={!isValid || loading || isNavigating || isSaving}
                 endContent={<Icon icon="lucide:check" />}
               >
-                {loading || isNavigating ? "Creating..." : "Finish"}
+                {loading || isNavigating || isSaving ? (isSaving ? "Saving..." : "Creating...") : "Finish"}
               </Button>
             </>
           ) : currentStep < totalSteps ? (
