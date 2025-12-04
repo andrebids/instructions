@@ -89,7 +89,6 @@ REM Sets: GITHUB_USERNAME, GITHUB_TOKEN, GITHUB_REPO
 REM Returns: ERRORLEVEL 0 if success, 1 if failure
 REM ============================================
 :load_github_credentials
-setlocal enabledelayedexpansion
 REM Get project root (go up from scripts/github/ to project root)
 set "CURRENT_DIR=%~dp0"
 set "CURRENT_DIR=%CURRENT_DIR:~0,-1%"
@@ -102,45 +101,50 @@ if not exist "%ENV_FILE%" (
     call :print_info "  GITHUB_USERNAME=seu_usuario"
     call :print_info "  GITHUB_TOKEN=seu_personal_access_token"
     call :print_info "  GITHUB_REPO=username/repo-name"
-    endlocal
     exit /b 1
 )
 
-REM Load .env file variables directly
+REM Load .env file variables directly - read only the GitHub variables we need
+REM Process line by line, setting variables directly (no setlocal, so they persist)
 for /f "usebackq tokens=1,* delims==" %%a in ("%ENV_FILE%") do (
-    set "LINE=%%a"
-    if not "!LINE:~0,1!"=="#" (
-        if not "!LINE!"=="" (
-            set "%%a=%%b"
+    REM Skip comments (lines starting with #)
+    echo %%a| findstr /b /c:"#" >nul 2>&1
+    if errorlevel 1 (
+        REM Not a comment, check if it's one of our variables
+        if /i "%%a"=="GITHUB_USERNAME" (
+            REM Remove leading spaces from value
+            for /f "tokens=*" %%v in ("%%b") do set "GITHUB_USERNAME=%%v"
+        )
+        if /i "%%a"=="GITHUB_TOKEN" (
+            for /f "tokens=*" %%v in ("%%b") do set "GITHUB_TOKEN=%%v"
+        )
+        if /i "%%a"=="GITHUB_REPO" (
+            for /f "tokens=*" %%v in ("%%b") do set "GITHUB_REPO=%%v"
         )
     )
 )
 
 REM Check if required variables are set
-if "!GITHUB_USERNAME!"=="" (
+if "%GITHUB_USERNAME%"=="" (
     call :print_error "GITHUB_USERNAME não encontrado no arquivo .env"
-    endlocal
+    call :print_info "Arquivo .env localizado em: %ENV_FILE%"
     exit /b 1
 )
 
-if "!GITHUB_TOKEN!"=="" (
+if "%GITHUB_TOKEN%"=="" (
     call :print_error "GITHUB_TOKEN não encontrado no arquivo .env"
     call :print_info "Crie um Personal Access Token em: https://github.com/settings/tokens"
     call :print_info "Permissões necessárias: write:packages"
-    endlocal
     exit /b 1
 )
 
-if "!GITHUB_REPO!"=="" (
+if "%GITHUB_REPO%"=="" (
     call :print_error "GITHUB_REPO não encontrado no arquivo .env"
     call :print_info "Formato esperado: username/repo-name"
-    endlocal
     exit /b 1
 )
 
 call :print_success "Credenciais GitHub carregadas do .env"
-REM Export variables to parent scope
-endlocal & set "GITHUB_USERNAME=!GITHUB_USERNAME!" & set "GITHUB_TOKEN=!GITHUB_TOKEN!" & set "GITHUB_REPO=!GITHUB_REPO!"
 exit /b 0
 
 REM ============================================

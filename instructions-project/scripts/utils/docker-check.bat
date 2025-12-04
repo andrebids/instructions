@@ -100,7 +100,7 @@ REM Function: Check if in correct project directory
 REM Returns: ERRORLEVEL 0 if correct, 1 if not
 REM ============================================
 :check_project_directory
-call :get_project_root
+call "%UTILS_DIR%common.bat" :get_project_root
 set "PROJECT_ROOT=%PROJECT_ROOT%"
 
 if not exist "%PROJECT_ROOT%\docker-compose.dev.yml" (

@@ -27,12 +27,37 @@ if not exist "!LOG_DIR!" (
     echo [OK] Pasta de logs criada com sucesso
 )
 
-REM Generate timestamp for log file
-for /f "tokens=2-4 delims=/ " %%a in ('date /t') do set "DATE=%%c-%%a-%%b"
-for /f "tokens=1-2 delims=: " %%a in ('time /t') do set "TIME=%%a-%%b"
-set "TIME=!TIME: =0!"
-set "TIME=!TIME::=-!"
+REM Generate timestamp for log file using wmic (more reliable)
+for /f "tokens=2 delims==" %%a in ('wmic OS Get localdatetime /value') do set "DT=%%a"
+set "YYYY=!DT:~0,4!"
+set "MM=!DT:~4,2!"
+set "DD=!DT:~6,2!"
+set "HH=!DT:~8,2!"
+set "MIN=!DT:~10,2!"
+set "DATE=!YYYY!-!MM!-!DD!"
+set "TIME=!HH!-!MIN!"
 set "LOG_FILE=!LOG_DIR!\build-!DATE!-!TIME!.log"
+
+REM Fallback if wmic doesn't work
+if "!YYYY!"=="" (
+    REM Use date command as fallback
+    for /f "tokens=1-3 delims=/ " %%a in ('date /t') do (
+        set "MM=%%a"
+        set "DD=%%b"
+        set "YYYY=%%c"
+    )
+    if "!MM!" LSS "10" set "MM=0!MM!"
+    if "!DD!" LSS "10" set "DD=0!DD!"
+    set "DATE=!YYYY!-!MM!-!DD!"
+    for /f "tokens=1-2 delims=: " %%a in ('time /t') do (
+        set "HH=%%a"
+        set "MIN=%%b"
+    )
+    set "HH=!HH: =0!"
+    set "MIN=!MIN: =0!"
+    set "TIME=!HH!-!MIN!"
+    set "LOG_FILE=!LOG_DIR!\build-!DATE!-!TIME!.log"
+)
 
 REM Check if log file already exists (in case script runs multiple times quickly)
 if exist "!LOG_FILE!" (
@@ -57,7 +82,9 @@ if exist "!LOG_FILE!" (
     )
 )
 
-REM Export LOG_FILE to parent scope
-endlocal & set "LOG_FILE=%LOG_FILE%" & set "LOG_DIR=%LOG_DIR%"
+REM Export LOG_FILE to parent scope (must capture before endlocal)
+set "EXPORT_LOG_FILE=!LOG_FILE!"
+set "EXPORT_LOG_DIR=!LOG_DIR!"
+endlocal & set "LOG_FILE=%EXPORT_LOG_FILE%" & set "LOG_DIR=%EXPORT_LOG_DIR%"
 exit /b 0
 
