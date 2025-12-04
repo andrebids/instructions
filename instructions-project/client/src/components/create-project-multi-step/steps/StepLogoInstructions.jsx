@@ -472,13 +472,102 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   // Ref para rastrear o ID do logo atual para detectar quando um novo logo é criado
   const currentLogoIdRef = React.useRef(currentLogo.id || null);
 
+  // Ref para debounce do onAIStateChange e evitar loops infinitos
+  const aiStateChangeTimeoutRef = React.useRef(null);
+  const isProcessingAIStateChangeRef = React.useRef(false);
+
+  // Cleanup do timeout quando o componente for desmontado ou o chat fechar
+  React.useEffect(() => {
+    return () => {
+      if (aiStateChangeTimeoutRef.current) {
+        clearTimeout(aiStateChangeTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Resetar refs quando um novo logo é criado (quando o ID muda ou quando o logo está vazio)
+  // E atualizar formik quando currentLogo for carregado (especialmente quando o modal abre)
   React.useEffect(() => {
     const currentLogoId = currentLogo.id || null;
     const isLogoEmpty = !currentLogo.logoNumber && !currentLogo.logoName;
+    const previousLogoId = currentLogoIdRef.current;
+    
+    // Se o logo foi carregado (tem dados mas não tinha ID antes), atualizar formik
+    const hasLogoData = currentLogo.logoNumber || currentLogo.logoName || currentLogo.requestedBy;
+    if (hasLogoData && previousLogoId === null && currentLogoId !== null) {
+      // Logo foi carregado, atualizar formik com os valores
+      // Usar setTimeout para garantir que o formik esteja pronto
+      setTimeout(() => {
+        formik.setFieldValue("logoNumber", currentLogo.logoNumber || "");
+        formik.setFieldValue("logoName", currentLogo.logoName || "");
+        formik.setFieldValue("requestedBy", currentLogo.requestedBy || "");
+        formik.setFieldValue("budget", currentLogo.budget || "");
+        formik.setFieldValue("dimensions", currentLogo.dimensions || {});
+        formik.setFieldValue("usageOutdoor", currentLogo.usageOutdoor || false);
+        formik.setFieldValue("usageIndoor", currentLogo.usageIndoor !== undefined ? currentLogo.usageIndoor : true);
+        formik.setFieldValue("fixationType", currentLogo.fixationType || "");
+        formik.setFieldValue("lacqueredStructure", currentLogo.lacqueredStructure || false);
+        formik.setFieldValue("lacquerColor", currentLogo.lacquerColor || "");
+        formik.setFieldValue("mastDiameter", currentLogo.mastDiameter || "");
+        formik.setFieldValue("maxWeightConstraint", currentLogo.maxWeightConstraint || false);
+        formik.setFieldValue("maxWeight", currentLogo.maxWeight || "");
+        formik.setFieldValue("ballast", currentLogo.ballast || false);
+        formik.setFieldValue("controlReport", currentLogo.controlReport || false);
+        formik.setFieldValue("criteria", currentLogo.criteria || "");
+        formik.setFieldValue("description", currentLogo.description || "");
+      }, 0);
+    }
+    
+    // Também verificar se o logo tem dados mas o formik está vazio (caso o logo seja carregado após o componente montar)
+    if (hasLogoData && (!formik.values.logoNumber && !formik.values.logoName && !formik.values.requestedBy)) {
+      // Formik está vazio mas o logo tem dados, atualizar
+      setTimeout(() => {
+        formik.setFieldValue("logoNumber", currentLogo.logoNumber || "");
+        formik.setFieldValue("logoName", currentLogo.logoName || "");
+        formik.setFieldValue("requestedBy", currentLogo.requestedBy || "");
+        formik.setFieldValue("budget", currentLogo.budget || "");
+        formik.setFieldValue("dimensions", currentLogo.dimensions || {});
+        formik.setFieldValue("usageOutdoor", currentLogo.usageOutdoor || false);
+        formik.setFieldValue("usageIndoor", currentLogo.usageIndoor !== undefined ? currentLogo.usageIndoor : true);
+        formik.setFieldValue("fixationType", currentLogo.fixationType || "");
+        formik.setFieldValue("lacqueredStructure", currentLogo.lacqueredStructure || false);
+        formik.setFieldValue("lacquerColor", currentLogo.lacquerColor || "");
+        formik.setFieldValue("mastDiameter", currentLogo.mastDiameter || "");
+        formik.setFieldValue("maxWeightConstraint", currentLogo.maxWeightConstraint || false);
+        formik.setFieldValue("maxWeight", currentLogo.maxWeight || "");
+        formik.setFieldValue("ballast", currentLogo.ballast || false);
+        formik.setFieldValue("controlReport", currentLogo.controlReport || false);
+        formik.setFieldValue("criteria", currentLogo.criteria || "");
+        formik.setFieldValue("description", currentLogo.description || "");
+      }, 0);
+    }
 
     // Se o ID mudou ou o logo está vazio (novo logo), resetar refs
-    if (currentLogoId !== currentLogoIdRef.current || (isLogoEmpty && currentLogoIdRef.current !== null)) {
+    if (currentLogoId !== previousLogoId || (isLogoEmpty && previousLogoId !== null)) {
+      // IMPORTANTE: Quando o ID do logo muda (editando um logo diferente), atualizar todos os campos do formik
+      if (currentLogoId !== previousLogoId && currentLogoId !== null && previousLogoId !== null) {
+        console.log("Logo ID changed, updating formik with new logo data. Previous ID:", previousLogoId, "New ID:", currentLogoId);
+        // Atualizar todos os campos do formik com os valores do novo currentLogo
+        formik.setFieldValue("logoNumber", currentLogo.logoNumber || "");
+        formik.setFieldValue("logoName", currentLogo.logoName || "");
+        formik.setFieldValue("requestedBy", currentLogo.requestedBy || "");
+        formik.setFieldValue("budget", currentLogo.budget || "");
+        formik.setFieldValue("dimensions", currentLogo.dimensions || {});
+        formik.setFieldValue("usageOutdoor", currentLogo.usageOutdoor || false);
+        formik.setFieldValue("usageIndoor", currentLogo.usageIndoor !== undefined ? currentLogo.usageIndoor : true);
+        formik.setFieldValue("fixationType", currentLogo.fixationType || "");
+        formik.setFieldValue("lacqueredStructure", currentLogo.lacqueredStructure || false);
+        formik.setFieldValue("lacquerColor", currentLogo.lacquerColor || "");
+        formik.setFieldValue("mastDiameter", currentLogo.mastDiameter || "");
+        formik.setFieldValue("maxWeightConstraint", currentLogo.maxWeightConstraint || false);
+        formik.setFieldValue("maxWeight", currentLogo.maxWeight || "");
+        formik.setFieldValue("ballast", currentLogo.ballast || false);
+        formik.setFieldValue("controlReport", currentLogo.controlReport || false);
+        formik.setFieldValue("criteria", currentLogo.criteria || "");
+        formik.setFieldValue("description", currentLogo.description || "");
+        formik.setFieldValue("composition", currentLogo.composition || { componentes: [], bolas: [] });
+      }
+      
       requestedByAutoFilled.current = false;
       logoNumberInitialized.current = false;
       preservedRequestedByRef.current = null;
@@ -519,7 +608,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         if (match) {
           const num = parseInt(match[1], 10);
           if (!isNaN(num) && num > 0) {
-            console.log("Found logo number:", num, "in", logo.logoNumber);
+            console.log("Found logo number:", num, "in saved logo:", logo.logoNumber);
             usedNumbers.add(num);
             if (num > maxNumber) {
               maxNumber = num;
@@ -552,7 +641,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       }
     }
     
-    console.log("Max number found:", maxNumber, "from", savedLogos.length, "saved logos");
+    console.log("Max number found:", maxNumber, "from", savedLogos.length, "saved logos. Used numbers:", Array.from(usedNumbers).sort((a, b) => a - b));
 
     // Se o logo atual já tem um número válido, não contar ele mesmo (estamos editando)
     // Mas se não tem número ou tem um número diferente, precisamos gerar um novo
@@ -572,16 +661,22 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           if (num > maxNumber) {
             maxNumber = num;
           }
+          // Adicionar ao usedNumbers para não gerar duplicado
+          usedNumbers.add(num);
         }
       }
     }
 
-    // Gerar o próximo número sequencial
-    // Se maxNumber é 0, significa que não há logos, então começar com L1
-    // Se maxNumber é 1, significa que há L1, então o próximo é L2
-    // Se maxNumber é 2, significa que há L1 e L2, então o próximo é L3
-    const nextNumber = maxNumber + 1;
-    console.log("Next number generated:", nextNumber, "for project:", baseName);
+    // Encontrar o próximo número disponível (não apenas maxNumber + 1, mas o próximo que não está em uso)
+    // Isso garante que mesmo se houver gaps (ex: L1, L3), o próximo será L2, não L4
+    let nextNumber = 1;
+    while (usedNumbers.has(nextNumber)) {
+      nextNumber++;
+    }
+    
+    // Se nextNumber for maior que maxNumber + 1, significa que há gaps, mas vamos usar o próximo disponível
+    // Se não há gaps, nextNumber será maxNumber + 1
+    console.log("Next number generated:", nextNumber, "for project:", baseName, "(max was:", maxNumber, ", used:", Array.from(usedNumbers).sort((a, b) => a - b), ")");
     return `${baseName} -L${nextNumber}`;
   }, [savedLogos, currentLogo]);
 
@@ -642,17 +737,25 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     onChange: (field, value) => {
       // Sincronizar com formData global através de currentLogo
       // IMPORTANTE: Preservar TODOS os valores do formik para não perder dados durante atualizações
+      // IMPORTANTE: Preservar também _originalIndex, id e savedAt que são essenciais para identificar e posicionar logos editados
+      
+      // Usar o valor novo do parâmetro quando o campo sendo alterado é o mesmo, senão usar o valor do formik
       const updatedCurrentLogo = {
         ...currentLogo,
+        // Preservar metadados importantes para logos editados
+        id: currentLogo.id,
+        savedAt: currentLogo.savedAt,
+        _originalIndex: currentLogo._originalIndex,
         // Preservar TODOS os valores do formik (que podem ter sido digitados mas ainda não sincronizados)
-        logoName: formik.values.logoName || currentLogo.logoName || "",
-        description: formik.values.description || currentLogo.description || "",
-        logoNumber: formik.values.logoNumber || currentLogo.logoNumber || "",
-        requestedBy: formik.values.requestedBy || currentLogo.requestedBy || "",
-        budget: formik.values.budget || currentLogo.budget || "",
-        fixationType: formik.values.fixationType || currentLogo.fixationType || "",
-        dimensions: formik.values.dimensions || currentLogo.dimensions || {},
-        // Atualizar o campo específico que está sendo alterado
+        // IMPORTANTE: Se o campo sendo alterado é o mesmo, usar o valor novo do parâmetro, senão usar formik.values
+        logoName: field === "logoName" ? value : (formik.values.logoName || currentLogo.logoName || ""),
+        description: field === "description" ? value : (formik.values.description || currentLogo.description || ""),
+        logoNumber: field === "logoNumber" ? value : (formik.values.logoNumber || currentLogo.logoNumber || ""),
+        requestedBy: field === "requestedBy" ? value : (formik.values.requestedBy || currentLogo.requestedBy || ""),
+        budget: field === "budget" ? value : (formik.values.budget || currentLogo.budget || ""),
+        fixationType: field === "fixationType" ? value : (formik.values.fixationType || currentLogo.fixationType || ""),
+        dimensions: field === "dimensions" ? value : (formik.values.dimensions || currentLogo.dimensions || {}),
+        // Atualizar o campo específico que está sendo alterado (garantir que o valor novo seja usado)
         [field]: value,
         // Garantir que valores preservados sejam sempre incluídos se o campo atual estiver vazio
         ...(preservedRequestedByRef.current && (!currentLogo.requestedBy || currentLogo.requestedBy.trim() === "") ? { requestedBy: preservedRequestedByRef.current } : {}),
@@ -826,20 +929,113 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           : currentLogoNumber;
         
         if (logoNumberToPreserve && logoNumberToPreserve.trim() !== "") {
-          // Só atualizar se o valor preservado for diferente do atual
-          if (preservedLogoNumberRef.current !== logoNumberToPreserve) {
+          // IMPORTANTE: Se o ID do logo mudou, sempre atualizar o logoNumber no formik
+          // Isso garante que quando editamos um logo diferente, o logoNumber correto é carregado
+          const logoIdChanged = currentLogo.id !== currentLogoIdRef.current;
+          
+          // Só atualizar se o valor preservado for diferente do atual OU se o ID mudou
+          if (preservedLogoNumberRef.current !== logoNumberToPreserve || logoIdChanged) {
             preservedLogoNumberRef.current = logoNumberToPreserve;
             logoNumberInitialized.current = true;
-            // Garantir que o formik tem o valor correto (só atualizar se diferente)
-            if (formik.values.logoNumber !== logoNumberToPreserve) {
+            // Sempre atualizar o formik quando o logoNumber mudar ou quando o ID do logo mudar
+            if (formik.values.logoNumber !== logoNumberToPreserve || logoIdChanged) {
               formik.setFieldValue("logoNumber", logoNumberToPreserve);
+              console.log("Preserving existing logo number for editing:", logoNumberToPreserve, "logo ID:", currentLogo.id);
             }
-            console.log("Preserving existing logo number for editing:", logoNumberToPreserve);
           }
         }
       } else if (!logoNumberInitialized.current) {
         // Se não estamos editando e o logo number não foi inicializado, gerar novo
-        const generatedLogoNumber = generateLogoNumber(projectName, currentLogoNumber);
+        // IMPORTANTE: Usar o savedLogos mais recente do logoDetails para garantir que incluímos logos recém-salvos
+        const latestSavedLogos = logoDetails.logos || savedLogos;
+        console.log("Generating new logo number. Current savedLogos length:", savedLogos.length, "Latest from logoDetails:", latestSavedLogos.length);
+        
+        // Criar uma versão temporária da função com os logos mais recentes
+        const generateWithLatestLogos = (projectName, currentLogoNumber = "") => {
+          if (!projectName || projectName.trim() === "") {
+            return "";
+          }
+
+          // IMPORTANTE: Se o currentLogo já tem um logoNumber válido e estamos editando, NÃO gerar novo número
+          if (currentLogo.id && currentLogo.logoNumber && currentLogo.logoNumber.trim() !== "") {
+            const match = currentLogo.logoNumber.match(/-L\s*(\d+)/i);
+            if (match) {
+              console.log("Logo has ID and valid logoNumber (editing existing logo). Preserving:", currentLogo.logoNumber);
+              return currentLogo.logoNumber;
+            }
+          }
+
+          const baseName = projectName.trim();
+          let maxNumber = 0;
+          const usedNumbers = new Set();
+
+          // Usar os logos mais recentes
+          latestSavedLogos.forEach((logo) => {
+            if (logo.logoNumber) {
+              const cleanedLogoNumber = logo.logoNumber.trim();
+              const match = cleanedLogoNumber.match(/-L\s*(\d+)/i);
+              if (match) {
+                const num = parseInt(match[1], 10);
+                if (!isNaN(num) && num > 0) {
+                  console.log("Found logo number:", num, "in saved logo:", logo.logoNumber);
+                  usedNumbers.add(num);
+                  if (num > maxNumber) {
+                    maxNumber = num;
+                  }
+                }
+              }
+            }
+          });
+          
+          // Verificar currentLogo se não tiver ID
+          if (currentLogo.logoNumber && 
+              currentLogo.logoNumber.trim() !== "" && 
+              currentLogo.logoNumber !== currentLogoNumber &&
+              !currentLogo.id) {
+            const cleanedCurrentLogoNumber = currentLogo.logoNumber.trim();
+            const match = cleanedCurrentLogoNumber.match(/-L\s*(\d+)/i);
+            if (match) {
+              const num = parseInt(match[1], 10);
+              if (!isNaN(num) && num > 0) {
+                console.log("Found logo number in currentLogo:", num, "in", currentLogo.logoNumber);
+                usedNumbers.add(num);
+                if (num > maxNumber) {
+                  maxNumber = num;
+                }
+              }
+            }
+          }
+          
+          console.log("Max number found:", maxNumber, "from", latestSavedLogos.length, "saved logos. Used numbers:", Array.from(usedNumbers).sort((a, b) => a - b));
+
+          if (currentLogoNumber && currentLogoNumber.trim() !== "") {
+            const cleanedCurrentLogoNumber = currentLogoNumber.trim();
+            const match = cleanedCurrentLogoNumber.match(/-L\s*(\d+)/i);
+            if (match) {
+              const num = parseInt(match[1], 10);
+              if (!isNaN(num) && num > 0) {
+                if (usedNumbers.has(num)) {
+                  console.log("Current logo number exists (editing). Returning:", currentLogoNumber);
+                  return currentLogoNumber.trim();
+                }
+                if (num > maxNumber) {
+                  maxNumber = num;
+                }
+                usedNumbers.add(num);
+              }
+            }
+          }
+
+          let nextNumber = 1;
+          while (usedNumbers.has(nextNumber)) {
+            nextNumber++;
+          }
+          
+          console.log("Next number generated:", nextNumber, "for project:", baseName);
+          return `${baseName} -L${nextNumber}`;
+        };
+        
+        const generatedLogoNumber = generateWithLatestLogos(projectName, currentLogoNumber);
 
         if (generatedLogoNumber) {
           // Se o logo atual está vazio ou não segue o padrão, aplicar o novo número
@@ -859,7 +1055,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
             const updatedLogoDetails = {
               ...logoDetails,
               currentLogo: updatedCurrentLogo,
-              logos: savedLogos,
+              logos: latestSavedLogos, // Usar os logos mais recentes
             };
             onInputChange("logoDetails", updatedLogoDetails);
           } else {
@@ -1585,7 +1781,21 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                         size="sm"
                         classNames={{ inputWrapper: "bg-gray-50 dark:bg-gray-700 h-9 md:h-10 lg:h-9", input: "text-xs sm:text-sm md:text-base lg:text-sm" }}
                         value={dimensionValue}
-                        onValueChange={(v) => handleDimensionUpdate(key, "value", v ? parseFloat(v) : null)}
+                        onValueChange={(v) => {
+                          // Se o valor for vazio, null, ou "0", definir como string vazia
+                          // Isso garante que a validação reconheça que o campo está vazio
+                          if (!v || v === "" || v === "0" || v === "0.00") {
+                            handleDimensionUpdate(key, "value", "");
+                          } else {
+                            const numValue = parseFloat(v);
+                            // Só definir se for um número válido e maior que 0
+                            if (!isNaN(numValue) && numValue > 0) {
+                              handleDimensionUpdate(key, "value", numValue);
+                            } else {
+                              handleDimensionUpdate(key, "value", "");
+                            }
+                          }
+                        }}
                         onBlur={() => {
                           formik.setFieldTouched(`dimensions.${key}.value`, true);
                           formik.setFieldTouched("dimensions", true);
@@ -2134,17 +2344,39 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         onClose={() => setIsChatOpen(false)}
         initialAIState={currentLogo.aiAssistantState || null}
         onAIStateChange={(aiState) => {
-          // Salvar estado do AI Assistant no currentLogo
-          const updatedCurrentLogo = {
-            ...currentLogo,
-            aiAssistantState: aiState,
-          };
-          const updatedLogoDetails = {
-            ...logoDetails,
-            currentLogo: updatedCurrentLogo,
-            logos: savedLogos,
-          };
-          onInputChange("logoDetails", updatedLogoDetails);
+          // Evitar loops infinitos verificando se já está processando
+          if (isProcessingAIStateChangeRef.current) {
+            return;
+          }
+
+          // Limpar timeout anterior
+          if (aiStateChangeTimeoutRef.current) {
+            clearTimeout(aiStateChangeTimeoutRef.current);
+          }
+
+          // Debounce de 300ms para evitar atualizações muito frequentes
+          aiStateChangeTimeoutRef.current = setTimeout(() => {
+            isProcessingAIStateChangeRef.current = true;
+            
+            try {
+              // Salvar estado do AI Assistant no currentLogo
+              const updatedCurrentLogo = {
+                ...currentLogo,
+                aiAssistantState: aiState,
+              };
+              const updatedLogoDetails = {
+                ...logoDetails,
+                currentLogo: updatedCurrentLogo,
+                logos: savedLogos,
+              };
+              onInputChange("logoDetails", updatedLogoDetails);
+            } finally {
+              // Resetar flag após um pequeno delay para permitir que o estado se estabilize
+              setTimeout(() => {
+                isProcessingAIStateChangeRef.current = false;
+              }, 100);
+            }
+          }, 300);
         }}
         onSaveImage={async (imageUrl) => {
           try {

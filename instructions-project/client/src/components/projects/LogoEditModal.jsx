@@ -5,6 +5,7 @@ import { StepLogoInstructions } from '../create-project-multi-step/steps/StepLog
 import { useProjectForm } from '../create-project-multi-step/hooks/useProjectForm';
 import { useSaveStatus } from '../create-project-multi-step/hooks/useSaveStatus';
 import { useTranslation } from 'react-i18next';
+import { projectsAPI } from '../../services/api';
 
 export default React.memo(function LogoEditModal({ 
     isOpen, 
@@ -17,8 +18,10 @@ export default React.memo(function LogoEditModal({
     const saveStatus = useSaveStatus();
     const hasUnsavedChangesRef = useRef(false);
     const savedFormDataRef = useRef(null);
-    const autosaveTimeoutRef = useRef(null);
     const isSavingRef = useRef(false);
+    const autosaveTimeoutRef = useRef(null);
+    const lastLogoDetailsRef = useRef(null);
+    const reloadTriggerRef = useRef(0);
 
     // Usar useProjectForm para gerenciar o formulário - ele já carrega o logo específico automaticamente
     const formState = useProjectForm(
@@ -30,101 +33,283 @@ export default React.memo(function LogoEditModal({
 
     // Reset quando modal abre e capturar estado inicial
     const prevIsOpenRef = useRef(false);
+    const reloadKeyRef = useRef(0);
+    
     React.useEffect(() => {
         if (isOpen && !prevIsOpenRef.current && formState.formData?.logoDetails && !formState.isLoadingProject) {
-            savedFormDataRef.current = JSON.stringify(formState.formData.logoDetails);
+            const logoDetails = formState.formData.logoDetails;
+            savedFormDataRef.current = JSON.stringify(logoDetails);
+            lastLogoDetailsRef.current = logoDetails;
             hasUnsavedChangesRef.current = false;
+            // Resetar status de save quando modal abre
+            saveStatus.reset();
+            
+            console.log('✅ LogoEditModal: Modal aberto com dados iniciais', {
+                logoNumber: logoDetails.currentLogo?.logoNumber,
+                logoName: logoDetails.currentLogo?.logoName,
+                requestedBy: logoDetails.currentLogo?.requestedBy
+            });
         }
         prevIsOpenRef.current = isOpen;
-    }, [isOpen, formState.formData?.logoDetails, formState.isLoadingProject]);
-
-    // Autosave quando houver mudanças (debounce de 2 segundos)
-    React.useEffect(() => {
-        if (!isOpen || !formState.formData?.logoDetails || formState.isLoadingProject || isSavingRef.current) {
-            return;
-        }
-
-        const currentData = JSON.stringify(formState.formData.logoDetails);
         
-        // Verificar se há mudanças reais
-        if (currentData === savedFormDataRef.current) {
-            return; // Sem mudanças, não precisa salvar
-        }
-
-        hasUnsavedChangesRef.current = true;
-
-        // Limpar timeout anterior
-        if (autosaveTimeoutRef.current) {
-            clearTimeout(autosaveTimeoutRef.current);
-        }
-
-        // Criar novo timeout com debounce de 2 segundos
-        autosaveTimeoutRef.current = setTimeout(async () => {
-            if (!formState.formData || !projectId || isSavingRef.current) {
-                return;
-            }
-
-            try {
-                isSavingRef.current = true;
-                saveStatus.setSaving();
-                
-                await formState.handleSave();
-                
-                // Atualizar referência do último conteúdo salvo
-                savedFormDataRef.current = JSON.stringify(formState.formData.logoDetails);
-                hasUnsavedChangesRef.current = false;
-                
-                saveStatus.setSaved();
-                
-                // Recarregar projeto após salvar (silenciosamente)
-                if (onSave) {
-                    await onSave();
-                }
-            } catch (error) {
-                console.error('Error autosaving logo:', error);
-                saveStatus.setError();
-            } finally {
-                isSavingRef.current = false;
-            }
-        }, 2000); // 2 segundos de debounce
-
-        // Cleanup
+        // Limpar timeout de autosave quando modal fecha
         return () => {
             if (autosaveTimeoutRef.current) {
                 clearTimeout(autosaveTimeoutRef.current);
+                autosaveTimeoutRef.current = null;
             }
         };
-    }, [formState.formData?.logoDetails, isOpen, projectId, formState, saveStatus, onSave]);
+    }, [isOpen, formState.formData?.logoDetails, formState.isLoadingProject, saveStatus]);
+    
+    // Effect para detectar mudanças no logoDetails e atualizar lastLogoDetailsRef
+    React.useEffect(() => {
+        if (formState.formData?.logoDetails) {
+            const logoDetails = formState.formData.logoDetails;
+            lastLogoDetailsRef.current = logoDetails;
+            
+            console.log('🔄 LogoEditModal: logoDetails atualizado no formState', {
+                logoNumber: logoDetails.currentLogo?.logoNumber,
+                logoName: logoDetails.currentLogo?.logoName,
+                requestedBy: logoDetails.currentLogo?.requestedBy
+            });
+        }
+    }, [formState.formData?.logoDetails]);
+    
+    // Função para forçar recarregamento do projeto
+    const forceReloadProject = useCallback(async () => {
+        if (!projectId) return;
+        
+        try {
+            // Aguardar um pouco para garantir que o servidor processou o salvamento
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // Recarregar projeto do servidor
+            const projectData = await projectsAPI.getById(projectId);
+            
+            // Atualizar formState com os dados atualizados do servidor
+            if (projectData && projectData.logoDetails) {
+                // Reconstruir logoDetails com o logoIndex correto (mesma lógica do useProjectForm)
+                const savedLogos = projectData.logoDetails.logos || [];
+                const currentLogo = projectData.logoDetails.currentLogo || projectData.logoDetails;
+                
+                let updatedLogoDetails = projectData.logoDetails;
+                
+                // Se logoIndex foi fornecido, carregar esse logo específico
+                if (logoIndex !== null && logoIndex !== undefined) {
+                    const isCurrentLogoValid = currentLogo?.logoNumber?.trim() && currentLogo?.logoName?.trim();
+                    let allLogos = [...savedLogos];
+                    if (isCurrentLogoValid && currentLogo) {
+                        const alreadyInSaved = savedLogos.some(logo => 
+                            (logo.id && currentLogo.id && logo.id === currentLogo.id) ||
+                            (logo.logoNumber && currentLogo.logoNumber && logo.logoNumber === currentLogo.logoNumber)
+                        );
+                        if (!alreadyInSaved) {
+                            allLogos.push(currentLogo);
+                        }
+                    }
+                    
+                    if (allLogos[logoIndex] !== undefined) {
+                        const logoToEdit = allLogos[logoIndex];
+                        const isCurrent = isCurrentLogoValid && logoIndex === allLogos.length - 1;
+                        
+                        if (isCurrent) {
+                            updatedLogoDetails = {
+                                ...projectData.logoDetails,
+                                logos: savedLogos,
+                                currentLogo: logoToEdit
+                            };
+                        } else {
+                            const originalIndexInSaved = savedLogos.findIndex((logo) => {
+                                if (logo.id && logoToEdit.id) return logo.id === logoToEdit.id;
+                                if (logo.logoNumber && logoToEdit.logoNumber) {
+                                    return logo.logoNumber.trim() === logoToEdit.logoNumber.trim();
+                                }
+                                return false;
+                            });
+                            
+                            if (originalIndexInSaved >= 0) {
+                                const newSavedLogos = savedLogos.filter((_, i) => i !== originalIndexInSaved);
+                                updatedLogoDetails = {
+                                    ...projectData.logoDetails,
+                                    logos: newSavedLogos,
+                                    currentLogo: {
+                                        ...logoToEdit,
+                                        _originalIndex: originalIndexInSaved
+                                    }
+                                };
+                            }
+                        }
+                    }
+                }
+                
+                // Atualizar formState com os dados atualizados do servidor
+                formState.handleInputChange('logoDetails', updatedLogoDetails);
+                lastLogoDetailsRef.current = updatedLogoDetails;
+                savedFormDataRef.current = JSON.stringify(updatedLogoDetails);
+                
+                console.log('✅ LogoEditModal: Projeto recarregado com dados atualizados', {
+                    logoNumber: updatedLogoDetails.currentLogo?.logoNumber,
+                    logoName: updatedLogoDetails.currentLogo?.logoName,
+                    requestedBy: updatedLogoDetails.currentLogo?.requestedBy
+                });
+            }
+        } catch (error) {
+            console.error('Error reloading project:', error);
+        }
+    }, [projectId, logoIndex, formState]);
+
+    // Função de autosave com debounce
+    const performAutosave = useCallback(async () => {
+        if (!projectId || isSavingRef.current || !isOpen) {
+            return;
+        }
+
+        // Usar o último logoDetails armazenado no ref (mais confiável)
+        const logoDetails = lastLogoDetailsRef.current || formState.formData?.logoDetails || {};
+        
+        // Validar que logoDetails não está vazio
+        if (!logoDetails || Object.keys(logoDetails).length === 0) {
+            console.warn('LogoEditModal: logoDetails está vazio, pulando autosave');
+            saveStatus.reset();
+            return;
+        }
+
+        try {
+            isSavingRef.current = true;
+            saveStatus.setSaving();
+            
+            // Salvar usando apenas updateCanvas (mais simples e direto)
+            await projectsAPI.updateCanvas(projectId, {
+                logoDetails: logoDetails,
+                lastEditedStep: 'logo-instructions'
+            });
+            
+            // Recarregar projeto do servidor para garantir que temos os dados mais recentes
+            await forceReloadProject();
+            
+            hasUnsavedChangesRef.current = false;
+            saveStatus.setSaved();
+            
+            // Não recarregar o projeto no autosave para evitar flicker na UI
+            // O recarregamento acontece apenas ao fechar o modal
+        } catch (error) {
+            console.error('Error autosaving logo:', error);
+            console.error('Error details:', {
+                message: error.message,
+                response: error.response?.data,
+                projectId,
+                logoDetails: logoDetails
+            });
+            saveStatus.setError();
+            // Não bloquear a UI em caso de erro no autosave
+        } finally {
+            isSavingRef.current = false;
+        }
+    }, [projectId, saveStatus, isOpen, formState, forceReloadProject]);
+
+    // Função para forçar sincronização final do formik antes de salvar
+    // Esta função garante que todos os valores do formik sejam sincronizados com logoDetails
+    const forceSyncFormikValues = useCallback(() => {
+        if (formState.formData?.logoDetails) {
+            const logoDetails = formState.formData.logoDetails;
+            const currentLogo = logoDetails.currentLogo || logoDetails;
+            const savedLogos = logoDetails.logos || [];
+            
+            // Criar um trigger de atualização forçando uma última sincronização
+            // O StepLogoInstructions já sincroniza através do onChange, mas vamos garantir
+            // que qualquer valor pendente seja salvo
+            const updatedLogoDetails = {
+                ...logoDetails,
+                currentLogo: {
+                    ...currentLogo,
+                    // Forçar atualização do timestamp para garantir que será salvo
+                    _lastSync: Date.now()
+                },
+                logos: savedLogos
+            };
+            
+            // Atualizar logoDetails para forçar uma última sincronização
+            formState.handleInputChange('logoDetails', updatedLogoDetails);
+        }
+    }, [formState]);
 
     const handleClose = useCallback(async () => {
-        // Cancelar autosave pendente
+        // Limpar timeout de autosave pendente
         if (autosaveTimeoutRef.current) {
             clearTimeout(autosaveTimeoutRef.current);
             autosaveTimeoutRef.current = null;
         }
-
-        // Salvar imediatamente se houver alterações não salvas
-        if (hasUnsavedChangesRef.current && formState.formData && projectId && !isSavingRef.current) {
-            try {
-                isSavingRef.current = true;
-                saveStatus.setSaving();
-                await formState.handleSave();
-                hasUnsavedChangesRef.current = false;
-                savedFormDataRef.current = JSON.stringify(formState.formData.logoDetails);
-                saveStatus.setSaved();
-                // Recarregar projeto após salvar
-                if (onSave) {
-                    await onSave();
+        
+        // Sempre salvar ao fechar o modal para garantir que todas as alterações sejam persistidas
+        // Verificar se temos os dados necessários e não estamos já salvando
+        if (formState.formData && projectId && isOpen) {
+            // Se há um autosave em andamento, aguardar um pouco
+            if (isSavingRef.current) {
+                let attempts = 0;
+                while (isSavingRef.current && attempts < 10) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    attempts++;
                 }
-            } catch (error) {
-                console.error('Error saving logo:', error);
-                saveStatus.setError();
-            } finally {
-                isSavingRef.current = false;
+            }
+            
+            // Se ainda há mudanças não salvas, salvar agora
+            if (hasUnsavedChangesRef.current && !isSavingRef.current) {
+                try {
+                    isSavingRef.current = true;
+                    saveStatus.setSaving();
+                    
+                    // Forçar sincronização final dos valores do formik
+                    forceSyncFormikValues();
+                    
+                    // Aguardar um pequeno delay para garantir que todas as atualizações foram processadas
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                    // Garantir que logoDetails está atualizado antes de salvar
+                    const logoDetails = formState.formData.logoDetails || {};
+                    
+                    // Validar que logoDetails não está vazio
+                    if (logoDetails && Object.keys(logoDetails).length > 0) {
+                        // Salvar diretamente usando updateCanvas
+                        await projectsAPI.updateCanvas(projectId, {
+                            logoDetails: logoDetails,
+                            lastEditedStep: 'logo-instructions'
+                        });
+                        
+                        // Recarregar projeto do servidor para garantir que temos os dados mais recentes
+                        await forceReloadProject();
+                        
+                        hasUnsavedChangesRef.current = false;
+                        saveStatus.setSaved();
+                        
+                        // Aguardar um pouco para garantir que o save foi completado no servidor
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                    } else {
+                        console.warn('LogoEditModal: logoDetails está vazio ao fechar, pulando salvamento');
+                    }
+                    
+                    // Recarregar projeto após salvar para garantir sincronização completa
+                    if (onSave) {
+                        await onSave();
+                    }
+                } catch (error) {
+                    console.error('Error saving logo on close:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        response: error.response?.data,
+                        projectId,
+                        logoDetails: formState.formData?.logoDetails
+                    });
+                    saveStatus.setError();
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                } finally {
+                    isSavingRef.current = false;
+                }
             }
         }
+        
+        // Fechar modal após salvar (ou se não foi possível salvar)
         onClose();
-    }, [formState, projectId, onSave, onClose, saveStatus]);
+    }, [formState, projectId, onSave, onClose, saveStatus, isOpen, forceSyncFormikValues, forceReloadProject]);
 
     const isLoading = useMemo(() => {
         return formState.isLoadingProject || !formState.formData?.logoDetails;
@@ -138,14 +323,37 @@ export default React.memo(function LogoEditModal({
         body: "p-0 rounded-b-lg bg-transparent",
     }), []);
 
-    // Memoizar handleInputChange wrapper para evitar re-renders desnecessários
+    // Memoizar handleInputChange wrapper com autosave
     const handleInputChangeOptimized = useCallback((field, value) => {
         if (field === 'logoDetails') {
-            // Marcar como tendo mudanças apenas quando realmente mudar
+            // Armazenar o último logoDetails no ref para garantir que temos os dados mais recentes
+            lastLogoDetailsRef.current = value;
+            
+            // Marcar como tendo mudanças
             hasUnsavedChangesRef.current = true;
+            
+            // Atualizar o estado primeiro
+            formState.handleInputChange(field, value);
+            
+            // Limpar timeout anterior se existir
+            if (autosaveTimeoutRef.current) {
+                clearTimeout(autosaveTimeoutRef.current);
+                autosaveTimeoutRef.current = null;
+            }
+            
+            // Agendar autosave com debounce de 1000ms após a última alteração
+            // Aumentado para 1000ms para dar mais tempo para sincronização
+            autosaveTimeoutRef.current = setTimeout(() => {
+                // Verificar novamente se ainda há mudanças antes de salvar
+                if (hasUnsavedChangesRef.current && lastLogoDetailsRef.current) {
+                    performAutosave();
+                }
+                autosaveTimeoutRef.current = null;
+            }, 1000);
+        } else {
+            formState.handleInputChange(field, value);
         }
-        formState.handleInputChange(field, value);
-    }, [formState.handleInputChange]);
+    }, [formState.handleInputChange, performAutosave]);
 
     // Memoizar o conteúdo do modal - apenas recalcular quando necessário
     const modalContent = useMemo(() => {
@@ -188,22 +396,23 @@ export default React.memo(function LogoEditModal({
                         <ModalHeader className="flex items-center justify-between bg-white/15 dark:bg-white/10 backdrop-blur-md rounded-t-lg border-b border-white/30 dark:border-white/20">
                             <div className="flex items-center gap-3">
                                 <span className="text-xl font-semibold text-foreground">Logo Instructions</span>
+                                {/* Indicador de status de autosave */}
                                 {saveStatus.status === 'saving' && (
-                                    <div className="flex items-center gap-2 text-xs text-default-500">
+                                    <div className="flex items-center gap-2 text-xs text-yellow-500">
                                         <Spinner size="sm" />
-                                        <span>Saving...</span>
+                                        <span>Salvando...</span>
                                     </div>
                                 )}
                                 {saveStatus.status === 'saved' && (
-                                    <div className="flex items-center gap-2 text-xs text-success">
-                                        <Icon icon="lucide:check-circle" className="w-4 h-4" />
-                                        <span>Saved</span>
+                                    <div className="flex items-center gap-2 text-xs text-green-500">
+                                        <Icon icon="lucide:check-circle" className="text-sm" />
+                                        <span>Salvo</span>
                                     </div>
                                 )}
                                 {saveStatus.status === 'error' && (
-                                    <div className="flex items-center gap-2 text-xs text-danger">
-                                        <Icon icon="lucide:alert-circle" className="w-4 h-4" />
-                                        <span>Error saving</span>
+                                    <div className="flex items-center gap-2 text-xs text-red-500">
+                                        <Icon icon="lucide:alert-circle" className="text-sm" />
+                                        <span>Erro ao salvar</span>
                                     </div>
                                 )}
                             </div>

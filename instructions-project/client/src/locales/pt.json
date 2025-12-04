@@ -601,11 +601,18 @@
         "savedAt": "Guardado em",
         "imagePreview": "Preview das Imagens",
         "decoratedPreview": "Preview com Decorações",
-        "moreImages": "mais imagens",
-        "decorationsList": "Decorações Utilizadas",
-        "moreDecorations": "mais decorações",
+        "editSimulation": "Editar Simulação"
+      },
+      "instructions": {
+        "selectInstruction": "Selecionar Instrução",
+        "selectInstructionPlaceholder": "Escolha uma instrução",
+        "noInstructions": "Nenhuma instrução disponível",
+        "noInstructionsDescription": "Adicione instruções de logo ou simulação ao projeto.",
         "editSimulation": "Editar Simulação",
-        "quantity": "Quantidade"
+        "editSimulationDescription": "Para editar a simulação, você será redirecionado para o editor AI Designer onde poderá modificar as decorações e imagens.",
+        "goToEditor": "Ir para Editor",
+        "confirmDelete": "Tem certeza que deseja eliminar \"{{name}}\"?",
+        "thisInstruction": "esta instrução"
       },
       "notes": "Notas",
       "startDate": "Data de Início",

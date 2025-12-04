@@ -108,40 +108,103 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
               // Se logoIndex foi fornecido, carregar esse logo específico para currentLogo
               if (logoIndex !== null && logoIndex !== undefined && project.logoDetails) {
                 const savedLogos = project.logoDetails.logos || [];
-                const hasCurrentLogo = project.logoDetails.currentLogo?.logoNumber || project.logoDetails.logoNumber;
+                const currentLogo = project.logoDetails.currentLogo || project.logoDetails;
                 
-                // Usar a mesma lógica do ProjectDetails para construir logoInstructions
-                const logoInstructions = savedLogos.length > 0 ? savedLogos : (hasCurrentLogo ? [project.logoDetails.currentLogo || project.logoDetails] : []);
+                // Usar a MESMA lógica do StepConfirmDetails para construir allLogos
+                // Verificar se currentLogo é válido (mesma validação que StepConfirmDetails)
+                const isCurrentLogoEmpty = (!currentLogo.logoNumber || currentLogo.logoNumber.trim() === "") && 
+                                           (!currentLogo.logoName || currentLogo.logoName.trim() === "") && 
+                                           (!currentLogo.requestedBy || currentLogo.requestedBy.trim() === "");
+                
+                const hasLogoNumber = currentLogo.logoNumber?.trim() !== "";
+                const hasLogoName = currentLogo.logoName?.trim() !== "";
+                const hasRequestedBy = currentLogo.requestedBy?.trim() !== "";
+                const dimensions = currentLogo.dimensions || {};
+                const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "" && dimensions.height.value !== 0;
+                const hasLength = dimensions.length?.value != null && dimensions.length.value !== "" && dimensions.length.value !== 0;
+                const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "" && dimensions.width.value !== 0;
+                const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "" && dimensions.diameter.value !== 0;
+                const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
+                const isCurrentLogoValid = !isCurrentLogoEmpty && hasLogoNumber && hasLogoName && hasRequestedBy && hasAtLeastOneDimension;
+                
+                // Construir allLogos da mesma forma que StepConfirmDetails
+                // Verificar se o currentLogo já existe nos savedLogos (para evitar duplicatas)
+                const currentLogoExistsInSaved = isCurrentLogoValid && savedLogos.some(logo => {
+                  // Comparar por ID se disponível (mais confiável)
+                  if (currentLogo.id && logo.id) {
+                    return logo.id === currentLogo.id;
+                  }
+                  // Se não tem ID, comparar por logoNumber
+                  if (currentLogo.logoNumber && logo.logoNumber) {
+                    return currentLogo.logoNumber.trim() === logo.logoNumber.trim();
+                  }
+                  return false;
+                });
+                
+                const allLogos = isCurrentLogoValid && !currentLogoExistsInSaved 
+                  ? [...savedLogos, currentLogo] 
+                  : savedLogos;
                 
                 console.log('🔍 useProjectForm: Loading logo for editing', {
                   logoIndex,
                   savedLogosCount: savedLogos.length,
-                  hasCurrentLogo,
-                  logoInstructionsCount: logoInstructions.length,
-                  logoInstructions: logoInstructions.map(l => ({ logoNumber: l.logoNumber, logoName: l.logoName }))
+                  isCurrentLogoValid,
+                  allLogosCount: allLogos.length,
+                  allLogos: allLogos.map((l, i) => ({ index: i, logoNumber: l.logoNumber, logoName: l.logoName, id: l.id }))
                 });
                 
-                if (logoInstructions[logoIndex] !== undefined) {
-                  const logoToEdit = logoInstructions[logoIndex];
+                if (allLogos[logoIndex] !== undefined) {
+                  const logoToEdit = allLogos[logoIndex];
                   console.log('✅ useProjectForm: Logo found for editing', {
                     logoNumber: logoToEdit.logoNumber,
-                    logoName: logoToEdit.logoName
+                    logoName: logoToEdit.logoName,
+                    id: logoToEdit.id,
+                    isCurrent: isCurrentLogoValid && logoIndex === allLogos.length - 1
                   });
                   
-                  // Remove o logo do array de savedLogos se estiver lá
+                  // Se o logo a editar é o currentLogo válido, apenas retornar os dados como estão
+                  if (isCurrentLogoValid && logoIndex === allLogos.length - 1) {
+                    // O logo já está no currentLogo, preservar _originalIndex se existir
+                    const currentLogoWithIndex = {
+                      ...logoToEdit,
+                      _originalIndex: logoToEdit._originalIndex !== undefined ? logoToEdit._originalIndex : (savedLogos.length > 0 ? savedLogos.length - 1 : null)
+                    };
+                    return {
+                      ...project.logoDetails,
+                      logos: savedLogos,
+                      currentLogo: currentLogoWithIndex
+                    };
+                  }
+                  
+                  // Encontrar o índice original do logo nos savedLogos antes de removê-lo
+                  const originalIndexInSaved = savedLogos.findIndex((logo) => {
+                    if (logo.id && logoToEdit.id) {
+                      return logo.id === logoToEdit.id;
+                    }
+                    if (logo.logoNumber && logoToEdit.logoNumber) {
+                      return logo.logoNumber.trim() === logoToEdit.logoNumber.trim();
+                    }
+                    return false;
+                  });
+                  
+                  // Se o logo está nos savedLogos, remover dos savedLogos e colocar no currentLogo
                   let newSavedLogos = savedLogos.filter((logo) => {
-                    return logo.logoNumber !== logoToEdit.logoNumber;
+                    // Comparar por ID se disponível, senão por logoNumber
+                    if (logo.id && logoToEdit.id) {
+                      return logo.id !== logoToEdit.id;
+                    }
+                    if (logo.logoNumber && logoToEdit.logoNumber) {
+                      return logo.logoNumber.trim() !== logoToEdit.logoNumber.trim();
+                    }
+                    return true; // Se não conseguir comparar, manter
                   });
                   
                   // Se currentLogo é válido e diferente do logo a editar, adicionar aos savedLogos
-                  const currentLogo = project.logoDetails.currentLogo || project.logoDetails;
-                  const isCurrentLogoValid = currentLogo?.logoNumber && currentLogo.logoNumber !== logoToEdit.logoNumber;
-                  
-                  if (isCurrentLogoValid && currentLogo.logoNumber) {
+                  if (isCurrentLogoValid && currentLogo.logoNumber && currentLogo.logoNumber !== logoToEdit.logoNumber) {
                     const logoToSave = {
                       ...currentLogo,
                       id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                      savedAt: new Date().toISOString()
+                      savedAt: currentLogo.savedAt || new Date().toISOString()
                     };
                     newSavedLogos.push(logoToSave);
                   }
@@ -149,22 +212,79 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
                   logger.lifecycle('useProjectForm', 'Logo loaded for editing', {
                     logoIndex,
                     logoNumber: logoToEdit.logoNumber,
-                    logoName: logoToEdit.logoName
+                    logoName: logoToEdit.logoName,
+                    originalIndexInSaved
                   });
+                  
+                  // IMPORTANTE: Preservar _originalIndex para que quando salvar, saiba onde substituir
+                  const logoToEditWithIndex = {
+                    ...logoToEdit,
+                    _originalIndex: originalIndexInSaved >= 0 ? originalIndexInSaved : (logoToEdit._originalIndex !== undefined ? logoToEdit._originalIndex : null)
+                  };
                   
                   // Retornar logoDetails atualizado com o logo a editar como currentLogo
                   return {
                     ...project.logoDetails,
                     logos: newSavedLogos,
-                    currentLogo: { ...logoToEdit }
+                    currentLogo: logoToEditWithIndex
                   };
                 } else {
-                  console.warn('⚠️ useProjectForm: Logo not found at index', logoIndex, 'Available logos:', logoInstructions.length);
+                  console.warn('⚠️ useProjectForm: Logo not found at index', logoIndex, 'Available logos:', allLogos.length);
                 }
               }
               
-              // Se não há logoIndex ou logo não encontrado, retornar logoDetails original
-              return project.logoDetails || {};
+              // Se não há logoIndex ou logo não encontrado, verificar se currentLogo já está nos savedLogos
+              // Se estiver, limpar o currentLogo para evitar duplicados
+              const logoDetails = project.logoDetails || {};
+              const savedLogos = logoDetails.logos || [];
+              const currentLogo = logoDetails.currentLogo || logoDetails;
+              
+              // Verificar se o currentLogo já está nos savedLogos (por ID ou logoNumber)
+              if (currentLogo && (currentLogo.logoNumber || currentLogo.logoName)) {
+                const isCurrentLogoInSaved = savedLogos.some(logo => {
+                  if (currentLogo.id && logo.id) {
+                    return logo.id === currentLogo.id;
+                  }
+                  if (currentLogo.logoNumber && logo.logoNumber) {
+                    return logo.logoNumber.trim() === currentLogo.logoNumber.trim();
+                  }
+                  return false;
+                });
+                
+                // Se o currentLogo já está nos savedLogos, limpá-lo para evitar duplicados
+                if (isCurrentLogoInSaved) {
+                  console.log('🧹 [useProjectForm] Limpando currentLogo que já está nos savedLogos');
+                  return {
+                    ...logoDetails,
+                    currentLogo: {
+                      logoNumber: "",
+                      logoName: "",
+                      requestedBy: "",
+                      dimensions: {},
+                      usageOutdoor: false,
+                      usageIndoor: true,
+                      fixationType: "",
+                      lacqueredStructure: false,
+                      lacquerColor: "",
+                      mastDiameter: "",
+                      maxWeightConstraint: false,
+                      maxWeight: "",
+                      ballast: false,
+                      controlReport: false,
+                      criteria: "",
+                      description: "",
+                      composition: {
+                        componentes: [],
+                        bolas: []
+                      },
+                      attachmentFiles: []
+                    }
+                  };
+                }
+              }
+              
+              // Retornar logoDetails original
+              return logoDetails;
             })(),
           });
 
@@ -271,53 +391,94 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
               isCurrentLogoValid
             });
             
-            // Se currentLogo é válido e ainda não está nos savedLogos, adicioná-lo
+            // Se currentLogo é válido, atualizar ou adicionar aos savedLogos
             if (isCurrentLogoValid) {
-              // Verificar se o currentLogo já está nos savedLogos
-              // IMPORTANTE: Comparar por ID primeiro (mais confiável)
-              // Se o currentLogo tem ID, só considerar como "já salvo" se encontrar um logo salvo com o mesmo ID
-              // Se o currentLogo não tem ID, comparar por logoNumber (mas só se ambos existirem e forem iguais)
-              const alreadySaved = savedLogos.some(logo => {
-                // Se currentLogo tem ID, só considerar como "já salvo" se o ID for igual
-                if (currentLogo.id) {
+              // Verificar se o currentLogo já está nos savedLogos (por ID ou logoNumber)
+              const existingLogoIndex = savedLogos.findIndex(logo => {
+                // Se currentLogo tem ID, comparar por ID
+                if (currentLogo.id && logo.id) {
                   return logo.id === currentLogo.id;
                 }
-                // Se currentLogo não tem ID, comparar por logoNumber (mas só se ambos existirem e forem iguais)
-                // E também verificar se o logo salvo não tem ID (para evitar falsos positivos)
-                if (logo.logoNumber && currentLogo.logoNumber && !logo.id) {
+                // Se não tem ID, comparar por logoNumber
+                if (logo.logoNumber && currentLogo.logoNumber) {
                   return logo.logoNumber.trim() === currentLogo.logoNumber.trim();
                 }
                 return false;
               });
               
-              console.log('🔍 [handleSubmit] currentLogo já está salvo?', alreadySaved, {
-                currentLogoId: currentLogo.id,
-                currentLogoNumber: currentLogo.logoNumber,
-                savedLogosIds: savedLogos.map(l => l.id),
-                savedLogosNumbers: savedLogos.map(l => l.logoNumber)
-              });
+              // Remover _originalIndex antes de salvar (é apenas para controle interno)
+              const { _originalIndex, ...logoWithoutOriginalIndex } = currentLogo;
               
-              if (!alreadySaved) {
-                const logoToSave = {
-                  ...currentLogo,
-                  id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                  savedAt: currentLogo.savedAt || new Date().toISOString()
-                };
+              const logoToSave = {
+                ...logoWithoutOriginalIndex,
+                id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                savedAt: currentLogo.savedAt || new Date().toISOString()
+              };
+              
+              let updatedSavedLogos;
+              
+              if (existingLogoIndex >= 0) {
+                // Logo já existe - ATUALIZAR em vez de criar novo
+                updatedSavedLogos = [...savedLogos];
+                updatedSavedLogos[existingLogoIndex] = logoToSave;
                 
-                console.log('✅ [handleSubmit] Adicionando currentLogo aos savedLogos:', {
+                console.log('✅ [handleSubmit] Atualizando logo existente nos savedLogos:', {
                   logoNumber: logoToSave.logoNumber,
                   logoName: logoToSave.logoName,
-                  totalLogos: savedLogos.length + 1
+                  index: existingLogoIndex,
+                  totalLogos: updatedSavedLogos.length
                 });
+              } else if (currentLogo._originalIndex !== undefined && currentLogo._originalIndex >= 0 && currentLogo._originalIndex < savedLogos.length) {
+                // Logo não existe mas tem posição original válida - SUBSTITUIR na posição original
+                // IMPORTANTE: Substituir em vez de inserir para manter o mesmo número de logos
+                updatedSavedLogos = [...savedLogos];
+                updatedSavedLogos[currentLogo._originalIndex] = logoToSave;
                 
-                return {
-                  ...logoDetails,
-                  logos: [...savedLogos, logoToSave],
-                  currentLogo: currentLogo // Manter currentLogo também
-                };
+                console.log('✅ [handleSubmit] Substituindo logo na posição original:', {
+                  logoNumber: logoToSave.logoNumber,
+                  logoName: logoToSave.logoName,
+                  originalIndex: currentLogo._originalIndex,
+                  totalLogos: updatedSavedLogos.length
+                });
               } else {
-                console.log('⏭️ [handleSubmit] currentLogo já está nos savedLogos, mantendo como está');
+                // Logo não existe e não tem posição original - ADICIONAR como novo no final
+                updatedSavedLogos = [...savedLogos, logoToSave];
+                
+                console.log('✅ [handleSubmit] Adicionando novo logo aos savedLogos:', {
+                  logoNumber: logoToSave.logoNumber,
+                  logoName: logoToSave.logoName,
+                  totalLogos: updatedSavedLogos.length
+                });
               }
+              
+              // IMPORTANTE: Limpar currentLogo após salvar para evitar que apareça duplicado na lista
+              return {
+                ...logoDetails,
+                logos: updatedSavedLogos,
+                currentLogo: {
+                  logoNumber: "",
+                  logoName: "",
+                  requestedBy: "",
+                  dimensions: {},
+                  usageOutdoor: false,
+                  usageIndoor: true,
+                  fixationType: "",
+                  lacqueredStructure: false,
+                  lacquerColor: "",
+                  mastDiameter: "",
+                  maxWeightConstraint: false,
+                  maxWeight: "",
+                  ballast: false,
+                  controlReport: false,
+                  criteria: "",
+                  description: "",
+                  composition: {
+                    componentes: [],
+                    bolas: []
+                  },
+                  attachmentFiles: []
+                }
+              };
             } else {
               console.log('⚠️ [handleSubmit] currentLogo não é válido, não será adicionado aos savedLogos');
             }
@@ -387,11 +548,12 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
         logger.lifecycle('useProjectForm', 'Project created', finalProject);
       }
 
-      // Atualizar formData com o ID do projeto
+      // IMPORTANTE: Atualizar formData local com o logoDetails atualizado (incluindo currentLogo limpo)
       setFormData(prev => ({
         ...prev,
         id: finalProject.id,
-        tempProjectId: finalProject.id
+        tempProjectId: finalProject.id,
+        logoDetails: projectData.logoDetails
       }));
 
       // Fechar modal se houver e redirecionar para a página de overview do projeto
@@ -447,8 +609,21 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
         logoDetails: (() => {
           const logoDetails = formData.logoDetails || {};
           if (formData.projectType === 'logo' && logoDetails) {
-            const savedLogos = logoDetails.logos || [];
+            let savedLogos = logoDetails.logos || [];
             const currentLogo = logoDetails.currentLogo || logoDetails;
+            
+            // IMPORTANTE: Filtrar logos inválidos dos savedLogos antes de processar
+            // Um logo é inválido se não tem logoName (campo obrigatório)
+            savedLogos = savedLogos.filter(logo => {
+              const hasLogoName = logo.logoName?.trim() !== "";
+              if (!hasLogoName) {
+                console.warn('⚠️ [handleSave] Removendo logo inválido dos savedLogos (sem logoName):', {
+                  logoId: logo.id,
+                  logoNumber: logo.logoNumber
+                });
+              }
+              return hasLogoName;
+            });
             
             console.log('🔍 [handleSave] Verificando logoDetails:', {
               savedLogosCount: savedLogos.length,
@@ -464,10 +639,20 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
             const hasRequestedBy = currentLogo.requestedBy?.trim() !== "";
             const hasFixationType = currentLogo.fixationType?.trim() !== "";
             const dimensions = currentLogo.dimensions || {};
-            const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
-            const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
-            const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
-            const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
+            
+            // Helper function para verificar se uma dimensão é válida (mesma lógica da validação)
+            const isValidDimension = (value) => {
+              if (value == null || value === "" || value === "0" || value === "0.00") {
+                return false;
+              }
+              const numValue = typeof value === 'number' ? value : parseFloat(value);
+              return !isNaN(numValue) && numValue > 0;
+            };
+            
+            const hasHeight = isValidDimension(dimensions.height?.value);
+            const hasLength = isValidDimension(dimensions.length?.value);
+            const hasWidth = isValidDimension(dimensions.width?.value);
+            const hasDiameter = isValidDimension(dimensions.diameter?.value);
             const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
             const isCurrentLogoValid = hasLogoNumber && hasLogoName && hasDescription && hasRequestedBy && hasFixationType && hasAtLeastOneDimension;
             
@@ -478,59 +663,258 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
               hasRequestedBy,
               hasFixationType,
               hasAtLeastOneDimension,
-              isCurrentLogoValid
+              isCurrentLogoValid,
+              dimensions: {
+                height: dimensions.height?.value,
+                length: dimensions.length?.value,
+                width: dimensions.width?.value,
+                diameter: dimensions.diameter?.value
+              },
+              dimensionChecks: { hasHeight, hasLength, hasWidth, hasDiameter }
             });
             
             // Se currentLogo é válido, atualizar ou adicionar aos savedLogos
             if (isCurrentLogoValid) {
-              // Verificar se o currentLogo já está nos savedLogos (por ID ou logoNumber)
-              const existingLogoIndex = savedLogos.findIndex(logo => {
-                // Se currentLogo tem ID, comparar por ID
-                if (currentLogo.id && logo.id) {
-                  return logo.id === currentLogo.id;
-                }
-                // Se não tem ID, comparar por logoNumber
-                if (logo.logoNumber && currentLogo.logoNumber) {
-                  return logo.logoNumber.trim() === currentLogo.logoNumber.trim();
-                }
-                return false;
-              });
+              // Guardar _originalIndex antes de remover (é apenas para controle interno)
+              const originalIndex = currentLogo._originalIndex;
+              
+              // Remover _originalIndex antes de salvar (é apenas para controle interno)
+              const { _originalIndex, ...logoWithoutOriginalIndex } = currentLogo;
               
               const logoToSave = {
-                ...currentLogo,
+                ...logoWithoutOriginalIndex,
                 id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 savedAt: currentLogo.savedAt || new Date().toISOString()
               };
               
+              console.log('🔍 [handleSave] Verificando logo para salvar:', {
+                logoId: logoToSave.id,
+                logoNumber: logoToSave.logoNumber,
+                logoName: logoToSave.logoName,
+                originalIndex: originalIndex,
+                savedLogosCount: savedLogos.length,
+                savedLogosIds: savedLogos.map(l => ({ id: l.id, logoNumber: l.logoNumber }))
+              });
+              
+              // Verificar se o currentLogo já está nos savedLogos (por ID ou logoNumber)
+              // IMPORTANTE: Se o logo foi removido dos savedLogos para edição, pode não estar mais lá
+              // Por isso, também verificamos o originalIndex
+              const existingLogoIndex = savedLogos.findIndex(logo => {
+                // Se currentLogo tem ID, comparar por ID (mais confiável)
+                if (logoToSave.id && logo.id) {
+                  return logo.id === logoToSave.id;
+                }
+                // Se não tem ID, comparar por logoNumber
+                if (logo.logoNumber && logoToSave.logoNumber) {
+                  return logo.logoNumber.trim() === logoToSave.logoNumber.trim();
+                }
+                return false;
+              });
+              
+              // IMPORTANTE: Se o logo foi editado (tem originalIndex), sempre substituir na posição original
+              // mesmo que não encontre por ID/logoNumber (porque foi removido dos savedLogos para edição)
               let updatedSavedLogos;
+              let finalExistingIndex = -1; // Índice final onde o logo foi colocado
               
               if (existingLogoIndex >= 0) {
-                // Logo já existe - ATUALIZAR em vez de criar novo
+                // Logo encontrado por ID/logoNumber - SUBSTITUIR na posição encontrada
                 updatedSavedLogos = [...savedLogos];
                 updatedSavedLogos[existingLogoIndex] = logoToSave;
+                finalExistingIndex = existingLogoIndex;
                 
-                console.log('✅ [handleSave] Atualizando logo existente nos savedLogos:', {
+                console.log('✅ [handleSave] Substituindo logo existente nos savedLogos (encontrado por ID/logoNumber):', {
                   logoNumber: logoToSave.logoNumber,
                   logoName: logoToSave.logoName,
+                  logoId: logoToSave.id,
                   index: existingLogoIndex,
                   totalLogos: updatedSavedLogos.length
                 });
+              } else if (originalIndex !== undefined && originalIndex >= 0) {
+                // Logo foi editado (tem originalIndex) - SUBSTITUIR na posição original
+                // IMPORTANTE: Se o logo foi removido dos savedLogos para edição, ele não está mais lá
+                // Mas sabemos a posição original, então devemos substituir nessa posição
+                updatedSavedLogos = [...savedLogos];
+                
+                if (originalIndex < updatedSavedLogos.length) {
+                  // Posição válida - SUBSTITUIR (pode ser que outro logo esteja nessa posição, mas substituímos mesmo assim)
+                  updatedSavedLogos[originalIndex] = logoToSave;
+                  finalExistingIndex = originalIndex;
+                  console.log('✅ [handleSave] Substituindo logo editado na posição original:', {
+                    logoNumber: logoToSave.logoNumber,
+                    logoName: logoToSave.logoName,
+                    logoId: logoToSave.id,
+                    originalIndex: originalIndex,
+                    totalLogos: updatedSavedLogos.length
+                  });
+                } else {
+                  // Posição fora dos limites - o array mudou enquanto editávamos
+                  // IMPORTANTE: Se o originalIndex era o último logo antes de remover, 
+                  // o array agora tem um logo a menos, então o originalIndex seria savedLogos.length
+                  // Nesse caso, substituir no final (não adicionar um novo)
+                  // Se o originalIndex era menor, significa que outros logos foram removidos
+                  // Nesse caso, também substituir no final para manter o número de logos
+                  // IMPORTANTE: Quando o logo foi removido dos savedLogos para edição,
+                  // o array ficou menor. O originalIndex aponta para a posição ANTES de remover.
+                  // Se originalIndex >= savedLogos.length, significa que era o último logo
+                  // e agora o array tem um logo a menos, então devemos substituir no final.
+                  // Se originalIndex < savedLogos.length, significa que outros logos foram removidos
+                  // e devemos substituir na posição mais próxima possível.
+                  // IMPORTANTE: NUNCA adicionar um novo logo quando temos originalIndex (logo foi editado)
+                  // IMPORTANTE: Quando o logo foi removido dos savedLogos para edição,
+                  // o array ficou menor. O originalIndex aponta para a posição ANTES de remover.
+                  // Se originalIndex >= savedLogos.length, significa que era o último logo
+                  // e agora o array tem um logo a menos, então devemos substituir no final.
+                  // Se originalIndex < savedLogos.length, significa que outros logos foram removidos
+                  // e devemos substituir na posição mais próxima possível.
+                  // IMPORTANTE: NUNCA adicionar um novo logo quando temos originalIndex (logo foi editado)
+                  // Se o originalIndex está fora dos limites, significa que o logo foi removido
+                  // e o array ficou menor. Nesse caso, devemos substituir no final para manter
+                  // o número de logos igual ao que era antes de remover.
+                  const targetPosition = Math.min(originalIndex, updatedSavedLogos.length);
+                  
+                  // Sempre substituir na posição targetPosition, não adicionar
+                  // Se targetPosition === updatedSavedLogos.length, significa que era o último logo
+                  // e devemos substituir no final (que é a posição correta após remover)
+                  if (targetPosition < updatedSavedLogos.length) {
+                    // Substituir na posição mais próxima possível
+                    updatedSavedLogos[targetPosition] = logoToSave;
+                    finalExistingIndex = targetPosition;
+                  } else {
+                    // Era o último logo - substituir no final (mantém o número de logos)
+                    // IMPORTANTE: Não usar push, usar indexação direta para substituir
+                    updatedSavedLogos[targetPosition] = logoToSave;
+                    finalExistingIndex = targetPosition;
+                  }
+                  console.log('⚠️ [handleSave] Logo editado com posição original fora dos limites, ajustando:', {
+                    logoNumber: logoToSave.logoNumber,
+                    logoName: logoToSave.logoName,
+                    logoId: logoToSave.id,
+                    originalIndex: originalIndex,
+                    targetPosition: targetPosition,
+                    savedLogosLength: savedLogos.length,
+                    totalLogos: updatedSavedLogos.length
+                  });
+                }
               } else {
-                // Logo não existe - ADICIONAR como novo
+                // Logo não existe e não tem posição original - ADICIONAR como novo no final
                 updatedSavedLogos = [...savedLogos, logoToSave];
+                finalExistingIndex = updatedSavedLogos.length - 1; // Novo logo adicionado no final
                 
                 console.log('✅ [handleSave] Adicionando novo logo aos savedLogos:', {
                   logoNumber: logoToSave.logoNumber,
                   logoName: logoToSave.logoName,
+                  logoId: logoToSave.id,
                   totalLogos: updatedSavedLogos.length
                 });
               }
               
-              return {
-                ...logoDetails,
-                logos: updatedSavedLogos,
-                currentLogo: currentLogo // Manter currentLogo também
-              };
+              // IMPORTANTE: Garantir que todos os logos salvos tenham logoName
+              // Filtrar qualquer logo que não tenha logoName (proteção adicional)
+              const validSavedLogos = updatedSavedLogos.filter(logo => {
+                const hasLogoName = logo.logoName?.trim() !== "";
+                if (!hasLogoName) {
+                  console.warn('⚠️ [handleSave] Removendo logo inválido (sem logoName) antes de salvar:', {
+                    logoId: logo.id,
+                    logoNumber: logo.logoNumber
+                  });
+                }
+                return hasLogoName;
+              });
+              
+              // IMPORTANTE: Se o logo já existe nos savedLogos (foi editado), limpar currentLogo
+              // para evitar duplicação. Só manter no currentLogo se for um logo novo.
+              // Se estamos editando um logo específico (logoIndex fornecido) E o logo já existe,
+              // limpar o currentLogo porque o logo já está nos savedLogos atualizado.
+              if (finalExistingIndex >= 0) {
+                // Logo já existe nos savedLogos (foi editado) - limpar currentLogo para evitar duplicação
+                return {
+                  ...logoDetails,
+                  logos: validSavedLogos,
+                  currentLogo: {
+                    logoNumber: "",
+                    logoName: "",
+                    requestedBy: "",
+                    dimensions: {},
+                    usageOutdoor: false,
+                    usageIndoor: true,
+                    fixationType: "",
+                    lacqueredStructure: false,
+                    lacquerColor: "",
+                    mastDiameter: "",
+                    maxWeightConstraint: false,
+                    maxWeight: "",
+                    ballast: false,
+                    controlReport: false,
+                    criteria: "",
+                    description: "",
+                    composition: {
+                      componentes: [],
+                      bolas: []
+                    },
+                    attachmentFiles: []
+                  }
+                };
+              } else if (logoIndex !== null && logoIndex !== undefined) {
+                // Modo edição mas logo não existe ainda (caso raro) - manter no currentLogo
+                // Filtrar logos inválidos antes de salvar
+                const validSavedLogos = updatedSavedLogos.filter(logo => {
+                  const hasLogoName = logo.logoName?.trim() !== "";
+                  if (!hasLogoName) {
+                    console.warn('⚠️ [handleSave] Removendo logo inválido (sem logoName) antes de salvar:', {
+                      logoId: logo.id,
+                      logoNumber: logo.logoNumber
+                    });
+                  }
+                  return hasLogoName;
+                });
+                
+                return {
+                  ...logoDetails,
+                  logos: validSavedLogos,
+                  currentLogo: logoToSave
+                };
+              } else {
+                // Modo criação: limpar currentLogo após salvar
+                // Filtrar logos inválidos antes de salvar
+                const validSavedLogos = updatedSavedLogos.filter(logo => {
+                  const hasLogoName = logo.logoName?.trim() !== "";
+                  if (!hasLogoName) {
+                    console.warn('⚠️ [handleSave] Removendo logo inválido (sem logoName) antes de salvar:', {
+                      logoId: logo.id,
+                      logoNumber: logo.logoNumber
+                    });
+                  }
+                  return hasLogoName;
+                });
+                
+                return {
+                  ...logoDetails,
+                  logos: validSavedLogos,
+                  currentLogo: {
+                    logoNumber: "",
+                    logoName: "",
+                    requestedBy: "",
+                    dimensions: {},
+                    usageOutdoor: false,
+                    usageIndoor: true,
+                    fixationType: "",
+                    lacqueredStructure: false,
+                    lacquerColor: "",
+                    mastDiameter: "",
+                    maxWeightConstraint: false,
+                    maxWeight: "",
+                    ballast: false,
+                    controlReport: false,
+                    criteria: "",
+                    description: "",
+                    composition: {
+                      componentes: [],
+                      bolas: []
+                    },
+                    attachmentFiles: []
+                  }
+                };
+              }
             } else {
               console.log('⚠️ [handleSave] currentLogo não é válido, não será adicionado aos savedLogos');
             }
@@ -544,6 +928,12 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
         await projectsAPI.update(projectIdToUpdate, projectData);
         logger.lifecycle('useProjectForm', 'Project saved', { projectId: projectIdToUpdate });
 
+        // IMPORTANTE: Atualizar formData local com o logoDetails atualizado (incluindo currentLogo limpo)
+        setFormData(prev => ({
+          ...prev,
+          logoDetails: projectData.logoDetails
+        }));
+
         // Indicate save success
         if (saveStatus) saveStatus.setSaved();
       } else {
@@ -551,12 +941,25 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
       }
     } catch (err) {
       logger.error('useProjectForm.handleSave', err);
+      
+      // Log detalhado do erro para debug
+      console.error('❌ [handleSave] Erro ao salvar projeto:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        projectId: projectId || formData.tempProjectId,
+        projectType: formData.projectType,
+        hasLogoDetails: !!formData.logoDetails
+      });
 
       // Indicate save error
       if (saveStatus) saveStatus.setError();
 
-      setError(err.response?.data?.error || "Failed to save project");
-      throw err;
+      const errorMessage = err.response?.data?.error || err.message || "Failed to save project";
+      setError(errorMessage);
+      
+      // Não fazer throw para não bloquear a UI, mas logar o erro
+      console.error('❌ [handleSave] Erro não tratado:', errorMessage);
     } finally {
       setLoading(false);
     }

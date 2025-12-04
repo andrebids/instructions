@@ -246,12 +246,42 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
     }
   };
 
-  const handleEditLogo = (index, isCurrent) => {
+  const handleEditLogo = (index, isCurrent, logoData = null) => {
     const logoDetails = formState.formData.logoDetails || {};
     const savedLogos = logoDetails.logos || [];
     const currentLogo = logoDetails.currentLogo || logoDetails; // Fallback for structure
 
-    if (isCurrent) {
+    // Verificar se currentLogo é válido para determinar a estrutura de allLogos
+    const hasLogoNumber = currentLogo.logoNumber?.trim() !== "";
+    const hasLogoName = currentLogo.logoName?.trim() !== "";
+    const hasRequestedBy = currentLogo.requestedBy?.trim() !== "";
+    const dimensions = currentLogo.dimensions || {};
+    const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
+    const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
+    const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
+    const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
+    const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
+    const isCurrentLogoValid = hasLogoNumber && hasLogoName && hasRequestedBy && hasAtLeastOneDimension;
+
+    // Construir allLogos da mesma forma que StepConfirmDetails
+    // Verificar se o currentLogo já existe nos savedLogos (para evitar duplicatas)
+    const currentLogoExistsInSaved = isCurrentLogoValid && savedLogos.some(logo => {
+      // Comparar por ID se disponível (mais confiável)
+      if (currentLogo.id && logo.id) {
+        return logo.id === currentLogo.id;
+      }
+      // Se não tem ID, comparar por logoNumber
+      if (currentLogo.logoNumber && logo.logoNumber) {
+        return logo.logoNumber.trim() === currentLogo.logoNumber.trim();
+      }
+      return false;
+    });
+    
+    const allLogos = isCurrentLogoValid && !currentLogoExistsInSaved 
+      ? [...savedLogos, currentLogo] 
+      : savedLogos;
+
+    if (isCurrent || (isCurrentLogoValid && index === allLogos.length - 1)) {
       // Already in currentLogo, just navigate
       const logoStepIndex = visibleSteps.findIndex(s => s.id === 'logo-instructions');
       if (logoStepIndex >= 0) {
@@ -259,17 +289,110 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
       }
     } else {
       // It's a saved logo. We need to swap it into currentLogo.
-      let newSavedLogos = [...savedLogos];
-      const logoToEdit = savedLogos[index];
+      // IMPORTANTE: Usar logoData se fornecido (mais confiável que índice), senão usar índice
+      let logoToEdit;
+      
+      if (logoData) {
+        // Usar o logo passado diretamente, mas encontrar a versão completa nos savedLogos ou allLogos
+        console.log("=== EDITING LOGO (using logoData) ===");
+        console.log("LogoData received:", { logoNumber: logoData.logoNumber, logoName: logoData.logoName, id: logoData.id });
+        
+        // IMPORTANTE: Buscar primeiro em allLogos (que inclui savedLogos + currentLogo)
+        // Isso garante que encontramos a versão mais completa do logo
+        const foundInAll = allLogos.find(logo => {
+          // Priorizar comparação por ID (mais confiável)
+          if (logo.id && logoData.id) {
+            return logo.id === logoData.id;
+          }
+          // Se não tem ID, comparar por logoNumber
+          if (logo.logoNumber && logoData.logoNumber) {
+            return logo.logoNumber.trim() === logoData.logoNumber.trim();
+          }
+          return false;
+        });
+        
+        if (foundInAll) {
+          logoToEdit = foundInAll;
+          console.log("Found logo in allLogos:", { logoNumber: logoToEdit.logoNumber, logoName: logoToEdit.logoName, id: logoToEdit.id });
+        } else {
+          // Se não encontrou, usar logoData diretamente (pode ser uma versão parcial)
+          logoToEdit = logoData;
+          console.log("Using logoData directly (not found in allLogos)");
+        }
+      } else {
+        // Fallback: usar índice (menos confiável)
+        console.log("=== EDITING LOGO (using index) ===");
+        logoToEdit = allLogos[index];
+        if (!logoToEdit) {
+          console.error("Logo not found at index:", index, "allLogos length:", allLogos.length);
+          return;
+        }
+      }
+      
+      console.log("Index clicked:", index);
+      console.log("AllLogos:", allLogos.map((l, i) => ({ index: i, logoNumber: l.logoNumber, logoName: l.logoName, id: l.id })));
+      console.log("Logo to edit:", { logoNumber: logoToEdit?.logoNumber, logoName: logoToEdit?.logoName, id: logoToEdit?.id });
+      console.log("CurrentLogo before edit:", { logoNumber: currentLogo?.logoNumber, logoName: currentLogo?.logoName, id: currentLogo?.id });
+      console.log("SavedLogos:", savedLogos.map((l, i) => ({ index: i, logoNumber: l.logoNumber, logoName: l.logoName, id: l.id })));
+      
+      if (!logoToEdit) {
+        console.error("Logo to edit not found. Index:", index, "allLogos length:", allLogos.length, "logoData:", logoData);
+        return;
+      }
 
-      // Remove logoToEdit from newSavedLogos (vai ser editado no currentLogo)
-      newSavedLogos = newSavedLogos.filter((_, i) => i !== index);
+      // IMPORTANTE: Se o logo clicado é o currentLogo (último na lista allLogos), não precisa procurar nos savedLogos
+      // Caso contrário, encontrar o índice real no savedLogos usando ID ou logoNumber
+      let newSavedLogos = [...savedLogos];
+      const isCurrentLogoClicked = isCurrentLogoValid && index === allLogos.length - 1;
+      
+      // Guardar a posição original do logo que está sendo editado (para restaurar depois)
+      let originalLogoIndex = -1;
+      
+      if (!isCurrentLogoClicked) {
+        // Encontrar o índice real no savedLogos usando ID ou logoNumber
+        const savedLogoIndex = savedLogos.findIndex(logo => {
+          // Comparar por ID se ambos tiverem
+          if (logo.id && logoToEdit.id) {
+            return logo.id === logoToEdit.id;
+          }
+          // Comparar por logoNumber se ambos tiverem
+          if (logo.logoNumber && logoToEdit.logoNumber) {
+            return logo.logoNumber.trim() === logoToEdit.logoNumber.trim();
+          }
+          // Comparar por logoName como fallback
+          if (logo.logoName && logoToEdit.logoName) {
+            return logo.logoName.trim() === logoToEdit.logoName.trim();
+          }
+          return false;
+        });
+
+        originalLogoIndex = savedLogoIndex;
+        console.log("Found logo in savedLogos at index:", savedLogoIndex, "savedLogos length:", savedLogos.length);
+        
+        // Se encontrou o logo nos savedLogos, removê-lo
+        // IMPORTANTE: Guardar o índice ANTES de remover, porque depois de remover os índices mudam
+        if (savedLogoIndex >= 0) {
+          newSavedLogos = newSavedLogos.filter((_, i) => i !== savedLogoIndex);
+          console.log("Removed logo from savedLogos, new length:", newSavedLogos.length, "originalIndex preserved:", originalLogoIndex);
+        } else {
+          console.warn("Logo not found in savedLogos, may be currentLogo or invalid index");
+          // Se não encontrou, pode ser que o logo esteja no currentLogo
+          // Nesse caso, o originalIndex seria o índice no allLogos (que inclui currentLogo)
+          originalLogoIndex = index;
+        }
+      } else {
+        console.log("Current logo was clicked, no need to remove from savedLogos");
+        // Se é o currentLogo, a posição original seria o índice no allLogos
+        // Mas como currentLogo não está nos savedLogos, o originalIndex deve ser undefined
+        // ou o índice no allLogos se quisermos adicionar no final
+        originalLogoIndex = savedLogos.length; // Posição seria no final dos savedLogos
+      }
 
       // IMPORTANTE: Só salvar o currentLogo anterior se ele for válido E diferente do logo que está sendo editado
       // Isso evita criar logos duplicados quando você está apenas editando
-      if (isLogoValid(currentLogo)) {
+      if (isLogoValid(currentLogo) && !isCurrentLogoClicked) {
         // Verificar se o currentLogo já está nos savedLogos (para evitar duplicados)
-        const currentLogoAlreadySaved = newSavedLogos.some(logo => {
+        const currentLogoIndexInSaved = newSavedLogos.findIndex(logo => {
           if (currentLogo.id && logo.id) {
             return logo.id === currentLogo.id;
           }
@@ -285,22 +408,75 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
           (!currentLogo.id && !logoToEdit.id && currentLogo.logoNumber && logoToEdit.logoNumber && 
            currentLogo.logoNumber.trim() !== logoToEdit.logoNumber.trim());
         
-        // Só salvar se não estiver já salvo E for diferente do logo a editar
-        if (!currentLogoAlreadySaved && isDifferentFromLogoToEdit) {
+        // Se o currentLogo já está nos savedLogos, atualizar no lugar (não adicionar novo)
+        if (currentLogoIndexInSaved >= 0 && isDifferentFromLogoToEdit) {
+          // Atualizar o logo existente no lugar
           const logoToSave = {
             ...currentLogo,
             id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            savedAt: new Date().toISOString()
+            savedAt: currentLogo.savedAt || new Date().toISOString()
           };
-          newSavedLogos.push(logoToSave);
+          newSavedLogos[currentLogoIndexInSaved] = logoToSave;
+          console.log("Updated currentLogo in savedLogos at index:", currentLogoIndexInSaved, { logoNumber: logoToSave.logoNumber, logoName: logoToSave.logoName, id: logoToSave.id });
+        } else if (currentLogoIndexInSaved < 0 && isDifferentFromLogoToEdit) {
+          // IMPORTANTE: Se não está nos savedLogos, inserir na posição original do logo que está sendo editado
+          // Isso preserva a ordem dos logos
+          const logoToSave = {
+            ...currentLogo,
+            id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            savedAt: currentLogo.savedAt || new Date().toISOString()
+          };
+          
+          // Se sabemos a posição original, inserir lá (mas não depois de remover o logo a editar)
+          // Se originalLogoIndex >= 0, inserir nessa posição (mas ajustar se necessário)
+          if (originalLogoIndex >= 0 && originalLogoIndex < newSavedLogos.length) {
+            newSavedLogos.splice(originalLogoIndex, 0, logoToSave);
+            console.log("Inserted currentLogo at original position:", originalLogoIndex, { logoNumber: logoToSave.logoNumber, logoName: logoToSave.logoName, id: logoToSave.id });
+          } else {
+            // Se não sabemos a posição ou está fora dos limites, adicionar no final
+            newSavedLogos.push(logoToSave);
+            console.log("Added currentLogo to end of savedLogos:", { logoNumber: logoToSave.logoNumber, logoName: logoToSave.logoName, id: logoToSave.id });
+          }
         }
       }
 
       // Update state - mover logo a editar para currentLogo
+      // IMPORTANTE: Garantir que estamos passando o logo correto, não uma referência que pode mudar
+      // E garantir que o logo mantém seu ID original para que possa ser atualizado corretamente quando salvo
+      const logoToEditCopy = { 
+        ...logoToEdit,
+        // IMPORTANTE: Manter o ID original do logo que está sendo editado
+        // Se o logo não tem ID, criar um novo (mas isso só deve acontecer se for um logo novo)
+        // Se o logo já tem ID, preservá-lo para que possa ser atualizado corretamente quando salvo
+        id: logoToEdit.id || (logoToEdit.logoNumber ? `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` : undefined),
+        // IMPORTANTE: Guardar a posição original para restaurar quando salvar
+        _originalIndex: originalLogoIndex >= 0 ? originalLogoIndex : undefined
+      };
+      
+      // Garantir que o logo tenha todas as propriedades necessárias
+      if (!logoToEditCopy.savedAt && logoToEdit.savedAt) {
+        logoToEditCopy.savedAt = logoToEdit.savedAt;
+      }
+      
+      console.log("=== SETTING CURRENT LOGO FOR EDITING ===");
+      console.log("Logo to edit copy:", { 
+        logoNumber: logoToEditCopy.logoNumber, 
+        logoName: logoToEditCopy.logoName, 
+        id: logoToEditCopy.id,
+        savedAt: logoToEditCopy.savedAt,
+        originalIndex: logoToEditCopy._originalIndex
+      });
+      console.log("New savedLogos after removing logo to edit:", newSavedLogos.map((l, i) => ({ 
+        index: i, 
+        logoNumber: l.logoNumber, 
+        logoName: l.logoName, 
+        id: l.id 
+      })));
+      
       formState.handleInputChange("logoDetails", {
         ...logoDetails,
         logos: newSavedLogos,
-        currentLogo: logoToEdit
+        currentLogo: logoToEditCopy
       });
 
       // Navigate
@@ -417,7 +593,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
                     startContent={<Icon icon="lucide:arrow-left" />}
                     onPress={() => {
                       if (projectId) {
-                        window.location.href = `/projects/${projectId}?tab=instructions`;
+                        window.location.href = `/projects/${projectId}?tab=overview`;
                       } else {
                         window.location.href = "/";
                       }
@@ -505,16 +681,95 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
 
                 // Only save if logo is valid - button should be disabled if not valid
                 if (isCurrentLogoValid) {
+                  // Guardar _originalIndex antes de remover (é apenas para controle interno)
+                  const originalIndex = currentLogo._originalIndex;
+                  
+                  // Remover _originalIndex antes de salvar (é apenas para controle interno)
+                  const { _originalIndex, ...logoWithoutOriginalIndex } = currentLogo;
+                  
                   const logoToSave = {
-                    ...currentLogo,
+                    ...logoWithoutOriginalIndex,
                     id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                    savedAt: new Date().toISOString()
+                    savedAt: currentLogo.savedAt || new Date().toISOString()
                   };
+
+                  console.log('🔍 [onResetLogo] Verificando logo para salvar:', {
+                    logoId: logoToSave.id,
+                    logoNumber: logoToSave.logoNumber,
+                    logoName: logoToSave.logoName,
+                    originalIndex: originalIndex,
+                    savedLogosCount: savedLogos.length,
+                    savedLogosIds: savedLogos.map(l => ({ id: l.id, logoNumber: l.logoNumber }))
+                  });
+
+                  // Verificar se o logo já existe nos savedLogos (por ID ou logoNumber)
+                  const existingLogoIndex = savedLogos.findIndex(logo => {
+                    // Se currentLogo tem ID, comparar por ID (mais confiável)
+                    if (logoToSave.id && logo.id) {
+                      return logo.id === logoToSave.id;
+                    }
+                    // Se não tem ID, comparar por logoNumber
+                    if (logo.logoNumber && logoToSave.logoNumber) {
+                      return logo.logoNumber.trim() === logoToSave.logoNumber.trim();
+                    }
+                    return false;
+                  });
+
+                  let updatedSavedLogos;
+
+                  if (existingLogoIndex >= 0) {
+                    // Logo já existe - ATUALIZAR em vez de criar novo
+                    updatedSavedLogos = [...savedLogos];
+                    updatedSavedLogos[existingLogoIndex] = logoToSave;
+                    
+                    console.log('✅ [onResetLogo] Atualizando logo existente nos savedLogos:', {
+                      logoNumber: logoToSave.logoNumber,
+                      logoName: logoToSave.logoName,
+                      logoId: logoToSave.id,
+                      index: existingLogoIndex,
+                      totalLogos: updatedSavedLogos.length
+                    });
+                  } else if (originalIndex !== undefined && originalIndex >= 0 && originalIndex < savedLogos.length) {
+                    // Logo não existe mas tem posição original válida - INSERIR na posição original
+                    // Isso acontece quando o logo foi editado (removido dos savedLogos) e agora está sendo salvo
+                    updatedSavedLogos = [...savedLogos];
+                    updatedSavedLogos.splice(originalIndex, 0, logoToSave);
+                    
+                    console.log('✅ [onResetLogo] Inserindo logo editado na posição original:', {
+                      logoNumber: logoToSave.logoNumber,
+                      logoName: logoToSave.logoName,
+                      logoId: logoToSave.id,
+                      originalIndex: originalIndex,
+                      totalLogos: updatedSavedLogos.length
+                    });
+                  } else if (originalIndex !== undefined && originalIndex >= 0) {
+                    // Logo tem posição original mas está fora dos limites - adicionar no final
+                    updatedSavedLogos = [...savedLogos, logoToSave];
+                    
+                    console.log('⚠️ [onResetLogo] Logo tem posição original inválida, adicionando no final:', {
+                      logoNumber: logoToSave.logoNumber,
+                      logoName: logoToSave.logoName,
+                      logoId: logoToSave.id,
+                      originalIndex: originalIndex,
+                      savedLogosLength: savedLogos.length,
+                      totalLogos: updatedSavedLogos.length
+                    });
+                  } else {
+                    // Logo não existe e não tem posição original - ADICIONAR como novo no final
+                    updatedSavedLogos = [...savedLogos, logoToSave];
+                    
+                    console.log('✅ [onResetLogo] Adicionando novo logo aos savedLogos:', {
+                      logoNumber: logoToSave.logoNumber,
+                      logoName: logoToSave.logoName,
+                      logoId: logoToSave.id,
+                      totalLogos: updatedSavedLogos.length
+                    });
+                  }
 
                   // Update logoDetails with saved logos and new empty currentLogo
                   formState.handleInputChange("logoDetails", {
                     ...currentLogoDetails,
-                    logos: [...savedLogos, logoToSave],
+                    logos: updatedSavedLogos,
                     currentLogo: {
                       logoNumber: "",
                       logoName: "",
@@ -551,19 +806,25 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
           </div>
           )}
           
-          {/* Footer simplificado para edição de logo apenas */}
+          {/* Footer simplificado para edição de logo apenas - removido botão Save, save automático ao fechar */}
           {isLogoEditOnlyMode && (
             <div className="flex-shrink-0 w-full bg-content1 border-t border-divider px-4 py-4 sm:px-6 sm:py-6">
               <div className="max-w-6xl mx-auto flex justify-end items-center gap-4">
                 <Button
-                  color="secondary"
+                  color="primary"
                   variant="flat"
-                  onPress={formState.handleSave}
+                  onPress={async () => {
+                    // Save before closing
+                    if (projectId) {
+                      await formState.handleSave();
+                    }
+                    onClose();
+                  }}
                   isLoading={saveStatus.status === 'saving'}
                   isDisabled={formState.loading || saveStatus.status === 'saving'}
-                  startContent={<Icon icon="lucide:save" />}
+                  startContent={<Icon icon="lucide:check" />}
                 >
-                  {saveStatus.status === 'saving' ? t('common.saving', 'A guardar...') : t('common.save', 'Guardar')}
+                  {saveStatus.status === 'saving' ? t('common.saving', 'A guardar...') : t('common.done', 'Concluído')}
                 </Button>
               </div>
             </div>

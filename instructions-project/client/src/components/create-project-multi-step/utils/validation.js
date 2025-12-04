@@ -90,13 +90,22 @@ export const validateStepLogoInstructions = (formData) => {
   const savedLogos = logoDetails.logos || [];
   const dimensions = currentLogo.dimensions || {};
 
+  // Helper function para verificar se uma dimensão é válida
+  const isValidDimension = (value) => {
+    if (value == null || value === "" || value === "0" || value === "0.00") {
+      return false;
+    }
+    const numValue = typeof value === 'number' ? value : parseFloat(value);
+    return !isNaN(numValue) && numValue > 0;
+  };
+
   // Verificar se pelo menos um campo de dimensões está preenchido
-  // Aceitar valores numéricos válidos (incluindo 0)
-  // Verificar se o valor existe, não é null, não é string vazia, e é um número válido >= 0
-  const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "" && !isNaN(parseFloat(dimensions.height.value)) && parseFloat(dimensions.height.value) >= 0;
-  const hasLength = dimensions.length?.value != null && dimensions.length.value !== "" && !isNaN(parseFloat(dimensions.length.value)) && parseFloat(dimensions.length.value) >= 0;
-  const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "" && !isNaN(parseFloat(dimensions.width.value)) && parseFloat(dimensions.width.value) >= 0;
-  const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "" && !isNaN(parseFloat(dimensions.diameter.value)) && parseFloat(dimensions.diameter.value) >= 0;
+  // IMPORTANTE: Não aceitar 0, null, undefined, ou string vazia como valor válido
+  // O valor deve ser um número maior que 0
+  const hasHeight = isValidDimension(dimensions.height?.value);
+  const hasLength = isValidDimension(dimensions.length?.value);
+  const hasWidth = isValidDimension(dimensions.width?.value);
+  const hasDiameter = isValidDimension(dimensions.diameter?.value);
   const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
 
   // Verificar se o logo atual está completamente vazio (permitir prosseguir apenas com logos salvos)
@@ -119,8 +128,31 @@ export const validateStepLogoInstructions = (formData) => {
     hasAtLeastOneDimension
   );
 
-  // Valid if: current logo is valid OR (current logo is empty AND there are saved logos)
-  const isValid = isCurrentLogoValid || (isCurrentLogoEmpty && savedLogos.length > 0);
+  // Verificar se há pelo menos um logo válido nos savedLogos
+  // Um logo é válido se tem todos os campos obrigatórios E pelo menos uma dimensão > 0
+  const hasValidSavedLogo = savedLogos.some(logo => {
+    const logoDimensions = logo.dimensions || {};
+    const logoHasHeight = isValidDimension(logoDimensions.height?.value);
+    const logoHasLength = isValidDimension(logoDimensions.length?.value);
+    const logoHasWidth = isValidDimension(logoDimensions.width?.value);
+    const logoHasDiameter = isValidDimension(logoDimensions.diameter?.value);
+    const logoHasAtLeastOneDimension = logoHasHeight || logoHasLength || logoHasWidth || logoHasDiameter;
+    
+    return (
+      logo.logoNumber?.trim() !== "" &&
+      logo.logoName?.trim() !== "" &&
+      logo.description?.trim() !== "" &&
+      logo.requestedBy?.trim() !== "" &&
+      logo.fixationType?.trim() !== "" &&
+      logoHasAtLeastOneDimension
+    );
+  });
+
+  // Valid if: 
+  // 1. current logo is valid, OR
+  // 2. there are saved logos AND (current logo is empty OR current logo is valid) AND at least one saved logo is valid
+  // IMPORTANTE: Não pode finalizar se não há pelo menos um logo válido (com dimensões)
+  const isValid = isCurrentLogoValid || (savedLogos.length > 0 && (isCurrentLogoEmpty || isCurrentLogoValid) && hasValidSavedLogo);
 
   logger.validation("logo-instructions", isValid, {
     hasLogoNumber: !!currentLogo.logoNumber,
@@ -155,13 +187,27 @@ export const validateStepLogoInstructions = (formData) => {
     hasAtLeastOneDimension,
     dimensions: dimensions,
     dimensionChecks: { hasHeight, hasLength, hasWidth, hasDiameter },
+    dimensionValues: {
+      height: dimensions.height?.value,
+      length: dimensions.length?.value,
+      width: dimensions.width?.value,
+      diameter: dimensions.diameter?.value
+    },
     requiredFields: {
       logoNumber: !!currentLogo.logoNumber?.trim(),
       logoName: !!currentLogo.logoName?.trim(),
       description: !!currentLogo.description?.trim(),
       requestedBy: !!currentLogo.requestedBy?.trim(),
       fixationType: !!currentLogo.fixationType?.trim()
-    }
+    },
+    requiredFieldValues: {
+      logoNumber: currentLogo.logoNumber,
+      logoName: currentLogo.logoName,
+      description: currentLogo.description,
+      requestedBy: currentLogo.requestedBy,
+      fixationType: currentLogo.fixationType
+    },
+    hasValidSavedLogo
   });
 
   return isValid;

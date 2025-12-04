@@ -588,6 +588,18 @@
         "savedAt": "Saved at",
         "imagePreview": "Image Preview",
         "decoratedPreview": "Preview with Decorations",
+        "editSimulation": "Edit Simulation"
+      },
+      "instructions": {
+        "selectInstruction": "Select Instruction",
+        "selectInstructionPlaceholder": "Choose an instruction",
+        "noInstructions": "No instructions available",
+        "noInstructionsDescription": "Add logo or simulation instructions to the project.",
+        "editSimulation": "Edit Simulation",
+        "editSimulationDescription": "To edit the simulation, you will be redirected to the AI Designer editor where you can modify decorations and images.",
+        "goToEditor": "Go to Editor",
+        "confirmDelete": "Are you sure you want to delete \"{{name}}\"?",
+        "thisInstruction": "this instruction",
         "moreImages": "more images",
         "decorationsList": "Used Decorations",
         "moreDecorations": "more decorations",

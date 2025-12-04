@@ -30,9 +30,7 @@ export function StepIndicator({ steps, currentStep, onStepClick }) {
                 <li className="flex items-center gap-1.5 sm:gap-2">
                   <button
                     onClick={() => onStepClick && onStepClick(stepNumber)}
-                    disabled={!isCompleted && !isActive}
-                    className={`flex items-center gap-1.5 sm:gap-2 transition-all ${(isCompleted || isActive) ? 'cursor-pointer hover:opacity-80' : 'cursor-not-allowed opacity-50'
-                      }`}
+                    className="flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer hover:opacity-80"
                   >
                     <div
                       className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-colors ${isCompleted
