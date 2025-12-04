@@ -247,20 +247,6 @@ export default function Dashboard() {
                             speed={3}
                           />
                         </h2>
-                        <p className="text-slate-200 mb-6 max-w-xs font-medium">
-                          {t('pages.dashboard.main.hero.draftsMessage', { count: stats.draft })}
-                        </p>
-                      </div>
-                      
-                      {/* Continue Working Button - Fixed Position at Bottom */}
-                      <div className="absolute bottom-6 left-6 right-8 z-20">
-                        <Button 
-                          size="sm"
-                          className="bg-white/10 backdrop-blur-md border border-white/20 text-white font-medium hover:bg-white/20 transition-all duration-300 group/btn"
-                          endContent={<Icon icon="lucide:arrow-right" className="group-hover/btn:translate-x-1 transition-transform" />}
-                        >
-                          {t('pages.dashboard.main.hero.continueWorking')}
-                        </Button>
                       </div>
                     </div>
                     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-900 border border-white/10 flex items-center justify-center shadow-lg p-0">

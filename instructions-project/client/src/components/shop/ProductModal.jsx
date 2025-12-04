@@ -642,7 +642,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                   >
                     Compare
                   </Button>
-                  <Button color="primary" isDisabled={isOutOfStock} onPress={() => { onOrder?.(activeProduct, { mode, color }, enableQuantity ? qty : undefined); close(); }}>Add</Button>
+                  <Button color="primary" isDisabled={isOutOfStock} onPress={() => { onOrder?.(activeProduct, { mode, color }, enableQuantity ? qty : undefined); close(); }} className="bg-blue-600 text-white">Add</Button>
                   {isOutOfStock && (
                     <Button variant="bordered" onPress={() => setInfoOpen(true)}>Request info</Button>
                   )}

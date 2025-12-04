@@ -41,7 +41,20 @@ call "%UTILS_DIR%common.bat" :print_separator
 goto :eof
 
 :write_log
-call "%UTILS_DIR%common.bat" :write_log %*
+if "%LOG_FILE%"=="" goto :eof
+if not exist "%LOG_FILE%" goto :eof
+setlocal enabledelayedexpansion
+set "MSG=%~1"
+if "!MSG!"=="" (
+    endlocal
+    goto :eof
+)
+REM Get current timestamp
+for /f "tokens=2-4 delims=/ " %%a in ('date /t') do set "LOG_DATE=%%c-%%a-%%b"
+for /f "tokens=1-2 delims=: " %%a in ('time /t') do set "LOG_TIME=%%a-%%b"
+REM Write to log file
+echo [!LOG_DATE! !LOG_TIME!] !MSG! >> "%LOG_FILE%" 2>&1
+endlocal
 goto :eof
 
 REM Load docker-check functions
@@ -73,30 +86,25 @@ set "CURRENT_DIR=%CURRENT_DIR:~0,-1%"
 for %%i in ("%CURRENT_DIR%\..\..") do set "PROJECT_ROOT=%%~fi"
 cd /d "%PROJECT_ROOT%"
 
-REM Initialize log file
-call "%UTILS_DIR%common.bat" :init_log_file ""
-if "%LOG_FILE%"=="" (
-    REM Fallback if init failed - use scripts/logs directory
-    set "SCRIPTS_DIR=%~dp0.."
-    for %%i in ("%SCRIPTS_DIR%") do set "SCRIPTS_DIR=%%~fi"
-    set "LOG_DIR=%SCRIPTS_DIR%\logs"
-    if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
-    for /f "tokens=2-4 delims=/ " %%a in ('date /t') do set "DATE=%%c-%%a-%%b"
-    for /f "tokens=1-2 delims=: " %%a in ('time /t') do set "TIME=%%a-%%b"
-    set "TIME=!TIME: =0!"
-    set "TIME=!TIME::=-!"
-    set "LOG_FILE=%LOG_DIR%\build-%DATE%-%TIME%.log"
-    (
-        echo ========================================
-        echo Log iniciado em: %DATE% %TIME%
-        echo ========================================
-        echo.
-    ) > "%LOG_FILE%"
+REM Initialize log file using dedicated script (MUST BE FIRST!)
+call "%UTILS_DIR%init-log.bat"
+if %ERRORLEVEL% neq 0 (
+    call :print_error "Falha ao inicializar arquivo de log"
+    exit /b 1
 )
-call :write_log "======================================="
-call :write_log "Build e Push para GitHub Packages"
-call :write_log "======================================="
-call :print_info "Arquivo de log: %LOG_FILE%"
+
+REM Verify log file was created
+if exist "%LOG_FILE%" (
+    call :print_info "Arquivo de log inicializado: %LOG_FILE%"
+    REM Write initial entry
+    call :write_log "======================================="
+    call :write_log "Build e Push para GitHub Packages"
+    call :write_log "======================================="
+    call :write_log "Processo iniciado"
+) else (
+    call :print_error "FALHA: Arquivo de log nao foi criado: %LOG_FILE%"
+    exit /b 1
+)
 
 call :print_header "Build e Push para GitHub Packages"
 
