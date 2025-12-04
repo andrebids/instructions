@@ -36,7 +36,7 @@ export function StepIndicator({ steps, currentStep, onStepClick }) {
                       className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-colors ${isCompleted
                         ? "bg-success text-white"
                         : isActive
-                          ? "bg-primary text-white"
+                          ? "bg-blue-600 text-white"
                           : "bg-default-100 text-default-400"
                         }`}
                     >

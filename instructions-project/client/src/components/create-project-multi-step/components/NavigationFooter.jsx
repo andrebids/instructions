@@ -73,6 +73,7 @@ export function NavigationFooter({
                 isLoading={loading || isNavigating || isSaving}
                 isDisabled={!isValid || loading || isNavigating || isSaving}
                 endContent={<Icon icon="lucide:check" />}
+                className="bg-blue-600 text-white"
               >
                 {loading || isNavigating || isSaving ? (isSaving ? "Saving..." : "Creating...") : "Finish"}
               </Button>
@@ -84,6 +85,7 @@ export function NavigationFooter({
               isLoading={isNavigating}
               isDisabled={!isValid || loading || isNavigating}
               endContent={<Icon icon="lucide:arrow-right" />}
+              className="bg-blue-600 text-white"
             >
               {isNavigating ? "Creating..." : "Continue"}
             </Button>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Card, Button, Skeleton } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination } from 'swiper/modules';
@@ -157,11 +157,9 @@ export const RecommendedProductsWidget = React.memo(() => {
 
   if (loading) {
     return (
-      <Card className="h-full w-full bg-default-100 border-none shadow-none">
-        <div className="relative h-full w-full overflow-hidden">
-          <Skeleton className="rounded-lg w-full h-full" />
-        </div>
-      </Card>
+      <div className="h-full w-full flex items-center justify-center">
+        <Spinner size="lg" color="primary" label="Carregando..." />
+      </div>
     );
   }
 
@@ -207,11 +205,10 @@ export const RecommendedProductsWidget = React.memo(() => {
             <SwiperSlide key={product.id} className="relative h-full w-full overflow-hidden">
               {/* Background with padding for full product visibility */}
               <div className="absolute inset-0 p-8 flex items-center justify-center">
-                {/* Placeholder skeleton que mantém a proporção durante o loading */}
+                {/* Spinner enquanto a imagem não carrega */}
                 {!isImageLoaded && (
-                  <div className="absolute inset-0 p-8 flex items-center justify-center z-10">
-                    <div className="w-full h-full bg-gradient-to-br from-default-200 to-default-300 dark:from-default-800 dark:to-default-900 rounded-lg animate-pulse" 
-                         style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                  <div className="absolute inset-0 p-8 flex items-center justify-center z-10 bg-black/20 backdrop-blur-sm">
+                    <Spinner size="lg" color="primary" />
                   </div>
                 )}
                 {/* Imagem com transição suave */}
