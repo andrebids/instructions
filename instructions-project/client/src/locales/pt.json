@@ -594,7 +594,18 @@
       "fixationType": "Tipo de Fixação",
       "mastDiameter": "Diâmetro do Mastro",
       "lacquered": "Lacado",
+      "lacquerColor": "Cor do Lacado",
+      "lacquerColors": {
+        "white": "BRANCO RAL 9010",
+        "gold": "DOURADO PANTONE 131C",
+        "red": "VERMELHO RAL 3000",
+        "blue": "AZUL RAL 5005",
+        "green": "VERDE RAL 6029",
+        "pink": "ROSA RAL 3015",
+        "black": "PRETO RAL 9011"
+      },
       "maxWeightConstraint": "Restrição de Peso Máx.",
+      "maxWeight": "Peso (kg)",
       "additionalInfo": "Informações Adicionais",
       "ballast": "Balastro",
       "controlReport": "Relatório de Controlo",

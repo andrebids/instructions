@@ -581,7 +581,18 @@
       "fixationType": "Fixation Type",
       "mastDiameter": "Mast Diameter",
       "lacquered": "Lacquered",
+      "lacquerColor": "Lacquer Color",
+      "lacquerColors": {
+        "white": "WHITE RAL 9010",
+        "gold": "GOLD PANTONE 131C",
+        "red": "RED RAL 3000",
+        "blue": "BLUE RAL 5005",
+        "green": "GREEN RAL 6029",
+        "pink": "PINK RAL 3015",
+        "black": "BLACK RAL 9011"
+      },
       "maxWeightConstraint": "Max Weight Constraint",
+      "maxWeight": "Weight (kg)",
       "additionalInfo": "Additional Info",
       "ballast": "Ballast",
       "controlReport": "Control Bureau Report",

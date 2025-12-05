@@ -48,6 +48,9 @@ router.get('/:id/observations', projectController.getObservations);
 router.post('/:id/observations', projectController.addObservation);
 router.delete('/:id/observations/:observationId', projectController.deleteObservation);
 
+// Rota de resultados (imagens de logos)
+router.get('/:id/results', projectController.getResults);
+
 router.get('/', projectController.getAll);
 router.get('/:id', projectController.getById);
 router.post('/', projectController.create);
@@ -57,6 +60,7 @@ router.delete('/:id', projectController.deleteProject);
 router.patch('/:id/status', projectController.updateStatus);
 router.patch('/:id/favorite', projectController.toggleFavorite);
 router.patch('/:id/canvas', projectController.updateCanvas); // Nova rota para atualizar canvas
+router.patch('/:id/add-random-designer', projectController.addRandomDesigner); // Adicionar designer aleatório
 
 export default router;
 

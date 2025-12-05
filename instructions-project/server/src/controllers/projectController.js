@@ -9,6 +9,9 @@ import { validateDescription, validateProjectId, validateFiles } from '../valida
 import { logInfo, logError, logServerOperation, formatErrorMessage } from '../utils/projectLogger.js';
 import { getUserRole } from '../middleware/roles.js';
 import { getAuth } from '../middleware/auth.js';
+import { getLogoFinalDir } from '../utils/pathUtils.js';
+import fs from 'fs';
+import path from 'path';
 
 // GET /api/projects - Listar todos os projetos
 export async function getAll(req, res) {
@@ -289,6 +292,72 @@ export async function toggleFavorite(req, res) {
   }
 }
 
+// PATCH /api/projects/:id/add-random-designer - Adicionar designer aleatório ao projeto
+export async function addRandomDesigner(req, res) {
+  try {
+    const projectId = req.params.id;
+    
+    const DESIGNERS = [
+      { name: "Ana Silva", email: "ana.silva@example.com" },
+      { name: "João Santos", email: "joao.santos@example.com" },
+      { name: "Sofia Martins", email: "sofia.martins@example.com" },
+      { name: "Pedro Oliveira", email: "pedro.oliveira@example.com" },
+      { name: "Maria Costa", email: "maria.costa@example.com" },
+      { name: "Rui Ferreira", email: "rui.ferreira@example.com" }
+    ];
+
+    function getAvatarUrl(seed) {
+      return `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
+    }
+
+    // Buscar projeto
+    const project = await projectService.findProjectById(projectId, false);
+    
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    // Obter designers já atribuídos
+    const currentDesigners = project.assignedDesigners || [];
+    
+    // Filtrar designers que já estão atribuídos (por email)
+    const assignedEmails = currentDesigners.map(d => d.email);
+    const availableDesigners = DESIGNERS.filter(d => !assignedEmails.includes(d.email));
+    
+    if (availableDesigners.length === 0) {
+      return res.status(400).json({ 
+        error: 'Todos os designers já estão atribuídos a este projeto' 
+      });
+    }
+
+    // Escolher designer aleatório
+    const randomDesigner = availableDesigners[Math.floor(Math.random() * availableDesigners.length)];
+    
+    // Criar objeto do designer
+    const newDesigner = {
+      id: `designer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: randomDesigner.name,
+      email: randomDesigner.email,
+      image: getAvatarUrl(randomDesigner.name.replace(' ', ''))
+    };
+
+    // Adicionar ao array de designers
+    const updatedDesigners = [...currentDesigners, newDesigner];
+
+    // Atualizar projeto
+    const updatedProject = await projectService.updateProject(projectId, {
+      assignedDesigners: updatedDesigners
+    });
+
+    logInfo(`Designer "${randomDesigner.name}" adicionado ao projeto "${project.name}"`);
+    
+    res.json(updatedProject);
+  } catch (error) {
+    logError('Erro ao adicionar designer aleatório', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
 // PATCH /api/projects/:id/canvas - Atualizar dados do canvas (zonas, decorações, etc)
 export async function updateCanvas(req, res) {
   try {
@@ -554,6 +623,69 @@ export async function deleteObservation(req, res) {
     res.json({ success: true, message: 'Observation deleted successfully' });
   } catch (error) {
     logError('Erro ao deletar observação', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+// GET /api/projects/:id/results - Listar imagens de resultados do projeto
+export async function getResults(req, res) {
+  try {
+    const { id } = req.params;
+    
+    // Buscar o projeto para verificar o tipo
+    const project = await projectService.findProjectById(id);
+    
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    // Se não for projeto do tipo "logo", retornar array vazio (frontend usa LANDSCAPES)
+    if (project.projectType !== 'logo') {
+      return res.json([]);
+    }
+    
+    // Buscar imagens do diretório LOGO_FINAL
+    const logoFinalDir = getLogoFinalDir();
+    
+    // Verificar se o diretório existe
+    if (!fs.existsSync(logoFinalDir)) {
+      logError(`Diretório LOGO_FINAL não encontrado: ${logoFinalDir}`);
+      return res.json([]);
+    }
+    
+    // Listar arquivos do diretório
+    let files = [];
+    try {
+      files = fs.readdirSync(logoFinalDir);
+    } catch (error) {
+      logError(`Erro ao ler diretório LOGO_FINAL: ${error.message}`);
+      return res.json([]);
+    }
+    
+    // Filtrar apenas arquivos de imagem
+    const imageExtensions = ['.webp', '.jpg', '.jpeg', '.png', '.gif'];
+    const imageFiles = files.filter(file => {
+      const ext = path.extname(file).toLowerCase();
+      return imageExtensions.includes(ext);
+    });
+    
+    // Ordenar arquivos por nome
+    imageFiles.sort();
+    
+    // Mapear para o formato esperado pelo frontend
+    const results = imageFiles.map((file, index) => {
+      const filename = path.basename(file, path.extname(file));
+      return {
+        id: index,
+        title: `Result Proposal ${index + 1}`,
+        src: `/api/uploads/logos/${file}`
+      };
+    });
+    
+    logInfo(`Encontradas ${results.length} imagens em LOGO_FINAL para projeto ${id}`);
+    res.json(results);
+  } catch (error) {
+    logError('Erro ao buscar resultados do projeto', error);
     res.status(500).json({ error: error.message });
   }
 }

@@ -38,6 +38,7 @@ import {
 import { AIAssistantChat } from "../components/AIAssistantChat";
 import { DragAndDropZone } from "../../ui/DragAndDropZone";
 import { productsAPI } from "../../../services/api";
+import { useTranslation } from "react-i18next";
 
 // Componente para texto em movimento quando truncado
 const MarqueeText = ({ children, className = "", hoverOnly = false }) => {
@@ -448,6 +449,7 @@ const validationSchema = Yup.object({
 });
 
 export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCompact = false }) {
+  const { t } = useTranslation();
   const logoDetails = formData.logoDetails || {};
   // Support both old structure (direct logoDetails) and new structure (with currentLogo)
   const currentLogo = logoDetails.currentLogo || logoDetails;
@@ -2400,19 +2402,61 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                         isSelected={formik.values.lacqueredStructure}
                         onValueChange={(v) => formik.updateField("lacqueredStructure", v)}
                       />
-                      <span className="text-xs md:text-sm lg:text-xs font-bold">Lacquered</span>
+                      <span className="text-xs md:text-sm lg:text-xs font-bold">{t('pages.projectDetails.lacquered', 'Lacquered')}</span>
                     </div>
                     {formik.values.lacqueredStructure && (
-                      <Input
-                        placeholder="RAL Color Code"
+                      <Select
+                        placeholder={t('pages.projectDetails.lacquerColor', 'Lacquer Color')}
                         size="sm"
                         variant="flat"
                         className="flex-1 w-full sm:w-auto"
-                        classNames={{ input: "text-xs sm:text-sm md:text-base lg:text-sm", inputWrapper: "h-8 md:h-10 lg:h-8" }}
-                        startContent={<div className="w-3 h-3 rounded-full bg-gradient-to-br from-red-500 to-blue-500 ring-2 ring-white"></div>}
-                        value={formik.values.lacquerColor}
-                        onValueChange={(v) => formik.updateField("lacquerColor", v)}
-                      />
+                        selectedKeys={(() => {
+                          // Encontrar a chave correspondente ao valor salvo
+                          const colorKeys = ['white', 'gold', 'red', 'blue', 'green', 'pink', 'black'];
+                          const savedValue = formik.values.lacquerColor || '';
+                          const matchingKey = colorKeys.find(key => {
+                            const translatedValue = t(`pages.projectDetails.lacquerColors.${key}`, '');
+                            return translatedValue === savedValue || key === savedValue;
+                          });
+                          return matchingKey ? new Set([matchingKey]) : new Set();
+                        })()}
+                        onSelectionChange={(keys) => {
+                          const selected = Array.from(keys)[0];
+                          if (selected) {
+                            // Salvar o valor traduzido completo
+                            const translatedValue = t(`pages.projectDetails.lacquerColors.${selected}`, '');
+                            formik.updateField("lacquerColor", translatedValue || selected);
+                          } else {
+                            formik.updateField("lacquerColor", "");
+                          }
+                        }}
+                        classNames={{ 
+                          trigger: "text-xs sm:text-sm md:text-base lg:text-sm h-8 md:h-10 lg:h-8",
+                          value: "text-xs sm:text-sm md:text-base lg:text-sm"
+                        }}
+                      >
+                        <SelectItem key="white" value="white">
+                          {t('pages.projectDetails.lacquerColors.white', 'WHITE RAL 9010')}
+                        </SelectItem>
+                        <SelectItem key="gold" value="gold">
+                          {t('pages.projectDetails.lacquerColors.gold', 'GOLD PANTONE 131C')}
+                        </SelectItem>
+                        <SelectItem key="red" value="red">
+                          {t('pages.projectDetails.lacquerColors.red', 'RED RAL 3000')}
+                        </SelectItem>
+                        <SelectItem key="blue" value="blue">
+                          {t('pages.projectDetails.lacquerColors.blue', 'BLUE RAL 5005')}
+                        </SelectItem>
+                        <SelectItem key="green" value="green">
+                          {t('pages.projectDetails.lacquerColors.green', 'GREEN RAL 6029')}
+                        </SelectItem>
+                        <SelectItem key="pink" value="pink">
+                          {t('pages.projectDetails.lacquerColors.pink', 'PINK RAL 3015')}
+                        </SelectItem>
+                        <SelectItem key="black" value="black">
+                          {t('pages.projectDetails.lacquerColors.black', 'BLACK RAL 9011')}
+                        </SelectItem>
+                      </Select>
                     )}
                   </div>
                 </div>
@@ -2420,15 +2464,33 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                 <div>
                   <label className="text-xs md:text-sm lg:text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1 md:mb-1.5 lg:mb-1">Technical Constraints</label>
                   <div className="grid grid-cols-1 gap-1 sm:gap-1 md:gap-1.5 lg:gap-1">
-                    <div className={`p-1 sm:p-1.5 md:p-1.5 lg:p-1 rounded-lg border-2 transition-all ${formik.values.maxWeightConstraint ? 'bg-primary-50/80 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800' : 'bg-white/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-700/50'}`}>
-                      <Checkbox
-                        size="sm"
-                        classNames={{ label: "text-xs md:text-sm lg:text-xs font-medium" }}
-                        isSelected={formik.values.maxWeightConstraint}
-                        onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
-                      >
-                        Maximum Weight Constraint
-                      </Checkbox>
+                    <div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 md:p-2 lg:p-1.5 bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-lg border border-white/20 dark:border-gray-600/30">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            size="sm"
+                            color="secondary"
+                            isSelected={formik.values.maxWeightConstraint}
+                            onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
+                          />
+                          <span className="text-xs md:text-sm lg:text-xs font-bold">{t('pages.projectDetails.maxWeightConstraint', 'Maximum Weight Constraint')}</span>
+                        </div>
+                        {formik.values.maxWeightConstraint && (
+                          <Input
+                            placeholder={t('pages.projectDetails.maxWeight', 'Weight (kg)')}
+                            size="sm"
+                            variant="flat"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className="flex-1 w-full sm:w-auto"
+                            classNames={{ input: "text-xs sm:text-sm md:text-base lg:text-sm", inputWrapper: "h-8 md:h-10 lg:h-8" }}
+                            endContent={<span className="text-xs text-default-400">kg</span>}
+                            value={formik.values.maxWeight}
+                            onValueChange={(v) => formik.updateField("maxWeight", v)}
+                          />
+                        )}
+                      </div>
                     </div>
                     <div className={`p-1 sm:p-1.5 md:p-1.5 lg:p-1 rounded-lg border-2 transition-all ${formik.values.ballast ? 'bg-primary-50/80 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800' : 'bg-white/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-700/50'}`}>
                       <Checkbox

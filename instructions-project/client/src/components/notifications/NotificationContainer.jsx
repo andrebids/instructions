@@ -6,13 +6,15 @@ import { NotificationToast } from '../notifications/NotificationToast';
 export function NotificationContainer() {
     const { notifications, markAsRead } = useNotifications();
 
-    // Auto-dismiss after 8 seconds
+    // Auto-dismiss after 8 seconds (only for non-persistent notifications)
     useEffect(() => {
-        const timers = notifications.map((notif) =>
-            setTimeout(() => {
-                markAsRead(notif.id);
-            }, 8000)
-        );
+        const timers = notifications
+            .filter((notif) => !notif.persistent) // Skip persistent notifications
+            .map((notif) =>
+                setTimeout(() => {
+                    markAsRead(notif.id);
+                }, 8000)
+            );
         return () => {
             timers.forEach((t) => clearTimeout(t));
         };

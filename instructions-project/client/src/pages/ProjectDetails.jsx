@@ -782,6 +782,7 @@ export default function ProjectDetails() {
     const [logoEditModalOpen, setLogoEditModalOpen] = useState(false);
     const [editingLogoIndex, setEditingLogoIndex] = useState(null);
     const [simulationEditModalOpen, setSimulationEditModalOpen] = useState(false);
+    const [isAddingDesigner, setIsAddingDesigner] = useState(false);
 
     // Definir todos os callbacks ANTES de qualquer useEffect (regra dos hooks)
     const loadProject = React.useCallback(async () => {
@@ -1111,6 +1112,27 @@ export default function ProjectDetails() {
         setUnreadObservationsCount(0);
     };
 
+    const handleAddRandomDesigner = React.useCallback(async () => {
+        try {
+            setIsAddingDesigner(true);
+            const updatedProject = await projectsAPI.addRandomDesigner(id);
+            setProject(updatedProject);
+            addNotification({
+                type: 'success',
+                message: t('pages.projectDetails.designerAdded', 'Designer adicionado com sucesso!'),
+                persistent: true, // Não fecha automaticamente e não tem botão de fechar
+            });
+        } catch (error) {
+            console.error('❌ Erro ao adicionar designer:', error);
+            addNotification({
+                type: 'error',
+                message: error.response?.data?.error || t('pages.projectDetails.errorAddingDesigner', 'Erro ao adicionar designer'),
+            });
+        } finally {
+            setIsAddingDesigner(false);
+        }
+    }, [id, addNotification, t]);
+
     // Clear unread count when switching to observations tab
     useEffect(() => {
         if (activeTab === 'observations') {
@@ -1343,8 +1365,19 @@ export default function ProjectDetails() {
                                     {/* Right Column - Designer Info */}
                                     <div className="space-y-6">
                                         <Card>
-                                            <CardHeader className="px-6 py-4 border-b border-divider">
+                                            <CardHeader className="px-6 py-4 border-b border-divider flex justify-between items-center">
                                                 <h3 className="text-lg font-semibold">{t('pages.projectDetails.designerInfo')}</h3>
+                                                <Button
+                                                    size="sm"
+                                                    variant="flat"
+                                                    color="primary"
+                                                    isIconOnly
+                                                    onPress={handleAddRandomDesigner}
+                                                    isLoading={isAddingDesigner}
+                                                    aria-label={t('pages.projectDetails.addRandomDesigner', 'Adicionar designer aleatório')}
+                                                >
+                                                    <Icon icon="lucide:user-plus" className="w-4 h-4" />
+                                                </Button>
                                             </CardHeader>
                                             <CardBody className="p-6">
                                                 {project.assignedDesigners && project.assignedDesigners.length > 0 ? (
@@ -1399,7 +1432,15 @@ export default function ProjectDetails() {
                                                             <Icon icon="lucide:user-x" className="text-2xl text-default-400" />
                                                         </div>
                                                         <p className="text-default-500 mb-4">{t('pages.projectDetails.noDesignersAssigned')}</p>
-                                                        {/* Optional: Add button to assign designer if user has permission */}
+                                                        <Button
+                                                            color="primary"
+                                                            variant="flat"
+                                                            onPress={handleAddRandomDesigner}
+                                                            isLoading={isAddingDesigner}
+                                                            startContent={<Icon icon="lucide:user-plus" />}
+                                                        >
+                                                            {t('pages.projectDetails.addRandomDesigner', 'Adicionar Designer Aleatório')}
+                                                        </Button>
                                                     </div>
                                                 )}
                                             </CardBody>
@@ -1506,6 +1547,7 @@ export default function ProjectDetails() {
                     isOpen={isResultsModalOpen}
                     onOpenChange={setIsResultsModalOpen}
                     projectId={id}
+                    projectType={project?.projectType}
                     onModificationSubmitted={handleModificationSubmitted}
                 />
 

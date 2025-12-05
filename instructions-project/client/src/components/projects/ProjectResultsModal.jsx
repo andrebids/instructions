@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Textarea, useDisclosure } from "@heroui/react";
+import React, { useRef, useState, useEffect } from 'react';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Textarea, useDisclosure, Spinner } from "@heroui/react";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Mousewheel, Keyboard } from 'swiper/modules';
 import { Icon } from "@iconify/react";
@@ -41,16 +41,63 @@ export const LANDSCAPES = [
     }
 ];
 
-export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, onModificationSubmitted }) {
+export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, projectType, onModificationSubmitted }) {
     const swiperRef = useRef(null);
     const [showAllView, setShowAllView] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
     const [modificationRequest, setModificationRequest] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [images, setImages] = useState([]);
+    const [loadingImages, setLoadingImages] = useState(false);
 
     // Annotation states
     const { isOpen: isAnnotationModalOpen, onOpen: onAnnotationModalOpen, onOpenChange: onAnnotationModalOpenChange } = useDisclosure();
     const [annotatedImageData, setAnnotatedImageData] = useState(null);
+
+    // Carregar imagens quando o modal abrir e o projeto for do tipo "logo"
+    useEffect(() => {
+        if (!isOpen || !projectId) {
+            return;
+        }
+
+        // Se for projeto do tipo "logo", carregar imagens do servidor
+        if (projectType === 'logo') {
+            setLoadingImages(true);
+            const apiBase = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
+            
+            fetch(`${apiBase}/api/projects/${projectId}/results`, {
+                credentials: 'include'
+            })
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('Failed to fetch results');
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    // Se houver imagens retornadas, usar elas; senão usar LANDSCAPES como fallback
+                    if (data && data.length > 0) {
+                        setImages(data);
+                    } else {
+                        setImages(LANDSCAPES);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading project results:', error);
+                    // Em caso de erro, usar LANDSCAPES como fallback
+                    setImages(LANDSCAPES);
+                })
+                .finally(() => {
+                    setLoadingImages(false);
+                });
+        } else {
+            // Se não for logo, usar LANDSCAPES
+            setImages(LANDSCAPES);
+        }
+    }, [isOpen, projectId, projectType]);
+
+    // Determinar quais imagens usar (dinâmicas ou estáticas)
+    const displayImages = images.length > 0 ? images : LANDSCAPES;
 
     const handleImageClick = (image) => {
         setSelectedImage(image);
@@ -171,9 +218,13 @@ export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, o
                                 </div>
                             </ModalHeader>
                             <ModalBody className="p-0 pb-20 overflow-hidden">
-                                {showAllView ? (
+                                {loadingImages ? (
+                                    <div className="flex items-center justify-center p-12">
+                                        <Spinner size="lg" />
+                                    </div>
+                                ) : showAllView ? (
                                     <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        {LANDSCAPES.map((item, index) => (
+                                        {displayImages.map((item, index) => (
                                             <div
                                                 key={item.id}
                                                 className="relative aspect-video rounded-lg overflow-hidden cursor-pointer group border-2 border-transparent hover:border-primary transition-all"
@@ -237,7 +288,7 @@ export default function ProjectResultsModal({ isOpen, onOpenChange, projectId, o
                                             keyboard={{ enabled: true }}
                                             className="w-full"
                                         >
-                                            {LANDSCAPES.map((item) => (
+                                            {displayImages.map((item) => (
                                                 <SwiperSlide
                                                     key={item.id}
                                                     className="w-full"
