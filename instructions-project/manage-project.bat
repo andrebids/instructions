@@ -86,15 +86,17 @@ echo.
 call :print_color "Escolha uma opcao:"
 echo.
 call :print_color "  [1]  Rebuild Ambiente Dev (sem cache)"
-call :print_color "  [2]  Build e Push para GitHub Packages"
-call :print_color "  [3]  Sair"
+call :print_color "  [2]  Build e Push LOCAL para GitHub Packages"
+call :print_color "  [3]  Disparar GitHub Action (Build no GitHub)"
+call :print_color "  [4]  Sair"
 echo.
 call :print_color "Opcao: "
 set /p "MENU_CHOICE="
 
 if "%MENU_CHOICE%"=="1" goto rebuild_dev
 if "%MENU_CHOICE%"=="2" goto build_push_github
-if "%MENU_CHOICE%"=="3" goto exit_script
+if "%MENU_CHOICE%"=="3" goto trigger_workflow
+if "%MENU_CHOICE%"=="4" goto exit_script
 if "%MENU_CHOICE%"=="" goto :main_menu
 
 call :print_error "Opcao invalida. Tente novamente."
@@ -125,11 +127,11 @@ pause >nul
 goto :main_menu
 
 REM ============================================
-REM Option 2: Build and Push to GitHub Packages
+REM Option 2: Build and Push to GitHub Packages (LOCAL)
 REM ============================================
 :build_push_github
 call :print_separator
-call :print_info "Iniciando build e push para GitHub Packages..."
+call :print_info "Iniciando build e push LOCAL para GitHub Packages..."
 echo.
 
 call "%SCRIPT_DIR%scripts\github\build-and-push.bat"
@@ -140,6 +142,29 @@ if %BUILD_PUSH_RESULT% equ 0 (
     call :print_success "Operacao concluida com sucesso!"
 ) else (
     call :print_error "Operacao falhou com codigo de erro: %BUILD_PUSH_RESULT%"
+)
+
+echo.
+call :print_info "Pressione qualquer tecla para voltar ao menu..."
+pause >nul
+goto :main_menu
+
+REM ============================================
+REM Option 3: Trigger GitHub Actions Workflow
+REM ============================================
+:trigger_workflow
+call :print_separator
+call :print_info "Disparando GitHub Actions Workflow..."
+echo.
+
+call "%SCRIPT_DIR%scripts\github\trigger-workflow.bat"
+set "WORKFLOW_RESULT=%ERRORLEVEL%"
+
+echo.
+if %WORKFLOW_RESULT% equ 0 (
+    call :print_success "Workflow disparado com sucesso!"
+) else (
+    call :print_error "Falha ao disparar workflow com codigo de erro: %WORKFLOW_RESULT%"
 )
 
 echo.
