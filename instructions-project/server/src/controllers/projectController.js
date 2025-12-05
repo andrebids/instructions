@@ -289,6 +289,72 @@ export async function toggleFavorite(req, res) {
   }
 }
 
+// PATCH /api/projects/:id/add-random-designer - Adicionar designer aleatório ao projeto
+export async function addRandomDesigner(req, res) {
+  try {
+    const projectId = req.params.id;
+    
+    const DESIGNERS = [
+      { name: "Ana Silva", email: "ana.silva@example.com" },
+      { name: "João Santos", email: "joao.santos@example.com" },
+      { name: "Sofia Martins", email: "sofia.martins@example.com" },
+      { name: "Pedro Oliveira", email: "pedro.oliveira@example.com" },
+      { name: "Maria Costa", email: "maria.costa@example.com" },
+      { name: "Rui Ferreira", email: "rui.ferreira@example.com" }
+    ];
+
+    function getAvatarUrl(seed) {
+      return `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
+    }
+
+    // Buscar projeto
+    const project = await projectService.findProjectById(projectId, false);
+    
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    // Obter designers já atribuídos
+    const currentDesigners = project.assignedDesigners || [];
+    
+    // Filtrar designers que já estão atribuídos (por email)
+    const assignedEmails = currentDesigners.map(d => d.email);
+    const availableDesigners = DESIGNERS.filter(d => !assignedEmails.includes(d.email));
+    
+    if (availableDesigners.length === 0) {
+      return res.status(400).json({ 
+        error: 'Todos os designers já estão atribuídos a este projeto' 
+      });
+    }
+
+    // Escolher designer aleatório
+    const randomDesigner = availableDesigners[Math.floor(Math.random() * availableDesigners.length)];
+    
+    // Criar objeto do designer
+    const newDesigner = {
+      id: `designer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: randomDesigner.name,
+      email: randomDesigner.email,
+      image: getAvatarUrl(randomDesigner.name.replace(' ', ''))
+    };
+
+    // Adicionar ao array de designers
+    const updatedDesigners = [...currentDesigners, newDesigner];
+
+    // Atualizar projeto
+    const updatedProject = await projectService.updateProject(projectId, {
+      assignedDesigners: updatedDesigners
+    });
+
+    logInfo(`Designer "${randomDesigner.name}" adicionado ao projeto "${project.name}"`);
+    
+    res.json(updatedProject);
+  } catch (error) {
+    logError('Erro ao adicionar designer aleatório', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
 // PATCH /api/projects/:id/canvas - Atualizar dados do canvas (zonas, decorações, etc)
 export async function updateCanvas(req, res) {
   try {

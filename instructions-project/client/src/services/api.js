@@ -199,6 +199,12 @@ export const projectsAPI = {
     return response.data;
   },
 
+  // PATCH /api/projects/:id/add-random-designer - Adicionar designer aleatório
+  addRandomDesigner: async (id) => {
+    const response = await api.patch(`/projects/${id}/add-random-designer`);
+    return response.data;
+  },
+
   // GET /api/projects/:id/observations
   getObservations: async (id) => {
     const response = await api.get(`/projects/${id}/observations`);

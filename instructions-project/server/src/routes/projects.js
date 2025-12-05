@@ -57,6 +57,7 @@ router.delete('/:id', projectController.deleteProject);
 router.patch('/:id/status', projectController.updateStatus);
 router.patch('/:id/favorite', projectController.toggleFavorite);
 router.patch('/:id/canvas', projectController.updateCanvas); // Nova rota para atualizar canvas
+router.patch('/:id/add-random-designer', projectController.addRandomDesigner); // Adicionar designer aleatório
 
 export default router;
 
