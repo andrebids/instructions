@@ -16,14 +16,16 @@ COPY client/package*.json ./
 # Note: --ignore-scripts is removed to allow postinstall scripts that may install platform-specific binaries
 RUN --mount=type=cache,target=/root/.npm \
     npm ci && \
-    npm install @rollup/rollup-linux-x64-gnu --save-optional --force || true
+    npm install @rollup/rollup-linux-x64-gnu --save-optional --force || true && \
+    npm install lightningcss-linux-x64-gnu --save-optional --force || true
 
 # Copy client source code AFTER dependencies are installed
 # node_modules is excluded by .dockerignore, so only source code is copied
 COPY client/ ./
 
-# Reinstall native dependencies for Linux (esbuild, etc.) to avoid Windows binaries
-RUN npm rebuild esbuild || npm install esbuild --save-dev || true
+# Reinstall native dependencies for Linux (esbuild, lightningcss, etc.) to avoid Windows binaries
+RUN npm rebuild esbuild || npm install esbuild --save-dev || true && \
+    npm install lightningcss-linux-x64-gnu --save-optional --force || true
 
 # Build client for production
 RUN --mount=type=cache,target=/root/.npm \
