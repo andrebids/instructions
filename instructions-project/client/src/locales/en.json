@@ -592,6 +592,7 @@
         "black": "BLACK RAL 9011"
       },
       "maxWeightConstraint": "Max Weight Constraint",
+      "maxWeight": "Weight (kg)",
       "additionalInfo": "Additional Info",
       "ballast": "Ballast",
       "controlReport": "Control Bureau Report",

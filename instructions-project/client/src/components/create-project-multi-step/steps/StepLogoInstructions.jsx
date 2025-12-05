@@ -2464,15 +2464,33 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                 <div>
                   <label className="text-xs md:text-sm lg:text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1 md:mb-1.5 lg:mb-1">Technical Constraints</label>
                   <div className="grid grid-cols-1 gap-1 sm:gap-1 md:gap-1.5 lg:gap-1">
-                    <div className={`p-1 sm:p-1.5 md:p-1.5 lg:p-1 rounded-lg border-2 transition-all ${formik.values.maxWeightConstraint ? 'bg-primary-50/80 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800' : 'bg-white/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-700/50'}`}>
-                      <Checkbox
-                        size="sm"
-                        classNames={{ label: "text-xs md:text-sm lg:text-xs font-medium" }}
-                        isSelected={formik.values.maxWeightConstraint}
-                        onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
-                      >
-                        Maximum Weight Constraint
-                      </Checkbox>
+                    <div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 md:p-2 lg:p-1.5 bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-lg border border-white/20 dark:border-gray-600/30">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            size="sm"
+                            color="secondary"
+                            isSelected={formik.values.maxWeightConstraint}
+                            onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
+                          />
+                          <span className="text-xs md:text-sm lg:text-xs font-bold">{t('pages.projectDetails.maxWeightConstraint', 'Maximum Weight Constraint')}</span>
+                        </div>
+                        {formik.values.maxWeightConstraint && (
+                          <Input
+                            placeholder={t('pages.projectDetails.maxWeight', 'Weight (kg)')}
+                            size="sm"
+                            variant="flat"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className="flex-1 w-full sm:w-auto"
+                            classNames={{ input: "text-xs sm:text-sm md:text-base lg:text-sm", inputWrapper: "h-8 md:h-10 lg:h-8" }}
+                            endContent={<span className="text-xs text-default-400">kg</span>}
+                            value={formik.values.maxWeight}
+                            onValueChange={(v) => formik.updateField("maxWeight", v)}
+                          />
+                        )}
+                      </div>
                     </div>
                     <div className={`p-1 sm:p-1.5 md:p-1.5 lg:p-1 rounded-lg border-2 transition-all ${formik.values.ballast ? 'bg-primary-50/80 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800' : 'bg-white/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-700/50'}`}>
                       <Checkbox

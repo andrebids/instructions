@@ -605,6 +605,7 @@
         "black": "PRETO RAL 9011"
       },
       "maxWeightConstraint": "Restrição de Peso Máx.",
+      "maxWeight": "Peso (kg)",
       "additionalInfo": "Informações Adicionais",
       "ballast": "Balastro",
       "controlReport": "Relatório de Controlo",

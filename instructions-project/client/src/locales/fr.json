@@ -544,6 +544,7 @@
         "black": "NOIR RAL 9011"
       },
       "maxWeightConstraint": "Contrainte de Poids Max",
+      "maxWeight": "Poids (kg)",
       "additionalInfo": "Informations Supplémentaires",
       "ballast": "Lestage",
       "controlReport": "Rapport de Contrôle",
