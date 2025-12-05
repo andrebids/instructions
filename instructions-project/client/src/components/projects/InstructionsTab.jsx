@@ -3,6 +3,7 @@ import { Card, CardBody, Select, SelectItem, Button, Spinner } from '@heroui/rea
 import { Icon } from '@iconify/react';
 import { useTranslation } from 'react-i18next';
 import { LogoDetailsContent, SimulationContent } from '../../pages/ProjectDetails';
+import { DeleteConfirmDialog } from '../ui/DeleteConfirmDialog';
 
 // Helper function to get unique decorations count
 const getUniqueDecorationsCount = (decorations) => {
@@ -20,6 +21,8 @@ const getTotalDecorationsQuantity = (decorations) => {
 export default function InstructionsTab({ project, onEditLogo, onEditSimulation, onDeleteLogo, onSave }) {
     const { t } = useTranslation();
     const [selectedInstructionKey, setSelectedInstructionKey] = useState(null);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [pendingDelete, setPendingDelete] = useState(null);
 
     // Combine and sort instructions
     const allInstructions = useMemo(() => {
@@ -332,49 +335,10 @@ export default function InstructionsTab({ project, onEditLogo, onEditSimulation,
                                         color="danger"
                                         variant="flat"
                                         startContent={<Icon icon="lucide:trash-2" />}
-                                        onPress={async () => {
-                                            if (onDeleteLogo) {
-                                                const logoDetails = project.logoDetails || {};
-                                                const savedLogos = logoDetails.logos || [];
-                                                const currentLogo = logoDetails.currentLogo || {};
-                                                
-                                                // Check if it's the current logo
-                                                const isCurrent = (selectedInstruction.id && currentLogo.id && selectedInstruction.id === currentLogo.id) ||
-                                                    (selectedInstruction.logoNumber && currentLogo.logoNumber && 
-                                                     selectedInstruction.logoNumber.trim() === currentLogo.logoNumber.trim());
-                                                
-                                                const logoName = selectedInstruction.logoName || selectedInstruction.logoNumber || t('pages.projectDetails.instructions.thisInstruction', 'esta instrução');
-                                                
-                                                if (window.confirm(t('pages.projectDetails.instructions.confirmDelete', 'Tem certeza que deseja eliminar "{{name}}"?', { name: logoName }))) {
-                                                    if (isCurrent) {
-                                                        // For current logo, find index in savedLogos or use -1
-                                                        const foundIndex = savedLogos.findIndex(logo =>
-                                                            (logo.id && selectedInstruction.id && logo.id === selectedInstruction.id) ||
-                                                            (logo.logoNumber && selectedInstruction.logoNumber && 
-                                                             logo.logoNumber.trim() === selectedInstruction.logoNumber.trim())
-                                                        );
-                                                        await onDeleteLogo(foundIndex >= 0 ? foundIndex : -1, true);
-                                                    } else {
-                                                        // It's a saved logo
-                                                        const logoIndex = savedLogos.findIndex(logo =>
-                                                            (logo.id && selectedInstruction.id && logo.id === selectedInstruction.id) ||
-                                                            (logo.logoNumber && selectedInstruction.logoNumber && 
-                                                             logo.logoNumber.trim() === selectedInstruction.logoNumber.trim())
-                                                        );
-                                                        if (logoIndex >= 0) {
-                                                            await onDeleteLogo(logoIndex, false);
-                                                        }
-                                                    }
-                                                    
-                                                    // Reset selection after delete
-                                                    setSelectedInstructionKey(null);
-                                                    
-                                                    // Reload project to update instructions list
-                                                    if (onSave) {
-                                                        await onSave();
-                                                    }
-                                                }
-                                            }
+                                        onPress={() => {
+                                            const logoName = selectedInstruction.logoName || selectedInstruction.logoNumber || t('pages.projectDetails.instructions.thisInstruction', 'esta instrução');
+                                            setPendingDelete({ instruction: selectedInstruction, logoName });
+                                            setDeleteConfirmOpen(true);
                                         }}
                                     >
                                         {t('common.delete', 'Eliminar')}
@@ -401,6 +365,63 @@ export default function InstructionsTab({ project, onEditLogo, onEditSimulation,
                     </CardBody>
                 </Card>
             )}
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmDialog
+                isOpen={deleteConfirmOpen}
+                onClose={() => {
+                    setDeleteConfirmOpen(false);
+                    setPendingDelete(null);
+                }}
+                onConfirm={async () => {
+                    if (!pendingDelete || !onDeleteLogo) return;
+                    
+                    const { instruction } = pendingDelete;
+                    const logoDetails = project.logoDetails || {};
+                    const savedLogos = logoDetails.logos || [];
+                    const currentLogo = logoDetails.currentLogo || {};
+                    
+                    // Check if it's the current logo
+                    const isCurrent = (instruction.id && currentLogo.id && instruction.id === currentLogo.id) ||
+                        (instruction.logoNumber && currentLogo.logoNumber && 
+                         instruction.logoNumber.trim() === currentLogo.logoNumber.trim());
+                    
+                    if (isCurrent) {
+                        // For current logo, find index in savedLogos or use -1
+                        const foundIndex = savedLogos.findIndex(logo =>
+                            (logo.id && instruction.id && logo.id === instruction.id) ||
+                            (logo.logoNumber && instruction.logoNumber && 
+                             logo.logoNumber.trim() === instruction.logoNumber.trim())
+                        );
+                        await onDeleteLogo(foundIndex >= 0 ? foundIndex : -1, true);
+                    } else {
+                        // It's a saved logo
+                        const logoIndex = savedLogos.findIndex(logo =>
+                            (logo.id && instruction.id && logo.id === instruction.id) ||
+                            (logo.logoNumber && instruction.logoNumber && 
+                             logo.logoNumber.trim() === instruction.logoNumber.trim())
+                        );
+                        if (logoIndex >= 0) {
+                            await onDeleteLogo(logoIndex, false);
+                        }
+                    }
+                    
+                    // Reset selection after delete
+                    setSelectedInstructionKey(null);
+                    
+                    // Reload project to update instructions list
+                    if (onSave) {
+                        await onSave();
+                    }
+                }}
+                title={t('pages.projectDetails.confirmDeleteLogo', 'Confirmar eliminação')}
+                message={pendingDelete 
+                    ? t('pages.projectDetails.instructions.confirmDelete', 'Tem certeza que deseja eliminar "{{name}}"?', { name: pendingDelete.logoName })
+                    : t('pages.projectDetails.confirmDeleteLogo', 'Tem certeza que deseja eliminar este logo?')
+                }
+                confirmText={t('common.ok', 'OK')}
+                cancelText={t('common.cancel', 'Cancelar')}
+            />
         </div>
     );
 }

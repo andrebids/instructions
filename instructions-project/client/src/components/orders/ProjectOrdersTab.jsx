@@ -21,6 +21,7 @@ import { Icon } from '@iconify/react';
 import { useTranslation } from 'react-i18next';
 import { ordersAPI } from '../../services/api';
 import ProjectAddPieceModal from './ProjectAddPieceModal';
+import { DeleteConfirmDialog } from '../ui/DeleteConfirmDialog';
 
 // Mapeamento de cores por status
 const statusConfig = {
@@ -40,6 +41,8 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
   const [updatingItem, setUpdatingItem] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const lastSyncKeyRef = useRef(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   // Sincronizar decorações do canvas com a order
   const syncCanvasDecorations = useCallback(async () => {
@@ -446,6 +449,24 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
               {/* Current Logo */}
               {logoDetails.currentLogo && (() => {
                 const logo = logoDetails.currentLogo;
+                
+                // Verificar se o currentLogo tem pelo menos algum dado válido
+                const hasLogoNumber = logo.logoNumber?.trim() !== "";
+                const hasLogoName = logo.logoName?.trim() !== "";
+                const hasRequestedBy = logo.requestedBy?.trim() !== "";
+                const hasGeneratedImage = !!logo.generatedImage;
+                const hasAttachments = logo.attachmentFiles && logo.attachmentFiles.length > 0;
+                const dimensions = logo.dimensions || {};
+                const hasDimensions = dimensions.height?.value || dimensions.length?.value || 
+                                     dimensions.width?.value || dimensions.diameter?.value;
+                
+                // Se não tiver nenhum dado relevante, não exibir (está completamente vazio)
+                const hasAnyData = hasLogoNumber || hasLogoName || hasRequestedBy || 
+                                  hasGeneratedImage || hasAttachments || hasDimensions;
+                
+                if (!hasAnyData) {
+                  return null;
+                }
                 // Priorizar: generatedImage > AI generated attachment > primeira imagem dos attachments
                 const rawLogoImage = logo.generatedImage || 
                   (logo.attachmentFiles?.find(f => f.isAIGenerated)?.url) ||
@@ -573,9 +594,8 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
                             // currentLogo está no índice -1 (não está nos savedLogos)
                             const allLogos = logoDetails.logos || [];
                             const currentLogoIndex = allLogos.length; // Índice após todos os savedLogos
-                            if (window.confirm(t('pages.projectDetails.confirmDeleteLogo', 'Tem certeza que deseja eliminar este logo?'))) {
-                              onDeleteLogo(currentLogoIndex, true);
-                            }
+                            setPendingDelete({ index: currentLogoIndex, isCurrent: true });
+                            setDeleteConfirmOpen(true);
                           }}
                           aria-label={t('common.delete', 'Eliminar')}
                         >
@@ -708,9 +728,8 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
                           variant="light"
                           color="danger"
                           onPress={() => {
-                            if (window.confirm(t('pages.projectDetails.confirmDeleteLogo', 'Tem certeza que deseja eliminar este logo?'))) {
-                              onDeleteLogo(index, false);
-                            }
+                            setPendingDelete({ index, isCurrent: false });
+                            setDeleteConfirmOpen(true);
                           }}
                           aria-label={t('common.delete', 'Eliminar')}
                         >
@@ -1008,6 +1027,30 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
         onOpenChange={setIsAddModalOpen}
         project={{ id: projectId, budget: effectiveBudget }}
         onAddItem={handleAddItem}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setPendingDelete(null);
+        }}
+        onConfirm={async () => {
+          if (pendingDelete && onDeleteLogo) {
+            try {
+              await onDeleteLogo(pendingDelete.index, pendingDelete.isCurrent);
+            } catch (error) {
+              console.error('Erro ao eliminar logo:', error);
+              // Não fechar o modal em caso de erro
+              throw error;
+            }
+          }
+        }}
+        title={t('pages.projectDetails.confirmDeleteLogo', 'Confirmar eliminação')}
+        message={t('pages.projectDetails.confirmDeleteLogo', 'Tem certeza que deseja eliminar este logo?')}
+        confirmText={t('common.ok', 'OK')}
+        cancelText={t('common.cancel', 'Cancelar')}
       />
     </div>
   );

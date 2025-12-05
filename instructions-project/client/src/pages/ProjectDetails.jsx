@@ -854,7 +854,22 @@ export default function ProjectDetails() {
                         productSizes: []
                     }
                 };
-                await projectsAPI.updateCanvas(id, { logoDetails: updatedLogoDetails });
+                
+                console.log('✅ [handleDeleteLogo] Resetting current logo');
+                
+                const updateResult = await projectsAPI.updateCanvas(id, { logoDetails: updatedLogoDetails });
+                
+                // Verificar se a atualização foi bem-sucedida antes de recarregar
+                if (updateResult) {
+                    // Recarregar projeto para garantir sincronização
+                    await loadProject();
+                } else {
+                    console.error('❌ [handleDeleteLogo] Falha ao atualizar current logo no servidor');
+                    addNotification({
+                        type: 'error',
+                        message: t('pages.projectDetails.errorDeleteLogo', 'Erro ao eliminar logo: falha ao atualizar no servidor'),
+                    });
+                }
             } else {
                 // Remove from saved logos
                 // Verificar se o índice é válido

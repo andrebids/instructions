@@ -1,12 +1,15 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Card, Button, Accordion, AccordionItem } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { getLocalTimeZone } from "@internationalized/date";
 import { SimulationCarousel } from "./SimulationCarousel";
+import { DeleteConfirmDialog } from "../../ui/DeleteConfirmDialog";
 
 export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, onAddLogo }) {
   const hasSimulations = formData.canvasImages && formData.canvasImages.length > 0;
   const simulationCount = formData.canvasImages?.length || 0;
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   // Memoize logo calculations to prevent unnecessary recalculations
   const logoData = useMemo(() => {
@@ -242,17 +245,25 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
-                              if (window.confirm(`Tem certeza que deseja eliminar o logo "${logo.logoName || logo.logoNumber || `Logo ${logoIndex + 1}`}"?`)) {
-                                onDeleteLogo && onDeleteLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
-                              }
+                              const logoName = logo.logoName || logo.logoNumber || `Logo ${logoIndex + 1}`;
+                              setPendingDelete({
+                                index: logoIndex,
+                                isCurrent: isCurrentLogoValid && logoIndex === allLogos.length - 1,
+                                logoName
+                              });
+                              setDeleteConfirmOpen(true);
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                if (window.confirm(`Tem certeza que deseja eliminar o logo "${logo.logoName || logo.logoNumber || `Logo ${logoIndex + 1}`}"?`)) {
-                                  onDeleteLogo && onDeleteLogo(logoIndex, isCurrentLogoValid && logoIndex === allLogos.length - 1);
-                                }
+                                const logoName = logo.logoName || logo.logoNumber || `Logo ${logoIndex + 1}`;
+                                setPendingDelete({
+                                  index: logoIndex,
+                                  isCurrent: isCurrentLogoValid && logoIndex === allLogos.length - 1,
+                                  logoName
+                                });
+                                setDeleteConfirmOpen(true);
                               }
                             }}
                             className="inline-flex items-center justify-center w-8 h-8 text-danger rounded-lg hover:bg-danger-50 active:bg-danger-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-danger focus:ring-offset-2"
@@ -641,6 +652,27 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
           {error}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setPendingDelete(null);
+        }}
+        onConfirm={() => {
+          if (pendingDelete && onDeleteLogo) {
+            onDeleteLogo(pendingDelete.index, pendingDelete.isCurrent);
+          }
+        }}
+        title="Confirmar eliminação"
+        message={pendingDelete 
+          ? `Tem certeza que deseja eliminar o logo "${pendingDelete.logoName}"?`
+          : "Tem certeza que deseja eliminar este logo?"
+        }
+        confirmText="OK"
+        cancelText="Cancelar"
+      />
     </div>
   );
 }
