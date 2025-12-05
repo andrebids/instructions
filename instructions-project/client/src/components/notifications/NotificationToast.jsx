@@ -5,7 +5,7 @@ import { Icon as Iconify } from '@iconify/react';
 import { useNavigate } from 'react-router-dom';
 
 export function NotificationToast({ notification, onClose }) {
-    const { title, message, type, url } = notification;
+    const { title, message, type, url, persistent } = notification;
     const navigate = useNavigate();
 
     const iconMap = {
@@ -78,18 +78,20 @@ export function NotificationToast({ notification, onClose }) {
                     </div>
                 )}
             </div>
-            <div onClick={(e) => e.stopPropagation()}>
-                <Button
-                    isIconOnly
-                    size="sm"
-                    variant="light"
-                    onPress={onClose}
-                    className="hover:bg-default-100 dark:hover:bg-default-200 transition-colors flex-shrink-0"
-                    aria-label="Close notification"
-                >
-                    <Iconify icon="lucide:x" width={16} />
-                </Button>
-            </div>
+            {!persistent && (
+                <div onClick={(e) => e.stopPropagation()}>
+                    <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={onClose}
+                        className="hover:bg-default-100 dark:hover:bg-default-200 transition-colors flex-shrink-0"
+                        aria-label="Close notification"
+                    >
+                        <Iconify icon="lucide:x" width={16} />
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }
