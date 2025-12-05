@@ -7,7 +7,7 @@ on:
       push_to_registry:
         description: 'Push to GitHub Container Registry'
         required: true
-        default: 'true'
+        default: true
         type: boolean
 
 env:
@@ -53,6 +53,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
