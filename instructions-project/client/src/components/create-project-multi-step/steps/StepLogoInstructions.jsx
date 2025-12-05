@@ -38,6 +38,7 @@ import {
 import { AIAssistantChat } from "../components/AIAssistantChat";
 import { DragAndDropZone } from "../../ui/DragAndDropZone";
 import { productsAPI } from "../../../services/api";
+import { useTranslation } from "react-i18next";
 
 // Componente para texto em movimento quando truncado
 const MarqueeText = ({ children, className = "", hoverOnly = false }) => {
@@ -448,6 +449,7 @@ const validationSchema = Yup.object({
 });
 
 export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCompact = false }) {
+  const { t } = useTranslation();
   const logoDetails = formData.logoDetails || {};
   // Support both old structure (direct logoDetails) and new structure (with currentLogo)
   const currentLogo = logoDetails.currentLogo || logoDetails;
@@ -2400,19 +2402,61 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                         isSelected={formik.values.lacqueredStructure}
                         onValueChange={(v) => formik.updateField("lacqueredStructure", v)}
                       />
-                      <span className="text-xs md:text-sm lg:text-xs font-bold">Lacquered</span>
+                      <span className="text-xs md:text-sm lg:text-xs font-bold">{t('pages.projectDetails.lacquered', 'Lacquered')}</span>
                     </div>
                     {formik.values.lacqueredStructure && (
-                      <Input
-                        placeholder="RAL Color Code"
+                      <Select
+                        placeholder={t('pages.projectDetails.lacquerColor', 'Lacquer Color')}
                         size="sm"
                         variant="flat"
                         className="flex-1 w-full sm:w-auto"
-                        classNames={{ input: "text-xs sm:text-sm md:text-base lg:text-sm", inputWrapper: "h-8 md:h-10 lg:h-8" }}
-                        startContent={<div className="w-3 h-3 rounded-full bg-gradient-to-br from-red-500 to-blue-500 ring-2 ring-white"></div>}
-                        value={formik.values.lacquerColor}
-                        onValueChange={(v) => formik.updateField("lacquerColor", v)}
-                      />
+                        selectedKeys={(() => {
+                          // Encontrar a chave correspondente ao valor salvo
+                          const colorKeys = ['white', 'gold', 'red', 'blue', 'green', 'pink', 'black'];
+                          const savedValue = formik.values.lacquerColor || '';
+                          const matchingKey = colorKeys.find(key => {
+                            const translatedValue = t(`pages.projectDetails.lacquerColors.${key}`, '');
+                            return translatedValue === savedValue || key === savedValue;
+                          });
+                          return matchingKey ? new Set([matchingKey]) : new Set();
+                        })()}
+                        onSelectionChange={(keys) => {
+                          const selected = Array.from(keys)[0];
+                          if (selected) {
+                            // Salvar o valor traduzido completo
+                            const translatedValue = t(`pages.projectDetails.lacquerColors.${selected}`, '');
+                            formik.updateField("lacquerColor", translatedValue || selected);
+                          } else {
+                            formik.updateField("lacquerColor", "");
+                          }
+                        }}
+                        classNames={{ 
+                          trigger: "text-xs sm:text-sm md:text-base lg:text-sm h-8 md:h-10 lg:h-8",
+                          value: "text-xs sm:text-sm md:text-base lg:text-sm"
+                        }}
+                      >
+                        <SelectItem key="white" value="white">
+                          {t('pages.projectDetails.lacquerColors.white', 'WHITE RAL 9010')}
+                        </SelectItem>
+                        <SelectItem key="gold" value="gold">
+                          {t('pages.projectDetails.lacquerColors.gold', 'GOLD PANTONE 131C')}
+                        </SelectItem>
+                        <SelectItem key="red" value="red">
+                          {t('pages.projectDetails.lacquerColors.red', 'RED RAL 3000')}
+                        </SelectItem>
+                        <SelectItem key="blue" value="blue">
+                          {t('pages.projectDetails.lacquerColors.blue', 'BLUE RAL 5005')}
+                        </SelectItem>
+                        <SelectItem key="green" value="green">
+                          {t('pages.projectDetails.lacquerColors.green', 'GREEN RAL 6029')}
+                        </SelectItem>
+                        <SelectItem key="pink" value="pink">
+                          {t('pages.projectDetails.lacquerColors.pink', 'PINK RAL 3015')}
+                        </SelectItem>
+                        <SelectItem key="black" value="black">
+                          {t('pages.projectDetails.lacquerColors.black', 'BLACK RAL 9011')}
+                        </SelectItem>
+                      </Select>
                     )}
                   </div>
                 </div>

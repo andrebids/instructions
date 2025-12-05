@@ -144,7 +144,7 @@ app.use((req, res, next) => {
 });
 
 // Servir uploads também via /api para funcionar por trás do proxy do Vite
-import { getUploadsDir, getProductsUploadDir, getProjectsUploadDir } from './utils/pathUtils.js';
+import { getUploadsDir, getProductsUploadDir, getProjectsUploadDir, getLogoFinalDir } from './utils/pathUtils.js';
 
 // Log do caminho de uploads base
 const uploadsDir = getUploadsDir();
@@ -153,6 +153,10 @@ console.log(`📁 [APP] Diretório de uploads base configurado: ${uploadsDir}`);
 // Log do caminho de produtos
 const productsDir = getProductsUploadDir();
 console.log(`📁 [APP] Diretório de produtos configurado: ${productsDir}`);
+
+// Log do caminho de logos
+const logosDir = getLogoFinalDir();
+console.log(`📁 [APP] Diretório de logos (LOGO_FINAL) configurado: ${logosDir}`);
 
 /**
  * Valida se o caminho resolvido está dentro do diretório base
@@ -289,6 +293,114 @@ app.use('/api/uploads/products', (req, res, next) => {
     }
   } catch (error) {
     console.error(`❌ [APP] Erro crítico no middleware de produtos: ${error.message}`);
+    console.error(`❌ [APP] Stack: ${error.stack}`);
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Erro interno do servidor', 
+        path: req.path 
+      });
+    }
+  }
+});
+
+// Servir logos especificamente de getLogoFinalDir()
+// IMPORTANTE: Logos estão em rede compartilhada em LOGO_FINAL
+app.use('/api/uploads/logos', (req, res, next) => {
+  try {
+    const requestedFile = req.path.replace(/^\//, ''); // Remover barra inicial
+    
+    // Validar path traversal antes de processar
+    const fullPath = validatePath(logosDir, requestedFile);
+    if (!fullPath) {
+      res.status(403).json({ 
+        error: 'Caminho inválido', 
+        path: req.path 
+      });
+      return;
+    }
+    
+    // Verificar se arquivo existe antes de tentar servir
+    if (fs.existsSync(fullPath)) {
+      // Verificar se é um arquivo (não diretório)
+      const stats = fs.statSync(fullPath);
+      if (!stats.isFile()) {
+        res.status(403).json({ 
+          error: 'Caminho não é um arquivo', 
+          path: req.path 
+        });
+        return;
+      }
+      
+      // Servir arquivo diretamente com sendFile
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`📤 [APP] Servindo arquivo de logo: ${fullPath}`);
+      }
+      
+      // Determinar content-type baseado na extensão
+      const ext = path.extname(fullPath).toLowerCase();
+      const contentType = ext === '.webp' ? 'image/webp' : 
+                         ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+                         ext === '.png' ? 'image/png' :
+                         ext === '.gif' ? 'image/gif' :
+                         'application/octet-stream';
+      
+      // Definir Content-Type apenas se headers ainda não foram enviados
+      res.setHeader('Content-Type', contentType);
+      res.sendFile(fullPath, (err) => {
+        if (err) {
+          console.error(`❌ [APP] Erro ao servir arquivo de logo: ${err.message}`);
+          // Se headers já foram enviados, não podemos enviar JSON
+          if (!res.headersSent) {
+            res.status(500).json({ 
+              error: 'Erro ao servir arquivo', 
+              path: req.path 
+            });
+          }
+        }
+      });
+    } else {
+      // Arquivo não encontrado - logs detalhados
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`⚠️ [APP] Arquivo de logo não encontrado: ${req.path}`);
+        console.warn(`   Arquivo solicitado: ${requestedFile}`);
+        console.warn(`   Caminho completo procurado: ${fullPath}`);
+        console.warn(`   Diretório base (SMB montado): ${logosDir}`);
+        
+        try {
+          console.warn(`   Arquivo existe fisicamente: ${fs.existsSync(fullPath)}`);
+          
+          // Verificar se o diretório existe
+          const fileDir = path.dirname(fullPath);
+          console.warn(`   Diretório do arquivo existe: ${fs.existsSync(fileDir)}`);
+          
+          // Listar alguns arquivos do diretório para debug
+          if (fs.existsSync(logosDir)) {
+            try {
+              const files = fs.readdirSync(logosDir);
+              const fileName = requestedFile.split('/').pop() || requestedFile;
+              console.warn(`   Total de arquivos no diretório: ${files.length}`);
+              console.warn(`   Procurando arquivo: ${fileName}`);
+            } catch (e) {
+              console.warn(`   Erro ao listar arquivos: ${e.message}`);
+            }
+          } else {
+            console.error(`   ❌ Diretório de logos não existe! Verifique se SMB está montado corretamente.`);
+          }
+        } catch (e) {
+          console.warn(`   Erro ao verificar arquivo: ${e.message}`);
+        }
+      }
+      
+      res.status(404).json({ 
+        error: 'Arquivo não encontrado', 
+        path: req.path,
+        requestedFile: requestedFile,
+        logosDir: logosDir,
+        fullPath: fullPath
+      });
+    }
+  } catch (error) {
+    console.error(`❌ [APP] Erro crítico no middleware de logos: ${error.message}`);
     console.error(`❌ [APP] Stack: ${error.stack}`);
     if (!res.headersSent) {
       res.status(500).json({ 

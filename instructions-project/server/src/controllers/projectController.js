@@ -9,6 +9,9 @@ import { validateDescription, validateProjectId, validateFiles } from '../valida
 import { logInfo, logError, logServerOperation, formatErrorMessage } from '../utils/projectLogger.js';
 import { getUserRole } from '../middleware/roles.js';
 import { getAuth } from '../middleware/auth.js';
+import { getLogoFinalDir } from '../utils/pathUtils.js';
+import fs from 'fs';
+import path from 'path';
 
 // GET /api/projects - Listar todos os projetos
 export async function getAll(req, res) {
@@ -620,6 +623,69 @@ export async function deleteObservation(req, res) {
     res.json({ success: true, message: 'Observation deleted successfully' });
   } catch (error) {
     logError('Erro ao deletar observação', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+// GET /api/projects/:id/results - Listar imagens de resultados do projeto
+export async function getResults(req, res) {
+  try {
+    const { id } = req.params;
+    
+    // Buscar o projeto para verificar o tipo
+    const project = await projectService.findProjectById(id);
+    
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    // Se não for projeto do tipo "logo", retornar array vazio (frontend usa LANDSCAPES)
+    if (project.projectType !== 'logo') {
+      return res.json([]);
+    }
+    
+    // Buscar imagens do diretório LOGO_FINAL
+    const logoFinalDir = getLogoFinalDir();
+    
+    // Verificar se o diretório existe
+    if (!fs.existsSync(logoFinalDir)) {
+      logError(`Diretório LOGO_FINAL não encontrado: ${logoFinalDir}`);
+      return res.json([]);
+    }
+    
+    // Listar arquivos do diretório
+    let files = [];
+    try {
+      files = fs.readdirSync(logoFinalDir);
+    } catch (error) {
+      logError(`Erro ao ler diretório LOGO_FINAL: ${error.message}`);
+      return res.json([]);
+    }
+    
+    // Filtrar apenas arquivos de imagem
+    const imageExtensions = ['.webp', '.jpg', '.jpeg', '.png', '.gif'];
+    const imageFiles = files.filter(file => {
+      const ext = path.extname(file).toLowerCase();
+      return imageExtensions.includes(ext);
+    });
+    
+    // Ordenar arquivos por nome
+    imageFiles.sort();
+    
+    // Mapear para o formato esperado pelo frontend
+    const results = imageFiles.map((file, index) => {
+      const filename = path.basename(file, path.extname(file));
+      return {
+        id: index,
+        title: `Result Proposal ${index + 1}`,
+        src: `/api/uploads/logos/${file}`
+      };
+    });
+    
+    logInfo(`Encontradas ${results.length} imagens em LOGO_FINAL para projeto ${id}`);
+    res.json(results);
+  } catch (error) {
+    logError('Erro ao buscar resultados do projeto', error);
     res.status(500).json({ error: error.message });
   }
 }

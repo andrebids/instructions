@@ -358,6 +358,105 @@ export function getEditorUploadDir() {
 }
 
 /**
+ * Retorna o caminho para o diretório LOGO_FINAL
+ * 
+ * PRIORIDADE:
+ * 1. Variável de ambiente LOGO_FINAL_PATH (se definida)
+ * 2. Caminho padrão de rede compartilhada (hardcoded)
+ * 3. Caminho Docker (se montado)
+ * 4. Fallback local
+ * 
+ * Exemplo: \\192.168.2.22\Olimpo\.dev\web\thecore\LOGO_FINAL
+ */
+export function getLogoFinalDir() {
+  const enableDebugLogs = process.env.DEBUG_PATHUTILS === 'true';
+  
+  // 1. Verificar se existe caminho específico via variável de ambiente (sobrescreve tudo)
+  const envLogoPath = process.env.LOGO_FINAL_PATH;
+  if (envLogoPath) {
+    // Detectar se estamos dentro do Docker (verificando se /app existe)
+    const isDocker = fs.existsSync('/app');
+    
+    // Normalizar caminho: se for caminho Windows UNC, manter; se for caminho Linux/Docker, usar como está
+    let normalizedPath;
+    if (process.platform === 'win32' && !isDocker) {
+      // Windows (não Docker): manter caminhos UNC como estão
+      normalizedPath = envLogoPath.replace(/\//g, '\\');
+    } else {
+      // Linux/Docker: se for caminho UNC, converter para caminho montado equivalente
+      const uncPathPattern = /192\.168\.2\.22[\\\/]Olimpo[\\\/]\.dev[\\\/]web[\\\/]thecore[\\\/]LOGO_FINAL/i;
+      const matchesUnc = uncPathPattern.test(envLogoPath);
+      
+      if (matchesUnc) {
+        // Dentro do Docker, o caminho UNC está montado em /app/server/public/uploads
+        normalizedPath = '/app/server/public/uploads/LOGO_FINAL';
+      } else if (envLogoPath.startsWith('\\\\') || envLogoPath.startsWith('//')) {
+        // Outro caminho UNC: tentar usar como está (pode não funcionar no Docker)
+        normalizedPath = envLogoPath.replace(/\\/g, '/');
+      } else {
+        // Caminho normal (Linux/Docker): usar como está, apenas normalizar separadores
+        normalizedPath = envLogoPath.replace(/\\/g, '/');
+      }
+    }
+    
+    if (fs.existsSync(normalizedPath)) {
+      if (enableDebugLogs) {
+        console.log(`✅ [PATHUTILS] Usando LOGO_FINAL_PATH: ${normalizedPath}`);
+      }
+      return normalizedPath;
+    } else {
+      if (enableDebugLogs) {
+        console.warn(`⚠️ [PATHUTILS] LOGO_FINAL_PATH configurado mas não existe: ${normalizedPath}`);
+      }
+    }
+  }
+
+  // 2. Verificar caminho padrão de rede compartilhada (hardcoded - sempre o mesmo)
+  // PRIORIDADE: Verificar primeiro o caminho com "Olimpo" que o usuário especificou
+  const preferredNetworkPath = '\\\\192.168.2.22\\Olimpo\\.dev\\web\\thecore\\LOGO_FINAL';
+  const defaultNetworkPath = '\\\\192.168.2.22\\.dev\\web\\thecore\\LOGO_FINAL';
+  
+  // Verificar caminho preferido primeiro (com "Olimpo")
+  if (process.platform === 'win32' && fs.existsSync(preferredNetworkPath)) {
+    if (enableDebugLogs) {
+      console.log(`✅ [PATHUTILS] Usando caminho preferido de rede compartilhada para LOGO_FINAL: ${preferredNetworkPath}`);
+    }
+    return preferredNetworkPath;
+  }
+  
+  // Verificar caminho alternativo (sem "Olimpo")
+  if (process.platform === 'win32' && fs.existsSync(defaultNetworkPath)) {
+    if (enableDebugLogs) {
+      console.log(`✅ [PATHUTILS] Usando caminho padrão de rede compartilhada para LOGO_FINAL: ${defaultNetworkPath}`);
+    }
+    return defaultNetworkPath;
+  }
+
+  // 3. Verificar se estamos dentro do Docker (caminho montado em /app/server/public/uploads)
+  // O Docker monta \\192.168.2.22\Olimpo\.dev\web\thecore em /app/server/public/uploads
+  // Então LOGO_FINAL deve estar em /app/server/public/uploads/LOGO_FINAL
+  const dockerLogoPath = '/app/server/public/uploads/LOGO_FINAL';
+  if (fs.existsSync(dockerLogoPath)) {
+    if (enableDebugLogs) {
+      console.log(`✅ [PATHUTILS] Detectado Docker - usando caminho montado para LOGO_FINAL: ${dockerLogoPath}`);
+    }
+    return dockerLogoPath;
+  }
+
+  // 4. Fallback: LOGO_FINAL dentro do diretório de uploads base
+  const dir = path.join(getUploadsDir(), 'LOGO_FINAL');
+  const normalizedDir = dir.replace(/\//g, path.sep);
+  
+  if (enableDebugLogs) {
+    console.log(`🔍 [PATHUTILS] Usando fallback para LOGO_FINAL: ${normalizedDir}`);
+  }
+
+  // Não criar o diretório automaticamente (é um diretório de rede compartilhada)
+  // Apenas retornar o caminho
+  return normalizedDir;
+}
+
+/**
  * Resolve um caminho relativo a partir do diretório public
  * Suporta caminhos de produtos que podem estar em rede compartilhada
  * @param {string} relativePath - Caminho relativo (ex: '/uploads/products/image.jpg')

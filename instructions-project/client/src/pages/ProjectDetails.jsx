@@ -1547,6 +1547,7 @@ export default function ProjectDetails() {
                     isOpen={isResultsModalOpen}
                     onOpenChange={setIsResultsModalOpen}
                     projectId={id}
+                    projectType={project?.projectType}
                     onModificationSubmitted={handleModificationSubmitted}
                 />
 

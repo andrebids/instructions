@@ -533,6 +533,16 @@
       "fixationType": "Type de Fixation",
       "mastDiameter": "Diamètre du Mât",
       "lacquered": "Laqué",
+      "lacquerColor": "Couleur du Laqué",
+      "lacquerColors": {
+        "white": "BLANC RAL 9010",
+        "gold": "OR PANTONE 131C",
+        "red": "ROUGE RAL 3000",
+        "blue": "BLEU RAL 5005",
+        "green": "VERT RAL 6029",
+        "pink": "ROSE RAL 3015",
+        "black": "NOIR RAL 9011"
+      },
       "maxWeightConstraint": "Contrainte de Poids Max",
       "additionalInfo": "Informations Supplémentaires",
       "ballast": "Lestage",
