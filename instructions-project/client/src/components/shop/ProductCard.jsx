@@ -1,5 +1,5 @@
 import React from "react";
-import { Image, Chip, Tooltip, Button } from "@heroui/react";
+import { Image, Chip, Tooltip, Button, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useShop } from "../../context/ShopContext";
 import ProductModal from "./ProductModal";
@@ -7,6 +7,7 @@ import { PLACEHOLDER_SVG } from "../../utils/imageUtils";
 import RequestInfoModal from "./RequestInfoModal";
 import CompareSuggestModal from "./CompareSuggestModal";
 import FavoriteFolderModal from "./FavoriteFolderModal";
+import { useLazyImage } from "../../hooks/useLazyImage";
 
 function ProductCard({ product, onOrder, glass = false, allowQty = false, removable = false, isSquare = false }) {
   const [open, setOpen] = React.useState(false);
@@ -122,6 +123,16 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
   const [compareOpen, setCompareOpen] = React.useState(false);
   const [favModalOpen, setFavModalOpen] = React.useState(false);
 
+  // Lazy loading da imagem usando IntersectionObserver
+  const { imageSrc: lazyImageSrc, isLoaded, imgRef } = useLazyImage(previewSrc, {
+    rootMargin: '100px', // Pré-carregar quando estiver 100px antes de entrar no viewport
+    threshold: 0.01
+  });
+
+  // Determinar o que mostrar: spinner durante carregamento, imagem quando carregada, ou placeholder se não há imagem
+  const showSpinner = previewSrc && !isLoaded;
+  const displayImageSrc = lazyImageSrc || PLACEHOLDER_SVG;
+
   return (
     <>
       <div
@@ -143,12 +154,18 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
           ) : isLowStock ? (
             <Chip size="sm" color="warning" variant="solid" className="absolute left-3 top-3 z-30 text-white">Low stock</Chip>
           ) : null}
-          <Image
-            removeWrapper
-            src={previewSrc || PLACEHOLDER_SVG}
-            alt={product.name}
-            className={`w-full ${isSquare ? 'h-full' : 'h-64'} object-contain transition-transform duration-300 group-hover:scale-105`}
-            onError={(e) => {
+          <div ref={imgRef} className="w-full h-full relative">
+            {showSpinner ? (
+              <div className={`w-full ${isSquare ? 'h-full' : 'h-64'} flex items-center justify-center`}>
+                <Spinner size="lg" color="primary" />
+              </div>
+            ) : (
+              <Image
+                removeWrapper
+                src={displayImageSrc}
+                alt={product.name}
+                className={`w-full ${isSquare ? 'h-full' : 'h-64'} object-contain transition-transform duration-300 group-hover:scale-105`}
+                onError={(e) => {
               // Prevent infinite error loop
               const attemptCount = parseInt(e.target.getAttribute('data-attempt') || '0');
 
@@ -211,7 +228,9 @@ function ProductCard({ product, onOrder, glass = false, allowQty = false, remova
               });
               e.target.src = PLACEHOLDER_SVG;
             }}
-          />
+              />
+            )}
+          </div>
           {glass && (
             <div
               className="absolute inset-0 z-5 pointer-events-none rounded-t-2xl"

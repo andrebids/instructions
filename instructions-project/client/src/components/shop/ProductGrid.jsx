@@ -1,11 +1,34 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, FreeMode, Mousewheel, Keyboard } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/free-mode';
-import ProductCard from "./ProductCard";
 
-export default function ProductGrid({ products, onOrder, cols = 4, glass = false, allowQty = false, cardProps = {}, filtersVisible = true }) {
+// Lazy load ProductCard component for code splitting
+const ProductCard = React.lazy(() => import("./ProductCard"));
+
+// Loading fallback for ProductCard
+const ProductCardSkeleton = () => (
+  <div className="rounded-2xl overflow-hidden bg-default-100 animate-pulse">
+    <div className="w-full h-64 bg-default-200" />
+    <div className="p-4 space-y-2">
+      <div className="h-4 bg-default-200 rounded w-3/4" />
+      <div className="h-4 bg-default-200 rounded w-1/2" />
+    </div>
+  </div>
+);
+
+export default function ProductGrid({ 
+  products, 
+  onOrder, 
+  cols = 4, 
+  glass = false, 
+  allowQty = false, 
+  cardProps = {}, 
+  filtersVisible = true,
+  itemsPerPage = 24, // Número de produtos a mostrar por página
+  enablePagination = true // Habilitar paginação client-side
+}) {
   const colClasses = React.useMemo(() => {
     if (cols === 1) {
       return "grid-cols-1";
@@ -25,6 +48,72 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     }
     return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4";
   }, [cols, filtersVisible]);
+
+  // Paginação client-side
+  const [visibleCount, setVisibleCount] = useState(enablePagination ? itemsPerPage : products.length);
+  const loadMoreRef = useRef(null);
+  const observerRef = useRef(null);
+
+  // Reset visible count quando produtos mudam (ex: filtros aplicados)
+  useEffect(() => {
+    if (enablePagination) {
+      setVisibleCount(itemsPerPage);
+    } else {
+      setVisibleCount(products.length);
+    }
+  }, [products.length, enablePagination, itemsPerPage]);
+
+  // Produtos visíveis (slice dos produtos totais)
+  const visibleProducts = React.useMemo(() => {
+    return products.slice(0, visibleCount);
+  }, [products, visibleCount]);
+
+  // Verificar se há mais produtos para carregar
+  const hasMore = visibleCount < products.length;
+
+  // IntersectionObserver para infinite scroll
+  useEffect(() => {
+    // Não aplicar paginação no modo carousel ou se não há mais produtos
+    if (cols === 1 || !enablePagination || !hasMore) {
+      return;
+    }
+
+    const loadMoreElement = loadMoreRef.current;
+    if (!loadMoreElement) {
+      return;
+    }
+
+    // Criar IntersectionObserver para detectar quando o elemento de "load more" entra no viewport
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && hasMore) {
+            // Carregar mais produtos (aumentar visibleCount)
+            setVisibleCount((prev) => {
+              const next = prev + itemsPerPage;
+              // Não exceder o total de produtos
+              return Math.min(next, products.length);
+            });
+          }
+        });
+      },
+      {
+        rootMargin: '200px', // Começar a carregar quando estiver 200px antes de entrar no viewport
+        threshold: 0.1
+      }
+    );
+
+    observerRef.current.observe(loadMoreElement);
+
+    return () => {
+      if (observerRef.current && loadMoreElement) {
+        observerRef.current.unobserve(loadMoreElement);
+      }
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [cols, enablePagination, hasMore, itemsPerPage, products.length]);
 
   // Swiper setup for cols === 1
   const carouselRef = useRef(null);
@@ -112,7 +201,7 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     }
   }, [cols]);
 
-  // Render carousel when cols === 1
+  // Render carousel when cols === 1 (sem paginação no carousel)
   if (cols === 1) {
     return (
       <div
@@ -174,14 +263,16 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
                 }}
               >
                 <div className="w-full h-full">
-                  <ProductCard
-                    product={p}
-                    onOrder={onOrder}
-                    glass={glass}
-                    allowQty={allowQty}
-                    isSquare={true}
-                    {...cardProps}
-                  />
+                  <Suspense fallback={<ProductCardSkeleton />}>
+                    <ProductCard
+                      product={p}
+                      onOrder={onOrder}
+                      glass={glass}
+                      allowQty={allowQty}
+                      isSquare={true}
+                      {...cardProps}
+                    />
+                  </Suspense>
                 </div>
               </SwiperSlide>
             );
@@ -191,12 +282,26 @@ export default function ProductGrid({ products, onOrder, cols = 4, glass = false
     );
   }
 
-  // Render normal grid for other column counts
+  // Render normal grid for other column counts (com paginação)
   return (
-    <div className={`grid ${colClasses} gap-6`}>
-      {products.map((p) => (
-        <ProductCard key={p.id} product={p} onOrder={onOrder} glass={glass} allowQty={allowQty} {...cardProps} />
-      ))}
-    </div>
+    <>
+      <div className={`grid ${colClasses} gap-6`}>
+        {visibleProducts.map((p) => (
+          <Suspense key={p.id} fallback={<ProductCardSkeleton />}>
+            <ProductCard product={p} onOrder={onOrder} glass={glass} allowQty={allowQty} {...cardProps} />
+          </Suspense>
+        ))}
+      </div>
+      {/* Elemento para detectar quando carregar mais produtos */}
+      {enablePagination && hasMore && (
+        <div 
+          ref={loadMoreRef} 
+          className="w-full h-20 flex items-center justify-center"
+          aria-label="Loading more products"
+        >
+          <div className="text-default-400 text-sm">Loading more products...</div>
+        </div>
+      )}
+    </>
   );
 }

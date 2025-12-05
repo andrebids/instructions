@@ -115,7 +115,9 @@ const ExtendOrderModal = ({ isOpen, onClose, project, onConfirm }) => {
                   className="mt-4"
                   endContent={
                     <span className="text-default-400 text-sm">
-                      {customDays && parseInt(customDays, 10) === 1 ? 'day' : 'days'}
+                      {customDays && parseInt(customDays, 10) === 1 
+                        ? t('pages.dashboard.orderManagement.day') 
+                        : t('pages.dashboard.orderManagement.days')}
                     </span>
                   }
                 />
@@ -204,17 +206,19 @@ export const OrderManagementWidget = React.memo(() => {
           <div>
             <h3 className="text-xl font-bold text-zinc-800 dark:text-white tracking-tight flex items-center gap-2">
               <Icon icon="lucide:package-check" className="w-6 h-6 text-primary" />
-              Order Management
+              {t('pages.dashboard.orderManagement.title')}
             </h3>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-              3 active orders require attention
+              {MOCK_ORDERS.length === 1 
+                ? t('pages.dashboard.orderManagement.subtitleOne')
+                : t('pages.dashboard.orderManagement.subtitle', { count: MOCK_ORDERS.length })}
             </p>
           </div>
           <Button 
             isIconOnly 
             variant="light" 
             className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-            aria-label="More options"
+            aria-label={t('pages.dashboard.orderManagement.moreOptions')}
           >
             <Icon icon="lucide:more-horizontal" className="w-5 h-5" />
           </Button>

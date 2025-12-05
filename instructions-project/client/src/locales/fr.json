@@ -185,6 +185,12 @@
         "lost": "Perdus"
       },
       "orderManagement": {
+        "title": "Gestion des Commandes",
+        "subtitle": "{{count}} commandes actives nécessitent une attention",
+        "subtitleOne": "1 commande active nécessite une attention",
+        "moreOptions": "Plus d'options",
+        "day": "jour",
+        "days": "jours",
         "extend": "Prolonger",
         "confirm": "Confirmer",
         "releaseOrder": {
@@ -357,6 +363,15 @@
           "summer": "Été",
           "christmas": "Noël"
         }
+      },
+      "recommendedProductsWidget": {
+        "trending": "En vedette",
+        "loading": "Chargement...",
+        "noRecommendations": "Aucune recommandation disponible",
+        "rent": "Location : €{{price}}/jour",
+        "inStock": "{{count}} en stock",
+        "outOfStock": "Rupture de stock",
+        "viewProduct": "Voir le Produit"
       },
       "adminUsers": {
         "title": "Gestion des Utilisateurs",

@@ -5,6 +5,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination } from 'swiper/modules';
 import { productsAPI } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -62,6 +63,7 @@ const filterTempImageUrl = (url) => {
 };
 
 export const RecommendedProductsWidget = React.memo(() => {
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -158,7 +160,7 @@ export const RecommendedProductsWidget = React.memo(() => {
   if (loading) {
     return (
       <div className="h-full w-full flex items-center justify-center">
-        <Spinner size="lg" color="primary" label="Carregando..." />
+        <Spinner size="lg" color="primary" label={t('pages.dashboard.recommendedProductsWidget.loading')} />
       </div>
     );
   }
@@ -166,7 +168,7 @@ export const RecommendedProductsWidget = React.memo(() => {
   if (products.length === 0) {
     return (
       <div className="h-full w-full flex items-center justify-center bg-default-100 rounded-3xl text-default-400">
-        No recommendations available
+        {t('pages.dashboard.recommendedProductsWidget.noRecommendations')}
       </div>
     );
   }
@@ -257,7 +259,7 @@ export const RecommendedProductsWidget = React.memo(() => {
       {/* Fixed Trending Badge - Top Left */}
       <div className="absolute top-6 left-6 z-20 pointer-events-none">
         <span className="px-3 py-1 rounded-full bg-blue-600 dark:bg-blue-500 backdrop-blur-md text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-blue-500/30">
-          Trending
+          {t('pages.dashboard.recommendedProductsWidget.trending')}
         </span>
       </div>
 
@@ -285,7 +287,7 @@ export const RecommendedProductsWidget = React.memo(() => {
             {currentProduct.rentalPrice && (
               <div className="flex items-center gap-1.5">
                 <Icon icon="lucide:calendar" className="w-4 h-4 text-primary-300" />
-                <span className="text-white/80">Rent: €{currentProduct.rentalPrice}/day</span>
+                <span className="text-white/80">{t('pages.dashboard.recommendedProductsWidget.rent', { price: currentProduct.rentalPrice })}</span>
               </div>
             )}
           </div>
@@ -296,8 +298,8 @@ export const RecommendedProductsWidget = React.memo(() => {
               <Icon icon="lucide:package" className="w-4 h-4 text-primary-300" />
               <span className="text-white/80">
                 {currentProduct.stock > 0 
-                  ? `${currentProduct.stock} in stock` 
-                  : 'Out of stock'}
+                  ? t('pages.dashboard.recommendedProductsWidget.inStock', { count: currentProduct.stock }) 
+                  : t('pages.dashboard.recommendedProductsWidget.outOfStock')}
               </span>
             </div>
           )}
@@ -310,7 +312,7 @@ export const RecommendedProductsWidget = React.memo(() => {
           endContent={<Icon icon="lucide:arrow-right" className="group-hover/btn:translate-x-1 transition-transform" />}
           onPress={() => navigate(`/stock-catalogue?product=${currentProduct.id}`)}
         >
-          View Product
+          {t('pages.dashboard.recommendedProductsWidget.viewProduct')}
         </Button>
       </div>
       

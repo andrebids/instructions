@@ -185,6 +185,12 @@
         "lost": "Perdidos"
       },
       "orderManagement": {
+        "title": "Gestão de Encomendas",
+        "subtitle": "{{count}} encomendas ativas requerem atenção",
+        "subtitleOne": "1 encomenda ativa requer atenção",
+        "moreOptions": "Mais opções",
+        "day": "dia",
+        "days": "dias",
         "extend": "Estender",
         "confirm": "Confirmar",
         "releaseOrder": {
@@ -357,6 +363,15 @@
           "summer": "Verão",
           "christmas": "Natal"
         }
+      },
+      "recommendedProductsWidget": {
+        "trending": "Destaques",
+        "loading": "Carregando...",
+        "noRecommendations": "Nenhuma recomendação disponível",
+        "rent": "Aluguer: €{{price}}/dia",
+        "inStock": "{{count}} em stock",
+        "outOfStock": "Sem stock",
+        "viewProduct": "Ver Produto"
       },
       "adminUsers": {
         "title": "Gestão de Utilizadores",

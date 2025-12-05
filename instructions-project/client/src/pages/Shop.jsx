@@ -426,6 +426,8 @@ export default function Shop() {
             cols={cols}
             glass={false}
             filtersVisible={filtersVisible}
+            enablePagination={true}
+            itemsPerPage={24}
           />
         </div>
       </div>

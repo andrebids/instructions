@@ -58,7 +58,7 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
     "in_queue": t('pages.dashboard.stats.inQueue'),
     "to_order": t('pages.dashboard.projectTable.statusLabels.toOrder'),
     "ordered": t('pages.dashboard.projectTable.statusLabels.ordered'),
-  }), [t]);
+  }), [t, i18n.language]);
 
   // Mock data augmentation - Optimized to only process visible items
   const items = React.useMemo(() => {
@@ -118,7 +118,7 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
           </Button>
         );
       case "name":
-        return <ProjectNameCell project={project} navigate={navigate} t={t} />;
+        return <ProjectNameCell project={project} navigate={navigate} t={t} language={i18n.language} />;
       case "status":
         const normalizedStatus = project.status?.toLowerCase()?.replace(/\s+/g, '_') || project.status;
         const statusLabel = statusLabelMap[normalizedStatus] || project.status?.replace(/_/g, " ") || project.status;
@@ -194,7 +194,7 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
       default:
         return cellValue;
     }
-  }, [navigate, onProjectsUpdate, t, statusLabelMap, locale, handleToggleFavorite]);
+  }, [navigate, onProjectsUpdate, t, statusLabelMap, locale, handleToggleFavorite, i18n.language]);
 
   return (
     <Card className="flex-1 h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm">
@@ -308,7 +308,7 @@ const SkeletonRow = React.memo(({ columnKey }) => {
 SkeletonRow.displayName = 'SkeletonRow';
 
 // Extracted component for Name Cell with Tooltip to optimize rendering
-const ProjectNameCell = React.memo(({ project, navigate, t }) => {
+const ProjectNameCell = React.memo(({ project, navigate, t, language }) => {
   return (
     <Tooltip 
       content={
