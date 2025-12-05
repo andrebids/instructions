@@ -602,7 +602,7 @@ if (!distExistsCheck) {
 
 // Health check
 app.get('/health', async (req, res) => {
-  const dbConnected = await testConnection();
+  const dbConnected = await testConnection(true); // silent = true para evitar logs repetitivos
   res.json({
     status: 'OK',
     env: process.env.NODE_ENV || 'development',

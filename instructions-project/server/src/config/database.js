@@ -198,13 +198,17 @@ if (process.env.DATABASE_URL) {
 }
 
 // Testar conexão
-export async function testConnection() {
+export async function testConnection(silent = false) {
   try {
     await sequelize.authenticate();
-    console.log('✅ Conexão PostgreSQL estabelecida com sucesso!');
+    if (!silent) {
+      console.log('✅ Conexão PostgreSQL estabelecida com sucesso!');
+    }
     return true;
   } catch (error) {
-    console.error('❌ Erro ao conectar ao PostgreSQL:', error.message);
+    if (!silent) {
+      console.error('❌ Erro ao conectar ao PostgreSQL:', error.message);
+    }
     return false;
   }
 }

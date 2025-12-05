@@ -185,6 +185,12 @@
         "lost": "Lost"
       },
       "orderManagement": {
+        "title": "Order Management",
+        "subtitle": "{{count}} active orders require attention",
+        "subtitleOne": "1 active order requires attention",
+        "moreOptions": "More options",
+        "day": "day",
+        "days": "days",
         "extend": "Extend",
         "confirm": "Confirm",
         "releaseOrder": {
@@ -357,6 +363,15 @@
           "summer": "Summer",
           "christmas": "Christmas"
         }
+      },
+      "recommendedProductsWidget": {
+        "trending": "Trending",
+        "loading": "Loading...",
+        "noRecommendations": "No recommendations available",
+        "rent": "Rent: €{{price}}/day",
+        "inStock": "{{count}} in stock",
+        "outOfStock": "Out of stock",
+        "viewProduct": "View Product"
       },
       "adminUsers": {
         "title": "User Management",

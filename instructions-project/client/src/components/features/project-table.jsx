@@ -43,7 +43,7 @@ const statusColorMap = {
 };
 
 export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onProjectDeleted }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const statusLabelMap = React.useMemo(() => ({
@@ -56,7 +56,7 @@ export function ProjectTable({ projects: apiProjects = [], onProjectsUpdate, onP
     "in_queue": t('pages.dashboard.projectTable.statusLabels.inQueue'),
     "to_order": t('pages.dashboard.projectTable.statusLabels.toOrder'),
     "ordered": t('pages.dashboard.projectTable.statusLabels.ordered'),
-  }), [t]);
+  }), [t, i18n.language]);
 
   // Função helper para normalizar e traduzir status
   const getTranslatedStatus = React.useCallback((status) => {
