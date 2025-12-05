@@ -555,6 +555,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
             formData={formState.formData}
             onInputChange={formState.handleInputChange}
             saveStatus={saveStatus}
+            onBack={navigation.prevStep}
           />
         );
 
@@ -665,7 +666,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
 
 
           {/* Navigation Footer */}
-          {!isLogoEditOnlyMode && (
+          {!isLogoEditOnlyMode && visibleSteps[navigation.currentStep - 1]?.id !== 'logo-instructions' && (
           <div className="flex-shrink-0">
             <NavigationFooter
               currentStep={navigation.currentStep}
