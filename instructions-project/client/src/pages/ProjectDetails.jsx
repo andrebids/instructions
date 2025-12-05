@@ -846,7 +846,12 @@ export default function ProjectDetails() {
                             componentes: [],
                             bolas: []
                         },
-                        attachmentFiles: []
+                        attachmentFiles: [],
+                        isModification: false,
+                        baseProductId: null,
+                        baseProduct: null,
+                        relatedProducts: [],
+                        productSizes: []
                     }
                 };
                 await projectsAPI.updateCanvas(id, { logoDetails: updatedLogoDetails });

@@ -12,9 +12,12 @@ export const logger = {
   },
   
   validation: (stepId, isValid, formData) => {
+    // Logs de validação desabilitados para evitar spam no console
+    // Se precisar debugar, ativar temporariamente em constants.js
     if (!LOG_CONFIG.ENABLE_LOGS || !LOG_CONFIG.LEVELS.VALIDATION) return;
     const icon = isValid ? '✅' : '❌';
-    console.log(`${icon} Validation [${stepId}]:`, isValid, formData);
+    // Usar console.debug em vez de console.log para reduzir ruído
+    console.debug(`${icon} Validation [${stepId}]:`, isValid, formData);
   },
   
   canvas: (action, data) => {

@@ -37,6 +37,7 @@ import {
 } from "../utils/materialsUtils.js";
 import { AIAssistantChat } from "../components/AIAssistantChat";
 import { DragAndDropZone } from "../../ui/DragAndDropZone";
+import { productsAPI } from "../../../services/api";
 
 // Componente para texto em movimento quando truncado
 const MarqueeText = ({ children, className = "", hoverOnly = false }) => {
@@ -475,6 +476,14 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   // Estado para rastrear qual attachment AI Generated está sendo editado
   const [editingAttachmentIndex, setEditingAttachmentIndex] = React.useState(null);
 
+  // Estados para modificação de logo e pesquisa de produtos
+  const [productSearchValue, setProductSearchValue] = React.useState("");
+  const [productSearchResults, setProductSearchResults] = React.useState([]);
+  const [isSearchingProducts, setIsSearchingProducts] = React.useState(false);
+  const [relatedProducts, setRelatedProducts] = React.useState([]);
+  const [productSizes, setProductSizes] = React.useState([]);
+  const productSearchTimeoutRef = React.useRef(null);
+
   // Ref para o card Details & Criteria para fazer scroll
   const detailsCriteriaRef = React.useRef(null);
 
@@ -533,6 +542,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         formik.setFieldValue("controlReport", currentLogo.controlReport || false);
         formik.setFieldValue("criteria", currentLogo.criteria || "");
         formik.setFieldValue("description", currentLogo.description || "");
+        formik.setFieldValue("isModification", currentLogo.isModification || false);
+        formik.setFieldValue("baseProductId", currentLogo.baseProductId || null);
+        formik.setFieldValue("baseProduct", currentLogo.baseProduct || null);
+        formik.setFieldValue("relatedProducts", currentLogo.relatedProducts || []);
+        formik.setFieldValue("productSizes", currentLogo.productSizes || []);
       }, 0);
     }
     
@@ -557,6 +571,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         formik.setFieldValue("controlReport", currentLogo.controlReport || false);
         formik.setFieldValue("criteria", currentLogo.criteria || "");
         formik.setFieldValue("description", currentLogo.description || "");
+        formik.setFieldValue("isModification", currentLogo.isModification || false);
+        formik.setFieldValue("baseProductId", currentLogo.baseProductId || null);
+        formik.setFieldValue("baseProduct", currentLogo.baseProduct || null);
+        formik.setFieldValue("relatedProducts", currentLogo.relatedProducts || []);
+        formik.setFieldValue("productSizes", currentLogo.productSizes || []);
       }, 0);
     }
 
@@ -584,6 +603,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         formik.setFieldValue("criteria", currentLogo.criteria || "");
         formik.setFieldValue("description", currentLogo.description || "");
         formik.setFieldValue("composition", currentLogo.composition || { componentes: [], bolas: [] });
+        formik.setFieldValue("isModification", currentLogo.isModification || false);
+        formik.setFieldValue("baseProductId", currentLogo.baseProductId || null);
+        formik.setFieldValue("baseProduct", currentLogo.baseProduct || null);
+        formik.setFieldValue("relatedProducts", currentLogo.relatedProducts || []);
+        formik.setFieldValue("productSizes", currentLogo.productSizes || []);
       }
       
       requestedByAutoFilled.current = false;
@@ -750,6 +774,12 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       controlReport: currentLogo.controlReport || false,
       criteria: currentLogo.criteria || "",
       description: currentLogo.description || "",
+      // Campos de modificação de logo
+      isModification: currentLogo.isModification || false,
+      baseProductId: currentLogo.baseProductId || null,
+      baseProduct: currentLogo.baseProduct || null,
+      relatedProducts: currentLogo.relatedProducts || [],
+      productSizes: currentLogo.productSizes || [],
     },
     validationSchema,
     onChange: (field, value) => {
@@ -1530,6 +1560,297 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     setIsChatOpen(true);
   };
 
+  // Função para buscar produtos do Stock Catalogue com debounce
+  const searchProducts = React.useCallback(async (query) => {
+    if (!query || query.trim().length < 2) {
+      setProductSearchResults([]);
+      return;
+    }
+
+    setIsSearchingProducts(true);
+    try {
+      const results = await productsAPI.search(query.trim());
+      setProductSearchResults(results || []);
+    } catch (error) {
+      console.error('Error searching products:', error);
+      setProductSearchResults([]);
+    } finally {
+      setIsSearchingProducts(false);
+    }
+  }, []);
+
+  // Debounce da pesquisa de produtos
+  React.useEffect(() => {
+    if (productSearchTimeoutRef.current) {
+      clearTimeout(productSearchTimeoutRef.current);
+    }
+
+    if (productSearchValue && productSearchValue.trim().length >= 2) {
+      productSearchTimeoutRef.current = setTimeout(() => {
+        searchProducts(productSearchValue);
+      }, 300);
+    } else {
+      setProductSearchResults([]);
+    }
+
+    return () => {
+      if (productSearchTimeoutRef.current) {
+        clearTimeout(productSearchTimeoutRef.current);
+      }
+    };
+  }, [productSearchValue, searchProducts]);
+
+  // Ref para rastrear quais produtos já tiveram produtos relacionados gerados
+  const hasGeneratedRelatedProductsRef = React.useRef(new Map());
+
+  // Handler para seleção de produto
+  const handleProductSelection = (productId) => {
+    const selectedProduct = productSearchResults.find(p => p.id === productId);
+    if (selectedProduct) {
+      // Criar 3 produtos relacionados fictícios com tamanhos diferentes
+      // Usar as dimensões do produto base como referência
+      const baseHeight = parseFloat(selectedProduct.height) || 0;
+      const baseWidth = parseFloat(selectedProduct.width) || 0;
+      const baseDepth = parseFloat(selectedProduct.depth) || 0;
+      const baseDiameter = parseFloat(selectedProduct.diameter) || 0;
+      
+      const demoRelatedProducts = [
+        {
+          id: `${selectedProduct.id}-size-1`,
+          name: selectedProduct.name,
+          size: "1.5m",
+          height: baseHeight ? (baseHeight * 1.5).toFixed(2) : null,
+          width: baseWidth ? (baseWidth * 1.5).toFixed(2) : null,
+          depth: baseDepth ? (baseDepth * 1.5).toFixed(2) : null,
+          diameter: baseDiameter ? (baseDiameter * 1.5).toFixed(2) : null,
+          imageUrl: (() => {
+            const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
+            // Filtrar URLs temporárias (não existem no servidor)
+            if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
+              return null;
+            }
+            return url;
+          })(),
+          baseProductId: selectedProduct.id,
+        },
+        {
+          id: `${selectedProduct.id}-size-2`,
+          name: selectedProduct.name,
+          size: "2.0m",
+          height: baseHeight ? (baseHeight * 2.0).toFixed(2) : null,
+          width: baseWidth ? (baseWidth * 2.0).toFixed(2) : null,
+          depth: baseDepth ? (baseDepth * 2.0).toFixed(2) : null,
+          diameter: baseDiameter ? (baseDiameter * 2.0).toFixed(2) : null,
+          imageUrl: (() => {
+            const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
+            // Filtrar URLs temporárias (não existem no servidor)
+            if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
+              return null;
+            }
+            return url;
+          })(),
+          baseProductId: selectedProduct.id,
+        },
+        {
+          id: `${selectedProduct.id}-size-3`,
+          name: selectedProduct.name,
+          size: "2.5m",
+          height: baseHeight ? (baseHeight * 2.5).toFixed(2) : null,
+          width: baseWidth ? (baseWidth * 2.5).toFixed(2) : null,
+          depth: baseDepth ? (baseDepth * 2.5).toFixed(2) : null,
+          diameter: baseDiameter ? (baseDiameter * 2.5).toFixed(2) : null,
+          imageUrl: (() => {
+            const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
+            // Filtrar URLs temporárias (não existem no servidor)
+            if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
+              return null;
+            }
+            return url;
+          })(),
+          baseProductId: selectedProduct.id,
+        },
+      ];
+
+      // Atualizar currentLogo com o produto selecionado
+      const updatedCurrentLogo = {
+        ...currentLogo,
+        isModification: true,
+        baseProductId: selectedProduct.id,
+        baseProduct: selectedProduct,
+        relatedProducts: demoRelatedProducts,
+        productSizes: [], // Não usado mais, tamanhos estão nos produtos relacionados
+      };
+      const updatedLogoDetails = {
+        ...logoDetails,
+        currentLogo: updatedCurrentLogo,
+        logos: savedLogos,
+      };
+      onInputChange("logoDetails", updatedLogoDetails);
+
+      // Atualizar estados locais
+      setRelatedProducts(demoRelatedProducts);
+      setProductSizes([]);
+      
+      // Marcar que produtos relacionados foram gerados para este produto
+      if (hasGeneratedRelatedProductsRef.current) {
+        hasGeneratedRelatedProductsRef.current.set(selectedProduct.id, true);
+      }
+      
+      // Limpar campo de pesquisa
+      setProductSearchValue("");
+      setProductSearchResults([]);
+    }
+  };
+
+  // Handler para limpar seleção de produto
+  const handleClearProductSelection = () => {
+    const updatedCurrentLogo = {
+      ...currentLogo,
+      baseProductId: null,
+      baseProduct: null,
+      relatedProducts: [],
+      productSizes: [],
+    };
+    const updatedLogoDetails = {
+      ...logoDetails,
+      currentLogo: updatedCurrentLogo,
+      logos: savedLogos,
+    };
+    onInputChange("logoDetails", updatedLogoDetails);
+    setProductSearchValue("");
+    setProductSearchResults([]);
+    setRelatedProducts([]);
+    setProductSizes([]);
+    // Resetar o ref de produtos gerados para este produto
+    if (currentLogo.baseProductId && hasGeneratedRelatedProductsRef.current) {
+      hasGeneratedRelatedProductsRef.current.delete(currentLogo.baseProductId);
+    }
+  };
+
+  // Sincronizar estados locais com currentLogo quando produto é carregado
+  // E gerar produtos relacionados de demo se necessário
+  React.useEffect(() => {
+    if (currentLogo.baseProduct) {
+      const productId = currentLogo.baseProduct.id;
+      const hasGenerated = hasGeneratedRelatedProductsRef.current.get(productId) || false;
+      
+      // Se já tem produtos relacionados, usar eles
+      if (currentLogo.relatedProducts && currentLogo.relatedProducts.length > 0) {
+        setRelatedProducts(currentLogo.relatedProducts);
+        hasGeneratedRelatedProductsRef.current.set(productId, true);
+      } else if (!hasGenerated) {
+        // Se não tem produtos relacionados mas tem produto base, gerar demo apenas uma vez por produto
+        const selectedProduct = currentLogo.baseProduct;
+        // Usar as dimensões do produto base como referência
+        const baseHeight = parseFloat(selectedProduct.height) || 0;
+        const baseWidth = parseFloat(selectedProduct.width) || 0;
+        const baseDepth = parseFloat(selectedProduct.depth) || 0;
+        const baseDiameter = parseFloat(selectedProduct.diameter) || 0;
+        
+        const demoRelatedProducts = [
+          {
+            id: `${selectedProduct.id}-size-1`,
+            name: selectedProduct.name,
+            size: "1.5m",
+            height: baseHeight ? (baseHeight * 1.5).toFixed(2) : null,
+            width: baseWidth ? (baseWidth * 1.5).toFixed(2) : null,
+            depth: baseDepth ? (baseDepth * 1.5).toFixed(2) : null,
+            diameter: baseDiameter ? (baseDiameter * 1.5).toFixed(2) : null,
+            imageUrl: (() => {
+            const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
+            // Filtrar URLs temporárias (não existem no servidor)
+            if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
+              return null;
+            }
+            return url;
+          })(),
+            baseProductId: selectedProduct.id,
+          },
+          {
+            id: `${selectedProduct.id}-size-2`,
+            name: selectedProduct.name,
+            size: "2.0m",
+            height: baseHeight ? (baseHeight * 2.0).toFixed(2) : null,
+            width: baseWidth ? (baseWidth * 2.0).toFixed(2) : null,
+            depth: baseDepth ? (baseDepth * 2.0).toFixed(2) : null,
+            diameter: baseDiameter ? (baseDiameter * 2.0).toFixed(2) : null,
+            imageUrl: (() => {
+            const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
+            // Filtrar URLs temporárias (não existem no servidor)
+            if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
+              return null;
+            }
+            return url;
+          })(),
+            baseProductId: selectedProduct.id,
+          },
+          {
+            id: `${selectedProduct.id}-size-3`,
+            name: selectedProduct.name,
+            size: "2.5m",
+            height: baseHeight ? (baseHeight * 2.5).toFixed(2) : null,
+            width: baseWidth ? (baseWidth * 2.5).toFixed(2) : null,
+            depth: baseDepth ? (baseDepth * 2.5).toFixed(2) : null,
+            diameter: baseDiameter ? (baseDiameter * 2.5).toFixed(2) : null,
+            imageUrl: (() => {
+            const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
+            // Filtrar URLs temporárias (não existem no servidor)
+            if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
+              return null;
+            }
+            return url;
+          })(),
+            baseProductId: selectedProduct.id,
+          },
+        ];
+        setRelatedProducts(demoRelatedProducts);
+        hasGeneratedRelatedProductsRef.current.set(productId, true);
+        
+        // Atualizar currentLogo com os produtos relacionados gerados
+        const updatedCurrentLogo = {
+          ...currentLogo,
+          relatedProducts: demoRelatedProducts,
+        };
+        const updatedLogoDetails = {
+          ...logoDetails,
+          currentLogo: updatedCurrentLogo,
+          logos: savedLogos,
+        };
+        onInputChange("logoDetails", updatedLogoDetails);
+      }
+      setProductSizes(currentLogo.productSizes || []);
+    } else {
+      setRelatedProducts([]);
+      setProductSizes([]);
+    }
+  }, [currentLogo.baseProduct?.id, currentLogo.relatedProducts?.length]);
+
+  // Handler para mudança do switch de modificação
+  const handleModificationToggle = (isModification) => {
+    const updatedCurrentLogo = {
+      ...currentLogo,
+      isModification: isModification,
+      baseProductId: isModification ? currentLogo.baseProductId : null,
+      baseProduct: isModification ? currentLogo.baseProduct : null,
+      relatedProducts: isModification ? (currentLogo.relatedProducts || []) : [],
+      productSizes: isModification ? (currentLogo.productSizes || []) : [],
+    };
+    const updatedLogoDetails = {
+      ...logoDetails,
+      currentLogo: updatedCurrentLogo,
+      logos: savedLogos,
+    };
+    onInputChange("logoDetails", updatedLogoDetails);
+
+    if (!isModification) {
+      // Limpar pesquisa quando desativar
+      setProductSearchValue("");
+      setProductSearchResults([]);
+      setRelatedProducts([]);
+      setProductSizes([]);
+    }
+  };
+
   const handleRemoveAttachment = (index) => {
     // Remove attachments from currentLogo, not logoDetails (each logo has its own attachments)
     const currentAttachments = currentLogo.attachmentFiles || [];
@@ -1557,30 +1878,10 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
   return (
     <div className={`${isCompact ? 'w-auto h-auto' : 'w-full h-full'} flex flex-col ${isCompact ? 'overflow-visible' : 'overflow-hidden'} ${isCompact ? 'bg-transparent' : 'bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background'}`}>
-      {/* Header - escondido no modo compacto (quando usado em modal) */}
-      {!isCompact && (
-        <div className={`step-logo-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 px-3 sm:px-4 lg:px-4 py-3 flex-shrink-0 bg-transparent`}>
-          <div>
-            <h1 className="text-base sm:text-lg lg:text-lg font-bold text-white">Logo Instructions</h1>
-            <p className="text-xs text-gray-300/70 hidden sm:block">Define the technical specifications for the logo</p>
-          </div>
-          <Button
-            color="primary"
-            variant="solid"
-            size="sm"
-            className="bg-gradient-to-tr from-primary-500 to-secondary-500 text-white font-medium text-xs w-full sm:w-auto shadow-lg"
-            startContent={<Icon icon="lucide:sparkles" className="w-4 h-4" />}
-            onPress={() => setIsChatOpen(true)}
-          >
-            AI Assistant
-          </Button>
-        </div>
-      )}
-
       {/* Form - Responsive Horizontal Grid */}
-      <div className={`${isCompact ? 'flex-auto' : 'flex-1'} ${isCompact ? 'overflow-visible' : 'overflow-y-auto sm:overflow-hidden'} ${isCompact ? 'p-1 sm:p-2' : 'p-2 sm:p-3 md:p-4 lg:p-6'}`}>
+      <div className={`${isCompact ? 'flex-auto' : 'flex-1'} ${isCompact ? 'overflow-visible' : 'overflow-y-auto sm:overflow-hidden'} ${isCompact ? 'p-1 sm:p-2' : 'p-2 sm:p-3 md:p-4 lg:p-4'}`}>
         <div className={`${isCompact ? 'h-auto' : 'h-full'} grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${isCompact ? 'gap-[50px] sm:gap-[50px]' : 'gap-4 sm:gap-4 md:gap-5 lg:gap-6'}`}>
-          {/* Column 1: Details & Attachments */}
+          {/* Column 1: Details */}
           <div className={`flex flex-col ${isCompact ? 'gap-1 sm:gap-1.5' : 'gap-2 sm:gap-2.5 md:gap-3 lg:gap-3'}`}>
 
             {/* Details Section */}
@@ -1692,75 +1993,241 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                     classNames={{ input: "text-xs sm:text-sm md:text-base lg:text-sm", inputWrapper: "h-9 sm:h-9 md:h-10 lg:h-9" }}
                   />
                 </div>
-              </div>
-            </div>
 
-            {/* Attachments Section */}
-            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-4'} shadow-xl border border-white/10`}>
-              <div className={`flex items-center gap-2 ${isCompact ? 'mb-1' : 'mb-1.5 sm:mb-1.5 md:mb-2 lg:mb-2'} text-pink-600 dark:text-pink-400`}>
-                <div className="p-1.5 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
-                  <Icon icon="lucide:paperclip" className="w-4 h-4" />
-                </div>
-                <h2 className="text-sm sm:text-sm md:text-base lg:text-base font-bold">Attachments</h2>
-              </div>
-
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-2 sm:p-2.5 md:p-4 lg:p-3 bg-gray-50/50 dark:bg-gray-700/50 hover:border-pink-300 dark:hover:border-pink-700 transition-colors">
-                {currentLogo.attachmentFiles && currentLogo.attachmentFiles.length > 0 ? (
-                  <div className="space-y-2">
-                    {currentLogo.attachmentFiles.map((file, index) => (
-                      <AttachmentItem
-                        key={index}
-                        file={file}
-                        index={index}
-                        onRemove={handleRemoveAttachment}
-                        onEdit={handleEditAIGenerated}
-                      />
-                    ))}
-                    <input
-                      type="file"
-                      id="file-upload-more"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handleFileUpload(Array.from(e.target.files))}
-                    />
-                    <Button
+                {/* Logo Modification Section */}
+                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Switch
                       size="sm"
-                      variant="flat"
-                      color="primary"
-                      fullWidth
-                      className="mt-1 font-medium"
-                      startContent={<Icon icon="lucide:upload" className="w-4 h-4" />}
-                      onPress={() => document.getElementById('file-upload-more').click()}
+                      isSelected={currentLogo.isModification || false}
+                      onValueChange={handleModificationToggle}
+                      classNames={{
+                        base: "max-w-fit",
+                        wrapper: "group-data-[selected=true]:bg-primary-500",
+                        label: "text-xs sm:text-sm md:text-base lg:text-sm font-semibold text-gray-700 dark:text-gray-200"
+                      }}
                     >
-                      Add More Files
-                    </Button>
+                      <span className="text-xs sm:text-sm md:text-base lg:text-sm">Is this logo a modification of an existing product?</span>
+                    </Switch>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-3 text-center">
-                    <div className="p-2 bg-pink-50 dark:bg-pink-900/20 rounded-full mb-2">
-                      <Icon icon="lucide:cloud-upload" className="w-6 h-6 text-pink-500" />
+
+                  {currentLogo.isModification && (
+                    <div className="space-y-3 mt-3">
+                      {/* Product Search */}
+                      <div>
+                        <label className="text-xs sm:text-sm md:text-base lg:text-sm font-semibold text-gray-700 dark:text-gray-200 block mb-1">Search Product from Stock Catalogue</label>
+                        <AutocompleteWithMarquee
+                          aria-label="Search Product from Stock Catalogue"
+                          placeholder="Search products..."
+                          size="sm"
+                          variant="bordered"
+                          selectedKey={currentLogo.baseProductId || null}
+                          inputValue={productSearchValue !== "" ? productSearchValue : (currentLogo.baseProduct ? currentLogo.baseProduct.name : "")}
+                          onSelectionChange={(key) => {
+                            if (key) {
+                              handleProductSelection(key);
+                            } else {
+                              // Se deselecionar, limpar produto
+                              handleClearProductSelection();
+                            }
+                          }}
+                          onInputChange={(value) => {
+                            setProductSearchValue(value);
+                            // Se o campo for limpo completamente, resetar a seleção
+                            if (value === "" && currentLogo.baseProductId) {
+                              handleClearProductSelection();
+                            }
+                          }}
+                          defaultItems={productSearchResults}
+                          menuTrigger="input"
+                          isLoading={isSearchingProducts}
+                          startContent={<Icon icon="lucide:search" className="w-3 h-3 text-gray-500" />}
+                          endContent={
+                            currentLogo.baseProductId && !productSearchValue ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleClearProductSelection();
+                                }}
+                                className="flex items-center justify-center w-4 h-4 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                aria-label="Clear selection"
+                              >
+                                <Icon icon="lucide:x" className="w-3 h-3 text-gray-500" />
+                              </button>
+                            ) : null
+                          }
+                          allowsCustomValue={false}
+                          classNames={{ 
+                            listboxWrapper: "max-h-[300px]", 
+                            trigger: "text-xs sm:text-sm md:text-base lg:text-sm h-9 md:h-10 lg:h-9", 
+                            input: "text-xs sm:text-sm md:text-base lg:text-sm" 
+                          }}
+                        >
+                          {(product) => (
+                            <AutocompleteItem 
+                              key={product.id} 
+                              textValue={`${product.name} ${product.type || ""}`}
+                            >
+                              <div className="flex flex-col">
+                                <div className="text-sm font-medium">{product.name}</div>
+                                {product.type && (
+                                  <div className="text-xs text-gray-500">{product.type}</div>
+                                )}
+                              </div>
+                            </AutocompleteItem>
+                          )}
+                        </AutocompleteWithMarquee>
+                      </div>
+
+                      {/* Related Products with Sizes */}
+                      {currentLogo.baseProduct && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Icon icon="lucide:package" className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                            <label className="text-xs sm:text-sm md:text-base lg:text-sm font-semibold text-gray-700 dark:text-gray-200">Related Products</label>
+                          </div>
+                          <div className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                            {relatedProducts.length > 0 ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                {relatedProducts.map((product, idx) => {
+                                  // Construir URL da imagem - usar a do produto relacionado ou do produto base
+                                  let imageUrl = product.imageUrl;
+                                  
+                                  // Se não tem imageUrl no produto relacionado, usar do produto base
+                                  if (!imageUrl && currentLogo.baseProduct) {
+                                    imageUrl = currentLogo.baseProduct.thumbnailUrl || 
+                                              currentLogo.baseProduct.imagesDayUrl || 
+                                              currentLogo.baseProduct.imagesNightUrl;
+                                  }
+                                  
+                                  // Filtrar URLs temporárias (não existem no servidor)
+                                  if (imageUrl && (imageUrl.includes('thumb_temp_') || imageUrl.includes('temp_dayImage_') || imageUrl.includes('temp_nightImage_'))) {
+                                    imageUrl = null; // Não tentar carregar imagens temporárias
+                                  }
+                                  
+                                  // Normalizar URL - tratar caminhos UNC e outros formatos
+                                  if (imageUrl) {
+                                    // Detectar caminhos UNC do Windows (começam com \\)
+                                    // Exemplo: \\192.168.2.22\Olimpo\.dev\web\thecore\products\image.webp
+                                    // Exemplo com subdiretórios: \\192.168.2.22\Olimpo\.dev\web\thecore\products\SHOP\TRENDING\NIGHT\image.webp
+                                    if (imageUrl.startsWith('\\\\') || imageUrl.startsWith('//')) {
+                                      // Encontrar a posição de "products" no caminho (case-insensitive)
+                                      const productsIndex = imageUrl.toLowerCase().indexOf('products');
+                                      if (productsIndex !== -1) {
+                                        // Extrair tudo após "products" incluindo subdiretórios
+                                        // Exemplo: products\SHOP\TRENDING\NIGHT\image.webp -> SHOP/TRENDING/NIGHT/image.webp
+                                        const afterProducts = imageUrl.substring(productsIndex + 'products'.length);
+                                        // Remover separadores iniciais e normalizar para usar /
+                                        const subPath = afterProducts.replace(/^[\\/]+/, '').replace(/\\/g, '/');
+                                        if (subPath) {
+                                          imageUrl = `/api/uploads/products/${subPath}`;
+                                        } else {
+                                          imageUrl = null;
+                                        }
+                                      } else {
+                                        // Se não contém "products", extrair apenas o nome do arquivo
+                                        const filename = imageUrl.split(/[\\/]/).pop();
+                                        if (filename) {
+                                          imageUrl = `/api/files/${filename}`;
+                                        } else {
+                                          imageUrl = null;
+                                        }
+                                      }
+                                    } else if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                                      // URL absoluta, usar como está
+                                    } else if (imageUrl.startsWith('/')) {
+                                      // URL relativa, verificar se precisa de /api
+                                      if (imageUrl.startsWith('/uploads/') && !imageUrl.startsWith('/api/')) {
+                                        imageUrl = `/api${imageUrl}`;
+                                      }
+                                    } else {
+                                      // Nome de arquivo simples, adicionar prefixo
+                                      imageUrl = `/api/files/${imageUrl}`;
+                                    }
+                                  }
+                                  
+                                  return (
+                                    <div key={product.id || idx} className="p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 space-y-1.5">
+                                      {/* Imagem do produto */}
+                                      <div className="w-full aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 mb-1.5 relative">
+                                        {imageUrl ? (
+                                          <img 
+                                            src={imageUrl} 
+                                            alt={product.name || 'Product'} 
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              // Se a imagem falhar, ocultar e mostrar placeholder
+                                              e.target.style.display = 'none';
+                                              const container = e.target.parentElement;
+                                              if (container) {
+                                                // Remover qualquer placeholder existente
+                                                const existingPlaceholder = container.querySelector('.image-placeholder');
+                                                if (existingPlaceholder) {
+                                                  existingPlaceholder.remove();
+                                                }
+                                                // Adicionar novo placeholder
+                                                const placeholderDiv = document.createElement('div');
+                                                placeholderDiv.className = 'image-placeholder w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500 absolute inset-0';
+                                                placeholderDiv.innerHTML = '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
+                                                container.appendChild(placeholderDiv);
+                                              }
+                                            }}
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
+                                            <Icon icon="lucide:image" className="w-8 h-8" />
+                                          </div>
+                                        )}
+                                      </div>
+                                      {/* Nome e dimensões */}
+                                      <div className="space-y-1.5">
+                                        <div className="text-xs font-semibold text-gray-900 dark:text-gray-100 line-clamp-1">
+                                          {product.name || product}
+                                        </div>
+                                        {/* Dimensões */}
+                                        <div className="space-y-0.5 text-xs">
+                                          {product.height && (
+                                            <div className="flex justify-between">
+                                              <span className="text-gray-600 dark:text-gray-400">H:</span>
+                                              <span className="font-medium text-gray-900 dark:text-gray-100">{product.height}m</span>
+                                            </div>
+                                          )}
+                                          {product.width && (
+                                            <div className="flex justify-between">
+                                              <span className="text-gray-600 dark:text-gray-400">W:</span>
+                                              <span className="font-medium text-gray-900 dark:text-gray-100">{product.width}m</span>
+                                            </div>
+                                          )}
+                                          {product.depth && (
+                                            <div className="flex justify-between">
+                                              <span className="text-gray-600 dark:text-gray-400">D:</span>
+                                              <span className="font-medium text-gray-900 dark:text-gray-100">{product.depth}m</span>
+                                            </div>
+                                          )}
+                                          {product.diameter && (
+                                            <div className="flex justify-between">
+                                              <span className="text-gray-600 dark:text-gray-400">Ø:</span>
+                                              <span className="font-medium text-gray-900 dark:text-gray-100">{product.diameter}m</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center py-2">
+                                No related products available
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-0.5">Upload Files</h4>
-                    <p className="text-xs text-gray-500 mb-3">Drag & drop or click to upload</p>
-                    <input
-                      type="file"
-                      id="file-upload"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handleFileUpload(Array.from(e.target.files))}
-                    />
-                    <Button
-                      size="sm"
-                      color="primary"
-                      variant="flat"
-                      className="font-medium px-6"
-                      onPress={() => document.getElementById('file-upload').click()}
-                    >
-                      Select Files
-                    </Button>
-                    <p className="text-xs text-gray-400 mt-2">Supported: PNG, JPG, PDF</p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -2092,6 +2559,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                       <div key={index} className="p-2 sm:p-2 md:p-2.5 lg:p-2 border border-white/20 dark:border-gray-600/30 rounded-lg bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm space-y-1.5 sm:space-y-1.5 md:space-y-2 lg:space-y-1.5 shadow-md">
                         <AutocompleteWithMarquee
                           label="Component"
+                          aria-label="Search component"
                           placeholder="Search component"
                           size="sm"
                           variant="bordered"
@@ -2362,6 +2830,89 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                 )}
               </div>
             </div>
+            </div>
+
+            {/* Attachments Section */}
+            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-4'} shadow-xl border border-white/10`}>
+              <div className={`flex items-center justify-between ${isCompact ? 'mb-1' : 'mb-1.5 sm:mb-1.5 md:mb-2 lg:mb-2'}`}>
+                <div className="flex items-center gap-2 text-pink-600 dark:text-pink-400">
+                  <div className="p-1.5 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
+                    <Icon icon="lucide:paperclip" className="w-4 h-4" />
+                  </div>
+                  <h2 className="text-sm sm:text-sm md:text-base lg:text-base font-bold">Attachments</h2>
+                </div>
+                {!isCompact && (
+                  <Button
+                    color="primary"
+                    variant="solid"
+                    size="sm"
+                    className="bg-gradient-to-tr from-primary-500 to-secondary-500 text-white font-medium text-xs shadow-lg"
+                    startContent={<Icon icon="lucide:sparkles" className="w-3 h-3" />}
+                    onPress={() => setIsChatOpen(true)}
+                  >
+                    AI Assistant
+                  </Button>
+                )}
+              </div>
+
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-2 sm:p-2.5 md:p-4 lg:p-3 bg-gray-50/50 dark:bg-gray-700/50 hover:border-pink-300 dark:hover:border-pink-700 transition-colors">
+                {currentLogo.attachmentFiles && currentLogo.attachmentFiles.length > 0 ? (
+                  <div className="space-y-2">
+                    {currentLogo.attachmentFiles.map((file, index) => (
+                      <AttachmentItem
+                        key={index}
+                        file={file}
+                        index={index}
+                        onRemove={handleRemoveAttachment}
+                        onEdit={handleEditAIGenerated}
+                      />
+                    ))}
+                    <input
+                      type="file"
+                      id="file-upload-more"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(Array.from(e.target.files))}
+                    />
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="primary"
+                      fullWidth
+                      className="mt-1 font-medium"
+                      startContent={<Icon icon="lucide:upload" className="w-4 h-4" />}
+                      onPress={() => document.getElementById('file-upload-more').click()}
+                    >
+                      Add More Files
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-3 text-center">
+                    <div className="p-2 bg-pink-50 dark:bg-pink-900/20 rounded-full mb-2">
+                      <Icon icon="lucide:cloud-upload" className="w-6 h-6 text-pink-500" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-0.5">Upload Files</h4>
+                    <p className="text-xs text-gray-500 mb-3">Drag & drop or click to upload</p>
+                    <input
+                      type="file"
+                      id="file-upload"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(Array.from(e.target.files))}
+                    />
+                    <Button
+                      size="sm"
+                      color="primary"
+                      variant="flat"
+                      className="font-medium px-6"
+                      onPress={() => document.getElementById('file-upload').click()}
+                    >
+                      Select Files
+                    </Button>
+                    <p className="text-xs text-gray-400 mt-2">Supported: PNG, JPG, PDF</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
