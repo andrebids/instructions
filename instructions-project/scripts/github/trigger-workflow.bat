@@ -64,15 +64,25 @@ if %ERRORLEVEL% neq 0 (
 call :print_success "Autenticado no GitHub CLI"
 
 REM Get repository name from git remote
-for /f "tokens=2 delims=: " %%r in ('git remote get-url origin 2^>nul') do set "REPO=%%r"
-if "%REPO%"=="" (
+for /f "tokens=*" %%r in ('git remote get-url origin 2^>nul') do set "REMOTE_URL=%%r"
+if "%REMOTE_URL%"=="" (
     call :print_error "Nao foi possivel determinar o repositorio"
     call :print_info "Certifique-se de estar em um repositorio Git valido"
     exit /b 1
 )
 
-REM Remove .git suffix if present
+REM Extract repo name from URL (handles both https:// and git@ formats)
+REM For https://github.com/user/repo.git or https://github.com/user/repo
+REM For git@github.com:user/repo.git
+set "REPO=%REMOTE_URL%"
+set "REPO=%REPO:https://github.com/=%"
+set "REPO=%REPO:git@github.com:=%"
 set "REPO=%REPO:.git=%"
+set "REPO=%REPO: =%"
+
+REM Remove trailing slash if present
+if "%REPO:~-1%"=="\" set "REPO=%REPO:~0,-1%"
+if "%REPO:~-1%"=="/" set "REPO=%REPO:~0,-1%"
 
 call :print_info "Repositorio: %REPO%"
 call :print_info "Workflow: Build and Push Docker Image"
