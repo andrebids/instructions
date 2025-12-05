@@ -92,11 +92,38 @@ echo.
 call :print_info "Disparando workflow no GitHub..."
 echo.
 
-REM Trigger the workflow using GitHub CLI
-REM The workflow accepts an input: push_to_registry (boolean, default: true)
-gh workflow run "Build and Push Docker Image" --repo %REPO% -f push_to_registry=true
+REM Check if workflows exist
+call :print_info "Verificando workflows disponiveis..."
+gh workflow list --repo %REPO% >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo.
+    call :print_error "Nenhum workflow encontrado no repositorio"
+    call :print_warning "IMPORTANTE: GitHub Actions so reconhece workflows na raiz do repositorio"
+    call :print_info "O workflow precisa estar em: .github/workflows/docker-build.yml"
+    call :print_info "Mas parece estar em: instructions-project/.github/workflows/docker-build.yml"
+    echo.
+    call :print_info "Solucao: Mova o workflow para a raiz do repositorio ou crie um link simbolico"
+    call :print_info "Ou use a opcao [2] para build local"
+    exit /b 1
+)
 
-if %ERRORLEVEL% equ 0 (
+REM Try to get workflow ID by name first
+call :print_info "Procurando workflow 'Build and Push Docker Image'..."
+for /f "tokens=*" %%w in ('gh workflow list --repo %REPO% --json name,id --jq ".[] | select(.name==\"Build and Push Docker Image\") | .id" 2^>nul') do set "WORKFLOW_ID=%%w"
+
+if "%WORKFLOW_ID%"=="" (
+    REM Try using the filename instead
+    call :print_info "Tentando usar o nome do arquivo..."
+    gh workflow run docker-build.yml --repo %REPO% -f push_to_registry=true
+    set "WORKFLOW_RESULT=%ERRORLEVEL%"
+) else (
+    REM Use workflow ID
+    call :print_info "Workflow encontrado (ID: %WORKFLOW_ID%)"
+    gh api repos/%REPO%/actions/workflows/%WORKFLOW_ID%/dispatches -X POST -f ref=main -f inputs[push_to_registry]=true
+    set "WORKFLOW_RESULT=%ERRORLEVEL%"
+)
+
+if %WORKFLOW_RESULT% equ 0 (
     echo.
     call :print_success "Workflow disparado com sucesso!"
     echo.
@@ -108,9 +135,10 @@ if %ERRORLEVEL% equ 0 (
     echo.
     call :print_error "Falha ao disparar o workflow"
     call :print_info "Verifique se:"
-    call :print_info "  - O workflow existe no repositorio"
+    call :print_info "  - O workflow existe na raiz do repositorio (.github/workflows/)"
     call :print_info "  - Voce tem permissao para disparar workflows"
     call :print_info "  - O nome do workflow esta correto"
+    call :print_warning "NOTA: Workflows em subdiretorios nao sao reconhecidos pelo GitHub Actions"
     exit /b 1
 )
 
