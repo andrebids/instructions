@@ -9,11 +9,29 @@ setlocal enabledelayedexpansion
 REM Load common functions
 set "UTILS_DIR=%~dp0..\utils\"
 
-REM Get project root
+REM Get project root first
 set "CURRENT_DIR=%~dp0"
 set "CURRENT_DIR=%CURRENT_DIR:~0,-1%"
 for %%i in ("%CURRENT_DIR%\..\..") do set "PROJECT_ROOT=%%~fi"
 cd /d "%PROJECT_ROOT%"
+
+REM Find Git repository root using git command (more reliable)
+for /f "tokens=*" %%g in ('git rev-parse --show-toplevel 2^>nul') do set "GIT_ROOT=%%g"
+if "%GIT_ROOT%"=="" (
+    REM Fallback: try going up from PROJECT_ROOT
+    cd /d "%PROJECT_ROOT%"
+    if exist "%PROJECT_ROOT%\.git" (
+        set "GIT_ROOT=%PROJECT_ROOT%"
+    ) else (
+        cd /d ".."
+        if exist "%CD%\.git" (
+            set "GIT_ROOT=%CD%"
+        ) else (
+            set "GIT_ROOT=%PROJECT_ROOT%"
+        )
+    )
+)
+cd /d "%GIT_ROOT%"
 
 REM Simple print functions
 :print_info
@@ -85,6 +103,7 @@ if "%REPO:~-1%"=="\" set "REPO=%REPO:~0,-1%"
 if "%REPO:~-1%"=="/" set "REPO=%REPO:~0,-1%"
 
 call :print_info "Repositorio: %REPO%"
+call :print_info "Diretorio Git: %GIT_ROOT%"
 call :print_info "Workflow: Build and Push Docker Image"
 echo.
 
@@ -104,7 +123,7 @@ echo.
 
 REM Check if workflows exist
 call :print_info "Verificando workflows disponiveis..."
-gh workflow list --repo %REPO% >nul 2>&1
+gh workflow list --repo %REPO% 2>&1
 if %ERRORLEVEL% neq 0 (
     echo.
     call :print_error "Nenhum workflow encontrado no repositorio"
@@ -116,21 +135,62 @@ if %ERRORLEVEL% neq 0 (
     call :print_info "Ou use a opcao [2] para build local"
     exit /b 1
 )
+echo.
+
+REM Get current branch
+for /f "tokens=*" %%b in ('git branch --show-current 2^>nul') do set "CURRENT_BRANCH=%%b"
+if "%CURRENT_BRANCH%"=="" (
+    call :print_warning "Nao foi possivel detectar o branch atual, usando 'main'"
+    set "CURRENT_BRANCH=main"
+)
+call :print_info "Branch atual: %CURRENT_BRANCH%"
 
 REM Try to get workflow ID by name first
 call :print_info "Procurando workflow 'Build and Push Docker Image'..."
 for /f "tokens=*" %%w in ('gh workflow list --repo %REPO% --json name,id --jq ".[] | select(.name==\"Build and Push Docker Image\") | .id" 2^>nul') do set "WORKFLOW_ID=%%w"
 
 if "%WORKFLOW_ID%"=="" (
-    REM Try using the filename instead
-    call :print_info "Tentando usar o nome do arquivo..."
-    gh workflow run docker-build.yml --repo %REPO% -f push_to_registry=true
-    set "WORKFLOW_RESULT=%ERRORLEVEL%"
+    REM Try to get workflow ID by filename
+    call :print_info "Tentando encontrar workflow pelo nome do arquivo..."
+    for /f "tokens=*" %%w in ('gh workflow list --repo %REPO% --json name,id,path --jq ".[] | select(.path==\".github/workflows/docker-build.yml\") | .id" 2^>nul') do set "WORKFLOW_ID=%%w"
+    
+    if "%WORKFLOW_ID%"=="" (
+        REM Try using the filename directly
+        call :print_info "Tentando usar o nome do arquivo diretamente..."
+        gh workflow run docker-build.yml --repo %REPO% --ref %CURRENT_BRANCH% -f push_to_registry=true 2>&1
+        set "WORKFLOW_RESULT=%ERRORLEVEL%"
+        if %WORKFLOW_RESULT% neq 0 (
+            call :print_error "Falha ao disparar workflow com nome do arquivo"
+            call :print_info "Codigo de erro: %WORKFLOW_RESULT%"
+        )
+    ) else (
+        call :print_info "Workflow encontrado pelo caminho (ID: %WORKFLOW_ID%)"
+        call :print_info "Disparando workflow via API..."
+        call :print_info "Comando: gh api repos/%REPO%/actions/workflows/%WORKFLOW_ID%/dispatches -X POST -f ref=%CURRENT_BRANCH% -f inputs[push_to_registry]=true"
+        gh api repos/%REPO%/actions/workflows/%WORKFLOW_ID%/dispatches -X POST -f ref=%CURRENT_BRANCH% -f inputs[push_to_registry]=true 2>&1
+        set "WORKFLOW_RESULT=%ERRORLEVEL%"
+        if %WORKFLOW_RESULT% neq 0 (
+            call :print_error "Falha ao disparar workflow via API"
+            call :print_info "Codigo de erro: %WORKFLOW_RESULT%"
+        )
+    )
 ) else (
-    REM Use workflow ID
-    call :print_info "Workflow encontrado (ID: %WORKFLOW_ID%)"
-    gh api repos/%REPO%/actions/workflows/%WORKFLOW_ID%/dispatches -X POST -f ref=main -f inputs[push_to_registry]=true
+    REM Use workflow ID with API (more reliable)
+    call :print_info "Workflow encontrado pelo nome (ID: %WORKFLOW_ID%)"
+    call :print_info "Disparando workflow via API..."
+    call :print_info "Comando: gh api repos/%REPO%/actions/workflows/%WORKFLOW_ID%/dispatches -X POST -f ref=%CURRENT_BRANCH% -f inputs[push_to_registry]=true"
+    gh api repos/%REPO%/actions/workflows/%WORKFLOW_ID%/dispatches -X POST -f ref=%CURRENT_BRANCH% -f inputs[push_to_registry]=true 2>&1
     set "WORKFLOW_RESULT=%ERRORLEVEL%"
+    if %WORKFLOW_RESULT% neq 0 (
+        call :print_error "Falha ao disparar workflow via API"
+        call :print_info "Codigo de erro: %WORKFLOW_RESULT%"
+    )
+)
+
+REM Ensure WORKFLOW_RESULT is set
+if not defined WORKFLOW_RESULT (
+    set "WORKFLOW_RESULT=1"
+    call :print_error "Erro: WORKFLOW_RESULT nao foi definido"
 )
 
 if %WORKFLOW_RESULT% equ 0 (
@@ -140,15 +200,23 @@ if %WORKFLOW_RESULT% equ 0 (
     call :print_info "Para acompanhar o progresso:"
     call :print_info "  https://github.com/%REPO%/actions"
     echo.
-    call :print_info "Ou execute: gh run watch"
+    call :print_info "Ou execute: gh run watch --repo %REPO%"
+    echo.
+    call :print_info "Listando ultimas execucoes do workflow..."
+    gh run list --repo %REPO% --workflow="Build and Push Docker Image" --limit 3
 ) else (
     echo.
-    call :print_error "Falha ao disparar o workflow"
+    call :print_error "Falha ao disparar o workflow (codigo de erro: %WORKFLOW_RESULT%)"
+    echo.
     call :print_info "Verifique se:"
     call :print_info "  - O workflow existe na raiz do repositorio (.github/workflows/)"
     call :print_info "  - Voce tem permissao para disparar workflows"
     call :print_info "  - O nome do workflow esta correto"
+    call :print_info "  - O branch '%CURRENT_BRANCH%' existe no repositorio"
     call :print_warning "NOTA: Workflows em subdiretorios nao sao reconhecidos pelo GitHub Actions"
+    echo.
+    call :print_info "Tentando listar workflows disponiveis para debug..."
+    gh workflow list --repo %REPO%
     exit /b 1
 )
 

@@ -515,6 +515,8 @@
       "location": "Emplacement",
       "aoTender": "AO/Appel d'offres",
       "aoTenderDescription": "Marquer ce projet comme appel d'offres important ou contrat majeur",
+      "enableNotes": "Notes du Projet",
+      "enableNotesDescription": "Ajouter des notes et observations sur ce projet",
       "strictDeadline": "⚠️ Délai strict - Projet d'appel d'offres public",
       "type": "Type",
       "name": "Nom",

@@ -515,6 +515,8 @@
       "location": "Location",
       "aoTender": "AO/Tender",
       "aoTenderDescription": "Mark this project as an important tender or major contract",
+      "enableNotes": "Project Notes",
+      "enableNotesDescription": "Add notes and observations about this project",
       "strictDeadline": "⚠️ Strict deadline - Public Tender Project",
       "type": "Type",
       "name": "Name",

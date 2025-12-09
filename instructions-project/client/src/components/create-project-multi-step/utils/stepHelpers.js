@@ -18,6 +18,11 @@ export const getVisibleSteps = (formData, allSteps) => {
       return formData.projectType === "logo";
     }
 
+    // Step condicional para Project Notes
+    if (step.condition === "hasNotes") {
+      return formData.enableNotes === true;
+    }
+
     return true;
   });
 };

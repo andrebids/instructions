@@ -14,18 +14,29 @@ COPY client/package*.json ./
 # Install client dependencies with BuildKit cache mounts
 # Dependencies are installed inside container, ensuring correct Linux binaries
 # Note: --ignore-scripts is removed to allow postinstall scripts that may install platform-specific binaries
+# Install platform-specific binaries based on architecture
 RUN --mount=type=cache,target=/root/.npm \
     npm ci && \
-    npm install @rollup/rollup-linux-x64-gnu --save-optional --force || true && \
-    npm install lightningcss-linux-x64-gnu --save-optional --force || true
+    if [ "$(uname -m)" = "x86_64" ]; then \
+        npm install @rollup/rollup-linux-x64-gnu --save-optional --force || true && \
+        npm install lightningcss-linux-x64-gnu --save-optional --force || true; \
+    elif [ "$(uname -m)" = "aarch64" ]; then \
+        npm install @rollup/rollup-linux-arm64-gnu --save-optional --force || true && \
+        npm install lightningcss-linux-arm64-gnu --save-optional --force || true; \
+    fi
 
 # Copy client source code AFTER dependencies are installed
 # node_modules is excluded by .dockerignore, so only source code is copied
 COPY client/ ./
 
 # Reinstall native dependencies for Linux (esbuild, lightningcss, etc.) to avoid Windows binaries
+# Install platform-specific binaries based on architecture
 RUN npm rebuild esbuild || npm install esbuild --save-dev || true && \
-    npm install lightningcss-linux-x64-gnu --save-optional --force || true
+    if [ "$(uname -m)" = "x86_64" ]; then \
+        npm install lightningcss-linux-x64-gnu --save-optional --force || true; \
+    elif [ "$(uname -m)" = "aarch64" ]; then \
+        npm install lightningcss-linux-arm64-gnu --save-optional --force || true; \
+    fi
 
 # Build client for production
 RUN --mount=type=cache,target=/root/.npm \
