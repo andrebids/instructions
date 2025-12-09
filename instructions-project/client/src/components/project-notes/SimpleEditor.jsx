@@ -12,6 +12,10 @@ import { Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter
 import { Icon } from '@iconify/react';
 import { editorAPI, projectsAPI } from '../../services/api';
 
+// Constantes para nota padrão
+const DEFAULT_NOTE_ID = 'default-note';
+const DEFAULT_NOTE_TOPIC = 'Notas Gerais';
+
 export function SimpleEditor({ projectId = null, saveStatus = null }) {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -334,17 +338,43 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
     const loadContent = async () => {
       try {
         const project = await projectsAPI.getById(projectId);
+        const notes = project.notes || [];
         
-        if (project?.description) {
-          editor.commands.setContent(project.description);
-          lastSavedContentRef.current = project.description;
-          hasUnsavedChangesRef.current = false;
+        // Buscar nota padrão no array de notas
+        let defaultNote = notes.find(note => note.id === DEFAULT_NOTE_ID);
+        
+        // Se não existe nota padrão, verificar se há conteúdo em description (migração)
+        if (!defaultNote && project?.description) {
+          // Migrar conteúdo de description para notes
+          defaultNote = {
+            id: DEFAULT_NOTE_ID,
+            topic: DEFAULT_NOTE_TOPIC,
+            title: '',
+            content: project.description,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          
+          // Adicionar nota padrão ao array e salvar
+          const updatedNotes = [...notes, defaultNote];
+          try {
+            await projectsAPI.update(projectId, { notes: updatedNotes });
+            console.log('✅ [NOTES EDITOR] Conteúdo migrado de description para notes');
+          } catch (migrationError) {
+            console.error('❌ [NOTES EDITOR] Erro ao migrar conteúdo:', migrationError);
+          }
+        }
+        
+        // Carregar conteúdo da nota padrão ou conteúdo vazio
+        if (defaultNote?.content) {
+          editor.commands.setContent(defaultNote.content);
+          lastSavedContentRef.current = defaultNote.content;
         } else {
           const emptyContent = editor.getHTML();
           lastSavedContentRef.current = emptyContent || '';
-          hasUnsavedChangesRef.current = false;
         }
         
+        hasUnsavedChangesRef.current = false;
         hasLoadedRef.current = true;
       } catch (error) {
         console.error('❌ [NOTES EDITOR] ===== ERRO AO CARREGAR NOTAS =====');
@@ -422,10 +452,44 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
       // Indicar início do salvamento
       if (saveStatus) saveStatus.setSaving();
       
-      const textToSave = editor?.getText() || '';
+      // Buscar projeto atual para obter array de notas
+      const project = await projectsAPI.getById(projectId);
+      const notes = project.notes || [];
       
-      // Salvar no projeto
-      await projectsAPI.update(projectId, { description: contentToSave });
+      // Buscar ou criar nota padrão
+      let defaultNote = notes.find(note => note.id === DEFAULT_NOTE_ID);
+      const now = new Date().toISOString();
+      
+      if (defaultNote) {
+        // Atualizar nota existente
+        defaultNote = {
+          ...defaultNote,
+          content: contentToSave,
+          updatedAt: now,
+        };
+        
+        // Substituir nota no array
+        const updatedNotes = notes.map(note => 
+          note.id === DEFAULT_NOTE_ID ? defaultNote : note
+        );
+        
+        // Salvar array atualizado
+        await projectsAPI.update(projectId, { notes: updatedNotes });
+      } else {
+        // Criar nova nota padrão
+        defaultNote = {
+          id: DEFAULT_NOTE_ID,
+          topic: DEFAULT_NOTE_TOPIC,
+          title: '',
+          content: contentToSave,
+          createdAt: now,
+          updatedAt: now,
+        };
+        
+        // Adicionar ao array
+        const updatedNotes = [...notes, defaultNote];
+        await projectsAPI.update(projectId, { notes: updatedNotes });
+      }
       
       // Atualizar referência do último conteúdo salvo
       lastSavedContentRef.current = contentToSave;
