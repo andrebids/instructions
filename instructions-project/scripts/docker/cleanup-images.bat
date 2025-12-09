@@ -3,55 +3,32 @@ REM ============================================
 REM Docker image cleanup functions
 REM ============================================
 
+REM Jump to end (skip function definitions - functions are called via common.bat directly)
+goto :end_functions
+
 REM Load common functions
 set "UTILS_DIR=%~dp0..\utils\"
 
 REM Load color variables
 call "%UTILS_DIR%common.bat" >nul 2>&1
 
-REM Define wrapper functions
-:print_color
-call "%UTILS_DIR%common.bat" :print_color %*
-goto :eof
-
-:print_success
-call "%UTILS_DIR%common.bat" :print_success %*
-goto :eof
-
-:print_error
-call "%UTILS_DIR%common.bat" :print_error %*
-goto :eof
-
-:print_warning
-call "%UTILS_DIR%common.bat" :print_warning %*
-goto :eof
-
-:print_info
-call "%UTILS_DIR%common.bat" :print_info %*
-goto :eof
-
-:print_header
-call "%UTILS_DIR%common.bat" :print_header %*
-goto :eof
-
-:print_separator
-call "%UTILS_DIR%common.bat" :print_separator
-goto :eof
+:end_functions
 
 REM ============================================
 REM Function: Cleanup dangling images
 REM ============================================
 :cleanup_dangling_images
 setlocal
-call :print_info "Limpando imagens dangling (não utilizadas)..."
+set "UTILS_DIR=%~dp0..\utils\"
+call "%UTILS_DIR%common.bat" :print_info "Limpando imagens dangling (não utilizadas)..."
 
 docker image prune -f >nul 2>&1
 if %ERRORLEVEL% equ 0 (
-    call :print_success "Imagens dangling removidas"
+    call "%UTILS_DIR%common.bat" :print_success "Imagens dangling removidas"
     endlocal
     exit /b 0
 ) else (
-    call :print_warning "Nenhuma imagem dangling encontrada ou erro ao limpar"
+    call "%UTILS_DIR%common.bat" :print_warning "Nenhuma imagem dangling encontrada ou erro ao limpar"
     endlocal
     exit /b 0
 )
@@ -73,8 +50,9 @@ if "%KEEP_TAG%"=="" (
     set "KEEP_TAG=latest"
 )
 
-call :print_info "Limpando imagens antigas do projeto: %IMAGE_PATTERN%"
-call :print_info "Mantendo apenas a tag: %KEEP_TAG%"
+set "UTILS_DIR=%~dp0..\utils\"
+call "%UTILS_DIR%common.bat" :print_info "Limpando imagens antigas do projeto: %IMAGE_PATTERN%"
+call "%UTILS_DIR%common.bat" :print_info "Mantendo apenas a tag: %KEEP_TAG%"
 
 REM Get all images matching the pattern
 set "FOUND_IMAGES=0"
@@ -89,7 +67,7 @@ for /f "tokens=*" %%i in ('docker images --filter "reference=%IMAGE_PATTERN%*" -
     
     REM Skip if it's the tag we want to keep
     if /i not "!TAG!"=="%KEEP_TAG%" (
-        call :print_info "Removendo imagem antiga: !IMAGE_NAME!"
+        call "%UTILS_DIR%common.bat" :print_info "Removendo imagem antiga: !IMAGE_NAME!"
         docker rmi !IMAGE_NAME! >nul 2>&1
         if !ERRORLEVEL! equ 0 (
             set /a FOUND_IMAGES+=1
@@ -98,9 +76,9 @@ for /f "tokens=*" %%i in ('docker images --filter "reference=%IMAGE_PATTERN%*" -
 )
 
 if %FOUND_IMAGES% gtr 0 (
-    call :print_success "%FOUND_IMAGES% imagem(ns) antiga(s) removida(s)"
+    call "%UTILS_DIR%common.bat" :print_success "%FOUND_IMAGES% imagem(ns) antiga(s) removida(s)"
 ) else (
-    call :print_info "Nenhuma imagem antiga encontrada para remover"
+    call "%UTILS_DIR%common.bat" :print_info "Nenhuma imagem antiga encontrada para remover"
 )
 
 endlocal
@@ -119,8 +97,9 @@ for %%i in ("%CURRENT_DIR%\..\..") do set "PROJECT_ROOT=%%~fi"
 
 REM Try to get image name from docker-compose
 set "COMPOSE_FILE=%PROJECT_ROOT%\docker-compose.dev.yml"
+set "UTILS_DIR=%~dp0..\utils\"
 if not exist "%COMPOSE_FILE%" (
-    call :print_warning "Arquivo docker-compose.dev.yml não encontrado"
+    call "%UTILS_DIR%common.bat" :print_warning "Arquivo docker-compose.dev.yml não encontrado"
     endlocal
     exit /b 1
 )
@@ -153,7 +132,7 @@ for /f "tokens=*" %%i in ('docker images --format "{{.Repository}}:{{.Tag}}" ^| 
     REM Check if it's not the latest or current
     echo !IMG! | findstr /i "latest" >nul
     if !ERRORLEVEL! neq 0 (
-        call :print_info "Removendo imagem: !IMG!"
+        call "%UTILS_DIR%common.bat" :print_info "Removendo imagem: !IMG!"
         docker rmi !IMG! >nul 2>&1
     )
 )
@@ -168,15 +147,16 @@ REM Function: Cleanup build cache (optional)
 REM ============================================
 :cleanup_build_cache
 setlocal
-call :print_info "Limpando cache de build do Docker..."
+set "UTILS_DIR=%~dp0..\utils\"
+call "%UTILS_DIR%common.bat" :print_info "Limpando cache de build do Docker..."
 
 docker builder prune -f >nul 2>&1
 if %ERRORLEVEL% equ 0 (
-    call :print_success "Cache de build limpo"
+    call "%UTILS_DIR%common.bat" :print_success "Cache de build limpo"
     endlocal
     exit /b 0
 ) else (
-    call :print_warning "Erro ao limpar cache de build"
+    call "%UTILS_DIR%common.bat" :print_warning "Erro ao limpar cache de build"
     endlocal
     exit /b 1
 )
@@ -186,12 +166,13 @@ REM Function: Full cleanup before build
 REM ============================================
 :cleanup_before_build
 setlocal
-call :print_header "Limpando Imagens Antigas (Antes do Build)"
+set "UTILS_DIR=%~dp0..\utils\"
+call "%UTILS_DIR%common.bat" :print_header "Limpando Imagens Antigas (Antes do Build)"
 
 call :cleanup_old_dev_images
 call :cleanup_dangling_images
 
-call :print_success "Limpeza concluída"
+call "%UTILS_DIR%common.bat" :print_success "Limpeza concluída"
 endlocal
 exit /b 0
 
@@ -200,12 +181,13 @@ REM Function: Full cleanup after build
 REM ============================================
 :cleanup_after_build
 setlocal
-call :print_header "Limpando Imagens Intermediárias (Após Build)"
+set "UTILS_DIR=%~dp0..\utils\"
+call "%UTILS_DIR%common.bat" :print_header "Limpando Imagens Intermediárias (Após Build)"
 
 call :cleanup_dangling_images
 call :cleanup_old_dev_images
 
-call :print_success "Limpeza pós-build concluída"
+call "%UTILS_DIR%common.bat" :print_success "Limpeza pós-build concluída"
 endlocal
 exit /b 0
 

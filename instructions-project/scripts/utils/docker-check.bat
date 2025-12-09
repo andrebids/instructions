@@ -12,34 +12,7 @@ set "UTILS_DIR=%~dp0"
 REM Load color variables
 call "%UTILS_DIR%common.bat" >nul 2>&1
 
-REM Define wrapper functions
-:print_color
-call "%UTILS_DIR%common.bat" :print_color %*
-goto :eof
-
-:print_success
-call "%UTILS_DIR%common.bat" :print_success %*
-goto :eof
-
-:print_error
-call "%UTILS_DIR%common.bat" :print_error %*
-goto :eof
-
-:print_warning
-call "%UTILS_DIR%common.bat" :print_warning %*
-goto :eof
-
-:print_info
-call "%UTILS_DIR%common.bat" :print_info %*
-goto :eof
-
-:print_header
-call "%UTILS_DIR%common.bat" :print_header %*
-goto :eof
-
-:print_separator
-call "%UTILS_DIR%common.bat" :print_separator
-goto :eof
+REM Define wrapper functions (call common.bat directly, no wrappers needed)
 
 REM Exit if called directly (not to call a function)
 exit /b 0
@@ -51,11 +24,11 @@ REM ============================================
 :check_docker_installed
 docker --version >nul 2>&1
 if %ERRORLEVEL% neq 0 (
-    call :print_error "Docker não está instalado ou não está no PATH"
-    call :print_info "Instale o Docker Desktop: https://www.docker.com/products/docker-desktop"
+    call "%UTILS_DIR%common.bat" :print_error "Docker nao esta instalado ou nao esta no PATH"
+    call "%UTILS_DIR%common.bat" :print_info "Instale o Docker Desktop: https://www.docker.com/products/docker-desktop"
     exit /b 1
 )
-call :print_success "Docker está instalado"
+call "%UTILS_DIR%common.bat" :print_success "Docker esta instalado"
 exit /b 0
 
 REM ============================================
@@ -65,11 +38,11 @@ REM ============================================
 :check_docker_running
 docker info >nul 2>&1
 if %ERRORLEVEL% neq 0 (
-    call :print_error "Docker não está rodando"
-    call :print_info "Inicie o Docker Desktop e tente novamente"
+    call "%UTILS_DIR%common.bat" :print_error "Docker nao esta rodando"
+    call "%UTILS_DIR%common.bat" :print_info "Inicie o Docker Desktop e tente novamente"
     exit /b 1
 )
-call :print_success "Docker está rodando"
+call "%UTILS_DIR%common.bat" :print_success "Docker esta rodando"
 exit /b 0
 
 REM ============================================
@@ -80,19 +53,19 @@ REM ============================================
 docker compose version >nul 2>&1
 if %ERRORLEVEL% equ 0 (
     set "COMPOSE_CMD=docker compose"
-    call :print_success "docker compose (v2) está disponível"
+    call "%UTILS_DIR%common.bat" :print_success "docker compose (v2) esta disponivel"
     exit /b 0
 )
 
 docker-compose --version >nul 2>&1
 if %ERRORLEVEL% equ 0 (
     set "COMPOSE_CMD=docker-compose"
-    call :print_success "docker-compose (v1) está disponível"
+    call "%UTILS_DIR%common.bat" :print_success "docker-compose (v1) esta disponivel"
     exit /b 0
 )
 
-call :print_error "docker-compose não está disponível"
-call :print_info "Instale o Docker Compose ou atualize o Docker Desktop"
+call "%UTILS_DIR%common.bat" :print_error "docker-compose nao esta disponivel"
+call "%UTILS_DIR%common.bat" :print_info "Instale o Docker Compose ou atualize o Docker Desktop"
 exit /b 1
 
 REM ============================================
@@ -104,13 +77,13 @@ call "%UTILS_DIR%common.bat" :get_project_root
 set "PROJECT_ROOT=%PROJECT_ROOT%"
 
 if not exist "%PROJECT_ROOT%\docker-compose.dev.yml" (
-    call :print_error "Arquivo docker-compose.dev.yml não encontrado"
+    call :print_error "Arquivo docker-compose.dev.yml nao encontrado"
     call :print_info "Execute o script a partir do diretório do projeto"
     exit /b 1
 )
 
 if not exist "%PROJECT_ROOT%\Dockerfile.dev" (
-    call :print_error "Arquivo Dockerfile.dev não encontrado"
+    call :print_error "Arquivo Dockerfile.dev nao encontrado"
     call :print_info "Execute o script a partir do diretório do projeto"
     exit /b 1
 )
@@ -123,7 +96,7 @@ REM Function: Run all Docker checks
 REM Returns: ERRORLEVEL 0 if all OK, 1 if any fails
 REM ============================================
 :check_all_docker
-call :print_header "Verificando Pré-requisitos Docker"
+call "%UTILS_DIR%common.bat" :print_header "Verificando Pre-requisitos Docker"
 
 call :check_docker_installed
 if %ERRORLEVEL% neq 0 exit /b 1
@@ -137,6 +110,6 @@ if %ERRORLEVEL% neq 0 exit /b 1
 call :check_project_directory
 if %ERRORLEVEL% neq 0 exit /b 1
 
-call :print_success "Todas as verificações passaram"
+call "%UTILS_DIR%common.bat" :print_success "Todas as verificacoes passaram"
 exit /b 0
 
