@@ -43,7 +43,13 @@ REM Function: Print success message
 REM Usage: call :print_success "message"
 REM ============================================
 :print_success
-call :print_color "[OK] %~1"
+setlocal enabledelayedexpansion
+REM Skip function name if it's the first argument
+set "MSG=%~1"
+if "!MSG!"==":print_success" set "MSG=%~2"
+if "!MSG!"=="" set "MSG=%~*"
+call :print_color "[OK] !MSG!"
+endlocal
 goto :eof
 
 REM ============================================
@@ -51,7 +57,13 @@ REM Function: Print error message
 REM Usage: call :print_error "message"
 REM ============================================
 :print_error
-call :print_color "[ERRO] %~1"
+setlocal enabledelayedexpansion
+REM Skip function name if it's the first argument
+set "MSG=%~1"
+if "!MSG!"==":print_error" set "MSG=%~2"
+if "!MSG!"=="" set "MSG=%~*"
+call :print_color "[ERRO] !MSG!"
+endlocal
 goto :eof
 
 REM ============================================
@@ -59,7 +71,13 @@ REM Function: Print warning message
 REM Usage: call :print_warning "message"
 REM ============================================
 :print_warning
-call :print_color "[AVISO] %~1"
+setlocal enabledelayedexpansion
+REM Skip function name if it's the first argument
+set "MSG=%~1"
+if "!MSG!"==":print_warning" set "MSG=%~2"
+if "!MSG!"=="" set "MSG=%~*"
+call :print_color "[AVISO] !MSG!"
+endlocal
 goto :eof
 
 REM ============================================
@@ -67,7 +85,13 @@ REM Function: Print info message
 REM Usage: call :print_info "message"
 REM ============================================
 :print_info
-call :print_color "[INFO] %~1"
+setlocal enabledelayedexpansion
+REM Skip function name if it's the first argument
+set "MSG=%~1"
+if "!MSG!"==":print_info" set "MSG=%~2"
+if "!MSG!"=="" set "MSG=%~*"
+call :print_color "[INFO] !MSG!"
+endlocal
 goto :eof
 
 REM ============================================
@@ -76,10 +100,15 @@ REM Usage: call :print_header "title"
 REM ============================================
 :print_header
 setlocal
+REM Skip function name if it's the first argument
 set "TITLE=%~1"
+if "!TITLE!"==":print_header" set "TITLE=%~2"
+if "!TITLE!"=="" set "TITLE=%~*"
+REM Remove quotes if present
+set "TITLE=!TITLE:"=!"
 echo.
 call :print_color "======================================="
-call :print_color "%TITLE%"
+call :print_color "!TITLE!"
 call :print_color "======================================="
 echo.
 endlocal

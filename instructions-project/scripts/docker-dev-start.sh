@@ -30,7 +30,15 @@ if [ ! -d "/app/client/node_modules" ] || [ -z "$(ls -A /app/client/node_modules
     cd /app/client && npm install
     cd /app
 else
-    echo "  ✓ Client dependencies OK"
+    echo "  ✓ Client dependencies directory exists"
+    # Verify critical dependency exists
+    if [ ! -d "/app/client/node_modules/i18next-browser-languagedetector" ]; then
+        echo "  → Missing i18next-browser-languagedetector, reinstalling..."
+        cd /app/client && npm install i18next-browser-languagedetector
+        cd /app
+    else
+        echo "  ✓ Client dependencies OK"
+    fi
 fi
 
 # Ensure musl binaries are installed (critical for Alpine Linux)

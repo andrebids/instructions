@@ -14,22 +14,20 @@ COPY client/package*.json ./
 # Install client dependencies with BuildKit cache mounts
 # Dependencies are installed inside container, ensuring correct Linux binaries
 # Remove package-lock.json to avoid npm bug with optional dependencies (see https://github.com/npm/cli/issues/4828)
-# Then install dependencies and explicitly install rollup native binaries for both platforms
+# Then install dependencies and explicitly install rollup native binaries for current platform
+# BuildKit automatically selects the correct platform-specific binaries
 RUN --mount=type=cache,target=/root/.npm \
     rm -f package-lock.json && \
-    npm install && \
-    npm install @rollup/rollup-linux-x64-gnu @rollup/rollup-linux-arm64-gnu --save-optional --force || true && \
-    npm install lightningcss-linux-x64-gnu lightningcss-linux-arm64-gnu --save-optional --force || true
+    npm install
 
 # Copy client source code AFTER dependencies are installed
 # node_modules is excluded by .dockerignore, so only source code is copied
 COPY client/ ./
 
-# Ensure rollup and lightningcss native binaries are still available after copying source code
-# This is necessary because copying might affect node_modules in some edge cases
-# Reinstall lightningcss to ensure native binaries are properly linked
-RUN npm install @rollup/rollup-linux-x64-gnu @rollup/rollup-linux-arm64-gnu --save-optional --force || true && \
-    npm install lightningcss lightningcss-linux-x64-gnu lightningcss-linux-arm64-gnu --save-optional --force || true
+# Ensure native binaries are available after copying source code
+# BuildKit will automatically install the correct platform-specific binaries
+# Reinstall lightningcss to ensure native binaries are properly linked for current platform
+RUN npm install lightningcss --force || true
 
 # Rebuild native dependencies for Linux to ensure correct binaries
 # This ensures esbuild and other native modules are built for the correct platform
@@ -104,7 +102,7 @@ EXPOSE 5000
 
 # Health check (using node as it's already available)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:5000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+    CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Set working directory to server
 WORKDIR /app/server
