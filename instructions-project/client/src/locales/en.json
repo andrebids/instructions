@@ -256,6 +256,17 @@
         "designStatus": {
           "ready": "Ready",
           "pending": "Pending"
+        },
+        "filters": {
+          "title": "Filters",
+          "status": "Status",
+          "contract": "Contract",
+          "design": "Design",
+          "clearAll": "Clear Filters",
+          "activeFilters": "active",
+          "all": "All",
+          "result": "result",
+          "results": "results"
         }
       },
       "projectTable": {

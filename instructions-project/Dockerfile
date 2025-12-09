@@ -25,9 +25,11 @@ RUN --mount=type=cache,target=/root/.npm \
 # node_modules is excluded by .dockerignore, so only source code is copied
 COPY client/ ./
 
-# Ensure rollup native binaries are still available after copying source code
+# Ensure rollup and lightningcss native binaries are still available after copying source code
 # This is necessary because copying might affect node_modules in some edge cases
-RUN npm install @rollup/rollup-linux-x64-gnu @rollup/rollup-linux-arm64-gnu --save-optional --force || true
+# Reinstall lightningcss to ensure native binaries are properly linked
+RUN npm install @rollup/rollup-linux-x64-gnu @rollup/rollup-linux-arm64-gnu --save-optional --force || true && \
+    npm install lightningcss lightningcss-linux-x64-gnu lightningcss-linux-arm64-gnu --save-optional --force || true
 
 # Rebuild native dependencies for Linux to ensure correct binaries
 # This ensures esbuild and other native modules are built for the correct platform
