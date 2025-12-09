@@ -52,8 +52,11 @@ export default function Landing() {
 
   React.useEffect(() => {
     // Reveal subtitle after headline typing completes (computed below via delays)
-    const timeout = setTimeout(() => setShowSubtitle(true), totalRevealMs)
-    return () => clearTimeout(timeout)
+    const subtitleTimeout = setTimeout(() => setShowSubtitle(true), totalRevealMs)
+    
+    return () => {
+      clearTimeout(subtitleTimeout)
+    }
   }, [totalRevealMs])
 
   return (
@@ -159,7 +162,7 @@ export default function Landing() {
             </FadeContent>
           ) : null}
         </div>
-      </div>
+        </div>
       </div>
     </main>
   )

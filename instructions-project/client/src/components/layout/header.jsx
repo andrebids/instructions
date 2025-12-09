@@ -1,4 +1,4 @@
-import { Avatar, Button, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Badge, Popover, PopoverTrigger, PopoverContent, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+import { Avatar, Button, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Badge, Popover, PopoverTrigger, PopoverContent, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import React from "react";
 import { useTheme } from "@heroui/use-theme";
@@ -7,15 +7,21 @@ import { useAuthContext } from "../../context/AuthContext";
 import { GlobalSyncStatus } from "../features/SyncStatus";
 import { LocaleSelector } from "./LocaleSelector";
 import { useTranslation } from "react-i18next";
-import { usersAPI } from "../../services/api";
+import { usersAPI, productsAPI, projectsAPI } from "../../services/api";
 import { PasswordField } from "../admin/PasswordField";
 import { usePasswordGenerator } from "../../hooks/usePasswordGenerator";
 import { DragAndDropZone } from "../ui/DragAndDropZone";
+import { useNavigate } from "react-router-dom";
 
 export function Header() {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
   const [showSearch, setShowSearch] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [searchResults, setSearchResults] = React.useState([]);
+  const [isSearching, setIsSearching] = React.useState(false);
+  const [showSearchResults, setShowSearchResults] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [showSettings, setShowSettings] = React.useState(false);
   const { userName, setUserName } = useUser();
@@ -49,6 +55,147 @@ export function Header() {
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
   };
+
+  // Debounce para pesquisa
+  const searchTimeoutRef = React.useRef(null);
+  // AbortController para cancelar requisições anteriores
+  const abortControllerRef = React.useRef(null);
+
+  // Função de pesquisa
+  const performSearch = React.useCallback(async (query) => {
+    if (!query || query.trim().length < 3) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    // Cancelar requisição anterior se existir
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Criar novo AbortController para esta requisição
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    setIsSearching(true);
+    try {
+      // Pesquisar produtos e projetos em paralelo com signal de cancelamento
+      const [products, projects] = await Promise.all([
+        productsAPI.search(query, { signal: abortController.signal }).catch((err) => {
+          // Ignorar erros de cancelamento
+          if (err.name === 'AbortError' || err.name === 'CanceledError') {
+            return null;
+          }
+          return [];
+        }),
+        projectsAPI.search(query, { signal: abortController.signal }).catch((err) => {
+          // Ignorar erros de cancelamento
+          if (err.name === 'AbortError' || err.name === 'CanceledError') {
+            return null;
+          }
+          return [];
+        }),
+      ]);
+
+      // Verificar se a requisição foi cancelada
+      if (abortController.signal.aborted) {
+        return;
+      }
+
+      // Se alguma requisição foi cancelada, retornar array vazio
+      if (products === null || projects === null) {
+        return;
+      }
+
+      // Combinar e formatar resultados
+      const combinedResults = [
+        ...products.slice(0, 3).map((product) => ({
+          type: 'product',
+          id: product.id,
+          name: product.name,
+          reference: product.id,
+          data: product,
+        })),
+        ...projects.slice(0, 3).map((project) => ({
+          type: 'project',
+          id: project.id,
+          name: project.name,
+          clientName: project.clientName,
+          status: project.status,
+          data: project,
+        })),
+      ].slice(0, 3); // Limitar a 3 resultados totais
+
+      // Verificar novamente se foi cancelado antes de atualizar estado
+      if (!abortController.signal.aborted) {
+        setSearchResults(combinedResults);
+        setShowSearchResults(combinedResults.length > 0);
+      }
+    } catch (error) {
+      // Ignorar erros de cancelamento
+      if (error.name === 'AbortError' || error.name === 'CanceledError') {
+        return;
+      }
+      console.error('Erro ao pesquisar:', error);
+      if (!abortController.signal.aborted) {
+        setSearchResults([]);
+        setShowSearchResults(false);
+      }
+    } finally {
+      // Só atualizar loading se não foi cancelado
+      if (!abortController.signal.aborted) {
+        setIsSearching(false);
+      }
+    }
+  }, []);
+
+  // Handler para mudança no input de pesquisa
+  const handleSearchChange = React.useCallback((value) => {
+    setSearchQuery(value);
+    
+    // Limpar timeout anterior
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Se tiver menos de 3 caracteres, limpar resultados
+    if (!value || value.trim().length < 3) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    // Debounce de 300ms
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(value.trim());
+    }, 300);
+  }, [performSearch]);
+
+  // Limpar timeout e cancelar requisições ao desmontar
+  React.useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  // Handler para clicar em um resultado
+  const handleResultClick = React.useCallback((result) => {
+    if (result.type === 'project') {
+      navigate(`/projects/${result.id}`);
+    } else if (result.type === 'product') {
+      // Navegar para admin/products (pode ser ajustado conforme necessário)
+      navigate(`/admin/products`);
+    }
+    setShowSearchResults(false);
+    setSearchQuery("");
+    setShowSearch(false);
+  }, [navigate]);
 
   // Inicializar valores do formulário quando o modal abrir
   React.useEffect(() => {
@@ -240,21 +387,122 @@ export function Header() {
         </Button>
 
         {showSearch ? (
-          <Input
-            autoFocus
-            size="sm"
-            className="w-64"
-            placeholder={t('components.header.searchPlaceholder')}
-            aria-label={t('common.search')}
-            startContent={<Icon icon="lucide:search" className="text-default-400" />}
-            onBlur={() => setShowSearch(false)}
-          />
+          <div className="relative">
+            <Input
+              autoFocus
+              size="sm"
+              className="w-64"
+              placeholder={t('components.header.searchPlaceholder')}
+              aria-label={t('common.search')}
+              value={searchQuery}
+              onValueChange={handleSearchChange}
+              startContent={
+                isSearching ? (
+                  <Spinner size="sm" className="text-default-400" />
+                ) : (
+                  <Icon icon="lucide:search" className="text-default-400" />
+                )
+              }
+              endContent={
+                searchQuery && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSearchQuery("");
+                      setSearchResults([]);
+                      setShowSearchResults(false);
+                    }}
+                    className="text-default-400 hover:text-default-600 transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <Icon icon="lucide:x" className="text-sm" />
+                  </button>
+                )
+              }
+              onBlur={(e) => {
+                // Delay para permitir cliques nos resultados
+                setTimeout(() => {
+                  const activeElement = document.activeElement;
+                  const resultsContainer = document.querySelector('[data-search-results]');
+                  if (!resultsContainer?.contains(activeElement)) {
+                    setShowSearchResults(false);
+                    if (!searchQuery) {
+                      setShowSearch(false);
+                    }
+                  }
+                }, 200);
+              }}
+              onFocus={() => {
+                if (searchResults.length > 0) {
+                  setShowSearchResults(true);
+                }
+              }}
+            />
+            {showSearchResults && searchResults.length > 0 && (
+              <div
+                data-search-results
+                className="absolute top-full left-0 mt-1 w-[400px] max-h-[300px] overflow-y-auto bg-background border border-default-200 dark:border-default-100 rounded-lg shadow-lg z-50"
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                <div className="p-2">
+                  {searchResults.map((result, index) => (
+                    <div
+                      key={`${result.type}-${result.id}-${index}`}
+                      onClick={() => handleResultClick(result)}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleResultClick(result);
+                      }}
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-default-100 dark:hover:bg-default-50 cursor-pointer transition-colors"
+                    >
+                      <div className="flex-shrink-0">
+                        {result.type === 'product' ? (
+                          <Icon icon="lucide:package" className="text-xl text-primary" />
+                        ) : (
+                          <Icon icon="lucide:folder" className="text-xl text-warning" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-default-500 uppercase">
+                            {result.type === 'product' ? t('common.product', 'Produto') : t('common.project', 'Projeto')}
+                          </span>
+                        </div>
+                        <div className="font-medium text-sm truncate mt-1">
+                          {result.name}
+                        </div>
+                        {result.type === 'product' && result.reference && (
+                          <div className="text-xs text-default-500 mt-1">
+                            {t('common.reference', 'Referência')}: {result.reference}
+                          </div>
+                        )}
+                        {result.type === 'project' && result.clientName && (
+                          <div className="text-xs text-default-500 mt-1">
+                            {t('common.client', 'Cliente')}: {result.clientName}
+                          </div>
+                        )}
+                      </div>
+                      <Icon icon="lucide:chevron-right" className="text-default-400 flex-shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <Button
             isIconOnly
             variant="light"
             aria-label={t('components.header.ariaLabels.openSearch')}
-            onClick={() => setShowSearch(true)}
+            onClick={() => {
+              setShowSearch(true);
+              setTimeout(() => {
+                const input = document.querySelector('input[aria-label="' + t('common.search') + '"]');
+                if (input) {
+                  input.focus();
+                }
+              }, 100);
+            }}
           >
             <Icon icon="lucide:search" className="text-xl" />
           </Button>

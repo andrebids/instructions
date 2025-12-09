@@ -128,6 +128,20 @@ export const projectsAPI = {
     return response.data;
   },
 
+  // GET /api/projects/search?q=query
+  search: async (query, options = {}) => {
+    const { signal, ...restOptions } = options;
+    const config = { 
+      params: { q: query },
+      ...restOptions
+    };
+    if (signal) {
+      config.signal = signal;
+    }
+    const response = await api.get('/projects/search', config);
+    return response.data;
+  },
+
   // GET /api/projects/:id
   getById: async (id) => {
     const response = await api.get(`/projects/${id}`);
@@ -300,8 +314,16 @@ export const productsAPI = {
   },
 
   // GET /api/products/search?q=query
-  search: async (query) => {
-    const response = await api.get('/products/search', { params: { q: query } });
+  search: async (query, options = {}) => {
+    const { signal, ...restOptions } = options;
+    const config = { 
+      params: { q: query },
+      ...restOptions
+    };
+    if (signal) {
+      config.signal = signal;
+    }
+    const response = await api.get('/products/search', config);
     return response.data;
   },
 

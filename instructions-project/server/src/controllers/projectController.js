@@ -10,8 +10,11 @@ import { logInfo, logError, logServerOperation, formatErrorMessage } from '../ut
 import { getUserRole } from '../middleware/roles.js';
 import { getAuth } from '../middleware/auth.js';
 import { getLogoFinalDir } from '../utils/pathUtils.js';
+import { Project } from '../models/index.js';
+import { Op } from 'sequelize';
 import fs from 'fs';
 import path from 'path';
+import searchCache from '../services/searchCache.js';
 
 // GET /api/projects - Listar todos os projetos
 export async function getAll(req, res) {
@@ -88,6 +91,69 @@ export async function getAll(req, res) {
   }
 }
 
+// GET /api/projects/search - Pesquisar projetos por nome
+export async function search(req, res) {
+  try {
+    const q = req.query.q;
+
+    if (!q) {
+      return res.status(400).json({ error: 'Query parameter "q" is required' });
+    }
+
+    // Obter informações do usuário para filtrar projetos
+    let userId = null;
+    let userRole = null;
+
+    try {
+      const auth = await getAuth(req);
+      userId = auth?.userId || null;
+      userRole = await getUserRole(req);
+    } catch (error) {
+      // Se houver erro ao obter auth, continuar sem auth
+      console.warn('Aviso: Não foi possível obter informações de autenticação:', error.message);
+    }
+
+    // Criar filtros para chave de cache
+    const filters = {
+      userId: userRole === 'comercial' ? userId : null,
+      userRole
+    };
+    const cacheKey = searchCache.generateKey('projects', q, filters);
+    
+    // Verificar cache
+    const cachedResult = searchCache.get(cacheKey);
+    if (cachedResult) {
+      return res.json(cachedResult);
+    }
+
+    const where = {
+      name: {
+        [Op.iLike]: '%' + q + '%',
+      },
+    };
+
+    // Se for comercial, filtrar apenas projetos criados por ele
+    if (userRole === 'comercial' && userId) {
+      where.createdBy = userId;
+    }
+
+    const projects = await Project.findAll({
+      where,
+      attributes: ['id', 'name', 'clientName', 'status'],
+      order: [['name', 'ASC']],
+      limit: 10, // Limitar resultados para performance
+    });
+
+    // Armazenar no cache
+    searchCache.set(cacheKey, projects);
+
+    res.json(projects);
+  } catch (error) {
+    logError('Erro ao pesquisar projetos', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
 // GET /api/projects/:id - Buscar projeto por ID
 export async function getById(req, res) {
   try {
@@ -148,6 +214,10 @@ export async function create(req, res) {
     };
 
     const project = await projectService.createProject(projectData);
+    
+    // Invalidar cache de pesquisa de projetos
+    searchCache.clearByType('projects');
+    
     res.status(201).json(project);
   } catch (error) {
     logError('===== ERRO AO CRIAR PROJETO =====', error);
@@ -193,6 +263,9 @@ export async function update(req, res) {
 
     const updatedProject = await projectService.updateProject(req.params.id, updateData);
 
+    // Invalidar cache de pesquisa de projetos
+    searchCache.clearByType('projects');
+
     res.json(updatedProject);
   } catch (error) {
     logError('===== ERRO AO ATUALIZAR PROJETO =====', error);
@@ -236,6 +309,9 @@ export async function deleteProject(req, res) {
     if (!result) {
       return res.status(404).json({ error: 'Project not found' });
     }
+
+    // Invalidar cache de pesquisa de projetos
+    searchCache.clearByType('projects');
 
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {

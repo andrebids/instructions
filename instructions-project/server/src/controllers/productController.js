@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { generateThumbnail, processImageToWebP } from '../utils/imageUtils.js';
 import { resolveImagePath, validateProductImages, validateProductImagesFormat, validateProductImagesWithExistence } from '../utils/imagePathResolver.js';
 import { resolvePublicPath, getProductsUploadDir } from '../utils/pathUtils.js';
+import searchCache from '../services/searchCache.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -785,9 +786,23 @@ export async function search(req, res) {
       return res.status(400).json({ error: 'Query parameter "q" is required' });
     }
 
+    // Verificar cache
+    const cacheKey = searchCache.generateKey('products', q);
+    const cachedResult = searchCache.get(cacheKey);
+    
+    if (cachedResult) {
+      return res.json(cachedResult);
+    }
+
+    // Limitar resultados para melhor performance (20 resultados para pesquisa)
     var products = await Product.findAll({
       where: {
         [Op.or]: [
+          {
+            id: {
+              [Op.iLike]: '%' + q + '%',
+            },
+          },
           {
             name: {
               [Op.iLike]: '%' + q + '%',
@@ -806,30 +821,23 @@ export async function search(req, res) {
         ],
       },
       order: [['name', 'ASC']],
-      attributes: { exclude: ['isSourceImage', 'usage'] },
+      limit: 20, // Limitar resultados para melhor performance
+      attributes: { 
+        exclude: ['isSourceImage', 'usage'],
+        // Selecionar apenas campos necessários para pesquisa
+        include: ['id', 'name', 'type', 'tags', 'thumbnailUrl', 'imagesDayUrl', 'imagesNightUrl']
+      },
     });
 
     // Converter produtos para objetos simples
+    // Remover validação de imagens da pesquisa para melhor performance
+    // A validação pode ser feita quando necessário (ex: ao exibir detalhes)
     var productsData = products.map(function (p) {
-      var plainProduct = p.get({ plain: true });
-
-      // Validar formato E existência física de caminhos de imagens
-      const validatedImages = validateProductImagesWithExistence(
-        {
-          imagesNightUrl: plainProduct.imagesNightUrl,
-          imagesDayUrl: plainProduct.imagesDayUrl,
-          thumbnailUrl: plainProduct.thumbnailUrl,
-        },
-        `sourceImages productId:${plainProduct.id}`
-      );
-
-      // Atualizar apenas com imagens válidas
-      plainProduct.imagesNightUrl = validatedImages.imagesNightUrl;
-      plainProduct.imagesDayUrl = validatedImages.imagesDayUrl;
-      plainProduct.thumbnailUrl = validatedImages.thumbnailUrl;
-
-      return plainProduct;
+      return p.get({ plain: true });
     });
+
+    // Armazenar no cache
+    searchCache.set(cacheKey, productsData);
 
     res.json(productsData);
   } catch (error) {
@@ -1284,6 +1292,9 @@ export async function create(req, res) {
       thumbnailUrl: productResponse.thumbnailUrl,
     });
 
+    // Invalidar cache de pesquisa de produtos
+    searchCache.clearByType('products');
+
     res.status(201).json(productResponse);
   } catch (error) {
     console.error('❌ [PRODUCTS API] Erro ao criar produto:', error);
@@ -1638,6 +1649,9 @@ export async function update(req, res) {
       }
     }
 
+    // Invalidar cache de pesquisa de produtos
+    searchCache.clearByType('products');
+
     res.json(productResponse);
   } catch (error) {
     console.error('❌ [PRODUCTS API] Erro ao atualizar produto:', error);
@@ -1727,6 +1741,9 @@ export async function archiveProduct(req, res) {
     // Arquivar: marcar como inativo
     await product.update({ isActive: false });
 
+    // Invalidar cache de pesquisa de produtos
+    searchCache.clearByType('products');
+
     res.json({ message: 'Product archived successfully', product: product });
   } catch (error) {
     console.error('Erro ao arquivar produto:', error);
@@ -1745,6 +1762,9 @@ export async function unarchiveProduct(req, res) {
 
     // Desarquivar: marcar como ativo
     await product.update({ isActive: true });
+
+    // Invalidar cache de pesquisa de produtos
+    searchCache.clearByType('products');
 
     res.json({ message: 'Product unarchived successfully', product: product });
   } catch (error) {
@@ -1883,6 +1903,9 @@ export async function deleteProduct(req, res) {
     console.log('🗑️  [DELETE PRODUCT] Apagando produto da base de dados...');
     await product.destroy();
     console.log('✅ [DELETE PRODUCT] Produto apagado da base de dados com sucesso!');
+
+    // Invalidar cache de pesquisa de produtos
+    searchCache.clearByType('products');
 
     res.json({
       message: 'Product deleted permanently',
