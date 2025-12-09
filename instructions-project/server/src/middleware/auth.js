@@ -34,11 +34,20 @@ export async function getAuth(req) {
         // Tentar acessar através do handler
         try {
           // Criar um objeto de opções básico baseado na configuração
+          // IMPORTANTE: Não definir basePath e baseURL ao mesmo tempo para evitar redundância
+          // Se AUTH_URL estiver definido, usar apenas baseURL (ele já inclui o caminho)
+          // Se não estiver definido, usar apenas basePath
           req.authOptions = {
-            basePath: '/auth',
-            baseURL: process.env.AUTH_URL || undefined,
             trustHost: true,
           };
+          
+          if (process.env.AUTH_URL) {
+            // Se AUTH_URL está definido, usar apenas baseURL (ele já inclui o caminho)
+            req.authOptions.baseURL = process.env.AUTH_URL;
+          } else {
+            // Se AUTH_URL não está definido, usar apenas basePath
+            req.authOptions.basePath = '/auth';
+          }
         } catch (e) {
           // Ignorar erro ao configurar authOptions
         }

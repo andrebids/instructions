@@ -41,6 +41,38 @@ const translations = {
                 btn: "Add to Project"
             }
         },
+        advanced_stock: {
+            tag: "Advanced Tools",
+            title: "Complete Control. Real-time Precision.",
+            subtitle: "Manage your inventory with military-grade precision and speed.",
+            features: {
+                comparator: {
+                    title: "Parts Comparator",
+                    desc: "Side-by-side specs comparison."
+                },
+                budgeting: {
+                    title: "Project Budgeting",
+                    desc: "Add parts to projects with auto-budget calculation."
+                },
+                live: {
+                    title: "Live Stock Management",
+                    desc: "Real-time inventory tracking."
+                },
+                reservations: {
+                    title: "Smart Reservations",
+                    desc: "Lock, Confirm, and Release workflow with automated expiration warnings."
+                }
+            },
+            actions: {
+                favorites: "Add to Favorites",
+                quick_add: "Quick Add"
+            },
+            mockup: {
+                header: "thecore.app/stock",
+                valuation: "Total Valuation",
+                demo: "Live Demo"
+            }
+        },
         hero: {
             headline_1: "Close the Deal",
             headline_2: "on the First Visit.",
@@ -281,6 +313,38 @@ const translations = {
                 warehouse: "Entrepôt A",
                 units: "unités",
                 btn: "Ajouter au Projet"
+            }
+        },
+        advanced_stock: {
+            tag: "Outils Avancés",
+            title: "Contrôle Total. Précision Temps Réel.",
+            subtitle: "Gérez votre inventaire avec une précision et une rapidité militaires.",
+            features: {
+                comparator: {
+                    title: "Comparateur de Pièces",
+                    desc: "Comparaison des spécifications côte à côte."
+                },
+                budgeting: {
+                    title: "Budgétisation de Projet",
+                    desc: "Ajoutez des pièces aux projets avec calcul automatique du budget."
+                },
+                live: {
+                    title: "Gestion de Stock en Direct",
+                    desc: "Suivi des stocks en temps réel."
+                },
+                reservations: {
+                    title: "Réservations Intelligentes",
+                    desc: "Flux de travail Verrouiller, Confirmer et Libérer avec avertissements d'expiration automatiques."
+                }
+            },
+            actions: {
+                favorites: "Ajouter aux Favoris",
+                quick_add: "Ajout Rapide"
+            },
+            mockup: {
+                header: "thecore.app/stock",
+                valuation: "Valorisation Totale",
+                demo: "Démo Live"
             }
         },
         hero: {

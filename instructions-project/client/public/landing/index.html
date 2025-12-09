@@ -77,16 +77,15 @@
                             <a href="#ai-visualization"
                                 class="block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-brand-violet/10 hover:text-brand-violet hover:pl-6 transition-all rounded-lg"
                                 data-i18n="nav.simulation_creation">Simulation Creation</a>
-                            class="block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-brand-violet/10
-                            hover:text-brand-violet hover:pl-6 transition-all rounded-lg"
-                            data-i18n="nav.motif_creation">Motif Creation</a>
-                            <a href="#intelligent-stock"
+                            <a href="#motif-creation"
                                 class="block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-brand-violet/10 hover:text-brand-violet hover:pl-6 transition-all rounded-lg"
-                                data-i18n="nav.stock_control">Stock Control</a>
+                                data-i18n="nav.motif_creation">Motif Creation</a>
                         </div>
                     </div>
                 </div>
 
+                <a href="#intelligent-stock" class="hover:text-brand-violet transition-colors"
+                    data-i18n="nav.stock_control">Stock Control</a>
                 <a href="#costs" class="hover:text-brand-violet transition-colors" data-i18n="nav.ai_costs">AI Costs</a>
                 <a href="#development-options" class="hover:text-brand-violet transition-colors"
                     data-i18n="nav.roadmap">Development Roadmap</a>
@@ -850,6 +849,219 @@
                 </div>
             </div>
         </div>
+    </section>
+
+    <!-- Section 2.9: Advanced Stock Control (New) -->
+    <section id="advanced-stock-tools" class="py-24 relative overflow-hidden bg-[#0B0D17] text-white">
+        <!-- Background Ambience -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+            <div class="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[100px]">
+            </div>
+            <div
+                class="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-purple-900/10 rounded-full blur-[120px]">
+            </div>
+        </div>
+
+        <div class="container mx-auto px-6 relative z-10">
+            <!-- Header -->
+            <div class="flex flex-col items-center text-center mb-16 reveal-on-scroll">
+                <span class="text-indigo-400 font-medium tracking-wider uppercase text-sm mb-3"
+                    data-i18n="advanced_stock.tag">Advanced Tools</span>
+                <h2 class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400"
+                    data-i18n="advanced_stock.title">Complete Control. Real-time Precision.</h2>
+                <p class="mt-4 text-gray-400 max-w-2xl text-lg font-light" data-i18n="advanced_stock.subtitle">Manage
+                    your inventory with
+                    military-grade precision and speed.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <!-- Left Side: Mockup Demo -->
+                <div class="relative group perspective-container reveal-on-scroll">
+                    <!-- Floating Container -->
+                    <div
+                        class="relative rounded-xl bg-gray-900/40 backdrop-blur-xl border border-white/10 shadow-[0_0_50px_-12px_rgba(99,102,241,0.2)] overflow-hidden animate-float">
+                        <!-- Browser Header -->
+                        <div class="h-10 bg-white/5 border-b border-white/10 flex items-center px-4 gap-2">
+                            <div class="flex gap-2">
+                                <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+                            </div>
+                            <div class="mx-auto w-1/2 h-5 bg-white/5 rounded-full text-[10px] flex items-center justify-center text-gray-400 font-mono"
+                                data-i18n="advanced_stock.mockup.header">thecore.app/stock</div>
+                        </div>
+
+                        <!-- Video/Content Placeholder -->
+                        <div
+                            class="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center relative group cursor-pointer overflow-hidden">
+                            <!-- Placeholder for video -->
+                            <div
+                                class="absolute inset-0 opacity-30 bg-[url('https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&q=80')] bg-cover bg-center">
+                            </div>
+
+                            <div
+                                class="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform z-10">
+                                <div
+                                    class="w-0 h-0 border-t-[10px] border-t-transparent border-l-[18px] border-l-white border-b-[10px] border-b-transparent ml-1">
+                                </div>
+                            </div>
+
+                            <!-- Simulated UI Overlay -->
+                            <div class="absolute bottom-4 left-4 right-4 flex justify-between items-end z-10">
+                                <div class="bg-black/50 backdrop-blur-md px-3 py-2 rounded-lg border border-white/10">
+                                    <div class="text-xs text-gray-400" data-i18n="advanced_stock.mockup.valuation">Total
+                                        Valuation</div>
+                                    <div class="text-sm font-bold text-white">$142,050.00</div>
+                                </div>
+                                <div class="bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse shadow-lg shadow-indigo-500/20"
+                                    data-i18n="advanced_stock.mockup.demo">Live Demo</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Glow behind -->
+                    <div class="absolute inset-0 bg-indigo-500/20 blur-3xl rounded-full -z-10 transform scale-90"></div>
+                </div>
+
+                <!-- Right Side: Feature Grid -->
+                <div class="flex flex-col gap-6 reveal-on-scroll">
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Parts Comparator -->
+                        <div
+                            class="col-span-1 p-5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors group">
+                            <div
+                                class="mb-3 p-2 bg-indigo-500/10 rounded-lg w-fit group-hover:bg-indigo-500/20 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-indigo-400"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m16 3 4 4-4 4" />
+                                    <path d="M20 7H4" />
+                                    <path d="m8 21-4-4 4-4" />
+                                    <path d="M4 17h16" />
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-semibold text-white mb-1 group-hover:text-indigo-300 transition-colors"
+                                data-i18n="advanced_stock.features.comparator.title">Parts Comparator</h3>
+                            <p class="text-sm text-gray-400 leading-relaxed font-light"
+                                data-i18n="advanced_stock.features.comparator.desc">Side-by-side specs comparison.</p>
+                        </div>
+
+                        <!-- Project Budgeting -->
+                        <div
+                            class="col-span-1 p-5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors group">
+                            <div
+                                class="mb-3 p-2 bg-indigo-500/10 rounded-lg w-fit group-hover:bg-indigo-500/20 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-indigo-400"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="16" height="20" x="4" y="2" rx="2" />
+                                    <line x1="8" x2="16" y1="6" y2="6" />
+                                    <line x1="16" x2="16" y1="14" y2="18" />
+                                    <path d="M16 10h.01" />
+                                    <path d="M12 10h.01" />
+                                    <path d="M8 10h.01" />
+                                    <path d="M12 14h.01" />
+                                    <path d="M8 14h.01" />
+                                    <path d="M12 18h.01" />
+                                    <path d="M8 18h.01" />
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-semibold text-white mb-1 group-hover:text-indigo-300 transition-colors"
+                                data-i18n="advanced_stock.features.budgeting.title">Project Budgeting</h3>
+                            <p class="text-sm text-gray-400 leading-relaxed font-light"
+                                data-i18n="advanced_stock.features.budgeting.desc">Add parts to projects with
+                                auto-budget
+                                calculation.</p>
+                        </div>
+
+                        <!-- Live Stock Management -->
+                        <div
+                            class="col-span-2 p-5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors group">
+                            <div
+                                class="mb-3 p-2 bg-indigo-500/10 rounded-lg w-fit group-hover:bg-indigo-500/20 transition-colors relative">
+                                <span class="absolute top-0 right-0 -mt-1 -mr-1 flex h-3 w-3">
+                                    <span
+                                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                                </span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-indigo-400"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-semibold text-white mb-1 group-hover:text-indigo-300 transition-colors"
+                                data-i18n="advanced_stock.features.live.title">Live Stock Management</h3>
+                            <p class="text-sm text-gray-400 leading-relaxed font-light"
+                                data-i18n="advanced_stock.features.live.desc">Real-time inventory tracking.</p>
+                        </div>
+
+                        <!-- Smart Reservations -->
+                        <div
+                            class="col-span-2 p-5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors group">
+                            <div
+                                class="mb-3 p-2 bg-indigo-500/10 rounded-lg w-fit group-hover:bg-indigo-500/20 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-indigo-400"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-semibold text-white mb-1 group-hover:text-indigo-300 transition-colors"
+                                data-i18n="advanced_stock.features.reservations.title">Smart Reservations</h3>
+                            <p class="text-sm text-gray-400 leading-relaxed font-light"
+                                data-i18n="advanced_stock.features.reservations.desc">Lock, Confirm, and Release
+                                workflow with
+                                automated expiration warnings.</p>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="flex items-center gap-4 mt-2">
+                        <button
+                            class="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all group">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                class="w-5 h-5 group-hover:text-red-400 transition-colors" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path
+                                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                            </svg>
+                            <span class="text-sm font-medium" data-i18n="advanced_stock.actions.favorites">Add to
+                                Favorites</span>
+                        </button>
+
+                        <button
+                            class="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-900/20 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12h14" />
+                                <path d="M12 5v14" />
+                            </svg>
+                            <span class="text-sm font-medium" data-i18n="advanced_stock.actions.quick_add">Quick
+                                Add</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('opacity-100', 'translate-y-0');
+                            entry.target.classList.remove('opacity-0', 'translate-y-10');
+                        }
+                    });
+                }, { threshold: 0.1 });
+
+                document.querySelectorAll('.reveal-on-scroll').forEach(el => {
+                    el.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-10');
+                    observer.observe(el);
+                });
+            });
+        </script>
     </section>
 
     <!-- Section 3: Control Hub & Performance -->
