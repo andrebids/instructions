@@ -33,6 +33,9 @@ if "%GIT_ROOT%"=="" (
 )
 cd /d "%GIT_ROOT%"
 
+REM CRITICAL: Jump to main code to skip function definitions
+goto :main_code
+
 REM Simple print functions
 :print_info
 echo [INFO] %~1
@@ -53,14 +56,16 @@ goto :eof
 REM ============================================
 REM Main Code
 REM ============================================
+:main_code
 
 echo.
 echo ========================================
-echo Trigger GitHub Actions Workflow
+echo Trigger GitHub Actions Workflow  
 echo ========================================
 echo.
 
 REM Check if GitHub CLI is installed
+call :print_info "Verificando GitHub CLI..."
 where gh >nul 2>&1
 if %ERRORLEVEL% neq 0 (
     call :print_error "GitHub CLI (gh) nao esta instalado"
@@ -107,17 +112,6 @@ call :print_info "Diretorio Git: %GIT_ROOT%"
 call :print_info "Workflow: Build and Push Docker Image"
 echo.
 
-REM Ask for confirmation
-call :print_info "Isso vai disparar o workflow no GitHub."
-call :print_info "Deseja continuar? (S/N)"
-set /p "CONFIRM="
-
-if /i not "%CONFIRM%"=="S" (
-    call :print_info "Operacao cancelada"
-    exit /b 0
-)
-
-echo.
 call :print_info "Disparando workflow no GitHub..."
 echo.
 
@@ -215,14 +209,24 @@ if not "%WORKFLOW_ID%"=="" (
             call :print_error "Falha ao disparar workflow via API (codigo: %WORKFLOW_RESULT%)"
             call :print_info "Tentando metodo alternativo com gh workflow run..."
             echo.
-            gh workflow run docker-build.yml --repo %REPO% --ref %CURRENT_BRANCH% -f push_to_registry=true
+            gh workflow run docker-build.yml --repo %REPO% --ref %CURRENT_BRANCH% -f push_to_registry=true > "%TEMP%\gh_workflow_output.txt" 2>&1
             set "WORKFLOW_RESULT=%ERRORLEVEL%"
-            if %WORKFLOW_RESULT% neq 0 (
-                call :print_error "Ambos os metodos falharam (codigo: %WORKFLOW_RESULT%)"
-                call :print_info "Saida dos comandos acima pode conter mais detalhes"
-            ) else (
+            type "%TEMP%\gh_workflow_output.txt"
+            findstr /i "Created workflow_dispatch event" "%TEMP%\gh_workflow_output.txt" >nul 2>&1
+            if %ERRORLEVEL% equ 0 (
+                REM Success - found "Created workflow_dispatch event" in output
+                set "WORKFLOW_RESULT=0"
                 call :print_success "Workflow disparado com sucesso usando gh workflow run"
+            ) else (
+                REM Check if ERRORLEVEL was 0 (some versions return 0 on success)
+                if %WORKFLOW_RESULT% equ 0 (
+                    call :print_success "Workflow disparado com sucesso usando gh workflow run"
+                ) else (
+                    call :print_error "Ambos os metodos falharam (codigo: %WORKFLOW_RESULT%)"
+                    call :print_info "Saida dos comandos acima pode conter mais detalhes"
+                )
             )
+            del "%TEMP%\gh_workflow_output.txt" >nul 2>&1
         ) else (
             call :print_success "Workflow disparado com sucesso via API"
         )
@@ -231,14 +235,24 @@ if not "%WORKFLOW_ID%"=="" (
         call :print_info "Workflow nao encontrado pelo ID, tentando usar o nome do arquivo diretamente..."
         call :print_info "Comando: gh workflow run docker-build.yml --repo %REPO% --ref %CURRENT_BRANCH% -f push_to_registry=true"
         echo.
-        gh workflow run docker-build.yml --repo %REPO% --ref %CURRENT_BRANCH% -f push_to_registry=true
+        gh workflow run docker-build.yml --repo %REPO% --ref %CURRENT_BRANCH% -f push_to_registry=true > "%TEMP%\gh_workflow_output.txt" 2>&1
         set "WORKFLOW_RESULT=%ERRORLEVEL%"
-        if %WORKFLOW_RESULT% neq 0 (
-            call :print_error "Falha ao disparar workflow com nome do arquivo (codigo: %WORKFLOW_RESULT%)"
-            call :print_info "Saida do comando acima pode conter mais detalhes"
-        ) else (
+        type "%TEMP%\gh_workflow_output.txt"
+        findstr /i "Created workflow_dispatch event" "%TEMP%\gh_workflow_output.txt" >nul 2>&1
+        if %ERRORLEVEL% equ 0 (
+            REM Success - found "Created workflow_dispatch event" in output
+            set "WORKFLOW_RESULT=0"
             call :print_success "Workflow disparado com sucesso usando gh workflow run"
+        ) else (
+            REM Check if ERRORLEVEL was 0 (some versions return 0 on success)
+            if %WORKFLOW_RESULT% equ 0 (
+                call :print_success "Workflow disparado com sucesso usando gh workflow run"
+            ) else (
+                call :print_error "Falha ao disparar workflow com nome do arquivo (codigo: %WORKFLOW_RESULT%)"
+                call :print_info "Saida do comando acima pode conter mais detalhes"
+            )
         )
+        del "%TEMP%\gh_workflow_output.txt" >nul 2>&1
     )
 )
 
