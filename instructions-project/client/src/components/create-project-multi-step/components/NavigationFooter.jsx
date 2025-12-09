@@ -17,67 +17,79 @@ export function NavigationFooter({
   isCurrentLogoValid,
   projectId,
   isSaving,
+  logoInstructionsPage,
+  onLogoInternalNext,
+  onLogoInternalPrev,
+  onLogoNew,
+  onLogoFinish,
+  isLogoFinishing,
 }) {
   const isLogoInstructionsStep = currentStepId === "logo-instructions";
 
   return (
     <div className="w-full bg-content1 border-t border-divider px-4 py-4 sm:px-6 sm:py-6 flex-shrink-0">
       <div className="max-w-6xl mx-auto flex justify-between items-center gap-4">
-        <Button
-          variant="flat"
-          className={currentStep === 1 ? "invisible" : ""}
-          onPress={onPrev}
-          isDisabled={loading}
-          startContent={<Icon icon="lucide:arrow-left" />}
-        >
-          Back
-        </Button>
+        {isLogoInstructionsStep && logoInstructionsPage > 1 ? (
+          // Nas páginas 2-4 do logo-instructions: Back navega entre páginas internas
+          <Button
+            variant="flat"
+            onPress={onLogoInternalPrev}
+            isDisabled={loading || isLogoFinishing}
+            startContent={<Icon icon="lucide:arrow-left" />}
+          >
+            Back
+          </Button>
+        ) : (
+          // Página 1 do logo-instructions ou outros steps: Back navega para step anterior
+          <Button
+            variant="flat"
+            className={currentStep === 1 ? "invisible" : ""}
+            onPress={onPrev}
+            isDisabled={loading}
+            startContent={<Icon icon="lucide:arrow-left" />}
+          >
+            Back
+          </Button>
+        )}
 
         <div className="flex gap-2">
           {isLogoInstructionsStep ? (
-            <>
-              <Button
-                color="secondary"
-                variant="flat"
-                onPress={onResetLogo}
-                isDisabled={loading || isNavigating || !isCurrentLogoValid}
-                startContent={<Icon icon="lucide:plus" />}
-              >
-                New Logo
-              </Button>
+            // No step logo-instructions: mostrar botões baseado na página interna
+            logoInstructionsPage === 4 ? (
+              // Summary page: mostrar New Logo e Finish
+              <>
+                <Button
+                  color="secondary"
+                  variant="flat"
+                  onPress={onLogoNew}
+                  isDisabled={loading || isNavigating || !isCurrentLogoValid || isLogoFinishing}
+                  startContent={<Icon icon="lucide:plus" />}
+                >
+                  New Logo
+                </Button>
+                <Button
+                  color="primary"
+                  onPress={onLogoFinish}
+                  isLoading={loading || isNavigating || isSaving || isLogoFinishing}
+                  isDisabled={!isValid || loading || isNavigating || isSaving || isLogoFinishing}
+                  endContent={<Icon icon="lucide:check" />}
+                  className="bg-blue-600 text-white"
+                >
+                  {loading || isNavigating || isSaving || isLogoFinishing ? (isSaving ? "Saving..." : "Creating...") : "Finish"}
+                </Button>
+              </>
+            ) : (
+              // Páginas 1-3: mostrar Next
               <Button
                 color="primary"
-                onPress={async () => {
-                  try {
-                    // Save before submitting if editing existing project
-                    if (projectId && onSave) {
-                      try {
-                        await onSave();
-                      } catch (saveError) {
-                        console.error('❌ Erro ao salvar antes de avançar:', saveError);
-                        // Continuar mesmo se houver erro no save (pode ser um problema temporário)
-                        // O erro já foi mostrado no saveStatus
-                      }
-                    }
-                    // Then submit or go to next step
-                    if (currentStep >= totalSteps) {
-                      onSubmit();
-                    } else {
-                      onNext();
-                    }
-                  } catch (error) {
-                    console.error('❌ Erro ao processar Finish:', error);
-                    // Não bloquear a UI, o erro já foi mostrado
-                  }
-                }}
-                isLoading={loading || isNavigating || isSaving}
-                isDisabled={!isValid || loading || isNavigating || isSaving}
-                endContent={<Icon icon="lucide:check" />}
+                onPress={onLogoInternalNext}
+                isDisabled={!isValid || loading || isNavigating || isLogoFinishing}
+                endContent={<Icon icon="lucide:arrow-right" />}
                 className="bg-blue-600 text-white"
               >
-                {loading || isNavigating || isSaving ? (isSaving ? "Saving..." : "Creating...") : "Finish"}
+                Next
               </Button>
-            </>
+            )
           ) : currentStep < totalSteps ? (
             <Button
               color="primary"
