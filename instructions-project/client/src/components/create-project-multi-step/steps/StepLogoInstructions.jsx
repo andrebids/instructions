@@ -40,6 +40,7 @@ import { DragAndDropZone } from "../../ui/DragAndDropZone";
 import { productsAPI } from "../../../services/api";
 import { useTranslation } from "react-i18next";
 import { StepIndicator } from "../components/StepIndicator";
+import { useVoiceAssistant } from "../../../context/VoiceAssistantContext";
 
 // Componente para texto em movimento quando truncado
 const MarqueeText = ({ children, className = "", hoverOnly = false }) => {
@@ -449,7 +450,7 @@ const validationSchema = Yup.object({
   ),
 });
 
-export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCompact = false, onBack }) {
+export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCompact = false, onBack, onNext, onSave, projectId, currentStep, totalSteps }) {
   const { t } = useTranslation();
   const logoDetails = formData.logoDetails || {};
   // Support both old structure (direct logoDetails) and new structure (with currentLogo)
@@ -464,6 +465,15 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
   // Obter nome do usuário atual
   const { userName } = useUser();
+
+  // Voice Assistant
+  const { 
+    openAssistant, 
+    closeAssistant, 
+    isOpen: isVoiceAssistantOpen,
+    listening,
+    supported: voiceSupported 
+  } = useVoiceAssistant();
 
   // Refs para preservar valores preenchidos automaticamente
   const preservedRequestedByRef = React.useRef(null);
@@ -494,6 +504,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
   // Wizard state - controla a página atual do wizard step-by-step
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [isFinishing, setIsFinishing] = React.useState(false);
   const logoSteps = [
     { id: 'details-attachments', label: 'Details & Attachments' },
     { id: 'dimensions', label: 'Dimensions' },
@@ -1964,12 +1975,34 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     }
   };
 
-  const handleFinish = () => {
-    // Finalizar e salvar o logo atual
-    if (canProceedToNext()) {
-      // O logo já está sendo salvo automaticamente via useLogoPersistence
-      // Aqui podemos adicionar lógica adicional se necessário
-      console.log("Finish clicked - Logo saved");
+  const handleFinish = async () => {
+    // Finalizar e salvar o logo atual antes de navegar
+    if (!canProceedToNext() || isFinishing) {
+      return; // Não prosseguir se a página atual não for válida ou já estiver processando
+    }
+
+    setIsFinishing(true);
+    try {
+      // Salvar antes de avançar se estiver editando um projeto existente
+      if (projectId && onSave) {
+        try {
+          await onSave();
+        } catch (saveError) {
+          console.error('❌ Erro ao salvar antes de avançar:', saveError);
+          // Continuar mesmo se houver erro no save (pode ser um problema temporário)
+          // O erro já foi mostrado no saveStatus
+        }
+      }
+      
+      // Navegar para o próximo passo
+      if (onNext) {
+        onNext();
+      }
+    } catch (error) {
+      console.error('❌ Erro ao processar Finish:', error);
+      // Não bloquear a UI, o erro já foi mostrado
+    } finally {
+      setIsFinishing(false);
     }
   };
 
@@ -4548,6 +4581,19 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           <div className="flex items-center gap-2">
             {currentPage === logoSteps.length ? (
               <>
+                {voiceSupported && (
+                  <Button
+                    isIconOnly
+                    variant="flat"
+                    size="sm"
+                    color="primary"
+                    onPress={isVoiceAssistantOpen ? closeAssistant : openAssistant}
+                    className={listening ? 'animate-pulse ring-2 ring-primary/30' : ''}
+                    aria-label={isVoiceAssistantOpen ? t('common.close') : t('pages.dashboard.voiceAssistant.title', 'Voice Assistant')}
+                  >
+                    <Icon icon={isVoiceAssistantOpen ? "lucide:x" : "lucide:mic"} className="w-4 h-4" />
+                  </Button>
+                )}
                 <Button
                   variant="light"
                   size="sm"
@@ -4560,21 +4606,40 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                   color="primary"
                   size="sm"
                   onPress={handleFinish}
+                  isDisabled={!canProceedToNext() || isFinishing || saveStatus?.status === 'saving'}
+                  isLoading={isFinishing || saveStatus?.status === 'saving'}
                   endContent={<Icon icon="lucide:check" className="w-4 h-4" />}
                 >
-                  {t('common.finish', 'Finish')}
+                  {isFinishing || saveStatus?.status === 'saving' 
+                    ? (saveStatus?.status === 'saving' ? t('common.saving', 'Saving...') : t('common.creating', 'Creating...'))
+                    : t('common.finish', 'Finish')}
                 </Button>
               </>
             ) : (
-              <Button
-                color="primary"
-                size="sm"
-                onPress={handleNextPage}
-                isDisabled={!canProceedToNext()}
-                endContent={<Icon icon="lucide:arrow-right" className="w-4 h-4" />}
-              >
-                {t('common.next', 'Next')}
-              </Button>
+              <>
+                {voiceSupported && (
+                  <Button
+                    isIconOnly
+                    variant="flat"
+                    size="sm"
+                    color="primary"
+                    onPress={isVoiceAssistantOpen ? closeAssistant : openAssistant}
+                    className={listening ? 'animate-pulse ring-2 ring-primary/30' : ''}
+                    aria-label={isVoiceAssistantOpen ? t('common.close') : t('pages.dashboard.voiceAssistant.title', 'Voice Assistant')}
+                  >
+                    <Icon icon={isVoiceAssistantOpen ? "lucide:x" : "lucide:mic"} className="w-4 h-4" />
+                  </Button>
+                )}
+                <Button
+                  color="primary"
+                  size="sm"
+                  onPress={handleNextPage}
+                  isDisabled={!canProceedToNext()}
+                  endContent={<Icon icon="lucide:arrow-right" className="w-4 h-4" />}
+                >
+                  {t('common.next', 'Next')}
+                </Button>
+              </>
             )}
           </div>
         </div>

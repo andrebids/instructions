@@ -19,6 +19,7 @@ export default function Landing() {
   const signIn = useAuthJs ? authJsHook.signIn : null
   const sectionRef = React.useRef(null)
   const [showSubtitle, setShowSubtitle] = React.useState(false)
+  const [showButton, setShowButton] = React.useState(false)
   const etherColors = React.useMemo(() => ['#5227FF', '#FF9FFC', '#B19EEF'], [])
 
   const handleAuthJsSignIn = async (e) => {
@@ -51,9 +52,17 @@ export default function Landing() {
   const totalRevealMs = d2c + l2c.length * speed + buf5;
 
   React.useEffect(() => {
+    // Mostrar botão imediatamente junto com o texto
+    const buttonDelay = 0; // Aparece imediatamente
+    const buttonTimeout = setTimeout(() => setShowButton(true), buttonDelay)
+    
     // Reveal subtitle after headline typing completes (computed below via delays)
-    const timeout = setTimeout(() => setShowSubtitle(true), totalRevealMs)
-    return () => clearTimeout(timeout)
+    const subtitleTimeout = setTimeout(() => setShowSubtitle(true), totalRevealMs)
+    
+    return () => {
+      clearTimeout(buttonTimeout)
+      clearTimeout(subtitleTimeout)
+    }
   }, [totalRevealMs])
 
   return (
@@ -136,14 +145,13 @@ export default function Landing() {
         </section>
 
         <div className="auth-cta">
-          {showSubtitle ? (
+          {showButton ? (
             <FadeContent
               blur
               duration={700}
               easing="ease-out"
               initialOpacity={0}
-              // start halfway through subtitle animation: chars*delay + duration
-              delay={(subtitleText.length * 60 + 500) / 2}
+              delay={0}
               className="w-full"
             >
               <ul>

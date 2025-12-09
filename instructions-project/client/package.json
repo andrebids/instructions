@@ -58,6 +58,7 @@
     "framer-motion": "^12.23.22",
     "gsap": "^3.13.0",
     "i18next": "^25.6.2",
+    "i18next-browser-languagedetector": "^7.2.2",
     "konva": "^10.0.2",
     "lottie-web": "^5.13.0",
     "lucide-react": "^0.555.0",
@@ -95,5 +96,10 @@
     "workbox-precaching": "^7.0.0",
     "workbox-routing": "^7.0.0",
     "workbox-strategies": "^7.0.0"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-musl": "^4.53.3",
+    "@tailwindcss/oxide-linux-x64-musl": "^4.1.17",
+    "lightningcss-linux-x64-musl": "^1.30.2"
   }
 }

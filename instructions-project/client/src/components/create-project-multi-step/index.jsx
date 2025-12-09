@@ -556,6 +556,11 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
             onInputChange={formState.handleInputChange}
             saveStatus={saveStatus}
             onBack={navigation.prevStep}
+            onNext={navigation.nextStep}
+            onSave={formState.handleSave}
+            projectId={projectId}
+            currentStep={navigation.currentStep}
+            totalSteps={visibleSteps.length}
           />
         );
 
