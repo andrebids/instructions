@@ -7,7 +7,6 @@ import {
   TableRow, 
   TableCell, 
   Chip, 
-  Tooltip,
   Card,
   CardBody,
   Button,
@@ -130,8 +129,7 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
         contractTypeKey: i % 3 === 0 ? "sale" : i % 3 === 1 ? "rent1y" : "rent3y",
         designStatus: i % 2 === 0 ? "Ready" : "Pending",
         designStatusKey: i % 2 === 0 ? "ready" : "pending",
-        reservationValidity: i % 4 === 0 ? 3 : deterministicValue, // Mock days
-        mockImage: `https://images.unsplash.com/photo-${i % 2 === 0 ? '1576692131261-40e88a446404' : '1512389142660-9c87db076481'}?w=300&h=200&fit=crop`
+        reservationValidity: i % 4 === 0 ? 3 : deterministicValue // Mock days
       };
     });
   }, [projects]);
@@ -380,30 +378,12 @@ const SkeletonRow = React.memo(({ columnKey }) => {
 });
 SkeletonRow.displayName = 'SkeletonRow';
 
-// Extracted component for Name Cell with Tooltip to optimize rendering
+// Extracted component for Name Cell to optimize rendering
 const ProjectNameCell = React.memo(({ project, navigate, t, language }) => {
   return (
-    <Tooltip 
-      content={
-        <div className="p-1">
-          <img 
-            src={project.mockImage} 
-            alt="Preview" 
-            className="w-48 h-32 object-cover rounded-lg mb-2" 
-            loading="lazy" // Lazy load image
-          />
-          <div className="text-xs font-semibold text-center">{t('pages.dashboard.smartProjectTable.tooltip.render')}</div>
-        </div>
-      }
-      delay={200} // Add delay to prevent accidental triggers
-      closeDelay={0}
-      placement="right"
-      className="bg-content1 border border-default-200"
-    >
-      <div className="cursor-pointer hover:text-primary transition-colors" onClick={() => navigate(`/projects/${project.id}`)}>
-        <p className="font-bold text-sm text-foreground">{project.name}</p>
-        <p className="text-xs text-default-500">{project.clientName || project.client}</p>
-      </div>
-    </Tooltip>
+    <div className="cursor-pointer hover:text-primary transition-colors" onClick={() => navigate(`/projects/${project.id}`)}>
+      <p className="font-bold text-sm text-foreground">{project.name}</p>
+      <p className="text-xs text-default-500">{project.clientName || project.client}</p>
+    </div>
   );
 });

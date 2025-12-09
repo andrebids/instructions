@@ -1,19 +1,24 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
+import { calculateImageDimensions } from '../../utils/canvasCalculations';
 
 /**
  * Componente para carregar Source Images (não arrastáveis)
  * Renderiza imagens estáticas no canvas Konva
+ * Calcula automaticamente o aspect ratio correto quando a imagem carrega
  * 
  * @param {Object} props
  * @param {string} props.src - URL da imagem
- * @param {number} props.width - Largura da imagem
- * @param {number} props.height - Altura da imagem
+ * @param {number} props.width - Largura inicial da imagem (será ajustada se necessário)
+ * @param {number} props.height - Altura inicial da imagem (será ajustada se necessário)
  * @param {number} props.x - Posição X
  * @param {number} props.y - Posição Y
  */
 export const URLImage = ({ src, width, height, x, y }) => {
+  const [adjustedDimensions, setAdjustedDimensions] = useState({ width, height });
+  const [hasAdjusted, setHasAdjusted] = useState(false);
+  
   // Converter caminho /uploads/ para /api/uploads/ se necessário (para passar pelo proxy do Vite)
   const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || '';
   const mapPath = (path) => {
@@ -42,21 +47,71 @@ export const URLImage = ({ src, width, height, x, y }) => {
     console.error('❌ [URLImage] Erro ao carregar imagem:', { src, mappedSrc, error: status.error });
   }
 
+  // Calcular dimensões corretas quando a imagem carregar
+  useEffect(() => {
+    if (!image || hasAdjusted) return;
+    
+    const imgW = image.width || 0;
+    const imgH = image.height || 0;
+    
+    if (imgW > 0 && imgH > 0) {
+      // Calcular aspect ratio real da imagem
+      const imageAspectRatio = imgW / imgH;
+      
+      // Calcular aspect ratio atual (das props)
+      const currentAspectRatio = width / height;
+      
+      // Verificar se o aspect ratio está incorreto (diferença > 1%)
+      const aspectRatioDiff = Math.abs(imageAspectRatio - currentAspectRatio);
+      const isAspectRatioIncorrect = aspectRatioDiff > 0.01;
+      
+      if (isAspectRatioIncorrect) {
+        // Canvas virtual sempre 1200x600
+        const canvasWidth = 1200;
+        const canvasHeight = 600;
+        
+        // Recalcular dimensões mantendo aspect ratio correto
+        const { imageWidth, imageHeight } = calculateImageDimensions(
+          imageAspectRatio, 
+          canvasWidth, 
+          canvasHeight, 
+          0.96
+        );
+        
+        console.log('📐 [URLImage] Ajustando dimensões:', {
+          original: { width, height, aspectRatio: currentAspectRatio },
+          real: { width: imgW, height: imgH, aspectRatio: imageAspectRatio },
+          adjusted: { width: imageWidth, height: imageHeight }
+        });
+        
+        setAdjustedDimensions({ width: imageWidth, height: imageHeight });
+        setHasAdjusted(true);
+      } else {
+        // Aspect ratio já está correto
+        setHasAdjusted(true);
+      }
+    }
+  }, [image, width, height, hasAdjusted]);
+
   // Não renderizar se não houver imagem válida ou se houver erro
   // Verificar se status existe e tem propriedade error, ou se image é null/undefined
   if (!image || (status && status.error)) {
     return null;
   }
 
+  // Usar dimensões ajustadas se disponíveis, senão usar as originais
+  const finalWidth = adjustedDimensions.width || width;
+  const finalHeight = adjustedDimensions.height || height;
+
   return (
     <KonvaImage
       image={image}
       x={x}
       y={y}
-      width={width}
-      height={height}
-      offsetX={width / 2}
-      offsetY={height / 2}
+      width={finalWidth}
+      height={finalHeight}
+      offsetX={finalWidth / 2}
+      offsetY={finalHeight / 2}
       listening={false} // Não responde a eventos (não arrastável)
     />
   );
