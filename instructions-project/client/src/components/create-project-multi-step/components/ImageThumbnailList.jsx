@@ -27,6 +27,7 @@ const mapImagePath = (path) => {
  * @param {Array} props.uploadedImages - Imagens uploadadas
  * @param {Object} props.selectedImage - Imagem selecionada
  * @param {Function} props.onImageSelect - Callback quando imagem é selecionada
+ * @param {Function} props.onImageRemove - Callback quando imagem é removida
  * @param {Object} props.conversionComplete - Mapeia quais imagens completaram conversão
  * @param {number} props.activeGifIndex - Índice da imagem com GIF ativo
  * @param {Function} props.onAddMore - Callback para adicionar mais imagens
@@ -36,6 +37,7 @@ export const ImageThumbnailList = ({
   uploadedImages,
   selectedImage,
   onImageSelect,
+  onImageRemove,
   conversionComplete = {},
   activeGifIndex = -1,
   onAddMore,
@@ -55,7 +57,7 @@ export const ImageThumbnailList = ({
           const isDisabled = !isConverted;
           
           return (
-            <div key={image.id} className="relative">
+            <div key={image.id} className="relative group">
               <Tooltip
                 content={isDisabled ? "Waiting for night conversion..." : ""}
                 isDisabled={!isDisabled}
@@ -81,6 +83,21 @@ export const ImageThumbnailList = ({
                   }}
                   aria-label={'Select source image ' + image.name}
                 >
+                  {/* Botão de remoção - aparece no hover */}
+                  {onImageRemove && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        onImageRemove(image.id);
+                      }}
+                      className="btn-remove-image absolute top-1 right-1 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-full p-1 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-danger-300 shadow-md"
+                      aria-label={`Remove image ${image.name}`}
+                      title="Remove image"
+                    >
+                      <Icon icon="lucide:x" className="icon-x text-xs" />
+                    </button>
+                  )}
                   {/* NightThumb com animação de dia para noite - só mostra se API disponível */}
                   {image.nightVersion && (
                     <NightThumb

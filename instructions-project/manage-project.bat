@@ -88,6 +88,7 @@ echo.
 call :print_color "  [1]  Rebuild Ambiente Dev (sem cache)"
 call :print_color "  [2]  Build e Push LOCAL para GitHub Packages"
 call :print_color "  [3]  Disparar GitHub Action (Build no GitHub)"
+call :print_color "  [5]  Deploy Docker no Servidor (Producao)"
 call :print_color "  [4]  Sair"
 echo.
 call :print_color "Opcao: "
@@ -96,6 +97,7 @@ set /p "MENU_CHOICE="
 if "%MENU_CHOICE%"=="1" goto rebuild_dev
 if "%MENU_CHOICE%"=="2" goto build_push_github
 if "%MENU_CHOICE%"=="3" goto trigger_workflow
+if "%MENU_CHOICE%"=="5" goto deploy_docker_server
 if "%MENU_CHOICE%"=="4" goto exit_script
 if "%MENU_CHOICE%"=="" goto :main_menu
 
@@ -168,6 +170,38 @@ if %WORKFLOW_RESULT% equ 0 (
     call :print_success "Workflow disparado com sucesso!"
 ) else (
     call :print_error "Falha ao disparar workflow com codigo de erro: %WORKFLOW_RESULT%"
+)
+
+echo.
+call :print_info "Pressione qualquer tecla para voltar ao menu..."
+pause >nul
+goto :main_menu
+
+REM ============================================
+REM Option 5: Deploy Docker to Remote Server
+REM ============================================
+:deploy_docker_server
+call :print_separator
+call :print_info "Iniciando deploy Docker no servidor remoto..."
+echo.
+
+REM Verify script exists before calling
+if not exist "%SCRIPT_DIR%scripts\deploy\deploy-docker-server.bat" (
+    call :print_error "Script de deploy nao encontrado: %SCRIPT_DIR%scripts\deploy\deploy-docker-server.bat"
+    echo.
+    call :print_info "Pressione qualquer tecla para voltar ao menu..."
+    pause >nul
+    goto :main_menu
+)
+
+call "%SCRIPT_DIR%scripts\deploy\deploy-docker-server.bat"
+set "DEPLOY_RESULT=%ERRORLEVEL%"
+
+echo.
+if %DEPLOY_RESULT% equ 0 (
+    call :print_success "Deploy concluido com sucesso!"
+) else (
+    call :print_error "Deploy falhou com codigo de erro: %DEPLOY_RESULT%"
 )
 
 echo.

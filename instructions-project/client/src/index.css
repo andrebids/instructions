@@ -567,6 +567,17 @@ ul[data-type="taskList"] li[data-checked="true"]>div {
 }
 
 /* =========================================
+   BOTÃO DE REMOÇÃO DE IMAGEM
+   ========================================= */
+.btn-remove-image {
+  background-color: color-mix(in oklab, rgb(var(--color-danger)) 30%, transparent);
+}
+
+.btn-remove-image .icon-x {
+  color: #db3b3e;
+}
+
+/* =========================================
    ANIMATIONS
    ========================================= */
 @keyframes subtle-zoom {

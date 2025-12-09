@@ -326,6 +326,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
             uploadedImages={canvasState.uploadedImages}
             selectedImage={canvasState.selectedImage}
             onImageSelect={handleImageAddToCanvas}
+            onImageRemove={canvasState.handleImageRemove}
             conversionComplete={imageConversion.conversionComplete}
             activeGifIndex={imageConversion.activeGifIndex}
             onAddMore={() => canvasState.setUploadStep('uploading')}
