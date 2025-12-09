@@ -86,28 +86,53 @@ if %ERRORLEVEL% neq 0 (
 
 call :print_success "Autenticado no GitHub CLI"
 
-REM Get repository name from git remote
-for /f "tokens=*" %%r in ('git remote get-url origin 2^>nul') do set "REMOTE_URL=%%r"
-if "%REMOTE_URL%"=="" (
-    call :print_error "Nao foi possivel determinar o repositorio"
-    call :print_info "Certifique-se de estar em um repositorio Git valido"
-    exit /b 1
+REM Try to get repository name from .env first (priority)
+set "REPO="
+set "ENV_FILE=%PROJECT_ROOT%\.env"
+
+if exist "%ENV_FILE%" (
+    call :print_info "Tentando ler GITHUB_REPO do arquivo .env..."
+    for /f "usebackq tokens=1,* delims==" %%a in ("%ENV_FILE%") do (
+        if not "%%a"=="" (
+            echo %%a| findstr /b /c:"#" >nul 2>&1
+            if errorlevel 1 (
+                for /f "tokens=*" %%n in ("%%a") do (
+                    if /i "%%n"=="GITHUB_REPO" (
+                        for /f "tokens=*" %%v in ("%%b") do set "REPO=%%v"
+                    )
+                )
+            )
+        )
+    )
 )
 
-REM Extract repo name from URL (handles both https:// and git@ formats)
-REM For https://github.com/user/repo.git or https://github.com/user/repo
-REM For git@github.com:user/repo.git
-set "REPO=%REMOTE_URL%"
-set "REPO=%REPO:https://github.com/=%"
-set "REPO=%REPO:git@github.com:=%"
-set "REPO=%REPO:.git=%"
-set "REPO=%REPO: =%"
+REM If not found in .env, try git remote as fallback
+if "%REPO%"=="" (
+    call :print_info "GITHUB_REPO nao encontrado no .env, tentando git remote..."
+    for /f "tokens=*" %%r in ('git remote get-url origin 2^>nul') do set "REMOTE_URL=%%r"
+    if "%REMOTE_URL%"=="" (
+        call :print_error "Nao foi possivel determinar o repositorio"
+        call :print_info "Certifique-se de estar em um repositorio Git valido ou configure GITHUB_REPO no .env"
+        exit /b 1
+    )
 
-REM Remove trailing slash if present
-if "%REPO:~-1%"=="\" set "REPO=%REPO:~0,-1%"
-if "%REPO:~-1%"=="/" set "REPO=%REPO:~0,-1%"
+    REM Extract repo name from URL (handles both https:// and git@ formats)
+    REM For https://github.com/user/repo.git or https://github.com/user/repo
+    REM For git@github.com:user/repo.git
+    set "REPO=%REMOTE_URL%"
+    set "REPO=%REPO:https://github.com/=%"
+    set "REPO=%REPO:git@github.com:=%"
+    set "REPO=%REPO:.git=%"
+    set "REPO=%REPO: =%"
 
-call :print_info "Repositorio: %REPO%"
+    REM Remove trailing slash if present
+    if "%REPO:~-1%"=="\" set "REPO=%REPO:~0,-1%"
+    if "%REPO:~-1%"=="/" set "REPO=%REPO:~0,-1%"
+    
+    call :print_info "Repositorio obtido do git remote: %REPO%"
+) else (
+    call :print_info "Repositorio obtido do .env: %REPO%"
+)
 call :print_info "Diretorio Git: %GIT_ROOT%"
 call :print_info "Workflow: Build and Push Docker Image"
 echo.

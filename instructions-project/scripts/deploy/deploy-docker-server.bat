@@ -62,11 +62,58 @@ if not exist "%VERIFY_UTILS%" (
     goto :error_exit
 )
 
-REM Registry configuration
-set "REGISTRY=ghcr.io/andrebids/instructions"
+REM Registry configuration (will be set dynamically from .env)
+set "REGISTRY="
+set "GITHUB_REPO="
 
 REM Jump to main code (skip error_exit label)
 goto :main
+
+REM ============================================
+REM Function: Load GitHub Repository from .env
+REM Sets: GITHUB_REPO variable
+REM Returns: ERRORLEVEL 0 if success, 1 if failure
+REM ============================================
+:load_github_repo
+setlocal enabledelayedexpansion
+REM Get project root (go up from scripts/deploy/ to project root)
+set "CURRENT_DIR=%~dp0"
+set "CURRENT_DIR=%CURRENT_DIR:~0,-1%"
+for %%i in ("%CURRENT_DIR%\..\..") do set "PROJECT_ROOT=%%~fi"
+set "ENV_FILE=%PROJECT_ROOT%\.env"
+
+if not exist "%ENV_FILE%" (
+    call "%COMMON_UTILS%" :print_error "Arquivo .env não encontrado em: %PROJECT_ROOT%"
+    call "%COMMON_UTILS%" :print_info "Crie um arquivo .env com a variável: GITHUB_REPO=username/repo-name"
+    endlocal
+    exit /b 1
+)
+
+REM Load GITHUB_REPO from .env file
+call "%COMMON_UTILS%" :print_info "Lendo GITHUB_REPO do arquivo .env..."
+for /f "usebackq tokens=1,* delims==" %%a in ("%ENV_FILE%") do (
+    if not "%%a"=="" (
+        echo %%a| findstr /b /c:"#" >nul 2>&1
+        if errorlevel 1 (
+            for /f "tokens=*" %%n in ("%%a") do (
+                if /i "%%n"=="GITHUB_REPO" (
+                    for /f "tokens=*" %%v in ("%%b") do set "GITHUB_REPO=%%v"
+                )
+            )
+        )
+    )
+)
+
+if "!GITHUB_REPO!"=="" (
+    call "%COMMON_UTILS%" :print_error "GITHUB_REPO não encontrado no arquivo .env"
+    call "%COMMON_UTILS%" :print_info "Formato esperado: GITHUB_REPO=username/repo-name"
+    endlocal
+    exit /b 1
+)
+
+call "%COMMON_UTILS%" :print_success "GITHUB_REPO carregado: !GITHUB_REPO!"
+endlocal & set "GITHUB_REPO=%GITHUB_REPO%"
+exit /b 0
 
 REM ============================================
 REM Error Exit Handler
@@ -91,9 +138,27 @@ call "%COMMON_UTILS%" :print_header "Deploy Docker no Servidor Remoto"
 echo.
 
 REM ============================================
+REM Step 0: Load GitHub Repository from .env
+REM ============================================
+call "%COMMON_UTILS%" :print_header "Passo 0/8: Carregando Configuração do Registry"
+echo.
+
+call :load_github_repo
+if %ERRORLEVEL% neq 0 (
+    call "%COMMON_UTILS%" :print_error "Falha ao carregar GITHUB_REPO do .env. Abortando."
+    exit /b 1
+)
+
+REM Set registry dynamically
+set "REGISTRY=ghcr.io/%GITHUB_REPO%"
+call "%COMMON_UTILS%" :print_success "Registry configurado: %REGISTRY%"
+echo.
+call "%COMMON_UTILS%" :print_separator
+
+REM ============================================
 REM Step 1: Environment Checks
 REM ============================================
-call "%COMMON_UTILS%" :print_header "Passo 1/7: Verificações de Ambiente"
+call "%COMMON_UTILS%" :print_header "Passo 1/8: Verificações de Ambiente"
 echo.
 
 REM 1.1 Check SSH
@@ -143,11 +208,72 @@ echo.
 call "%COMMON_UTILS%" :print_separator
 
 REM ============================================
-REM Step 2: Get Latest Image Tag
+REM Step 1.5: Verify Docker Authentication on Remote Server
 REM ============================================
-call "%COMMON_UTILS%" :print_header "Passo 2/7: Obtendo Última Versão da Imagem"
+call "%COMMON_UTILS%" :print_header "Passo 1.5/8: Verificando Autenticação Docker no Servidor Remoto"
 echo.
 
+REM Load GitHub credentials from .env for authentication
+set "LOGIN_SCRIPT=%SCRIPT_DIR%..\github\login.bat"
+set "GITHUB_USERNAME="
+set "GITHUB_TOKEN="
+
+if exist "%LOGIN_SCRIPT%" (
+    call "%COMMON_UTILS%" :print_info "Carregando credenciais do .env..."
+    call "%LOGIN_SCRIPT%" :load_github_credentials
+    if %ERRORLEVEL% equ 0 (
+        REM Read credentials from temp file created by login.bat
+        set "TEMP_FILE=%PROJECT_ROOT%\.github_creds_temp.tmp"
+        if exist "%TEMP_FILE%" (
+            for /f "usebackq tokens=1,* delims==" %%a in ("%TEMP_FILE%") do (
+                if /i "%%a"=="GITHUB_USERNAME" set "GITHUB_USERNAME=%%b"
+                if /i "%%a"=="GITHUB_TOKEN" set "GITHUB_TOKEN=%%b"
+            )
+            del "%TEMP_FILE%" >nul 2>&1
+        )
+    )
+)
+
+REM Check if server is authenticated to ghcr.io by trying to inspect a manifest
+call "%COMMON_UTILS%" :print_info "Verificando autenticação no GitHub Container Registry..."
+call "%SSH_UTILS%" :execute_ssh_command "docker manifest inspect %REGISTRY%:latest >nul 2>&1" "Verificando autenticação"
+set "AUTH_CHECK=%ERRORLEVEL%"
+
+REM If authentication failed and we have credentials, try to login
+if %AUTH_CHECK% neq 0 (
+    if not "!GITHUB_USERNAME!"=="" if not "!GITHUB_TOKEN!"=="" (
+        call "%COMMON_UTILS%" :print_warning "Servidor remoto não está autenticado no ghcr.io"
+        call "%COMMON_UTILS%" :print_info "Tentando fazer login usando credenciais do .env..."
+        
+        REM Try to login on remote server via SSH
+        REM Note: We need to escape the pipe for SSH
+        call "%SSH_UTILS%" :execute_ssh_command "echo !GITHUB_TOKEN! | docker login ghcr.io -u !GITHUB_USERNAME! --password-stdin" "Fazendo login no servidor remoto"
+        if %ERRORLEVEL% equ 0 (
+            call "%COMMON_UTILS%" :print_success "Login realizado com sucesso no servidor remoto"
+        ) else (
+            call "%COMMON_UTILS%" :print_warning "Falha ao fazer login automaticamente"
+            call "%COMMON_UTILS%" :print_info "O pull pode falhar se a imagem for privada"
+            call "%COMMON_UTILS%" :print_info "Você pode fazer login manualmente com:"
+            call "%COMMON_UTILS%" :print_info "  ssh !SSH_ALIAS! \"echo SEU_TOKEN | docker login ghcr.io -u SEU_USUARIO --password-stdin\""
+        )
+    ) else (
+        call "%COMMON_UTILS%" :print_warning "Credenciais GitHub não disponíveis"
+        call "%COMMON_UTILS%" :print_info "O pull pode falhar se a imagem for privada"
+        call "%COMMON_UTILS%" :print_info "Certifique-se de que o servidor remoto está autenticado no ghcr.io"
+    )
+) else (
+    call "%COMMON_UTILS%" :print_success "Servidor remoto já está autenticado"
+)
+echo.
+call "%COMMON_UTILS%" :print_separator
+
+REM ============================================
+REM Step 2: Get Latest Image Tag
+REM ============================================
+call "%COMMON_UTILS%" :print_header "Passo 2/8: Obtendo Última Versão da Imagem"
+echo.
+
+REM REGISTRY is already set and will be available in image-utils.bat context
 call "%IMAGE_UTILS%" :get_latest_image_tag
 if %ERRORLEVEL% neq 0 (
     call "%COMMON_UTILS%" :print_error "Falha ao obter tag da imagem. Abortando."
@@ -163,7 +289,7 @@ call "%COMMON_UTILS%" :print_separator
 REM ============================================
 REM Step 3: Stop and Remove Old Container
 REM ============================================
-call "%COMMON_UTILS%" :print_header "Passo 3/7: Parando e Removendo Container Antigo"
+call "%COMMON_UTILS%" :print_header "Passo 3/8: Parando e Removendo Container Antigo"
 echo.
 
 call "%CONTAINER_UTILS%" :stop_old_container
@@ -177,7 +303,7 @@ call "%COMMON_UTILS%" :print_separator
 REM ============================================
 REM Step 4: Pull Image
 REM ============================================
-call "%COMMON_UTILS%" :print_header "Passo 4/7: Fazendo Pull da Imagem"
+call "%COMMON_UTILS%" :print_header "Passo 4/8: Fazendo Pull da Imagem"
 echo.
 
 call "%IMAGE_UTILS%" :pull_image "%FULL_IMAGE_NAME%"
@@ -191,7 +317,7 @@ call "%COMMON_UTILS%" :print_separator
 REM ============================================
 REM Step 5: Create Container
 REM ============================================
-call "%COMMON_UTILS%" :print_header "Passo 5/7: Criando Container"
+call "%COMMON_UTILS%" :print_header "Passo 5/8: Criando Container"
 echo.
 
 call "%CONTAINER_UTILS%" :create_container "%FULL_IMAGE_NAME%"
@@ -205,7 +331,7 @@ call "%COMMON_UTILS%" :print_separator
 REM ============================================
 REM Step 6: Create Frontend Symlink
 REM ============================================
-call "%COMMON_UTILS%" :print_header "Passo 6/7: Criando Symlink do Frontend"
+call "%COMMON_UTILS%" :print_header "Passo 6/8: Criando Symlink do Frontend"
 echo.
 
 REM Wait a moment for container to be fully started
@@ -230,7 +356,7 @@ call "%COMMON_UTILS%" :print_separator
 REM ============================================
 REM Step 7: Verify Deployment
 REM ============================================
-call "%COMMON_UTILS%" :print_header "Passo 7/7: Verificações Pós-Deploy"
+call "%COMMON_UTILS%" :print_header "Passo 7/8: Verificações Pós-Deploy"
 echo.
 
 REM Wait a bit more for services to be ready

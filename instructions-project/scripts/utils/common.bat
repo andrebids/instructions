@@ -47,7 +47,10 @@ setlocal enabledelayedexpansion
 REM Skip function name if it's the first argument
 set "MSG=%~1"
 if "!MSG!"==":print_success" set "MSG=%~2"
-if "!MSG!"=="" set "MSG=%~*"
+if "!MSG!"=="" (
+    if not "%~2"=="" set "MSG=%~2"
+    if "!MSG!"=="" if not "%~3"=="" set "MSG=%~3"
+)
 call :print_color "[OK] !MSG!"
 endlocal
 goto :eof
@@ -61,7 +64,10 @@ setlocal enabledelayedexpansion
 REM Skip function name if it's the first argument
 set "MSG=%~1"
 if "!MSG!"==":print_error" set "MSG=%~2"
-if "!MSG!"=="" set "MSG=%~*"
+if "!MSG!"=="" (
+    if not "%~2"=="" set "MSG=%~2"
+    if "!MSG!"=="" if not "%~3"=="" set "MSG=%~3"
+)
 call :print_color "[ERRO] !MSG!"
 endlocal
 goto :eof
@@ -75,7 +81,10 @@ setlocal enabledelayedexpansion
 REM Skip function name if it's the first argument
 set "MSG=%~1"
 if "!MSG!"==":print_warning" set "MSG=%~2"
-if "!MSG!"=="" set "MSG=%~*"
+if "!MSG!"=="" (
+    if not "%~2"=="" set "MSG=%~2"
+    if "!MSG!"=="" if not "%~3"=="" set "MSG=%~3"
+)
 call :print_color "[AVISO] !MSG!"
 endlocal
 goto :eof
@@ -89,7 +98,10 @@ setlocal enabledelayedexpansion
 REM Skip function name if it's the first argument
 set "MSG=%~1"
 if "!MSG!"==":print_info" set "MSG=%~2"
-if "!MSG!"=="" set "MSG=%~*"
+if "!MSG!"=="" (
+    if not "%~2"=="" set "MSG=%~2"
+    if "!MSG!"=="" if not "%~3"=="" set "MSG=%~3"
+)
 call :print_color "[INFO] !MSG!"
 endlocal
 goto :eof
@@ -99,11 +111,14 @@ REM Function: Print section header
 REM Usage: call :print_header "title"
 REM ============================================
 :print_header
-setlocal
+setlocal enabledelayedexpansion
 REM Skip function name if it's the first argument
 set "TITLE=%~1"
 if "!TITLE!"==":print_header" set "TITLE=%~2"
-if "!TITLE!"=="" set "TITLE=%~*"
+if "!TITLE!"=="" (
+    if not "%~2"=="" set "TITLE=%~2"
+    if "!TITLE!"=="" if not "%~3"=="" set "TITLE=%~3"
+)
 REM Remove quotes if present
 set "TITLE=!TITLE:"=!"
 echo.
