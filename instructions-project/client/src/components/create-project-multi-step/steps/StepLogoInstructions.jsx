@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import {
   Input,
   Checkbox,
@@ -54,19 +54,19 @@ const MarqueeText = ({ children, className = "", hoverOnly = false }) => {
       if (textRef.current && containerRef.current) {
         const textElement = textRef.current;
         const containerElement = containerRef.current;
-        // Verificar se o texto está truncado
+        // Verificar se o texto estÃ¡ truncado
         const isOverflowing = textElement.scrollWidth > containerElement.clientWidth;
         setNeedsMarquee(isOverflowing);
       }
     };
 
-    // Verificar após renderização
+    // Verificar apÃ³s renderizaÃ§Ã£o
     checkOverflow();
 
-    // Verificar também após um pequeno delay para garantir que o layout está completo
+    // Verificar tambÃ©m apÃ³s um pequeno delay para garantir que o layout estÃ¡ completo
     const timeout = setTimeout(checkOverflow, 100);
 
-    // Verificar quando a janela é redimensionada
+    // Verificar quando a janela Ã© redimensionada
     window.addEventListener('resize', checkOverflow);
 
     return () => {
@@ -162,10 +162,10 @@ const SelectWithMarquee = React.forwardRef((props, ref) => {
       };
     };
 
-    // Verificar após um delay para garantir que o DOM está pronto
+    // Verificar apÃ³s um delay para garantir que o DOM estÃ¡ pronto
     const timeout = setTimeout(checkAndApplyMarquee, 100);
 
-    // Observar mudanças no DOM
+    // Observar mudanÃ§as no DOM
     const observer = new MutationObserver(checkAndApplyMarquee);
     observer.observe(trigger, { childList: true, subtree: true, attributes: true });
 
@@ -203,7 +203,7 @@ const AutocompleteWithMarquee = React.forwardRef((props, ref) => {
       const input = trigger.querySelector('input');
       if (!input) return;
 
-      // Verificar se o texto está truncado
+      // Verificar se o texto estÃ¡ truncado
       const isOverflowing = input.scrollWidth > input.clientWidth;
 
       const handleMouseEnter = () => {
@@ -232,10 +232,10 @@ const AutocompleteWithMarquee = React.forwardRef((props, ref) => {
       };
     };
 
-    // Verificar após um delay para garantir que o DOM está pronto
+    // Verificar apÃ³s um delay para garantir que o DOM estÃ¡ pronto
     const timeout = setTimeout(checkAndApplyMarquee, 100);
 
-    // Observar mudanças no DOM
+    // Observar mudanÃ§as no DOM
     const observer = new MutationObserver(checkAndApplyMarquee);
     observer.observe(trigger, { childList: true, subtree: true, attributes: true });
 
@@ -255,18 +255,18 @@ AutocompleteWithMarquee.displayName = 'AutocompleteWithMarquee';
 const AttachmentItem = ({ file, index, onRemove, onEdit }) => {
   const [imageError, setImageError] = React.useState(false);
   const [imageLoading, setImageLoading] = React.useState(true);
-  
+
   const isImage = file.mimetype?.startsWith('image/') || file.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
   const isAIGenerated = file.isAIGenerated;
-  
-  // Construir URL completa se necessário
+
+  // Construir URL completa se necessÃ¡rio
   const imageUrl = React.useMemo(() => {
     if (!file.url && !file.path) return null;
-    
-    // Preferir file.url se disponível, caso contrário usar file.path
+
+    // Preferir file.url se disponÃ­vel, caso contrÃ¡rio usar file.path
     let url = file.url || file.path;
-    
-    // Detectar caminhos UNC do Windows (começam com \\)
+
+    // Detectar caminhos UNC do Windows (comeÃ§am com \\)
     // Exemplo: \\192.168.2.22\Olimpo\.dev\web\thecore\coelho-1764760019198-615688862.webp
     if (url.startsWith('\\\\') || url.startsWith('//')) {
       // Extrair apenas o nome do arquivo do caminho UNC
@@ -278,28 +278,28 @@ const AttachmentItem = ({ file, index, onRemove, onEdit }) => {
       console.warn('Could not extract filename from UNC path:', url);
       return null;
     }
-    
-    // Se a URL já é absoluta (começa com http://, https:// ou data:)
+
+    // Se a URL jÃ¡ Ã© absoluta (comeÃ§a com http://, https:// ou data:)
     if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
       try {
         const urlObj = new URL(url);
         const pathname = urlObj.pathname;
-        
+
         // SEMPRE usar caminho relativo para que o proxy do Vite funcione
-        // Se o caminho começa com /api/files/, usar diretamente (será resolvido pelo proxy)
+        // Se o caminho comeÃ§a com /api/files/, usar diretamente (serÃ¡ resolvido pelo proxy)
         if (pathname.startsWith('/api/files/')) {
           return pathname;
         }
-        
-        // Se o caminho começa com /api/, usar diretamente
+
+        // Se o caminho comeÃ§a com /api/, usar diretamente
         if (pathname.startsWith('/api/')) {
           return pathname;
         }
-        
-        // Se não começa com /api/, adicionar /api antes
+
+        // Se nÃ£o comeÃ§a com /api/, adicionar /api antes
         return `/api${pathname}`;
       } catch (e) {
-        // Se não conseguir fazer parse da URL, tentar extrair o caminho manualmente
+        // Se nÃ£o conseguir fazer parse da URL, tentar extrair o caminho manualmente
         const match = url.match(/\/api\/files\/[^\/\s]+/);
         if (match) {
           return match[0];
@@ -308,25 +308,25 @@ const AttachmentItem = ({ file, index, onRemove, onEdit }) => {
         return url;
       }
     }
-    
-    // Se a URL já começa com /api/, usar diretamente (será resolvida pelo proxy do Vite)
+
+    // Se a URL jÃ¡ comeÃ§a com /api/, usar diretamente (serÃ¡ resolvida pelo proxy do Vite)
     if (url.startsWith('/api/')) {
       return url;
     }
-    
-    // Se começa com /, é um caminho relativo ao servidor
+
+    // Se comeÃ§a com /, Ã© um caminho relativo ao servidor
     if (url.startsWith('/')) {
-      // Se não começa com /api/, adicionar /api antes
+      // Se nÃ£o comeÃ§a com /api/, adicionar /api antes
       if (!url.startsWith('/api/')) {
         return `/api${url}`;
       }
       return url;
     }
-    
-    // Caso contrário, assumir que é um nome de arquivo e construir caminho completo
+
+    // Caso contrÃ¡rio, assumir que Ã© um nome de arquivo e construir caminho completo
     return `/api/files/${url}`;
   }, [file.url, file.path]);
-  
+
   return (
     <div className="flex items-center justify-between p-2 bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm rounded-lg border border-white/20 dark:border-gray-600/30 group">
       <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
@@ -338,13 +338,13 @@ const AttachmentItem = ({ file, index, onRemove, onEdit }) => {
               </div>
             )}
             {!imageError && imageUrl ? (
-              <img 
-                src={imageUrl} 
+              <img
+                src={imageUrl}
                 alt={file.name}
                 className="w-full h-full object-cover"
                 onLoad={() => setImageLoading(false)}
                 onError={(e) => {
-                  console.error('❌ Error loading image:', imageUrl, file);
+                  console.error('âŒ Error loading image:', imageUrl, file);
                   setImageError(true);
                   setImageLoading(false);
                   e.target.style.display = 'none';
@@ -400,7 +400,7 @@ const AttachmentItem = ({ file, index, onRemove, onEdit }) => {
   );
 };
 
-// Schema de validação para Logo Instructions
+// Schema de validaÃ§Ã£o para Logo Instructions
 const validationSchema = Yup.object({
   logoNumber: Yup.string()
     .required("Logo number is required")
@@ -437,10 +437,10 @@ const validationSchema = Yup.object({
     "at-least-one-dimension",
     "At least one dimension (Height, Length, Width, or Diameter) must be filled",
     function (value) {
-      // Se dimensions for null ou undefined, retornar false (inválido)
+      // Se dimensions for null ou undefined, retornar false (invÃ¡lido)
       if (!value) return false;
-      // Aceitar valores numéricos válidos (incluindo 0)
-      // Verificar se o valor existe, não é null, não é string vazia, e é um número válido >= 0
+      // Aceitar valores numÃ©ricos vÃ¡lidos (incluindo 0)
+      // Verificar se o valor existe, nÃ£o Ã© null, nÃ£o Ã© string vazia, e Ã© um nÃºmero vÃ¡lido >= 0
       const hasHeight = value.height?.value != null && value.height.value !== "" && !isNaN(parseFloat(value.height.value)) && parseFloat(value.height.value) >= 0;
       const hasLength = value.length?.value != null && value.length.value !== "" && !isNaN(parseFloat(value.length.value)) && parseFloat(value.length.value) >= 0;
       const hasWidth = value.width?.value != null && value.width.value !== "" && !isNaN(parseFloat(value.width.value)) && parseFloat(value.width.value) >= 0;
@@ -455,7 +455,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   const logoDetails = formData.logoDetails || {};
   // Support both old structure (direct logoDetails) and new structure (with currentLogo)
   const rawCurrentLogo = logoDetails.currentLogo || logoDetails;
-  // Garantir que isModification seja false por padrão se não estiver definido
+  // Garantir que isModification seja false por padrÃ£o se nÃ£o estiver definido
   const currentLogo = {
     ...rawCurrentLogo,
     isModification: rawCurrentLogo.isModification === true ? true : false
@@ -463,16 +463,16 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   const savedLogos = logoDetails.logos || [];
   const composition = currentLogo.composition || { componentes: [], bolas: [] };
 
-  // Obter nome do usuário atual
+  // Obter nome do usuÃ¡rio atual
   const { userName } = useUser();
 
   // Voice Assistant
-  const { 
-    openAssistant, 
-    closeAssistant, 
+  const {
+    openAssistant,
+    closeAssistant,
     isOpen: isVoiceAssistantOpen,
     listening,
-    supported: voiceSupported 
+    supported: voiceSupported
   } = useVoiceAssistant();
 
   // Refs para preservar valores preenchidos automaticamente
@@ -482,19 +482,19 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   // Estado para controlar a busca nos componentes
   const [componenteSearchValues, setComponenteSearchValues] = React.useState({});
 
-  // Estado para controlar quais componentes estão em modo de edição
+  // Estado para controlar quais componentes estÃ£o em modo de ediÃ§Ã£o
   const [componentesEditando, setComponentesEditando] = React.useState({});
 
-  // Estado para controlar quais bolas estão em modo de edição
+  // Estado para controlar quais bolas estÃ£o em modo de ediÃ§Ã£o
   const [bolasEditando, setBolasEditando] = React.useState({});
 
   // Estado para controlar a visibilidade do chat
   const [isChatOpen, setIsChatOpen] = React.useState(false);
 
-  // Estado para rastrear qual attachment AI Generated está sendo editado
+  // Estado para rastrear qual attachment AI Generated estÃ¡ sendo editado
   const [editingAttachmentIndex, setEditingAttachmentIndex] = React.useState(null);
 
-  // Estados para modificação de logo e pesquisa de produtos
+  // Estados para modificaÃ§Ã£o de logo e pesquisa de produtos
   const [productSearchValue, setProductSearchValue] = React.useState("");
   const [productSearchResults, setProductSearchResults] = React.useState([]);
   const [isSearchingProducts, setIsSearchingProducts] = React.useState(false);
@@ -503,11 +503,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   const [selectedRelatedProductId, setSelectedRelatedProductId] = React.useState(null);
   const productSearchTimeoutRef = React.useRef(null);
 
-  // Wizard state - controla a página atual do wizard step-by-step
+  // Wizard state - controla a pÃ¡gina atual do wizard step-by-step
   const [currentPage, setCurrentPage] = React.useState(1);
   const [isFinishing, setIsFinishing] = React.useState(false);
 
-  // Notificar o componente pai sobre mudanças na página interna
+  // Notificar o componente pai sobre mudanÃ§as na pÃ¡gina interna
   React.useEffect(() => {
     if (onInternalPageChange) {
       onInternalPageChange(currentPage);
@@ -523,16 +523,16 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   // Ref para o card Details & Criteria para fazer scroll
   const detailsCriteriaRef = React.useRef(null);
 
-  // Ref para rastrear se o campo "Requested By" já foi preenchido automaticamente
+  // Ref para rastrear se o campo "Requested By" jÃ¡ foi preenchido automaticamente
   const requestedByAutoFilled = React.useRef(false);
 
-  // Ref para rastrear se o Logo Number já foi gerado inicialmente
+  // Ref para rastrear se o Logo Number jÃ¡ foi gerado inicialmente
   const logoNumberInitialized = React.useRef(false);
 
-  // Ref para rastrear o último nome do projeto usado para gerar o Logo Number
+  // Ref para rastrear o Ãºltimo nome do projeto usado para gerar o Logo Number
   const lastProjectNameRef = React.useRef("");
 
-  // Ref para rastrear o ID do logo atual para detectar quando um novo logo é criado
+  // Ref para rastrear o ID do logo atual para detectar quando um novo logo Ã© criado
   const currentLogoIdRef = React.useRef(currentLogo.id || null);
 
   // Ref para debounce do onAIStateChange e evitar loops infinitos
@@ -548,14 +548,14 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     };
   }, []);
 
-  // Resetar refs quando um novo logo é criado (quando o ID muda ou quando o logo está vazio)
+  // Resetar refs quando um novo logo Ã© criado (quando o ID muda ou quando o logo estÃ¡ vazio)
   // E atualizar formik quando currentLogo for carregado (especialmente quando o modal abre)
   React.useEffect(() => {
     const currentLogoId = currentLogo.id || null;
     const isLogoEmpty = !currentLogo.logoNumber && !currentLogo.logoName;
     const previousLogoId = currentLogoIdRef.current;
-    
-    // Se o logo foi carregado (tem dados mas não tinha ID antes), atualizar formik
+
+    // Se o logo foi carregado (tem dados mas nÃ£o tinha ID antes), atualizar formik
     const hasLogoData = currentLogo.logoNumber || currentLogo.logoName || currentLogo.requestedBy;
     if (hasLogoData && previousLogoId === null && currentLogoId !== null) {
       // Logo foi carregado, atualizar formik com os valores
@@ -583,7 +583,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         formik.setFieldValue("baseProduct", currentLogo.baseProduct || null);
         formik.setFieldValue("relatedProducts", currentLogo.relatedProducts || []);
         formik.setFieldValue("productSizes", currentLogo.productSizes || []);
-        // Restaurar seleção de produto relacionado se houver
+        // Restaurar seleÃ§Ã£o de produto relacionado se houver
         if (currentLogo.selectedRelatedProductId) {
           setSelectedRelatedProductId(currentLogo.selectedRelatedProductId);
         } else {
@@ -591,10 +591,10 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         }
       }, 0);
     }
-    
-    // Também verificar se o logo tem dados mas o formik está vazio (caso o logo seja carregado após o componente montar)
+
+    // TambÃ©m verificar se o logo tem dados mas o formik estÃ¡ vazio (caso o logo seja carregado apÃ³s o componente montar)
     if (hasLogoData && (!formik.values.logoNumber && !formik.values.logoName && !formik.values.requestedBy)) {
-      // Formik está vazio mas o logo tem dados, atualizar
+      // Formik estÃ¡ vazio mas o logo tem dados, atualizar
       setTimeout(() => {
         formik.setFieldValue("logoNumber", currentLogo.logoNumber || "");
         formik.setFieldValue("logoName", currentLogo.logoName || "");
@@ -618,7 +618,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         formik.setFieldValue("baseProduct", currentLogo.baseProduct || null);
         formik.setFieldValue("relatedProducts", currentLogo.relatedProducts || []);
         formik.setFieldValue("productSizes", currentLogo.productSizes || []);
-        // Restaurar seleção de produto relacionado se houver
+        // Restaurar seleÃ§Ã£o de produto relacionado se houver
         if (currentLogo.selectedRelatedProductId) {
           setSelectedRelatedProductId(currentLogo.selectedRelatedProductId);
         } else {
@@ -627,7 +627,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       }, 0);
     }
 
-    // Se o ID mudou ou o logo está vazio (novo logo), resetar refs
+    // Se o ID mudou ou o logo estÃ¡ vazio (novo logo), resetar refs
     if (currentLogoId !== previousLogoId || (isLogoEmpty && previousLogoId !== null)) {
       // IMPORTANTE: Quando o ID do logo muda (editando um logo diferente), atualizar todos os campos do formik
       if (currentLogoId !== previousLogoId && currentLogoId !== null && previousLogoId !== null) {
@@ -656,14 +656,14 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         formik.setFieldValue("baseProduct", currentLogo.baseProduct || null);
         formik.setFieldValue("relatedProducts", currentLogo.relatedProducts || []);
         formik.setFieldValue("productSizes", currentLogo.productSizes || []);
-        // Restaurar seleção de produto relacionado se houver
+        // Restaurar seleÃ§Ã£o de produto relacionado se houver
         if (currentLogo.selectedRelatedProductId) {
           setSelectedRelatedProductId(currentLogo.selectedRelatedProductId);
         } else {
           setSelectedRelatedProductId(null);
         }
       }
-      
+
       requestedByAutoFilled.current = false;
       logoNumberInitialized.current = false;
       preservedRequestedByRef.current = null;
@@ -672,19 +672,19 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     }
   }, [currentLogo.id, currentLogo.logoNumber, currentLogo.logoName, savedLogos.length]);
 
-  // Função para gerar o Logo Number automaticamente baseado no nome do projeto
+  // FunÃ§Ã£o para gerar o Logo Number automaticamente baseado no nome do projeto
   const generateLogoNumber = React.useCallback((projectName, currentLogoNumber = "") => {
     if (!projectName || projectName.trim() === "") {
       return "";
     }
 
-    // IMPORTANTE: Se o currentLogo já tem um logoNumber válido e estamos editando, NÃO gerar novo número
-    // Verificar se o currentLogo tem um ID (indica que é um logo existente sendo editado)
+    // IMPORTANTE: Se o currentLogo jÃ¡ tem um logoNumber vÃ¡lido e estamos editando, NÃƒO gerar novo nÃºmero
+    // Verificar se o currentLogo tem um ID (indica que Ã© um logo existente sendo editado)
     if (currentLogo.id && currentLogo.logoNumber && currentLogo.logoNumber.trim() !== "") {
       const match = currentLogo.logoNumber.match(/-L\s*(\d+)/i);
       if (match) {
         console.log("Logo has ID and valid logoNumber (editing existing logo). Preserving:", currentLogo.logoNumber);
-        return currentLogo.logoNumber; // Preservar o número existente
+        return currentLogo.logoNumber; // Preservar o nÃºmero existente
       }
     }
 
@@ -693,12 +693,12 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     let maxNumber = 0;
     const usedNumbers = new Set();
 
-    // Verificar nos logos salvos - contar todos os logos que têm o padrão -L<número>
+    // Verificar nos logos salvos - contar todos os logos que tÃªm o padrÃ£o -L<nÃºmero>
     console.log("Generating Logo Number. SavedLogos:", savedLogos);
     savedLogos.forEach((logo) => {
       if (logo.logoNumber) {
-        // Limpar espaços extras e tentar encontrar o padrão -L<número>
-        // Pode estar no meio ou no final, com ou sem espaços
+        // Limpar espaÃ§os extras e tentar encontrar o padrÃ£o -L<nÃºmero>
+        // Pode estar no meio ou no final, com ou sem espaÃ§os
         const cleanedLogoNumber = logo.logoNumber.trim();
         const match = cleanedLogoNumber.match(/-L\s*(\d+)/i);
         if (match) {
@@ -713,16 +713,16 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         }
       }
     });
-    
-    // IMPORTANTE: Também verificar o currentLogo atual (que pode ter um logo anterior ainda não salvo)
+
+    // IMPORTANTE: TambÃ©m verificar o currentLogo atual (que pode ter um logo anterior ainda nÃ£o salvo)
     // Isso garante que quando criamos o Logo 2, o Logo 1 (ainda em currentLogo) seja contado
-    // Só contar se o currentLogo.logoNumber for diferente do currentLogoNumber (que está sendo gerado)
-    // e se o currentLogo.logoNumber não estiver vazio
-    // NÃO contar se o currentLogo tem um ID (é um logo existente sendo editado)
-    if (currentLogo.logoNumber && 
-        currentLogo.logoNumber.trim() !== "" && 
-        currentLogo.logoNumber !== currentLogoNumber &&
-        !currentLogo.id) { // Não contar se tem ID (logo existente)
+    // SÃ³ contar se o currentLogo.logoNumber for diferente do currentLogoNumber (que estÃ¡ sendo gerado)
+    // e se o currentLogo.logoNumber nÃ£o estiver vazio
+    // NÃƒO contar se o currentLogo tem um ID (Ã© um logo existente sendo editado)
+    if (currentLogo.logoNumber &&
+      currentLogo.logoNumber.trim() !== "" &&
+      currentLogo.logoNumber !== currentLogoNumber &&
+      !currentLogo.id) { // NÃ£o contar se tem ID (logo existente)
       const cleanedCurrentLogoNumber = currentLogo.logoNumber.trim();
       const match = cleanedCurrentLogoNumber.match(/-L\s*(\d+)/i);
       if (match) {
@@ -736,47 +736,47 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         }
       }
     }
-    
+
     console.log("Max number found:", maxNumber, "from", savedLogos.length, "saved logos. Used numbers:", Array.from(usedNumbers).sort((a, b) => a - b));
 
-    // Se o logo atual já tem um número válido, não contar ele mesmo (estamos editando)
-    // Mas se não tem número ou tem um número diferente, precisamos gerar um novo
+    // Se o logo atual jÃ¡ tem um nÃºmero vÃ¡lido, nÃ£o contar ele mesmo (estamos editando)
+    // Mas se nÃ£o tem nÃºmero ou tem um nÃºmero diferente, precisamos gerar um novo
     if (currentLogoNumber && currentLogoNumber.trim() !== "") {
       const cleanedCurrentLogoNumber = currentLogoNumber.trim();
       const match = cleanedCurrentLogoNumber.match(/-L\s*(\d+)/i);
       if (match) {
         const num = parseInt(match[1], 10);
         if (!isNaN(num) && num > 0) {
-          // Se este número já está nos logos salvos ou no currentLogo, significa que estamos editando este logo
-          // Nesse caso, não devemos gerar um novo número, devemos manter o atual
+          // Se este nÃºmero jÃ¡ estÃ¡ nos logos salvos ou no currentLogo, significa que estamos editando este logo
+          // Nesse caso, nÃ£o devemos gerar um novo nÃºmero, devemos manter o atual
           if (usedNumbers.has(num)) {
             console.log("Current logo number exists in saved logos or currentLogo (editing). Returning:", currentLogoNumber);
-            return currentLogoNumber.trim(); // Retornar o número atual se já existe (sem espaços extras)
+            return currentLogoNumber.trim(); // Retornar o nÃºmero atual se jÃ¡ existe (sem espaÃ§os extras)
           }
-          // Se não está nos salvos mas tem um número, considerar para o máximo
+          // Se nÃ£o estÃ¡ nos salvos mas tem um nÃºmero, considerar para o mÃ¡ximo
           if (num > maxNumber) {
             maxNumber = num;
           }
-          // Adicionar ao usedNumbers para não gerar duplicado
+          // Adicionar ao usedNumbers para nÃ£o gerar duplicado
           usedNumbers.add(num);
         }
       }
     }
 
-    // Encontrar o próximo número disponível (não apenas maxNumber + 1, mas o próximo que não está em uso)
-    // Isso garante que mesmo se houver gaps (ex: L1, L3), o próximo será L2, não L4
+    // Encontrar o prÃ³ximo nÃºmero disponÃ­vel (nÃ£o apenas maxNumber + 1, mas o prÃ³ximo que nÃ£o estÃ¡ em uso)
+    // Isso garante que mesmo se houver gaps (ex: L1, L3), o prÃ³ximo serÃ¡ L2, nÃ£o L4
     let nextNumber = 1;
     while (usedNumbers.has(nextNumber)) {
       nextNumber++;
     }
-    
-    // Se nextNumber for maior que maxNumber + 1, significa que há gaps, mas vamos usar o próximo disponível
-    // Se não há gaps, nextNumber será maxNumber + 1
+
+    // Se nextNumber for maior que maxNumber + 1, significa que hÃ¡ gaps, mas vamos usar o prÃ³ximo disponÃ­vel
+    // Se nÃ£o hÃ¡ gaps, nextNumber serÃ¡ maxNumber + 1
     console.log("Next number generated:", nextNumber, "for project:", baseName, "(max was:", maxNumber, ", used:", Array.from(usedNumbers).sort((a, b) => a - b), ")");
     return `${baseName} -L${nextNumber}`;
   }, [savedLogos, currentLogo]);
 
-  // Função helper para filtrar componentes (não pode ser hook pois é usada dentro de map)
+  // FunÃ§Ã£o helper para filtrar componentes (nÃ£o pode ser hook pois Ã© usada dentro de map)
   const filterComponentes = React.useCallback((searchTerm) => {
     if (!searchTerm) return materialsData.componentes;
     const term = searchTerm.toLowerCase();
@@ -787,22 +787,22 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     });
   }, []);
 
-  // Verificar se um componente está completo (tem referência)
+  // Verificar se um componente estÃ¡ completo (tem referÃªncia)
   const isComponenteCompleto = React.useCallback((comp) => {
     if (!comp.componenteId) return false;
     const componente = getComponenteById(comp.componenteId);
     if (!componente) return false;
 
-    // Se o componente não precisa de cor, só precisa do componenteId
+    // Se o componente nÃ£o precisa de cor, sÃ³ precisa do componenteId
     if (componente.semCor) {
       return true;
     }
 
-    // Se precisa de cor, precisa ter corId e referência
+    // Se precisa de cor, precisa ter corId e referÃªncia
     return comp.corId && comp.referencia;
   }, []);
 
-  // Verificar se uma bola está completa (tem cor, acabamento, tamanho e referência)
+  // Verificar se uma bola estÃ¡ completa (tem cor, acabamento, tamanho e referÃªncia)
   const isBolaCompleta = React.useCallback((bola) => {
     return bola.corId && bola.acabamentoId && bola.tamanhoId && bola.referencia;
   }, []);
@@ -812,7 +812,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     return !!(bola.corId || bola.acabamentoId || bola.tamanhoId || bola.referencia || bola.corNome || bola.acabamentoNome || bola.tamanhoName || bola.bolaName || bola.reference);
   }, []);
 
-  // Usar Formik para gerenciar estado e validação
+  // Usar Formik para gerenciar estado e validaÃ§Ã£o
   const formik = useFormikStep({
     initialValues: {
       logoNumber: currentLogo.logoNumber || "",
@@ -833,7 +833,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       controlReport: currentLogo.controlReport || false,
       criteria: currentLogo.criteria || "",
       description: currentLogo.description || "",
-      // Campos de modificação de logo
+      // Campos de modificaÃ§Ã£o de logo
       isModification: currentLogo.isModification || false,
       baseProductId: currentLogo.baseProductId || null,
       baseProduct: currentLogo.baseProduct || null,
@@ -842,19 +842,19 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     },
     validationSchema,
     onChange: (field, value) => {
-      // Sincronizar com formData global através de currentLogo
-      // IMPORTANTE: Preservar TODOS os valores do formik para não perder dados durante atualizações
-      // IMPORTANTE: Preservar também _originalIndex, id e savedAt que são essenciais para identificar e posicionar logos editados
-      
-      // Usar o valor novo do parâmetro quando o campo sendo alterado é o mesmo, senão usar o valor do formik
+      // Sincronizar com formData global atravÃ©s de currentLogo
+      // IMPORTANTE: Preservar TODOS os valores do formik para nÃ£o perder dados durante atualizaÃ§Ãµes
+      // IMPORTANTE: Preservar tambÃ©m _originalIndex, id e savedAt que sÃ£o essenciais para identificar e posicionar logos editados
+
+      // Usar o valor novo do parÃ¢metro quando o campo sendo alterado Ã© o mesmo, senÃ£o usar o valor do formik
       const updatedCurrentLogo = {
         ...currentLogo,
         // Preservar metadados importantes para logos editados
         id: currentLogo.id,
         savedAt: currentLogo.savedAt,
         _originalIndex: currentLogo._originalIndex,
-        // Preservar TODOS os valores do formik (que podem ter sido digitados mas ainda não sincronizados)
-        // IMPORTANTE: Se o campo sendo alterado é o mesmo, usar o valor novo do parâmetro, senão usar formik.values
+        // Preservar TODOS os valores do formik (que podem ter sido digitados mas ainda nÃ£o sincronizados)
+        // IMPORTANTE: Se o campo sendo alterado Ã© o mesmo, usar o valor novo do parÃ¢metro, senÃ£o usar formik.values
         logoName: field === "logoName" ? value : (formik.values.logoName || currentLogo.logoName || ""),
         description: field === "description" ? value : (formik.values.description || currentLogo.description || ""),
         logoNumber: field === "logoNumber" ? value : (formik.values.logoNumber || currentLogo.logoNumber || ""),
@@ -862,9 +862,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         budget: field === "budget" ? value : (formik.values.budget || currentLogo.budget || ""),
         fixationType: field === "fixationType" ? value : (formik.values.fixationType || currentLogo.fixationType || ""),
         dimensions: field === "dimensions" ? value : (formik.values.dimensions || currentLogo.dimensions || {}),
-        // Atualizar o campo específico que está sendo alterado (garantir que o valor novo seja usado)
+        // Atualizar o campo especÃ­fico que estÃ¡ sendo alterado (garantir que o valor novo seja usado)
         [field]: value,
-        // Garantir que valores preservados sejam sempre incluídos se o campo atual estiver vazio
+        // Garantir que valores preservados sejam sempre incluÃ­dos se o campo atual estiver vazio
         ...(preservedRequestedByRef.current && (!currentLogo.requestedBy || currentLogo.requestedBy.trim() === "") ? { requestedBy: preservedRequestedByRef.current } : {}),
         ...(preservedLogoNumberRef.current && (!currentLogo.logoNumber || currentLogo.logoNumber.trim() === "") ? { logoNumber: preservedLogoNumberRef.current } : {}),
       };
@@ -881,7 +881,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
   const handleFileUpload = async (newFiles) => {
     if (newFiles.length > 0) {
-      console.log('📤 Uploading files to server...', newFiles);
+      console.log('ðŸ“¤ Uploading files to server...', newFiles);
 
       // Upload each file to the server
       const uploadPromises = newFiles.map(async (file) => {
@@ -900,7 +900,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           }
 
           const result = await response.json();
-          console.log('✅ File uploaded:', result.file);
+          console.log('âœ… File uploaded:', result.file);
 
           // Return file metadata to store in attachments
           return {
@@ -912,7 +912,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
             mimetype: result.file.mimetype,
           };
         } catch (error) {
-          console.error('❌ Error uploading file:', file.name, error);
+          console.error('âŒ Error uploading file:', file.name, error);
           return null;
         }
       });
@@ -937,17 +937,17 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           logos: savedLogos,
         };
         onInputChange("logoDetails", updatedLogoDetails);
-        console.log('✅ Files uploaded and metadata saved to currentLogo:', successfulUploads);
+        console.log('âœ… Files uploaded and metadata saved to currentLogo:', successfulUploads);
       }
     }
   };
 
-  // Preencher automaticamente o campo "Requested By" com o nome do usuário (apenas uma vez)
+  // Preencher automaticamente o campo "Requested By" com o nome do usuÃ¡rio (apenas uma vez)
   React.useEffect(() => {
-    // Preencher apenas se ainda não foi preenchido e userName estiver disponível
+    // Preencher apenas se ainda nÃ£o foi preenchido e userName estiver disponÃ­vel
     if (userName && !requestedByAutoFilled.current) {
       const currentRequestedBy = currentLogo.requestedBy?.trim() || formik.values.requestedBy?.trim() || "";
-      // Se o campo está vazio, preencher com o nome do usuário
+      // Se o campo estÃ¡ vazio, preencher com o nome do usuÃ¡rio
       if (!currentRequestedBy) {
         preservedRequestedByRef.current = userName;
         requestedByAutoFilled.current = true;
@@ -965,52 +965,52 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         };
         onInputChange("logoDetails", updatedLogoDetails);
       } else {
-        // Se já tem valor, preservar e marcar como preenchido
+        // Se jÃ¡ tem valor, preservar e marcar como preenchido
         preservedRequestedByRef.current = currentRequestedBy;
         requestedByAutoFilled.current = true;
       }
     } else if (currentLogo.requestedBy && !preservedRequestedByRef.current) {
-      // Preservar valor do currentLogo se ainda não foi preservado
+      // Preservar valor do currentLogo se ainda nÃ£o foi preservado
       preservedRequestedByRef.current = currentLogo.requestedBy;
       requestedByAutoFilled.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userName, currentLogo.requestedBy]); // Executar quando userName ou currentLogo.requestedBy mudar
 
-  // Ref para rastrear o número anterior de logos salvos
+  // Ref para rastrear o nÃºmero anterior de logos salvos
   const prevSavedLogosLengthRef = React.useRef(savedLogos.length);
-  // Ref para rastrear o número do logo anterior (para detectar limpeza/novo logo)
+  // Ref para rastrear o nÃºmero do logo anterior (para detectar limpeza/novo logo)
   const prevLogoNumberRef = React.useRef(currentLogo.logoNumber || "");
 
   // Gerar automaticamente o Logo Number baseado no nome do projeto
   React.useEffect(() => {
     const projectName = formData.name?.trim() || "";
-    // FIX: Usar nullish coalescing (??) para respeitar string vazia "" como valor válido
+    // FIX: Usar nullish coalescing (??) para respeitar string vazia "" como valor vÃ¡lido
     // Isso evita que caia no valor do formik (que pode estar desatualizado) quando criamos um novo logo
     const currentLogoNumber = currentLogo.logoNumber ?? formik.values.logoNumber ?? "";
 
-    // Se o nome do projeto mudou, resetar a flag de inicialização
+    // Se o nome do projeto mudou, resetar a flag de inicializaÃ§Ã£o
     if (projectName && projectName !== lastProjectNameRef.current) {
       logoNumberInitialized.current = false;
       lastProjectNameRef.current = projectName;
       preservedLogoNumberRef.current = null;
     }
 
-    // Detectar se o logo number foi limpo (transição de um logo existente para um novo)
+    // Detectar se o logo number foi limpo (transiÃ§Ã£o de um logo existente para um novo)
     if (prevLogoNumberRef.current && (!currentLogoNumber || currentLogoNumber.trim() === "")) {
       logoNumberInitialized.current = false;
       preservedLogoNumberRef.current = null;
     }
-    
-    // Só atualizar prevLogoNumberRef se realmente mudou para evitar loops
+
+    // SÃ³ atualizar prevLogoNumberRef se realmente mudou para evitar loops
     if (prevLogoNumberRef.current !== currentLogoNumber) {
       prevLogoNumberRef.current = currentLogoNumber;
     }
 
-    // Se o número de logos salvos mudou e o logo atual está vazio, resetar para recalcular
+    // Se o nÃºmero de logos salvos mudou e o logo atual estÃ¡ vazio, resetar para recalcular
     if (savedLogos.length !== prevSavedLogosLengthRef.current) {
       prevSavedLogosLengthRef.current = savedLogos.length;
-      // Se o logo atual está vazio (novo logo criado), resetar para gerar novo número
+      // Se o logo atual estÃ¡ vazio (novo logo criado), resetar para gerar novo nÃºmero
       if (!currentLogoNumber || currentLogoNumber.trim() === "") {
         logoNumberInitialized.current = false;
         preservedLogoNumberRef.current = null;
@@ -1018,29 +1018,29 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     }
 
     if (projectName) {
-      // IMPORTANTE: Se o currentLogo tem um ID, significa que é um logo existente sendo editado
-      // Nesse caso, SEMPRE preservar o logoNumber existente, não gerar novo
+      // IMPORTANTE: Se o currentLogo tem um ID, significa que Ã© um logo existente sendo editado
+      // Nesse caso, SEMPRE preservar o logoNumber existente, nÃ£o gerar novo
       const isEditingExistingLogo = currentLogo.id !== null && currentLogo.id !== undefined;
-      
-      // Também verificar se o logo está nos savedLogos (pode não ter ID mas estar na lista)
+
+      // TambÃ©m verificar se o logo estÃ¡ nos savedLogos (pode nÃ£o ter ID mas estar na lista)
       const isInSavedLogos = savedLogos.some(logo =>
         (logo.id && currentLogo.id && logo.id === currentLogo.id) ||
         (logo.logoNumber === currentLogoNumber && currentLogoNumber)
       );
 
-      // Se estamos editando um logo existente (tem ID ou está nos savedLogos), preservar o número
+      // Se estamos editando um logo existente (tem ID ou estÃ¡ nos savedLogos), preservar o nÃºmero
       if (isEditingExistingLogo || isInSavedLogos) {
-        // Usar o logoNumber do currentLogo se existir e for válido
-        const logoNumberToPreserve = currentLogo.logoNumber && currentLogo.logoNumber.trim() !== "" 
-          ? currentLogo.logoNumber 
+        // Usar o logoNumber do currentLogo se existir e for vÃ¡lido
+        const logoNumberToPreserve = currentLogo.logoNumber && currentLogo.logoNumber.trim() !== ""
+          ? currentLogo.logoNumber
           : currentLogoNumber;
-        
+
         if (logoNumberToPreserve && logoNumberToPreserve.trim() !== "") {
           // IMPORTANTE: Se o ID do logo mudou, sempre atualizar o logoNumber no formik
-          // Isso garante que quando editamos um logo diferente, o logoNumber correto é carregado
+          // Isso garante que quando editamos um logo diferente, o logoNumber correto Ã© carregado
           const logoIdChanged = currentLogo.id !== currentLogoIdRef.current;
-          
-          // Só atualizar se o valor preservado for diferente do atual OU se o ID mudou
+
+          // SÃ³ atualizar se o valor preservado for diferente do atual OU se o ID mudou
           if (preservedLogoNumberRef.current !== logoNumberToPreserve || logoIdChanged) {
             preservedLogoNumberRef.current = logoNumberToPreserve;
             logoNumberInitialized.current = true;
@@ -1052,18 +1052,18 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           }
         }
       } else if (!logoNumberInitialized.current) {
-        // Se não estamos editando e o logo number não foi inicializado, gerar novo
-        // IMPORTANTE: Usar o savedLogos mais recente do logoDetails para garantir que incluímos logos recém-salvos
+        // Se nÃ£o estamos editando e o logo number nÃ£o foi inicializado, gerar novo
+        // IMPORTANTE: Usar o savedLogos mais recente do logoDetails para garantir que incluÃ­mos logos recÃ©m-salvos
         const latestSavedLogos = logoDetails.logos || savedLogos;
         console.log("Generating new logo number. Current savedLogos length:", savedLogos.length, "Latest from logoDetails:", latestSavedLogos.length);
-        
-        // Criar uma versão temporária da função com os logos mais recentes
+
+        // Criar uma versÃ£o temporÃ¡ria da funÃ§Ã£o com os logos mais recentes
         const generateWithLatestLogos = (projectName, currentLogoNumber = "") => {
           if (!projectName || projectName.trim() === "") {
             return "";
           }
 
-          // IMPORTANTE: Se o currentLogo já tem um logoNumber válido e estamos editando, NÃO gerar novo número
+          // IMPORTANTE: Se o currentLogo jÃ¡ tem um logoNumber vÃ¡lido e estamos editando, NÃƒO gerar novo nÃºmero
           if (currentLogo.id && currentLogo.logoNumber && currentLogo.logoNumber.trim() !== "") {
             const match = currentLogo.logoNumber.match(/-L\s*(\d+)/i);
             if (match) {
@@ -1093,12 +1093,12 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
               }
             }
           });
-          
-          // Verificar currentLogo se não tiver ID
-          if (currentLogo.logoNumber && 
-              currentLogo.logoNumber.trim() !== "" && 
-              currentLogo.logoNumber !== currentLogoNumber &&
-              !currentLogo.id) {
+
+          // Verificar currentLogo se nÃ£o tiver ID
+          if (currentLogo.logoNumber &&
+            currentLogo.logoNumber.trim() !== "" &&
+            currentLogo.logoNumber !== currentLogoNumber &&
+            !currentLogo.id) {
             const cleanedCurrentLogoNumber = currentLogo.logoNumber.trim();
             const match = cleanedCurrentLogoNumber.match(/-L\s*(\d+)/i);
             if (match) {
@@ -1112,7 +1112,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
               }
             }
           }
-          
+
           console.log("Max number found:", maxNumber, "from", latestSavedLogos.length, "saved logos. Used numbers:", Array.from(usedNumbers).sort((a, b) => a - b));
 
           if (currentLogoNumber && currentLogoNumber.trim() !== "") {
@@ -1137,15 +1137,15 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           while (usedNumbers.has(nextNumber)) {
             nextNumber++;
           }
-          
+
           console.log("Next number generated:", nextNumber, "for project:", baseName);
           return `${baseName} -L${nextNumber}`;
         };
-        
+
         const generatedLogoNumber = generateWithLatestLogos(projectName, currentLogoNumber);
 
         if (generatedLogoNumber) {
-          // Se o logo atual está vazio ou não segue o padrão, aplicar o novo número
+          // Se o logo atual estÃ¡ vazio ou nÃ£o segue o padrÃ£o, aplicar o novo nÃºmero
           const isEmpty = !currentLogoNumber || currentLogoNumber.trim() === "";
           const doesNotMatchPattern = currentLogoNumber && !currentLogoNumber.match(new RegExp(`^${projectName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*-L\\s*\\d+`, 'i'));
 
@@ -1166,20 +1166,20 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
             };
             onInputChange("logoDetails", updatedLogoDetails);
           } else {
-            // Se já tem um número válido, preservar e marcar como inicializado
+            // Se jÃ¡ tem um nÃºmero vÃ¡lido, preservar e marcar como inicializado
             preservedLogoNumberRef.current = currentLogoNumber;
             logoNumberInitialized.current = true;
           }
         }
       } else if (currentLogo.logoNumber && currentLogo.logoNumber.trim() !== "" && !isEditingExistingLogo) {
-        // Se o currentLogo tem um número válido mas não estamos editando, verificar se precisa atualizar
+        // Se o currentLogo tem um nÃºmero vÃ¡lido mas nÃ£o estamos editando, verificar se precisa atualizar
         const logoNumberToPreserve = currentLogo.logoNumber;
         if (formik.values.logoNumber !== logoNumberToPreserve) {
           formik.setFieldValue("logoNumber", logoNumberToPreserve);
         }
       }
     } else if (currentLogo.logoNumber && !preservedLogoNumberRef.current) {
-      // Preservar valor do currentLogo se ainda não foi preservado
+      // Preservar valor do currentLogo se ainda nÃ£o foi preservado
       preservedLogoNumberRef.current = currentLogo.logoNumber;
       logoNumberInitialized.current = true;
     }
@@ -1203,7 +1203,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       shouldUpdate = true;
     }
 
-    // Atualizar currentLogo se necessário
+    // Atualizar currentLogo se necessÃ¡rio
     if (shouldUpdate) {
       const updatedCurrentLogo = {
         ...currentLogo,
@@ -1220,8 +1220,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   }, [currentLogo]); // Executar quando currentLogo mudar
 
   // Sincronizar valores do Formik quando currentLogo mudar (especialmente para campos que podem ser atualizados externamente)
-  // IMPORTANTE: Não sincronizar logoName aqui para evitar conflitos com a digitação do usuário
-  // O logoName é gerenciado diretamente pelo updateField através do onChange
+  // IMPORTANTE: NÃ£o sincronizar logoName aqui para evitar conflitos com a digitaÃ§Ã£o do usuÃ¡rio
+  // O logoName Ã© gerenciado diretamente pelo updateField atravÃ©s do onChange
   React.useEffect(() => {
     if (currentLogo.fixationType !== formik.values.fixationType) {
       formik.setFieldValue("fixationType", currentLogo.fixationType || "");
@@ -1229,24 +1229,24 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     if (currentLogo.description !== formik.values.description) {
       formik.setFieldValue("description", currentLogo.description || "");
     }
-    // Removido logoName da sincronização automática para evitar conflitos com digitação
+    // Removido logoName da sincronizaÃ§Ã£o automÃ¡tica para evitar conflitos com digitaÃ§Ã£o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLogo.fixationType, currentLogo.description]);
 
-  // Helper para atualizar logoDetails completo (mantém compatibilidade)
-  // IMPORTANTE: Preservar todos os valores do formik para não perder dados durante atualizações
+  // Helper para atualizar logoDetails completo (mantÃ©m compatibilidade)
+  // IMPORTANTE: Preservar todos os valores do formik para nÃ£o perder dados durante atualizaÃ§Ãµes
   const handleUpdate = React.useCallback((key, value) => {
     // Usar valores do formik como base para preservar todos os campos preenchidos
     const updatedCurrentLogo = {
       ...currentLogo,
-      // Preservar valores do formik (que podem ter sido digitados mas ainda não sincronizados)
+      // Preservar valores do formik (que podem ter sido digitados mas ainda nÃ£o sincronizados)
       logoName: formik.values.logoName || currentLogo.logoName || "",
       description: formik.values.description || currentLogo.description || "",
       logoNumber: formik.values.logoNumber || currentLogo.logoNumber || "",
       requestedBy: formik.values.requestedBy || currentLogo.requestedBy || "",
       budget: formik.values.budget || currentLogo.budget || "",
       fixationType: formik.values.fixationType || currentLogo.fixationType || "",
-      // Atualizar o campo específico
+      // Atualizar o campo especÃ­fico
       [key]: value
     };
     const updatedLogoDetails = {
@@ -1255,11 +1255,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       logos: savedLogos, // Preserve saved logos
     };
     onInputChange("logoDetails", updatedLogoDetails);
-    // NÃO sincronizar com Formik aqui - o formik já foi atualizado antes de chamar handleUpdate
+    // NÃƒO sincronizar com Formik aqui - o formik jÃ¡ foi atualizado antes de chamar handleUpdate
     // Isso evita loops infinitos
   }, [currentLogo, formik.values, logoDetails, savedLogos, onInputChange]);
 
-  // Helper melhorado para atualizar dimensões usando Formik
+  // Helper melhorado para atualizar dimensÃµes usando Formik
   const handleDimensionUpdate = (dim, field, value) => {
     const dimensions = formik.values.dimensions || {};
     const updatedDimensions = {
@@ -1276,14 +1276,14 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
   // Handler para selecionar um produto relacionado
   const handleSelectRelatedProduct = (product) => {
-    // Extrair dimensões do produto
+    // Extrair dimensÃµes do produto
     const height = product.height || product.specs?.dimensions?.heightM || product.specs?.height;
     const width = product.width || product.specs?.dimensions?.widthM || product.specs?.width;
     const depth = product.depth || product.specs?.dimensions?.depthM || product.specs?.depth;
     const diameter = product.diameter || product.specs?.dimensions?.diameterM || product.specs?.diameter;
     const length = product.length || product.specs?.dimensions?.lengthM || product.specs?.length;
 
-    // Atualizar estado de seleção
+    // Atualizar estado de seleÃ§Ã£o
     setSelectedRelatedProductId(product.id);
 
     // Salvar o ID do produto selecionado no currentLogo
@@ -1298,7 +1298,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     };
     onInputChange("logoDetails", updatedLogoDetails);
 
-    // Atualizar dimensões do logo com as dimensões do produto selecionado
+    // Atualizar dimensÃµes do logo com as dimensÃµes do produto selecionado
     const updatedDimensions = {
       ...formik.values.dimensions,
     };
@@ -1322,7 +1322,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         value: parseFloat(depth)
       };
     } else if (length) {
-      // Se não tem depth mas tem length, usar length
+      // Se nÃ£o tem depth mas tem length, usar length
       updatedDimensions.length = {
         ...updatedDimensions.length,
         value: parseFloat(length)
@@ -1335,7 +1335,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       };
     }
 
-    // Atualizar dimensões no formik
+    // Atualizar dimensÃµes no formik
     formik.setFieldValue("dimensions", updatedDimensions);
     handleUpdate("dimensions", updatedDimensions);
   };
@@ -1360,20 +1360,20 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       [field]: value
     };
 
-    // Se estamos atualizando componenteId, resetar cor e combinação
+    // Se estamos atualizando componenteId, resetar cor e combinaÃ§Ã£o
     if (field === "componenteId") {
       const componente = getComponenteById(value);
       if (componente) {
         newArray[index].componenteNome = componente.nome;
         newArray[index].componenteReferencia = componente.referencia;
 
-        // Se semCor === true, verificar se há apenas uma combinação disponível
+        // Se semCor === true, verificar se hÃ¡ apenas uma combinaÃ§Ã£o disponÃ­vel
         if (componente.semCor) {
-          // Verificar se há apenas uma cor/combinação disponível para este componente
+          // Verificar se hÃ¡ apenas uma cor/combinaÃ§Ã£o disponÃ­vel para este componente
           const coresDisponiveis = getCoresByComponente(value);
 
           if (coresDisponiveis.length === 1) {
-            // Se há apenas uma cor disponível, usar automaticamente
+            // Se hÃ¡ apenas uma cor disponÃ­vel, usar automaticamente
             const corUnica = coresDisponiveis[0];
             const combinacao = getCombinacaoByComponenteECor(value, corUnica.id);
 
@@ -1383,21 +1383,21 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
               newArray[index].combinacaoId = combinacao.id;
               newArray[index].referencia = combinacao.referencia;
             } else {
-              // Se não há combinação, usar referência do componente
+              // Se nÃ£o hÃ¡ combinaÃ§Ã£o, usar referÃªncia do componente
               newArray[index].corId = null;
               newArray[index].corNome = null;
               newArray[index].combinacaoId = null;
               newArray[index].referencia = componente.referencia || null;
             }
           } else {
-            // Se não há cores ou há múltiplas, usar referência do componente
+            // Se nÃ£o hÃ¡ cores ou hÃ¡ mÃºltiplas, usar referÃªncia do componente
             newArray[index].corId = null;
             newArray[index].corNome = null;
             newArray[index].combinacaoId = null;
             newArray[index].referencia = componente.referencia || null;
           }
         } else {
-          // Se semCor === false, manter cor se já existir, senão limpar
+          // Se semCor === false, manter cor se jÃ¡ existir, senÃ£o limpar
           if (!newArray[index].corId) {
             newArray[index].corId = null;
             newArray[index].corNome = null;
@@ -1408,7 +1408,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       }
     }
 
-    // Se estamos atualizando corId, atualizar combinação
+    // Se estamos atualizando corId, atualizar combinaÃ§Ã£o
     if (field === "corId" && newArray[index].componenteId) {
       if (value) {
         const cor = getCorById(value);
@@ -1429,13 +1429,13 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
     newComposition[type] = newArray;
 
-    // Verificar se o componente acabou de ficar completo (só para componentes)
+    // Verificar se o componente acabou de ficar completo (sÃ³ para componentes)
     if (type === "componentes") {
       const componenteAtual = newArray[index];
       const estavaCompleto = isComponenteCompleto(estadoAnterior);
       const ficouCompleto = isComponenteCompleto(componenteAtual);
 
-      // Se acabou de ficar completo e não estava completo antes, adicionar novo componente
+      // Se acabou de ficar completo e nÃ£o estava completo antes, adicionar novo componente
       if (ficouCompleto && !estavaCompleto) {
         newComposition.componentes.push({
           componenteId: null,
@@ -1474,7 +1474,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     if (newComposition.componentes) {
       newComposition.componentes = newComposition.componentes.filter((_, i) => i !== index);
       handleUpdate("composition", newComposition);
-      // Limpar estado de busca para o índice removido e ajustar índices
+      // Limpar estado de busca para o Ã­ndice removido e ajustar Ã­ndices
       setComponenteSearchValues(prev => {
         const newValues = {};
         Object.keys(prev).forEach(key => {
@@ -1484,11 +1484,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           } else if (keyIndex > index) {
             newValues[keyIndex - 1] = prev[key];
           }
-          // keyIndex === index é ignorado (removido)
+          // keyIndex === index Ã© ignorado (removido)
         });
         return newValues;
       });
-      // Limpar estado de edição
+      // Limpar estado de ediÃ§Ã£o
       setComponentesEditando(prev => {
         const newValues = {};
         Object.keys(prev).forEach(key => {
@@ -1508,7 +1508,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     const newComposition = { ...composition };
     newComposition.componentes = [];
     handleUpdate("composition", newComposition);
-    // Limpar todos os estados de busca e edição
+    // Limpar todos os estados de busca e ediÃ§Ã£o
     setComponenteSearchValues({});
     setComponentesEditando({});
   };
@@ -1518,7 +1518,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       ...prev,
       [index]: !prev[index]
     }));
-    // Limpar busca quando entrar em modo de edição
+    // Limpar busca quando entrar em modo de ediÃ§Ã£o
     setComponenteSearchValues(prev => {
       const newValues = { ...prev };
       delete newValues[index];
@@ -1549,7 +1549,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     if (newComposition.bolas) {
       newComposition.bolas = newComposition.bolas.filter((_, i) => i !== index);
       handleUpdate("composition", newComposition);
-      // Limpar estado de edição
+      // Limpar estado de ediÃ§Ã£o
       setBolasEditando(prev => {
         const newValues = {};
         Object.keys(prev).forEach(key => {
@@ -1634,7 +1634,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       }
     }
 
-    // Quando todos os três estão selecionados, buscar a bola
+    // Quando todos os trÃªs estÃ£o selecionados, buscar a bola
     if (newArray[index].corId && newArray[index].acabamentoId && newArray[index].tamanhoId) {
       const bola = getBolaBySelecao(
         newArray[index].corId,
@@ -1650,11 +1650,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       newArray[index].referencia = null;
     }
 
-    // Verificar se a bola acabou de ficar completa (só para bolas)
+    // Verificar se a bola acabou de ficar completa (sÃ³ para bolas)
     const estavaCompleta = isBolaCompleta(estadoAnterior);
     const ficouCompleta = isBolaCompleta(newArray[index]);
 
-    // Se acabou de ficar completa e não estava completa antes, adicionar nova bola
+    // Se acabou de ficar completa e nÃ£o estava completa antes, adicionar nova bola
     if (ficouCompleta && !estavaCompleta) {
       newComposition.bolas = newArray;
       newComposition.bolas.push({
@@ -1679,13 +1679,13 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   };
 
   const handleEditAIGenerated = (index) => {
-    // Armazenar o índice do attachment que está sendo editado
+    // Armazenar o Ã­ndice do attachment que estÃ¡ sendo editado
     setEditingAttachmentIndex(index);
     // Abrir o AI Assistant Chat
     setIsChatOpen(true);
   };
 
-  // Função para buscar produtos do Stock Catalogue com debounce
+  // FunÃ§Ã£o para buscar produtos do Stock Catalogue com debounce
   const searchProducts = React.useCallback(async (query) => {
     if (!query || query.trim().length < 2) {
       setProductSearchResults([]);
@@ -1725,20 +1725,20 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     };
   }, [productSearchValue, searchProducts]);
 
-  // Ref para rastrear quais produtos já tiveram produtos relacionados gerados
+  // Ref para rastrear quais produtos jÃ¡ tiveram produtos relacionados gerados
   const hasGeneratedRelatedProductsRef = React.useRef(new Map());
 
-  // Handler para seleção de produto
+  // Handler para seleÃ§Ã£o de produto
   const handleProductSelection = (productId) => {
     const selectedProduct = productSearchResults.find(p => p.id === productId);
     if (selectedProduct) {
-      // Criar 3 produtos relacionados fictícios com tamanhos diferentes
-      // Usar as dimensões do produto base como referência
+      // Criar 3 produtos relacionados fictÃ­cios com tamanhos diferentes
+      // Usar as dimensÃµes do produto base como referÃªncia
       const baseHeight = parseFloat(selectedProduct.height) || 0;
       const baseWidth = parseFloat(selectedProduct.width) || 0;
       const baseDepth = parseFloat(selectedProduct.depth) || 0;
       const baseDiameter = parseFloat(selectedProduct.diameter) || 0;
-      
+
       const demoRelatedProducts = [
         {
           id: `${selectedProduct.id}-size-1`,
@@ -1750,7 +1750,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           diameter: baseDiameter ? (baseDiameter * 1.5).toFixed(2) : null,
           imageUrl: (() => {
             const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
-            // Filtrar URLs temporárias (não existem no servidor)
+            // Filtrar URLs temporÃ¡rias (nÃ£o existem no servidor)
             if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
               return null;
             }
@@ -1768,7 +1768,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           diameter: baseDiameter ? (baseDiameter * 2.0).toFixed(2) : null,
           imageUrl: (() => {
             const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
-            // Filtrar URLs temporárias (não existem no servidor)
+            // Filtrar URLs temporÃ¡rias (nÃ£o existem no servidor)
             if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
               return null;
             }
@@ -1786,7 +1786,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           diameter: baseDiameter ? (baseDiameter * 2.5).toFixed(2) : null,
           imageUrl: (() => {
             const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
-            // Filtrar URLs temporárias (não existem no servidor)
+            // Filtrar URLs temporÃ¡rias (nÃ£o existem no servidor)
             if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
               return null;
             }
@@ -1803,7 +1803,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         baseProductId: selectedProduct.id,
         baseProduct: selectedProduct,
         relatedProducts: demoRelatedProducts,
-        productSizes: [], // Não usado mais, tamanhos estão nos produtos relacionados
+        productSizes: [], // NÃ£o usado mais, tamanhos estÃ£o nos produtos relacionados
       };
       const updatedLogoDetails = {
         ...logoDetails,
@@ -1815,19 +1815,19 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       // Atualizar estados locais
       setRelatedProducts(demoRelatedProducts);
       setProductSizes([]);
-      
+
       // Marcar que produtos relacionados foram gerados para este produto
       if (hasGeneratedRelatedProductsRef.current) {
         hasGeneratedRelatedProductsRef.current.set(selectedProduct.id, true);
       }
-      
+
       // Limpar campo de pesquisa
       setProductSearchValue("");
       setProductSearchResults([]);
     }
   };
 
-  // Handler para limpar seleção de produto
+  // Handler para limpar seleÃ§Ã£o de produto
   const handleClearProductSelection = () => {
     const updatedCurrentLogo = {
       ...currentLogo,
@@ -1854,30 +1854,30 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     }
   };
 
-  // Sincronizar estados locais com currentLogo quando produto é carregado
-  // E gerar produtos relacionados de demo se necessário
+  // Sincronizar estados locais com currentLogo quando produto Ã© carregado
+  // E gerar produtos relacionados de demo se necessÃ¡rio
   React.useEffect(() => {
     if (currentLogo.baseProduct) {
       const productId = currentLogo.baseProduct.id;
       const hasGenerated = hasGeneratedRelatedProductsRef.current.get(productId) || false;
-      
-      // Se já tem produtos relacionados, usar eles
+
+      // Se jÃ¡ tem produtos relacionados, usar eles
       if (currentLogo.relatedProducts && currentLogo.relatedProducts.length > 0) {
         setRelatedProducts(currentLogo.relatedProducts);
-        // Restaurar seleção se houver um produto relacionado selecionado
+        // Restaurar seleÃ§Ã£o se houver um produto relacionado selecionado
         if (currentLogo.selectedRelatedProductId) {
           setSelectedRelatedProductId(currentLogo.selectedRelatedProductId);
         }
         hasGeneratedRelatedProductsRef.current.set(productId, true);
       } else if (!hasGenerated) {
-        // Se não tem produtos relacionados mas tem produto base, gerar demo apenas uma vez por produto
+        // Se nÃ£o tem produtos relacionados mas tem produto base, gerar demo apenas uma vez por produto
         const selectedProduct = currentLogo.baseProduct;
-        // Usar as dimensões do produto base como referência
+        // Usar as dimensÃµes do produto base como referÃªncia
         const baseHeight = parseFloat(selectedProduct.height) || 0;
         const baseWidth = parseFloat(selectedProduct.width) || 0;
         const baseDepth = parseFloat(selectedProduct.depth) || 0;
         const baseDiameter = parseFloat(selectedProduct.diameter) || 0;
-        
+
         const demoRelatedProducts = [
           {
             id: `${selectedProduct.id}-size-1`,
@@ -1888,13 +1888,13 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
             depth: baseDepth ? (baseDepth * 1.5).toFixed(2) : null,
             diameter: baseDiameter ? (baseDiameter * 1.5).toFixed(2) : null,
             imageUrl: (() => {
-            const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
-            // Filtrar URLs temporárias (não existem no servidor)
-            if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
-              return null;
-            }
-            return url;
-          })(),
+              const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
+              // Filtrar URLs temporÃ¡rias (nÃ£o existem no servidor)
+              if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
+                return null;
+              }
+              return url;
+            })(),
             baseProductId: selectedProduct.id,
           },
           {
@@ -1906,13 +1906,13 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
             depth: baseDepth ? (baseDepth * 2.0).toFixed(2) : null,
             diameter: baseDiameter ? (baseDiameter * 2.0).toFixed(2) : null,
             imageUrl: (() => {
-            const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
-            // Filtrar URLs temporárias (não existem no servidor)
-            if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
-              return null;
-            }
-            return url;
-          })(),
+              const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
+              // Filtrar URLs temporÃ¡rias (nÃ£o existem no servidor)
+              if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
+                return null;
+              }
+              return url;
+            })(),
             baseProductId: selectedProduct.id,
           },
           {
@@ -1924,19 +1924,19 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
             depth: baseDepth ? (baseDepth * 2.5).toFixed(2) : null,
             diameter: baseDiameter ? (baseDiameter * 2.5).toFixed(2) : null,
             imageUrl: (() => {
-            const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
-            // Filtrar URLs temporárias (não existem no servidor)
-            if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
-              return null;
-            }
-            return url;
-          })(),
+              const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
+              // Filtrar URLs temporÃ¡rias (nÃ£o existem no servidor)
+              if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
+                return null;
+              }
+              return url;
+            })(),
             baseProductId: selectedProduct.id,
           },
         ];
         setRelatedProducts(demoRelatedProducts);
         hasGeneratedRelatedProductsRef.current.set(productId, true);
-        
+
         // Atualizar currentLogo com os produtos relacionados gerados
         const updatedCurrentLogo = {
           ...currentLogo,
@@ -1957,7 +1957,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     }
   }, [currentLogo.baseProduct?.id, currentLogo.relatedProducts?.length]);
 
-  // Handler para mudança do switch de modificação
+  // Handler para mudanÃ§a do switch de modificaÃ§Ã£o
   const handleModificationToggle = (isModification) => {
     const updatedCurrentLogo = {
       ...currentLogo,
@@ -2000,7 +2000,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     onInputChange("logoDetails", updatedLogoDetails);
   };
 
-  // Persistência automática dos dados do logo (PWA)
+  // PersistÃªncia automÃ¡tica dos dados do logo (PWA)
   useLogoPersistence({
     logoDetails: logoDetails,
     formData: formData,
@@ -2008,30 +2008,30 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     saveStatus: saveStatus
   });
 
-  // Validação por página
+  // ValidaÃ§Ã£o por pÃ¡gina
   const validatePage = (pageNumber) => {
     switch (pageNumber) {
       case 1: // Details & Attachments
-        // Validar apenas campos visíveis nesta página (Logo Number, Requested By e Criteria são guardados mas não visíveis aqui)
+        // Validar apenas campos visÃ­veis nesta pÃ¡gina (Logo Number, Requested By e Criteria sÃ£o guardados mas nÃ£o visÃ­veis aqui)
         const hasLogoName = formik.values.logoName?.trim() !== "";
         const hasDescription = formik.values.description?.trim() !== "";
         return hasLogoName && hasDescription;
       case 2: // Dimensions & Fixation
-        // Validar pelo menos uma dimensão preenchida
+        // Validar pelo menos uma dimensÃ£o preenchida
         const dimensions = formik.values.dimensions || {};
         const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "" && !isNaN(parseFloat(dimensions.height.value));
         const hasLength = dimensions.length?.value != null && dimensions.length.value !== "" && !isNaN(parseFloat(dimensions.length.value));
         const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "" && !isNaN(parseFloat(dimensions.width.value));
         const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "" && !isNaN(parseFloat(dimensions.diameter.value));
         const hasDimension = hasHeight || hasLength || hasWidth || hasDiameter;
-        // Validar que Fixation Type está selecionado
+        // Validar que Fixation Type estÃ¡ selecionado
         const hasFixationType = formik.values.fixationType?.trim() !== "";
         return hasDimension && hasFixationType;
       case 3: // Composition
-        // Sem validação obrigatória (pode estar vazio)
+        // Sem validaÃ§Ã£o obrigatÃ³ria (pode estar vazio)
         return true;
       case 4: // Summary
-        // Sem validação (já passou pelas outras páginas)
+        // Sem validaÃ§Ã£o (jÃ¡ passou pelas outras pÃ¡ginas)
         return true;
       default:
         return true;
@@ -2048,7 +2048,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       formik.setFieldTouched("logoName", true);
       formik.setFieldTouched("description", true);
     } else if (currentPage === 2) {
-      // Marcar dimensões como touched
+      // Marcar dimensÃµes como touched
       formik.setFieldTouched("dimensions", true);
       ['height', 'length', 'width', 'diameter'].forEach(key => {
         formik.setFieldTouched(`dimensions.${key}.value`, true);
@@ -2056,7 +2056,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       // Marcar fixationType como touched
       formik.setFieldTouched("fixationType", true);
     }
-    
+
     if (canProceedToNext() && currentPage < logoSteps.length) {
       setCurrentPage(currentPage + 1);
       window.scrollTo(0, 0);
@@ -2072,7 +2072,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
   const handleStepClick = (stepNumber) => {
     // Permitir navegar para qualquer step anterior ou o atual
-    // Para steps futuros, só permitir se o step atual for válido
+    // Para steps futuros, sÃ³ permitir se o step atual for vÃ¡lido
     if (stepNumber <= currentPage || (stepNumber === currentPage + 1 && canProceedToNext())) {
       setCurrentPage(stepNumber);
       if (onInternalPageChange) {
@@ -2085,58 +2085,58 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   const handleFinish = async () => {
     // Finalizar e salvar o logo atual antes de navegar
     if (!canProceedToNext() || isFinishing) {
-      return; // Não prosseguir se a página atual não for válida ou já estiver processando
+      return; // NÃ£o prosseguir se a pÃ¡gina atual nÃ£o for vÃ¡lida ou jÃ¡ estiver processando
     }
 
     setIsFinishing(true);
     try {
-      // Salvar antes de avançar se estiver editando um projeto existente
+      // Salvar antes de avanÃ§ar se estiver editando um projeto existente
       if (projectId && onSave) {
         try {
           await onSave();
         } catch (saveError) {
-          console.error('❌ Erro ao salvar antes de avançar:', saveError);
-          // Continuar mesmo se houver erro no save (pode ser um problema temporário)
-          // O erro já foi mostrado no saveStatus
+          console.error('âŒ Erro ao salvar antes de avanÃ§ar:', saveError);
+          // Continuar mesmo se houver erro no save (pode ser um problema temporÃ¡rio)
+          // O erro jÃ¡ foi mostrado no saveStatus
         }
       }
-      
-      // Navegar para o próximo passo
+
+      // Navegar para o prÃ³ximo passo
       if (onNext) {
         onNext();
       }
     } catch (error) {
-      console.error('❌ Erro ao processar Finish:', error);
-      // Não bloquear a UI, o erro já foi mostrado
+      console.error('âŒ Erro ao processar Finish:', error);
+      // NÃ£o bloquear a UI, o erro jÃ¡ foi mostrado
     } finally {
       setIsFinishing(false);
     }
   };
 
   const handleNewLogo = () => {
-    // Só salvar o logo atual se ele for válido
+    // SÃ³ salvar o logo atual se ele for vÃ¡lido
     let updatedSavedLogos = [...savedLogos];
-    
+
     if (isCurrentLogoValid()) {
-      // Guardar _originalIndex antes de remover (é apenas para controle interno)
+      // Guardar _originalIndex antes de remover (Ã© apenas para controle interno)
       const originalIndex = currentLogo._originalIndex;
-      
-      // Remover _originalIndex antes de salvar (é apenas para controle interno)
+
+      // Remover _originalIndex antes de salvar (Ã© apenas para controle interno)
       const { _originalIndex, ...logoWithoutOriginalIndex } = currentLogo;
-      
+
       const logoToSave = {
         ...logoWithoutOriginalIndex,
         id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         savedAt: currentLogo.savedAt || new Date().toISOString()
       };
 
-      // Verificar se o logo já existe nos savedLogos (por ID ou logoNumber)
+      // Verificar se o logo jÃ¡ existe nos savedLogos (por ID ou logoNumber)
       const existingLogoIndex = savedLogos.findIndex(logo => {
-        // Se currentLogo tem ID, comparar por ID (mais confiável)
+        // Se currentLogo tem ID, comparar por ID (mais confiÃ¡vel)
         if (logoToSave.id && logo.id) {
           return logo.id === logoToSave.id;
         }
-        // Se não tem ID, comparar por logoNumber
+        // Se nÃ£o tem ID, comparar por logoNumber
         if (logo.logoNumber && logoToSave.logoNumber) {
           return logo.logoNumber.trim() === logoToSave.logoNumber.trim();
         }
@@ -2144,21 +2144,21 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       });
 
       if (existingLogoIndex >= 0) {
-        // Logo já existe - ATUALIZAR em vez de criar novo
+        // Logo jÃ¡ existe - ATUALIZAR em vez de criar novo
         updatedSavedLogos[existingLogoIndex] = logoToSave;
       } else if (originalIndex !== undefined && originalIndex >= 0 && originalIndex < savedLogos.length) {
-        // Logo não existe mas tem posição original válida - INSERIR na posição original
+        // Logo nÃ£o existe mas tem posiÃ§Ã£o original vÃ¡lida - INSERIR na posiÃ§Ã£o original
         updatedSavedLogos.splice(originalIndex, 0, logoToSave);
       } else {
-        // Logo não existe e não tem posição original - ADICIONAR como novo no final
+        // Logo nÃ£o existe e nÃ£o tem posiÃ§Ã£o original - ADICIONAR como novo no final
         updatedSavedLogos.push(logoToSave);
       }
     }
-    
-    // Resetar refs para permitir preenchimento automático novamente
+
+    // Resetar refs para permitir preenchimento automÃ¡tico novamente
     logoNumberInitialized.current = false;
     requestedByAutoFilled.current = false;
-    
+
     // Criar um novo logo vazio
     const newLogo = {
       id: null,
@@ -2192,14 +2192,14 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     };
 
     onInputChange("logoDetails", updatedLogoDetails);
-    setCurrentPage(1); // Voltar para a primeira página
+    setCurrentPage(1); // Voltar para a primeira pÃ¡gina
     if (onInternalPageChange) {
       onInternalPageChange(1);
     }
     window.scrollTo(0, 0);
   };
 
-  // Função para renderizar página 1: Details & Attachments
+  // FunÃ§Ã£o para renderizar pÃ¡gina 1: Details & Attachments
   const renderDetailsAndAttachments = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 h-full">
@@ -2213,8 +2213,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           </div>
 
           <div className={`flex-1 overflow-y-auto space-y-1.5`}>
-            {/* Logo Number, Requested By e Criteria são guardados mas não mostrados aqui - só no Summary */}
-            
+            {/* Logo Number, Requested By e Criteria sÃ£o guardados mas nÃ£o mostrados aqui - sÃ³ no Summary */}
+
             <div>
               <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Logo Name</label>
               <Input
@@ -2259,7 +2259,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                 variant="bordered"
                 size="sm"
                 type="text"
-                startContent={<span className="text-gray-500 dark:text-gray-400 font-medium">€</span>}
+                startContent={<span className="text-gray-500 dark:text-gray-400 font-medium">&euro;</span>}
                 value={formik.values.budget || ""}
                 onValueChange={(v) => {
                   let cleaned = v.replace(/[^\d,]/g, '');
@@ -2323,7 +2323,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
               {currentLogo.isModification && (
                 <div className="space-y-3 mt-3">
-                  {/* Product Search - manter código existente */}
+                  {/* Product Search - manter cÃ³digo existente */}
                   <div>
                     <label className="text-xs sm:text-sm md:text-base lg:text-sm font-semibold text-gray-700 dark:text-gray-200 block mb-1">Search Product from Stock Catalogue</label>
                     <AutocompleteWithMarquee
@@ -2366,15 +2366,15 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                         ) : null
                       }
                       allowsCustomValue={false}
-                      classNames={{ 
-                        listboxWrapper: "max-h-[300px]", 
-                        trigger: "text-xs h-8", 
-                        input: "text-xs" 
+                      classNames={{
+                        listboxWrapper: "max-h-[300px]",
+                        trigger: "text-xs h-8",
+                        input: "text-xs"
                       }}
                     >
                       {(product) => (
-                        <AutocompleteItem 
-                          key={product.id} 
+                        <AutocompleteItem
+                          key={product.id}
                           textValue={`${product.name} ${product.type || ""}`}
                         >
                           <div className="flex flex-col">
@@ -2388,7 +2388,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                     </AutocompleteWithMarquee>
                   </div>
 
-                  {/* Related Products - manter código existente se necessário */}
+                  {/* Related Products - manter cÃ³digo existente se necessÃ¡rio */}
                   {currentLogo.baseProduct && relatedProducts.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
@@ -2400,26 +2400,26 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                           {relatedProducts.map((product, idx) => {
                             const isSelected = selectedRelatedProductId === product.id;
                             return (
-                              <div 
-                                key={product.id || idx} 
+                              <div
+                                key={product.id || idx}
                                 onClick={() => handleSelectRelatedProduct(product)}
                                 className={`
                                   p-2 rounded-lg border space-y-1.5 cursor-pointer transition-all
-                                  ${isSelected 
-                                    ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 dark:border-primary-400 shadow-md' 
+                                  ${isSelected
+                                    ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 dark:border-primary-400 shadow-md'
                                     : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-primary-300 dark:hover:border-primary-700'
                                   }
                                 `}
                               >
                                 <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">{product.name || product}</div>
-                                {/* Dimensões */}
+                                {/* DimensÃµes */}
                                 {(() => {
-                                  // Extrair dimensões de diferentes formatos possíveis
+                                  // Extrair dimensÃµes de diferentes formatos possÃ­veis
                                   const height = product.height || product.specs?.dimensions?.heightM || product.specs?.height;
                                   const width = product.width || product.specs?.dimensions?.widthM || product.specs?.width;
                                   const depth = product.depth || product.specs?.dimensions?.depthM || product.specs?.depth;
                                   const diameter = product.diameter || product.specs?.dimensions?.diameterM || product.specs?.diameter;
-                                  
+
                                   if (height || width || depth || diameter) {
                                     return (
                                       <div className="space-y-0.5 text-xs">
@@ -2443,7 +2443,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                                         )}
                                         {diameter && (
                                           <div className="flex justify-between">
-                                            <span className="text-gray-600 dark:text-gray-400">Ø:</span>
+                                            <span className="text-gray-600 dark:text-gray-400">Ã˜:</span>
                                             <span className="font-medium text-gray-900 dark:text-gray-100">{Number(diameter).toFixed(2)}m</span>
                                           </div>
                                         )}
@@ -2557,7 +2557,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     );
   };
 
-  // Função para renderizar página 2: Dimensions & Fixation
+  // FunÃ§Ã£o para renderizar pÃ¡gina 2: Dimensions & Fixation
   const renderDimensions = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -2585,7 +2585,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                       <Checkbox
                         size="sm"
                         color="danger"
-                        classNames={{ 
+                        classNames={{
                           label: "text-xs font-semibold text-gray-800 dark:text-gray-100",
                           wrapper: "before:border-2 before:border-gray-400 dark:before:border-gray-500",
                           icon: "text-white"
@@ -2752,7 +2752,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                         formik.updateField("lacquerColor", "");
                       }
                     }}
-                    classNames={{ 
+                    classNames={{
                       trigger: "text-xs h-8",
                       value: "text-xs"
                     }}
@@ -2842,7 +2842,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     );
   };
 
-  // Função para renderizar página 3: Composition
+  // FunÃ§Ã£o para renderizar pÃ¡gina 3: Composition
   const renderComposition = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -3217,7 +3217,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     );
   };
 
-  // Função para renderizar página 4: Summary (editável)
+  // FunÃ§Ã£o para renderizar pÃ¡gina 4: Summary (editÃ¡vel)
   const renderSummary = () => {
     // Helper function to check if a value is filled
     const hasValue = (value) => {
@@ -3293,750 +3293,276 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     const validComponentes = composition.componentes?.filter(c => c.referencia) || [];
     const validBolas = composition.bolas?.filter(bola => hasBolaData(bola)) || [];
 
+    // Get Attachments (use only the first one for the main preview if available)
+    const attachments = currentLogo.attachmentFiles || [];
+    const mainAttachment = attachments.length > 0 ? attachments[0] : null;
+
     return (
-      <div className="h-full overflow-y-auto">
-        <div className="max-w-4xl mx-auto">
-          {/* Single Card with all sections */}
-          <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-3' : 'p-4'} shadow-xl border border-white/10 space-y-4`}>
-            
+      <div className="h-full overflow-y-auto p-4 bg-[#141b2d] text-gray-300 font-sans">
+        <div className="max-w-[1600px] mx-auto grid grid-cols-12 gap-8">
+
+          {/* COLUMN 1: Details & Technical (4 cols) */}
+          <div className="col-span-12 lg:col-span-4 flex flex-col gap-10">
+
             {/* Details Section */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                <Icon icon="lucide:file-signature" className="w-4 h-4" />
-                <h2 className="text-sm font-bold">Details</h2>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-blue-500 mb-2">
+                <Icon icon="lucide:file-text" className="w-5 h-5" />
+                <h3 className="text-lg font-bold">Details</h3>
               </div>
-              <div className="space-y-2 pl-6">
+
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Logo Number</label>
-                  <Input
-                    placeholder="Enter logo number"
-                    variant="bordered"
-                    size="sm"
-                    value={formik.values.logoNumber || ""}
-                    onValueChange={(v) => formik.updateField("logoNumber", v)}
-                    classNames={{ input: "text-xs", inputWrapper: "h-8" }}
-                  />
+                  <label className="text-xs text-gray-400 block mb-1">Logo Number</label>
+                  <div className="text-sm font-medium text-white break-words">{formik.values.logoNumber || "---"}</div>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Logo Name</label>
-                  <Input
-                    placeholder="Enter logo name"
-                    variant="bordered"
-                    size="sm"
-                    value={formik.values.logoName || ""}
-                    onValueChange={(v) => formik.updateField("logoName", v)}
-                    classNames={{ input: "text-xs", inputWrapper: "h-8" }}
-                  />
+                  <label className="text-xs text-gray-400 block mb-1">Logo Name</label>
+                  <div className="text-sm font-medium text-white break-words">{formik.values.logoName || "---"}</div>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Budget (EUR)</label>
-                  <Input
-                    placeholder="0,00"
-                    variant="bordered"
-                    size="sm"
-                    type="text"
-                    startContent={<span className="text-gray-500 dark:text-gray-400 font-medium">€</span>}
-                    value={formik.values.budget || ""}
-                    onValueChange={(v) => {
-                      let cleaned = v.replace(/[^\d,]/g, '');
-                      cleaned = cleaned.replace(/\./g, ',');
-                      const parts = cleaned.split(',');
-                      if (parts.length > 2) {
-                        cleaned = parts[0] + ',' + parts.slice(1).join('');
-                      }
-                      if (parts.length === 2 && parts[1].length > 2) {
-                        cleaned = parts[0] + ',' + parts[1].substring(0, 2);
-                      }
-                      if (parts[0] && parts[0].length > 3) {
-                        const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-                        cleaned = parts.length > 1 ? integerPart + ',' + parts[1] : integerPart;
-                      }
-                      formik.updateField("budget", cleaned);
-                    }}
-                    classNames={{ input: "text-xs", inputWrapper: "h-8" }}
-                  />
+                  <label className="text-xs text-gray-400 block mb-1">Budget (EUR)</label>
+                  <div className="text-sm font-medium text-white break-words">&euro; {formik.values.budget || "---"}</div>
                 </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Requested By</label>
-                  <Input
-                    placeholder="Enter requester name"
-                    variant="bordered"
-                    size="sm"
-                    value={formik.values.requestedBy || ""}
-                    onValueChange={(v) => formik.updateField("requestedBy", v)}
-                    classNames={{ input: "text-xs", inputWrapper: "h-8" }}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Description</label>
-                  <Textarea
-                    placeholder="Enter description..."
-                    minRows={3}
-                    variant="bordered"
-                    size="sm"
-                    value={formik.values.description || ""}
-                    onValueChange={(v) => formik.updateField("description", v)}
-                    classNames={{ input: "text-xs" }}
-                  />
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Description</label>
+                <div className="text-xs text-gray-300 leading-relaxed bg-[#1f2942] p-3 rounded-lg border border-gray-700/50 min-h-[100px] whitespace-pre-wrap">
+                  {formik.values.description || "No description provided."}
                 </div>
               </div>
             </div>
 
-            <Divider />
-
-            {/* Attachments Section */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-pink-600 dark:text-pink-400">
-                <Icon icon="lucide:paperclip" className="w-4 h-4" />
-                <h2 className="text-sm font-bold">Attachments</h2>
+            {/* Fixation & Technical Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-orange-500 mb-2">
+                <Icon icon="lucide:hammer" className="w-5 h-5" />
+                <h3 className="text-lg font-bold">Fixation & Technical</h3>
               </div>
-              <div className="pl-6">
-                {currentLogo.attachmentFiles && currentLogo.attachmentFiles.length > 0 ? (
-                  <div className="space-y-2">
-                    {currentLogo.attachmentFiles.map((file, index) => {
-                      const isImage = file.mimetype?.startsWith('image/') || file.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
-                      const fileUrl = buildImageUrl(file.url || file.path);
-                      return (
-                        <div key={index} className="relative">
-                          {isImage && fileUrl ? (
-                            <img 
-                              src={fileUrl} 
-                              alt={file.name || `Attachment ${index + 1}`}
-                              className="max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-700"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <AttachmentItem
-                              file={file}
-                              index={index}
-                              onRemove={handleRemoveAttachment}
-                              onEdit={handleEditAIGenerated}
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
+
+              <div className="grid grid-cols-2 gap-y-6 gap-x-4">
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Usage</label>
+                  <div className="text-sm font-medium text-white flex items-center gap-2">
+                    {formik.values.usageOutdoor ? (
+                      <><Icon icon="lucide:trees" className="w-4 h-4" /> Outdoor</>
+                    ) : (
+                      <><Icon icon="lucide:home" className="w-4 h-4" /> Indoor</>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Structure Finish</label>
+                  {formik.values.lacqueredStructure ? (
+                    <div className="text-xs font-bold bg-[#1f2942] border border-gray-600 px-2 py-1 rounded inline-block text-white">
+                      {formik.values.lacquerColor}
+                    </div>
+                  ) : (
+                    <div className="text-xs font-medium text-gray-500 italic">Standard</div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Fixation Type</label>
+                  <div className="text-sm font-medium text-white flex items-center gap-2">
+                    <Icon icon="lucide:ban" className="w-4 h-4" /> {/* You might want to map icons based on type */}
+                    {formik.values.fixationType || "None"}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Technical Constraints</label>
+                  {formik.values.maxWeightConstraint ? (
+                    <div className="text-xs font-medium text-white bg-[#1f2942] px-2 py-1 rounded border border-gray-700 inline-flex items-center gap-2">
+                      <span>RestriÃ§Ã£o de Peso MÃ¡x.</span>
+                      <span className="font-bold text-orange-400">{formik.values.maxWeight} kg</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-600 text-xs">None</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 mt-2">
+                {formik.values.ballast && (
+                  <div className="px-3 py-1.5 rounded-full bg-gray-700/50 border border-gray-600 text-xs font-medium text-white flex items-center gap-2">
+                    <Icon icon="lucide:check-circle-2" className="w-3.5 h-3.5" /> Ballast Required
+                  </div>
+                )}
+                {formik.values.controlReport && (
+                  <div className="px-3 py-1.5 rounded-full bg-gray-700/50 border border-gray-600 text-xs font-medium text-white flex items-center gap-2">
+                    <Icon icon="lucide:check-circle-2" className="w-3.5 h-3.5" /> Control Report Needed
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* COLUMN 2: Requested By, Attachments, Components (4 cols) */}
+          <div className="col-span-12 lg:col-span-4 flex flex-col gap-10">
+
+            <div className="space-y-6">
+              {/* Requested By */}
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">Requested By â€”</span>
+                  <span className="text-sm font-medium text-white">{formik.values.requestedBy || "---"}</span>
+                </div>
+              </div>
+
+              {/* Attachments */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-pink-500 mb-1">
+                  <Icon icon="lucide:paperclip" className="w-4 h-4" />
+                  <h4 className="text-sm font-bold">Attachments</h4>
+                </div>
+
+                {mainAttachment ? (
+                  <div className="relative w-full h-48 rounded-xl overflow-hidden border-2 border-dashed border-gray-700 bg-[#1f2942] group">
+                    {mainAttachment.url || mainAttachment.path ? (
+                      <img
+                        src={buildImageUrl(mainAttachment.url || mainAttachment.path)}
+                        alt="Main Attachment"
+                        className="w-full h-full object-contain p-2"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-500 cursor-default">
+                        <Icon icon="lucide:image-off" className="w-8 h-8" />
+                      </div>
+                    )}
+                    {/* Overlay with more count if > 1 */}
+                    {attachments.length > 1 && (
+                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-md">
+                        +{attachments.length - 1} more
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-400">No attachments</p>
+                  <div className="w-full h-32 rounded-xl border-2 border-dashed border-gray-700 flex items-center justify-center text-gray-600 bg-[#1f2942]/30">
+                    <span className="text-xs">No image attached</span>
+                  </div>
                 )}
               </div>
             </div>
 
-            <Divider />
+            {/* Composition - Components Section (Moved to this column based on layout) */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-purple-500 mb-2">
+                <Icon icon="lucide:layers" className="w-5 h-5" />
+                <h3 className="text-lg font-bold">Composition</h3>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Icon icon="lucide:box" className="w-4 h-4 text-purple-400" />
+                  <span className="text-xs font-bold text-gray-300 uppercase">COMPONENTS</span>
+                  <span className="bg-purple-900/50 text-purple-300 text-[10px] px-1.5 rounded font-bold">{validComponentes.length}</span>
+                </div>
+
+                <div className="space-y-2">
+                  {validComponentes.length > 0 ? (
+                    validComponentes.map((comp, idx) => (
+                      <div key={idx} className="bg-[#1f2942] p-3 rounded-lg border border-gray-700 flex flex-col gap-1">
+                        <div className="flex justify-between items-start">
+                          <span className="text-sm font-bold text-white uppercase">{comp.referencia}</span>
+                        </div>
+                        <div className="text-xs text-gray-400 flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-gray-500"></div> {/* Simplified color indicator */}
+                          <span className="truncate">{comp.componenteNome || "Component Name"}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-xs text-gray-500 italic px-2">No components added.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* COLUMN 3: Dimensions & Balls (4 cols) */}
+          <div className="col-span-12 lg:col-span-4 flex flex-col gap-10">
 
             {/* Dimensions Section */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                <Icon icon="lucide:ruler" className="w-4 h-4" />
-                <h2 className="text-sm font-bold">Dimensions</h2>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-emerald-500 mb-2">
+                <Icon icon="lucide:ruler" className="w-5 h-5" />
+                <h3 className="text-lg font-bold">Dimensions</h3>
               </div>
-              <div className="grid grid-cols-2 gap-3 pl-6">
-                {dimensionOrder.map((key) => {
-                  const dimensionValue = formik.values.dimensions?.[key]?.value || "";
-                  const isImperative = formik.values.dimensions?.[key]?.imperative || false;
+
+              <div className="grid grid-cols-2 gap-4">
+                {dimensionOrder.map(key => {
+                  const dimData = formik.values.dimensions?.[key];
+                  const val = dimData?.value;
+                  const isImperative = dimData?.imperative;
+                  const displayVal = (val !== null && val !== undefined && val !== "") ? val : "---";
+
                   return (
-                    <div key={key} className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase">{dimensionLabels[key]}</label>
-                        <Checkbox
-                          size="sm"
-                          color="danger"
-                          classNames={{ 
-                            wrapper: isImperative ? "before:border-danger" : "",
-                            icon: "text-white"
-                          }}
-                          isSelected={isImperative}
-                          onValueChange={(v) => handleDimensionUpdate(key, "imperative", v)}
-                        >
-                          <span className="text-xs">Imperative</span>
-                        </Checkbox>
+                    <div key={key} className="bg-[#1f2942] p-3 rounded-xl border border-gray-700 relative group overflow-hidden">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{dimensionLabels[key]}</span>
+                        <div className={`flex items-center gap-1.5 ${isImperative ? 'opacity-100' : 'opacity-40'}`}>
+                          {isImperative ? (
+                            <Icon icon="lucide:check-circle" className="w-3 h-3 text-pink-500" />
+                          ) : (
+                            <div className="w-3 h-3 rounded-full border border-gray-500"></div>
+                          )}
+                          <span className="text-[10px] text-white">Imperative</span>
+                        </div>
                       </div>
-                      <Input
-                        type="number"
-                        placeholder="0.00"
-                        endContent={<span className="text-xs text-gray-700 dark:text-gray-200 font-bold">m</span>}
-                        variant="bordered"
-                        size="sm"
-                        classNames={{ inputWrapper: "bg-gray-50 dark:bg-gray-700 h-8", input: "text-xs" }}
-                        value={dimensionValue}
-                        onValueChange={(v) => {
-                          if (!v || v === "" || v === "0" || v === "0.00") {
-                            handleDimensionUpdate(key, "value", "");
-                          } else {
-                            const numValue = parseFloat(v);
-                            if (!isNaN(numValue) && numValue > 0) {
-                              handleDimensionUpdate(key, "value", numValue);
-                            } else {
-                              handleDimensionUpdate(key, "value", "");
-                            }
-                          }
-                        }}
-                      />
+                      <div className="flex items-end justify-between">
+                        <span className="text-xl font-bold text-white">{displayVal}</span>
+                        <span className="text-xs text-gray-500 mb-1">m</span>
+                      </div>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            <Divider />
-
-            {/* Fixation & Technical Section */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
-                <Icon icon="lucide:wrench" className="w-4 h-4" />
-                <h2 className="text-sm font-bold">Fixation & Technical</h2>
+            {/* Composition - Balls Section */}
+            <div className="space-y-3 pt-6"> {/* Added spacing to align visually if needed */}
+              <div className="flex items-center gap-2">
+                <Icon icon="lucide:circle-dot" className="w-4 h-4 text-purple-400" />
+                <span className="text-xs font-bold text-gray-300 uppercase">BALLS</span>
+                <span className="bg-purple-900/50 text-purple-300 text-[10px] px-1.5 rounded font-bold">{validBolas.length}</span>
               </div>
-              <div className="space-y-2 pl-6">
-                <div>
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Usage</label>
-                  <Tabs
-                    fullWidth
-                    size="sm"
-                    color="primary"
-                    selectedKey={formik.values.usageOutdoor ? "outdoor" : "indoor"}
-                    onSelectionChange={(key) => {
-                      if (key === "indoor") {
-                        formik.updateFields({ usageIndoor: true, usageOutdoor: false });
-                      } else {
-                        formik.updateFields({ usageIndoor: false, usageOutdoor: true });
-                      }
-                    }}
-                    classNames={{
-                      tabList: "p-0.5 bg-gray-100 dark:bg-gray-700",
-                      cursor: "shadow-md",
-                      tabContent: "font-bold text-xs"
-                    }}
-                  >
-                    <Tab
-                      key="indoor"
-                      title={
-                        <div className="flex items-center gap-1.5 py-0.5">
-                          <Icon icon="lucide:home" className="w-3 h-3" />
-                          <span>Indoor</span>
+
+              <div className="space-y-2">
+                {validBolas.length > 0 ? (
+                  validBolas.map((bola, idx) => (
+                    <div key={idx} className="bg-[#1f2942] p-3 rounded-lg border border-gray-700 flex flex-col gap-1">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm font-bold text-white">{bola.corNome || "Ball"} - {bola.acabamentoNome || "Finish"} - {bola.tamanhoName || "Size"}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-orange-400"></div> {/* Color placeholder */}
+                        <span className="text-xs text-gray-400">{bola.corNome || "Color"} â€¢ {bola.acabamentoNome || "Matte"}</span>
+                      </div>
+                      {bola.reference && (
+                        <div className="mt-1">
+                          <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded font-mono">Ref: {bola.reference}</span>
                         </div>
-                      }
-                    />
-                    <Tab
-                      key="outdoor"
-                      title={
-                        <div className="flex items-center gap-1.5 py-0.5">
-                          <Icon icon="lucide:trees" className="w-3 h-3" />
-                          <span>Outdoor</span>
-                        </div>
-                      }
-                    />
-                  </Tabs>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Structure Finish</label>
-                  {formik.values.lacqueredStructure ? (
-                    <Input
-                      variant="bordered"
-                      size="sm"
-                      value={formik.values.lacquerColor || ""}
-                      onValueChange={(v) => formik.updateField("lacquerColor", v)}
-                      classNames={{ input: "text-xs", inputWrapper: "h-8" }}
-                      endContent={
-                        <Button
-                          size="sm"
-                          variant="light"
-                          isIconOnly
-                          onPress={() => formik.updateField("lacqueredStructure", false)}
-                          className="min-w-6 h-6"
-                        >
-                          <Icon icon="lucide:x" className="w-3 h-3" />
-                        </Button>
-                      }
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        size="sm"
-                        color="secondary"
-                        isSelected={false}
-                        onValueChange={(v) => formik.updateField("lacqueredStructure", v)}
-                      />
-                      <Select
-                        placeholder="Select color"
-                        size="sm"
-                        variant="bordered"
-                        selectedKeys={(() => {
-                          const colorKeys = ['white', 'gold', 'red', 'blue', 'green', 'pink', 'black'];
-                          const savedValue = formik.values.lacquerColor || '';
-                          const matchingKey = colorKeys.find(key => {
-                            const translatedValue = t(`pages.projectDetails.lacquerColors.${key}`, '');
-                            return translatedValue === savedValue || key === savedValue;
-                          });
-                          return matchingKey ? new Set([matchingKey]) : new Set();
-                        })()}
-                        onSelectionChange={(keys) => {
-                          const selected = Array.from(keys)[0];
-                          if (selected) {
-                            const translatedValue = t(`pages.projectDetails.lacquerColors.${selected}`, '');
-                            formik.updateField("lacquerColor", translatedValue || selected);
-                            formik.updateField("lacqueredStructure", true);
-                          }
-                        }}
-                        classNames={{ trigger: "text-xs h-8" }}
-                      >
-                        <SelectItem key="white" value="white">
-                          {t('pages.projectDetails.lacquerColors.white', 'WHITE RAL 9010')}
-                        </SelectItem>
-                        <SelectItem key="gold" value="gold">
-                          {t('pages.projectDetails.lacquerColors.gold', 'GOLD PANTONE 131C')}
-                        </SelectItem>
-                        <SelectItem key="red" value="red">
-                          {t('pages.projectDetails.lacquerColors.red', 'RED RAL 3000')}
-                        </SelectItem>
-                        <SelectItem key="blue" value="blue">
-                          {t('pages.projectDetails.lacquerColors.blue', 'BLUE RAL 5005')}
-                        </SelectItem>
-                        <SelectItem key="green" value="green">
-                          {t('pages.projectDetails.lacquerColors.green', 'GREEN RAL 6029')}
-                        </SelectItem>
-                        <SelectItem key="pink" value="pink">
-                          {t('pages.projectDetails.lacquerColors.pink', 'PINK RAL 3015')}
-                        </SelectItem>
-                        <SelectItem key="black" value="black">
-                          {t('pages.projectDetails.lacquerColors.black', 'BLACK RAL 9011')}
-                        </SelectItem>
-                      </Select>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Fixation Type</label>
-                  <Select
-                    placeholder="Select fixation type"
-                    size="sm"
-                    variant="bordered"
-                    selectedKeys={formik.values.fixationType ? new Set([formik.values.fixationType]) : new Set()}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys)[0] || "";
-                      formik.updateField("fixationType", selected);
-                    }}
-                    startContent={<Icon icon="lucide:settings-2" className="w-3 h-3 text-gray-500" />}
-                    classNames={{ trigger: "text-xs h-8" }}
-                  >
-                    <SelectItem key="ground" startContent={<Icon icon="lucide:arrow-down-to-line" className="w-3 h-3" />}>Ground</SelectItem>
-                    <SelectItem key="wall" startContent={<Icon icon="lucide:brick-wall" className="w-3 h-3" />}>Wall</SelectItem>
-                    <SelectItem key="suspended" startContent={<Icon icon="lucide:arrow-up-to-line" className="w-3 h-3" />}>Suspended</SelectItem>
-                    <SelectItem key="none" startContent={<Icon icon="lucide:ban" className="w-3 h-3" />}>None</SelectItem>
-                    <SelectItem key="pole_side">Pole (Side)</SelectItem>
-                    <SelectItem key="pole_central">Pole (Central)</SelectItem>
-                    <SelectItem key="special">Special</SelectItem>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Technical Constraints</label>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        size="sm"
-                        color="secondary"
-                        isSelected={formik.values.maxWeightConstraint || false}
-                        onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
-                      />
-                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Restrição de Peso Máx.</span>
-                      {formik.values.maxWeightConstraint && (
-                        <Input
-                          placeholder="Weight (kg)"
-                          size="sm"
-                          variant="bordered"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          classNames={{ input: "text-xs", inputWrapper: "h-8 w-24" }}
-                          endContent={<span className="text-xs text-default-400">kg</span>}
-                          value={formik.values.maxWeight || ""}
-                          onValueChange={(v) => formik.updateField("maxWeight", v)}
-                        />
                       )}
                     </div>
-                    <Checkbox
-                      size="sm"
-                      classNames={{ label: "text-xs font-medium" }}
-                      isSelected={formik.values.ballast || false}
-                      onValueChange={(v) => formik.updateField("ballast", v)}
-                    >
-                      Ballast Required
-                    </Checkbox>
-                    <Checkbox
-                      size="sm"
-                      classNames={{ label: "text-xs font-medium" }}
-                      isSelected={formik.values.controlReport || false}
-                      onValueChange={(v) => formik.updateField("controlReport", v)}
-                    >
-                      Control Report Needed
-                    </Checkbox>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <Divider />
-
-            {/* Composition Section */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
-                <Icon icon="lucide:atom" className="w-4 h-4" />
-                <h2 className="text-sm font-bold">Composition</h2>
-              </div>
-              <div className="space-y-3 pl-6">
-                {/* Components */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <h5 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">COMPONENTS</h5>
-                      <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-1.5 py-0.5 rounded font-semibold">
-                        {validComponentes.length}
-                      </span>
-                    </div>
-                    <Button
-                      size="sm"
-                      color="primary"
-                      className="font-medium h-7 text-xs"
-                      startContent={<Icon icon="lucide:plus" className="w-3 h-3" />}
-                      onPress={handleAddComponente}
-                    >
-                      Add
-                    </Button>
-                  </div>
-                  {validComponentes.length > 0 ? (
-                    <div className="space-y-1.5">
-                      {validComponentes.map((comp, filteredIdx) => {
-                        const originalIndex = getOriginalComponenteIndex(filteredIdx);
-                        if (originalIndex === -1) return null;
-                        
-                        const componente = comp.componenteId ? getComponenteById(comp.componenteId) : null;
-                        const coresDisponiveis = componente && !componente.semCor
-                          ? getCoresByComponente(comp.componenteId)
-                          : [];
-                        const completo = isComponenteCompleto(comp);
-                        const editando = componentesEditando[originalIndex];
-                        const mostrarApenasReferencia = completo && !editando;
-                        const searchValue = componenteSearchValues[originalIndex] || "";
-                        const componentesFiltrados = filterComponentes(searchValue);
-                        const displayValue = componente
-                          ? `${componente.nome}${componente.referencia ? ` (${componente.referencia})` : ""} `
-                          : "";
-
-                        if (mostrarApenasReferencia) {
-                          return (
-                            <div key={originalIndex} className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-xs font-bold text-gray-900 dark:text-white">{componente?.nome || comp.componenteNome}</div>
-                                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
-                                    {comp.referencia && (
-                                      <>
-                                        Ref: <span className="font-mono bg-gray-100 dark:bg-gray-600 px-1 py-0.5 rounded">{comp.referencia}</span>
-                                      </>
-                                    )}
-                                  </div>
-                                  {(comp.corNome || comp.acabamentoNome) && (
-                                    <div className="text-[10px] text-gray-600 dark:text-gray-400 mt-1">
-                                      {comp.corNome && <span>{comp.corNome}</span>}
-                                      {comp.corNome && comp.acabamentoNome && <span> - </span>}
-                                      {comp.acabamentoNome && <span>{comp.acabamentoNome}</span>}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="flat"
-                                    isIconOnly
-                                    onPress={() => handleToggleEditComponente(originalIndex)}
-                                    className="h-6 w-6 min-w-6"
-                                  >
-                                    <Icon icon="lucide:pencil" className="w-3 h-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="flat"
-                                    color="danger"
-                                    isIconOnly
-                                    onPress={() => handleRemoveComponente(originalIndex)}
-                                    className="h-6 w-6 min-w-6"
-                                  >
-                                    <Icon icon="lucide:trash-2" className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <div key={originalIndex} className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 space-y-1.5">
-                            <AutocompleteWithMarquee
-                              label="Component"
-                              placeholder="Search component"
-                              size="sm"
-                              variant="bordered"
-                              selectedKey={comp.componenteId ? String(comp.componenteId) : null}
-                              inputValue={componenteSearchValues[originalIndex] || displayValue || ""}
-                              onSelectionChange={(key) => {
-                                const selectedId = key ? Number(key) : null;
-                                handleCompositionUpdate("componentes", originalIndex, "componenteId", selectedId);
-                                setComponenteSearchValues(prev => {
-                                  const newValues = { ...prev };
-                                  delete newValues[originalIndex];
-                                  return newValues;
-                                });
-                              }}
-                              onInputChange={(value) => {
-                                setComponenteSearchValues(prev => ({
-                                  ...prev,
-                                  [originalIndex]: value
-                                }));
-                              }}
-                              defaultItems={componentesFiltrados}
-                              menuTrigger="input"
-                              startContent={<Icon icon="lucide:search" className="w-3 h-3 text-gray-500" />}
-                              allowsCustomValue={false}
-                              classNames={{ listboxWrapper: "max-h-[300px]", trigger: "text-xs h-8", input: "text-xs" }}
-                            >
-                              {(c) => (
-                                <AutocompleteItem key={String(c.id)} textValue={`${c.nome} ${c.referencia || ""} `}>
-                                  <div className="text-sm font-medium">{c.nome}</div>
-                                  {c.referencia && <div className="text-xs text-gray-500">Ref: {c.referencia}</div>}
-                                </AutocompleteItem>
-                              )}
-                            </AutocompleteWithMarquee>
-
-                            {componente && !componente.semCor && (
-                              <SelectWithMarquee
-                                label="Color"
-                                placeholder="Select color"
-                                size="sm"
-                                variant="bordered"
-                                selectedKeys={comp.corId ? new Set([String(comp.corId)]) : new Set()}
-                                onSelectionChange={(keys) => {
-                                  const selectedId = Array.from(keys)[0];
-                                  handleCompositionUpdate("componentes", originalIndex, "corId", selectedId ? Number(selectedId) : null);
-                                }}
-                                startContent={<Icon icon="lucide:palette" className="w-3 h-3 text-gray-500" />}
-                                classNames={{ trigger: "text-xs h-8" }}
-                              >
-                                {coresDisponiveis.map((cor) => (
-                                  <SelectItem key={String(cor.id)} textValue={cor.nome}>
-                                    {cor.nome}
-                                  </SelectItem>
-                                ))}
-                              </SelectWithMarquee>
-                            )}
-
-                            <div className="flex gap-1.5 justify-end">
-                              {completo && (
-                                <Button
-                                  size="sm"
-                                  color="success"
-                                  variant="flat"
-                                  className="font-medium h-6 text-xs"
-                                  startContent={<Icon icon="lucide:check" className="w-3 h-3" />}
-                                  onPress={() => handleToggleEditComponente(originalIndex)}
-                                >
-                                  Done
-                                </Button>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="flat"
-                                color="danger"
-                                isIconOnly
-                                className="h-6 w-6 min-w-6"
-                                onPress={() => handleRemoveComponente(originalIndex)}
-                              >
-                                <Icon icon="lucide:trash-2" className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-                </div>
-
-                {/* Balls */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <h5 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">BALLS</h5>
-                      <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-1.5 py-0.5 rounded font-semibold">
-                        {validBolas.length}
-                      </span>
-                    </div>
-                    <Button
-                      size="sm"
-                      color="primary"
-                      className="font-medium h-7 text-xs"
-                      startContent={<Icon icon="lucide:plus" className="w-3 h-3" />}
-                      onPress={handleAddBola}
-                    >
-                      Add
-                    </Button>
-                  </div>
-                  {validBolas.length > 0 ? (
-                    <div className="space-y-1.5">
-                      {validBolas.map((bola, filteredIdx) => {
-                        const originalIndex = getOriginalBolaIndex(filteredIdx);
-                        if (originalIndex === -1) return null;
-                        
-                        const coresDisponiveis = getCoresDisponiveisBolas();
-                        const acabamentosDisponiveis = bola.corId
-                          ? getAcabamentosByCorBola(bola.corId)
-                          : materialsData.acabamentos;
-                        const tamanhosDisponiveis = bola.corId && bola.acabamentoId
-                          ? getTamanhosByCorEAcabamentoBola(bola.corId, bola.acabamentoId)
-                          : materialsData.tamanhos;
-                        const completa = isBolaCompleta(bola);
-                        const editando = bolasEditando[originalIndex];
-                        const mostrarApenasReferencia = completa && !editando;
-
-                        if (mostrarApenasReferencia) {
-                          const nomeBola = [bola.corNome, bola.acabamentoNome, bola.tamanhoNome]
-                            .filter(Boolean)
-                            .join(" - ");
-
-                          return (
-                            <div key={originalIndex} className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-xs font-bold text-gray-900 dark:text-white">{nomeBola || bola.bolaName || `Ball ${filteredIdx + 1}`}</div>
-                                  {bola.reference && (
-                                    <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
-                                      Ref: <span className="font-mono bg-gray-100 dark:bg-gray-600 px-1 py-0.5 rounded">{bola.reference}</span>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="flat"
-                                    isIconOnly
-                                    onPress={() => handleToggleEditBola(originalIndex)}
-                                    className="h-6 w-6 min-w-6"
-                                  >
-                                    <Icon icon="lucide:pencil" className="w-3 h-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="flat"
-                                    color="danger"
-                                    isIconOnly
-                                    onPress={() => handleRemoveBola(originalIndex)}
-                                    className="h-6 w-6 min-w-6"
-                                  >
-                                    <Icon icon="lucide:trash-2" className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <div key={originalIndex} className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 space-y-1.5">
-                            <Select
-                              label="Color"
-                              placeholder="Select color"
-                              size="sm"
-                              variant="bordered"
-                              selectedKeys={bola.corId ? [String(bola.corId)] : []}
-                              onSelectionChange={(keys) => {
-                                const selectedId = Array.from(keys)[0];
-                                handleBolaUpdate(originalIndex, "corId", selectedId ? Number(selectedId) : null);
-                              }}
-                              classNames={{ trigger: "text-xs h-8" }}
-                            >
-                              {coresDisponiveis.map((cor) => (
-                                <SelectItem key={String(cor.id)}>{cor.nome}</SelectItem>
-                              ))}
-                            </Select>
-
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <Select
-                                label="Finish"
-                                placeholder="Finish"
-                                size="sm"
-                                variant="bordered"
-                                selectedKeys={bola.acabamentoId ? [String(bola.acabamentoId)] : []}
-                                onSelectionChange={(keys) => {
-                                  const selectedId = Array.from(keys)[0];
-                                  handleBolaUpdate(originalIndex, "acabamentoId", selectedId ? Number(selectedId) : null);
-                                }}
-                                isDisabled={!bola.corId}
-                                classNames={{ trigger: "text-xs h-8" }}
-                              >
-                                {acabamentosDisponiveis.map((acabamento) => (
-                                  <SelectItem key={String(acabamento.id)}>{acabamento.nome}</SelectItem>
-                                ))}
-                              </Select>
-
-                              <Select
-                                label="Size"
-                                placeholder="Size"
-                                size="sm"
-                                variant="bordered"
-                                selectedKeys={bola.tamanhoId ? [String(bola.tamanhoId)] : []}
-                                onSelectionChange={(keys) => {
-                                  const selectedId = Array.from(keys)[0];
-                                  handleBolaUpdate(originalIndex, "tamanhoId", selectedId ? Number(selectedId) : null);
-                                }}
-                                isDisabled={!bola.corId || !bola.acabamentoId}
-                                classNames={{ trigger: "text-xs h-8" }}
-                              >
-                                {tamanhosDisponiveis.map((tamanho) => (
-                                  <SelectItem key={String(tamanho.id)}>{tamanho.nome}</SelectItem>
-                                ))}
-                              </Select>
-                            </div>
-
-                            <div className="flex gap-1.5 justify-end">
-                              {completa && (
-                                <Button
-                                  size="sm"
-                                  color="success"
-                                  variant="flat"
-                                  className="font-medium h-6 text-xs"
-                                  startContent={<Icon icon="lucide:check" className="w-3 h-3" />}
-                                  onPress={() => handleToggleEditBola(originalIndex)}
-                                >
-                                  Done
-                                </Button>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="flat"
-                                color="danger"
-                                isIconOnly
-                                className="h-6 w-6 min-w-6"
-                                onPress={() => handleRemoveBola(originalIndex)}
-                              >
-                                <Icon icon="lucide:trash-2" className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-                </div>
+                  ))
+                ) : (
+                  <div className="text-xs text-gray-500 italic px-2">No balls added.</div>
+                )}
               </div>
             </div>
 
           </div>
+
         </div>
       </div>
     );
   };
 
-  // Renderizar página atual baseada no estado
+  // Renderizar pÃ¡gina atual baseada no estado
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 1:
@@ -4052,7 +3578,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     }
   };
 
-  // Helper para verificar se o logo atual é válido (para o botão New Logo)
+  // Helper para verificar se o logo atual Ã© vÃ¡lido (para o botÃ£o New Logo)
   const isCurrentLogoValid = () => {
     const hasLogoNumber = currentLogo.logoNumber?.trim() !== "";
     const hasLogoName = currentLogo.logoName?.trim() !== "";
@@ -4068,7 +3594,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     return hasLogoNumber && hasLogoName && hasDescription && hasRequestedBy && hasFixationType && hasAtLeastOneDimension;
   };
 
-  // Expor funções para o componente pai através de ref
+  // Expor funÃ§Ãµes para o componente pai atravÃ©s de ref
   React.useEffect(() => {
     if (handlersRef) {
       handlersRef.current = {
