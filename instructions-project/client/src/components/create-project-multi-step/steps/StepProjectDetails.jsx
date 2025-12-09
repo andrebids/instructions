@@ -168,10 +168,9 @@ export function StepProjectDetails({
                 onValueChange={(checked) => {
                   onInputChange('enableNotes', checked);
                 }}
-                color="primary"
                 size="md"
                 classNames={{
-                  wrapper: "group-data-[selected=true]:bg-primary"
+                  wrapper: "group-data-[selected=true]:bg-blue-500"
                 }}
               />
             </div>

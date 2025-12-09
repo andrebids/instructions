@@ -123,10 +123,12 @@ echo.
 
 REM Check if workflows exist
 call :print_info "Verificando workflows disponiveis..."
-gh workflow list --repo %REPO% 2>&1
-if %ERRORLEVEL% neq 0 (
-    echo.
-    call :print_error "Nenhum workflow encontrado no repositorio"
+echo.
+gh workflow list --repo %REPO%
+set "WORKFLOW_LIST_RESULT=%ERRORLEVEL%"
+echo.
+if %WORKFLOW_LIST_RESULT% neq 0 (
+    call :print_error "Nenhum workflow encontrado no repositorio (codigo: %WORKFLOW_LIST_RESULT%)"
     call :print_warning "IMPORTANTE: GitHub Actions so reconhece workflows na raiz do repositorio"
     call :print_info "O workflow precisa estar em: .github/workflows/docker-build.yml"
     call :print_info "Mas parece estar em: instructions-project/.github/workflows/docker-build.yml"
@@ -134,6 +136,26 @@ if %ERRORLEVEL% neq 0 (
     call :print_info "Solucao: Mova o workflow para a raiz do repositorio ou crie um link simbolico"
     call :print_info "Ou use a opcao [2] para build local"
     exit /b 1
+)
+call :print_success "Workflows encontrados no repositorio"
+echo.
+
+REM Check if workflow file exists in repository root
+call :print_info "Verificando localizacao do workflow..."
+if exist "%GIT_ROOT%\.github\workflows\docker-build.yml" (
+    call :print_success "Workflow encontrado na raiz do repositorio: .github/workflows/docker-build.yml"
+) else (
+    if exist "%PROJECT_ROOT%\.github\workflows\docker-build.yml" (
+        call :print_warning "Workflow encontrado em: %PROJECT_ROOT%\.github\workflows\docker-build.yml"
+        call :print_warning "IMPORTANTE: GitHub Actions so reconhece workflows na raiz do repositorio Git"
+        call :print_info "Raiz do repositorio Git: %GIT_ROOT%"
+        call :print_info "O workflow precisa estar em: %GIT_ROOT%\.github\workflows\docker-build.yml"
+        echo.
+        call :print_info "Tentando disparar mesmo assim (pode falhar se o workflow nao estiver na raiz)..."
+    ) else (
+        call :print_warning "Workflow docker-build.yml nao encontrado localmente"
+        call :print_info "Continuando com tentativa de disparo via GitHub API..."
+    )
 )
 echo.
 
@@ -145,56 +167,83 @@ if "%CURRENT_BRANCH%"=="" (
 )
 call :print_info "Branch atual: %CURRENT_BRANCH%"
 
+REM Initialize WORKFLOW_RESULT to failure by default
+set "WORKFLOW_RESULT=1"
+
 REM Try to get workflow ID by name first
 call :print_info "Procurando workflow 'Build and Push Docker Image'..."
+set "WORKFLOW_ID="
 for /f "tokens=*" %%w in ('gh workflow list --repo %REPO% --json name,id --jq ".[] | select(.name==\"Build and Push Docker Image\") | .id" 2^>nul') do set "WORKFLOW_ID=%%w"
 
-if "%WORKFLOW_ID%"=="" (
-    REM Try to get workflow ID by filename
-    call :print_info "Tentando encontrar workflow pelo nome do arquivo..."
-    for /f "tokens=*" %%w in ('gh workflow list --repo %REPO% --json name,id,path --jq ".[] | select(.path==\".github/workflows/docker-build.yml\") | .id" 2^>nul') do set "WORKFLOW_ID=%%w"
-    
-    if "%WORKFLOW_ID%"=="" (
-        REM Try using the filename directly
-        call :print_info "Tentando usar o nome do arquivo diretamente..."
-        gh workflow run docker-build.yml --repo %REPO% --ref %CURRENT_BRANCH% -f push_to_registry=true 2>&1
-        set "WORKFLOW_RESULT=%ERRORLEVEL%"
-        if %WORKFLOW_RESULT% neq 0 (
-            call :print_error "Falha ao disparar workflow com nome do arquivo"
-            call :print_info "Codigo de erro: %WORKFLOW_RESULT%"
-        )
-    ) else (
-        call :print_info "Workflow encontrado pelo caminho (ID: %WORKFLOW_ID%)"
-        call :print_info "Disparando workflow via API..."
-        call :print_info "Comando: gh api repos/%REPO%/actions/workflows/%WORKFLOW_ID%/dispatches -X POST -f ref=%CURRENT_BRANCH% -f inputs[push_to_registry]=true"
-        gh api repos/%REPO%/actions/workflows/%WORKFLOW_ID%/dispatches -X POST -f ref=%CURRENT_BRANCH% -f inputs[push_to_registry]=true 2>&1
-        set "WORKFLOW_RESULT=%ERRORLEVEL%"
-        if %WORKFLOW_RESULT% neq 0 (
-            call :print_error "Falha ao disparar workflow via API"
-            call :print_info "Codigo de erro: %WORKFLOW_RESULT%"
-        )
-    )
-) else (
+if not "%WORKFLOW_ID%"=="" (
     REM Use workflow ID with API (more reliable)
     call :print_info "Workflow encontrado pelo nome (ID: %WORKFLOW_ID%)"
     call :print_info "Disparando workflow via API..."
     call :print_info "Comando: gh api repos/%REPO%/actions/workflows/%WORKFLOW_ID%/dispatches -X POST -f ref=%CURRENT_BRANCH% -f inputs[push_to_registry]=true"
-    gh api repos/%REPO%/actions/workflows/%WORKFLOW_ID%/dispatches -X POST -f ref=%CURRENT_BRANCH% -f inputs[push_to_registry]=true 2>&1
+    echo.
+    gh api repos/%REPO%/actions/workflows/%WORKFLOW_ID%/dispatches -X POST -f ref=%CURRENT_BRANCH% -f inputs[push_to_registry]=true
     set "WORKFLOW_RESULT=%ERRORLEVEL%"
     if %WORKFLOW_RESULT% neq 0 (
-        call :print_error "Falha ao disparar workflow via API"
-        call :print_info "Codigo de erro: %WORKFLOW_RESULT%"
+        call :print_error "Falha ao disparar workflow via API (codigo: %WORKFLOW_RESULT%)"
+        call :print_info "Tentando metodo alternativo com gh workflow run..."
+        echo.
+        gh workflow run docker-build.yml --repo %REPO% --ref %CURRENT_BRANCH% -f push_to_registry=true
+        set "WORKFLOW_RESULT=%ERRORLEVEL%"
+        if %WORKFLOW_RESULT% neq 0 (
+            call :print_error "Ambos os metodos falharam (codigo: %WORKFLOW_RESULT%)"
+            call :print_info "Saida dos comandos acima pode conter mais detalhes"
+        ) else (
+            call :print_success "Workflow disparado com sucesso usando gh workflow run"
+        )
+    ) else (
+        call :print_success "Workflow disparado com sucesso via API"
+    )
+) else (
+    REM Try to get workflow ID by filename
+    call :print_info "Workflow nao encontrado pelo nome, tentando pelo caminho do arquivo..."
+    set "WORKFLOW_ID="
+    for /f "tokens=*" %%w in ('gh workflow list --repo %REPO% --json name,id,path --jq ".[] | select(.path==\".github/workflows/docker-build.yml\") | .id" 2^>nul') do set "WORKFLOW_ID=%%w"
+    
+    if not "%WORKFLOW_ID%"=="" (
+        call :print_info "Workflow encontrado pelo caminho (ID: %WORKFLOW_ID%)"
+        call :print_info "Disparando workflow via API..."
+        call :print_info "Comando: gh api repos/%REPO%/actions/workflows/%WORKFLOW_ID%/dispatches -X POST -f ref=%CURRENT_BRANCH% -f inputs[push_to_registry]=true"
+        echo.
+        gh api repos/%REPO%/actions/workflows/%WORKFLOW_ID%/dispatches -X POST -f ref=%CURRENT_BRANCH% -f inputs[push_to_registry]=true
+        set "WORKFLOW_RESULT=%ERRORLEVEL%"
+        if %WORKFLOW_RESULT% neq 0 (
+            call :print_error "Falha ao disparar workflow via API (codigo: %WORKFLOW_RESULT%)"
+            call :print_info "Tentando metodo alternativo com gh workflow run..."
+            echo.
+            gh workflow run docker-build.yml --repo %REPO% --ref %CURRENT_BRANCH% -f push_to_registry=true
+            set "WORKFLOW_RESULT=%ERRORLEVEL%"
+            if %WORKFLOW_RESULT% neq 0 (
+                call :print_error "Ambos os metodos falharam (codigo: %WORKFLOW_RESULT%)"
+                call :print_info "Saida dos comandos acima pode conter mais detalhes"
+            ) else (
+                call :print_success "Workflow disparado com sucesso usando gh workflow run"
+            )
+        ) else (
+            call :print_success "Workflow disparado com sucesso via API"
+        )
+    ) else (
+        REM Try using the filename directly
+        call :print_info "Workflow nao encontrado pelo ID, tentando usar o nome do arquivo diretamente..."
+        call :print_info "Comando: gh workflow run docker-build.yml --repo %REPO% --ref %CURRENT_BRANCH% -f push_to_registry=true"
+        echo.
+        gh workflow run docker-build.yml --repo %REPO% --ref %CURRENT_BRANCH% -f push_to_registry=true
+        set "WORKFLOW_RESULT=%ERRORLEVEL%"
+        if %WORKFLOW_RESULT% neq 0 (
+            call :print_error "Falha ao disparar workflow com nome do arquivo (codigo: %WORKFLOW_RESULT%)"
+            call :print_info "Saida do comando acima pode conter mais detalhes"
+        ) else (
+            call :print_success "Workflow disparado com sucesso usando gh workflow run"
+        )
     )
 )
 
-REM Ensure WORKFLOW_RESULT is set
-if not defined WORKFLOW_RESULT (
-    set "WORKFLOW_RESULT=1"
-    call :print_error "Erro: WORKFLOW_RESULT nao foi definido"
-)
-
+echo.
 if %WORKFLOW_RESULT% equ 0 (
-    echo.
     call :print_success "Workflow disparado com sucesso!"
     echo.
     call :print_info "Para acompanhar o progresso:"
@@ -203,20 +252,28 @@ if %WORKFLOW_RESULT% equ 0 (
     call :print_info "Ou execute: gh run watch --repo %REPO%"
     echo.
     call :print_info "Listando ultimas execucoes do workflow..."
-    gh run list --repo %REPO% --workflow="Build and Push Docker Image" --limit 3
-) else (
     echo.
+    gh run list --repo %REPO% --workflow="Build and Push Docker Image" --limit 3
+    if %ERRORLEVEL% neq 0 (
+        call :print_warning "Nao foi possivel listar execucoes (pode levar alguns segundos para aparecer)"
+    )
+) else (
     call :print_error "Falha ao disparar o workflow (codigo de erro: %WORKFLOW_RESULT%)"
     echo.
     call :print_info "Verifique se:"
     call :print_info "  - O workflow existe na raiz do repositorio (.github/workflows/)"
     call :print_info "  - Voce tem permissao para disparar workflows"
     call :print_info "  - O nome do workflow esta correto"
-    call :print_info "  - O branch '%CURRENT_BRANCH%' existe no repositorio"
+    call :print_info "  - O branch '%CURRENT_BRANCH%' existe no repositorio remoto"
+    call :print_info "  - O workflow tem o trigger 'workflow_dispatch' configurado"
     call :print_warning "NOTA: Workflows em subdiretorios nao sao reconhecidos pelo GitHub Actions"
     echo.
     call :print_info "Tentando listar workflows disponiveis para debug..."
+    echo.
     gh workflow list --repo %REPO%
+    echo.
+    call :print_info "Para mais informacoes, execute manualmente:"
+    call :print_info "  gh workflow view docker-build.yml --repo %REPO%"
     exit /b 1
 )
 
