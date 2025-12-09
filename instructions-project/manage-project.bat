@@ -171,7 +171,7 @@ if not exist "%SCRIPT_DIR%scripts\deploy\deploy-docker-server.bat" (
     goto :main_menu
 )
 
-call "%SCRIPT_DIR%scripts\deploy\deploy-docker-server.bat"
+call "%SCRIPT_DIR%scripts\deploy\deploy-docker-server.bat" --from-menu
 set "DEPLOY_RESULT=%ERRORLEVEL%"
 
 echo.
