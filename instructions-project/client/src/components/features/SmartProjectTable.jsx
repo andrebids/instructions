@@ -18,6 +18,7 @@ import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
 import { projectsAPI } from "../../services/api";
 import { useTranslation } from "react-i18next";
+import { SmartProjectTableFilters } from "./SmartProjectTableFilters";
 
 const statusColorMap = {
   "draft": "default",
@@ -36,6 +37,11 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
   const navigate = useNavigate();
   const [page, setPage] = React.useState(1);
   const rowsPerPage = 5;
+  const [filters, setFilters] = React.useState({
+    status: [],
+    contract: [],
+    design: []
+  });
 
   // Helper para obter locale do i18n
   const locale = React.useMemo(() => {
@@ -60,29 +66,89 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
     "ordered": t('pages.dashboard.projectTable.statusLabels.ordered'),
   }), [t, i18n.language]);
 
-  // Mock data augmentation - Optimized to only process visible items
+  // Filter projects based on active filters
+  const getFilteredProjects = React.useCallback((projectsToFilter, activeFilters) => {
+    return projectsToFilter.filter(project => {
+      // Filter by status
+      if (activeFilters.status.length > 0) {
+        const normalizedStatus = project.status?.toLowerCase()?.replace(/\s+/g, '_') || project.status?.toLowerCase();
+        if (!activeFilters.status.includes(normalizedStatus)) {
+          return false;
+        }
+      }
+
+      // Filter by contract
+      if (activeFilters.contract.length > 0) {
+        const contractKey = project.contractTypeKey || 
+          (project.contractType === "Sale" ? "sale" : 
+           project.contractType === "Rent 1Y" ? "rent1y" : 
+           project.contractType === "Rent 3Y" ? "rent3y" : null);
+        if (!contractKey || !activeFilters.contract.includes(contractKey)) {
+          return false;
+        }
+      }
+
+      // Filter by design
+      if (activeFilters.design.length > 0) {
+        const designKey = project.designStatusKey || 
+          (project.designStatus === 'Ready' ? "ready" : 
+           project.designStatus === 'Pending' ? "pending" : null);
+        if (!designKey || !activeFilters.design.includes(designKey)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, []);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [filters.status, filters.contract, filters.design]);
+
+  const handleFilterChange = React.useCallback((newFilters) => {
+    setFilters(newFilters);
+  }, []);
+
+  const handleClearFilters = React.useCallback(() => {
+    setFilters({
+      status: [],
+      contract: [],
+      design: []
+    });
+  }, []);
+
+  // Mock data augmentation - Apply to all projects first
+  const augmentedProjects = React.useMemo(() => {
+    return projects.map((p, i) => {
+      // Função determinística para gerar valor estável baseado no index (evita Math.random durante render)
+      const deterministicValue = ((i * 17 + 23) % 10) + 5; // Gera valores entre 5-14 de forma determinística
+      return {
+        ...p,
+        contractType: i % 3 === 0 ? "Sale" : i % 3 === 1 ? "Rent 1Y" : "Rent 3Y",
+        contractTypeKey: i % 3 === 0 ? "sale" : i % 3 === 1 ? "rent1y" : "rent3y",
+        designStatus: i % 2 === 0 ? "Ready" : "Pending",
+        designStatusKey: i % 2 === 0 ? "ready" : "pending",
+        reservationValidity: i % 4 === 0 ? 3 : deterministicValue, // Mock days
+        mockImage: `https://images.unsplash.com/photo-${i % 2 === 0 ? '1576692131261-40e88a446404' : '1512389142660-9c87db076481'}?w=300&h=200&fit=crop`
+      };
+    });
+  }, [projects]);
+
+  // Get filtered projects
+  const filteredProjects = React.useMemo(() => {
+    return getFilteredProjects(augmentedProjects, filters);
+  }, [augmentedProjects, filters, getFilteredProjects]);
+
+  // Paginate filtered projects
   const items = React.useMemo(() => {
     const start = (page - 1) * rowsPerPage;
     const end = start + rowsPerPage;
-    const visibleProjects = projects.slice(start, end);
+    return filteredProjects.slice(start, end);
+  }, [page, filteredProjects]);
 
-    return visibleProjects.map((p, i) => {
-      const index = start + i;
-      // Função determinística para gerar valor estável baseado no index (evita Math.random durante render)
-      const deterministicValue = ((index * 17 + 23) % 10) + 5; // Gera valores entre 5-14 de forma determinística
-      return {
-        ...p,
-        contractType: index % 3 === 0 ? "Sale" : index % 3 === 1 ? "Rent 1Y" : "Rent 3Y",
-        contractTypeKey: index % 3 === 0 ? "sale" : index % 3 === 1 ? "rent1y" : "rent3y",
-        designStatus: index % 2 === 0 ? "Ready" : "Pending",
-        designStatusKey: index % 2 === 0 ? "ready" : "pending",
-        reservationValidity: index % 4 === 0 ? 3 : deterministicValue, // Mock days
-        mockImage: `https://images.unsplash.com/photo-${index % 2 === 0 ? '1576692131261-40e88a446404' : '1512389142660-9c87db076481'}?w=300&h=200&fit=crop`
-      };
-    });
-  }, [page, projects]);
-
-  const pages = Math.ceil(projects.length / rowsPerPage);
+  const pages = Math.ceil(filteredProjects.length / rowsPerPage);
 
   const handleToggleFavorite = React.useCallback(async (projectId, isFavorite) => {
     try {
@@ -127,7 +193,7 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
             color={statusColorMap[project.status] || "default"}
             variant="flat"
             size="sm"
-            className="capitalize"
+            className="capitalize rounded-none"
           >
             {statusLabel}
           </Chip>
@@ -144,7 +210,7 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
             size="sm" 
             color={contractColors[project.contractType]} 
             variant="dot"
-            className="border-none"
+            className="border-none rounded-none"
           >
             {t(`pages.dashboard.smartProjectTable.contractTypes.${contractKey}`)}
           </Chip>
@@ -199,13 +265,20 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
   return (
     <Card className="flex-1 h-full bg-content1/50 border-default-200/50 backdrop-blur-md shadow-sm">
       <CardBody className="p-0 overflow-hidden flex flex-col h-full">
+        <SmartProjectTableFilters
+          filters={filters}
+          onFiltersChange={handleFilterChange}
+          onClearFilters={handleClearFilters}
+          statusLabelMap={statusLabelMap}
+          filteredCount={filteredProjects.length}
+        />
         <div className="flex-1 overflow-auto min-h-0">
           <Table 
             removeWrapper 
             aria-label="Smart Project Table"
             classNames={{
-              th: "bg-default-100/50 text-default-500 font-medium border-b border-default-200/50",
-              td: "py-3 border-b border-default-200/50 group-last:border-none",
+              th: "bg-default-100/50 text-default-500 font-medium border-b border-default-200/50 rounded-none",
+              td: "py-3 border-b border-default-200/50 group-last:border-none rounded-none",
               tr: "hover:bg-default-100/50 transition-colors"
             }}
             bottomContent={
@@ -219,7 +292,7 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
                   onChange={setPage}
                   classNames={{
                     wrapper: "gap-0",
-                    item: "bg-transparent text-default-600 hover:bg-default-100 dark:hover:bg-default-800 min-w-8 w-8 h-8",
+                    item: "bg-transparent text-default-600 hover:bg-default-100/10 dark:hover:bg-default-800/10 min-w-8 w-8 h-8",
                     cursor: "bg-blue-600 text-white font-medium"
                   }}
                 />

@@ -157,10 +157,13 @@ call :print_separator
 call :print_info "Disparando GitHub Actions Workflow..."
 echo.
 
+REM Execute script and ensure output is visible
+REM Note: Using call to preserve ERRORLEVEL
 call "%SCRIPT_DIR%scripts\github\trigger-workflow.bat"
 set "WORKFLOW_RESULT=%ERRORLEVEL%"
 
 echo.
+
 if %WORKFLOW_RESULT% equ 0 (
     call :print_success "Workflow disparado com sucesso!"
 ) else (

@@ -1,7 +1,7 @@
 // Array de steps (incluindo steps condicionais)
 export const STEPS = [
   { id: "project-details", label: "Project Details", icon: "lucide:folder", conditional: false },
-  { id: "notes", label: "Notes", icon: "lucide:file-text", conditional: false },
+  { id: "notes", label: "Notes", icon: "lucide:file-text", conditional: true, condition: "hasNotes" },
   { id: "project-type", label: "Project Type", icon: "lucide:layers", conditional: false },
   { id: "ai-designer", label: "AI Designer", icon: "lucide:sparkles", conditional: true, condition: "isAIDesigner" },
   { id: "logo-instructions", label: "Logo Instructions", icon: "lucide:pen-tool", conditional: true, condition: "isLogo" },

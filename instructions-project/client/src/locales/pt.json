@@ -256,6 +256,17 @@
         "designStatus": {
           "ready": "Pronto",
           "pending": "Pendente"
+        },
+        "filters": {
+          "title": "Filtros",
+          "status": "Estado",
+          "contract": "Contrato",
+          "design": "Design",
+          "clearAll": "Limpar Filtros",
+          "activeFilters": "ativos",
+          "all": "Todos",
+          "result": "resultado",
+          "results": "resultados"
         }
       },
       "projectTable": {
@@ -515,6 +526,8 @@
       "location": "Localização",
       "aoTender": "Concurso Público",
       "aoTenderDescription": "Projeto de concurso público com prazo de entrega inadiável e obrigatório",
+      "enableNotes": "Notas do Projeto",
+      "enableNotesDescription": "Adicionar notas e observações sobre este projeto",
       "strictDeadline": "⚠️ Prazo inadiável - Projeto de Concurso Público",
       "type": "Tipo",
       "name": "Nome",

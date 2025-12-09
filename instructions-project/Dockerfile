@@ -13,17 +13,27 @@ COPY client/package*.json ./
 
 # Install client dependencies with BuildKit cache mounts
 # Dependencies are installed inside container, ensuring correct Linux binaries
-# Note: --ignore-scripts is removed to allow postinstall scripts that may install platform-specific binaries
+# Remove package-lock.json to avoid npm bug with optional dependencies (see https://github.com/npm/cli/issues/4828)
+# Then install dependencies and explicitly install rollup native binaries for both platforms
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci && \
-    npm install @rollup/rollup-linux-x64-gnu --save-optional --force || true
+    rm -f package-lock.json && \
+    npm install && \
+    npm install @rollup/rollup-linux-x64-gnu @rollup/rollup-linux-arm64-gnu --save-optional --force || true && \
+    npm install lightningcss-linux-x64-gnu lightningcss-linux-arm64-gnu --save-optional --force || true
 
 # Copy client source code AFTER dependencies are installed
 # node_modules is excluded by .dockerignore, so only source code is copied
 COPY client/ ./
 
-# Reinstall native dependencies for Linux (esbuild, etc.) to avoid Windows binaries
-RUN npm rebuild esbuild || npm install esbuild --save-dev || true
+# Ensure rollup and lightningcss native binaries are still available after copying source code
+# This is necessary because copying might affect node_modules in some edge cases
+# Reinstall lightningcss to ensure native binaries are properly linked
+RUN npm install @rollup/rollup-linux-x64-gnu @rollup/rollup-linux-arm64-gnu --save-optional --force || true && \
+    npm install lightningcss lightningcss-linux-x64-gnu lightningcss-linux-arm64-gnu --save-optional --force || true
+
+# Rebuild native dependencies for Linux to ensure correct binaries
+# This ensures esbuild and other native modules are built for the correct platform
+RUN npm rebuild || true
 
 # Build client for production
 RUN --mount=type=cache,target=/root/.npm \

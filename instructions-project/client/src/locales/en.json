@@ -256,6 +256,17 @@
         "designStatus": {
           "ready": "Ready",
           "pending": "Pending"
+        },
+        "filters": {
+          "title": "Filters",
+          "status": "Status",
+          "contract": "Contract",
+          "design": "Design",
+          "clearAll": "Clear Filters",
+          "activeFilters": "active",
+          "all": "All",
+          "result": "result",
+          "results": "results"
         }
       },
       "projectTable": {
@@ -515,6 +526,8 @@
       "location": "Location",
       "aoTender": "AO/Tender",
       "aoTenderDescription": "Mark this project as an important tender or major contract",
+      "enableNotes": "Project Notes",
+      "enableNotesDescription": "Add notes and observations about this project",
       "strictDeadline": "⚠️ Strict deadline - Public Tender Project",
       "type": "Type",
       "name": "Name",

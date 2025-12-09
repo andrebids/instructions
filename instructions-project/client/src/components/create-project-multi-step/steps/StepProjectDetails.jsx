@@ -43,6 +43,7 @@ export function StepProjectDetails({
       budget: formData.budget || "",
       endDate: formData.endDate || null,
       category: formData.category || "normal",
+      enableNotes: formData.enableNotes ?? false,
     },
     validationSchema,
     onChange: onInputChange,
@@ -141,8 +142,35 @@ export function StepProjectDetails({
                 onValueChange={(checked) => {
                   onInputChange('category', checked ? 'ao_tender' : 'normal');
                 }}
+                color="warning"
+                size="md"
                 classNames={{
                   wrapper: "group-data-[selected=true]:bg-orange-600"
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Project Notes Toggle */}
+          <div className="max-w-md mx-auto">
+            <div className="flex items-center justify-between p-4 rounded-xl border border-divider" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
+              <div className="flex items-center gap-3 flex-1">
+                <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
+                  <Icon icon="lucide:file-text" className="text-primary text-xl" />
+                </div>
+                <div>
+                  <span className="font-medium text-foreground block">{t('pages.projectDetails.enableNotes')}</span>
+                  <p className="text-xs text-default-500 mt-0.5">{t('pages.projectDetails.enableNotesDescription')}</p>
+                </div>
+              </div>
+              <Switch
+                isSelected={formData.enableNotes === true}
+                onValueChange={(checked) => {
+                  onInputChange('enableNotes', checked);
+                }}
+                size="md"
+                classNames={{
+                  wrapper: "group-data-[selected=true]:bg-blue-500"
                 }}
               />
             </div>

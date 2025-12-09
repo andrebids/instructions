@@ -30,6 +30,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
     budget: "",
     location: "",
     description: "",
+    enableNotes: false, // Controla se o step "Notes" deve aparecer
     tempProjectId: null, // ID temporário do projeto criado após Project Details
     // 🆕 Novos campos para Canvas Konva (apenas projectos Simu)
     canvasDecorations: [],    // Array de decorações geradas pelo AI Designer
@@ -90,6 +91,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
             budget: project.budget ? String(project.budget) : "",
             location: project.location || "",
             description: project.description || "",
+            enableNotes: project.enableNotes ?? false, // Restaurar se existir, senão false
             tempProjectId: project.id, // Já existe, usar o ID real
             // Restaurar estado do canvas
             canvasDecorations: project.canvasDecorations || [],
@@ -337,6 +339,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
         budget: formData.budget ? parseFloat(formData.budget) : null,
         startDate: new Date().toISOString(), // Data de criação do projeto
         endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
+        enableNotes: formData.enableNotes ?? false,
         // Dados do canvas (AI Designer)
         canvasDecorations: formData.canvasDecorations || [],
         canvasImages: formData.canvasImages || [],
@@ -592,6 +595,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
         description: formData.description,
         budget: formData.budget ? parseFloat(formData.budget) : null,
         endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
+        enableNotes: formData.enableNotes ?? false,
         canvasDecorations: formData.canvasDecorations || [],
         canvasImages: formData.canvasImages || [],
         snapZonesByImage: formData.snapZonesByImage || {},
@@ -987,6 +991,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
         budget: formData.budget ? parseFloat(formData.budget) : null,
         startDate: null, // Será definido apenas quando o projeto for finalizado
         endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
+        enableNotes: formData.enableNotes ?? false,
       };
 
       const newProject = await projectsAPI.create(projectData);
