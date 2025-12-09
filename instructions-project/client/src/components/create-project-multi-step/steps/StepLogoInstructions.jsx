@@ -450,7 +450,7 @@ const validationSchema = Yup.object({
   ),
 });
 
-export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCompact = false, onBack, onNext, onSave, projectId, currentStep, totalSteps }) {
+export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCompact = false, onBack, onNext, onSave, projectId, currentStep, totalSteps, onInternalPageChange, handlersRef }) {
   const { t } = useTranslation();
   const logoDetails = formData.logoDetails || {};
   // Support both old structure (direct logoDetails) and new structure (with currentLogo)
@@ -506,6 +506,13 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   // Wizard state - controla a página atual do wizard step-by-step
   const [currentPage, setCurrentPage] = React.useState(1);
   const [isFinishing, setIsFinishing] = React.useState(false);
+
+  // Notificar o componente pai sobre mudanças na página interna
+  React.useEffect(() => {
+    if (onInternalPageChange) {
+      onInternalPageChange(currentPage);
+    }
+  }, [currentPage, onInternalPageChange]);
   const logoSteps = [
     { id: 'details-attachments', label: 'Details & Attachments' },
     { id: 'dimensions', label: 'Dimensions' },
@@ -2068,6 +2075,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     // Para steps futuros, só permitir se o step atual for válido
     if (stepNumber <= currentPage || (stepNumber === currentPage + 1 && canProceedToNext())) {
       setCurrentPage(stepNumber);
+      if (onInternalPageChange) {
+        onInternalPageChange(stepNumber);
+      }
       window.scrollTo(0, 0);
     }
   };
@@ -2104,6 +2114,47 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   };
 
   const handleNewLogo = () => {
+    // Só salvar o logo atual se ele for válido
+    let updatedSavedLogos = [...savedLogos];
+    
+    if (isCurrentLogoValid()) {
+      // Guardar _originalIndex antes de remover (é apenas para controle interno)
+      const originalIndex = currentLogo._originalIndex;
+      
+      // Remover _originalIndex antes de salvar (é apenas para controle interno)
+      const { _originalIndex, ...logoWithoutOriginalIndex } = currentLogo;
+      
+      const logoToSave = {
+        ...logoWithoutOriginalIndex,
+        id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        savedAt: currentLogo.savedAt || new Date().toISOString()
+      };
+
+      // Verificar se o logo já existe nos savedLogos (por ID ou logoNumber)
+      const existingLogoIndex = savedLogos.findIndex(logo => {
+        // Se currentLogo tem ID, comparar por ID (mais confiável)
+        if (logoToSave.id && logo.id) {
+          return logo.id === logoToSave.id;
+        }
+        // Se não tem ID, comparar por logoNumber
+        if (logo.logoNumber && logoToSave.logoNumber) {
+          return logo.logoNumber.trim() === logoToSave.logoNumber.trim();
+        }
+        return false;
+      });
+
+      if (existingLogoIndex >= 0) {
+        // Logo já existe - ATUALIZAR em vez de criar novo
+        updatedSavedLogos[existingLogoIndex] = logoToSave;
+      } else if (originalIndex !== undefined && originalIndex >= 0 && originalIndex < savedLogos.length) {
+        // Logo não existe mas tem posição original válida - INSERIR na posição original
+        updatedSavedLogos.splice(originalIndex, 0, logoToSave);
+      } else {
+        // Logo não existe e não tem posição original - ADICIONAR como novo no final
+        updatedSavedLogos.push(logoToSave);
+      }
+    }
+    
     // Resetar refs para permitir preenchimento automático novamente
     logoNumberInitialized.current = false;
     requestedByAutoFilled.current = false;
@@ -2137,11 +2188,14 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     const updatedLogoDetails = {
       ...logoDetails,
       currentLogo: newLogo,
-      logos: savedLogos, // Preservar logos salvos
+      logos: updatedSavedLogos, // Usar savedLogos atualizado (com o logo anterior salvo)
     };
 
     onInputChange("logoDetails", updatedLogoDetails);
     setCurrentPage(1); // Voltar para a primeira página
+    if (onInternalPageChange) {
+      onInternalPageChange(1);
+    }
     window.scrollTo(0, 0);
   };
 
@@ -3173,39 +3227,6 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       return true;
     };
 
-    // Check which fields have values
-    const hasLogoNumber = hasValue(formik.values.logoNumber);
-    const hasLogoName = hasValue(formik.values.logoName);
-    const hasDescription = hasValue(formik.values.description);
-    const hasBudget = hasValue(formik.values.budget);
-    const hasRequestedBy = hasValue(formik.values.requestedBy);
-    const hasCriteria = hasValue(formik.values.criteria);
-    const hasAnyDetailsField = hasLogoNumber || hasLogoName || hasDescription || hasBudget || hasRequestedBy || hasCriteria;
-
-    // Filter dimensions that have values
-    const dimensionsWithValues = ['Height', 'Length', 'Width', 'Diameter'].filter((dim) => {
-      const key = dim.toLowerCase();
-      const dimensionValue = formik.values.dimensions?.[key]?.value;
-      return hasValue(dimensionValue);
-    });
-    const hasAnyDimensions = dimensionsWithValues.length > 0;
-
-    // Check Fixation & Technical fields
-    // Usage always has a value (indoor/outdoor), so it should always be shown
-    const hasFixationType = hasValue(formik.values.fixationType);
-    const hasLacqueredStructure = formik.values.lacqueredStructure === true;
-    const hasMaxWeightConstraint = formik.values.maxWeightConstraint === true;
-    const hasBallast = formik.values.ballast === true;
-    const hasControlReport = formik.values.controlReport === true;
-    const hasTechnicalConstraints = hasMaxWeightConstraint || hasBallast || hasControlReport;
-    // Usage always has a value, so this section should always appear if there are any fields
-    const hasAnyFixationFields = true; // Usage always has a value, so section always shows
-
-    // Check Composition - apenas componentes com referência e bolas com dados
-    const hasValidComponentes = composition.componentes?.filter(c => c.referencia).length > 0;
-    const hasValidBolas = composition.bolas?.filter(bola => hasBolaData(bola)).length > 0;
-    const hasComposition = hasValidComponentes || hasValidBolas;
-
     // Helper functions to map filtered indices to original array indices
     const getOriginalComponenteIndex = (filteredIndex) => {
       if (!composition.componentes) return -1;
@@ -3235,197 +3256,242 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       return -1;
     };
 
-    // Check Attachments
-    const hasAttachments = currentLogo.attachmentFiles && currentLogo.attachmentFiles.length > 0;
+    // Helper function to build image URL for attachments
+    const buildImageUrl = (imageUrl) => {
+      if (!imageUrl) return '';
+      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+        try {
+          const urlObj = new URL(imageUrl);
+          imageUrl = urlObj.pathname;
+        } catch (e) {
+          const match = imageUrl.match(/\/api\/[^\s]+/);
+          if (match) imageUrl = match[0];
+        }
+      }
+      if (imageUrl.startsWith('\\\\') || imageUrl.startsWith('//')) {
+        const filename = imageUrl.split(/[\\/]/).pop();
+        if (filename) imageUrl = `/api/files/${filename}`;
+      }
+      if (imageUrl && !imageUrl.startsWith('/api/') && imageUrl.startsWith('/')) {
+        imageUrl = `/api${imageUrl}`;
+      } else if (imageUrl && !imageUrl.startsWith('/')) {
+        imageUrl = `/api/files/${imageUrl}`;
+      }
+      return imageUrl;
+    };
+
+    // Get dimensions in correct order: HEIGHT, WIDTH, LENGTH, DIAMETER
+    const dimensionOrder = ['height', 'width', 'length', 'diameter'];
+    const dimensionLabels = {
+      height: 'HEIGHT',
+      width: 'WIDTH',
+      length: 'LENGTH',
+      diameter: 'DIAMETER'
+    };
+
+    // Get valid componentes and bolas
+    const validComponentes = composition.componentes?.filter(c => c.referencia) || [];
+    const validBolas = composition.bolas?.filter(bola => hasBolaData(bola)) || [];
 
     return (
       <div className="h-full overflow-y-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Details Summary Section */}
-          {hasAnyDetailsField && (
-            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-3'} shadow-xl border border-white/10 flex flex-col overflow-hidden`}>
-              <div className={`flex items-center gap-2 mb-2 text-blue-600 dark:text-blue-400 flex-shrink-0`}>
-                <div className="p-1 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <Icon icon="lucide:file-signature" className="w-3.5 h-3.5" />
-                </div>
-                <h2 className="text-xs sm:text-sm font-bold">Details</h2>
+        <div className="max-w-4xl mx-auto">
+          {/* Single Card with all sections */}
+          <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-3' : 'p-4'} shadow-xl border border-white/10 space-y-4`}>
+            
+            {/* Details Section */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                <Icon icon="lucide:file-signature" className="w-4 h-4" />
+                <h2 className="text-sm font-bold">Details</h2>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-1.5">
-                {hasLogoNumber && (
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Logo Number</label>
-                    <Input
-                      placeholder="Enter logo number"
-                      variant="bordered"
-                      size="sm"
-                      value={formik.values.logoNumber}
-                      onValueChange={(v) => formik.updateField("logoNumber", v)}
-                      classNames={{ input: "text-xs", inputWrapper: "h-8" }}
-                    />
-                  </div>
-                )}
-                {hasLogoName && (
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Logo Name</label>
-                    <Input
-                      placeholder="Enter logo name"
-                      variant="bordered"
-                      size="sm"
-                      value={formik.values.logoName}
-                      onValueChange={(v) => formik.updateField("logoName", v)}
-                      classNames={{ input: "text-xs", inputWrapper: "h-8" }}
-                    />
-                  </div>
-                )}
-                {hasDescription && (
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Description</label>
-                    <Textarea
-                      placeholder="Enter description..."
-                      minRows={2}
-                      variant="bordered"
-                      size="sm"
-                      value={formik.values.description}
-                      onValueChange={(v) => formik.updateField("description", v)}
-                      classNames={{ input: "text-xs" }}
-                    />
-                  </div>
-                )}
-                {hasBudget && (
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Budget (EUR)</label>
-                    <Input
-                      placeholder="0,00"
-                      variant="bordered"
-                      size="sm"
-                      type="text"
-                      startContent={<span className="text-gray-500 dark:text-gray-400 font-medium">€</span>}
-                      value={formik.values.budget || ""}
-                      onValueChange={(v) => {
-                        let cleaned = v.replace(/[^\d,]/g, '');
-                        cleaned = cleaned.replace(/\./g, ',');
-                        const parts = cleaned.split(',');
-                        if (parts.length > 2) {
-                          cleaned = parts[0] + ',' + parts.slice(1).join('');
-                        }
-                        if (parts.length === 2 && parts[1].length > 2) {
-                          cleaned = parts[0] + ',' + parts[1].substring(0, 2);
-                        }
-                        if (parts[0] && parts[0].length > 3) {
-                          const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-                          cleaned = parts.length > 1 ? integerPart + ',' + parts[1] : integerPart;
-                        }
-                        formik.updateField("budget", cleaned);
-                      }}
-                      classNames={{ input: "text-xs", inputWrapper: "h-8" }}
-                    />
-                  </div>
-                )}
-                {hasRequestedBy && (
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Requested By</label>
-                    <Input
-                      placeholder="Enter requester name"
-                      variant="bordered"
-                      size="sm"
-                      value={formik.values.requestedBy}
-                      onValueChange={(v) => formik.updateField("requestedBy", v)}
-                      classNames={{ input: "text-xs", inputWrapper: "h-8" }}
-                    />
-                  </div>
-                )}
-                {hasCriteria && (
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Criteria</label>
-                    <Textarea
-                      placeholder="Enter criteria..."
-                      minRows={2}
-                      variant="bordered"
-                      size="sm"
-                      value={formik.values.criteria || ""}
-                      onValueChange={(v) => formik.updateField("criteria", v)}
-                      classNames={{ input: "text-xs sm:text-sm md:text-base lg:text-sm" }}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Dimensions Summary Section */}
-          {hasAnyDimensions && (
-            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-1.5' : 'p-1.5'} shadow-xl border border-white/10 flex flex-col overflow-hidden`}>
-              <div className={`flex items-center gap-2 mb-1.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0`}>
-                <div className="p-1 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                  <Icon icon="lucide:ruler" className="w-3.5 h-3.5" />
-                </div>
-                <h2 className="text-xs sm:text-sm font-bold">Dimensions</h2>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                <div className="grid grid-cols-2 gap-2">
-                  {dimensionsWithValues.map((dim) => {
-                    const key = dim.toLowerCase();
-                    const dimensionValue = formik.values.dimensions?.[key]?.value || "";
-                    return (
-                      <div key={key} className="p-1.5 rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm shadow-md">
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                          <label className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{dim}</label>
-                          <Checkbox
-                            size="sm"
-                            color="danger"
-                            classNames={{ 
-                              label: "text-xs font-semibold text-gray-800 dark:text-gray-100",
-                              wrapper: "before:border-2 before:border-gray-400 dark:before:border-gray-500",
-                              icon: "text-white"
-                            }}
-                            isSelected={formik.values.dimensions?.[key]?.imperative || false}
-                            onValueChange={(v) => handleDimensionUpdate(key, "imperative", v)}
-                          >
-                            <span className="text-xs">Imperative</span>
-                          </Checkbox>
-                        </div>
-                        <Input
-                          type="number"
-                          placeholder="0.00"
-                          endContent={<span className="text-xs text-gray-700 dark:text-gray-200 font-bold">m</span>}
-                          variant="flat"
-                          size="sm"
-                          classNames={{ inputWrapper: "bg-gray-50 dark:bg-gray-700 h-8", input: "text-xs" }}
-                          value={dimensionValue}
-                          onValueChange={(v) => {
-                            if (!v || v === "" || v === "0" || v === "0.00") {
-                              handleDimensionUpdate(key, "value", "");
-                            } else {
-                              const numValue = parseFloat(v);
-                              if (!isNaN(numValue) && numValue > 0) {
-                                handleDimensionUpdate(key, "value", numValue);
-                              } else {
-                                handleDimensionUpdate(key, "value", "");
-                              }
-                            }
-                          }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Fixation Summary Section */}
-          {hasAnyFixationFields && (
-            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-3'} shadow-xl border border-white/10 flex flex-col overflow-hidden`}>
-              <div className={`flex items-center gap-2 mb-2 text-orange-600 dark:text-orange-400 flex-shrink-0`}>
-                <div className="p-1 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                  <Icon icon="lucide:hammer" className="w-3.5 h-3.5" />
-                </div>
-                <h2 className="text-xs sm:text-sm font-bold">Fixation & Technical</h2>
-              </div>
-              <div className="flex-1 space-y-1.5">
-                {/* Usage is always visible as it has a default value */}
+              <div className="space-y-2 pl-6">
                 <div>
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Usage</label>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Logo Number</label>
+                  <Input
+                    placeholder="Enter logo number"
+                    variant="bordered"
+                    size="sm"
+                    value={formik.values.logoNumber || ""}
+                    onValueChange={(v) => formik.updateField("logoNumber", v)}
+                    classNames={{ input: "text-xs", inputWrapper: "h-8" }}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Logo Name</label>
+                  <Input
+                    placeholder="Enter logo name"
+                    variant="bordered"
+                    size="sm"
+                    value={formik.values.logoName || ""}
+                    onValueChange={(v) => formik.updateField("logoName", v)}
+                    classNames={{ input: "text-xs", inputWrapper: "h-8" }}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Budget (EUR)</label>
+                  <Input
+                    placeholder="0,00"
+                    variant="bordered"
+                    size="sm"
+                    type="text"
+                    startContent={<span className="text-gray-500 dark:text-gray-400 font-medium">€</span>}
+                    value={formik.values.budget || ""}
+                    onValueChange={(v) => {
+                      let cleaned = v.replace(/[^\d,]/g, '');
+                      cleaned = cleaned.replace(/\./g, ',');
+                      const parts = cleaned.split(',');
+                      if (parts.length > 2) {
+                        cleaned = parts[0] + ',' + parts.slice(1).join('');
+                      }
+                      if (parts.length === 2 && parts[1].length > 2) {
+                        cleaned = parts[0] + ',' + parts[1].substring(0, 2);
+                      }
+                      if (parts[0] && parts[0].length > 3) {
+                        const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                        cleaned = parts.length > 1 ? integerPart + ',' + parts[1] : integerPart;
+                      }
+                      formik.updateField("budget", cleaned);
+                    }}
+                    classNames={{ input: "text-xs", inputWrapper: "h-8" }}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Requested By</label>
+                  <Input
+                    placeholder="Enter requester name"
+                    variant="bordered"
+                    size="sm"
+                    value={formik.values.requestedBy || ""}
+                    onValueChange={(v) => formik.updateField("requestedBy", v)}
+                    classNames={{ input: "text-xs", inputWrapper: "h-8" }}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Description</label>
+                  <Textarea
+                    placeholder="Enter description..."
+                    minRows={3}
+                    variant="bordered"
+                    size="sm"
+                    value={formik.values.description || ""}
+                    onValueChange={(v) => formik.updateField("description", v)}
+                    classNames={{ input: "text-xs" }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Divider />
+
+            {/* Attachments Section */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-pink-600 dark:text-pink-400">
+                <Icon icon="lucide:paperclip" className="w-4 h-4" />
+                <h2 className="text-sm font-bold">Attachments</h2>
+              </div>
+              <div className="pl-6">
+                {currentLogo.attachmentFiles && currentLogo.attachmentFiles.length > 0 ? (
+                  <div className="space-y-2">
+                    {currentLogo.attachmentFiles.map((file, index) => {
+                      const isImage = file.mimetype?.startsWith('image/') || file.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                      const fileUrl = buildImageUrl(file.url || file.path);
+                      return (
+                        <div key={index} className="relative">
+                          {isImage && fileUrl ? (
+                            <img 
+                              src={fileUrl} 
+                              alt={file.name || `Attachment ${index + 1}`}
+                              className="max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-700"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <AttachmentItem
+                              file={file}
+                              index={index}
+                              onRemove={handleRemoveAttachment}
+                              onEdit={handleEditAIGenerated}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400">No attachments</p>
+                )}
+              </div>
+            </div>
+
+            <Divider />
+
+            {/* Dimensions Section */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                <Icon icon="lucide:ruler" className="w-4 h-4" />
+                <h2 className="text-sm font-bold">Dimensions</h2>
+              </div>
+              <div className="grid grid-cols-2 gap-3 pl-6">
+                {dimensionOrder.map((key) => {
+                  const dimensionValue = formik.values.dimensions?.[key]?.value || "";
+                  const isImperative = formik.values.dimensions?.[key]?.imperative || false;
+                  return (
+                    <div key={key} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase">{dimensionLabels[key]}</label>
+                        <Checkbox
+                          size="sm"
+                          color="danger"
+                          classNames={{ 
+                            wrapper: isImperative ? "before:border-danger" : "",
+                            icon: "text-white"
+                          }}
+                          isSelected={isImperative}
+                          onValueChange={(v) => handleDimensionUpdate(key, "imperative", v)}
+                        >
+                          <span className="text-xs">Imperative</span>
+                        </Checkbox>
+                      </div>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        endContent={<span className="text-xs text-gray-700 dark:text-gray-200 font-bold">m</span>}
+                        variant="bordered"
+                        size="sm"
+                        classNames={{ inputWrapper: "bg-gray-50 dark:bg-gray-700 h-8", input: "text-xs" }}
+                        value={dimensionValue}
+                        onValueChange={(v) => {
+                          if (!v || v === "" || v === "0" || v === "0.00") {
+                            handleDimensionUpdate(key, "value", "");
+                          } else {
+                            const numValue = parseFloat(v);
+                            if (!isNaN(numValue) && numValue > 0) {
+                              handleDimensionUpdate(key, "value", numValue);
+                            } else {
+                              handleDimensionUpdate(key, "value", "");
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <Divider />
+
+            {/* Fixation & Technical Section */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                <Icon icon="lucide:wrench" className="w-4 h-4" />
+                <h2 className="text-sm font-bold">Fixation & Technical</h2>
+              </div>
+              <div className="space-y-2 pl-6">
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Usage</label>
                   <Tabs
                     fullWidth
                     size="sm"
@@ -3464,184 +3530,169 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                     />
                   </Tabs>
                 </div>
-                {hasFixationType && (
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Fixation Type</label>
-                    <Select
-                      placeholder="Select fixation type"
-                      size="sm"
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Structure Finish</label>
+                  {formik.values.lacqueredStructure ? (
+                    <Input
                       variant="bordered"
-                      selectedKeys={formik.values.fixationType ? new Set([formik.values.fixationType]) : new Set()}
-                      onSelectionChange={(keys) => {
-                        const selected = Array.from(keys)[0] || "";
-                        formik.updateField("fixationType", selected);
-                      }}
-                      startContent={<Icon icon="lucide:settings-2" className="w-3 h-3 text-gray-500" />}
-                      classNames={{ trigger: "text-xs h-8" }}
-                    >
-                      <SelectItem key="ground" startContent={<Icon icon="lucide:arrow-down-to-line" className="w-3 h-3" />}>Ground</SelectItem>
-                      <SelectItem key="wall" startContent={<Icon icon="lucide:brick-wall" className="w-3 h-3" />}>Wall</SelectItem>
-                      <SelectItem key="suspended" startContent={<Icon icon="lucide:arrow-up-to-line" className="w-3 h-3" />}>Suspended</SelectItem>
-                      <SelectItem key="none" startContent={<Icon icon="lucide:ban" className="w-3 h-3" />}>None</SelectItem>
-                      <SelectItem key="pole_side">Pole (Side)</SelectItem>
-                      <SelectItem key="pole_central">Pole (Central)</SelectItem>
-                      <SelectItem key="special">Special</SelectItem>
-                    </Select>
-                  </div>
-                )}
-                {hasLacqueredStructure && (
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Structure Finish</label>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 p-1.5 bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-lg border border-white/20 dark:border-gray-600/30">
-                      <div className="flex items-center gap-1.5">
-                        <Switch
+                      size="sm"
+                      value={formik.values.lacquerColor || ""}
+                      onValueChange={(v) => formik.updateField("lacquerColor", v)}
+                      classNames={{ input: "text-xs", inputWrapper: "h-8" }}
+                      endContent={
+                        <Button
                           size="sm"
-                          color="secondary"
-                          isSelected={formik.values.lacqueredStructure}
-                          onValueChange={(v) => formik.updateField("lacqueredStructure", v)}
-                        />
-                        <span className="text-xs font-bold">{t('pages.projectDetails.lacquered', 'Lacquered')}</span>
-                      </div>
-                      {formik.values.lacqueredStructure && (
-                        <Select
-                          placeholder={t('pages.projectDetails.lacquerColor', 'Lacquer Color')}
-                          size="sm"
-                          variant="flat"
-                          className="flex-1 w-full sm:w-auto"
-                          selectedKeys={(() => {
-                            const colorKeys = ['white', 'gold', 'red', 'blue', 'green', 'pink', 'black'];
-                            const savedValue = formik.values.lacquerColor || '';
-                            const matchingKey = colorKeys.find(key => {
-                              const translatedValue = t(`pages.projectDetails.lacquerColors.${key}`, '');
-                              return translatedValue === savedValue || key === savedValue;
-                            });
-                            return matchingKey ? new Set([matchingKey]) : new Set();
-                          })()}
-                          onSelectionChange={(keys) => {
-                            const selected = Array.from(keys)[0];
-                            if (selected) {
-                              const translatedValue = t(`pages.projectDetails.lacquerColors.${selected}`, '');
-                              formik.updateField("lacquerColor", translatedValue || selected);
-                            } else {
-                              formik.updateField("lacquerColor", "");
-                            }
-                          }}
-                          classNames={{ 
-                            trigger: "text-xs h-8",
-                            value: "text-xs"
-                          }}
+                          variant="light"
+                          isIconOnly
+                          onPress={() => formik.updateField("lacqueredStructure", false)}
+                          className="min-w-6 h-6"
                         >
-                          <SelectItem key="white" value="white">
-                            {t('pages.projectDetails.lacquerColors.white', 'WHITE RAL 9010')}
-                          </SelectItem>
-                          <SelectItem key="gold" value="gold">
-                            {t('pages.projectDetails.lacquerColors.gold', 'GOLD PANTONE 131C')}
-                          </SelectItem>
-                          <SelectItem key="red" value="red">
-                            {t('pages.projectDetails.lacquerColors.red', 'RED RAL 3000')}
-                          </SelectItem>
-                          <SelectItem key="blue" value="blue">
-                            {t('pages.projectDetails.lacquerColors.blue', 'BLUE RAL 5005')}
-                          </SelectItem>
-                          <SelectItem key="green" value="green">
-                            {t('pages.projectDetails.lacquerColors.green', 'GREEN RAL 6029')}
-                          </SelectItem>
-                          <SelectItem key="pink" value="pink">
-                            {t('pages.projectDetails.lacquerColors.pink', 'PINK RAL 3015')}
-                          </SelectItem>
-                          <SelectItem key="black" value="black">
-                            {t('pages.projectDetails.lacquerColors.black', 'BLACK RAL 9011')}
-                          </SelectItem>
-                        </Select>
+                          <Icon icon="lucide:x" className="w-3 h-3" />
+                        </Button>
+                      }
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        size="sm"
+                        color="secondary"
+                        isSelected={false}
+                        onValueChange={(v) => formik.updateField("lacqueredStructure", v)}
+                      />
+                      <Select
+                        placeholder="Select color"
+                        size="sm"
+                        variant="bordered"
+                        selectedKeys={(() => {
+                          const colorKeys = ['white', 'gold', 'red', 'blue', 'green', 'pink', 'black'];
+                          const savedValue = formik.values.lacquerColor || '';
+                          const matchingKey = colorKeys.find(key => {
+                            const translatedValue = t(`pages.projectDetails.lacquerColors.${key}`, '');
+                            return translatedValue === savedValue || key === savedValue;
+                          });
+                          return matchingKey ? new Set([matchingKey]) : new Set();
+                        })()}
+                        onSelectionChange={(keys) => {
+                          const selected = Array.from(keys)[0];
+                          if (selected) {
+                            const translatedValue = t(`pages.projectDetails.lacquerColors.${selected}`, '');
+                            formik.updateField("lacquerColor", translatedValue || selected);
+                            formik.updateField("lacqueredStructure", true);
+                          }
+                        }}
+                        classNames={{ trigger: "text-xs h-8" }}
+                      >
+                        <SelectItem key="white" value="white">
+                          {t('pages.projectDetails.lacquerColors.white', 'WHITE RAL 9010')}
+                        </SelectItem>
+                        <SelectItem key="gold" value="gold">
+                          {t('pages.projectDetails.lacquerColors.gold', 'GOLD PANTONE 131C')}
+                        </SelectItem>
+                        <SelectItem key="red" value="red">
+                          {t('pages.projectDetails.lacquerColors.red', 'RED RAL 3000')}
+                        </SelectItem>
+                        <SelectItem key="blue" value="blue">
+                          {t('pages.projectDetails.lacquerColors.blue', 'BLUE RAL 5005')}
+                        </SelectItem>
+                        <SelectItem key="green" value="green">
+                          {t('pages.projectDetails.lacquerColors.green', 'GREEN RAL 6029')}
+                        </SelectItem>
+                        <SelectItem key="pink" value="pink">
+                          {t('pages.projectDetails.lacquerColors.pink', 'PINK RAL 3015')}
+                        </SelectItem>
+                        <SelectItem key="black" value="black">
+                          {t('pages.projectDetails.lacquerColors.black', 'BLACK RAL 9011')}
+                        </SelectItem>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Fixation Type</label>
+                  <Select
+                    placeholder="Select fixation type"
+                    size="sm"
+                    variant="bordered"
+                    selectedKeys={formik.values.fixationType ? new Set([formik.values.fixationType]) : new Set()}
+                    onSelectionChange={(keys) => {
+                      const selected = Array.from(keys)[0] || "";
+                      formik.updateField("fixationType", selected);
+                    }}
+                    startContent={<Icon icon="lucide:settings-2" className="w-3 h-3 text-gray-500" />}
+                    classNames={{ trigger: "text-xs h-8" }}
+                  >
+                    <SelectItem key="ground" startContent={<Icon icon="lucide:arrow-down-to-line" className="w-3 h-3" />}>Ground</SelectItem>
+                    <SelectItem key="wall" startContent={<Icon icon="lucide:brick-wall" className="w-3 h-3" />}>Wall</SelectItem>
+                    <SelectItem key="suspended" startContent={<Icon icon="lucide:arrow-up-to-line" className="w-3 h-3" />}>Suspended</SelectItem>
+                    <SelectItem key="none" startContent={<Icon icon="lucide:ban" className="w-3 h-3" />}>None</SelectItem>
+                    <SelectItem key="pole_side">Pole (Side)</SelectItem>
+                    <SelectItem key="pole_central">Pole (Central)</SelectItem>
+                    <SelectItem key="special">Special</SelectItem>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1">Technical Constraints</label>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        size="sm"
+                        color="secondary"
+                        isSelected={formik.values.maxWeightConstraint || false}
+                        onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
+                      />
+                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Restrição de Peso Máx.</span>
+                      {formik.values.maxWeightConstraint && (
+                        <Input
+                          placeholder="Weight (kg)"
+                          size="sm"
+                          variant="bordered"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          classNames={{ input: "text-xs", inputWrapper: "h-8 w-24" }}
+                          endContent={<span className="text-xs text-default-400">kg</span>}
+                          value={formik.values.maxWeight || ""}
+                          onValueChange={(v) => formik.updateField("maxWeight", v)}
+                        />
                       )}
                     </div>
+                    <Checkbox
+                      size="sm"
+                      classNames={{ label: "text-xs font-medium" }}
+                      isSelected={formik.values.ballast || false}
+                      onValueChange={(v) => formik.updateField("ballast", v)}
+                    >
+                      Ballast Required
+                    </Checkbox>
+                    <Checkbox
+                      size="sm"
+                      classNames={{ label: "text-xs font-medium" }}
+                      isSelected={formik.values.controlReport || false}
+                      onValueChange={(v) => formik.updateField("controlReport", v)}
+                    >
+                      Control Report Needed
+                    </Checkbox>
                   </div>
-                )}
-                {hasTechnicalConstraints && (
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Technical Constraints</label>
-                    <div className="grid grid-cols-1 gap-1">
-                      {hasMaxWeightConstraint && (
-                        <div>
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 p-1.5 bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-lg border border-white/20 dark:border-gray-600/30">
-                            <div className="flex items-center gap-1.5">
-                              <Switch
-                                size="sm"
-                                color="secondary"
-                                isSelected={formik.values.maxWeightConstraint}
-                                onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
-                              />
-                              <span className="text-xs font-bold">{t('pages.projectDetails.maxWeightConstraint', 'Max Weight')}</span>
-                            </div>
-                            {formik.values.maxWeightConstraint && (
-                              <Input
-                                placeholder={t('pages.projectDetails.maxWeight', 'Weight (kg)')}
-                                size="sm"
-                                variant="flat"
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                className="flex-1 w-full sm:w-auto"
-                                classNames={{ input: "text-xs", inputWrapper: "h-8" }}
-                                endContent={<span className="text-xs text-default-400">kg</span>}
-                                value={formik.values.maxWeight}
-                                onValueChange={(v) => formik.updateField("maxWeight", v)}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      {hasBallast && (
-                        <div className={`p-1 rounded-lg border-2 transition-all ${formik.values.ballast ? 'bg-primary-50/80 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800' : 'bg-white/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-700/50'}`}>
-                          <Checkbox
-                            size="sm"
-                            classNames={{ label: "text-xs font-medium" }}
-                            isSelected={formik.values.ballast}
-                            onValueChange={(v) => formik.updateField("ballast", v)}
-                          >
-                            Ballast Required
-                          </Checkbox>
-                        </div>
-                      )}
-                      {hasControlReport && (
-                        <div className={`p-1 rounded-lg border-2 transition-all ${formik.values.controlReport ? 'bg-primary-50/80 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800' : 'bg-white/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-700/50'}`}>
-                          <Checkbox
-                            size="sm"
-                            classNames={{ label: "text-xs font-medium" }}
-                            isSelected={formik.values.controlReport}
-                            onValueChange={(v) => formik.updateField("controlReport", v)}
-                          >
-                            Control Report Needed
-                          </Checkbox>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Composition Summary Section */}
-          {hasComposition && (
-            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-3'} shadow-xl border border-white/10 flex flex-col overflow-hidden`}>
-              <div className={`flex items-center gap-2 mb-2 text-purple-600 dark:text-purple-400 flex-shrink-0`}>
-                <div className="p-1 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                  <Icon icon="lucide:layers" className="w-3.5 h-3.5" />
-                </div>
-                <h2 className="text-xs sm:text-sm font-bold">Composition</h2>
+            <Divider />
+
+            {/* Composition Section */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                <Icon icon="lucide:atom" className="w-4 h-4" />
+                <h2 className="text-sm font-bold">Composition</h2>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-3">
-                {/* Components List */}
+              <div className="space-y-3 pl-6">
+                {/* Components */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <Icon icon="lucide:box" className="w-3 h-3 text-purple-600 dark:text-purple-400" />
-                      <h5 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                        Components
-                      </h5>
+                      <h5 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">COMPONENTS</h5>
                       <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-1.5 py-0.5 rounded font-semibold">
-                        {composition.componentes?.filter(c => c.referencia).length || 0}
+                        {validComponentes.length}
                       </span>
                     </div>
                     <Button
@@ -3654,9 +3705,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                       Add
                     </Button>
                   </div>
-                  {composition.componentes && composition.componentes.filter(c => c.referencia).length > 0 ? (
-                    <div className="space-y-1.5 pl-5">
-                      {composition.componentes.filter(c => c.referencia).map((comp, filteredIdx) => {
+                  {validComponentes.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {validComponentes.map((comp, filteredIdx) => {
                         const originalIndex = getOriginalComponenteIndex(filteredIdx);
                         if (originalIndex === -1) return null;
                         
@@ -3675,29 +3726,22 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
                         if (mostrarApenasReferencia) {
                           return (
-                            <div key={originalIndex} className="p-1.5 border border-white/20 dark:border-gray-600/30 rounded-lg bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
+                            <div key={originalIndex} className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5 mb-0">
-                                    <div className="text-xs font-bold truncate text-gray-900 dark:text-white">{componente?.nome || comp.componenteNome}</div>
-                                  </div>
-                                  <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                    Ref: <span className="font-mono bg-gray-100 dark:bg-gray-600 px-1 py-0.5 rounded text-[10px]">{comp.referencia}</span>
+                                  <div className="text-xs font-bold text-gray-900 dark:text-white">{componente?.nome || comp.componenteNome}</div>
+                                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                    {comp.referencia && (
+                                      <>
+                                        Ref: <span className="font-mono bg-gray-100 dark:bg-gray-600 px-1 py-0.5 rounded">{comp.referencia}</span>
+                                      </>
+                                    )}
                                   </div>
                                   {(comp.corNome || comp.acabamentoNome) && (
-                                    <div className="flex flex-wrap gap-2 text-[10px] text-gray-600 dark:text-gray-400 mt-1">
-                                      {comp.corNome && (
-                                        <span className="flex items-center gap-1">
-                                          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                                          <span>{comp.corNome}</span>
-                                        </span>
-                                      )}
-                                      {comp.acabamentoNome && (
-                                        <span className="flex items-center gap-1">
-                                          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                                          <span>{comp.acabamentoNome}</span>
-                                        </span>
-                                      )}
+                                    <div className="text-[10px] text-gray-600 dark:text-gray-400 mt-1">
+                                      {comp.corNome && <span>{comp.corNome}</span>}
+                                      {comp.corNome && comp.acabamentoNome && <span> - </span>}
+                                      {comp.acabamentoNome && <span>{comp.acabamentoNome}</span>}
                                     </div>
                                   )}
                                 </div>
@@ -3708,7 +3752,6 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                                     isIconOnly
                                     onPress={() => handleToggleEditComponente(originalIndex)}
                                     className="h-6 w-6 min-w-6"
-                                    aria-label={`Edit component ${filteredIdx + 1}`}
                                   >
                                     <Icon icon="lucide:pencil" className="w-3 h-3" />
                                   </Button>
@@ -3719,7 +3762,6 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                                     isIconOnly
                                     onPress={() => handleRemoveComponente(originalIndex)}
                                     className="h-6 w-6 min-w-6"
-                                    aria-label={`Remove component ${filteredIdx + 1}`}
                                   >
                                     <Icon icon="lucide:trash-2" className="w-3 h-3" />
                                   </Button>
@@ -3730,10 +3772,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                         }
 
                         return (
-                          <div key={originalIndex} className="p-1.5 border border-white/20 dark:border-gray-600/30 rounded-lg bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm space-y-1.5 shadow-md">
+                          <div key={originalIndex} className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 space-y-1.5">
                             <AutocompleteWithMarquee
                               label="Component"
-                              aria-label="Search component"
                               placeholder="Search component"
                               size="sm"
                               variant="bordered"
@@ -3790,7 +3831,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                               </SelectWithMarquee>
                             )}
 
-                            <div className="flex gap-1.5 justify-end mt-1">
+                            <div className="flex gap-1.5 justify-end">
                               {completo && (
                                 <Button
                                   size="sm"
@@ -3810,7 +3851,6 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                                 isIconOnly
                                 className="h-6 w-6 min-w-6"
                                 onPress={() => handleRemoveComponente(originalIndex)}
-                                aria-label={`Remove component ${filteredIdx + 1}`}
                               >
                                 <Icon icon="lucide:trash-2" className="w-3 h-3" />
                               </Button>
@@ -3819,24 +3859,16 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                         );
                       })}
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-4 border-2 border-dashed border-white/30 dark:border-gray-600/40 rounded-lg bg-white/30 dark:bg-gray-700/30 backdrop-blur-sm ml-5">
-                      <Icon icon="lucide:box" className="w-6 h-6 text-gray-300 mb-1" />
-                      <p className="text-xs text-gray-400">No components added yet</p>
-                    </div>
-                  )}
+                  ) : null}
                 </div>
 
-                {/* Balls List */}
+                {/* Balls */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <Icon icon="lucide:circle-dot" className="w-3 h-3 text-purple-600 dark:text-purple-400" />
-                      <h5 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                        Balls
-                      </h5>
+                      <h5 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">BALLS</h5>
                       <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-1.5 py-0.5 rounded font-semibold">
-                        {composition.bolas?.filter(bola => hasBolaData(bola)).length || 0}
+                        {validBolas.length}
                       </span>
                     </div>
                     <Button
@@ -3849,9 +3881,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                       Add
                     </Button>
                   </div>
-                  {composition.bolas && composition.bolas.filter(bola => hasBolaData(bola)).length > 0 ? (
-                    <div className="space-y-1.5 pl-5">
-                      {composition.bolas.filter(bola => hasBolaData(bola)).map((bola, filteredIdx) => {
+                  {validBolas.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {validBolas.map((bola, filteredIdx) => {
                         const originalIndex = getOriginalBolaIndex(filteredIdx);
                         if (originalIndex === -1) return null;
                         
@@ -3872,37 +3904,13 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                             .join(" - ");
 
                           return (
-                            <div key={originalIndex} className="p-1.5 border border-white/20 dark:border-gray-600/30 rounded-lg bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
+                            <div key={originalIndex} className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5 mb-0">
-                                    <div className="text-xs font-bold truncate text-gray-900 dark:text-white">{nomeBola || bola.bolaName || `Ball ${filteredIdx + 1}`}</div>
-                                  </div>
+                                  <div className="text-xs font-bold text-gray-900 dark:text-white">{nomeBola || bola.bolaName || `Ball ${filteredIdx + 1}`}</div>
                                   {bola.reference && (
-                                    <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                      Ref: <span className="font-mono bg-gray-100 dark:bg-gray-600 px-1 py-0.5 rounded text-[10px]">{bola.reference}</span>
-                                    </div>
-                                  )}
-                                  {(bola.corNome || bola.acabamentoNome || bola.tamanhoName) && (
-                                    <div className="flex flex-wrap gap-2 text-[10px] text-gray-600 dark:text-gray-400 mt-1">
-                                      {bola.corNome && (
-                                        <span className="flex items-center gap-1">
-                                          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                                          <span>{bola.corNome}</span>
-                                        </span>
-                                      )}
-                                      {bola.acabamentoNome && (
-                                        <span className="flex items-center gap-1">
-                                          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                                          <span>{bola.acabamentoNome}</span>
-                                        </span>
-                                      )}
-                                      {bola.tamanhoName && (
-                                        <span className="flex items-center gap-1">
-                                          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                                          <span>{bola.tamanhoName}</span>
-                                        </span>
-                                      )}
+                                    <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                      Ref: <span className="font-mono bg-gray-100 dark:bg-gray-600 px-1 py-0.5 rounded">{bola.reference}</span>
                                     </div>
                                   )}
                                 </div>
@@ -3913,7 +3921,6 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                                     isIconOnly
                                     onPress={() => handleToggleEditBola(originalIndex)}
                                     className="h-6 w-6 min-w-6"
-                                    aria-label={`Edit ball ${filteredIdx + 1}`}
                                   >
                                     <Icon icon="lucide:pencil" className="w-3 h-3" />
                                   </Button>
@@ -3924,7 +3931,6 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                                     isIconOnly
                                     onPress={() => handleRemoveBola(originalIndex)}
                                     className="h-6 w-6 min-w-6"
-                                    aria-label={`Remove ball ${filteredIdx + 1}`}
                                   >
                                     <Icon icon="lucide:trash-2" className="w-3 h-3" />
                                   </Button>
@@ -3935,14 +3941,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                         }
 
                         return (
-                          <div key={originalIndex} className="p-1.5 border border-white/20 dark:border-gray-600/30 rounded-lg bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm space-y-1.5 shadow-md">
-                            <div className="flex items-center gap-1.5 mb-0">
-                              <div className="w-4 h-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300 ring-2 ring-white dark:ring-gray-700">
-                                {filteredIdx + 1}
-                              </div>
-                              <span className="text-xs font-bold text-gray-600 dark:text-gray-300">Ball Configuration</span>
-                            </div>
-
+                          <div key={originalIndex} className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 space-y-1.5">
                             <Select
                               label="Color"
                               placeholder="Select color"
@@ -3960,7 +3959,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                               ))}
                             </Select>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                            <div className="grid grid-cols-2 gap-1.5">
                               <Select
                                 label="Finish"
                                 placeholder="Finish"
@@ -3998,7 +3997,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                               </Select>
                             </div>
 
-                            <div className="flex gap-1.5 justify-end mt-1">
+                            <div className="flex gap-1.5 justify-end">
                               {completa && (
                                 <Button
                                   size="sm"
@@ -4018,7 +4017,6 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                                 isIconOnly
                                 className="h-6 w-6 min-w-6"
                                 onPress={() => handleRemoveBola(originalIndex)}
-                                aria-label={`Remove ball ${filteredIdx + 1}`}
                               >
                                 <Icon icon="lucide:trash-2" className="w-3 h-3" />
                               </Button>
@@ -4027,41 +4025,12 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                         );
                       })}
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-4 border-2 border-dashed border-white/30 dark:border-gray-600/40 rounded-lg bg-white/30 dark:bg-gray-700/30 backdrop-blur-sm ml-5">
-                      <Icon icon="lucide:circle-dashed" className="w-6 h-6 text-gray-300 mb-1" />
-                      <p className="text-xs text-gray-400">No balls added yet</p>
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>
-          )}
 
-          {/* Attachments Summary Section */}
-          {hasAttachments && (
-            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-3'} shadow-xl border border-white/10 flex flex-col overflow-hidden`}>
-              <div className={`flex items-center gap-2 mb-2 text-pink-600 dark:text-pink-400 flex-shrink-0`}>
-                <div className="p-1 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
-                  <Icon icon="lucide:paperclip" className="w-3.5 h-3.5" />
-                </div>
-                <h2 className="text-xs sm:text-sm font-bold">Attachments</h2>
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-1.5">
-                {currentLogo.attachmentFiles && currentLogo.attachmentFiles.length > 0 && (
-                  currentLogo.attachmentFiles.map((file, index) => (
-                    <AttachmentItem
-                      key={index}
-                      file={file}
-                      index={index}
-                      onRemove={handleRemoveAttachment}
-                      onEdit={handleEditAIGenerated}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     );
@@ -4082,6 +4051,37 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         return renderDetailsAndAttachments();
     }
   };
+
+  // Helper para verificar se o logo atual é válido (para o botão New Logo)
+  const isCurrentLogoValid = () => {
+    const hasLogoNumber = currentLogo.logoNumber?.trim() !== "";
+    const hasLogoName = currentLogo.logoName?.trim() !== "";
+    const hasDescription = currentLogo.description?.trim() !== "";
+    const hasRequestedBy = currentLogo.requestedBy?.trim() !== "";
+    const hasFixationType = currentLogo.fixationType?.trim() !== "";
+    const dimensions = currentLogo.dimensions || {};
+    const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "" && !isNaN(parseFloat(dimensions.height.value)) && parseFloat(dimensions.height.value) >= 0;
+    const hasLength = dimensions.length?.value != null && dimensions.length.value !== "" && !isNaN(parseFloat(dimensions.length.value)) && parseFloat(dimensions.length.value) >= 0;
+    const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "" && !isNaN(parseFloat(dimensions.width.value)) && parseFloat(dimensions.width.value) >= 0;
+    const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "" && !isNaN(parseFloat(dimensions.diameter.value)) && parseFloat(dimensions.diameter.value) >= 0;
+    const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
+    return hasLogoNumber && hasLogoName && hasDescription && hasRequestedBy && hasFixationType && hasAtLeastOneDimension;
+  };
+
+  // Expor funções para o componente pai através de ref
+  React.useEffect(() => {
+    if (handlersRef) {
+      handlersRef.current = {
+        handleNextPage,
+        handlePrevPage,
+        handleNewLogo,
+        handleFinish,
+        canProceedToNext: canProceedToNext(),
+        isCurrentLogoValid: isCurrentLogoValid(),
+        isFinishing,
+      };
+    }
+  });
 
   return (
     <div className={`${isCompact ? 'w-auto h-auto' : 'w-full h-full'} flex flex-col ${isCompact ? 'overflow-visible' : 'overflow-hidden'} ${isCompact ? 'bg-transparent' : 'bg-gradient-to-b from-[#e4e4ec] to-[#d6d4ee] dark:bg-none dark:bg-background'}`}>
@@ -4105,1375 +4105,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         </div>
       </div>
 
-      {/* Old grid code - to be removed after implementing all render functions */}
-      {false && (
-        <div className={`${isCompact ? 'flex-auto' : 'flex-1'} ${isCompact ? 'overflow-visible' : 'overflow-y-auto sm:overflow-hidden'} ${isCompact ? 'p-1 sm:p-2' : 'p-2 sm:p-3 md:p-4 lg:p-4'}`}>
-          <div className={`${isCompact ? 'h-auto' : 'h-full'} grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${isCompact ? 'gap-[50px] sm:gap-[50px]' : 'gap-4 sm:gap-4 md:gap-5 lg:gap-6'}`}>
-          {/* Column 1: Details */}
-          <div className={`flex flex-col ${isCompact ? 'gap-1 sm:gap-1.5' : 'gap-2 sm:gap-2.5 md:gap-3 lg:gap-3'}`}>
-
-            {/* Details Section */}
-            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-4'} shadow-xl border border-white/10`}>
-              <div className={`flex items-center gap-2 ${isCompact ? 'mb-1' : 'mb-1.5 sm:mb-1.5 md:mb-2 lg:mb-2'} text-blue-600 dark:text-blue-400`}>
-                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <Icon icon="lucide:file-signature" className="w-4 h-4" />
-                </div>
-                <h2 className="text-sm sm:text-sm md:text-base lg:text-base font-bold">Details</h2>
-              </div>
-
-              <div className={isCompact ? 'space-y-1' : 'space-y-1.5 sm:space-y-2 lg:space-y-2'}>
-                <div>
-                  <label className="text-xs sm:text-sm lg:text-sm font-semibold text-gray-700 dark:text-gray-200 block mb-0.5 sm:mb-1 lg:mb-1">Logo Name</label>
-                  <Input
-                    placeholder="Enter logo name"
-                    variant="bordered"
-                    size="sm"
-                    isRequired
-                    aria-label="Logo Name"
-                    value={formik.values.logoName}
-                    onValueChange={(v) => formik.updateField("logoName", v)}
-                    onBlur={formik.handleBlur}
-                    isInvalid={formik.touched.logoName && !!formik.errors.logoName}
-                    errorMessage={formik.touched.logoName && formik.errors.logoName}
-                    classNames={{ input: "text-xs sm:text-sm md:text-base lg:text-sm", inputWrapper: "h-9 sm:h-9 md:h-10 lg:h-9" }}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs sm:text-sm md:text-base lg:text-sm font-semibold text-gray-700 dark:text-gray-200 block mb-0.5 sm:mb-1 md:mb-1.5 lg:mb-1">Description</label>
-                  <Textarea
-                    placeholder="Enter description..."
-                    minRows={3}
-                    variant="bordered"
-                    size="sm"
-                    isRequired
-                    aria-label="Description"
-                    value={formik.values.description}
-                    onValueChange={(v) => formik.updateField("description", v)}
-                    onBlur={formik.handleBlur}
-                    isInvalid={formik.touched.description && !!formik.errors.description}
-                    errorMessage={formik.touched.description && formik.errors.description}
-                    classNames={{ input: "text-xs sm:text-sm md:text-base lg:text-sm" }}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs sm:text-sm md:text-base lg:text-sm font-semibold text-gray-700 dark:text-gray-200 block mb-0.5 sm:mb-1 md:mb-1.5 lg:mb-1">
-                    Budget (EUR)
-                  </label>
-                  <Input
-                    placeholder="0,00"
-                    variant="bordered"
-                    size="sm"
-                    type="text"
-                    startContent={<span className="text-gray-500 dark:text-gray-400 font-medium">€</span>}
-                    value={formik.values.budget || ""}
-                    onValueChange={(v) => {
-                      // Remover todos os caracteres não numéricos exceto vírgula
-                      let cleaned = v.replace(/[^\d,]/g, '');
-                      // Substituir ponto por vírgula para formato europeu
-                      cleaned = cleaned.replace(/\./g, ',');
-                      // Permitir apenas uma vírgula
-                      const parts = cleaned.split(',');
-                      if (parts.length > 2) {
-                        cleaned = parts[0] + ',' + parts.slice(1).join('');
-                      }
-                      // Limitar a 2 casas decimais após a vírgula
-                      if (parts.length === 2 && parts[1].length > 2) {
-                        cleaned = parts[0] + ',' + parts[1].substring(0, 2);
-                      }
-                      // Formatar com separadores de milhar (espaços ou pontos) antes da vírgula
-                      if (parts[0] && parts[0].length > 3) {
-                        const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-                        cleaned = parts.length > 1 ? integerPart + ',' + parts[1] : integerPart;
-                      }
-                      formik.updateField("budget", cleaned);
-                    }}
-                    onBlur={(e) => {
-                      // Ao perder o foco, garantir formatação correta
-                      const value = formik.values.budget || "";
-                      if (value) {
-                        // Remover espaços e garantir formato correto
-                        let cleaned = value.replace(/\s/g, '');
-                        const parts = cleaned.split(',');
-                        if (parts.length === 1 && parts[0]) {
-                          // Se não tem vírgula, adicionar ,00
-                          cleaned = parts[0] + ',00';
-                        } else if (parts.length === 2 && parts[1].length === 1) {
-                          // Se tem apenas 1 decimal, adicionar 0
-                          cleaned = parts[0] + ',' + parts[1] + '0';
-                        } else if (parts.length === 2 && parts[1].length === 0) {
-                          // Se vírgula sem decimais, adicionar 00
-                          cleaned = parts[0] + ',00';
-                        }
-                        // Formatar com separadores de milhar
-                        const finalParts = cleaned.split(',');
-                        if (finalParts[0] && finalParts[0].length > 3) {
-                          const integerPart = finalParts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-                          cleaned = finalParts.length > 1 ? integerPart + ',' + finalParts[1] : integerPart;
-                        }
-                        formik.updateField("budget", cleaned);
-                      }
-                      formik.handleBlur(e);
-                    }}
-                    isInvalid={formik.touched.budget && !!formik.errors.budget}
-                    errorMessage={formik.touched.budget && formik.errors.budget}
-                    classNames={{ input: "text-xs sm:text-sm md:text-base lg:text-sm", inputWrapper: "h-9 sm:h-9 md:h-10 lg:h-9" }}
-                  />
-                </div>
-
-                {/* Logo Modification Section */}
-                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Switch
-                      size="sm"
-                      isSelected={currentLogo.isModification || false}
-                      onValueChange={handleModificationToggle}
-                      classNames={{
-                        base: "max-w-fit",
-                        wrapper: "group-data-[selected=true]:bg-primary-500",
-                        label: "text-xs sm:text-sm md:text-base lg:text-sm font-semibold text-gray-700 dark:text-gray-200"
-                      }}
-                    >
-                      <span className="text-xs sm:text-sm md:text-base lg:text-sm">Is this logo a modification of an existing product?</span>
-                    </Switch>
-                  </div>
-
-                  {currentLogo.isModification && (
-                    <div className="space-y-3 mt-3">
-                      {/* Product Search */}
-                      <div>
-                        <label className="text-xs sm:text-sm md:text-base lg:text-sm font-semibold text-gray-700 dark:text-gray-200 block mb-1">Search Product from Stock Catalogue</label>
-                        <AutocompleteWithMarquee
-                          aria-label="Search Product from Stock Catalogue"
-                          placeholder="Search products..."
-                          size="sm"
-                          variant="bordered"
-                          selectedKey={currentLogo.baseProductId || null}
-                          inputValue={productSearchValue !== "" ? productSearchValue : (currentLogo.baseProduct ? currentLogo.baseProduct.name : "")}
-                          onSelectionChange={(key) => {
-                            if (key) {
-                              handleProductSelection(key);
-                            } else {
-                              // Se deselecionar, limpar produto
-                              handleClearProductSelection();
-                            }
-                          }}
-                          onInputChange={(value) => {
-                            setProductSearchValue(value);
-                            // Se o campo for limpo completamente, resetar a seleção
-                            if (value === "" && currentLogo.baseProductId) {
-                              handleClearProductSelection();
-                            }
-                          }}
-                          defaultItems={productSearchResults}
-                          menuTrigger="input"
-                          isLoading={isSearchingProducts}
-                          startContent={<Icon icon="lucide:search" className="w-3 h-3 text-gray-500" />}
-                          endContent={
-                            currentLogo.baseProductId && !productSearchValue ? (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleClearProductSelection();
-                                }}
-                                className="flex items-center justify-center w-4 h-4 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                                aria-label="Clear selection"
-                              >
-                                <Icon icon="lucide:x" className="w-3 h-3 text-gray-500" />
-                              </button>
-                            ) : null
-                          }
-                          allowsCustomValue={false}
-                          classNames={{ 
-                            listboxWrapper: "max-h-[300px]", 
-                            trigger: "text-xs sm:text-sm md:text-base lg:text-sm h-9 md:h-10 lg:h-9", 
-                            input: "text-xs sm:text-sm md:text-base lg:text-sm" 
-                          }}
-                        >
-                          {(product) => (
-                            <AutocompleteItem 
-                              key={product.id} 
-                              textValue={`${product.name} ${product.type || ""}`}
-                            >
-                              <div className="flex flex-col">
-                                <div className="text-sm font-medium">{product.name}</div>
-                                {product.type && (
-                                  <div className="text-xs text-gray-500">{product.type}</div>
-                                )}
-                              </div>
-                            </AutocompleteItem>
-                          )}
-                        </AutocompleteWithMarquee>
-                      </div>
-
-                      {/* Related Products with Sizes */}
-                      {currentLogo.baseProduct && (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Icon icon="lucide:package" className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                            <label className="text-xs sm:text-sm md:text-base lg:text-sm font-semibold text-gray-700 dark:text-gray-200">Related Products</label>
-                          </div>
-                          <div className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                            {relatedProducts.length > 0 ? (
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                {relatedProducts.map((product, idx) => {
-                                  // Construir URL da imagem - usar a do produto relacionado ou do produto base
-                                  let imageUrl = product.imageUrl;
-                                  
-                                  // Se não tem imageUrl no produto relacionado, usar do produto base
-                                  if (!imageUrl && currentLogo.baseProduct) {
-                                    imageUrl = currentLogo.baseProduct.thumbnailUrl || 
-                                              currentLogo.baseProduct.imagesDayUrl || 
-                                              currentLogo.baseProduct.imagesNightUrl;
-                                  }
-                                  
-                                  // Filtrar URLs temporárias (não existem no servidor)
-                                  if (imageUrl && (imageUrl.includes('thumb_temp_') || imageUrl.includes('temp_dayImage_') || imageUrl.includes('temp_nightImage_'))) {
-                                    imageUrl = null; // Não tentar carregar imagens temporárias
-                                  }
-                                  
-                                  // Normalizar URL - tratar caminhos UNC e outros formatos
-                                  if (imageUrl) {
-                                    // Detectar caminhos UNC do Windows (começam com \\)
-                                    // Exemplo: \\192.168.2.22\Olimpo\.dev\web\thecore\products\image.webp
-                                    // Exemplo com subdiretórios: \\192.168.2.22\Olimpo\.dev\web\thecore\products\SHOP\TRENDING\NIGHT\image.webp
-                                    if (imageUrl.startsWith('\\\\') || imageUrl.startsWith('//')) {
-                                      // Encontrar a posição de "products" no caminho (case-insensitive)
-                                      const productsIndex = imageUrl.toLowerCase().indexOf('products');
-                                      if (productsIndex !== -1) {
-                                        // Extrair tudo após "products" incluindo subdiretórios
-                                        // Exemplo: products\SHOP\TRENDING\NIGHT\image.webp -> SHOP/TRENDING/NIGHT/image.webp
-                                        const afterProducts = imageUrl.substring(productsIndex + 'products'.length);
-                                        // Remover separadores iniciais e normalizar para usar /
-                                        const subPath = afterProducts.replace(/^[\\/]+/, '').replace(/\\/g, '/');
-                                        if (subPath) {
-                                          imageUrl = `/api/uploads/products/${subPath}`;
-                                        } else {
-                                          imageUrl = null;
-                                        }
-                                      } else {
-                                        // Se não contém "products", extrair apenas o nome do arquivo
-                                        const filename = imageUrl.split(/[\\/]/).pop();
-                                        if (filename) {
-                                          imageUrl = `/api/files/${filename}`;
-                                        } else {
-                                          imageUrl = null;
-                                        }
-                                      }
-                                    } else if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-                                      // URL absoluta, usar como está
-                                    } else if (imageUrl.startsWith('/')) {
-                                      // URL relativa, verificar se precisa de /api
-                                      if (imageUrl.startsWith('/uploads/') && !imageUrl.startsWith('/api/')) {
-                                        imageUrl = `/api${imageUrl}`;
-                                      }
-                                    } else {
-                                      // Nome de arquivo simples, adicionar prefixo
-                                      imageUrl = `/api/files/${imageUrl}`;
-                                    }
-                                  }
-                                  
-                                  const isSelected = selectedRelatedProductId === product.id;
-                                  return (
-                                    <div 
-                                      key={product.id || idx} 
-                                      onClick={() => handleSelectRelatedProduct(product)}
-                                      className={`
-                                        p-2 rounded-lg border space-y-1.5 cursor-pointer transition-all
-                                        ${isSelected 
-                                          ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 dark:border-primary-400 shadow-md' 
-                                          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-primary-300 dark:hover:border-primary-700'
-                                        }
-                                      `}
-                                    >
-                                      {/* Imagem do produto */}
-                                      <div className="w-full aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 mb-1.5 relative">
-                                        {imageUrl ? (
-                                          <img 
-                                            src={imageUrl} 
-                                            alt={product.name || 'Product'} 
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                              // Se a imagem falhar, ocultar e mostrar placeholder
-                                              e.target.style.display = 'none';
-                                              const container = e.target.parentElement;
-                                              if (container) {
-                                                // Remover qualquer placeholder existente
-                                                const existingPlaceholder = container.querySelector('.image-placeholder');
-                                                if (existingPlaceholder) {
-                                                  existingPlaceholder.remove();
-                                                }
-                                                // Adicionar novo placeholder
-                                                const placeholderDiv = document.createElement('div');
-                                                placeholderDiv.className = 'image-placeholder w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500 absolute inset-0';
-                                                placeholderDiv.innerHTML = '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
-                                                container.appendChild(placeholderDiv);
-                                              }
-                                            }}
-                                          />
-                                        ) : (
-                                          <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
-                                            <Icon icon="lucide:image" className="w-8 h-8" />
-                                          </div>
-                                        )}
-                                      </div>
-                                      {/* Nome e dimensões */}
-                                      <div className="space-y-1.5">
-                                        <div className="text-xs font-semibold text-gray-900 dark:text-gray-100 line-clamp-1">
-                                          {product.name || product}
-                                        </div>
-                                        {/* Dimensões */}
-                                        {(() => {
-                                          // Extrair dimensões de diferentes formatos possíveis
-                                          const height = product.height || product.specs?.dimensions?.heightM || product.specs?.height;
-                                          const width = product.width || product.specs?.dimensions?.widthM || product.specs?.width;
-                                          const depth = product.depth || product.specs?.dimensions?.depthM || product.specs?.depth;
-                                          const diameter = product.diameter || product.specs?.dimensions?.diameterM || product.specs?.diameter;
-                                          
-                                          if (height || width || depth || diameter) {
-                                            return (
-                                              <div className="space-y-0.5 text-xs">
-                                                {height && (
-                                                  <div className="flex justify-between">
-                                                    <span className="text-gray-600 dark:text-gray-400">H:</span>
-                                                    <span className="font-medium text-gray-900 dark:text-gray-100">{Number(height).toFixed(2)}m</span>
-                                                  </div>
-                                                )}
-                                                {width && (
-                                                  <div className="flex justify-between">
-                                                    <span className="text-gray-600 dark:text-gray-400">W:</span>
-                                                    <span className="font-medium text-gray-900 dark:text-gray-100">{Number(width).toFixed(2)}m</span>
-                                                  </div>
-                                                )}
-                                                {depth && (
-                                                  <div className="flex justify-between">
-                                                    <span className="text-gray-600 dark:text-gray-400">D:</span>
-                                                    <span className="font-medium text-gray-900 dark:text-gray-100">{Number(depth).toFixed(2)}m</span>
-                                                  </div>
-                                                )}
-                                                {diameter && (
-                                                  <div className="flex justify-between">
-                                                    <span className="text-gray-600 dark:text-gray-400">Ø:</span>
-                                                    <span className="font-medium text-gray-900 dark:text-gray-100">{Number(diameter).toFixed(2)}m</span>
-                                                  </div>
-                                                )}
-                                              </div>
-                                            );
-                                          }
-                                          return null;
-                                        })()}
-                                        {isSelected && (
-                                          <div className="flex items-center gap-1 text-primary-600 dark:text-primary-400 text-xs mt-1">
-                                            <Icon icon="lucide:check-circle" className="w-3 h-3" />
-                                            <span className="font-medium">Selected</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center py-2">
-                                No related products available
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Column 2: Dimensions & Fixation */}
-          <div className="flex flex-col gap-2 sm:gap-2.5 md:gap-3 lg:gap-3">
-            {/* Dimensions Section */}
-            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-1.5' : 'p-1.5'} shadow-xl border border-white/10`}>
-              <div className={`flex items-center gap-2 ${isCompact ? 'mb-1' : 'mb-1'} text-emerald-600 dark:text-emerald-400`}>
-                <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                  <Icon icon="lucide:ruler" className="w-4 h-4" />
-                </div>
-                <h2 className="text-sm sm:text-sm md:text-base lg:text-base font-bold">Dimensions</h2>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 sm:gap-2 md:gap-3 lg:gap-3">
-                {['Height', 'Length', 'Width', 'Diameter'].map((dim) => {
-                  const key = dim.toLowerCase();
-                  const dimensionValue = formik.values.dimensions?.[key]?.value || "";
-                  const dimensionError = formik.errors.dimensions?.[key]?.value;
-                  const isTouched = formik.touched.dimensions?.[key]?.value;
-
-                  return (
-                    <div key={key} className="p-2 sm:p-2 md:p-2.5 lg:p-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm shadow-md">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 mb-1 sm:mb-1.5 md:mb-2 lg:mb-1.5">
-                        <label className="text-xs md:text-sm lg:text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{dim}</label>
-                        <Checkbox
-                          size="sm"
-                          color="danger"
-                          classNames={{ 
-                            label: "text-xs md:text-sm lg:text-xs font-semibold text-gray-800 dark:text-gray-100",
-                            wrapper: "before:border-2 before:border-gray-400 dark:before:border-gray-500",
-                            icon: "text-white"
-                          }}
-                          isSelected={formik.values.dimensions?.[key]?.imperative || false}
-                          onValueChange={(v) => handleDimensionUpdate(key, "imperative", v)}
-                        >
-                          Imperative
-                        </Checkbox>
-                      </div>
-                      <Input
-                        type="number"
-                        placeholder="0.00"
-                        endContent={<span className="text-xs md:text-sm lg:text-xs text-gray-700 dark:text-gray-200 font-bold">m</span>}
-                        variant="flat"
-                        size="sm"
-                        classNames={{ inputWrapper: "bg-gray-50 dark:bg-gray-700 h-9 md:h-10 lg:h-9", input: "text-xs sm:text-sm md:text-base lg:text-sm" }}
-                        value={dimensionValue}
-                        onValueChange={(v) => {
-                          // Se o valor for vazio, null, ou "0", definir como string vazia
-                          // Isso garante que a validação reconheça que o campo está vazio
-                          if (!v || v === "" || v === "0" || v === "0.00") {
-                            handleDimensionUpdate(key, "value", "");
-                          } else {
-                            const numValue = parseFloat(v);
-                            // Só definir se for um número válido e maior que 0
-                            if (!isNaN(numValue) && numValue > 0) {
-                              handleDimensionUpdate(key, "value", numValue);
-                            } else {
-                              handleDimensionUpdate(key, "value", "");
-                            }
-                          }
-                        }}
-                        onBlur={() => {
-                          formik.setFieldTouched(`dimensions.${key}.value`, true);
-                          formik.setFieldTouched("dimensions", true);
-                        }}
-                        isInvalid={isTouched && !!dimensionError}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              {formik.touched.dimensions && formik.errors.dimensions && typeof formik.errors.dimensions === 'string' && (
-                <div className="mt-1.5 text-xs text-danger">
-                  {formik.errors.dimensions}
-                </div>
-              )}
-            </div>
-
-            {/* Fixation Section */}
-            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-4'} shadow-xl border border-white/10`}>
-              <div className={`flex items-center gap-2 ${isCompact ? 'mb-1' : 'mb-1.5 sm:mb-1.5 md:mb-2 lg:mb-2'} text-orange-600 dark:text-orange-400`}>
-                <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                  <Icon icon="lucide:hammer" className="w-4 h-4" />
-                </div>
-                <h2 className="text-sm sm:text-sm md:text-base lg:text-base font-bold">Fixation</h2>
-              </div>
-
-              <div className="space-y-1.5 sm:space-y-1.5 md:space-y-2 lg:space-y-1.5">
-                <div>
-                  <label className="text-xs md:text-sm lg:text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1 md:mb-1.5 lg:mb-1">Usage Environment</label>
-                  <Tabs
-                    fullWidth
-                    size="sm"
-                    color="primary"
-                    aria-label="Usage Environment"
-                    selectedKey={formik.values.usageOutdoor ? "outdoor" : "indoor"}
-                    onSelectionChange={(key) => {
-                      if (key === "indoor") {
-                        formik.updateFields({ usageIndoor: true, usageOutdoor: false });
-                      } else {
-                        formik.updateFields({ usageIndoor: false, usageOutdoor: true });
-                      }
-                    }}
-                    classNames={{
-                      tabList: "p-0.5 bg-gray-100 dark:bg-gray-700",
-                      cursor: "shadow-md",
-                      tabContent: "font-bold text-xs"
-                    }}
-                  >
-                    <Tab
-                      key="indoor"
-                      title={
-                        <div className="flex items-center gap-1.5 py-0.5">
-                          <Icon icon="lucide:home" className="w-3 h-3" />
-                          <span>Indoor</span>
-                        </div>
-                      }
-                    />
-                    <Tab
-                      key="outdoor"
-                      title={
-                        <div className="flex items-center gap-1.5 py-0.5">
-                          <Icon icon="lucide:trees" className="w-3 h-3" />
-                          <span>Outdoor</span>
-                        </div>
-                      }
-                    />
-                  </Tabs>
-                </div>
-
-                <div>
-                  <label className="text-xs md:text-sm lg:text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1 md:mb-1.5 lg:mb-1">Fixation Type</label>
-                  <Select
-                    placeholder="Select fixation type"
-                    isRequired
-                    size="sm"
-                    variant="bordered"
-                    aria-label="Fixation Type"
-                    selectedKeys={formik.values.fixationType ? new Set([formik.values.fixationType]) : new Set()}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys)[0] || "";
-                      formik.updateField("fixationType", selected);
-                      formik.setFieldTouched("fixationType", true);
-                    }}
-                    onBlur={() => formik.setFieldTouched("fixationType", true)}
-                    isInvalid={formik.touched.fixationType && (!formik.values.fixationType || formik.values.fixationType.trim() === "")}
-                    errorMessage={formik.touched.fixationType && (!formik.values.fixationType || formik.values.fixationType.trim() === "") ? "Fixation type is required" : undefined}
-                    startContent={<Icon icon="lucide:settings-2" className="w-3 h-3 text-gray-500" />}
-                    classNames={{ trigger: "text-xs sm:text-sm md:text-base lg:text-sm h-8 md:h-10 lg:h-8" }}
-                  >
-                    <SelectItem key="ground" startContent={<Icon icon="lucide:arrow-down-to-line" className="w-3 h-3" />}>Ground</SelectItem>
-                    <SelectItem key="wall" startContent={<Icon icon="lucide:brick-wall" className="w-3 h-3" />}>Wall</SelectItem>
-                    <SelectItem key="suspended" startContent={<Icon icon="lucide:arrow-up-to-line" className="w-3 h-3" />}>Suspended</SelectItem>
-                    <SelectItem key="none" startContent={<Icon icon="lucide:ban" className="w-3 h-3" />}>None</SelectItem>
-                    <SelectItem key="pole_side">Pole (Side)</SelectItem>
-                    <SelectItem key="pole_central">Pole (Central)</SelectItem>
-                    <SelectItem key="special">Special</SelectItem>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-xs md:text-sm lg:text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1 md:mb-1.5 lg:mb-1">Structure Finish</label>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 md:p-2 lg:p-1.5 bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-lg border border-white/20 dark:border-gray-600/30">
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        size="sm"
-                        color="secondary"
-                        isSelected={formik.values.lacqueredStructure}
-                        onValueChange={(v) => formik.updateField("lacqueredStructure", v)}
-                      />
-                      <span className="text-xs md:text-sm lg:text-xs font-bold">{t('pages.projectDetails.lacquered', 'Lacquered')}</span>
-                    </div>
-                    {formik.values.lacqueredStructure && (
-                      <Select
-                        placeholder={t('pages.projectDetails.lacquerColor', 'Lacquer Color')}
-                        size="sm"
-                        variant="flat"
-                        className="flex-1 w-full sm:w-auto"
-                        selectedKeys={(() => {
-                          // Encontrar a chave correspondente ao valor salvo
-                          const colorKeys = ['white', 'gold', 'red', 'blue', 'green', 'pink', 'black'];
-                          const savedValue = formik.values.lacquerColor || '';
-                          const matchingKey = colorKeys.find(key => {
-                            const translatedValue = t(`pages.projectDetails.lacquerColors.${key}`, '');
-                            return translatedValue === savedValue || key === savedValue;
-                          });
-                          return matchingKey ? new Set([matchingKey]) : new Set();
-                        })()}
-                        onSelectionChange={(keys) => {
-                          const selected = Array.from(keys)[0];
-                          if (selected) {
-                            // Salvar o valor traduzido completo
-                            const translatedValue = t(`pages.projectDetails.lacquerColors.${selected}`, '');
-                            formik.updateField("lacquerColor", translatedValue || selected);
-                          } else {
-                            formik.updateField("lacquerColor", "");
-                          }
-                        }}
-                        classNames={{ 
-                          trigger: "text-xs sm:text-sm md:text-base lg:text-sm h-8 md:h-10 lg:h-8",
-                          value: "text-xs sm:text-sm md:text-base lg:text-sm"
-                        }}
-                      >
-                        <SelectItem key="white" value="white">
-                          {t('pages.projectDetails.lacquerColors.white', 'WHITE RAL 9010')}
-                        </SelectItem>
-                        <SelectItem key="gold" value="gold">
-                          {t('pages.projectDetails.lacquerColors.gold', 'GOLD PANTONE 131C')}
-                        </SelectItem>
-                        <SelectItem key="red" value="red">
-                          {t('pages.projectDetails.lacquerColors.red', 'RED RAL 3000')}
-                        </SelectItem>
-                        <SelectItem key="blue" value="blue">
-                          {t('pages.projectDetails.lacquerColors.blue', 'BLUE RAL 5005')}
-                        </SelectItem>
-                        <SelectItem key="green" value="green">
-                          {t('pages.projectDetails.lacquerColors.green', 'GREEN RAL 6029')}
-                        </SelectItem>
-                        <SelectItem key="pink" value="pink">
-                          {t('pages.projectDetails.lacquerColors.pink', 'PINK RAL 3015')}
-                        </SelectItem>
-                        <SelectItem key="black" value="black">
-                          {t('pages.projectDetails.lacquerColors.black', 'BLACK RAL 9011')}
-                        </SelectItem>
-                      </Select>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs md:text-sm lg:text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-1 md:mb-1.5 lg:mb-1">Technical Constraints</label>
-                  <div className="grid grid-cols-1 gap-1 sm:gap-1 md:gap-1.5 lg:gap-1">
-                    <div>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 md:p-2 lg:p-1.5 bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-lg border border-white/20 dark:border-gray-600/30">
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            size="sm"
-                            color="secondary"
-                            isSelected={formik.values.maxWeightConstraint}
-                            onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
-                          />
-                          <span className="text-xs md:text-sm lg:text-xs font-bold">{t('pages.projectDetails.maxWeightConstraint', 'Maximum Weight Constraint')}</span>
-                        </div>
-                        {formik.values.maxWeightConstraint && (
-                          <Input
-                            placeholder={t('pages.projectDetails.maxWeight', 'Weight (kg)')}
-                            size="sm"
-                            variant="flat"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            className="flex-1 w-full sm:w-auto"
-                            classNames={{ input: "text-xs sm:text-sm md:text-base lg:text-sm", inputWrapper: "h-8 md:h-10 lg:h-8" }}
-                            endContent={<span className="text-xs text-default-400">kg</span>}
-                            value={formik.values.maxWeight}
-                            onValueChange={(v) => formik.updateField("maxWeight", v)}
-                          />
-                        )}
-                      </div>
-                    </div>
-                    <div className={`p-1 sm:p-1.5 md:p-1.5 lg:p-1 rounded-lg border-2 transition-all ${formik.values.ballast ? 'bg-primary-50/80 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800' : 'bg-white/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-700/50'}`}>
-                      <Checkbox
-                        size="sm"
-                        classNames={{ label: "text-xs md:text-sm lg:text-xs font-medium" }}
-                        isSelected={formik.values.ballast}
-                        onValueChange={(v) => formik.updateField("ballast", v)}
-                      >
-                        Ballast Required
-                      </Checkbox>
-                    </div>
-                    <div className={`p-1 sm:p-1.5 md:p-1.5 lg:p-1 rounded-lg border-2 transition-all ${formik.values.controlReport ? 'bg-primary-50/80 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800' : 'bg-white/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-700/50'}`}>
-                      <Checkbox
-                        size="sm"
-                        classNames={{ label: "text-xs md:text-sm lg:text-xs font-medium" }}
-                        isSelected={formik.values.controlReport}
-                        onValueChange={(v) => formik.updateField("controlReport", v)}
-                      >
-                        Control Report Needed
-                      </Checkbox>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Column 3: Composition (Components & Balls) */}
-          <div className={`flex flex-col ${isCompact ? 'gap-1 sm:gap-1.5' : 'gap-2 sm:gap-2.5 md:gap-3 lg:gap-3'}`}>
-            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-4'} shadow-xl border border-white/10`}>
-              <div className={`flex items-center gap-2 ${isCompact ? 'mb-1.5' : 'mb-3'} text-purple-600 dark:text-purple-400`}>
-                <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                  <Icon icon="lucide:layers" className="w-4 h-4" />
-                </div>
-                <h2 className="text-sm sm:text-sm md:text-base lg:text-base font-bold">Composition</h2>
-              </div>
-
-            {/* Components Section */}
-            <div className="flex flex-col gap-2 sm:gap-2 md:gap-3 lg:gap-3">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm p-2 sm:p-2.5 md:p-3 lg:p-2.5 rounded-lg border border-white/20 dark:border-gray-600/30 shadow-md gap-2 sm:gap-0">
-                <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                  <Icon icon="lucide:box" className="w-4 h-4" />
-                  <h4 className="text-sm font-bold uppercase tracking-wide">Components</h4>
-                </div>
-                <div className="flex gap-1.5 w-full sm:w-auto">
-                  {composition.componentes && composition.componentes.length > 0 && (
-                    <Button
-                      size="sm"
-                      variant="light"
-                      color="danger"
-                      isIconOnly
-                      onPress={handleClearAllComponentes}
-                      className="bg-white dark:bg-gray-800 h-7 w-7 min-w-7"
-                      aria-label="Clear all components"
-                    >
-                      <Icon icon="lucide:trash-2" className="w-3 h-3" />
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    color="primary"
-                    className="font-medium h-7 text-xs flex-1 sm:flex-initial"
-                    startContent={<Icon icon="lucide:plus" className="w-3 h-3" />}
-                    onPress={handleAddComponente}
-                  >
-                    Add
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                {composition.componentes && composition.componentes.length > 0 ? (
-                  composition.componentes.map((comp, index) => {
-                    const componente = comp.componenteId ? getComponenteById(comp.componenteId) : null;
-                    const coresDisponiveis = componente && !componente.semCor
-                      ? getCoresByComponente(comp.componenteId)
-                      : [];
-                    const completo = isComponenteCompleto(comp);
-                    const editando = componentesEditando[index];
-                    const mostrarApenasReferencia = completo && !editando;
-                    const searchValue = componenteSearchValues[index] || "";
-                    const componentesFiltrados = filterComponentes(searchValue);
-                    const displayValue = componente
-                      ? `${componente.nome}${componente.referencia ? ` (${componente.referencia})` : ""} `
-                      : "";
-
-                    if (mostrarApenasReferencia) {
-                      return (
-                        <div key={index} className="p-2 sm:p-2 md:p-2.5 lg:p-2 border border-white/20 dark:border-gray-600/30 rounded-lg bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 mb-0">
-                                <div className="text-sm md:text-base lg:text-sm font-bold truncate text-gray-900 dark:text-white">{componente?.nome}</div>
-                              </div>
-                              <div className="text-xs md:text-sm lg:text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                Ref: <span className="font-mono bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded text-xs md:text-sm lg:text-xs">{comp.referencia}</span>
-                              </div>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="flat"
-                                isIconOnly
-                                onPress={() => handleToggleEditComponente(index)}
-                                className="h-6 w-6 min-w-6"
-                                aria-label={`Edit component ${index + 1}`}
-                              >
-                                <Icon icon="lucide:pencil" className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="flat"
-                                color="danger"
-                                isIconOnly
-                                onPress={() => handleRemoveComponente(index)}
-                                className="h-6 w-6 min-w-6"
-                                aria-label={`Remove component ${index + 1}`}
-                              >
-                                <Icon icon="lucide:trash-2" className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div key={index} className="p-2 sm:p-2 md:p-2.5 lg:p-2 border border-white/20 dark:border-gray-600/30 rounded-lg bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm space-y-1.5 sm:space-y-1.5 md:space-y-2 lg:space-y-1.5 shadow-md">
-                        <AutocompleteWithMarquee
-                          label="Component"
-                          aria-label="Search component"
-                          placeholder="Search component"
-                          size="sm"
-                          variant="bordered"
-                          selectedKey={comp.componenteId ? String(comp.componenteId) : null}
-                          inputValue={componenteSearchValues[index] || displayValue || ""}
-                          onSelectionChange={(key) => {
-                            const selectedId = key ? Number(key) : null;
-                            handleCompositionUpdate("componentes", index, "componenteId", selectedId);
-                            setComponenteSearchValues(prev => {
-                              const newValues = { ...prev };
-                              delete newValues[index];
-                              return newValues;
-                            });
-                          }}
-                          onInputChange={(value) => {
-                            setComponenteSearchValues(prev => ({
-                              ...prev,
-                              [index]: value
-                            }));
-                          }}
-                          defaultItems={componentesFiltrados}
-                          menuTrigger="input"
-                          startContent={<Icon icon="lucide:search" className="w-3 h-3 text-gray-500" />}
-                          allowsCustomValue={false}
-                          classNames={{ listboxWrapper: "max-h-[300px]", trigger: "text-xs sm:text-sm md:text-base lg:text-sm h-9 md:h-10 lg:h-9", input: "text-xs sm:text-sm md:text-base lg:text-sm" }}
-                        >
-                          {(c) => (
-                            <AutocompleteItem key={String(c.id)} textValue={`${c.nome} ${c.referencia || ""} `}>
-                              <div className="text-sm font-medium">{c.nome}</div>
-                              {c.referencia && <div className="text-xs text-gray-500">Ref: {c.referencia}</div>}
-                            </AutocompleteItem>
-                          )}
-                        </AutocompleteWithMarquee>
-
-                        {componente && !componente.semCor && (
-                          <SelectWithMarquee
-                            label="Color"
-                            placeholder="Select color"
-                            size="sm"
-                            variant="bordered"
-                            selectedKeys={comp.corId ? new Set([String(comp.corId)]) : new Set()}
-                            onSelectionChange={(keys) => {
-                              const selectedId = Array.from(keys)[0];
-                              handleCompositionUpdate("componentes", index, "corId", selectedId ? Number(selectedId) : null);
-                            }}
-                            startContent={<Icon icon="lucide:palette" className="w-3 h-3 text-gray-500" />}
-                            classNames={{ trigger: "text-xs sm:text-sm md:text-base lg:text-sm h-9 md:h-10 lg:h-9" }}
-                          >
-                            {coresDisponiveis.map((cor) => (
-                              <SelectItem key={String(cor.id)} textValue={cor.nome}>
-                                {cor.nome}
-                              </SelectItem>
-                            ))}
-                          </SelectWithMarquee>
-                        )}
-
-                        <div className="flex gap-1.5 justify-end mt-1">
-                          {completo && (
-                            <Button
-                              size="sm"
-                              color="success"
-                              variant="flat"
-                              className="font-medium h-6 text-xs"
-                              startContent={<Icon icon="lucide:check" className="w-3 h-3" />}
-                              onPress={() => handleToggleEditComponente(index)}
-                            >
-                              Done
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            color="danger"
-                            isIconOnly
-                            className="h-6 w-6 min-w-6"
-                            onPress={() => handleRemoveComponente(index)}
-                            aria-label={`Remove component ${index + 1}`}
-                          >
-                            <Icon icon="lucide:trash-2" className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-4 border-2 border-dashed border-white/30 dark:border-gray-600/40 rounded-lg bg-white/30 dark:bg-gray-700/30 backdrop-blur-sm">
-                    <Icon icon="lucide:box" className="w-8 h-8 text-gray-300 mb-1" />
-                    <p className="text-xs text-gray-400">No components added yet</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Balls Section */}
-            <div className="flex flex-col gap-2 sm:gap-2 md:gap-3 lg:gap-3 border-t-2 border-white/20 dark:border-gray-600/30 pt-2 sm:pt-2 md:pt-3 lg:pt-3 mt-1">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm p-2 sm:p-2.5 md:p-3 lg:p-2.5 rounded-lg border border-white/20 dark:border-gray-600/30 shadow-md gap-2 sm:gap-0">
-                <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                  <Icon icon="lucide:circle-dot" className="w-4 h-4" />
-                  <h4 className="text-xs sm:text-sm lg:text-sm font-bold uppercase tracking-wide">Balls</h4>
-                </div>
-                <Button
-                  size="sm"
-                  color="primary"
-                  className="font-medium h-7 text-xs w-full sm:w-auto"
-                  startContent={<Icon icon="lucide:plus" className="w-3 h-3" />}
-                  onPress={handleAddBola}
-                >
-                  Add
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                {composition.bolas && composition.bolas.length > 0 ? (
-                  composition.bolas.map((bola, index) => {
-                    const coresDisponiveis = getCoresDisponiveisBolas();
-                    const acabamentosDisponiveis = bola.corId
-                      ? getAcabamentosByCorBola(bola.corId)
-                      : materialsData.acabamentos;
-                    const tamanhosDisponiveis = bola.corId && bola.acabamentoId
-                      ? getTamanhosByCorEAcabamentoBola(bola.corId, bola.acabamentoId)
-                      : materialsData.tamanhos;
-                    const completa = isBolaCompleta(bola);
-                    const editando = bolasEditando[index];
-                    const mostrarApenasReferencia = completa && !editando;
-
-                    if (mostrarApenasReferencia) {
-                      // Montar nome da bola: cor + acabamento + tamanho
-                      const nomeBola = [bola.corNome, bola.acabamentoNome, bola.tamanhoNome]
-                        .filter(Boolean)
-                        .join(" - ");
-
-                      return (
-                        <div key={index} className="p-2 sm:p-2 md:p-2.5 lg:p-2 border border-white/20 dark:border-gray-600/30 rounded-lg bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 mb-0">
-                                <div className="text-sm md:text-base lg:text-sm font-bold truncate text-gray-900 dark:text-white">{nomeBola}</div>
-                              </div>
-                              <div className="text-xs md:text-sm lg:text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                Ref: <span className="font-mono bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded text-xs md:text-sm lg:text-xs">{bola.referencia}</span>
-                              </div>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="flat"
-                                isIconOnly
-                                onPress={() => handleToggleEditBola(index)}
-                                className="h-6 w-6 min-w-6"
-                                aria-label={`Edit ball ${index + 1}`}
-                              >
-                                <Icon icon="lucide:pencil" className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="flat"
-                                color="danger"
-                                isIconOnly
-                                onPress={() => handleRemoveBola(index)}
-                                className="h-6 w-6 min-w-6"
-                                aria-label={`Remove ball ${index + 1}`}
-                              >
-                                <Icon icon="lucide:trash-2" className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div key={index} className="p-2 sm:p-2 md:p-2.5 lg:p-2 border border-white/20 dark:border-gray-600/30 rounded-lg bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm space-y-1.5 sm:space-y-1.5 md:space-y-2 lg:space-y-1.5 shadow-md">
-                        <div className="flex items-center gap-1.5 mb-0">
-                          <div className="w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300 ring-2 ring-white dark:ring-gray-700">
-                            {index + 1}
-                          </div>
-                          <span className="text-xs md:text-sm lg:text-xs font-bold text-gray-600 dark:text-gray-300">Ball Configuration</span>
-                        </div>
-
-                        <Select
-                          label="Color"
-                          placeholder="Select color"
-                          size="sm"
-                          variant="bordered"
-                          selectedKeys={bola.corId ? [String(bola.corId)] : []}
-                          onSelectionChange={(keys) => {
-                            const selectedId = Array.from(keys)[0];
-                            handleBolaUpdate(index, "corId", selectedId ? Number(selectedId) : null);
-                          }}
-                          classNames={{ trigger: "text-xs sm:text-sm md:text-base lg:text-sm h-9 md:h-10 lg:h-9" }}
-                        >
-                          {coresDisponiveis.map((cor) => (
-                            <SelectItem key={String(cor.id)}>{cor.nome}</SelectItem>
-                          ))}
-                        </Select>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-1.5 sm:gap-1.5 md:gap-2 lg:gap-1.5">
-                          <Select
-                            label="Finish"
-                            placeholder="Finish"
-                            size="sm"
-                            variant="bordered"
-                            selectedKeys={bola.acabamentoId ? [String(bola.acabamentoId)] : []}
-                            onSelectionChange={(keys) => {
-                              const selectedId = Array.from(keys)[0];
-                              handleBolaUpdate(index, "acabamentoId", selectedId ? Number(selectedId) : null);
-                            }}
-                            isDisabled={!bola.corId}
-                            classNames={{ trigger: "text-xs sm:text-sm md:text-base lg:text-sm h-9 md:h-10 lg:h-9" }}
-                          >
-                            {acabamentosDisponiveis.map((acabamento) => (
-                              <SelectItem key={String(acabamento.id)}>{acabamento.nome}</SelectItem>
-                            ))}
-                          </Select>
-
-                          <Select
-                            label="Size"
-                            placeholder="Size"
-                            size="sm"
-                            variant="bordered"
-                            selectedKeys={bola.tamanhoId ? [String(bola.tamanhoId)] : []}
-                            onSelectionChange={(keys) => {
-                              const selectedId = Array.from(keys)[0];
-                              handleBolaUpdate(index, "tamanhoId", selectedId ? Number(selectedId) : null);
-                            }}
-                            isDisabled={!bola.corId || !bola.acabamentoId}
-                            classNames={{ trigger: "text-xs sm:text-sm md:text-base lg:text-sm h-9 md:h-10 lg:h-9" }}
-                          >
-                            {tamanhosDisponiveis.map((tamanho) => (
-                              <SelectItem key={String(tamanho.id)}>{tamanho.nome}</SelectItem>
-                            ))}
-                          </Select>
-                        </div>
-
-                        <div className="flex gap-1.5 justify-end mt-0.5">
-                          {completa && (
-                            <Button
-                              size="sm"
-                              color="success"
-                              variant="flat"
-                              className="font-medium h-6 text-xs"
-                              startContent={<Icon icon="lucide:check" className="w-3 h-3" />}
-                              onPress={() => handleToggleEditBola(index)}
-                            >
-                              Done
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="light"
-                            color="danger"
-                            isIconOnly
-                            className="h-6 w-6 min-w-6"
-                            onPress={() => handleRemoveBola(index)}
-                            aria-label={`Remove ball ${index + 1}`}
-                          >
-                            <Icon icon="lucide:trash-2" className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-4 border-2 border-dashed border-white/30 dark:border-gray-600/40 rounded-lg bg-white/30 dark:bg-gray-700/30 backdrop-blur-sm">
-                    <Icon icon="lucide:circle-dashed" className="w-8 h-8 text-gray-300 mb-1" />
-                    <p className="text-xs text-gray-400">No balls added yet</p>
-                  </div>
-                )}
-              </div>
-            </div>
-            </div>
-
-            {/* Attachments Section */}
-            <div className={`bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl ${isCompact ? 'p-2.5' : 'p-4'} shadow-xl border border-white/10`}>
-              <div className={`flex items-center justify-between ${isCompact ? 'mb-1' : 'mb-1.5 sm:mb-1.5 md:mb-2 lg:mb-2'}`}>
-                <div className="flex items-center gap-2 text-pink-600 dark:text-pink-400">
-                  <div className="p-1.5 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
-                    <Icon icon="lucide:paperclip" className="w-4 h-4" />
-                  </div>
-                  <h2 className="text-sm sm:text-sm md:text-base lg:text-base font-bold">Attachments</h2>
-                </div>
-                {!isCompact && (
-                  <Button
-                    color="primary"
-                    variant="solid"
-                    size="sm"
-                    className="bg-gradient-to-tr from-primary-500 to-secondary-500 text-white font-medium text-xs shadow-lg"
-                    startContent={<Icon icon="lucide:sparkles" className="w-3 h-3" />}
-                    onPress={() => setIsChatOpen(true)}
-                  >
-                    AI Assistant
-                  </Button>
-                )}
-              </div>
-
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-2 sm:p-2.5 md:p-4 lg:p-3 bg-gray-50/50 dark:bg-gray-700/50 hover:border-pink-300 dark:hover:border-pink-700 transition-colors">
-                {currentLogo.attachmentFiles && currentLogo.attachmentFiles.length > 0 ? (
-                  <div className="space-y-2">
-                    {currentLogo.attachmentFiles.map((file, index) => (
-                      <AttachmentItem
-                        key={index}
-                        file={file}
-                        index={index}
-                        onRemove={handleRemoveAttachment}
-                        onEdit={handleEditAIGenerated}
-                      />
-                    ))}
-                    <input
-                      type="file"
-                      id="file-upload-more"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handleFileUpload(Array.from(e.target.files))}
-                    />
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      color="primary"
-                      fullWidth
-                      className="mt-1 font-medium"
-                      startContent={<Icon icon="lucide:upload" className="w-4 h-4" />}
-                      onPress={() => document.getElementById('file-upload-more').click()}
-                    >
-                      Add More Files
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-3 text-center">
-                    <div className="p-2 bg-pink-50 dark:bg-pink-900/20 rounded-full mb-2">
-                      <Icon icon="lucide:cloud-upload" className="w-6 h-6 text-pink-500" />
-                    </div>
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-0.5">Upload Files</h4>
-                    <p className="text-xs text-gray-500 mb-3">Drag & drop or click to upload</p>
-                    <input
-                      type="file"
-                      id="file-upload"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handleFileUpload(Array.from(e.target.files))}
-                    />
-                    <Button
-                      size="sm"
-                      color="primary"
-                      variant="flat"
-                      className="font-medium px-6"
-                      onPress={() => document.getElementById('file-upload').click()}
-                    >
-                      Select Files
-                    </Button>
-                    <p className="text-xs text-gray-400 mt-2">Supported: PNG, JPG, PDF</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-        </div>
-      )}
-
-      {/* Navigation Buttons - Unified Bar */}
-      {!isCompact && (
-        <div className="w-full bg-content1 px-3 py-2 border-t border-divider flex-shrink-0 flex items-center justify-between gap-3">
-          {/* Left side buttons */}
-          <div className="flex items-center gap-2">
-            {currentPage === 1 && onBack && (
-              <Button
-                variant="light"
-                size="sm"
-                onPress={onBack}
-                startContent={<Icon icon="lucide:arrow-left" className="w-4 h-4" />}
-              >
-                {t('common.back', 'Back')}
-              </Button>
-            )}
-            {currentPage > 1 && (
-              <Button
-                variant="light"
-                size="sm"
-                onPress={handlePrevPage}
-                startContent={<Icon icon="lucide:arrow-left" className="w-4 h-4" />}
-              >
-                {t('common.previous', 'Previous')}
-              </Button>
-            )}
-          </div>
-
-          {/* Right side buttons */}
-          <div className="flex items-center gap-2">
-            {currentPage === logoSteps.length ? (
-              <>
-                {voiceSupported && (
-                  <Button
-                    isIconOnly
-                    variant="flat"
-                    size="sm"
-                    color="primary"
-                    onPress={isVoiceAssistantOpen ? closeAssistant : openAssistant}
-                    className={listening ? 'animate-pulse ring-2 ring-primary/30' : ''}
-                    aria-label={isVoiceAssistantOpen ? t('common.close') : t('pages.dashboard.voiceAssistant.title', 'Voice Assistant')}
-                  >
-                    <Icon icon={isVoiceAssistantOpen ? "lucide:x" : "lucide:mic"} className="w-4 h-4" />
-                  </Button>
-                )}
-                <Button
-                  variant="light"
-                  size="sm"
-                  onPress={handleNewLogo}
-                  startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
-                >
-                  {t('common.newLogo', 'New Logo')}
-                </Button>
-                <Button
-                  color="primary"
-                  size="sm"
-                  onPress={handleFinish}
-                  isDisabled={!canProceedToNext() || isFinishing || saveStatus?.status === 'saving'}
-                  isLoading={isFinishing || saveStatus?.status === 'saving'}
-                  endContent={<Icon icon="lucide:check" className="w-4 h-4" />}
-                >
-                  {isFinishing || saveStatus?.status === 'saving' 
-                    ? (saveStatus?.status === 'saving' ? t('common.saving', 'Saving...') : t('common.creating', 'Creating...'))
-                    : t('common.finish', 'Finish')}
-                </Button>
-              </>
-            ) : (
-              <>
-                {voiceSupported && (
-                  <Button
-                    isIconOnly
-                    variant="flat"
-                    size="sm"
-                    color="primary"
-                    onPress={isVoiceAssistantOpen ? closeAssistant : openAssistant}
-                    className={listening ? 'animate-pulse ring-2 ring-primary/30' : ''}
-                    aria-label={isVoiceAssistantOpen ? t('common.close') : t('pages.dashboard.voiceAssistant.title', 'Voice Assistant')}
-                  >
-                    <Icon icon={isVoiceAssistantOpen ? "lucide:x" : "lucide:mic"} className="w-4 h-4" />
-                  </Button>
-                )}
-                <Button
-                  color="primary"
-                  size="sm"
-                  onPress={handleNextPage}
-                  isDisabled={!canProceedToNext()}
-                  endContent={<Icon icon="lucide:arrow-right" className="w-4 h-4" />}
-                >
-                  {t('common.next', 'Next')}
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* AI Assistant Chat */}
-      <AIAssistantChat
-        isOpen={isChatOpen}
-        onClose={() => {
-          setIsChatOpen(false);
-          // Resetar o índice de edição quando o modal fecha sem salvar
-          setEditingAttachmentIndex(null);
-        }}
-        initialAIState={currentLogo.aiAssistantState || null}
-        onAIStateChange={(aiState) => {
-          // Evitar loops infinitos verificando se já está processando
-          if (isProcessingAIStateChangeRef.current) {
-            return;
-          }
-
-          // Limpar timeout anterior
-          if (aiStateChangeTimeoutRef.current) {
-            clearTimeout(aiStateChangeTimeoutRef.current);
-          }
-
-          // Debounce de 300ms para evitar atualizações muito frequentes
-          aiStateChangeTimeoutRef.current = setTimeout(() => {
-            isProcessingAIStateChangeRef.current = true;
-            
-            try {
-              // Normalizar caminhos de imagem antes de salvar
-              const normalizedAIState = aiState ? {
-                ...aiState,
-                generatedImageUrl: aiState.generatedImageUrl?.includes('AIGENERATOR/') 
-                  ? `/api/files/${aiState.generatedImageUrl.split('AIGENERATOR/')[1]}`
-                  : aiState.generatedImageUrl
-              } : aiState;
-              
-              // Salvar estado do AI Assistant no currentLogo
-              const updatedCurrentLogo = {
-                ...currentLogo,
-                aiAssistantState: normalizedAIState,
-              };
-              const updatedLogoDetails = {
-                ...logoDetails,
-                currentLogo: updatedCurrentLogo,
-                logos: savedLogos,
-              };
-              onInputChange("logoDetails", updatedLogoDetails);
-            } finally {
-              // Resetar flag após um pequeno delay para permitir que o estado se estabilize
-              setTimeout(() => {
-                isProcessingAIStateChangeRef.current = false;
-              }, 100);
-            }
-          }, 300);
-        }}
-        onSaveImage={async (imageUrl) => {
-          try {
-            // Normalizar caminho se necessário (converter AIGENERATOR para /api/files/)
-            let normalizedUrl = imageUrl;
-            if (imageUrl?.includes('AIGENERATOR/')) {
-              const filename = imageUrl.split('AIGENERATOR/')[1];
-              normalizedUrl = `/api/files/${filename}`;
-            }
-            
-            // Extract filename from URL or create a default name
-            const urlParts = normalizedUrl.split('/');
-            const originalFilename = urlParts[urlParts.length - 1] || 'ai-generated-image.webp';
-            const nameWithoutExtension = originalFilename.replace(/\.[^/.]+$/, '');
-            
-            // Fetch the image from the URL and convert to File
-            const response = await fetch(normalizedUrl);
-            const blob = await response.blob();
-            const file = new File([blob], originalFilename, { type: blob.type || 'image/webp' });
-            
-            // Upload the image to the server
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const apiBase = (import.meta?.env?.VITE_API_URL || '').replace(/\/api$/, '') || '';
-            const uploadResponse = await fetch(`${apiBase}/api/files/upload`, {
-              method: 'POST',
-              body: formData,
-            });
-
-            if (!uploadResponse.ok) {
-              throw new Error(`Upload failed: ${uploadResponse.statusText}`);
-            }
-
-            const uploadResult = await uploadResponse.json();
-            console.log('✅ AI Generated image uploaded:', uploadResult.file);
-            
-            // Create attachment object with server URL
-            const aiGeneratedAttachment = {
-              name: `AI Generated - ${nameWithoutExtension}`,
-              filename: uploadResult.file.filename,
-              url: uploadResult.file.url,
-              path: uploadResult.file.path,
-              size: uploadResult.file.size,
-              mimetype: uploadResult.file.mimetype || 'image/webp',
-              isAIGenerated: true // Flag to identify AI generated images
-            };
-
-            // Add to attachments in currentLogo, not logoDetails (each logo has its own attachments)
-            const existingFiles = currentLogo.attachmentFiles || [];
-            
-            // Se estamos editando um attachment existente, substituir ao invés de adicionar
-            let allFiles;
-            if (editingAttachmentIndex !== null && editingAttachmentIndex >= 0 && editingAttachmentIndex < existingFiles.length) {
-              // Substituir o attachment no índice específico
-              allFiles = [...existingFiles];
-              allFiles[editingAttachmentIndex] = aiGeneratedAttachment;
-            } else {
-              // Adicionar novo attachment (comportamento padrão)
-              allFiles = [...existingFiles, aiGeneratedAttachment];
-            }
-
-            // Preservar estado do AI Assistant ao salvar imagem
-            const updatedCurrentLogo = {
-              ...currentLogo,
-              attachmentFiles: allFiles,
-              generatedImage: uploadResult.file.url,
-              // Manter o estado do AI Assistant (pode ter sido atualizado)
-              aiAssistantState: currentLogo.aiAssistantState || null
-            };
-            const updatedLogoDetails = {
-              ...logoDetails,
-              currentLogo: updatedCurrentLogo,
-              logos: savedLogos,
-            };
-            onInputChange("logoDetails", updatedLogoDetails);
-            setIsChatOpen(false);
-            // Resetar o índice de edição após salvar com sucesso
-            setEditingAttachmentIndex(null);
-          } catch (error) {
-            console.error('❌ Error uploading AI generated image:', error);
-            // Show error to user or handle gracefully
-            alert('Erro ao fazer upload da imagem gerada. Por favor, tente novamente.');
-            // Resetar o índice de edição mesmo em caso de erro
-            setEditingAttachmentIndex(null);
-          }
-        }}
-      />
     </div>
   );
-}
+};
 
 export default StepLogoInstructions;
-
