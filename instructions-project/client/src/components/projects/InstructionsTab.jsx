@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardBody, Select, SelectItem, Button, Spinner } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { LogoDetailsContent, SimulationContent } from '../../pages/ProjectDetails';
 import { DeleteConfirmDialog } from '../ui/DeleteConfirmDialog';
 
@@ -20,6 +21,7 @@ const getTotalDecorationsQuantity = (decorations) => {
 
 export default function InstructionsTab({ project, onEditLogo, onEditSimulation, onDeleteLogo, onSave }) {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const [selectedInstructionKey, setSelectedInstructionKey] = useState(null);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [pendingDelete, setPendingDelete] = useState(null);
@@ -145,14 +147,13 @@ export default function InstructionsTab({ project, onEditLogo, onEditSimulation,
 
     // Handle edit button click
     const handleEdit = () => {
-        if (!selectedInstruction) return;
+        if (!selectedInstruction || !project?.id) return;
 
         if (selectedInstruction.isSimulation) {
-            if (onEditSimulation) {
-                onEditSimulation();
-            }
+            // For simulations, navigate to AI Designer step
+            navigate(`/projects/${project.id}/edit?step=ai-designer`);
         } else {
-            // Use the same logic as handleEditLogoFromOrders
+            // For logos, navigate to logo instructions step with the correct logoIndex
             const logoDetails = project.logoDetails || {};
             const savedLogos = logoDetails.logos || [];
             const currentLogo = logoDetails.currentLogo || {};
@@ -175,6 +176,8 @@ export default function InstructionsTab({ project, onEditLogo, onEditSimulation,
                 (selectedInstruction.logoNumber && currentLogo.logoNumber && 
                  selectedInstruction.logoNumber.trim() === currentLogo.logoNumber.trim());
             
+            let logoIndex = null;
+            
             if (isCurrent) {
                 // It's the current logo - find its index in logoInstructions
                 const foundIndex = logoInstructions.findIndex((logo) => {
@@ -189,9 +192,7 @@ export default function InstructionsTab({ project, onEditLogo, onEditSimulation,
                     return false;
                 });
                 
-                if (onEditLogo) {
-                    onEditLogo(foundIndex >= 0 ? foundIndex : logoInstructions.length - 1, true, selectedInstruction);
-                }
+                logoIndex = foundIndex >= 0 ? foundIndex : logoInstructions.length - 1;
             } else {
                 // It's a saved logo - find its index in savedLogos first
                 const savedLogoIndex = savedLogos.findIndex(logo =>
@@ -215,10 +216,16 @@ export default function InstructionsTab({ project, onEditLogo, onEditSimulation,
                         return false;
                     });
                     
-                    if (onEditLogo) {
-                        onEditLogo(foundIndex >= 0 ? foundIndex : savedLogoIndex, false, selectedInstruction);
-                    }
+                    logoIndex = foundIndex >= 0 ? foundIndex : savedLogoIndex;
                 }
+            }
+            
+            // Navigate to logo instructions step with the logoIndex
+            if (logoIndex !== null) {
+                navigate(`/projects/${project.id}/edit?step=logo-instructions&logoIndex=${logoIndex}`);
+            } else {
+                // Fallback: navigate without logoIndex
+                navigate(`/projects/${project.id}/edit?step=logo-instructions`);
             }
         }
     };

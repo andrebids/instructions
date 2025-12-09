@@ -40,20 +40,11 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
   const formState = useProjectForm(onClose, projectId, saveStatus, logoIndex);
   const clientState = useClientManagement(formState.setFormData);
 
-  // Verificar se estamos editando apenas um logo (modo simplificado)
-  const isLogoEditOnlyMode = useMemo(() => {
-    return initialStep === 'logo-instructions' && logoIndex !== null && logoIndex !== undefined;
-  }, [initialStep, logoIndex]);
-
   // Get visible steps based on project type
-  // Se estamos no modo de edição apenas de logo, mostrar apenas esse passo
+  // Sempre mostrar todos os steps visíveis (não filtrar mesmo quando há logoIndex)
   const visibleSteps = useMemo(() => {
-    if (isLogoEditOnlyMode) {
-      // Retornar apenas o passo logo-instructions
-      return STEPS.filter(step => step.id === 'logo-instructions');
-    }
     return getVisibleSteps(formState.formData, STEPS);
-  }, [formState.formData, isLogoEditOnlyMode]);
+  }, [formState.formData]);
 
   // Debug: verificar initialStep e visibleSteps (apenas uma vez quando initialStep é fornecido)
   const initialStepCheckedRef = useRef(false);
@@ -74,8 +65,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
     logger.lifecycle('CreateProjectMultiStep', 'Component mounted', {
       hasOnClose: !!onClose,
       totalSteps: STEPS.length,
-      visibleSteps: visibleSteps.length,
-      isLogoEditOnlyMode
+      visibleSteps: visibleSteps.length
     });
 
     // Logs de teste removidos
@@ -83,7 +73,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
     return () => {
       logger.lifecycle('CreateProjectMultiStep', 'Component unmounting');
     };
-  }, [isLogoEditOnlyMode]);
+  }, []);
 
   // Log quando steps visíveis mudam
   useEffect(() => {
@@ -602,23 +592,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
           <div className="w-full bg-content1 px-4 py-2 sm:px-6 sm:py-3 border-b border-divider flex-shrink-0">
             <div className="flex items-center gap-4 justify-between">
               <div className="flex items-center gap-4 flex-1 min-w-0">
-                {isLogoEditOnlyMode ? (
-                  <Button
-                    variant="light"
-                    className="text-default-600 shrink-0"
-                    startContent={<Icon icon="lucide:arrow-left" />}
-                    onPress={() => {
-                      if (projectId) {
-                        window.location.href = `/projects/${projectId}?tab=overview`;
-                      } else {
-                        window.location.href = "/";
-                      }
-                    }}
-                  >
-                    {t('common.back', 'Voltar')}
-                  </Button>
-                ) : (
-                  <>
+                <>
                 <Button
                   variant="light"
                   className="text-default-600 shrink-0"
@@ -635,7 +609,6 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
                   onStepClick={(stepNumber) => navigation.setCurrentStep(stepNumber)}
                 />
                   </>
-                )}
               </div>
 
               {/* Status de salvamento à direita */}
@@ -671,7 +644,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
 
 
           {/* Navigation Footer */}
-          {!isLogoEditOnlyMode && visibleSteps[navigation.currentStep - 1]?.id !== 'logo-instructions' && (
+          {visibleSteps[navigation.currentStep - 1]?.id !== 'logo-instructions' && (
           <div className="flex-shrink-0">
             <NavigationFooter
               currentStep={navigation.currentStep}
@@ -822,29 +795,6 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
           </div>
           )}
           
-          {/* Footer simplificado para edição de logo apenas - removido botão Save, save automático ao fechar */}
-          {isLogoEditOnlyMode && (
-            <div className="flex-shrink-0 w-full bg-content1 border-t border-divider px-4 py-4 sm:px-6 sm:py-6">
-              <div className="max-w-6xl mx-auto flex justify-end items-center gap-4">
-                <Button
-                  color="primary"
-                  variant="flat"
-                  onPress={async () => {
-                    // Save before closing
-                    if (projectId) {
-                      await formState.handleSave();
-                    }
-                    onClose();
-                  }}
-                  isLoading={saveStatus.status === 'saving'}
-                  isDisabled={formState.loading || saveStatus.status === 'saving'}
-                  startContent={<Icon icon="lucide:check" />}
-                >
-                  {saveStatus.status === 'saving' ? t('common.saving', 'A guardar...') : t('common.done', 'Concluído')}
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
       </Card>
 

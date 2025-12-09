@@ -97,7 +97,7 @@ export function NavigationFooter({
               isDisabled={!isValid || loading}
               endContent={<Icon icon="lucide:check" />}
             >
-              {loading ? "Creating..." : "Create Project"}
+              {loading ? (projectId ? "Saving..." : "Creating...") : (projectId ? "Save" : "Create Project")}
             </Button>
           )}
         </div>

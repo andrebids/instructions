@@ -19,10 +19,18 @@ export function NotificationProvider({ children }) {
     }, []);
 
     const markAsRead = useCallback((id) => {
-        setNotifications((prev) =>
-            prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-        );
-        setUnreadCount((c) => Math.max(0, c - 1));
+        setNotifications((prev) => {
+            const notification = prev.find((n) => n.id === id);
+            const wasUnread = notification && !notification.read;
+            
+            // Update unread count if the notification was unread
+            if (wasUnread) {
+                setUnreadCount((c) => Math.max(0, c - 1));
+            }
+            
+            // Remove the notification from the list
+            return prev.filter((n) => n.id !== id);
+        });
     }, []);
 
     const clearAll = useCallback(() => {

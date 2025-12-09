@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardBody, CardHeader, Button, Spinner, Tabs, Tab, Chip, Divider, Accordion, AccordionItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
 import { Icon } from '@iconify/react';
@@ -1078,7 +1078,6 @@ export default function ProjectDetails() {
             addNotification({
                 type: 'success',
                 message: t('pages.projectDetails.designerAdded', 'Designer adicionado com sucesso!'),
-                persistent: true, // Não fecha automaticamente e não tem botão de fechar
             });
         } catch (error) {
             console.error('❌ Erro ao adicionar designer:', error);
