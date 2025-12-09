@@ -8,7 +8,38 @@ const translations = {
             why_switch: "Why Switch?",
             ai_costs: "AI Costs",
             roadmap: "Development Roadmap",
-            cta: "See it in action"
+            cta: "See it in action",
+            stock_control: "Stock Control"
+        },
+        stock: {
+            tag: "Intelligent Stock Control",
+            title: "Inventory Reimagined.",
+            subtitle: "Stop managing dead stock. Start selling what you have.",
+            list1: {
+                title: "Better Stock Rotation",
+                desc: "Algoritmos garantem que o stock antigo sai primeiro."
+            },
+            list2: {
+                title: "Proactive Sales Suggestions",
+                desc: "\"Temos 50 Motivos Estrela livres, vende isto agora!\""
+            },
+            list3: {
+                title: "Motif Reservation",
+                desc: "Funcionalidade \"Add to Cart\" instantânea para equipas internas."
+            },
+            badge1: "Web Version",
+            badge2: "Mobile App",
+            badge3: "Easy to use",
+            notification: {
+                title: "Opportunity",
+                desc: "Excess Stock! Sell this item now."
+            },
+            mockup: {
+                motif: "Star Motif 50cm",
+                warehouse: "Warehouse A",
+                units: "units",
+                btn: "Add to Project"
+            }
         },
         hero: {
             headline_1: "Close the Deal",
@@ -219,7 +250,38 @@ const translations = {
             why_switch: "Pourquoi Changer ?",
             ai_costs: "Coûts IA",
             roadmap: "Feuille de Route",
-            cta: "Voir en action"
+            cta: "Voir en action",
+            stock_control: "Contrôle des Stocks"
+        },
+        stock: {
+            tag: "Contrôle Intelligent des Stocks",
+            title: "L'Inventaire Réinventé.",
+            subtitle: "Arrêtez de gérer le stock dormant. Vendez ce que vous avez.",
+            list1: {
+                title: "Meilleure Rotation des Stocks",
+                desc: "Les algorithmes garantissent que l'ancien stock part en premier."
+            },
+            list2: {
+                title: "Suggestions de Vente Proactives",
+                desc: "\"Nous avons 50 Motifs Étoile libres, vendez-les maintenant !\""
+            },
+            list3: {
+                title: "Réservation de Motifs",
+                desc: "Fonctionnalité \"Ajouter au Panier\" instantanée pour les équipes internes."
+            },
+            badge1: "Version Web",
+            badge2: "App Mobile",
+            badge3: "Facile à utiliser",
+            notification: {
+                title: "Opportunité",
+                desc: "Surstock ! Vendez cet article maintenant."
+            },
+            mockup: {
+                motif: "Motif Étoile 50cm",
+                warehouse: "Entrepôt A",
+                units: "unités",
+                btn: "Ajouter au Projet"
+            }
         },
         hero: {
             headline_1: "Concluez l'Affaire",

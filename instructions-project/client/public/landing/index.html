@@ -77,9 +77,12 @@
                             <a href="#ai-visualization"
                                 class="block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-brand-violet/10 hover:text-brand-violet hover:pl-6 transition-all rounded-lg"
                                 data-i18n="nav.simulation_creation">Simulation Creation</a>
-                            <a href="#motif-creator"
+                            class="block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-brand-violet/10
+                            hover:text-brand-violet hover:pl-6 transition-all rounded-lg"
+                            data-i18n="nav.motif_creation">Motif Creation</a>
+                            <a href="#intelligent-stock"
                                 class="block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-brand-violet/10 hover:text-brand-violet hover:pl-6 transition-all rounded-lg"
-                                data-i18n="nav.motif_creation">Motif Creation</a>
+                                data-i18n="nav.stock_control">Stock Control</a>
                         </div>
                     </div>
                 </div>
@@ -668,6 +671,187 @@
         </div>
     </section>
 
+    <!-- Section 2.8: Intelligent Stock Control -->
+    <section id="intelligent-stock" class="py-24 relative overflow-hidden bg-gray-900 border-t border-white/5">
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="flex flex-col lg:flex-row items-center gap-16">
+                <!-- Content (Left) -->
+                <div class="lg:w-1/2 order-2 lg:order-1">
+                    <span class="text-brand-violet font-mono text-sm tracking-widest uppercase"
+                        data-i18n="stock.tag">Intelligent Stock Control</span>
+                    <h2 class="text-4xl md:text-5xl font-bold mt-2 mb-6 text-white" data-i18n="stock.title">Inventory
+                        Reimagined.</h2>
+                    <h3 class="text-xl text-gray-400 mb-6 font-medium" data-i18n="stock.subtitle">Stop managing dead
+                        stock. Start selling what you have.</h3>
+
+                    <ul class="text-gray-400 text-lg mb-8 leading-relaxed font-light space-y-4">
+                        <li class="flex items-start gap-3">
+                            <div
+                                class="w-8 h-8 rounded-lg bg-brand-violet/10 flex items-center justify-center text-brand-violet mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+                                    <path d="M3 7v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7" />
+                                    <path d="M14 7v14" />
+                                </svg>
+                            </div>
+                            <div>
+                                <strong class="text-white block text-base" data-i18n="stock.list1.title">Better Stock
+                                    Rotation</strong>
+                                <span class="text-sm" data-i18n="stock.list1.desc">Algoritmos garantem que o stock
+                                    antigo sai primeiro.</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <div
+                                class="w-8 h-8 rounded-lg bg-brand-violet/10 flex items-center justify-center text-brand-violet mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                                    <polyline points="17 6 23 6 23 12" />
+                                </svg>
+                            </div>
+                            <div>
+                                <strong class="text-white block text-base" data-i18n="stock.list2.title">Proactive Sales
+                                    Suggestions</strong>
+                                <span class="text-sm" data-i18n="stock.list2.desc">"Temos 50 Motivos Estrela livres,
+                                    vende isto agora!"</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <div
+                                class="w-8 h-8 rounded-lg bg-brand-violet/10 flex items-center justify-center text-brand-violet mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M3 6h18" />
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                </svg>
+                            </div>
+                            <div>
+                                <strong class="text-white block text-base" data-i18n="stock.list3.title">Motif
+                                    Reservation</strong>
+                                <span class="text-sm" data-i18n="stock.list3.desc">Funcionalidade "Add to Cart"
+                                    instantânea para equipas internas.</span>
+                            </div>
+                        </li>
+                        <li class="flex items-center gap-3 mt-4">
+                            <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-gray-400"
+                                data-i18n="stock.badge1">Web Version</span>
+                            <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-gray-400"
+                                data-i18n="stock.badge2">Mobile App</span>
+                            <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-gray-400"
+                                data-i18n="stock.badge3">Easy to use</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Visual (Right) -->
+                <div class="lg:w-1/2 w-full order-1 lg:order-2 relative perspective-container">
+                    <!-- Mockup Container -->
+                    <div id="stock-mockup"
+                        class="relative mx-auto bg-gray-900 border-4 border-gray-700/50 rounded-[2rem] shadow-2xl overflow-hidden h-[400px] w-full max-w-md transform rotate-1 hover:rotate-0 transition-transform duration-500">
+                        <!-- Top Bar -->
+                        <div class="absolute top-0 left-0 w-full h-8 bg-gray-800 flex items-center px-4 gap-2 z-20">
+                            <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                            <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
+                            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                        </div>
+
+                        <!-- Screen Content -->
+                        <div class="absolute inset-0 pt-8 bg-gray-800 flex flex-col p-6">
+                            <!-- Header -->
+                            <div class="flex justify-between items-center mb-6">
+                                <div>
+                                    <div class="h-2 w-24 bg-gray-600 rounded mb-2"></div>
+                                    <div class="h-2 w-16 bg-gray-700 rounded"></div>
+                                </div>
+                                <div class="w-8 h-8 rounded-full bg-gray-700"></div>
+                            </div>
+
+                            <!-- Product Row -->
+                            <div
+                                class="bg-gray-700/50 p-4 rounded-xl mb-4 border border-white/5 flex gap-4 items-center">
+                                <div
+                                    class="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center text-indigo-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polygon
+                                            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-white text-sm font-bold" data-i18n="stock.mockup.motif">Star Motif
+                                        50cm</div>
+                                    <div class="text-gray-400 text-xs" data-i18n="stock.mockup.warehouse">Warehouse A
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-white font-mono font-bold" id="stock-count">142</div>
+                                    <div class="text-xs text-gray-500" data-i18n="stock.mockup.units">units</div>
+                                </div>
+                            </div>
+
+                            <!-- Other fake rows -->
+                            <div
+                                class="bg-gray-700/30 p-4 rounded-xl mb-4 border border-white/5 flex gap-4 items-center opacity-50">
+                                <div class="w-12 h-12 bg-gray-600 rounded-lg"></div>
+                                <div class="flex-1">
+                                    <div class="h-2 w-20 bg-gray-600 rounded mb-2"></div>
+                                </div>
+                            </div>
+
+                            <!-- Button Area -->
+                            <button id="reserve-btn"
+                                class="mt-auto w-full py-3 bg-brand-violet text-white rounded-xl font-bold text-sm shadow-lg overflow-hidden relative group">
+                                <span class="relative z-10" data-i18n="stock.mockup.btn">Add to Project</span>
+                                <div
+                                    class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform">
+                                </div>
+                                <!-- Success Check Overlay -->
+                                <div id="success-check"
+                                    class="absolute inset-0 bg-green-500 flex items-center justify-center opacity-0 rounded-xl">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white"
+                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                                        stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                </div>
+                            </button>
+                        </div>
+
+                        <!-- Animation Elements Overlay -->
+                        <!-- Notification Bubble -->
+                        <div id="stock-notification"
+                            class="absolute top-24 right-4 bg-white text-gray-900 p-3 rounded-xl shadow-xl border-l-4 border-brand-violet w-48 z-30 opacity-0 transform translate-y-4">
+                            <div class="text-xs font-bold text-brand-violet uppercase mb-1"
+                                data-i18n="stock.notification.title">Oportunidade</div>
+                            <div class="text-xs leading-snug font-medium" data-i18n="stock.notification.desc">Excesso de
+                                Stock! Vende este item agora.</div>
+                        </div>
+
+                        <!-- Cursor -->
+                        <div id="demo-cursor"
+                            class="absolute top-[120px] left-[200px] w-6 h-6 z-40 opacity-0 pointer-events-none drop-shadow-lg text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M7 2l12 11.2-5.8.5 3.3 7.3-2.2.9-3.2-7.4-4.4 4z" />
+                            </svg>
+                        </div>
+
+                    </div>
+
+                    <!-- Glow behind -->
+                    <div class="absolute inset-0 bg-brand-violet/20 blur-3xl rounded-full -z-10 transform scale-75">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Section 3: Control Hub & Performance -->
     <section id="control-hub" class="py-24 relative overflow-hidden bg-brand-black text-white">
         <!-- Background Grid -->
@@ -712,13 +896,16 @@
                         <!-- Floating Elements -->
                         <div
                             class="absolute -right-12 top-20 bg-brand-violet/20 backdrop-blur-md border border-brand-violet/30 p-4 rounded-xl shadow-lg animate-float">
-                            <div class="text-xs text-brand-violet font-bold mb-1" data-i18n="control.mockup.update">OTA
+                            <div class="text-xs text-brand-violet font-bold mb-1" data-i18n="control.mockup.update">
+                                OTA
                                 UPDATE</div>
-                            <div class="text-white text-sm" data-i18n="control.mockup.installed">v2.4.0 Installed</div>
+                            <div class="text-white text-sm" data-i18n="control.mockup.installed">v2.4.0 Installed
+                            </div>
                         </div>
                         <div class="absolute -left-8 bottom-12 bg-blue-500/20 backdrop-blur-md border border-blue-500/30 p-4 rounded-xl shadow-lg animate-float"
                             style="animation-delay: 1s;">
-                            <div class="text-xs text-blue-400 font-bold mb-1" data-i18n="control.mockup.offline">OFFLINE
+                            <div class="text-xs text-blue-400 font-bold mb-1" data-i18n="control.mockup.offline">
+                                OFFLINE
                                 MODE</div>
                             <div class="text-white text-sm" data-i18n="control.mockup.synced">Data Synced</div>
                         </div>
@@ -732,7 +919,8 @@
                         Performance</span>
                     <h2 class="text-4xl md:text-5xl font-bold mt-2 mb-6 text-white" data-i18n="control.title">
                         Unstoppable Operations.</h2>
-                    <h3 class="text-xl text-gray-400 mb-6 font-medium" data-i18n="control.subtitle">Master your budget
+                    <h3 class="text-xl text-gray-400 mb-6 font-medium" data-i18n="control.subtitle">Master your
+                        budget
                         and manage orders, even
                         without signal.</h3>
                     <p class="text-gray-400 text-lg mb-6 leading-relaxed font-light" data-i18n="control.desc">
@@ -747,19 +935,22 @@
                         </li>
                         <li class="flex items-start gap-3">
                             <span class="text-brand-violet font-bold mt-1">•</span>
-                            <span data-i18n="control.list2"><strong>Always-On Reliability:</strong> Work anywhere with
+                            <span data-i18n="control.list2"><strong>Always-On Reliability:</strong> Work anywhere
+                                with
                                 Offline Mode. Data syncs
                                 automatically when you reconnect.</span>
                         </li>
                         <li class="flex items-start gap-3">
                             <span class="text-brand-violet font-bold mt-1">•</span>
-                            <span data-i18n="control.list3"><strong>Global Accessibility:</strong> Speech recognition in
+                            <span data-i18n="control.list3"><strong>Global Accessibility:</strong> Speech
+                                recognition in
                                 English, French, and
                                 Portuguese, plus Light/Dark modes to suit your environment.</span>
                         </li>
                         <li class="flex items-start gap-3">
                             <span class="text-brand-violet font-bold mt-1">•</span>
-                            <span data-i18n="control.list4"><strong>Seamless Tech:</strong> Automatic OTA updates and
+                            <span data-i18n="control.list4"><strong>Seamless Tech:</strong> Automatic OTA updates
+                                and
                                 API integration with the
                                 Blachere ecosystem keep you connected.</span>
                         </li>
@@ -791,7 +982,8 @@
 
         <div class="container mx-auto px-6 relative z-10">
             <div class="text-center mb-16">
-                <h2 class="text-4xl font-bold mb-4 text-brand-black" data-i18n="comparison.title">The Choice is Yours
+                <h2 class="text-4xl font-bold mb-4 text-brand-black" data-i18n="comparison.title">The Choice is
+                    Yours
                 </h2>
             </div>
 
@@ -863,7 +1055,8 @@
                                     <path d="M20 6 9 17l-5-5" />
                                 </svg>
                             </div>
-                            <span class="text-xl font-bold" data-i18n="comparison.core.item2">Real-Time Database</span>
+                            <span class="text-xl font-bold" data-i18n="comparison.core.item2">Real-Time
+                                Database</span>
                         </li>
                         <li class="flex items-center gap-4 text-brand-black">
                             <div
@@ -874,7 +1067,8 @@
                                     <path d="M20 6 9 17l-5-5" />
                                 </svg>
                             </div>
-                            <span class="text-xl font-bold" data-i18n="comparison.core.item3">Guaranteed Delivery</span>
+                            <span class="text-xl font-bold" data-i18n="comparison.core.item3">Guaranteed
+                                Delivery</span>
                         </li>
                     </ul>
                 </div>
@@ -886,9 +1080,11 @@
     <section id="costs" class="py-24 relative bg-white/50">
         <div class="container mx-auto px-6 relative z-10">
             <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-4xl font-bold mb-4 text-brand-black" data-i18n="costs.title">Cost Structure
+                <h2 class="text-3xl md:text-4xl font-bold mb-4 text-brand-black" data-i18n="costs.title">Cost
+                    Structure
                 </h2>
-                <p class="text-brand-gray max-w-xl mx-auto font-light" data-i18n="costs.subtitle">Transparent breakdown
+                <p class="text-brand-gray max-w-xl mx-auto font-light" data-i18n="costs.subtitle">Transparent
+                    breakdown
                     by User License and Project
                     Consumption.
                 </p>
@@ -907,7 +1103,8 @@
                     </h3>
                     <div class="text-4xl font-bold text-brand-black mb-6" data-i18n="costs.card1.price">€40<span
                             class="text-lg text-gray-400 font-normal" data-i18n="costs.card1.unit">/mo</span></div>
-                    <p class="text-brand-gray text-sm mb-6 flex-grow font-light" data-i18n="costs.card1.desc">Estimated
+                    <p class="text-brand-gray text-sm mb-6 flex-grow font-light" data-i18n="costs.card1.desc">
+                        Estimated
                         average based on annual
                         project volume. Varies significantly as agents may have months with zero activity.</p>
                     <ul class="space-y-3 text-gray-500 text-sm border-t border-gray-200 pt-4">
@@ -965,7 +1162,8 @@
                         </div>
                         <div class="flex justify-between items-center border-b border-gray-200 pb-2">
                             <div>
-                                <div class="text-brand-black font-medium" data-i18n="costs.card2.item3.title">Generative
+                                <div class="text-brand-black font-medium" data-i18n="costs.card2.item3.title">
+                                    Generative
                                     Decoration</div>
                                 <div class="text-xs text-gray-500" data-i18n="costs.card2.item3.desc">Text-to-Image
                                     Visualization</div>
@@ -984,10 +1182,12 @@
                             data-i18n="costs.card3.tag">Per
                             Project</span>
                     </div>
-                    <h3 class="text-2xl font-bold text-white mb-2" data-i18n="costs.card3.title">Typical Project</h3>
+                    <h3 class="text-2xl font-bold text-white mb-2" data-i18n="costs.card3.title">Typical Project
+                    </h3>
                     <div class="text-4xl font-bold text-white mb-6" data-i18n="costs.card3.price">~€6.00<span
                             class="text-lg text-gray-400 font-normal" data-i18n="costs.card3.unit">/avg</span></div>
-                    <p class="text-gray-400 text-sm mb-6 font-light" data-i18n="costs.card3.desc">Estimated AI cost for
+                    <p class="text-gray-400 text-sm mb-6 font-light" data-i18n="costs.card3.desc">Estimated AI cost
+                        for
                         a standard commercial
                         proposal.</p>
 
@@ -1021,9 +1221,11 @@
     <section id="development-options" class="py-24 relative overflow-hidden">
         <div class="container mx-auto px-6 relative z-10">
             <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-4xl font-bold mb-4 text-brand-black" data-i18n="roadmap.title">Development
+                <h2 class="text-3xl md:text-4xl font-bold mb-4 text-brand-black" data-i18n="roadmap.title">
+                    Development
                     Roadmap</h2>
-                <p class="text-brand-gray max-w-xl mx-auto font-light" data-i18n="roadmap.subtitle">Strategic options
+                <p class="text-brand-gray max-w-xl mx-auto font-light" data-i18n="roadmap.subtitle">Strategic
+                    options
                     for platform evolution and
                     scaling.</p>
             </div>
@@ -1041,7 +1243,8 @@
                                 Leandro & André</p>
                             <p class="text-xs text-red-500 mt-2 font-medium leading-snug"
                                 data-i18n="roadmap.card1.warning">
-                                *These designers must be focused on this project most of the time to deliver on time.
+                                *These designers must be focused on this project most of the time to deliver on
+                                time.
                             </p>
                         </div>
                         <div class="bg-brand-violet/10 px-3 py-1 rounded-full text-brand-violet text-xs font-bold uppercase tracking-wider"
@@ -1051,14 +1254,15 @@
                     </div>
 
                     <div class="mb-8">
-                        <div class="text-4xl font-bold text-brand-black mb-1" data-i18n="roadmap.card1.price">€120<span
-                                class="text-lg text-gray-400 font-normal">/mês</span></div>
+                        <div class="text-4xl font-bold text-brand-black mb-1" data-i18n="roadmap.card1.price">
+                            €120<span class="text-lg text-gray-400 font-normal">/mês</span></div>
                         <p class="text-sm text-gray-500" data-i18n="roadmap.card1.cost_desc">Total Operational Costs
                             (mensal)</p>
                         <ul class="text-xs text-gray-400 mt-2 space-y-1">
                             <li class="flex items-start gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-brand-violet mt-1.5 flex-shrink-0"></span>
-                                <span data-i18n="roadmap.card1.cost_item1">€60 Cursor Pro+ Plan (AI Code Editor)</span>
+                                <span data-i18n="roadmap.card1.cost_item1">€60 Cursor Pro+ Plan (AI Code
+                                    Editor)</span>
                             </li>
                             <li class="flex items-start gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-brand-violet mt-1.5 flex-shrink-0"></span>
@@ -1081,7 +1285,8 @@
                                 <span data-i18n="roadmap.card1.strat.title">Platform Strategy</span>
                             </h4>
                             <p class="text-brand-gray text-sm leading-relaxed" data-i18n="roadmap.card1.strat.desc">
-                                <strong>Universal Web App (PWA)</strong> with frictionless browser-based installation.
+                                <strong>Universal Web App (PWA)</strong> with frictionless browser-based
+                                installation.
                                 Bypasses app store delays for immediate updates.
                             </p>
                         </div>
@@ -1131,9 +1336,11 @@
                     <div class="absolute top-0 left-0 w-full h-1 bg-brand-black"></div>
                     <div class="flex justify-between items-start mb-6">
                         <div>
-                            <h3 class="text-2xl font-bold text-brand-black" data-i18n="roadmap.card2.title">Adicional
+                            <h3 class="text-2xl font-bold text-brand-black" data-i18n="roadmap.card2.title">
+                                Adicional
                                 dev member</h3>
-                            <p class="text-sm text-gray-500 font-medium mt-1" data-i18n="roadmap.card2.names">External
+                            <p class="text-sm text-gray-500 font-medium mt-1" data-i18n="roadmap.card2.names">
+                                External
                                 Expansion</p>
                         </div>
                         <div class="bg-gray-100 px-3 py-1 rounded-full text-gray-500 text-xs font-bold uppercase tracking-wider"
@@ -1154,7 +1361,8 @@
                             </li>
                             <li class="flex items-start gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></span>
-                                <span data-i18n="roadmap.card2.cost_item2">€60 Cursor Pro+ Plan (AI Code Editor)</span>
+                                <span data-i18n="roadmap.card2.cost_item2">€60 Cursor Pro+ Plan (AI Code
+                                    Editor)</span>
                             </li>
                             <li class="flex items-start gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></span>
@@ -1269,6 +1477,54 @@
                 document.getElementById('motif-input').placeholder = "Describe your motif (e.g., 'Giant 3D Star, Warm White, 3 meters')...";
             }
         }
+    </script>
+    <script>
+        // Intelligent Stock Animation
+        document.addEventListener("DOMContentLoaded", (event) => {
+            gsap.registerPlugin(ScrollTrigger);
+
+            const stockTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: "#intelligent-stock",
+                    start: "top 60%",
+                    toggleActions: "play none none reset"
+                },
+                repeat: -1,
+                repeatDelay: 3
+            });
+
+            stockTl
+                // 1. Notification appears
+                .to("#stock-notification", { opacity: 1, y: 0, duration: 0.5, ease: "back.out(1.7)" })
+                .to("#stock-notification", { scale: 1.05, duration: 0.1, yoyo: true, repeat: 1 }, "+=0.2")
+
+                // 2. Cursor appears and moves
+                .set("#demo-cursor", { opacity: 1, x: 50, y: -20 })
+                .to("#demo-cursor", { x: 70, y: 20, duration: 1, ease: "power2.out" })
+
+                // 3. Cursor moves to button
+                .to("#demo-cursor", { top: "85%", left: "50%", x: -10, y: 0, duration: 1, ease: "power1.inOut" }, "+=0.2")
+
+                // 4. Click effect
+                .to("#demo-cursor", { scale: 0.8, duration: 0.1 })
+                .to("#reserve-btn", { scale: 0.95, duration: 0.1 }, "<")
+                .to("#demo-cursor", { scale: 1, duration: 0.1 })
+                .to("#reserve-btn", { scale: 1, duration: 0.1 }, "<")
+
+                // 5. Stock decrease & Success
+                .to("#stock-count", {
+                    innerHTML: 122,
+                    duration: 0.5,
+                    snap: { innerHTML: 1 },
+                    ease: "power1.in"
+                }, "<")
+                .to("#success-check", { opacity: 1, duration: 0.3 }, "<0.2")
+
+                // 6. Fade out for loop
+                .to(["#stock-notification", "#success-check"], { opacity: 0, duration: 0.5, delay: 2 })
+                .to("#demo-cursor", { opacity: 0, duration: 0.3 }, "<")
+                .set("#stock-count", { innerHTML: 142 }); // Reset stock
+        });
     </script>
     <style>
         @keyframes scan {
