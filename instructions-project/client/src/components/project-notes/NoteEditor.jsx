@@ -4,16 +4,13 @@ import { Icon } from '@iconify/react';
 import { useTranslation } from 'react-i18next';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
-import Placeholder from '@tiptap/extension-placeholder';
+import { Placeholder } from '@tiptap/extensions/placeholder';
 import TextAlign from '@tiptap/extension-text-align';
-import Color from '@tiptap/extension-color';
-import TextStyle from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
-import Underline from '@tiptap/extension-underline';
-import TaskList from '@tiptap/extension-task-list';
-import TaskItem from '@tiptap/extension-task-item';
+import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 export function NoteEditor({ note, onSave, onDelete }) {
@@ -32,12 +29,8 @@ export function NoteEditor({ note, onSave, onDelete }) {
     const editor = useEditor({
         content: note.content || '',
         extensions: [
-            StarterKit,
-            Link.configure({
-                openOnClick: false,
-                HTMLAttributes: {
-                    class: 'text-primary underline cursor-pointer',
-                },
+            StarterKit.configure({
+                // Link, ListKeymap, and Underline are now included by default
             }),
             Image.configure({
                 HTMLAttributes: {
@@ -57,7 +50,6 @@ export function NoteEditor({ note, onSave, onDelete }) {
             Highlight.configure({
                 multicolor: true,
             }),
-            Underline,
             TaskList,
             TaskItem.configure({
                 nested: true,

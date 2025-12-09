@@ -1,15 +1,12 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
-import Placeholder from '@tiptap/extension-placeholder';
+import { Placeholder } from '@tiptap/extensions/placeholder';
 import TextAlign from '@tiptap/extension-text-align';
-import Color from '@tiptap/extension-color';
-import TextStyle from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
-import Underline from '@tiptap/extension-underline';
-import TaskList from '@tiptap/extension-task-list';
-import TaskItem from '@tiptap/extension-task-item';
+import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Spinner } from '@heroui/react';
 import { Icon } from '@iconify/react';
@@ -40,13 +37,7 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
     content: '',
     extensions: [
       StarterKit.configure({
-        // Keep all default features
-      }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'text-primary underline cursor-pointer',
-        },
+        // Link, ListKeymap, and Underline are now included by default
       }),
       Image.configure({
         HTMLAttributes: {
@@ -66,7 +57,6 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
       Highlight.configure({
         multicolor: true,
       }),
-      Underline,
       TaskList.configure({
         HTMLAttributes: {
           class: 'task-list',

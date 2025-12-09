@@ -14,8 +14,9 @@ export const passwordUpdateLimiter = rateLimit({
     standardHeaders: true, // Retornar info de rate limit nos headers `RateLimit-*`
     legacyHeaders: false, // Desabilitar headers `X-RateLimit-*`
     // Usar IP do cliente como chave
+    // Priorizar socket.remoteAddress que é mais confiável que req.ip quando trust proxy está ativo
     keyGenerator: (req) => {
-        return req.ip || req.connection.remoteAddress;
+        return req.socket.remoteAddress || req.ip || 'unknown';
     },
     // Handler customizado para quando limite é excedido
     handler: (req, res) => {
@@ -49,6 +50,11 @@ export const generalApiLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
+    // Usar IP do cliente como chave
+    // Priorizar socket.remoteAddress que é mais confiável que req.ip quando trust proxy está ativo
+    keyGenerator: (req) => {
+        return req.socket.remoteAddress || req.ip || 'unknown';
+    },
     skip: (req) => {
         return process.env.SKIP_RATE_LIMIT === 'true';
     }

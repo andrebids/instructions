@@ -582,6 +582,8 @@ const enableAuth = process.env.ENABLE_AUTH === 'true';
 // Configurar Auth.js
 if (useAuthJs) {
   // Trust proxy para Auth.js funcionar corretamente
+  // NOTA: express-rate-limit pode avisar sobre trust proxy, mas os rate limiters
+  // usam keyGenerator com socket.remoteAddress para obter IP real e evitar bypass
   app.set('trust proxy', true);
 
   // Montar rotas do Auth.js em /auth/*
@@ -689,7 +691,11 @@ app.options('/api/icons/*', (req, res) => {
 // Rota raiz - informações do servidor (apenas quando não há build de produção)
 // Quando há dist/, o catch-all serve index.html para /
 var distPathCheck = path.resolve(__dirname, '../../client/dist');
-var distExistsCheck = fs.existsSync(distPathCheck) && fs.statSync(distPathCheck).isDirectory();
+// Verificar se existe (incluindo symlinks) e se é um diretório ou symlink válido
+var distExistsCheck = fs.existsSync(distPathCheck) && (
+  fs.statSync(distPathCheck).isDirectory() || 
+  (fs.lstatSync(distPathCheck).isSymbolicLink() && fs.existsSync(fs.readlinkSync(distPathCheck)))
+);
 
 if (!distExistsCheck) {
   app.get('/', (req, res) => {
@@ -920,7 +926,11 @@ app.get('/api/me', async (req, res) => {
 // Isso garante que o arquivo processado pelo VitePWA seja servido, não o source de public/
 // (__filename e __dirname já declarados acima)
 var distPath = path.resolve(__dirname, '../../client/dist');
-var distExists = fs.existsSync(distPath) && fs.statSync(distPath).isDirectory();
+// Verificar se existe (incluindo symlinks) e se é um diretório ou symlink válido
+var distExists = fs.existsSync(distPath) && (
+  fs.statSync(distPath).isDirectory() || 
+  (fs.lstatSync(distPath).isSymbolicLink() && fs.existsSync(fs.readlinkSync(distPath)))
+);
 
 if (distExists) {
   // Servir sw.js especificamente de dist/ com prioridade máxima

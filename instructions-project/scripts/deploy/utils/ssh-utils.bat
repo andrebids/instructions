@@ -155,8 +155,22 @@ REM Returns: ERRORLEVEL from SSH command
 REM ============================================
 :execute_ssh_command
 setlocal enabledelayedexpansion
+REM Skip function name if it's the first argument
+REM When called from another bat file: %~1 = function name, %~2 = command, %~3 = error message
 set "SSH_CMD=%~1"
 set "ERROR_MSG=%~2"
+
+REM If first arg is function name, shift arguments
+if "!SSH_CMD!"==":execute_ssh_command" (
+    set "SSH_CMD=%~2"
+    set "ERROR_MSG=%~3"
+)
+
+REM Fallback if SSH_CMD is still empty
+if "!SSH_CMD!"=="" (
+    if not "%~2"=="" set "SSH_CMD=%~2"
+    if "!SSH_CMD!"=="" if not "%~3"=="" set "SSH_CMD=%~3"
+)
 
 if "%SSH_ALIAS%"=="" (
     call "%COMMON_UTILS%" :print_error "SSH_ALIAS não está definido"
@@ -165,13 +179,17 @@ if "%SSH_ALIAS%"=="" (
 )
 
 REM Execute command via SSH
+REM Log the command being executed (without sensitive data)
+call "%COMMON_UTILS%" :print_info "Executando via SSH: %SSH_ALIAS%"
 ssh %SSH_ALIAS% "%SSH_CMD%"
 set "CMD_RESULT=%ERRORLEVEL%"
+call "%COMMON_UTILS%" :print_info "Comando SSH executado, resultado: %CMD_RESULT%"
 
 if %CMD_RESULT% neq 0 (
-    if not "%ERROR_MSG%"=="" (
-        call "%COMMON_UTILS%" :print_error "%ERROR_MSG%"
+    if not "!ERROR_MSG!"=="" (
+        call "%COMMON_UTILS%" :print_error "!ERROR_MSG!"
     )
+    call "%COMMON_UTILS%" :print_info "Erro SSH detalhado - codigo: %CMD_RESULT%"
     endlocal
     exit /b %CMD_RESULT%
 )

@@ -159,8 +159,11 @@ const translations = {
                 title: "In-House Agile",
                 names: "Leandro & André",
                 tag: "Fastest to Market",
+                warning: "*These designers must be focused on this project most of the time to deliver on time.",
                 price: "€180",
                 cost_desc: "Total Operational Costs",
+                cost_item1: "€60 Cursor Pro+ Plan (AI Code Editor)",
+                cost_item2: "€120 fal.ai credits (testing & implementation)",
                 strat: {
                     title: "Platform Strategy",
                     desc: "<strong>Universal Web App (PWA)</strong> with frictionless browser-based installation. Bypasses app store delays for immediate updates."
@@ -168,7 +171,7 @@ const translations = {
                 timeline: {
                     title: "Delivery Timeline",
                     p1: {
-                        date: "February 2026",
+                        date: "April 2026",
                         tag: "Phase 1",
                         desc: "AI Resume Notes, Decor Suggestions, Day-to-Night Engine, AI Presentations."
                     },
@@ -184,7 +187,10 @@ const translations = {
                 names: "External Expansion",
                 tag: "Native Stores",
                 price: "€5000+ /month",
-                cost_desc: "Salarie + €220/mo Ops",
+                cost_desc: "Salary + Operational Costs",
+                cost_item1: "Salary",
+                cost_item2: "€60 Cursor Pro+ Plan (AI Code Editor)",
+                cost_item3: "€160 fal.ai credits",
                 strat: {
                     title: "Platform Strategy",
                     desc: "<strong>Official Native Apps</strong> for iOS & Android. Requires specialized recruitment (Junior to Lead) and store approval processes.",
@@ -364,8 +370,11 @@ const translations = {
                 title: "Agile en Interne",
                 names: "Leandro & André",
                 tag: "Le Plus Rapide",
+                warning: "*Ces designers doivent consacrer la majeure partie de leur temps à ce projet pour livrer dans les délais.",
                 price: "180 €",
                 cost_desc: "Coûts Opérationnels Totaux",
+                cost_item1: "60 € Plan Cursor Pro+ (Éditeur de Code IA)",
+                cost_item2: "120 € crédits fal.ai (tests & implémentation)",
                 strat: {
                     title: "Stratégie Plateforme",
                     desc: "<strong>App Web Universelle (PWA)</strong> avec installation sans friction via navigateur. Contourne les délais des stores pour des mises à jour immédiates."
@@ -373,7 +382,7 @@ const translations = {
                 timeline: {
                     title: "Calendrier de Livraison",
                     p1: {
-                        date: "Février 2026",
+                        date: "Avril 2026",
                         tag: "Phase 1",
                         desc: "Notes Résumé IA, Suggestions Décor, Moteur Jour-Nuit, Présentations IA."
                     },
@@ -389,7 +398,10 @@ const translations = {
                 names: "Expansion Externe",
                 tag: "Stores Natifs",
                 price: "€5000+ /month",
-                cost_desc: "Salaire + 220 €/mois Ops",
+                cost_desc: "Salaire + Coûts Opérationnels",
+                cost_item1: "Salaire",
+                cost_item2: "60 € Plan Cursor Pro+ (Éditeur de Code IA)",
+                cost_item3: "160 € crédits fal.ai",
                 strat: {
                     title: "Stratégie Plateforme",
                     desc: "<strong>Applications Natives Officielles</strong> pour iOS & Android. Nécessite un recrutement spécialisé (Junior à Lead) et des processus d'approbation des stores.",

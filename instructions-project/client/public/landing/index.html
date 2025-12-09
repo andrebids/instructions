@@ -60,10 +60,30 @@
             <div class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
                 <a href="#smart-discovery" class="hover:text-brand-violet transition-colors"
                     data-i18n="nav.capabilities">Capabilities</a>
-                <a href="#motif-creator" class="hover:text-brand-violet transition-colors"
-                    data-i18n="nav.motif_creator">Motif Creator</a>
-                <a href="#comparison" class="hover:text-brand-violet transition-colors" data-i18n="nav.why_switch">Why
-                    Switch?</a>
+                <div class="relative group h-full flex items-center">
+                    <a href="#smart-discovery"
+                        class="flex items-center gap-1 hover:text-brand-violet transition-colors h-full focus:outline-none">
+                        <span data-i18n="nav.instructions">Instructions</span>
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            class="w-4 h-4 transition-transform group-hover:rotate-180" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </a>
+                    <!-- Dropdown Content -->
+                    <div
+                        class="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-56 bg-white/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 overflow-hidden transform opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-2 group-hover:translate-y-0 z-50">
+                        <div class="p-1">
+                            <a href="#ai-visualization"
+                                class="block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-brand-violet/10 hover:text-brand-violet hover:pl-6 transition-all rounded-lg"
+                                data-i18n="nav.simulation_creation">Simulation Creation</a>
+                            <a href="#motif-creator"
+                                class="block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-brand-violet/10 hover:text-brand-violet hover:pl-6 transition-all rounded-lg"
+                                data-i18n="nav.motif_creation">Motif Creation</a>
+                        </div>
+                    </div>
+                </div>
+
                 <a href="#costs" class="hover:text-brand-violet transition-colors" data-i18n="nav.ai_costs">AI Costs</a>
                 <a href="#development-options" class="hover:text-brand-violet transition-colors"
                     data-i18n="nav.roadmap">Development Roadmap</a>
@@ -511,7 +531,7 @@
     <!-- Section 2.5: Motif Creator (New Independent Section) -->
     <section id="motif-creator" class="py-24 relative overflow-hidden bg-gray-50/50">
         <div class="container mx-auto px-6 relative z-10">
-            <div class="flex flex-col lg:flex-row-reverse items-center gap-16">
+            <div class="flex flex-col lg:flex-row items-center gap-16">
                 <!-- Visual: Holographic Projection -->
                 <div class="lg:w-1/2 w-full relative">
                     <div
@@ -1019,6 +1039,10 @@
                                 Agile</h3>
                             <p class="text-sm text-brand-violet font-medium mt-1" data-i18n="roadmap.card1.names">
                                 Leandro & André</p>
+                            <p class="text-xs text-red-500 mt-2 font-medium leading-snug"
+                                data-i18n="roadmap.card1.warning">
+                                *These designers must be focused on this project most of the time to deliver on time.
+                            </p>
                         </div>
                         <div class="bg-brand-violet/10 px-3 py-1 rounded-full text-brand-violet text-xs font-bold uppercase tracking-wider"
                             data-i18n="roadmap.card1.tag">
@@ -1031,6 +1055,17 @@
                                 class="text-lg text-gray-400 font-normal">/mês</span></div>
                         <p class="text-sm text-gray-500" data-i18n="roadmap.card1.cost_desc">Total Operational Costs
                             (mensal)</p>
+                        <ul class="text-xs text-gray-400 mt-2 space-y-1">
+                            <li class="flex items-start gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-brand-violet mt-1.5 flex-shrink-0"></span>
+                                <span data-i18n="roadmap.card1.cost_item1">€60 Cursor Pro+ Plan (AI Code Editor)</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-brand-violet mt-1.5 flex-shrink-0"></span>
+                                <span data-i18n="roadmap.card1.cost_item2">€120 fal.ai credits (testing &
+                                    implementation)</span>
+                            </li>
+                        </ul>
                     </div>
 
                     <div class="space-y-8 flex-grow">
@@ -1067,7 +1102,7 @@
                                         class="absolute -left-[21px] top-1.5 w-3 h-3 rounded-full bg-brand-violet border-2 border-white">
                                     </div>
                                     <div class="text-sm font-bold text-brand-black"><span
-                                            data-i18n="roadmap.card1.timeline.p1.date">February 2026</span> <span
+                                            data-i18n="roadmap.card1.timeline.p1.date">April 2026</span> <span
                                             class="text-brand-violet text-xs font-normal ml-2"
                                             data-i18n="roadmap.card1.timeline.p1.tag">Phase 1</span></div>
                                     <p class="text-xs text-gray-500 mt-1" data-i18n="roadmap.card1.timeline.p1.desc">AI
@@ -1112,6 +1147,20 @@
                             month<span class="text-lg text-gray-400 font-normal">/mês</span></div>
                         <p class="text-sm text-gray-500" data-i18n="roadmap.card2.cost_desc">Salaries + €220/mês Ops
                             (valores mensais)</p>
+                        <ul class="text-xs text-gray-400 mt-2 space-y-1">
+                            <li class="flex items-start gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></span>
+                                <span data-i18n="roadmap.card2.cost_item1">Salary</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></span>
+                                <span data-i18n="roadmap.card2.cost_item2">€60 Cursor Pro+ Plan (AI Code Editor)</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></span>
+                                <span data-i18n="roadmap.card2.cost_item3">€160 fal.ai credits</span>
+                            </li>
+                        </ul>
                     </div>
 
                     <div class="space-y-8 flex-grow">
@@ -1142,7 +1191,7 @@
 
                         <div>
                             <h4 class="font-bold text-brand-black mb-3 flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-400"
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand-violet"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                     stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="12" cy="12" r="10"></circle>
@@ -1152,14 +1201,14 @@
                             </h4>
                             <p class="text-xs text-gray-500 mb-4 italic" data-i18n="roadmap.card2.timeline.note">*
                                 Timelines valid if hired by mid-January.</p>
-                            <div class="relative pl-4 border-l-2 border-gray-200 space-y-6">
+                            <div class="relative pl-4 border-l-2 border-brand-violet/20 space-y-6">
                                 <div class="relative">
                                     <div
-                                        class="absolute -left-[21px] top-1.5 w-3 h-3 rounded-full bg-gray-400 border-2 border-white">
+                                        class="absolute -left-[21px] top-1.5 w-3 h-3 rounded-full bg-brand-violet border-2 border-white">
                                     </div>
                                     <div class="text-sm font-bold text-brand-black"><span
                                             data-i18n="roadmap.card2.timeline.p1.date">July 2026</span> <span
-                                            class="text-gray-400 text-xs font-normal ml-2"
+                                            class="text-brand-violet text-xs font-normal ml-2"
                                             data-i18n="roadmap.card2.timeline.p1.tag">Phase 1</span></div>
                                     <p class="text-xs text-gray-500 mt-1" data-i18n="roadmap.card2.timeline.p1.desc">
                                         Feature parity with In-House Phase 1.</p>

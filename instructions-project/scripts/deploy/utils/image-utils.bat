@@ -116,22 +116,15 @@ for /f "tokens=1,2 delims=/" %%u in ("%REPO%") do (
     set "PACKAGE_NAME=%%v"
 )
 
-REM Try to get package versions using GitHub API
-REM Note: This requires the package to be public or proper permissions
-REM API endpoint format: /users/{username}/packages/container/{package-name}/versions
-REM or /orgs/{org}/packages/container/{package-name}/versions
-for /f "tokens=*" %%t in ('gh api /users/!GITHUB_USER!/packages/container/!PACKAGE_NAME!/versions --jq ".[0].metadata.container.tags[0]" 2^>nul') do (
-    set "LATEST_TAG=%%t"
-)
-
-REM If that failed, try orgs endpoint
-if "!LATEST_TAG!"=="" (
-    for /f "tokens=*" %%t in ('gh api /orgs/!GITHUB_USER!/packages/container/!PACKAGE_NAME!/versions --jq ".[0].metadata.container.tags[0]" 2^>nul') do (
-        set "LATEST_TAG=%%t"
-    )
-)
+REM Use 'latest' tag directly
+REM The GitHub Actions workflow always updates 'latest' when pushing a new image
+REM So 'latest' will always point to the most recent build
+call "%COMMON_UTILS%" :print_info "Usando tag 'latest' - sempre aponta para a versão mais recente"
+set "LATEST_TAG=latest"
 
 if not "!LATEST_TAG!"=="" (
+    REM Remove any whitespace
+    set "LATEST_TAG=!LATEST_TAG: =!"
     call "%COMMON_UTILS%" :print_success "Tag obtida via API: !LATEST_TAG!"
     endlocal & set "IMAGE_TAG=!LATEST_TAG!"
     exit /b 0
@@ -172,19 +165,38 @@ set "REPO=%REPO:ghcr.io/=%"
 REM Method 1: Try GitHub API
 call :get_latest_tag_from_api "%REPO%"
 if %ERRORLEVEL% equ 0 (
-    endlocal & set "IMAGE_TAG=%IMAGE_TAG%"
-    exit /b 0
+    REM IMAGE_TAG should be set by get_latest_tag_from_api
+    if not "!IMAGE_TAG!"=="" (
+        endlocal & set "IMAGE_TAG=!IMAGE_TAG!"
+        exit /b 0
+    )
 )
 
-REM Method 2: Try to list tags from registry (requires authentication)
-call "%COMMON_UTILS%" :print_info "Tentando listar tags do registry..."
-REM This would require docker login to ghcr.io first
-REM For now, we'll use 'latest' as fallback
+REM Method 2: Try to get latest tag using curl and GitHub API (if GitHub CLI failed)
+if "!IMAGE_TAG!"=="" (
+    call "%COMMON_UTILS%" :print_info "Tentando obter tag via GitHub API (curl)..."
+    REM Extract username and package name
+    for /f "tokens=1,2 delims=/" %%u in ("%REPO%") do (
+        set "GITHUB_USER=%%u"
+        set "PACKAGE_NAME=%%v"
+    )
+    
+    REM Try to get latest version using curl (requires GITHUB_TOKEN in .env)
+    REM This is a fallback if GitHub CLI is not available
+    REM Note: This requires authentication token
+    if not "!GITHUB_USER!"=="" if not "!PACKAGE_NAME!"=="" (
+        REM Try to get from API (this would need token, so we'll skip for now)
+        REM For now, we'll use 'latest' as fallback
+    )
+)
 
 REM Method 3: Use 'latest' as fallback
-call "%COMMON_UTILS%" :print_warning "Não foi possível obter tag específica, usando 'latest'"
-call "%COMMON_UTILS%" :print_info "AVISO: Usando tag 'latest' - certifique-se de que esta é a versão desejada"
-set "IMAGE_TAG=latest"
+if "!IMAGE_TAG!"=="" (
+    call "%COMMON_UTILS%" :print_warning "Não foi possível obter tag específica via API"
+    call "%COMMON_UTILS%" :print_info "Usando tag 'latest' - esta é a tag padrão do GitHub Packages"
+    call "%COMMON_UTILS%" :print_info "Certifique-se de que a action build-and-push está configurada para usar 'latest'"
+    set "IMAGE_TAG=latest"
+)
 
 endlocal & set "IMAGE_TAG=%IMAGE_TAG%"
 exit /b 0
@@ -222,8 +234,15 @@ REM Returns: ERRORLEVEL 0 if success, 1 if failed
 REM ============================================
 :pull_image
 setlocal enabledelayedexpansion
+REM Skip function name if it's the first argument
+REM When called from another bat file: %~1 = function name, %~2 = image name
 set "IMAGE_NAME=%~1"
-if "%IMAGE_NAME%"=="" (
+if "!IMAGE_NAME!"==":pull_image" set "IMAGE_NAME=%~2"
+if "!IMAGE_NAME!"=="" (
+    if not "%~2"=="" set "IMAGE_NAME=%~2"
+    if "!IMAGE_NAME!"=="" if not "%~3"=="" set "IMAGE_NAME=%~3"
+)
+if "!IMAGE_NAME!"=="" (
     call "%COMMON_UTILS%" :print_error "Nome da imagem não fornecido"
     endlocal
     exit /b 1

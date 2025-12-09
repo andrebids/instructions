@@ -13,25 +13,33 @@ const updateRateLimiter = rateLimit({
   message: 'Muitas atualizações. Por favor, aguarde um momento.',
   standardHeaders: true,
   legacyHeaders: false,
+  // Usar keyGenerator para obter IP real mesmo com trust proxy
+  // Isso ajuda a evitar bypass do rate limiting
+  keyGenerator: (req) => {
+    // Priorizar socket.remoteAddress que é mais confiável que req.ip quando trust proxy está ativo
+    return req.socket.remoteAddress || req.ip || 'unknown';
+  },
 });
 
 // Rate limiting mais restritivo para atualizações de description (notas)
-// Middleware customizado que só aplica rate limit se for atualização de description
-const notesUpdateRateLimiter = (req, res, next) => {
+// Criar o limiter uma vez na inicialização, não em cada request
+const notesUpdateRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 20, // máximo 20 atualizações de notas por minuto por IP
+  message: 'Muitas atualizações de notas. Por favor, aguarde um momento.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Usar keyGenerator para obter IP real mesmo com trust proxy
+  // Isso ajuda a evitar bypass do rate limiting
+  keyGenerator: (req) => {
+    // Priorizar socket.remoteAddress que é mais confiável que req.ip quando trust proxy está ativo
+    return req.socket.remoteAddress || req.ip || 'unknown';
+  },
   // Só aplicar rate limit se for atualização de description
-  if (req.method === 'PUT' && req.body.description !== undefined) {
-    const limiter = rateLimit({
-      windowMs: 60 * 1000, // 1 minuto
-      max: 20, // máximo 20 atualizações de notas por minuto por IP
-      message: 'Muitas atualizações de notas. Por favor, aguarde um momento.',
-      standardHeaders: true,
-      legacyHeaders: false,
-    });
-    return limiter(req, res, next);
-  }
-  // Se não for atualização de description, passar direto
-  next();
-};
+  skip: (req) => {
+    return !(req.method === 'PUT' && req.body.description !== undefined);
+  },
+});
 
 // Rotas de projetos
 // IMPORTANTE: Rotas específicas devem vir ANTES das rotas genéricas com parâmetros
