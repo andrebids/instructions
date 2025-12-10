@@ -23,6 +23,8 @@ import { getCenterPosition } from '../utils/canvasCalculations';
 export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externalSelectedImage }) => {
   // Ref para o canvas (para exportar imagem)
   const canvasRef = useRef(null);
+  // Rastrear última conversão restaurada para evitar loops de setState
+  const lastRestoredConversionStrRef = useRef(null);
   
   // Estados locais
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -68,7 +70,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   const handleUploadComplete = (uploadedImages = null) => {
     canvasState.setUploadStep('loading');
     
-    const imagesToUse = uploadedImages && uploadedImages.length > 0 
+    const mappedIncoming = uploadedImages && uploadedImages.length > 0 
       ? uploadedImages.map(img => ({
           id: img.id,
           name: img.name,
@@ -80,12 +82,20 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
           cartouche: img.cartouche || null
         }))
       : canvasState.loadedImages;
+
+    // Mesclar novas imagens com as já existentes, preservando e deduplicando por id
+    const mergedImages = (() => {
+      const mergedMap = new Map();
+      (canvasState.uploadedImages || []).forEach((img) => mergedMap.set(img.id, img));
+      (mappedIncoming || []).forEach((img) => mergedMap.set(img.id, img));
+      return Array.from(mergedMap.values());
+    })();
     
     setTimeout(() => {
-      canvasState.setUploadedImages(imagesToUse);
+      canvasState.setUploadedImages(mergedImages);
       canvasState.setUploadStep('done');
       
-      onInputChange?.('uploadedImages', imagesToUse);
+      onInputChange?.('uploadedImages', mergedImages);
       const currentSimulationState = formData?.simulationState || {
         uploadStep: 'done',
         selectedImageId: null,
@@ -100,7 +110,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
       if (hasSavedConversions) {
         imageConversion.setConversionComplete(savedConversionComplete);
       } else {
-        imageConversion.handleUploadComplete(imagesToUse);
+        imageConversion.handleUploadComplete(mergedImages);
       }
     }, 300);
   };
@@ -298,10 +308,19 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
 
   // Restaurar conversionComplete do simulationState
   useEffect(() => {
-    if (formData?.simulationState?.conversionComplete && Object.keys(formData.simulationState.conversionComplete).length > 0) {
-      imageConversion.setConversionComplete(formData.simulationState.conversionComplete);
+    const savedConversionComplete = formData?.simulationState?.conversionComplete;
+    if (!savedConversionComplete || Object.keys(savedConversionComplete).length === 0) {
+      return;
     }
-  }, [formData?.id, formData?.simulationState?.conversionComplete, imageConversion]);
+
+    const savedStr = JSON.stringify(savedConversionComplete);
+    if (lastRestoredConversionStrRef.current === savedStr) {
+      return; // Já aplicado, evitar setState em loop
+    }
+
+    lastRestoredConversionStrRef.current = savedStr;
+    imageConversion.setConversionComplete(savedConversionComplete);
+  }, [formData?.id, formData?.simulationState?.conversionComplete, imageConversion.setConversionComplete]);
 
   const projectId = formData?.id || formData?.tempProjectId;
 
@@ -315,6 +334,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
         <UploadModal 
           onUploadComplete={handleUploadComplete} 
           projectId={projectId}
+          onRequestClose={() => canvasState.setUploadStep('done')}
         />
       )}
       {canvasState.uploadStep === 'loading' && <LoadingIndicator />}
@@ -371,6 +391,11 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                   ref={canvasRef}
                   width="100%"
                   height="100%"
+                onEmptyCanvasClick={() => {
+                  if ((canvasState.uploadedImages || []).length === 0) {
+                    canvasState.setUploadStep('uploading');
+                  }
+                }}
                   onDecorationAdd={handleDecorationAdd}
                   onDecorationRemove={handleDecorationRemove}
                   onDecorationUpdate={handleDecorationUpdate}

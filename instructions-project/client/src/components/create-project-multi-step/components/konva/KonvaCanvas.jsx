@@ -25,6 +25,7 @@ export const KonvaCanvas = forwardRef(({
   canvasImages = [],
   selectedImage,
   onRequireBackground,
+  onEmptyCanvasClick = null,
   snapZones = [],
   isDayMode = true,
   isEditingZones = false,
@@ -250,6 +251,9 @@ export const KonvaCanvas = forwardRef(({
     const stage = e.target.getStage();
     
     if (target === stage) {
+      if (onEmptyCanvasClick && (!canvasImages || canvasImages.length === 0)) {
+        onEmptyCanvasClick();
+      }
       console.log('❌ Desselecionado');
       setSelectedId(null);
     }
@@ -558,11 +562,26 @@ export const KonvaCanvas = forwardRef(({
 
       {/* Overlays informativos */}
       {canvasImages.length === 0 && decorations.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center">
-            <Icon icon="lucide:image" className="text-default-400 text-4xl mb-2" />
-            <p className="text-default-600 mb-4">Click on a Source Image to start</p>
-            <p className="text-default-500 text-sm">Then add decorations on top</p>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
+          <div className="relative text-center px-6 py-5 rounded-xl bg-content1/80 border border-default-200/60 shadow-lg backdrop-blur-md max-w-md w-full">
+            <div className="absolute -left-6 -top-6 h-16 w-16 rounded-full bg-primary/10 blur-2xl" />
+            <div className="absolute -right-8 -bottom-8 h-20 w-20 rounded-full bg-secondary/10 blur-2xl" />
+            <div className="relative z-10 flex flex-col items-center gap-2">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-default-500">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary/70" />
+                Workflow de simulação
+              </div>
+              <Icon icon="lucide:image-plus" className="text-primary text-4xl" />
+              <p className="text-lg font-semibold text-default-800">Adicione a primeira imagem base</p>
+              <p className="text-default-600 text-sm max-w-sm">
+                Clique em “Add more images” na barra lateral ou toque no canvas vazio para abrir o upload.
+              </p>
+              <div className="flex flex-col gap-2 text-xs text-default-500 mt-2">
+                <span>1) Carregue uma imagem de origem</span>
+                <span>2) Selecione-a para ativar o canvas</span>
+                <span>3) Aplique decorações e cartouche</span>
+              </div>
+            </div>
           </div>
         </div>
       )}

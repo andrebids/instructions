@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
 import { calculateImageDimensions } from '../../utils/canvasCalculations';
@@ -18,6 +18,7 @@ import { calculateImageDimensions } from '../../utils/canvasCalculations';
 export const URLImage = ({ src, width, height, x, y }) => {
   const [adjustedDimensions, setAdjustedDimensions] = useState({ width, height });
   const [hasAdjusted, setHasAdjusted] = useState(false);
+  const loggedSourcesRef = useRef(new Set());
   
   // Converter caminho /uploads/ para /api/uploads/ se necessário (para passar pelo proxy do Vite)
   const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || '';
@@ -34,10 +35,16 @@ export const URLImage = ({ src, width, height, x, y }) => {
   
   const mappedSrc = mapPath(src);
   
-  // Log para debug (apenas quando src é diferente de mappedSrc)
-  if (src !== mappedSrc) {
-    console.log('🔄 [URLImage] Mapeando caminho:', { original: src, mapped: mappedSrc });
-  }
+  // Log para debug (apenas em desenvolvimento e uma vez por origem)
+  useEffect(() => {
+    const isDev = import.meta?.env?.DEV || process.env?.NODE_ENV === 'development';
+    if (!isDev || !src || src === mappedSrc) return;
+
+    if (!loggedSourcesRef.current.has(src)) {
+      loggedSourcesRef.current.add(src);
+      console.log('🔄 [URLImage] Mapeando caminho:', { original: src, mapped: mappedSrc });
+    }
+  }, [src, mappedSrc]);
   
   // useImage retorna [image, status] onde status pode ter propriedades loading/error
   const [image, status] = useImage(mappedSrc, 'anonymous');
