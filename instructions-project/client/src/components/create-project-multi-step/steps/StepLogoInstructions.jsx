@@ -749,6 +749,11 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
             composition={composition}
             currentLogo={currentLogo}
             hasBolaData={hasBolaData}
+            handleCompositionUpdate={handleCompositionUpdate}
+            handleAddComponente={handleAddComponente}
+            handleRemoveComponente={handleRemoveComponente}
+            handleAddBola={handleAddBola}
+            handleRemoveBola={handleRemoveBola}
           />
         );
       default:
