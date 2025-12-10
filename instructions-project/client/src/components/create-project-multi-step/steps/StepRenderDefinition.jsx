@@ -140,8 +140,8 @@ export function StepRenderDefinition({ formData, onInputChange, onNext, onBack }
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
-        <div className="max-w-7xl mx-auto space-y-4">
+      <div className="flex-1 overflow-y-auto px-8 pb-8 custom-scrollbar">
+        <div className="max-w-7xl mx-auto space-y-8">
           {/* Bulk Actions */}
           {uploadedImages.length > 0 && (
             <RenderBulkActions
@@ -160,10 +160,11 @@ export function StepRenderDefinition({ formData, onInputChange, onNext, onBack }
               onRenderChange={handleRenderChange}
             />
           ) : (
-            <Card className="p-8">
-              <div className="text-center text-default-500">
-                <p>Nenhuma imagem disponível para renderização.</p>
-                <p className="text-sm mt-2">Volte ao passo anterior para adicionar imagens.</p>
+            <Card className="p-12 bg-black/40 border border-white/10 backdrop-blur-md">
+              <div className="text-center text-default-400">
+                <Icon icon="lucide:image-off" className="text-6xl mx-auto mb-4 text-default-600" />
+                <p className="text-xl font-bold text-white mb-2">Nenhuma imagem disponível para renderização.</p>
+                <p className="text-base">Volte ao passo anterior para adicionar imagens.</p>
               </div>
             </Card>
           )}

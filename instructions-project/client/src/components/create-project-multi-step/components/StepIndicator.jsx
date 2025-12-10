@@ -1,9 +1,38 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "@heroui/use-theme";
 
 export function StepIndicator({ steps, currentStep, onStepClick, vertical = false }) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return theme === 'dark';
+  });
+
+  useEffect(() => {
+    const checkDark = () => {
+      const hasDarkClass = document.documentElement.classList.contains('dark');
+      setIsDark(hasDarkClass);
+    };
+
+    checkDark();
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    window.addEventListener('themechange', checkDark);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('themechange', checkDark);
+    };
+  }, [theme]);
 
   // Função para traduzir o label do step
   const getTranslatedLabel = (stepId) => {
@@ -39,17 +68,22 @@ export function StepIndicator({ steps, currentStep, onStepClick, vertical = fals
                     className={`flex items-center gap-3 transition-all cursor-pointer hover:opacity-80 group ${vertical ? "flex-row-reverse text-right" : "text-left"}`}
                   >
                     <div
-                      className={`relative z-10 flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 border-2 ${isCompleted
-                        ? "bg-success border-success text-white shadow-sm"
+                      className={`relative z-10 flex items-center justify-center aspect-square w-8 h-8 rounded-full transition-all duration-300 ${isCompleted
+                        ? "bg-success border-2 border-success text-white shadow-sm"
                         : isActive
-                          ? "bg-primary border-primary text-white shadow-md scale-110"
-                          : "bg-default-50 border-default-200 text-default-400 group-hover:border-default-300"
+                          ? isDark
+                            ? "bg-blue-600 text-white shadow-md"
+                            : "bg-primary text-white shadow-md"
+                          : isDark
+                            ? "bg-default-50 border-2 border-default-200 text-default-400 group-hover:border-default-300"
+                            : "bg-gray-100 border-2 border-gray-300 text-gray-500 group-hover:border-gray-400"
                         }`}
+                      style={{ minWidth: '2rem', minHeight: '2rem' }}
                     >
                       {isCompleted ? (
                         <Icon icon="lucide:check" className="text-base" />
                       ) : (
-                        <span className="text-sm font-semibold">{stepNumber}</span>
+                        <span className="text-sm font-semibold leading-none">{stepNumber}</span>
                       )}
                     </div>
 
@@ -75,8 +109,13 @@ export function StepIndicator({ steps, currentStep, onStepClick, vertical = fals
 
                     {!vertical && (
                       <span
-                        className={`whitespace-nowrap text-xs sm:text-sm ${isActive ? "font-semibold text-foreground" : "text-default-500"
-                          }`}
+                        className={`whitespace-nowrap text-xs sm:text-sm ${
+                          isActive 
+                            ? "font-semibold text-foreground" 
+                            : isDark 
+                              ? "text-default-500" 
+                              : "text-gray-600"
+                        }`}
                       >
                         {getTranslatedLabel(step.id)}
                       </span>
@@ -87,10 +126,20 @@ export function StepIndicator({ steps, currentStep, onStepClick, vertical = fals
                 {!isLast && (
                   <div
                     className={`${vertical
-                      ? `w-0.5 h-6 mr-4 my-1 transition-colors duration-300 ${isCompleted ? "bg-success/50" : "bg-default-200"
-                      }`
-                      : `h-0.5 w-6 sm:w-10 md:w-16 lg:w-24 ${isCompleted ? "bg-success" : "bg-default-200"
-                      }`
+                      ? `w-0.5 h-6 mr-4 my-1 transition-colors duration-300 ${
+                          isCompleted 
+                            ? "bg-success/50" 
+                            : isDark 
+                              ? "bg-default-200" 
+                              : "bg-gray-300"
+                        }`
+                      : `h-0.5 w-6 sm:w-10 md:w-16 lg:w-24 ${
+                          isCompleted 
+                            ? "bg-success" 
+                            : isDark 
+                              ? "bg-default-200" 
+                              : "bg-gray-300"
+                        }`
                       }`}
                   />
                 )}

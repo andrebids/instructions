@@ -13,16 +13,29 @@ export function ImageRenderItem({ image, thumbnail, selectedRender, onRenderChan
   const isDesigner = selectedRender === 'designer';
 
   return (
-    <Card className="w-full bg-content1 border border-default-200 shadow-sm hover:shadow-md transition-all">
-      <CardBody className="p-3">
-        <div className="flex items-center gap-3">
+    <Card 
+      className={`
+        w-full transition-all duration-300 backdrop-blur-md border 
+        ${isDesigner 
+          ? 'bg-black/60 border-pink-500/50 shadow-[0_0_20px_-5px_rgba(236,72,153,0.3)]' 
+          : isAI 
+            ? 'bg-black/60 border-warning-500/50 shadow-[0_0_20px_-5px_rgba(245,165,36,0.3)]'
+            : 'bg-black/40 border-white/10 hover:bg-black/50 hover:border-white/20'
+        }
+      `}
+    >
+      <CardBody className="p-4">
+        <div className="flex items-center gap-4">
           {/* Thumbnail Compacto */}
-          <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-default-100 border border-default-200">
+          <div className={`
+            flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border transition-all duration-300 relative group
+            ${isDesigner ? 'border-pink-500/50' : isAI ? 'border-warning-500/50' : 'border-white/10'}
+          `}>
             {thumbnail ? (
               <img
                 src={thumbnail}
                 alt={image.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 onError={(e) => {
                   e.target.style.display = 'none';
                   if (e.target.nextSibling) {
@@ -31,20 +44,27 @@ export function ImageRenderItem({ image, thumbnail, selectedRender, onRenderChan
                 }}
               />
             ) : null}
-            <div className="w-full h-full hidden items-center justify-center bg-default-100">
-              <Icon icon="lucide:image" className="text-xl text-default-400" />
+            <div className={`w-full h-full ${!thumbnail ? 'flex' : 'hidden'} items-center justify-center bg-white/5`}>
+              <Icon icon="lucide:image" className="text-2xl text-white/20" />
             </div>
           </div>
 
-          <div className="flex-1 min-w-0 flex flex-col justify-between h-16 py-1">
+          <div className="flex-1 min-w-0 flex flex-col justify-between h-20 py-0.5">
             {/* Nome do ficheiro */}
-            <p className="text-sm font-medium text-foreground truncate" title={image.name}>
+            <p className="text-base font-bold text-white truncate" title={image.name}>
               {image.name}
             </p>
 
             {/* Controls Integrados */}
             <div className="flex items-center justify-between mt-auto">
-              <div className="flex items-center gap-2 bg-default-50 rounded-full px-2 py-1 border border-default-100">
+              <div className={`
+                flex items-center gap-3 rounded-full px-3 py-1.5 border transition-all duration-300
+                ${isDesigner 
+                  ? 'bg-pink-500/10 border-pink-500/20' 
+                  : isAI 
+                    ? 'bg-warning-500/10 border-warning-500/20' 
+                    : 'bg-white/5 border-white/10'}
+              `}>
                 <Switch
                   isSelected={isDesigner}
                   onValueChange={(checked) => {
@@ -53,7 +73,7 @@ export function ImageRenderItem({ image, thumbnail, selectedRender, onRenderChan
                   color="secondary"
                   size="sm"
                   classNames={{
-                    wrapper: isDesigner ? 'bg-pink-500' : 'bg-warning-500',
+                     wrapper: isDesigner ? 'group-data-[selected=true]:bg-pink-500' : 'group-data-[selected=true]:bg-warning-500',
                   }}
                   thumbIcon={({ isSelected, className }) => 
                     isSelected ? (
@@ -63,7 +83,9 @@ export function ImageRenderItem({ image, thumbnail, selectedRender, onRenderChan
                     )
                   }
                 />
-                <span className={`text-xs font-semibold ${isDesigner ? 'text-pink-600' : isAI ? 'text-warning-600' : 'text-default-400'}`}>
+                <span className={`text-xs font-bold uppercase tracking-wider ${
+                  isDesigner ? 'text-pink-500' : isAI ? 'text-warning-500' : 'text-default-400'
+                }`}>
                   {isDesigner 
                     ? t('pages.createProject.renderDefinition.bulkActions.designer') 
                     : isAI 

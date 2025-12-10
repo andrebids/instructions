@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Card, Button, DatePicker } from "@heroui/react";
 import { today, getLocalTimeZone } from "@internationalized/date";
 import { Icon } from "@iconify/react";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "@heroui/use-theme";
 
 // Hooks
 import { useProjectForm } from "./hooks/useProjectForm";
@@ -37,9 +38,39 @@ const TEST_BREAKPOINT_5 = false;
 export function CreateProjectMultiStep({ onClose, selectedImage, projectId, initialStep, logoIndex }) {
   // Initialize hooks
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const saveStatus = useSaveStatus();
   const formState = useProjectForm(onClose, projectId, saveStatus, logoIndex);
   const clientState = useClientManagement(formState.setFormData);
+  
+  // Detect dark mode
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return theme === 'dark';
+  });
+
+  useEffect(() => {
+    const checkDark = () => {
+      const hasDarkClass = document.documentElement.classList.contains('dark');
+      setIsDark(hasDarkClass);
+    };
+
+    checkDark();
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    window.addEventListener('themechange', checkDark);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('themechange', checkDark);
+    };
+  }, [theme]);
 
   // Get visible steps based on project type
   // Sempre mostrar todos os steps visíveis (não filtrar mesmo quando há logoIndex)
@@ -599,7 +630,9 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
   };
 
   return (
-    <div className="w-full h-full flex flex-col min-h-0 relative">
+    <div className={`w-full h-full flex flex-col min-h-0 relative ${
+      isDark ? 'bg-background' : 'bg-gray-50'
+    }`}>
       {/* Animated Gradient Background removed */}
 
       {/* Glassmorphism Card */}
@@ -607,23 +640,37 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
         className="shadow-2xl overflow-hidden flex-1 min-h-0 rounded-none relative z-10"
         classNames={{ base: "flex flex-col" }}
         style={{
-          background: 'rgba(20, 20, 20, 0.6)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
+          background: isDark 
+            ? 'rgba(20, 20, 20, 0.6)' 
+            : '#ffffff',
+          backdropFilter: isDark ? 'blur(16px)' : 'none',
+          WebkitBackdropFilter: isDark ? 'blur(16px)' : 'none',
+          border: isDark 
+            ? '1px solid rgba(255, 255, 255, 0.1)' 
+            : '1px solid rgba(0, 0, 0, 0.1)',
+          boxShadow: isDark 
+            ? '0 8px 32px 0 rgba(0, 0, 0, 0.37)' 
+            : '0 8px 32px 0 rgba(0, 0, 0, 0.1)'
         }}
       >
         <div className="flex flex-col h-full min-h-0">
 
           {/* Top bar + horizontal stepper */}
-          <div className="w-full bg-content1 px-4 py-2 sm:px-6 sm:py-3 border-b border-divider flex-shrink-0">
+          <div className={`w-full px-4 py-2 sm:px-6 sm:py-3 border-b flex-shrink-0 ${
+            isDark 
+              ? 'bg-content1 border-divider' 
+              : 'bg-white/95 dark:bg-content1 border-default-200 shadow-sm'
+          }`}>
             <div className="flex items-center gap-4 justify-between">
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <>
                   <Button
                     variant="light"
-                    className="text-default-600 shrink-0"
+                    className={`shrink-0 ${
+                      isDark 
+                        ? "text-default-600" 
+                        : "text-gray-700 hover:text-gray-900"
+                    }`}
                     startContent={<Icon icon="lucide:arrow-left" />}
                     as="a"
                     href="/"
@@ -654,7 +701,13 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
             return (
               <Scroller
                 hideScrollbar
-                className={`flex-1 min-h-0 ${isLogoInstructionsStep ? '' : 'bg-default-100'} ${isAIDesignerStep() || isLogoInstructionsStep
+                className={`flex-1 min-h-0 ${
+                  isLogoInstructionsStep 
+                    ? '' 
+                    : isDark 
+                      ? 'bg-default-100' 
+                      : 'bg-white'
+                } ${isAIDesignerStep() || isLogoInstructionsStep
                   ? 'overflow-hidden'
                   : 'px-4 py-6 sm:px-6 sm:py-8 lg:px-8 overflow-y-auto'
                   }`}
