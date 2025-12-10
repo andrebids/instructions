@@ -697,6 +697,8 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
           {(() => {
             const currentVisibleStep = visibleSteps[navigation.currentStep - 1];
             const isLogoInstructionsStep = currentVisibleStep?.id === 'logo-instructions';
+            const isRenderDefinitionStep = currentVisibleStep?.id === 'render-definition';
+            const isFullLayoutStep = isAIDesignerStep() || isLogoInstructionsStep || isRenderDefinitionStep;
 
             return (
               <Scroller
@@ -707,13 +709,13 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
                     : isDark 
                       ? 'bg-default-100' 
                       : 'bg-white'
-                } ${isAIDesignerStep() || isLogoInstructionsStep
+                } ${isFullLayoutStep
                   ? 'overflow-hidden'
                   : 'px-4 py-6 sm:px-6 sm:py-8 lg:px-8 overflow-y-auto'
                   }`}
               >
                 <div className={
-                  isAIDesignerStep() || isLogoInstructionsStep
+                  isFullLayoutStep
                     ? 'h-full w-full'
                     : 'max-w-6xl mx-auto'
                 }>

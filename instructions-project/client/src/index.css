@@ -267,10 +267,11 @@ ul[data-type="taskList"] li[data-checked="true"]>div {
 /* Marquee infinito para nomes de imagens */
 @keyframes marquee-infinite {
   0% {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
   100% {
-    transform: translateX(-50%);
+    /* Usar variável CSS calculada dinamicamente para loop perfeito */
+    transform: translate3d(var(--translate-x, -50%), 0, 0);
   }
 }
 
