@@ -9,8 +9,9 @@ import { projectsAPI } from "../../../services/api";
  * @param {Object} props
  * @param {Function} props.onUploadComplete - Callback quando upload completo, recebe array de imagens
  * @param {string} props.projectId - ID do projeto para associar as imagens
+ * @param {Function} [props.onRequestClose] - Callback para fechar o modal ao clicar fora
  */
-export const UploadModal = ({ onUploadComplete, projectId }) => {
+export const UploadModal = ({ onUploadComplete, projectId, onRequestClose = () => {} }) => {
   const [isPreparing, setIsPreparing] = useState(true);
   const [dragOver, setDragOver] = useState(false);
   const [files, setFiles] = useState([]);
@@ -225,14 +226,25 @@ export const UploadModal = ({ onUploadComplete, projectId }) => {
     }
   };
 
+  const handleBackdropClick = (e) => {
+    // Fechar apenas se clicar diretamente no backdrop e não no conteúdo
+    if (e.target === e.currentTarget && !uploading) {
+      onRequestClose();
+    }
+  };
+
   return (
     <div 
       className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onClick={handleBackdropClick}
     >
-      <Card className="p-8 text-center max-w-lg w-full m-4 transition-all duration-300">
+      <Card 
+        className="p-8 text-center max-w-lg w-full m-4 transition-all duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Inputs de ficheiro/câmara sempre montados para permitir adicionar mais imagens a qualquer momento */}
         <input
           ref={fileInputRef}

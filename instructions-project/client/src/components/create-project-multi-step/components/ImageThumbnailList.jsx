@@ -2,7 +2,7 @@
  * Componente de lista de thumbnails de imagens (sidebar lateral)
  */
 import React from 'react';
-import { Card, CardFooter, Tooltip, Spinner, Image } from "@heroui/react";
+import { Card, CardFooter, Tooltip, Spinner, Image, ScrollShadow } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { NightThumb } from '../../ui/NightThumb';
 
@@ -168,7 +168,12 @@ export const ImageThumbnailList = ({
       <div className="p-3 md:p-4 border-b border-divider text-center">
         <h3 className="text-base md:text-lg font-semibold">Source Images</h3>
       </div>
-      <div className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4 space-y-2 md:space-y-3">
+      <div className="flex-1 flex flex-col min-h-0">
+        <ScrollShadow
+          hideScrollBar={false}
+          visibility="auto"
+          className="flex-1 hover-reveal-scrollbar p-2 md:p-3 lg:p-4 space-y-2 md:space-y-3"
+        >
         {uploadedImages.map((image, index) => {
           const isConverted = conversionComplete[image.id] === true;
           const isCurrentlyConverting = index === activeGifIndex && activeGifIndex >= 0;
@@ -186,9 +191,9 @@ export const ImageThumbnailList = ({
                 <div
                   className={
                     isDisabled
-                      ? 'border-none transition-all duration-200 cursor-not-allowed opacity-60'
+                        ? 'border-none transition-all duration-200 cursor-not-allowed opacity-60'
                       : selectedImage?.id === image.id 
-                        ? 'border-none transition-all duration-200 cursor-pointer ring-2 ring-primary shadow-lg rounded-lg'
+                        ? 'border-none transition-all duration-200 cursor-pointer shadow-lg rounded-lg'
                         : 'border-none transition-all duration-200 cursor-pointer hover:ring-1 hover:ring-primary/50 rounded-lg'
                   }
                   onClick={() => {
@@ -222,8 +227,15 @@ export const ImageThumbnailList = ({
                     )}
                     {/* Checkmark de seleção - aparece quando imagem está selecionada */}
                     {selectedImage?.id === image.id && (
-                      <div className="absolute bottom-1 right-1 z-50 rounded-full p-1.5 shadow-md bg-primary-500/80 backdrop-blur-sm text-white pointer-events-none">
-                        <Icon icon="lucide:check" className="text-xs" />
+                      <div
+                        className="absolute top-1 left-1 z-50 rounded-full p-1.5 shadow-lg text-white pointer-events-none"
+                        style={{
+                          backdropFilter: 'blur(20px)',
+                          WebkitBackdropFilter: 'blur(20px)',
+                          background: 'linear-gradient(135deg, rgba(59,130,246,0.30), rgba(59,130,246,0.15))'
+                        }}
+                      >
+                        <Icon icon="lucide:check" className="text-sm leading-none" />
                       </div>
                     )}
                   {/* NightThumb com animação de dia para noite - só mostra se API disponível */}
@@ -278,28 +290,32 @@ export const ImageThumbnailList = ({
           );
         })}
 
-        {/* Botão para adicionar mais imagens */}
-        <Card
-          isFooterBlurred
-          isPressable={true}
-          className="w-full cursor-pointer border-none transition-all duration-200 hover:ring-1 hover:ring-primary/50"
-          radius="lg"
-          onPress={onAddMore}
-          aria-label="Add more images"
-        >
-          <div className="w-full h-[120px] flex items-center justify-center bg-gradient-to-br from-default-100 to-default-200 rounded-lg relative overflow-hidden">
-            <div className="flex flex-col items-center gap-2 text-default-500 relative z-10">
-              <Icon icon="lucide:plus-circle" className="text-3xl opacity-80" />
-              <span className="text-sm font-medium text-center leading-tight">Add more images</span>
+        </ScrollShadow>
+
+        {/* Botão para adicionar mais imagens - sempre visível fora da área rolável */}
+        <div className="p-2 md:p-3 lg:p-4 border-t border-divider">
+          <Card
+            isFooterBlurred
+            isPressable={true}
+            className="w-full cursor-pointer border-none transition-all duration-200 hover:ring-1 hover:ring-primary/50"
+            radius="lg"
+            onPress={onAddMore}
+            aria-label="Add more images"
+          >
+            <div className="w-full h-[120px] flex items-center justify-center bg-gradient-to-br from-default-100 to-default-200 rounded-lg relative overflow-hidden">
+              <div className="flex flex-col items-center gap-2 text-default-500 relative z-10">
+                <Icon icon="lucide:plus-circle" className="text-3xl opacity-80" />
+                <span className="text-sm font-medium text-center leading-tight">Add more images</span>
+              </div>
             </div>
-          </div>
-          <CardFooter className="absolute bg-black/40 bottom-0 z-10 py-1 pointer-events-none">
-            <div className="flex grow gap-2 items-center">
-              <Icon icon="lucide:upload" className="text-tiny text-primary-400" />
-              <p className="text-tiny text-white/80 truncate">Upload or camera</p>
-            </div>
-          </CardFooter>
-        </Card>
+            <CardFooter className="absolute bg-black/40 bottom-0 z-10 py-1 pointer-events-none">
+              <div className="flex grow gap-2 items-center">
+                <Icon icon="lucide:upload" className="text-tiny text-primary-400" />
+                <p className="text-tiny text-white/80 truncate">Upload or camera</p>
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
       </div>
     </aside>
   );

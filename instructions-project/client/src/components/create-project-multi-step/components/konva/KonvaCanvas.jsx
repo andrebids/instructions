@@ -25,6 +25,7 @@ export const KonvaCanvas = forwardRef(({
   canvasImages = [],
   selectedImage,
   onRequireBackground,
+  onEmptyCanvasClick = null,
   snapZones = [],
   isDayMode = true,
   isEditingZones = false,
@@ -250,6 +251,9 @@ export const KonvaCanvas = forwardRef(({
     const stage = e.target.getStage();
     
     if (target === stage) {
+      if (onEmptyCanvasClick && (!canvasImages || canvasImages.length === 0)) {
+        onEmptyCanvasClick();
+      }
       console.log('❌ Desselecionado');
       setSelectedId(null);
     }

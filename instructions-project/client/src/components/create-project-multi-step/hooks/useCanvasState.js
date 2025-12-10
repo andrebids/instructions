@@ -17,7 +17,7 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
   const [decorations, setDecorations] = useState([]);
   const [noBgWarning, setNoBgWarning] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [uploadStep, setUploadStep] = useState('uploading'); // 'uploading', 'loading', 'done'
+  const [uploadStep, setUploadStep] = useState('done'); // 'uploading', 'loading', 'done'
   const [selectedImage, setSelectedImage] = useState(null);
   const [canvasImages, setCanvasImages] = useState([]); // Imagens adicionadas ao canvas
   const [isDayMode, setIsDayMode] = useState(true); // Controla se mostra imagem de dia ou noite
@@ -79,13 +79,16 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
     if (formData?.uploadedImages && Array.isArray(formData.uploadedImages) && formData.uploadedImages.length > 0) {
       setUploadedImages(formData.uploadedImages);
       
-      // Restaurar uploadStep baseado no estado salvo ou nas imagens disponíveis
+      // Restaurar uploadStep baseado no estado salvo, mas nunca auto-abrir modal
       const savedSimulationState = formData?.simulationState || {};
-      const savedUploadStep = savedSimulationState.uploadStep || (formData.uploadedImages.length > 0 ? 'done' : 'uploading');
-      setUploadStep(savedUploadStep);
+      const rawSavedUploadStep = savedSimulationState.uploadStep;
+      const normalizedUploadStep = rawSavedUploadStep === 'uploading'
+        ? 'done'
+        : (rawSavedUploadStep || 'done');
+      setUploadStep(normalizedUploadStep);
     } else {
-      // Se não houver imagens salvas, manter estado de upload
-      setUploadStep('uploading');
+      // Sem imagens salvas: manter em 'done' e abrir modal apenas sob ação do utilizador
+      setUploadStep('done');
     }
     
     // Restaurar modo dia/noite
