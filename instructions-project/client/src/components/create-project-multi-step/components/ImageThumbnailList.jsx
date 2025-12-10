@@ -27,13 +27,27 @@ const mapImagePath = (path) => {
 const MarqueeText = ({ children, className = "" }) => {
   const containerRef = React.useRef(null);
   const textRef = React.useRef(null);
+  const firstSpanRef = React.useRef(null);
   const [needsMarquee, setNeedsMarquee] = React.useState(false);
+  const [textWidth, setTextWidth] = React.useState(0);
+  const [translateX, setTranslateX] = React.useState('50%');
 
   React.useEffect(() => {
     const checkOverflow = () => {
       if (textRef.current && containerRef.current) {
-        const isOverflowing = textRef.current.scrollWidth > containerRef.current.clientWidth;
-        setNeedsMarquee(isOverflowing);
+        const textElement = textRef.current;
+        const containerElement = containerRef.current;
+        const textWidthValue = textElement.scrollWidth;
+        const containerWidth = containerElement.clientWidth;
+        const isOverflowing = textWidthValue > containerWidth;
+        
+        if (isOverflowing) {
+          setTextWidth(textWidthValue);
+          setNeedsMarquee(true);
+        } else {
+          setTextWidth(0);
+          setNeedsMarquee(false);
+        }
       }
     };
 
@@ -41,16 +55,56 @@ const MarqueeText = ({ children, className = "" }) => {
     checkOverflow();
     
     // Verificar também após um pequeno delay para garantir que o layout está completo
-    const timeout = setTimeout(checkOverflow, 100);
+    const timeout = setTimeout(checkOverflow, 150);
 
-    // Verificar quando a janela é redimensionada
-    window.addEventListener('resize', checkOverflow);
+    // Verificar quando a janela é redimensionada (com debounce)
+    let resizeTimeout;
+    const handleResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(checkOverflow, 100);
+    };
+    window.addEventListener('resize', handleResize);
+    
+    // Usar ResizeObserver para detectar mudanças no container
+    let resizeObserver = null;
+    if (containerRef.current && window.ResizeObserver) {
+      resizeObserver = new ResizeObserver(() => {
+        // Usar requestAnimationFrame para garantir que o DOM está atualizado
+        requestAnimationFrame(checkOverflow);
+      });
+      resizeObserver.observe(containerRef.current);
+    }
 
     return () => {
       clearTimeout(timeout);
-      window.removeEventListener('resize', checkOverflow);
+      clearTimeout(resizeTimeout);
+      window.removeEventListener('resize', handleResize);
+      if (resizeObserver && containerRef.current) {
+        resizeObserver.unobserve(containerRef.current);
+      }
     };
   }, [children]);
+
+  // Calcular translateX quando o primeiro span estiver disponível
+  React.useEffect(() => {
+    if (needsMarquee && firstSpanRef.current && textWidth > 0) {
+      const gap = 64; // 4rem = 64px
+      const firstSpanWidth = firstSpanRef.current.offsetWidth || textWidth;
+      const totalWidth = firstSpanWidth + gap + firstSpanWidth; // texto1 + gap + texto2
+      const moveDistance = firstSpanWidth + gap; // distância para mover
+      const percentage = (moveDistance / totalWidth) * 100;
+      setTranslateX(`-${percentage}%`);
+    }
+  }, [needsMarquee, textWidth]);
+
+  // Calcular duração da animação baseada no comprimento do texto
+  // Velocidade reduzida: ~15px por segundo para uma animação mais lenta e suave
+  const animationDuration = textWidth > 0 
+    ? Math.max(15, Math.min(50, textWidth / 15)) 
+    : 20;
+
+  // Gap fixo de 4rem para criar espaço adequado entre os textos duplicados
+  const gap = 64; // 4rem = 64px
 
   return (
     <div 
@@ -58,15 +112,25 @@ const MarqueeText = ({ children, className = "" }) => {
       className={`overflow-hidden ${className}`} 
       style={{ maxWidth: "100%", width: "100%" }}
     >
-      {needsMarquee ? (
+      {needsMarquee && textWidth > 0 ? (
         <div 
-          className="inline-flex whitespace-nowrap" 
+          className="inline-flex whitespace-nowrap"
           style={{
-            animation: "marquee-infinite 15s linear infinite"
+            willChange: 'transform',
+            animation: `marquee-infinite ${animationDuration}s linear infinite`,
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            transform: 'translateZ(0)',
+            WebkitTransform: 'translateZ(0)',
+            '--translate-x': translateX
           }}
         >
-          <span>{children}</span>
-          <span style={{ paddingLeft: "2rem" }}>{children}</span>
+          <span ref={firstSpanRef} style={{ display: 'inline-block', flexShrink: 0 }}>{children}</span>
+          <span style={{ 
+            display: 'inline-block', 
+            flexShrink: 0,
+            paddingLeft: `${gap}px`
+          }}>{children}</span>
         </div>
       ) : (
         <span ref={textRef} className="truncate inline-block whitespace-nowrap" style={{ maxWidth: "100%" }}>
@@ -156,6 +220,12 @@ export const ImageThumbnailList = ({
                         <Icon icon="lucide:trash-2" className="text-xs" />
                       </button>
                     )}
+                    {/* Checkmark de seleção - aparece quando imagem está selecionada */}
+                    {selectedImage?.id === image.id && (
+                      <div className="absolute bottom-1 right-1 z-50 rounded-full p-1.5 shadow-md bg-primary-500/80 backdrop-blur-sm text-white pointer-events-none">
+                        <Icon icon="lucide:check" className="text-xs" />
+                      </div>
+                    )}
                   {/* NightThumb com animação de dia para noite - só mostra se API disponível */}
                   {image.nightVersion && (
                     <NightThumb
@@ -200,11 +270,6 @@ export const ImageThumbnailList = ({
                         {image.name}
                       </MarqueeText>
                     </div>
-                    {selectedImage?.id === image.id && (
-                      <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
-                        <Icon icon="lucide:check" className="text-white text-xs" />
-                      </div>
-                    )}
                   </CardFooter>
                   </Card>
                 </div>

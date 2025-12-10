@@ -172,10 +172,10 @@ export function StepRenderDefinition({ formData, onInputChange, onNext, onBack }
       </div>
 
       {/* Sticky Footer com Resumo e Navegação */}
-      <div className="flex-shrink-0 bg-content1 border-t border-divider shadow-lg">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          {/* Resumo Compacto */}
-          <div className="flex items-center justify-between mb-3 text-sm">
+      <div className="w-full bg-content1 border-t border-divider px-4 py-4 sm:px-6 sm:py-6 flex-shrink-0">
+        <div className="max-w-6xl mx-auto">
+          {/* Resumo Compacto - Mantido acima dos botões para contexto importante */}
+          <div className="flex items-center justify-between mb-4 text-sm">
             <div className="flex items-center gap-4">
               {summary.aiCount > 0 && (
                 <div className="flex items-center gap-1.5">
@@ -207,7 +207,7 @@ export function StepRenderDefinition({ formData, onInputChange, onNext, onBack }
             </div>
           </div>
 
-          {/* Botões de Navegação */}
+          {/* Botões de Navegação - Layout alinhado com NavigationFooter */}
           <div className="flex justify-between items-center gap-4">
             <Button
               variant="flat"
@@ -220,17 +220,16 @@ export function StepRenderDefinition({ formData, onInputChange, onNext, onBack }
 
             <Button
               color="primary"
-              size="lg"
               onPress={handleConfirm}
               isDisabled={!summary.canConfirm || isProcessing}
               isLoading={isProcessing}
-              startContent={!isProcessing && <Icon icon="lucide:check-circle" />}
-              className="bg-blue-600 text-white min-w-48"
+              endContent={!isProcessing && <Icon icon="lucide:arrow-right" />}
+              className="bg-blue-600 text-white"
             >
               {isProcessing
                 ? t('pages.createProject.renderDefinition.summary.processing')
                 : summary.canConfirm
-                  ? t('pages.createProject.renderDefinition.summary.confirm')
+                  ? t('common.continue') // Using generic 'Continue' or similar
                   : t('pages.createProject.renderDefinition.summary.selectRequired')
               }
             </Button>
