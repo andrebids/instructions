@@ -5,12 +5,13 @@ import { useTranslation } from 'react-i18next';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
-import { Placeholder } from '@tiptap/extensions/placeholder';
+import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
 import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
-import { TaskList, TaskItem } from '@tiptap/extension-list';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 export function NoteEditor({ note, onSave, onDelete }) {
@@ -72,20 +73,20 @@ export function NoteEditor({ note, onSave, onDelete }) {
         const noteIdChanged = previousNoteIdRef.current !== note.id;
         const noteTitleChanged = previousNoteTitleRef.current !== (note.title || '');
         const noteContentChanged = previousNoteContentRef.current !== (note.content || '');
-        
+
         // Se nada mudou, não fazer nada
         if (!noteIdChanged && !noteTitleChanged && !noteContentChanged) {
             return;
         }
-        
+
         // Atualizar refs sincronamente para evitar race conditions
         previousNoteIdRef.current = note.id;
         previousNoteTitleRef.current = note.title || '';
         previousNoteContentRef.current = note.content || '';
-        
+
         // Marcar que estamos resetando para evitar race condition com o effect de tracking
         isResettingRef.current = true;
-        
+
         // Usar setTimeout para evitar setState síncrono em effect
         const timeoutId = setTimeout(() => {
             setTitle(note.title || '');
@@ -114,7 +115,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
         if (noteIdChanged || isResettingRef.current) {
             return;
         }
-        
+
         // Verificar se o título do state difere do título da nota
         // Isso indica que o usuário editou o título manualmente
         let timeoutId = null;

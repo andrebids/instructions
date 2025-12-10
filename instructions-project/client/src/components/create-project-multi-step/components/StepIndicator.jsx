@@ -2,7 +2,7 @@ import React from "react";
 import { Icon } from "@iconify/react";
 import { useTranslation } from "react-i18next";
 
-export function StepIndicator({ steps, currentStep, onStepClick }) {
+export function StepIndicator({ steps, currentStep, onStepClick, vertical = false }) {
   const { t } = useTranslation();
 
   // Função para traduzir o label do step
@@ -16,9 +16,15 @@ export function StepIndicator({ steps, currentStep, onStepClick }) {
     return translated !== translationKey ? translated : steps.find(s => s.id === stepId)?.label || stepId;
   };
   return (
-    <div className="flex-1 overflow-x-auto scrollbar-hide">
-      <div className="flex justify-center">
-        <ol className="flex items-center gap-2 sm:gap-4 min-w-fit">
+    <div className={`${vertical
+      ? "fixed right-8 top-1/2 -translate-y-1/2 z-50 bg-transparent"
+      : "flex-1 overflow-x-auto scrollbar-hide p-4"
+      }`}>
+      <div className={vertical ? "" : "flex justify-center"}>
+        <ol className={`${vertical
+          ? "flex flex-col items-end"
+          : "flex items-center gap-2 sm:gap-4 min-w-fit"
+          }`}>
           {steps.map((step, index) => {
             const stepNumber = index + 1;
             const isCompleted = stepNumber < currentStep;
@@ -27,36 +33,64 @@ export function StepIndicator({ steps, currentStep, onStepClick }) {
 
             return (
               <React.Fragment key={step.id}>
-                <li className="flex items-center gap-1.5 sm:gap-2">
+                <li className={`flex items-center gap-3 relative ${vertical ? "py-1" : ""}`}>
                   <button
                     onClick={() => onStepClick && onStepClick(stepNumber)}
-                    className="flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer hover:opacity-80"
+                    className={`flex items-center gap-3 transition-all cursor-pointer hover:opacity-80 group ${vertical ? "flex-row-reverse text-right" : "text-left"}`}
                   >
                     <div
-                      className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-colors ${isCompleted
-                        ? "bg-success text-white"
+                      className={`relative z-10 flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 border-2 ${isCompleted
+                        ? "bg-success border-success text-white shadow-sm"
                         : isActive
-                          ? "bg-blue-600 text-white"
-                          : "bg-default-100 text-default-400"
+                          ? "bg-primary border-primary text-white shadow-md scale-110"
+                          : "bg-default-50 border-default-200 text-default-400 group-hover:border-default-300"
                         }`}
                     >
                       {isCompleted ? (
-                        <Icon icon="lucide:check" className="text-base sm:text-lg" />
+                        <Icon icon="lucide:check" className="text-base" />
                       ) : (
-                        <span className="text-xs sm:text-sm font-medium">{stepNumber}</span>
+                        <span className="text-sm font-semibold">{stepNumber}</span>
                       )}
                     </div>
-                    <span
-                      className={`whitespace-nowrap text-xs sm:text-sm ${isActive ? "font-semibold text-foreground" : "text-default-500"
-                        }`}
-                    >
-                      {getTranslatedLabel(step.id)}
-                    </span>
+
+                    {vertical && (
+                      <div className="flex flex-col items-end max-w-0 opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-300 overflow-hidden">
+                        <span
+                          className={`whitespace-nowrap text-sm font-medium transition-colors ${isActive
+                            ? "text-foreground font-semibold"
+                            : isCompleted
+                              ? "text-white/90"
+                              : "text-gray-300"
+                            }`}
+                        >
+                          {getTranslatedLabel(step.id)}
+                        </span>
+                        {isActive && (
+                          <span className="text-xs text-primary/90 font-medium whitespace-nowrap">
+                            {t('common.currentStep', 'Current Step')}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {!vertical && (
+                      <span
+                        className={`whitespace-nowrap text-xs sm:text-sm ${isActive ? "font-semibold text-foreground" : "text-default-500"
+                          }`}
+                      >
+                        {getTranslatedLabel(step.id)}
+                      </span>
+                    )}
                   </button>
                 </li>
+
                 {!isLast && (
                   <div
-                    className={`h-0.5 w-6 sm:w-10 md:w-16 lg:w-24 ${isCompleted ? "bg-success" : "bg-default-200"
+                    className={`${vertical
+                      ? `w-0.5 h-6 mr-4 my-1 transition-colors duration-300 ${isCompleted ? "bg-success/50" : "bg-default-200"
+                      }`
+                      : `h-0.5 w-6 sm:w-10 md:w-16 lg:w-24 ${isCompleted ? "bg-success" : "bg-default-200"
+                      }`
                       }`}
                   />
                 )}
