@@ -1,6 +1,5 @@
 import React from "react";
 import { ProjectTypeCard } from "../components/ProjectTypeCard";
-import { SimuWorkflowSelector } from "../components/SimuWorkflowSelector";
 
 export function StepProjectType({ formData, onInputChange }) {
   const projectTypes = [
@@ -50,14 +49,6 @@ export function StepProjectType({ formData, onInputChange }) {
             ))}
           </div>
         </div>
-
-        {/* Simu Workflow Selector */}
-        {formData.projectType === "simu" && (
-          <SimuWorkflowSelector
-            selectedWorkflow={formData.simuWorkflow}
-            onSelect={(workflow) => onInputChange("simuWorkflow", workflow)}
-          />
-        )}
       </div>
     </div>
   );

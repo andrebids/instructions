@@ -304,6 +304,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   }, [formData?.id, formData?.simulationState?.conversionComplete, imageConversion]);
 
   const projectId = formData?.id || formData?.tempProjectId;
+
   const cartoucheData = canvasState.selectedImage 
     ? cartoucheManagement.getCartoucheForImage(canvasState.selectedImage.id)
     : null;

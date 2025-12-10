@@ -17,7 +17,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
   const [formData, setFormData] = useState({
     name: "",
     projectType: null,
-    simuWorkflow: null,
+    simuWorkflow: null, // Mantido para compatibilidade, mas não mais usado no StepProjectType
     status: "draft",
     category: "normal",
     clientId: null,
@@ -40,6 +40,9 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
     decorationsByImage: {},   // Decorações por imagem: { 'image-id': [...] }
     cartoucheByImage: {},     // Metadados do cartouche por imagem: { 'image-id': { projectName, streetOrZone, option, hasCartouche } }
     uploadedImages: [],        // Lista de imagens uploadadas para o projeto
+    workflowByImage: {},      // Workflow por imagem: { 'image-id': 'ai' | 'human' } (mantido para compatibilidade)
+    humanDesignerInstructions: {}, // Instruções para designer humano por imagem: { 'image-id': 'instruções...' }
+    renderByImage: {},        // Renderização por imagem: { 'image-id': 'ai' | 'designer' }
     simulationState: {        // Estado da simulação
       uploadStep: 'uploading', // 'uploading' | 'loading' | 'done'
       selectedImageId: null,
@@ -351,6 +354,11 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
         decorationsByImage: formData.decorationsByImage || {},
         // Metadados do cartouche (nome da rua, projeto, opção) - IMPORTANTE: ficam associados às imagens
         cartoucheByImage: formData.cartoucheByImage || {},
+        // Workflow por imagem e instruções para designer humano (mantido para compatibilidade)
+        workflowByImage: formData.workflowByImage || {},
+        humanDesignerInstructions: formData.humanDesignerInstructions || {},
+        // Renderização por imagem (novo campo para step de renderização)
+        renderByImage: formData.renderByImage || {},
         // Estado das simulações
         uploadedImages: formData.uploadedImages || [],
         simulationState: formData.simulationState || {

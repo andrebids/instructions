@@ -129,8 +129,9 @@ export function getAuthConfig() {
     const isProduction = process.env.NODE_ENV === 'production';
     
     // Configurar basePath/baseURL sem redundância
-    // Se AUTH_URL estiver definido, ele já deve incluir o caminho completo (ex: http://localhost:5001/auth)
-    // Se não estiver definido, usar apenas basePath
+    // Conforme a documentação: não devemos ter AUTH_URL com pathname E basePath ao mesmo tempo
+    // Solução: Se AUTH_URL contém pathname (ex: http://localhost:5001/auth), extrair apenas a base e usar basePath
+    // Se AUTH_URL não contém pathname (ex: http://localhost:5001), usar apenas baseURL
     const authConfigOptions = {
       trustHost: true, // Necessário quando servido através de proxy
       secret: process.env.AUTH_SECRET,
@@ -138,8 +139,26 @@ export function getAuthConfig() {
     };
     
     if (process.env.AUTH_URL) {
-      // Se AUTH_URL está definido, usar apenas baseURL (ele já inclui o caminho)
-      authConfigOptions.baseURL = process.env.AUTH_URL;
+      try {
+        const authUrl = new URL(process.env.AUTH_URL);
+        const pathname = authUrl.pathname;
+        
+        // Se AUTH_URL contém um pathname (ex: /auth), usar apenas baseURL (sem pathname) + basePath
+        if (pathname && pathname !== '/') {
+          // Remover o pathname da URL base
+          authUrl.pathname = '';
+          authConfigOptions.baseURL = authUrl.toString().replace(/\/$/, ''); // Remove trailing slash
+          authConfigOptions.basePath = pathname;
+        } else {
+          // Se não contém pathname, usar apenas baseURL (sem basePath)
+          authConfigOptions.baseURL = process.env.AUTH_URL;
+          // NÃO definir basePath para evitar redundância
+        }
+      } catch (urlError) {
+        // Se AUTH_URL não for uma URL válida, tratar como se não estivesse definido
+        console.warn('⚠️  [Auth Config] AUTH_URL não é uma URL válida, usando apenas basePath');
+        authConfigOptions.basePath = '/auth';
+      }
     } else {
       // Se AUTH_URL não está definido, usar apenas basePath
       authConfigOptions.basePath = '/auth';

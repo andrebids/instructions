@@ -4,6 +4,7 @@ export const STEPS = [
   { id: "notes", label: "Notes", icon: "lucide:file-text", conditional: true, condition: "hasNotes" },
   { id: "project-type", label: "Project Type", icon: "lucide:layers", conditional: false },
   { id: "ai-designer", label: "AI Designer", icon: "lucide:sparkles", conditional: true, condition: "isAIDesigner" },
+  { id: "render-definition", label: "Render Definition", icon: "lucide:wand-2", conditional: true, condition: "isSimu" },
   { id: "logo-instructions", label: "Logo Instructions", icon: "lucide:pen-tool", conditional: true, condition: "isLogo" },
   { id: "confirm-details", label: "Confirm Details", icon: "lucide:check-circle", conditional: false },
 ];

@@ -793,7 +793,31 @@
         "projectType": "Tipo de Projeto",
         "aiDesigner": "Designer IA",
         "logoInstructions": "Instruções do Logo",
-        "confirmDetails": "Confirmar Detalhes"
+        "confirmDetails": "Confirmar Detalhes",
+        "renderDefinition": "Definição de Renderização"
+      },
+      "renderDefinition": {
+        "title": "Definição de Renderização",
+        "subtitle": "Escolha como deseja processar cada imagem",
+        "bulkActions": {
+          "title": "Métodos de Processamento",
+          "description": "Selecione uma opção para aplicar a todas as {{count}} imagens",
+          "ai": "IA Instantânea",
+          "aiDesc": "Dia-para-noite automático e rápido.",
+          "designer": "Designer Pro",
+          "designerDesc": "Tratamento manual realista.",
+          "applyToAll": "Aplicar a Todas"
+        },
+        "summary": {
+          "viaAI": "via IA",
+          "viaDesigner": "via Designer",
+          "unassigned": "sem seleção",
+          "total": "Total",
+          "images": "imagens",
+          "confirm": "Confirmar e Processar",
+          "processing": "Processando...",
+          "selectRequired": "Selecione todas as imagens"
+        }
       }
     }
   },
