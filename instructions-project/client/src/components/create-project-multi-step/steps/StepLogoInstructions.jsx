@@ -256,11 +256,17 @@ const AttachmentItem = ({ file, index, onRemove, onEdit }) => {
   const [imageError, setImageError] = React.useState(false);
   const [imageLoading, setImageLoading] = React.useState(true);
 
-  const isImage = file.mimetype?.startsWith('image/') || file.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+  // Aceitar qualquer mimetype que comece com "image/" para suportar todos os formatos de imagem
+  const isImage = file.mimetype?.startsWith('image/') || file.url?.match(/\.(jpg|jpeg|png|gif|webp|bmp|tiff|tif|heic|heif|svg|ico)$/i) || file.name?.match(/\.(jpg|jpeg|png|gif|webp|bmp|tiff|tif|heic|heif|svg|ico)$/i);
   const isAIGenerated = file.isAIGenerated;
 
   // Construir URL completa se necessÃ¡rio
   const imageUrl = React.useMemo(() => {
+    // Se houver preview local (blob URL), usar primeiro
+    if (file.previewUrl) {
+      return file.previewUrl;
+    }
+    
     if (!file.url && !file.path) return null;
 
     // Preferir file.url se disponÃ­vel, caso contrÃ¡rio usar file.path
@@ -325,7 +331,18 @@ const AttachmentItem = ({ file, index, onRemove, onEdit }) => {
 
     // Caso contrÃ¡rio, assumir que Ã© um nome de arquivo e construir caminho completo
     return `/api/files/${url}`;
-  }, [file.url, file.path]);
+  }, [file.url, file.path, file.previewUrl]);
+
+  const handleRemoveClick = React.useCallback((e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    console.log('🗑️ Remove button clicked for index:', index, 'File:', file.name);
+    if (onRemove && typeof onRemove === 'function') {
+      onRemove(index);
+    } else {
+      console.error('❌ onRemove is not a function:', onRemove);
+    }
+  }, [index, file.name, onRemove]);
 
   return (
     <div className="flex items-center justify-between p-2 bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm rounded-lg border border-white/20 dark:border-gray-600/30 group">
@@ -378,7 +395,7 @@ const AttachmentItem = ({ file, index, onRemove, onEdit }) => {
             variant="light"
             color="primary"
             onPress={() => onEdit(index)}
-            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 min-w-6 flex-shrink-0"
+            className="opacity-70 group-hover:opacity-100 transition-opacity h-6 w-6 min-w-6 flex-shrink-0"
             aria-label={`Edit AI generated image ${file.name}`}
           >
             <Icon icon="lucide:edit-2" className="w-3 h-3" />
@@ -389,8 +406,8 @@ const AttachmentItem = ({ file, index, onRemove, onEdit }) => {
           size="sm"
           variant="light"
           color="danger"
-          onPress={() => onRemove(index)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 min-w-6 flex-shrink-0"
+          onPress={handleRemoveClick}
+          className="opacity-70 group-hover:opacity-100 transition-opacity h-6 w-6 min-w-6 flex-shrink-0 z-10"
           aria-label={`Remove attachment ${file.name}`}
         >
           <Icon icon="lucide:x" className="w-3 h-3" />
@@ -879,12 +896,163 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     formData: currentLogo,
   });
 
-  const handleFileUpload = async (newFiles) => {
-    if (newFiles.length > 0) {
-      console.log('ðŸ“¤ Uploading files to server...', newFiles);
+  // Função para converter imagem para WebP e criar preview
+  const createImagePreview = async (file) => {
+    // Detectar se é imagem - aceitar qualquer mimetype que comece com "image/"
+    const mimetype = file.type || '';
+    const isImageFile = mimetype.startsWith('image/');
+    
+    if (!isImageFile) {
+      return null;
+    }
 
-      // Upload each file to the server
-      const uploadPromises = newFiles.map(async (file) => {
+    try {
+      // Tentar criar preview direto primeiro (mais rápido para formatos suportados)
+      const directPreview = URL.createObjectURL(file);
+      
+      // Verificar se a imagem pode ser carregada
+      return new Promise((resolve) => {
+        const img = new Image();
+        const timeout = setTimeout(() => {
+          // Timeout após 5 segundos - usar preview direto mesmo assim
+          URL.revokeObjectURL(directPreview);
+          resolve(URL.createObjectURL(file));
+        }, 5000);
+
+        img.onload = () => {
+          clearTimeout(timeout);
+          // Se carregou com sucesso, usar preview direto
+          resolve(directPreview);
+        };
+        
+        img.onerror = async () => {
+          clearTimeout(timeout);
+          // Se falhou ao carregar, tentar converter para WebP
+          URL.revokeObjectURL(directPreview);
+          try {
+            const webpBlob = await convertImageToWebP(file);
+            const webpUrl = URL.createObjectURL(webpBlob);
+            resolve(webpUrl);
+          } catch (error) {
+            console.warn('Could not convert image to WebP:', error);
+            // Se conversão falhar, retornar null (não mostrar preview)
+            resolve(null);
+          }
+        };
+        
+        img.src = directPreview;
+      });
+    } catch (error) {
+      console.warn('Error creating image preview:', error);
+      // Fallback: tentar criar preview direto
+      try {
+        return URL.createObjectURL(file);
+      } catch (e) {
+        return null;
+      }
+    }
+  };
+
+  // Função para converter imagem para WebP
+  const convertImageToWebP = (file) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      let objectUrl = null;
+
+      // Timeout para evitar espera infinita
+      const timeout = setTimeout(() => {
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        reject(new Error('Image conversion timeout'));
+      }, 10000);
+
+      img.onload = () => {
+        clearTimeout(timeout);
+        try {
+          // Configurar canvas com as dimensões da imagem
+          canvas.width = img.width;
+          canvas.height = img.height;
+
+          // Desenhar imagem no canvas
+          ctx.drawImage(img, 0, 0);
+
+          // Converter para WebP
+          canvas.toBlob(
+            (blob) => {
+              if (objectUrl) URL.revokeObjectURL(objectUrl);
+              if (blob) {
+                resolve(blob);
+              } else {
+                reject(new Error('Failed to convert image to WebP'));
+              }
+            },
+            'image/webp',
+            0.9 // Qualidade (0-1)
+          );
+        } catch (error) {
+          if (objectUrl) URL.revokeObjectURL(objectUrl);
+          reject(error);
+        }
+      };
+
+      img.onerror = () => {
+        clearTimeout(timeout);
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        reject(new Error('Failed to load image for conversion'));
+      };
+
+      // Carregar imagem
+      objectUrl = URL.createObjectURL(file);
+      img.src = objectUrl;
+    });
+  };
+
+  const handleFileUpload = async (newFiles) => {
+    if (!newFiles || newFiles.length === 0) return;
+    
+    console.log('📤 Uploading files to server...', newFiles);
+
+    // Criar previews locais imediatamente e adicionar aos attachments
+    const existingFiles = currentLogo.attachmentFiles || [];
+    
+    // Criar previews para todos os arquivos (assíncrono)
+    const tempFilesPromises = newFiles.map(async (file) => {
+      // Detectar mimetype do arquivo - aceitar qualquer imagem
+      const mimetype = file.type || '';
+      const isImageFile = mimetype.startsWith('image/');
+      
+      // Criar preview para imagens
+      const previewUrl = isImageFile ? await createImagePreview(file) : null;
+      
+      return {
+        name: file.name,
+        filename: file.name,
+        size: file.size,
+        mimetype: mimetype,
+        previewUrl: previewUrl,
+        _isUploading: true, // Flag para indicar que está fazendo upload
+        _fileObject: file, // Guardar referência ao objeto File original
+      };
+    });
+
+    const tempFiles = await Promise.all(tempFilesPromises);
+
+    // Adicionar arquivos temporários com preview local imediatamente
+    const allFilesWithPreview = [...existingFiles, ...tempFiles];
+    const updatedCurrentLogoWithPreview = {
+      ...currentLogo,
+      attachmentFiles: allFilesWithPreview,
+    };
+    const updatedLogoDetailsWithPreview = {
+      ...logoDetails,
+      currentLogo: updatedCurrentLogoWithPreview,
+      logos: savedLogos,
+    };
+    onInputChange("logoDetails", updatedLogoDetailsWithPreview);
+
+    // Upload each file to the server
+    const uploadPromises = newFiles.map(async (file, index) => {
         const formData = new FormData();
         formData.append('file', file);
 
@@ -902,7 +1070,8 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           const result = await response.json();
           console.log('âœ… File uploaded:', result.file);
 
-          // Return file metadata to store in attachments
+          // Return file metadata to store in attachments, mantendo a preview local
+          const tempFile = tempFiles[index];
           return {
             name: result.file.originalName,
             filename: result.file.filename,
@@ -910,9 +1079,15 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
             url: result.file.url,
             size: result.file.size,
             mimetype: result.file.mimetype,
+            previewUrl: tempFile.previewUrl, // Manter preview local
           };
         } catch (error) {
           console.error('âŒ Error uploading file:', file.name, error);
+          // Remover preview local em caso de erro
+          const tempFile = tempFiles[index];
+          if (tempFile?.previewUrl) {
+            URL.revokeObjectURL(tempFile.previewUrl);
+          }
           return null;
         }
       });
@@ -922,9 +1097,9 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       const successfulUploads = uploadedFiles.filter(f => f !== null);
 
       if (successfulUploads.length > 0) {
-        // Save attachments to currentLogo, not logoDetails (each logo has its own attachments)
-        const existingFiles = currentLogo.attachmentFiles || [];
-        const allFiles = [...existingFiles, ...successfulUploads];
+        // Remover arquivos temporários e adicionar os com metadados do servidor
+        const filesWithoutTemp = existingFiles.filter(f => !f._isUploading);
+        const allFiles = [...filesWithoutTemp, ...successfulUploads];
 
         // Save file metadata to currentLogo
         const updatedCurrentLogo = {
@@ -937,9 +1112,21 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           logos: savedLogos,
         };
         onInputChange("logoDetails", updatedLogoDetails);
-        console.log('âœ… Files uploaded and metadata saved to currentLogo:', successfulUploads);
+        console.log('✅ Files uploaded and metadata saved to currentLogo:', successfulUploads);
+      } else {
+        // Se nenhum upload foi bem-sucedido, remover os arquivos temporários
+        const filesWithoutTemp = existingFiles.filter(f => !f._isUploading);
+        const updatedCurrentLogo = {
+          ...currentLogo,
+          attachmentFiles: filesWithoutTemp,
+        };
+        const updatedLogoDetails = {
+          ...logoDetails,
+          currentLogo: updatedCurrentLogo,
+          logos: savedLogos,
+        };
+        onInputChange("logoDetails", updatedLogoDetails);
       }
-    }
   };
 
   // Preencher automaticamente o campo "Requested By" com o nome do usuÃ¡rio (apenas uma vez)
@@ -1742,39 +1929,6 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     onInputChange("logoDetails", updatedLogoDetails);
   };
 
-  const handleFileUpload = (files) => {
-    if (!files || files.length === 0) return;
-
-    // Convert File objects to attachment format
-    const newAttachments = Array.from(files).map(file => ({
-      name: file.name,
-      url: URL.createObjectURL(file), // Create temporary preview URL
-      path: file.name,
-      mimetype: file.type,
-      size: file.size,
-      isAIGenerated: false,
-      uploadedAt: new Date().toISOString(),
-      file: file // Keep reference for actual upload later
-    }));
-
-    // Add to existing attachments
-    const updatedAttachments = [
-      ...(currentLogo.attachmentFiles || []),
-      ...newAttachments
-    ];
-
-    const updatedCurrentLogo = {
-      ...currentLogo,
-      attachmentFiles: updatedAttachments,
-    };
-    const updatedLogoDetails = {
-      ...logoDetails,
-      currentLogo: updatedCurrentLogo,
-      logos: savedLogos,
-    };
-    onInputChange("logoDetails", updatedLogoDetails);
-  };
-
   // FunÃ§Ã£o para buscar produtos do Stock Catalogue com debounce
   const searchProducts = React.useCallback(async (query) => {
     if (!query || query.trim().length < 2) {
@@ -2073,22 +2227,55 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     }
   };
 
-  const handleRemoveAttachment = (index) => {
-    // Remove attachments from currentLogo, not logoDetails (each logo has its own attachments)
-    const currentAttachments = currentLogo.attachmentFiles || [];
-    const newAttachments = currentAttachments.filter((_, i) => i !== index);
+  const handleRemoveAttachment = React.useCallback((indexToRemove) => {
+    console.log('🔴 handleRemoveAttachment called with index:', indexToRemove);
+    
+    // Obter valores mais recentes diretamente de formData
+    const latestLogoDetails = formData.logoDetails || {};
+    const rawCurrentLogo = latestLogoDetails.currentLogo || latestLogoDetails;
+    const currentLogoToUpdate = {
+      ...rawCurrentLogo,
+      isModification: rawCurrentLogo.isModification === true ? true : false
+    };
+    const savedLogosToUpdate = latestLogoDetails.logos || [];
+    
+    // Obter attachments atuais
+    const currentAttachments = [...(currentLogoToUpdate.attachmentFiles || [])];
+    console.log('📎 Current attachments count:', currentAttachments.length, 'Removing index:', indexToRemove);
+    
+    // Verificar se o índice é válido
+    if (indexToRemove < 0 || indexToRemove >= currentAttachments.length) {
+      console.error('❌ Invalid attachment index:', indexToRemove, 'Total attachments:', currentAttachments.length);
+      return;
+    }
+    
+    // Limpar preview URL se existir antes de remover
+    const attachmentToRemove = currentAttachments[indexToRemove];
+    if (attachmentToRemove?.previewUrl) {
+      console.log('🗑️ Revoking preview URL for:', attachmentToRemove.name);
+      URL.revokeObjectURL(attachmentToRemove.previewUrl);
+    }
+    
+    // Criar novo array sem o attachment removido
+    const newAttachments = currentAttachments.filter((_, i) => i !== indexToRemove);
+    console.log('✅ New attachments count:', newAttachments.length);
 
+    // Criar novo currentLogo com attachments atualizados
     const updatedCurrentLogo = {
-      ...currentLogo,
+      ...currentLogoToUpdate,
       attachmentFiles: newAttachments,
     };
+    
+    // Criar novo logoDetails
     const updatedLogoDetails = {
-      ...logoDetails,
+      ...latestLogoDetails,
       currentLogo: updatedCurrentLogo,
-      logos: savedLogos,
+      logos: savedLogosToUpdate,
     };
+    
+    console.log('💾 Updating logoDetails with new attachments');
     onInputChange("logoDetails", updatedLogoDetails);
-  };
+  }, [formData, onInputChange]);
 
   // PersistÃªncia automÃ¡tica dos dados do logo (PWA)
   useLogoPersistence({
@@ -2585,41 +2772,46 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           </div>
 
           <div className="flex-1 overflow-y-auto border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50/50 dark:bg-gray-700/50 hover:border-pink-300 dark:hover:border-pink-700 transition-colors">
-            {currentLogo.attachmentFiles && currentLogo.attachmentFiles.length > 0 ? (
-              <div className="space-y-2">
-                {/* Grid of attachment previews */}
-                <div className="grid grid-cols-2 gap-2">
-                  {currentLogo.attachmentFiles.map((file, index) => (
-                    <AttachmentItem
-                      key={index}
-                      file={file}
-                      index={index}
-                      onRemove={handleRemoveAttachment}
-                      onEdit={file.isAIGenerated ? handleEditAIGenerated : null}
-                    />
-                  ))}
-                </div>
+            {(() => {
+              const attachments = currentLogo.attachmentFiles || [];
+              console.log('🔄 Rendering attachments, count:', attachments.length);
+              return attachments.length > 0 ? (
+                <div className="space-y-2">
+                  {/* Grid of attachment previews */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {attachments.map((file, index) => (
+                      <AttachmentItem
+                        key={`${file.name}-${file.filename || ''}-${index}-${file.url || file.path || ''}`}
+                        file={file}
+                        index={index}
+                        onRemove={handleRemoveAttachment}
+                        onEdit={file.isAIGenerated ? handleEditAIGenerated : null}
+                      />
+                    ))}
+                  </div>
 
-                {/* Add More Files button */}
-                <input
-                  type="file"
-                  id="file-upload-more"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => handleFileUpload(Array.from(e.target.files))}
-                />
-                <Button
-                  size="sm"
-                  variant="flat"
-                  color="primary"
-                  className="font-medium px-3 py-1 w-full"
-                  startContent={<Icon icon="lucide:upload" className="w-4 h-4" />}
-                  onPress={() => document.getElementById('file-upload-more').click()}
-                >
-                  Add More Files
-                </Button>
-              </div>
-            ) : (
+                  {/* Add More Files button */}
+                  <input
+                    type="file"
+                    id="file-upload-more"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => handleFileUpload(Array.from(e.target.files))}
+                  />
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="primary"
+                    className="font-medium px-3 py-1 w-full"
+                    startContent={<Icon icon="lucide:upload" className="w-4 h-4" />}
+                    onPress={() => document.getElementById('file-upload-more').click()}
+                  >
+                    Add More Files
+                  </Button>
+                </div>
+              ) : null;
+            })()}
+            {(!currentLogo.attachmentFiles || currentLogo.attachmentFiles.length === 0) && (
               <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center">
                 <div className="p-1.5 bg-pink-50 dark:bg-pink-900/20 rounded-full mb-1.5">
                   <Icon icon="lucide:cloud-upload" className="w-5 h-5 text-pink-500" />
@@ -2642,7 +2834,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                 >
                   Select Files
                 </Button>
-                <p className="text-xs text-gray-400 mt-2">Supported: PNG, JPG, PDF</p>
+                <p className="text-xs text-gray-400 mt-2">Supported: All image formats (PNG, JPG, HEIC, WebP, etc.)</p>
               </div>
             )}
           </div>
