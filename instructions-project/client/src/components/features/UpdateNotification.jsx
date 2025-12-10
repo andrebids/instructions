@@ -44,10 +44,9 @@ export default function UpdateNotification() {
           </Button>
           <Button
             size="sm"
-            color="primary"
             onPress={updateNow}
             isLoading={isUpdating}
-            className="text-xs"
+            className="text-xs font-medium shadow-lg shadow-blue-500/20 bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-500 dark:hover:bg-blue-400 hover:scale-[1.02] transition-all duration-300"
             aria-label="Update now"
           >
             {isUpdating ? 'Updating...' : 'Update Now'}

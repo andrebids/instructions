@@ -253,9 +253,14 @@ export async function createProject(projectData) {
 
   // Garantir que cartoucheByImage existe e tem valor padrão se não fornecido
   // createdBy deve ser definido pelo controller (do req.auth.userId)
+  // Garantir que notes seja inicializado quando enableNotes é true
   const data = {
     ...projectData,
-    cartoucheByImage: projectData.cartoucheByImage || {}
+    cartoucheByImage: projectData.cartoucheByImage || {},
+    // Inicializar notes como array vazio se enableNotes é true e notes não foi fornecido
+    notes: projectData.enableNotes === true && !projectData.notes 
+      ? [] 
+      : (projectData.notes || [])
   };
 
   // Se createdBy não foi fornecido, não definir (será null)

@@ -13,6 +13,10 @@ import { Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter
 import { Icon } from '@iconify/react';
 import { editorAPI, projectsAPI } from '../../services/api';
 
+// Constantes para nota padrão
+const DEFAULT_NOTE_ID = 'default-note';
+const DEFAULT_NOTE_TOPIC = 'Notas Gerais';
+
 export function SimpleEditor({ projectId = null, saveStatus = null }) {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -343,7 +347,6 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
         } else {
           const emptyContent = editor.getHTML();
           lastSavedContentRef.current = emptyContent || '';
-          hasUnsavedChangesRef.current = false;
         }
 
         hasLoadedRef.current = true;

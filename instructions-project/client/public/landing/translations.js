@@ -8,7 +8,70 @@ const translations = {
             why_switch: "Why Switch?",
             ai_costs: "AI Costs",
             roadmap: "Development Roadmap",
-            cta: "See it in action"
+            cta: "See it in action",
+            stock_control: "Stock Control"
+        },
+        stock: {
+            tag: "Intelligent Stock Control",
+            title: "Inventory Reimagined.",
+            subtitle: "Stop managing dead stock. Start selling what you have.",
+            list1: {
+                title: "Better Stock Rotation",
+                desc: "Algoritmos garantem que o stock antigo sai primeiro."
+            },
+            list2: {
+                title: "Proactive Sales Suggestions",
+                desc: "\"Temos 50 Motivos Estrela livres, vende isto agora!\""
+            },
+            list3: {
+                title: "Motif Reservation",
+                desc: "Funcionalidade \"Add to Cart\" instantânea para equipas internas."
+            },
+            badge1: "Web Version",
+            badge2: "Mobile App",
+            badge3: "Easy to use",
+            notification: {
+                title: "Opportunity",
+                desc: "Excess Stock! Sell this item now."
+            },
+            mockup: {
+                motif: "Star Motif 50cm",
+                warehouse: "Warehouse A",
+                units: "units",
+                btn: "Add to Project"
+            }
+        },
+        advanced_stock: {
+            tag: "Advanced Tools",
+            title: "Complete Control. Real-time Precision.",
+            subtitle: "Manage your inventory with military-grade precision and speed.",
+            features: {
+                comparator: {
+                    title: "Parts Comparator",
+                    desc: "Side-by-side specs comparison."
+                },
+                budgeting: {
+                    title: "Project Budgeting",
+                    desc: "Add parts to projects with auto-budget calculation."
+                },
+                live: {
+                    title: "Live Stock Management",
+                    desc: "Real-time inventory tracking."
+                },
+                reservations: {
+                    title: "Smart Reservations",
+                    desc: "Lock, Confirm, and Release workflow with automated expiration warnings."
+                }
+            },
+            actions: {
+                favorites: "Add to Favorites",
+                quick_add: "Quick Add"
+            },
+            mockup: {
+                header: "thecore.app/stock",
+                valuation: "Total Valuation",
+                demo: "Live Demo"
+            }
         },
         hero: {
             headline_1: "Close the Deal",
@@ -219,7 +282,70 @@ const translations = {
             why_switch: "Pourquoi Changer ?",
             ai_costs: "Coûts IA",
             roadmap: "Feuille de Route",
-            cta: "Voir en action"
+            cta: "Voir en action",
+            stock_control: "Contrôle des Stocks"
+        },
+        stock: {
+            tag: "Contrôle Intelligent des Stocks",
+            title: "L'Inventaire Réinventé.",
+            subtitle: "Arrêtez de gérer le stock dormant. Vendez ce que vous avez.",
+            list1: {
+                title: "Meilleure Rotation des Stocks",
+                desc: "Les algorithmes garantissent que l'ancien stock part en premier."
+            },
+            list2: {
+                title: "Suggestions de Vente Proactives",
+                desc: "\"Nous avons 50 Motifs Étoile libres, vendez-les maintenant !\""
+            },
+            list3: {
+                title: "Réservation de Motifs",
+                desc: "Fonctionnalité \"Ajouter au Panier\" instantanée pour les équipes internes."
+            },
+            badge1: "Version Web",
+            badge2: "App Mobile",
+            badge3: "Facile à utiliser",
+            notification: {
+                title: "Opportunité",
+                desc: "Surstock ! Vendez cet article maintenant."
+            },
+            mockup: {
+                motif: "Motif Étoile 50cm",
+                warehouse: "Entrepôt A",
+                units: "unités",
+                btn: "Ajouter au Projet"
+            }
+        },
+        advanced_stock: {
+            tag: "Outils Avancés",
+            title: "Contrôle Total. Précision Temps Réel.",
+            subtitle: "Gérez votre inventaire avec une précision et une rapidité militaires.",
+            features: {
+                comparator: {
+                    title: "Comparateur de Pièces",
+                    desc: "Comparaison des spécifications côte à côte."
+                },
+                budgeting: {
+                    title: "Budgétisation de Projet",
+                    desc: "Ajoutez des pièces aux projets avec calcul automatique du budget."
+                },
+                live: {
+                    title: "Gestion de Stock en Direct",
+                    desc: "Suivi des stocks en temps réel."
+                },
+                reservations: {
+                    title: "Réservations Intelligentes",
+                    desc: "Flux de travail Verrouiller, Confirmer et Libérer avec avertissements d'expiration automatiques."
+                }
+            },
+            actions: {
+                favorites: "Ajouter aux Favoris",
+                quick_add: "Ajout Rapide"
+            },
+            mockup: {
+                header: "thecore.app/stock",
+                valuation: "Valorisation Totale",
+                demo: "Démo Live"
+            }
         },
         hero: {
             headline_1: "Concluez l'Affaire",

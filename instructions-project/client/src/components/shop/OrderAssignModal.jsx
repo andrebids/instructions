@@ -17,6 +17,29 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
   const [submitSuccess, setSubmitSuccess] = React.useState(false);
   const [orderInfo, setOrderInfo] = React.useState(null); // { total, budget }
 
+  // Funções para gerenciar o último projeto usado
+  const getLastUsedProjectId = React.useCallback(() => {
+    try {
+      const lastProjectId = localStorage.getItem('lastUsedProjectId');
+      return lastProjectId || null;
+    } catch (err) {
+      console.error('Erro ao ler último projeto:', err);
+      return null;
+    }
+  }, []);
+
+  const saveLastUsedProjectId = React.useCallback((id) => {
+    try {
+      if (id) {
+        localStorage.setItem('lastUsedProjectId', String(id));
+      } else {
+        localStorage.removeItem('lastUsedProjectId');
+      }
+    } catch (err) {
+      console.error('Erro ao salvar último projeto:', err);
+    }
+  }, []);
+
   // Carregar projetos da API
   const loadProjects = React.useCallback(async () => {
     try {
@@ -51,18 +74,40 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
     }
   }, [projects]);
 
+  // Estado para controlar se já tentou pré-selecionar o último projeto
+  const [hasTriedPreselect, setHasTriedPreselect] = React.useState(false);
+
   React.useEffect(() => {
     if (isOpen) {
-      setProjectId("");
-      setProjectSearch("");
       setQty(1);
       setQtyError("");
       setProjectError("");
       setSubmitSuccess(false);
       setOrderInfo(null);
+      setHasTriedPreselect(false);
+      setProjectId("");
+      setProjectSearch("");
       loadProjects();
     }
   }, [isOpen, loadProjects]);
+
+  // Pré-selecionar o último projeto usado quando os projetos forem carregados
+  React.useEffect(() => {
+    if (isOpen && !loadingProjects && projects.length > 0 && !hasTriedPreselect) {
+      const lastProjectId = getLastUsedProjectId();
+      if (lastProjectId) {
+        const lastProject = projects.find((p) => String(p.id) === String(lastProjectId));
+        if (lastProject) {
+          setProjectId(String(lastProjectId));
+          setProjectSearch(lastProject.name);
+        } else {
+          // Se o projeto não existir mais, limpar o localStorage
+          saveLastUsedProjectId(null);
+        }
+      }
+      setHasTriedPreselect(true);
+    }
+  }, [isOpen, loadingProjects, projects, hasTriedPreselect, getLastUsedProjectId, saveLastUsedProjectId]);
 
   // Quando projeto é selecionado, carregar info da order
   React.useEffect(() => {
@@ -140,6 +185,9 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
         variant: variant || {},
       });
 
+      // Salvar o projeto como último usado
+      saveLastUsedProjectId(projectId);
+
       setSubmitSuccess(true);
 
       // Fechar modal após 1 segundo de sucesso
@@ -203,63 +251,66 @@ export default function OrderAssignModal({ isOpen, onOpenChange, product, varian
                     </div>
                   </div>
 
-                  {/* Seleção de projeto */}
-                  <div>
-                    <div className="text-sm text-default-500 mb-1">
-                      {t('shop.orderAssign.project', 'Projeto')}
-                    </div>
-                    {loadingProjects ? (
-                      <div className="flex items-center gap-2 py-2">
-                        <Spinner size="sm" />
-                        <span className="text-sm text-default-500">{t('common.loading')}</span>
+                  {/* Seleção de projeto e quantidade lado a lado */}
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    {/* Seleção de projeto */}
+                    <div className="flex-1">
+                      <div className="text-sm text-default-500 mb-1">
+                        {t('shop.orderAssign.project', 'Projeto')}
                       </div>
-                    ) : (
-                      <Autocomplete
-                        selectedKey={projectId || null}
-                        inputValue={projectSearch}
-                        onSelectionChange={handleProjectSelection}
-                        onInputChange={setProjectSearch}
-                        defaultItems={projects}
-                        placeholder={t('shop.orderAssign.searchProject', 'Pesquisar projeto...')}
-                        menuTrigger="input"
-                        selectionMode="single"
-                        allowsCustomValue={false}
-                        isInvalid={!!projectError}
-                        errorMessage={projectError}
-                        isDisabled={isSubmitting}
-                      >
-                        {(p) => (
-                          <AutocompleteItem key={p.id} textValue={p.name}>
-                            <div className="flex items-center justify-between">
-                              <span>{p.name}</span>
-                              <span className="text-xs text-default-400">{p.clientName}</span>
-                            </div>
-                          </AutocompleteItem>
-                        )}
-                      </Autocomplete>
-                    )}
-                  </div>
+                      {loadingProjects ? (
+                        <div className="flex items-center gap-2 py-2">
+                          <Spinner size="sm" />
+                          <span className="text-sm text-default-500">{t('common.loading')}</span>
+                        </div>
+                      ) : (
+                        <Autocomplete
+                          selectedKey={projectId || null}
+                          inputValue={projectSearch}
+                          onSelectionChange={handleProjectSelection}
+                          onInputChange={setProjectSearch}
+                          defaultItems={projects}
+                          placeholder={t('shop.orderAssign.searchProject', 'Pesquisar projeto...')}
+                          menuTrigger="input"
+                          selectionMode="single"
+                          allowsCustomValue={false}
+                          isInvalid={!!projectError}
+                          errorMessage={projectError}
+                          isDisabled={isSubmitting}
+                        >
+                          {(p) => (
+                            <AutocompleteItem key={p.id} textValue={p.name}>
+                              <div className="flex items-center justify-between">
+                                <span>{p.name}</span>
+                                <span className="text-xs text-default-400">{p.clientName}</span>
+                              </div>
+                            </AutocompleteItem>
+                          )}
+                        </Autocomplete>
+                      )}
+                    </div>
 
-                  {/* Quantidade */}
-                  <div>
-                    <div className="text-sm text-default-500 mb-1">
-                      {t('shop.orderAssign.quantity', 'Quantidade')}
-                    </div>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={String(qty)}
-                      onChange={(e) => handleQtyChange(e.target.value)}
-                      className="max-w-[160px]"
-                      isInvalid={!!qtyError}
-                      errorMessage={qtyError}
-                      isDisabled={isSubmitting}
-                    />
-                    {stock === 0 && (
-                      <div className="mt-1 text-danger-400 text-xs">
-                        {t('shop.orderAssign.outOfStock', 'Sem stock.')}
+                    {/* Quantidade */}
+                    <div className="flex-1 sm:flex-initial sm:w-[160px]">
+                      <div className="text-sm text-default-500 mb-1">
+                        {t('shop.orderAssign.quantity', 'Quantidade')}
                       </div>
-                    )}
+                      <Input
+                        type="number"
+                        min={1}
+                        value={String(qty)}
+                        onChange={(e) => handleQtyChange(e.target.value)}
+                        className="w-full sm:max-w-[160px]"
+                        isInvalid={!!qtyError}
+                        errorMessage={qtyError}
+                        isDisabled={isSubmitting}
+                      />
+                      {stock === 0 && (
+                        <div className="mt-1 text-danger-400 text-xs">
+                          {t('shop.orderAssign.outOfStock', 'Sem stock.')}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Resumo do budget */}

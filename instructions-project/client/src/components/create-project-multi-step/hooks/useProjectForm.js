@@ -31,6 +31,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
     location: "",
     description: "",
     enableNotes: false, // Controla se o step "Notes" deve aparecer
+    notes: [], // Array de notas organizadas por tópicos
     tempProjectId: null, // ID temporário do projeto criado após Project Details
     // 🆕 Novos campos para Canvas Konva (apenas projectos Simu)
     canvasDecorations: [],    // Array de decorações geradas pelo AI Designer
@@ -92,6 +93,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
             location: project.location || "",
             description: project.description || "",
             enableNotes: project.enableNotes ?? false, // Restaurar se existir, senão false
+            notes: project.notes || [], // Restaurar notas se existirem
             tempProjectId: project.id, // Já existe, usar o ID real
             // Restaurar estado do canvas
             canvasDecorations: project.canvasDecorations || [],
@@ -340,6 +342,8 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
         startDate: new Date().toISOString(), // Data de criação do projeto
         endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
         enableNotes: formData.enableNotes ?? false,
+        // Inicializar campo notes quando enableNotes é true
+        notes: formData.enableNotes === true ? (formData.notes || []) : (formData.notes || []),
         // Dados do canvas (AI Designer)
         canvasDecorations: formData.canvasDecorations || [],
         canvasImages: formData.canvasImages || [],
@@ -596,6 +600,8 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
         budget: formData.budget ? parseFloat(formData.budget) : null,
         endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
         enableNotes: formData.enableNotes ?? false,
+        // Inicializar campo notes quando enableNotes é true
+        notes: formData.enableNotes === true ? (formData.notes || []) : (formData.notes || []),
         canvasDecorations: formData.canvasDecorations || [],
         canvasImages: formData.canvasImages || [],
         snapZonesByImage: formData.snapZonesByImage || {},
@@ -992,6 +998,8 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
         startDate: null, // Será definido apenas quando o projeto for finalizado
         endDate: formData.endDate ? formData.endDate.toDate(getLocalTimeZone()).toISOString() : null,
         enableNotes: formData.enableNotes ?? false,
+        // Inicializar campo notes quando enableNotes é true
+        notes: formData.enableNotes === true ? (formData.notes || []) : (formData.notes || []),
       };
 
       const newProject = await projectsAPI.create(projectData);

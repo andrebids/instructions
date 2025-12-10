@@ -130,6 +130,13 @@ const Project = sequelize.define('Project', {
     defaultValue: [],
     comment: 'Array de notas: [{ id, topic, title, content, createdAt, updatedAt }]',
   },
+  // Controla se o projeto tem notas habilitadas
+  enableNotes: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true,
+    defaultValue: false,
+    comment: 'Indica se as notas do projeto estão habilitadas',
+  },
   // Designers atribuídos ao projeto
   assignedDesigners: {
     type: DataTypes.JSON,

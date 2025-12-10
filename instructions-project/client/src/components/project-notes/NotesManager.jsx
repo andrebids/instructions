@@ -5,6 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { NoteEditor } from './NoteEditor';
 import { projectsAPI } from '../../services/api';
 
+// ID da nota padrão (deve corresponder ao SimpleEditor)
+const DEFAULT_NOTE_ID = 'default-note';
+
 export function NotesManager({ projectId }) {
     const { t } = useTranslation();
     const [notes, setNotes] = useState([]);
