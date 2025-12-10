@@ -5,7 +5,8 @@ export const NightThumb = ({
   nightImage, 
   filename, 
   isActive, 
-  duration = 4000 
+  duration = 4000,
+  objectPosition = '50% 50%'
 }) => {
   const [progress, setProgress] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -86,6 +87,7 @@ export const NightThumb = ({
             src={dayImage} 
             alt={`${filename} - Day`}
             className="w-full h-full object-cover"
+            style={{ objectPosition }}
           />
         </div>
         
@@ -96,6 +98,7 @@ export const NightThumb = ({
             src={nightImage} 
             alt={`${filename} - Night`}
             className="w-full h-full object-cover"
+            style={{ objectPosition }}
             onLoad={() => setNightImageLoaded(true)}
             onError={(e) => {
               // Fallback visual se imagem falhar
@@ -170,6 +173,7 @@ export const NightThumb = ({
             src={dayImage} 
             alt={`${filename} - Day`}
             className="w-full h-full object-cover"
+            style={{ objectPosition }}
             style={{
               filter: `blur(${dayBlur}px)`,
               opacity: finalDayOpacity,
@@ -193,6 +197,7 @@ export const NightThumb = ({
             alt={`${filename} - Night`}
             className="w-full h-full object-cover"
             style={{
+              objectPosition,
               filter: `blur(${finalNightBlur}px)`,
               willChange: 'filter'
             }}

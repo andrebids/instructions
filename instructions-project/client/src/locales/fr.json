@@ -821,6 +821,10 @@
       "step1": "1) Importez une image source",
       "step2": "2) Sélectionnez-la pour activer le canvas",
       "step3": "3) Appliquez décorations et cartouche"
+    },
+    "canvasControls": {
+      "crop": "Recadrer",
+      "resetOriginal": "Réinitialiser l’original"
     }
   },
   "errors": {

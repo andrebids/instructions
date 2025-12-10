@@ -163,6 +163,14 @@ export const ImageThumbnailList = ({
   onAddMore,
   isMobile = false
 }) => {
+  const getObjectPosition = (image) => {
+    if (!image?.crop || !image.crop.wNorm || !image.crop.hNorm) return '50% 50%';
+    const cx = (image.crop.xNorm || 0) + (image.crop.wNorm / 2);
+    const cy = (image.crop.yNorm || 0) + (image.crop.hNorm / 2);
+    const clamp = (v) => Math.min(1, Math.max(0, v));
+    return `${(clamp(cx) * 100).toFixed(2)}% ${(clamp(cy) * 100).toFixed(2)}%`;
+  };
+
   return (
     <aside className={(isMobile ? 'w-24' : 'w-32') + ' sm:w-32 md:w-40 lg:w-48 border-r border-divider bg-content1/30 flex flex-col flex-shrink-0'}>
       <div className="p-3 md:p-4 border-b border-divider text-center">
@@ -180,6 +188,7 @@ export const ImageThumbnailList = ({
           // Mostrar overlay apenas se não foi convertida E não está sendo convertida agora
           const showOverlay = !isConverted && !isCurrentlyConverting;
           const isDisabled = !isConverted;
+          const objectPosition = getObjectPosition(image);
           
           return (
             <div key={image.id} className="relative group">
@@ -247,7 +256,8 @@ export const ImageThumbnailList = ({
                       isActive={index === activeGifIndex && 
                                image.conversionStatus !== 'failed' && 
                                image.conversionStatus !== 'unavailable'}
-                      duration={4000}
+                    duration={4000}
+                    objectPosition={objectPosition}
                     />
                   )}
                   
@@ -265,6 +275,7 @@ export const ImageThumbnailList = ({
                     height={120}
                     src={mapImagePath(image.thumbnail)}
                     width="100%"
+                    style={{ objectPosition }}
                     onError={(e) => {
                       e.target.style.display = 'none';
                       if (e.target.nextSibling && e.target.nextSibling.style) {

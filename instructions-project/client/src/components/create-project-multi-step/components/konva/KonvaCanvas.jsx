@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef } from "react";
-import { Stage, Layer, Rect } from 'react-konva';
+import { Stage, Layer, Rect, Transformer } from 'react-konva';
 import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useTranslation } from "react-i18next";
@@ -33,7 +33,14 @@ export const KonvaCanvas = forwardRef(({
   onZoneCreate = null,
   analysisComplete = {}, // Nova prop para verificar se análise YOLO completou
   showSnapZones = false, // Zonas removidas
-  cartoucheInfo = null // Informações do cartouche: { projectName, streetOrZone, option }
+  cartoucheInfo = null, // Informações do cartouche: { projectName, streetOrZone, option }
+  isCropping = false,
+  activeCrop = null,
+  cropOrientation = 'portrait',
+  onCropApply = () => {},
+  onCropCancel = () => {},
+  onCropOrientationChange = () => {},
+  onImageNaturalSize = null
 }, ref) => {
   // Usa keyPrefix para garantir resolução das chaves nesta área vazia
   const { t } = useTranslation(undefined, { keyPrefix: 'components.aiDesignerEmpty' });
@@ -41,6 +48,9 @@ export const KonvaCanvas = forwardRef(({
   const containerRef = useRef(null);
   const [selectedId, setSelectedId] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  const cropRectRef = useRef(null);
+  const cropTransformerRef = useRef(null);
+  const [localCrop, setLocalCrop] = useState(null);
   // const [isDrawingZone, setIsDrawingZone] = useState(false); // Zonas removidas
   // const [currentZone, setCurrentZone] = useState(null); // Zonas removidas
   
@@ -372,6 +382,133 @@ export const KonvaCanvas = forwardRef(({
     }
   };
 
+  // Atualizar Transformer quando em modo crop
+  useEffect(() => {
+    if (!isCropping) return;
+    if (cropTransformerRef.current && cropRectRef.current) {
+      cropTransformerRef.current.nodes([cropRectRef.current]);
+      cropTransformerRef.current.getLayer()?.batchDraw();
+    }
+  }, [isCropping, localCrop]);
+
+  // Preparar crop inicial (default ou a partir do recorte salvo)
+  useEffect(() => {
+    if (!isCropping) {
+      setLocalCrop(null);
+      return;
+    }
+    const backgroundImage = canvasImages.find(img => img.isSourceImage);
+    if (!backgroundImage) return;
+
+    const ratio = cropOrientation === 'portrait' ? (210 / 297) : (297 / 210);
+    let targetWidth = backgroundImage.width * 0.8;
+    let targetHeight = targetWidth / ratio;
+
+    if (targetHeight > backgroundImage.height * 0.9) {
+      targetHeight = backgroundImage.height * 0.9;
+      targetWidth = targetHeight * ratio;
+    }
+
+    if (activeCrop && activeCrop.wNorm && activeCrop.hNorm) {
+      const imgLeft = backgroundImage.x - backgroundImage.width / 2;
+      const imgTop = backgroundImage.y - backgroundImage.height / 2;
+      const absW = backgroundImage.width * activeCrop.wNorm;
+      const absH = backgroundImage.height * activeCrop.hNorm;
+      const absX = imgLeft + backgroundImage.width * activeCrop.xNorm;
+      const absY = imgTop + backgroundImage.height * activeCrop.yNorm;
+      setLocalCrop({
+        x: absX,
+        y: absY,
+        width: absW,
+        height: absH
+      });
+      return;
+    }
+
+    setLocalCrop({
+      width: targetWidth,
+      height: targetHeight,
+      x: backgroundImage.x - targetWidth / 2,
+      y: backgroundImage.y - targetHeight / 2
+    });
+  }, [isCropping, cropOrientation, activeCrop, canvasImages]);
+
+  const enforceBounds = (nextX, nextY, width, height) => {
+    const backgroundImage = canvasImages.find(img => img.isSourceImage);
+    if (!backgroundImage) return { x: nextX, y: nextY };
+    const imgLeft = backgroundImage.x - backgroundImage.width / 2;
+    const imgTop = backgroundImage.y - backgroundImage.height / 2;
+    const imgRight = imgLeft + backgroundImage.width;
+    const imgBottom = imgTop + backgroundImage.height;
+
+    const boundedX = Math.min(Math.max(nextX, imgLeft), imgRight - width);
+    const boundedY = Math.min(Math.max(nextY, imgTop), imgBottom - height);
+    return { x: boundedX, y: boundedY };
+  };
+
+  const handleCropDragEnd = (e) => {
+    const node = e.target;
+    const { width, height } = node.size();
+    const { x, y } = enforceBounds(node.x(), node.y(), width, height);
+    node.position({ x, y });
+    setLocalCrop(prev => prev ? { ...prev, x, y } : prev);
+  };
+
+  const handleCropTransformEnd = () => {
+    const node = cropRectRef.current;
+    if (!node) return;
+    const backgroundImage = canvasImages.find(img => img.isSourceImage);
+    const maxWidth = backgroundImage ? backgroundImage.width : Infinity;
+    const maxHeight = backgroundImage ? backgroundImage.height : Infinity;
+    const ratio = cropOrientation === 'portrait' ? (210 / 297) : (297 / 210);
+    let width = Math.max(10, node.width() * node.scaleX());
+    let height = width / ratio;
+
+    // Limitar ao tamanho da imagem de fundo
+    if (width > maxWidth) {
+      width = maxWidth;
+      height = width / ratio;
+    }
+    if (height > maxHeight) {
+      height = maxHeight;
+      width = height * ratio;
+    }
+
+    const { x: boundedX, y: boundedY } = enforceBounds(node.x(), node.y(), width, height);
+
+    node.scaleX(1);
+    node.scaleY(1);
+    node.width(width);
+    node.height(height);
+    node.position({ x: boundedX, y: boundedY });
+
+    setLocalCrop({
+      x: boundedX,
+      y: boundedY,
+      width,
+      height
+    });
+  };
+
+  const applyCrop = () => {
+    const backgroundImage = canvasImages.find(img => img.isSourceImage);
+    if (!backgroundImage || !localCrop) {
+      onCropCancel();
+      return;
+    }
+    const imgLeft = backgroundImage.x - backgroundImage.width / 2;
+    const imgTop = backgroundImage.y - backgroundImage.height / 2;
+
+    const normalized = {
+      xNorm: (localCrop.x - imgLeft) / backgroundImage.width,
+      yNorm: (localCrop.y - imgTop) / backgroundImage.height,
+      wNorm: localCrop.width / backgroundImage.width,
+      hNorm: localCrop.height / backgroundImage.height
+    };
+
+    onCropApply({ ...normalized, orientation: cropOrientation });
+  };
+
   // Funções para controlar z-index (ordem no array)
   const moveDecorationToFront = () => {
     if (!selectedId) return;
@@ -444,11 +581,15 @@ export const KonvaCanvas = forwardRef(({
           {canvasImages.map(img => (
             <URLImage
               key={img.id}
+              imageId={img.imageId || img.id}
               src={img.src}
               x={img.x}
               y={img.y}
               width={img.width}
               height={img.height}
+              crop={img.crop}
+              naturalSize={img.naturalSize}
+              onImageNaturalSize={onImageNaturalSize}
             />
           ))}
         </Layer>
@@ -521,7 +662,73 @@ export const KonvaCanvas = forwardRef(({
             </Layer>
           );
         })()}
+
+        {/* Layer de recorte (sempre no topo) */}
+        {isCropping && localCrop && (
+          <Layer>
+            <Rect
+              x={0}
+              y={0}
+              width={sceneWidth}
+              height={sceneHeight}
+              fill="rgba(0,0,0,0.35)"
+              listening={false}
+            />
+            <Rect
+              ref={cropRectRef}
+              x={localCrop.x}
+              y={localCrop.y}
+              width={localCrop.width}
+              height={localCrop.height}
+              stroke="#22c55e"
+              strokeWidth={2}
+              dash={[10, 6]}
+              draggable
+              dragBoundFunc={(pos) => {
+                const { x, y } = enforceBounds(pos.x, pos.y, localCrop.width, localCrop.height);
+                return { x, y };
+              }}
+              onDragEnd={handleCropDragEnd}
+              onTransformEnd={handleCropTransformEnd}
+              fill="rgba(34,197,94,0.08)"
+            />
+            <Transformer
+              ref={cropTransformerRef}
+              borderEnabled={false}
+              anchorSize={8}
+              rotateEnabled={false}
+              keepRatio
+            />
+          </Layer>
+        )}
       </Stage>
+
+      {isCropping && (
+        <div className="absolute top-3 right-3 z-30 flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant={cropOrientation === 'portrait' ? 'solid' : 'flat'}
+            onPress={() => onCropOrientationChange('portrait')}
+            aria-label="Portrait A4"
+          >
+            A4 Portrait
+          </Button>
+          <Button
+            size="sm"
+            variant={cropOrientation === 'landscape' ? 'solid' : 'flat'}
+            onPress={() => onCropOrientationChange('landscape')}
+            aria-label="Landscape A4"
+          >
+            A4 Landscape
+          </Button>
+          <Button size="sm" variant="flat" onPress={onCropCancel}>
+            Cancel
+          </Button>
+          <Button size="sm" color="primary" onPress={applyCrop}>
+            Apply Crop
+          </Button>
+        </div>
+      )}
 
       {/* Botão de remover - HTML overlay */}
       {selectedId && (

@@ -22,6 +22,8 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
   const [canvasImages, setCanvasImages] = useState([]); // Imagens adicionadas ao canvas
   const [isDayMode, setIsDayMode] = useState(true); // Controla se mostra imagem de dia ou noite
   const [uploadedImages, setUploadedImages] = useState([]); // Imagens disponíveis após upload completo
+  const [cropByImage, setCropByImage] = useState({}); // Recorte por imagem (valores normalizados)
+  const [naturalSizeByImage, setNaturalSizeByImage] = useState({}); // Dimensões reais da imagem carregada
   
   // Carregar Source Images da API usando hook
   const { sourceImages, loading: sourceImagesLoading, error: sourceImagesError } = useSourceImages();
@@ -199,6 +201,8 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
       width: imageWidth,
       height: imageHeight,
       isSourceImage: true,
+      crop: cropByImage?.[image.id] || null,
+      naturalSize: naturalSizeByImage?.[image.id] || null,
       // Incluir metadados do cartouche na imagem (IMPORTANTE: ficam ligados à imagem)
       cartouche: cartoucheData ? {
         projectName: cartoucheData.projectName || null,
@@ -337,6 +341,14 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
       setCanvasImages(prev => prev.filter(img => img.imageId !== imageId));
     }
     
+    // Remover crop associado
+    setCropByImage(prev => {
+      if (!prev || !prev[imageId]) return prev;
+      const next = { ...prev };
+      delete next[imageId];
+      return next;
+    });
+
     console.log('✅ Imagem removida com sucesso');
   };
 
@@ -394,6 +406,10 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
     setUploadStep,
     uploadedImages,
     setUploadedImages,
+    cropByImage,
+    setCropByImage,
+    naturalSizeByImage,
+    setNaturalSizeByImage,
     noBgWarning,
     setNoBgWarning,
     isGenerating,

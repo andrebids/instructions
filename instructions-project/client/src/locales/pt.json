@@ -864,6 +864,10 @@
       "step1": "1) Carregue uma imagem de origem",
       "step2": "2) Selecione-a para ativar o canvas",
       "step3": "3) Aplique decorações e cartouche"
+    },
+    "canvasControls": {
+      "crop": "Crop",
+      "resetOriginal": "Restaurar original"
     }
   },
   "errors": {

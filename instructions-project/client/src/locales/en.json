@@ -856,6 +856,10 @@
       "step1": "1) Upload a source image",
       "step2": "2) Select it to activate the canvas",
       "step3": "3) Apply decorations and cartouche"
+    },
+    "canvasControls": {
+      "crop": "Crop",
+      "resetOriginal": "Reset original"
     }
   },
   "errors": {
