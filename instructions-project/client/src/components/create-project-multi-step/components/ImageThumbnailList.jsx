@@ -22,6 +22,62 @@ const mapImagePath = (path) => {
 };
 
 /**
+ * Componente de texto com marquee infinito quando o texto é muito comprido
+ */
+const MarqueeText = ({ children, className = "" }) => {
+  const containerRef = React.useRef(null);
+  const textRef = React.useRef(null);
+  const [needsMarquee, setNeedsMarquee] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkOverflow = () => {
+      if (textRef.current && containerRef.current) {
+        const isOverflowing = textRef.current.scrollWidth > containerRef.current.clientWidth;
+        setNeedsMarquee(isOverflowing);
+      }
+    };
+
+    // Verificar após renderização
+    checkOverflow();
+    
+    // Verificar também após um pequeno delay para garantir que o layout está completo
+    const timeout = setTimeout(checkOverflow, 100);
+
+    // Verificar quando a janela é redimensionada
+    window.addEventListener('resize', checkOverflow);
+
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener('resize', checkOverflow);
+    };
+  }, [children]);
+
+  return (
+    <div 
+      ref={containerRef} 
+      className={`overflow-hidden ${className}`} 
+      style={{ maxWidth: "100%", width: "100%" }}
+    >
+      {needsMarquee ? (
+        <div 
+          className="inline-flex whitespace-nowrap" 
+          style={{
+            animation: "marquee-infinite 15s linear infinite"
+          }}
+        >
+          <span>{children}</span>
+          <span style={{ paddingLeft: "2rem" }}>{children}</span>
+        </div>
+      ) : (
+        <span ref={textRef} className="truncate inline-block whitespace-nowrap" style={{ maxWidth: "100%" }}>
+          {children}
+        </span>
+      )}
+    </div>
+  );
+};
+
+/**
  * Lista de thumbnails de imagens
  * @param {Object} props
  * @param {Array} props.uploadedImages - Imagens uploadadas
@@ -139,11 +195,13 @@ export const ImageThumbnailList = ({
                   </div>
                   
                   <CardFooter className="absolute bg-black/40 bottom-0 z-10 py-1 pointer-events-none">
-                    <div className="flex grow gap-2 items-center">
-                      <p className="text-tiny text-white/80 truncate">{image.name}</p>
+                    <div className="flex grow gap-2 items-center min-w-0">
+                      <MarqueeText className="text-tiny text-white/80">
+                        {image.name}
+                      </MarqueeText>
                     </div>
                     {selectedImage?.id === image.id && (
-                      <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                      <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
                         <Icon icon="lucide:check" className="text-white text-xs" />
                       </div>
                     )}

@@ -530,7 +530,6 @@ export default function ImageAnnotationEditor({ image, onSave, onCancel, isOpen 
                                             isIconOnly
                                             size="sm"
                                             variant="flat"
-                                            aria-label="Clear all annotations"
                                             color="danger"
                                             isDisabled={annotations.length === 0}
                                             onPress={handleClearAll}
