@@ -1742,39 +1742,6 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     onInputChange("logoDetails", updatedLogoDetails);
   };
 
-  const handleFileUpload = (files) => {
-    if (!files || files.length === 0) return;
-
-    // Convert File objects to attachment format
-    const newAttachments = Array.from(files).map(file => ({
-      name: file.name,
-      url: URL.createObjectURL(file), // Create temporary preview URL
-      path: file.name,
-      mimetype: file.type,
-      size: file.size,
-      isAIGenerated: false,
-      uploadedAt: new Date().toISOString(),
-      file: file // Keep reference for actual upload later
-    }));
-
-    // Add to existing attachments
-    const updatedAttachments = [
-      ...(currentLogo.attachmentFiles || []),
-      ...newAttachments
-    ];
-
-    const updatedCurrentLogo = {
-      ...currentLogo,
-      attachmentFiles: updatedAttachments,
-    };
-    const updatedLogoDetails = {
-      ...logoDetails,
-      currentLogo: updatedCurrentLogo,
-      logos: savedLogos,
-    };
-    onInputChange("logoDetails", updatedLogoDetails);
-  };
-
   // FunÃ§Ã£o para buscar produtos do Stock Catalogue com debounce
   const searchProducts = React.useCallback(async (query) => {
     if (!query || query.trim().length < 2) {
