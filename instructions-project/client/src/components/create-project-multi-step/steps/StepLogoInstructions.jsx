@@ -1685,6 +1685,96 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     setIsChatOpen(true);
   };
 
+  const handleSaveImageFromAI = (imageUrl) => {
+    if (!imageUrl) {
+      console.error('No image URL provided to save');
+      return;
+    }
+
+    // Criar objeto de arquivo para o attachment
+    const aiGeneratedFile = {
+      name: `AI-Generated-${Date.now()}.webp`,
+      url: imageUrl,
+      path: imageUrl,
+      mimetype: 'image/webp',
+      isAIGenerated: true,
+      generatedAt: new Date().toISOString()
+    };
+
+    // Se estamos editando um attachment existente, substituí-lo
+    let newAttachments;
+    if (editingAttachmentIndex !== null && editingAttachmentIndex >= 0) {
+      newAttachments = [...(currentLogo.attachmentFiles || [])];
+      newAttachments[editingAttachmentIndex] = aiGeneratedFile;
+      setEditingAttachmentIndex(null);
+    } else {
+      // Caso contrário, adicionar como novo attachment
+      newAttachments = [...(currentLogo.attachmentFiles || []), aiGeneratedFile];
+    }
+
+    // Atualizar currentLogo com o novo attachment
+    const updatedCurrentLogo = {
+      ...currentLogo,
+      attachmentFiles: newAttachments,
+    };
+    const updatedLogoDetails = {
+      ...logoDetails,
+      currentLogo: updatedCurrentLogo,
+      logos: savedLogos,
+    };
+    onInputChange("logoDetails", updatedLogoDetails);
+
+    // Fechar o modal
+    setIsChatOpen(false);
+  };
+
+  const handleAIStateChange = (aiState) => {
+    // Salvar o estado do AI Assistant no currentLogo para persistência
+    const updatedCurrentLogo = {
+      ...currentLogo,
+      aiAssistantState: aiState,
+    };
+    const updatedLogoDetails = {
+      ...logoDetails,
+      currentLogo: updatedCurrentLogo,
+      logos: savedLogos,
+    };
+    onInputChange("logoDetails", updatedLogoDetails);
+  };
+
+  const handleFileUpload = (files) => {
+    if (!files || files.length === 0) return;
+
+    // Convert File objects to attachment format
+    const newAttachments = Array.from(files).map(file => ({
+      name: file.name,
+      url: URL.createObjectURL(file), // Create temporary preview URL
+      path: file.name,
+      mimetype: file.type,
+      size: file.size,
+      isAIGenerated: false,
+      uploadedAt: new Date().toISOString(),
+      file: file // Keep reference for actual upload later
+    }));
+
+    // Add to existing attachments
+    const updatedAttachments = [
+      ...(currentLogo.attachmentFiles || []),
+      ...newAttachments
+    ];
+
+    const updatedCurrentLogo = {
+      ...currentLogo,
+      attachmentFiles: updatedAttachments,
+    };
+    const updatedLogoDetails = {
+      ...logoDetails,
+      currentLogo: updatedCurrentLogo,
+      logos: savedLogos,
+    };
+    onInputChange("logoDetails", updatedLogoDetails);
+  };
+
   // FunÃ§Ã£o para buscar produtos do Stock Catalogue com debounce
   const searchProducts = React.useCallback(async (query) => {
     if (!query || query.trim().length < 2) {
@@ -2496,106 +2586,21 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
           <div className="flex-1 overflow-y-auto border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50/50 dark:bg-gray-700/50 hover:border-pink-300 dark:hover:border-pink-700 transition-colors">
             {currentLogo.attachmentFiles && currentLogo.attachmentFiles.length > 0 ? (
-              <div className="flex flex-col items-center justify-center space-y-3 h-full">
-                {/* Preview central em quadrado */}
-                <div className="relative w-48 h-48 rounded-lg overflow-hidden border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-md">
-                  {(() => {
-                    const file = currentLogo.attachmentFiles[0];
-                    const isImage = file.mimetype?.startsWith('image/') || file.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
-                    const isAIGenerated = file.isAIGenerated;
-
-                    // Construir URL da imagem
-                    let imageUrl = null;
-                    if (file.url || file.path) {
-                      let url = file.url || file.path;
-
-                      if (url.startsWith('\\\\') || url.startsWith('//')) {
-                        const filename = url.split(/[\\/]/).pop();
-                        if (filename) imageUrl = `/api/files/${filename}`;
-                      } else if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
-                        try {
-                          const urlObj = new URL(url);
-                          const pathname = urlObj.pathname;
-                          if (pathname.startsWith('/api/files/')) {
-                            imageUrl = pathname;
-                          } else if (pathname.startsWith('/api/')) {
-                            imageUrl = pathname;
-                          } else {
-                            imageUrl = `/api${pathname}`;
-                          }
-                        } catch (e) {
-                          const match = url.match(/\/api\/files\/[^\/\s]+/);
-                          if (match) imageUrl = match[0];
-                          else imageUrl = url;
-                        }
-                      } else if (url.startsWith('/api/')) {
-                        imageUrl = url;
-                      } else if (url.startsWith('/')) {
-                        imageUrl = !url.startsWith('/api/') ? `/api${url}` : url;
-                      } else {
-                        imageUrl = `/api/files/${url}`;
-                      }
-                    }
-
-                    return (
-                      <>
-                        {isImage && imageUrl ? (
-                          <img
-                            src={imageUrl}
-                            alt={file.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextElementSibling.style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
-                        <div
-                          className={`w-full h-full flex items-center justify-center ${isImage && imageUrl ? 'hidden' : 'flex'} ${isAIGenerated ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-pink-100 dark:bg-pink-900/30'}`}
-                          style={{ display: isImage && imageUrl ? 'none' : 'flex' }}
-                        >
-                          <Icon icon={isAIGenerated ? "lucide:sparkles" : "lucide:image"} className={`w-16 h-16 ${isAIGenerated ? 'text-purple-500' : 'text-pink-500'}`} />
-                        </div>
-                        {isAIGenerated && (
-                          <div className="absolute top-2 right-2 bg-purple-500 text-white text-xs px-2 py-1 rounded-md font-bold shadow-md">
-                            AI
-                          </div>
-                        )}
-                        <div className="absolute bottom-2 left-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-md truncate">
-                          {file.name}
-                        </div>
-                        <div className="absolute top-2 left-2 flex gap-1">
-                          {isAIGenerated && (
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="solid"
-                              color="primary"
-                              onPress={() => handleEditAIGenerated(0)}
-                              className="h-7 w-7 min-w-7 shadow-md"
-                              aria-label={`Edit AI generated image ${file.name}`}
-                            >
-                              <Icon icon="lucide:edit-2" className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="solid"
-                            color="danger"
-                            onPress={() => handleRemoveAttachment(0)}
-                            className="h-7 w-7 min-w-7 shadow-md"
-                            aria-label={`Remove attachment ${file.name}`}
-                          >
-                            <Icon icon="lucide:x" className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </>
-                    );
-                  })()}
+              <div className="space-y-2">
+                {/* Grid of attachment previews */}
+                <div className="grid grid-cols-2 gap-2">
+                  {currentLogo.attachmentFiles.map((file, index) => (
+                    <AttachmentItem
+                      key={index}
+                      file={file}
+                      index={index}
+                      onRemove={handleRemoveAttachment}
+                      onEdit={file.isAIGenerated ? handleEditAIGenerated : null}
+                    />
+                  ))}
                 </div>
 
-                {/* Botão Add More Files abaixo da preview */}
+                {/* Add More Files button */}
                 <input
                   type="file"
                   id="file-upload-more"
@@ -2607,7 +2612,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                   size="sm"
                   variant="flat"
                   color="primary"
-                  className="font-medium px-3 py-1"
+                  className="font-medium px-3 py-1 w-full"
                   startContent={<Icon icon="lucide:upload" className="w-4 h-4" />}
                   onPress={() => document.getElementById('file-upload-more').click()}
                 >
@@ -3388,125 +3393,125 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
     return (
       <div className="h-full overflow-y-auto p-4 bg-[#141b2d] text-gray-300 font-sans">
-        <div className="w-full mx-auto grid grid-cols-12 gap-8">
+        <div className="w-full mx-auto space-y-6">
 
-          {/* COLUMN 1: Details & Technical (4 cols) */}
-          <div className="col-span-12 lg:col-span-4 flex flex-col gap-10">
+          {/* TOP ROW: 4 equal columns for efficiency */}
+          <div className="grid grid-cols-12 gap-4">
 
-            {/* Details Section */}
-            <div className="space-y-4">
+            {/* COLUMN 1: Details (3 cols) */}
+            <div className="col-span-12 lg:col-span-3 space-y-4">
+
               <div className="flex items-center gap-2 text-blue-500 mb-2">
-                <Icon icon="lucide:file-text" className="w-5 h-5" />
-                <h3 className="text-lg font-bold">Details</h3>
+                <Icon icon="lucide:file-text" className="w-4 h-4" />
+                <h3 className="text-sm font-bold">Details</h3>
               </div>
 
-              <div className="grid grid-cols-4 gap-4">
-                <div>
-                  <label className="text-xs text-gray-400 block mb-1">Logo Number</label>
-                  <div className="text-sm font-medium text-white break-words">{formik.values.logoNumber || "---"}</div>
+              <div className="space-y-3">
+                {/* Row 1: Logo Number + Logo Name */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-gray-400 block mb-1">Logo Number</label>
+                    <div className="text-xs font-medium text-white break-words">{formik.values.logoNumber || "---"}</div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-400 block mb-1">Logo Name</label>
+                    <div className="text-xs font-medium text-white break-words">{formik.values.logoName || "---"}</div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs text-gray-400 block mb-1">Logo Name</label>
-                  <div className="text-sm font-medium text-white break-words">{formik.values.logoName || "---"}</div>
+
+                {/* Row 2: Budget + Requested By */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-gray-400 block mb-1">Budget (EUR)</label>
+                    <div className="text-xs font-medium text-white break-words">&euro; {formik.values.budget || "---"}</div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-400 block mb-1">Requested By</label>
+                    <div className="text-xs font-medium text-white break-words">{formik.values.requestedBy || "---"}</div>
+                  </div>
                 </div>
+
+                {/* Description - now takes more vertical space */}
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1">Budget (EUR)</label>
-                  <div className="text-sm font-medium text-white break-words">&euro; {formik.values.budget || "---"}</div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-400 block mb-1">Requested By</label>
-                  <div className="text-sm font-medium text-white break-words">{formik.values.requestedBy || "---"}</div>
+                  <label className="text-[10px] text-gray-400 block mb-1">Description</label>
+                  <div className="text-[10px] text-gray-300 leading-relaxed bg-[#1f2942] p-2 rounded-lg border border-gray-700/50 min-h-[100px] max-h-[140px] overflow-y-auto whitespace-pre-wrap">
+                    {formik.values.description || "No description provided."}
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs text-gray-400 block mb-1">Description</label>
-                <div className="text-xs text-gray-300 leading-relaxed bg-[#1f2942] p-3 rounded-lg border border-gray-700/50 min-h-[100px] whitespace-pre-wrap">
-                  {formik.values.description || "No description provided."}
-                </div>
-              </div>
             </div>
 
-            {/* Fixation & Technical Section */}
-            <div className="space-y-4">
+            {/* COLUMN 2: Fixation & Technical (3 cols) */}
+            <div className="col-span-12 lg:col-span-3 space-y-4">
               <div className="flex items-center gap-2 text-orange-500 mb-2">
-                <Icon icon="lucide:hammer" className="w-5 h-5" />
-                <h3 className="text-lg font-bold">Fixation & Technical</h3>
+                <Icon icon="lucide:hammer" className="w-4 h-4" />
+                <h3 className="text-sm font-bold">Fixation & Technical</h3>
               </div>
 
-              <div className="grid grid-cols-2 gap-y-6 gap-x-4">
+              <div className="space-y-3">
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1">Usage</label>
-                  <div className="text-sm font-medium text-white flex items-center gap-2">
+                  <label className="text-[10px] text-gray-400 block mb-1">Usage</label>
+                  <div className="text-xs font-medium text-white flex items-center gap-2">
                     {formik.values.usageOutdoor ? (
-                      <><Icon icon="lucide:trees" className="w-4 h-4" /> Outdoor</>
+                      <><Icon icon="lucide:trees" className="w-3 h-3" /> Outdoor</>
                     ) : (
-                      <><Icon icon="lucide:home" className="w-4 h-4" /> Indoor</>
+                      <><Icon icon="lucide:home" className="w-3 h-3" /> Indoor</>
                     )}
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1">Structure Finish</label>
+                  <label className="text-[10px] text-gray-400 block mb-1">Structure Finish</label>
                   {formik.values.lacqueredStructure ? (
-                    <div className="text-xs font-bold bg-[#1f2942] border border-gray-600 px-2 py-1 rounded inline-block text-white">
+                    <div className="text-[10px] font-bold bg-[#1f2942] border border-gray-600 px-2 py-1 rounded inline-block text-white">
                       {formik.values.lacquerColor}
                     </div>
                   ) : (
-                    <div className="text-xs font-medium text-gray-500 italic">Standard</div>
+                    <div className="text-[10px] font-medium text-gray-500 italic">Standard</div>
                   )}
                 </div>
-
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1">Fixation Type</label>
-                  <div className="text-sm font-medium text-white flex items-center gap-2">
-                    <Icon icon="lucide:ban" className="w-4 h-4" /> {/* You might want to map icons based on type */}
+                  <label className="text-[10px] text-gray-400 block mb-1">Fixation Type</label>
+                  <div className="text-xs font-medium text-white flex items-center gap-2">
+                    <Icon icon="lucide:ban" className="w-3 h-3" />
                     {formik.values.fixationType || "None"}
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1">Technical Constraints</label>
+                  <label className="text-[10px] text-gray-400 block mb-1">Technical Constraints</label>
                   {formik.values.maxWeightConstraint ? (
-                    <div className="text-xs font-medium text-white bg-[#1f2942] px-2 py-1 rounded border border-gray-700 inline-flex items-center gap-2">
-                      <span>RestriÃ§Ã£o de Peso MÃ¡x.</span>
+                    <div className="text-[10px] font-medium text-white bg-[#1f2942] px-2 py-1 rounded border border-gray-700 inline-flex items-center gap-2">
+                      <span>Max Weight</span>
                       <span className="font-bold text-orange-400">{formik.values.maxWeight} kg</span>
                     </div>
                   ) : (
-                    <span className="text-gray-600 text-xs">None</span>
+                    <span className="text-gray-600 text-[10px]">None</span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formik.values.ballast && (
+                    <div className="px-2 py-1 rounded-full bg-gray-700/50 border border-gray-600 text-[10px] font-medium text-white inline-flex items-center gap-1.5">
+                      <Icon icon="lucide:check-circle-2" className="w-3 h-3" /> Ballast
+                    </div>
+                  )}
+                  {formik.values.controlReport && (
+                    <div className="px-2 py-1 rounded-full bg-gray-700/50 border border-gray-600 text-[10px] font-medium text-white inline-flex items-center gap-1.5">
+                      <Icon icon="lucide:check-circle-2" className="w-3 h-3" /> Control Report
+                    </div>
                   )}
                 </div>
               </div>
-
-              <div className="flex items-center gap-4 mt-2">
-                {formik.values.ballast && (
-                  <div className="px-3 py-1.5 rounded-full bg-gray-700/50 border border-gray-600 text-xs font-medium text-white flex items-center gap-2">
-                    <Icon icon="lucide:check-circle-2" className="w-3.5 h-3.5" /> Ballast Required
-                  </div>
-                )}
-                {formik.values.controlReport && (
-                  <div className="px-3 py-1.5 rounded-full bg-gray-700/50 border border-gray-600 text-xs font-medium text-white flex items-center gap-2">
-                    <Icon icon="lucide:check-circle-2" className="w-3.5 h-3.5" /> Control Report Needed
-                  </div>
-                )}
-              </div>
-
             </div>
 
-          </div>
-
-          {/* COLUMN 2: Attachments, Composition - Components (4 cols) */}
-          <div className="col-span-12 lg:col-span-4 flex flex-col gap-10">
-
-
-
-            {/* Attachments */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-pink-500 mb-1">
+            {/* COLUMN 3: Attachments (3 cols) */}
+            <div className="col-span-12 lg:col-span-3 space-y-4">
+              <div className="flex items-center gap-2 text-pink-500 mb-2">
                 <Icon icon="lucide:paperclip" className="w-4 h-4" />
                 <h4 className="text-sm font-bold">Attachments</h4>
               </div>
 
               {mainAttachment ? (
-                <div className="relative w-full h-48 rounded-xl overflow-hidden border-2 border-dashed border-gray-700 bg-[#1f2942] group">
+                <div className="relative w-full h-[200px] rounded-xl overflow-hidden border-2 border-dashed border-gray-700 bg-[#1f2942] group">
                   {mainAttachment.url || mainAttachment.path ? (
                     <img
                       src={buildImageUrl(mainAttachment.url || mainAttachment.path)}
@@ -3515,138 +3520,131 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-500 cursor-default">
-                      <Icon icon="lucide:image-off" className="w-8 h-8" />
+                      <Icon icon="lucide:image-off" className="w-6 h-6" />
                     </div>
                   )}
-                  {/* Overlay with more count if > 1 */}
                   {attachments.length > 1 && (
-                    <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-md">
+                    <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded-md">
                       +{attachments.length - 1} more
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="w-full h-32 rounded-xl border-2 border-dashed border-gray-700 flex items-center justify-center text-gray-600 bg-[#1f2942]/30">
-                  <span className="text-xs">No image attached</span>
+                <div className="w-full h-[200px] rounded-xl border-2 border-dashed border-gray-700 flex items-center justify-center text-gray-600 bg-[#1f2942]/30">
+                  <span className="text-[10px]">No image attached</span>
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Composition Section (Components & Balls) */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-purple-500 mb-2">
-              <Icon icon="lucide:layers" className="w-5 h-5" />
-              <h3 className="text-lg font-bold">Composition</h3>
-            </div>
-
-            {/* Components Subsection */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Icon icon="lucide:box" className="w-4 h-4 text-purple-400" />
-                <span className="text-xs font-bold text-gray-300 uppercase">COMPONENTS</span>
-                <span className="bg-purple-900/50 text-purple-300 text-[10px] px-1.5 rounded font-bold">{validComponentes.length}</span>
+            {/* COLUMN 4: Dimensions (3 cols) */}
+            <div className="col-span-12 lg:col-span-3 space-y-4">
+              <div className="flex items-center gap-2 text-emerald-500 mb-2">
+                <Icon icon="lucide:ruler" className="w-4 h-4" />
+                <h3 className="text-sm font-bold">Dimensions</h3>
               </div>
 
               <div className="space-y-2">
-                {validComponentes.length > 0 ? (
-                  validComponentes.map((comp, idx) => (
-                    <div key={idx} className="bg-[#1f2942] p-3 rounded-lg border border-gray-700 flex flex-col gap-1">
-                      <div className="flex justify-between items-start">
-                        <span className="text-sm font-bold text-white uppercase">{comp.referencia}</span>
+                {dimensionOrder.map(key => {
+                  const dimData = formik.values.dimensions?.[key];
+                  const val = dimData?.value;
+                  const isImperative = dimData?.imperative;
+                  const displayVal = (val !== null && val !== undefined && val !== "") ? val : "---";
+
+                  return (
+                    <div key={key} className="bg-[#1f2942] p-3 rounded-lg border border-gray-700 flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{dimensionLabels[key]}</span>
+                        <div className={`flex items-center gap-1.5 ${isImperative ? 'opacity-100' : 'opacity-40'}`}>
+                          {isImperative ? (
+                            <Icon icon="lucide:check-circle" className="w-3 h-3 text-pink-500" />
+                          ) : (
+                            <div className="w-3 h-3 rounded-full border border-gray-500"></div>
+                          )}
+                          <span className="text-[10px] text-white">Imperative</span>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-400 flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-gray-500"></div> {/* Simplified color indicator */}
-                        <span className="truncate">{comp.componenteNome || "Component Name"}</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-white">{displayVal}</span>
+                        <span className="text-xs text-gray-500">m</span>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-xs text-gray-500 italic px-2">No components added.</div>
-                )}
+                  );
+                })}
               </div>
             </div>
+          </div>
 
+          {/* BOTTOM ROW: Composition (Components + Balls side by side) - Full Width */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-purple-500 mb-2">
+              <Icon icon="lucide:layers" className="w-4 h-4" />
+              <h3 className="text-sm font-bold">Composition</h3>
+            </div>
 
-
-
-            {/* COLUMN 3: Dimensions & Balls (4 cols) */}
-            <div className="col-span-12 lg:col-span-4 flex flex-col gap-10">
-
-              {/* Dimensions Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-emerald-500 mb-2">
-                  <Icon icon="lucide:ruler" className="w-5 h-5" />
-                  <h3 className="text-lg font-bold">Dimensions</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Components Subsection */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Icon icon="lucide:box" className="w-3.5 h-3.5 text-purple-400" />
+                  <span className="text-[10px] font-bold text-gray-300 uppercase">COMPONENTS</span>
+                  <span className="bg-purple-900/50 text-purple-300 text-[9px] px-1.5 rounded font-bold">{validComponentes.length}</span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {dimensionOrder.map(key => {
-                    const dimData = formik.values.dimensions?.[key];
-                    const val = dimData?.value;
-                    const isImperative = dimData?.imperative;
-                    const displayVal = (val !== null && val !== undefined && val !== "") ? val : "---";
-
-                    return (
-                      <div key={key} className="bg-[#1f2942] p-3 rounded-xl border border-gray-700 relative group overflow-hidden">
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{dimensionLabels[key]}</span>
-                          <div className={`flex items-center gap-1.5 ${isImperative ? 'opacity-100' : 'opacity-40'}`}>
-                            {isImperative ? (
-                              <Icon icon="lucide:check-circle" className="w-3 h-3 text-pink-500" />
-                            ) : (
-                              <div className="w-3 h-3 rounded-full border border-gray-500"></div>
-                            )}
-                            <span className="text-[10px] text-white">Imperative</span>
-                          </div>
+                <div className="space-y-2">
+                  {validComponentes.length > 0 ? (
+                    validComponentes.map((comp, idx) => (
+                      <div key={idx} className="bg-[#1f2942] p-2 rounded-lg border border-gray-700 flex flex-col gap-1">
+                        <div className="flex justify-between items-start">
+                          <span className="text-xs font-bold text-white uppercase">{comp.referencia}</span>
                         </div>
-                        <div className="flex items-end justify-between">
-                          <span className="text-xl font-bold text-white">{displayVal}</span>
-                          <span className="text-xs text-gray-500 mb-1">m</span>
+                        <div className="text-[10px] text-gray-400 flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-gray-500"></div>
+                          <span className="truncate">{comp.componenteNome || "Component Name"}</span>
                         </div>
                       </div>
-                    );
-                  })}
+                    ))
+                  ) : (
+                    <div className="text-[10px] text-gray-500 italic px-2">No components added.</div>
+                  )}
                 </div>
               </div>
 
-              {/* Balls Section (Moved to Col 3) */}
-              <div className="space-y-3 pt-6">
+              {/* Balls Subsection */}
+              <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Icon icon="lucide:circle-dot" className="w-4 h-4 text-purple-400" />
-                  <span className="text-xs font-bold text-gray-300 uppercase">BALLS</span>
-                  <span className="bg-purple-900/50 text-purple-300 text-[10px] px-1.5 rounded font-bold">{validBolas.length}</span>
+                  <Icon icon="lucide:circle-dot" className="w-3.5 h-3.5 text-purple-400" />
+                  <span className="text-[10px] font-bold text-gray-300 uppercase">BALLS</span>
+                  <span className="bg-purple-900/50 text-purple-300 text-[9px] px-1.5 rounded font-bold">{validBolas.length}</span>
                 </div>
 
                 <div className="space-y-2">
                   {validBolas.length > 0 ? (
                     validBolas.map((bola, idx) => (
-                      <div key={idx} className="bg-[#1f2942] p-3 rounded-lg border border-gray-700 flex flex-col gap-1">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm font-bold text-white">
+                      <div key={idx} className="bg-[#1f2942] p-2 rounded-lg border border-gray-700 flex flex-col gap-1">
+                        <div className="flex justify-between items-center mb-0.5">
+                          <span className="text-xs font-bold text-white">
                             {bola.corNome || "Ball"} - {bola.acabamentoNome || "Finish"} - {bola.tamanho ? `${bola.tamanho} cm` : "Size"}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-orange-400"></div> {/* Color placeholder */}
-                          <span className="text-xs text-gray-400">{bola.corNome || "Color"} &bull; {bola.acabamentoNome || "Matte"}</span>
+                          <div className="w-1.5 h-1.5 rounded-full bg-orange-400"></div>
+                          <span className="text-[10px] text-gray-400">{bola.corNome || "Color"} &bull; {bola.acabamentoNome || "Matte"}</span>
                         </div>
                         {bola.reference && (
-                          <div className="mt-1">
-                            <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded font-mono">Ref: {bola.reference}</span>
+                          <div className="mt-0.5">
+                            <span className="text-[9px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded font-mono">Ref: {bola.reference}</span>
                           </div>
                         )}
                       </div>
                     ))
                   ) : (
-                    <div className="text-xs text-gray-500 italic px-2">No balls added.</div>
+                    <div className="text-[10px] text-gray-500 italic px-2">No balls added.</div>
                   )}
                 </div>
               </div>
-
             </div>
-
           </div>
+
         </div>
       </div>
     );
@@ -3732,6 +3730,18 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
           </div>
         </div>
       </div>
+
+      {/* AI Assistant Chat Modal para geraÃ§Ã£o de imagens */}
+      <AIAssistantChat
+        isOpen={isChatOpen}
+        onClose={() => {
+          setIsChatOpen(false);
+          setEditingAttachmentIndex(null);
+        }}
+        onSaveImage={handleSaveImageFromAI}
+        initialAIState={currentLogo.aiAssistantState || null}
+        onAIStateChange={handleAIStateChange}
+      />
 
     </div>
   );
