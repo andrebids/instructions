@@ -34,16 +34,31 @@ export async function getAuth(req) {
         // Tentar acessar através do handler
         try {
           // Criar um objeto de opções básico baseado na configuração
-          // IMPORTANTE: Não definir basePath e baseURL ao mesmo tempo para evitar redundância
-          // Se AUTH_URL estiver definido, usar apenas baseURL (ele já inclui o caminho)
-          // Se não estiver definido, usar apenas basePath
+          // IMPORTANTE: Não definir basePath e baseURL com pathname ao mesmo tempo para evitar redundância
+          // Se AUTH_URL contém pathname, extrair apenas a base e usar basePath
+          // Se AUTH_URL não contém pathname, usar apenas baseURL
           req.authOptions = {
             trustHost: true,
           };
           
           if (process.env.AUTH_URL) {
-            // Se AUTH_URL está definido, usar apenas baseURL (ele já inclui o caminho)
-            req.authOptions.baseURL = process.env.AUTH_URL;
+            try {
+              const authUrl = new URL(process.env.AUTH_URL);
+              const pathname = authUrl.pathname;
+              
+              // Se AUTH_URL contém um pathname (ex: /auth), usar apenas baseURL (sem pathname) + basePath
+              if (pathname && pathname !== '/') {
+                authUrl.pathname = '';
+                req.authOptions.baseURL = authUrl.toString().replace(/\/$/, '');
+                req.authOptions.basePath = pathname;
+              } else {
+                // Se não contém pathname, usar apenas baseURL (sem basePath)
+                req.authOptions.baseURL = process.env.AUTH_URL;
+              }
+            } catch (urlError) {
+              // Se AUTH_URL não for uma URL válida, usar apenas basePath
+              req.authOptions.basePath = '/auth';
+            }
           } else {
             // Se AUTH_URL não está definido, usar apenas basePath
             req.authOptions.basePath = '/auth';

@@ -5,12 +5,19 @@ export const getVisibleSteps = (formData, allSteps) => {
 
     // Steps condicionais apenas para projectos Simu
     if (step.condition === "isSimu") {
-      return formData.projectType === "simu" && formData.simuWorkflow !== null;
+      // Step render-definition só aparece se houver imagens uploadadas
+      // (não precisa ter decorações ainda, pode aparecer após posicionar)
+      if (step.id === "render-definition") {
+        const hasImages = formData.uploadedImages && formData.uploadedImages.length > 0;
+        return formData.projectType === "simu" && hasImages;
+      }
+      return formData.projectType === "simu";
     }
 
-    // Step condicional para AI Designer
+    // Step condicional para AI Designer (agora aparece para qualquer projeto Simu)
+    // O workflow é escolhido por imagem dentro do step
     if (step.condition === "isAIDesigner") {
-      return formData.projectType === "simu" && formData.simuWorkflow === "ai";
+      return formData.projectType === "simu";
     }
 
     // Step condicional para Logo Instructions

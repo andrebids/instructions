@@ -63,41 +63,43 @@ export const ImageThumbnailList = ({
                 isDisabled={!isDisabled}
                 placement="right"
               >
-                <Card
-                  isFooterBlurred
-                  isPressable={!isDisabled}
-                  isDisabled={isDisabled}
+                <div
                   className={
                     isDisabled
                       ? 'border-none transition-all duration-200 cursor-not-allowed opacity-60'
                       : selectedImage?.id === image.id 
-                        ? 'border-none transition-all duration-200 cursor-pointer ring-2 ring-primary shadow-lg'
-                        : 'border-none transition-all duration-200 cursor-pointer hover:ring-1 hover:ring-primary/50'
+                        ? 'border-none transition-all duration-200 cursor-pointer ring-2 ring-primary shadow-lg rounded-lg'
+                        : 'border-none transition-all duration-200 cursor-pointer hover:ring-1 hover:ring-primary/50 rounded-lg'
                   }
-                  radius="lg"
-                  onPress={() => {
+                  onClick={() => {
                     if (!isDisabled) {
-                      // Log removido
                       onImageSelect(image);
                     }
                   }}
-                  aria-label={'Select source image ' + image.name}
                 >
-                  {/* Botão de remoção - aparece no hover */}
-                  {onImageRemove && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        onImageRemove(image.id);
-                      }}
-                      className="btn-remove-image absolute top-1 right-1 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-full p-1 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-danger-300 shadow-md"
-                      aria-label={`Remove image ${image.name}`}
-                      title="Remove image"
-                    >
-                      <Icon icon="lucide:x" className="icon-x text-xs" />
-                    </button>
-                  )}
+                  <Card
+                    isFooterBlurred
+                    isPressable={false}
+                    isDisabled={isDisabled}
+                    className="border-none"
+                    radius="lg"
+                    aria-label={'Select source image ' + image.name}
+                  >
+                    {/* Botão de remoção - aparece no hover */}
+                    {onImageRemove && isConverted && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          onImageRemove(image.id);
+                        }}
+                        className="absolute top-1 right-1 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-full p-1.5 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-danger-300 shadow-md bg-danger-500 text-white"
+                        aria-label={`Remove image ${image.name}`}
+                        title="Remove image"
+                      >
+                        <Icon icon="lucide:trash-2" className="text-xs" />
+                      </button>
+                    )}
                   {/* NightThumb com animação de dia para noite - só mostra se API disponível */}
                   {image.nightVersion && (
                     <NightThumb
@@ -146,7 +148,8 @@ export const ImageThumbnailList = ({
                       </div>
                     )}
                   </CardFooter>
-                </Card>
+                  </Card>
+                </div>
               </Tooltip>
             </div>
           );

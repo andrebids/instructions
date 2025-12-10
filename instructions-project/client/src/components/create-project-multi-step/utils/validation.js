@@ -32,17 +32,16 @@ export const validateStepNotes = (formData) => {
 // Validação do Step 3: Project Type (agora opcional - pode ser null)
 export const validateStepProjectType = (formData) => {
   // Se projectType for null, é válido (pode fazer skip)
-  // Se projectType for "simu", precisa ter simuWorkflow definido
-  // Se projectType for "logo" ou outro, é válido
+  // Se projectType for "simu", não precisa mais de simuWorkflow global
+  // O workflow é escolhido por imagem dentro do step do designer
   const isValid = (
     formData.projectType === null || // Permite skip (não selecionar nada)
     formData.projectType !== "simu" || // Se não for simu, é válido
-    (formData.projectType === "simu" && formData.simuWorkflow !== null) // Se for simu, precisa workflow
+    formData.projectType === "simu" // Se for simu, é válido (workflow escolhido por imagem)
   );
 
   logger.validation("project-type", isValid, {
     projectType: formData.projectType,
-    simuWorkflow: formData.simuWorkflow,
     canSkip: formData.projectType === null
   });
 
@@ -183,6 +182,29 @@ export const validateStepLogoInstructions = (formData) => {
   return isValid;
 };
 
+// Validação do Step: Render Definition (apenas para projetos Simu)
+export const validateStepRenderDefinition = (formData) => {
+  // Step é válido se todas as imagens têm método de renderização atribuído
+  const uploadedImages = formData?.uploadedImages || [];
+  const renderByImage = formData?.renderByImage || {};
+  
+  if (uploadedImages.length === 0) {
+    return false; // Precisa ter imagens
+  }
+  
+  // Todas as imagens devem ter renderização atribuída
+  const allAssigned = uploadedImages.every(img => renderByImage[img.id] === 'ai' || renderByImage[img.id] === 'designer');
+  
+  logger.validation("render-definition", allAssigned, {
+    totalImages: uploadedImages.length,
+    assignedCount: Object.keys(renderByImage).length,
+    aiCount: uploadedImages.filter(img => renderByImage[img.id] === 'ai').length,
+    designerCount: uploadedImages.filter(img => renderByImage[img.id] === 'designer').length
+  });
+  
+  return allAssigned;
+};
+
 // Validação do Step 6: Confirm Details
 export const validateStepConfirmDetails = (formData) => {
   return true; // Review step
@@ -213,6 +235,9 @@ export const isStepValid = (stepId, formData) => {
       break;
     case "ai-designer":
       isValid = validateStepAIDesigner(formData);
+      break;
+    case "render-definition":
+      isValid = validateStepRenderDefinition(formData);
       break;
     case "logo-instructions":
       isValid = validateStepLogoInstructions(formData);

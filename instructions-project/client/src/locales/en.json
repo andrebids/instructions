@@ -785,7 +785,31 @@
         "projectType": "Project Type",
         "aiDesigner": "AI Designer",
         "logoInstructions": "Logo Instructions",
-        "confirmDetails": "Confirm Details"
+        "confirmDetails": "Confirm Details",
+        "renderDefinition": "Render Definition"
+      },
+      "renderDefinition": {
+        "title": "Render Definition",
+        "subtitle": "Choose how you want to process each image",
+        "bulkActions": {
+          "title": "Processing Methods",
+          "description": "Select an option to apply to all {{count}} images",
+          "ai": "Instant AI",
+          "aiDesc": "Automatic and fast day-to-night.",
+          "designer": "Pro Designer",
+          "designerDesc": "Realistic manual treatment.",
+          "applyToAll": "Apply to All"
+        },
+        "summary": {
+          "viaAI": "via AI",
+          "viaDesigner": "via Designer",
+          "unassigned": "unselected",
+          "total": "Total",
+          "images": "images",
+          "confirm": "Confirm and Process",
+          "processing": "Processing...",
+          "selectRequired": "Select all images"
+        }
       }
     }
   },

@@ -1,15 +1,118 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { Card, Button, Accordion, AccordionItem } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { getLocalTimeZone } from "@internationalized/date";
 import { SimulationCarousel } from "./SimulationCarousel";
 import { DeleteConfirmDialog } from "../../ui/DeleteConfirmDialog";
+import { WorkflowSummaryPanel } from "../components/WorkflowSummaryPanel";
+import { projectsAPI, ordersAPI } from "../../../services/api";
 
-export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, onAddLogo }) {
+export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, onAddLogo, onInputChange }) {
   const hasSimulations = formData.canvasImages && formData.canvasImages.length > 0;
   const simulationCount = formData.canvasImages?.length || 0;
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const projectId = formData?.id || formData?.tempProjectId;
+
+  // Handlers para workflow por imagem
+  const handleWorkflowChange = useCallback((imageId, workflow) => {
+    const currentWorkflowByImage = formData?.workflowByImage || {};
+    onInputChange?.('workflowByImage', {
+      ...currentWorkflowByImage,
+      [imageId]: workflow
+    });
+  }, [formData?.workflowByImage, onInputChange]);
+
+  const handleInstructionsChange = useCallback((imageId, instructions) => {
+    const currentInstructions = formData?.humanDesignerInstructions || {};
+    onInputChange?.('humanDesignerInstructions', {
+      ...currentInstructions,
+      [imageId]: instructions
+    });
+  }, [formData?.humanDesignerInstructions, onInputChange]);
+
+  // Handler para submeter todas as imagens
+  const handleSubmitAll = useCallback(async () => {
+    if (!projectId) {
+      console.error('❌ Cannot submit: project ID is missing');
+      return;
+    }
+
+    const workflowByImage = formData?.workflowByImage || {};
+    const uploadedImages = formData?.uploadedImages || [];
+    
+    // Verificar se todas as imagens têm workflow atribuído
+    const unassignedImages = uploadedImages.filter(img => !workflowByImage[img.id]);
+    if (unassignedImages.length > 0) {
+      console.warn('⚠️ Some images do not have workflow assigned:', unassignedImages.map(img => img.name));
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Salvar canvas atual
+      const canvasData = {
+        canvasDecorations: formData?.canvasDecorations || [],
+        canvasImages: formData?.canvasImages || [],
+        decorationsByImage: formData?.decorationsByImage || {},
+        cartoucheByImage: formData?.cartoucheByImage || {},
+        workflowByImage: workflowByImage,
+        humanDesignerInstructions: formData?.humanDesignerInstructions || {}
+      };
+
+      await projectsAPI.updateCanvas(projectId, canvasData);
+
+      // Processar cada imagem de acordo com seu workflow
+      const aiImages = uploadedImages.filter(img => workflowByImage[img.id] === 'ai');
+      const humanImages = uploadedImages.filter(img => workflowByImage[img.id] === 'human');
+
+      // Para imagens AI: sincronizar decorações com orders
+      if (aiImages.length > 0 && formData?.canvasDecorations?.length > 0) {
+        const decorationsToSync = formData.canvasDecorations
+          .map(dec => ({
+            decorationId: dec.decorationId || dec.id,
+            name: dec.name || 'Decoração',
+            imageUrl: dec.dayUrl || dec.nightUrl || dec.src || dec.imageUrl,
+            price: dec.price || 0,
+          }));
+
+        if (decorationsToSync.length > 0) {
+          await ordersAPI.syncDecorations(projectId, decorationsToSync);
+        }
+      }
+
+      // Para imagens Human: criar observações com instruções
+      for (const image of humanImages) {
+        const instructions = formData?.humanDesignerInstructions?.[image.id] || '';
+        const observationData = {
+          content: instructions || 'Please process this image with human design.',
+          linkedResultImageId: image.id,
+          attachments: []
+        };
+        await projectsAPI.addObservation(projectId, observationData);
+      }
+
+      console.log('✅ All images submitted successfully');
+      
+    } catch (error) {
+      console.error('❌ Error submitting images:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [
+    projectId,
+    formData?.workflowByImage,
+    formData?.humanDesignerInstructions,
+    formData?.cartoucheByImage,
+    formData?.uploadedImages,
+    formData?.canvasDecorations,
+    formData?.canvasImages,
+    formData?.decorationsByImage,
+    onInputChange
+  ]);
 
   // Memoize logo calculations to prevent unnecessary recalculations
   const logoData = useMemo(() => {
@@ -108,13 +211,11 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
             </div>
             {formData.projectType === "simu" && (
               <div className="col-span-2">
-                <span className="text-default-500">Simu mode:</span>
+                <span className="text-default-500">Simu workflow:</span>
                 <p className="font-medium">
-                  {formData.simuWorkflow === "ai"
-                    ? "AI Assisted Designer"
-                    : formData.simuWorkflow === "human"
-                      ? "Send to Human Designer"
-                      : "—"}
+                  {formData.workflowByImage && Object.keys(formData.workflowByImage).length > 0
+                    ? `${Object.keys(formData.workflowByImage).length} image(s) configured`
+                    : "Not configured"}
                 </p>
               </div>
             )}
@@ -153,8 +254,21 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
           </div>
         </Card>
 
-        {/* AI Generated Simulations Card - apenas se for AI workflow e houver simulações */}
-        {formData.projectType === "simu" && formData.simuWorkflow === "ai" && hasSimulations && (
+        {/* Workflow Summary Panel - apenas para projetos Simu */}
+        {formData.projectType === "simu" && formData.uploadedImages && formData.uploadedImages.length > 0 && (
+          <WorkflowSummaryPanel
+            uploadedImages={formData.uploadedImages}
+            workflowByImage={formData?.workflowByImage || {}}
+            humanDesignerInstructions={formData?.humanDesignerInstructions || {}}
+            onWorkflowChange={handleWorkflowChange}
+            onInstructionsChange={handleInstructionsChange}
+            onSubmitAll={handleSubmitAll}
+            isSubmitting={isSubmitting}
+          />
+        )}
+
+        {/* AI Generated Simulations Card - apenas se houver simulações */}
+        {formData.projectType === "simu" && hasSimulations && (
           <Card className="p-4">
                   <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
                     <Icon icon="lucide:sparkles" className="text-primary" aria-hidden="true" />

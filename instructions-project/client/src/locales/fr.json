@@ -750,7 +750,31 @@
         "projectType": "Type de Projet",
         "aiDesigner": "Designer IA",
         "logoInstructions": "Instructions du Logo",
-        "confirmDetails": "Confirmer les Détails"
+        "confirmDetails": "Confirmer les Détails",
+        "renderDefinition": "Définition du Rendu"
+      },
+      "renderDefinition": {
+        "title": "Définition du Rendu",
+        "subtitle": "Choisissez comment vous souhaitez traiter chaque image",
+        "bulkActions": {
+          "title": "Méthodes de Traitement",
+          "description": "Sélectionnez une option pour appliquer à toutes les {{count}} images",
+          "ai": "IA Instantanée",
+          "aiDesc": "Jour-à-nuit automatique et rapide.",
+          "designer": "Designer Pro",
+          "designerDesc": "Traitement manuel réaliste.",
+          "applyToAll": "Appliquer à Tous"
+        },
+        "summary": {
+          "viaAI": "via IA",
+          "viaDesigner": "via Designer",
+          "unassigned": "non sélectionné",
+          "total": "Total",
+          "images": "images",
+          "confirm": "Confirmer et Traiter",
+          "processing": "Traitement...",
+          "selectRequired": "Sélectionnez toutes les images"
+        }
       }
     }
   },

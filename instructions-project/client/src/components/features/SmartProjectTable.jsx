@@ -121,15 +121,12 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
   // Mock data augmentation - Apply to all projects first
   const augmentedProjects = React.useMemo(() => {
     return projects.map((p, i) => {
-      // Função determinística para gerar valor estável baseado no index (evita Math.random durante render)
-      const deterministicValue = ((i * 17 + 23) % 10) + 5; // Gera valores entre 5-14 de forma determinística
       return {
         ...p,
         contractType: i % 3 === 0 ? "Sale" : i % 3 === 1 ? "Rent 1Y" : "Rent 3Y",
         contractTypeKey: i % 3 === 0 ? "sale" : i % 3 === 1 ? "rent1y" : "rent3y",
         designStatus: i % 2 === 0 ? "Ready" : "Pending",
-        designStatusKey: i % 2 === 0 ? "ready" : "pending",
-        reservationValidity: i % 4 === 0 ? 3 : deterministicValue // Mock days
+        designStatusKey: i % 2 === 0 ? "ready" : "pending"
       };
     });
   }, [projects]);
@@ -163,23 +160,25 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
     switch (columnKey) {
       case "favorite":
         return (
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            aria-label={project.isFavorite ? "Remove from favorites" : "Add to favorites"}
-            onPress={() => {
-              // Chamar handleToggleFavorite diretamente sem incluí-lo nas dependências
-              // para evitar dependência circular
-              handleToggleFavorite(project.id, project.isFavorite);
-            }}
-            className="text-warning hover:text-warning-600"
-          >
-            <Icon
-              icon={project.isFavorite ? "material-symbols:star" : "material-symbols:star-outline"}
-              className={`text-lg text-warning ${project.isFavorite ? "opacity-100" : "opacity-50 hover:opacity-100"}`}
-            />
-          </Button>
+          <div className="stop-propagation" onClick={(e) => e.stopPropagation()}>
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              aria-label={project.isFavorite ? "Remove from favorites" : "Add to favorites"}
+              onPress={() => {
+                // Chamar handleToggleFavorite diretamente sem incluí-lo nas dependências
+                // para evitar dependência circular
+                handleToggleFavorite(project.id, project.isFavorite);
+              }}
+              className="text-warning hover:text-warning-600"
+            >
+              <Icon
+                icon={project.isFavorite ? "material-symbols:star" : "material-symbols:star-outline"}
+                className={`text-lg text-warning ${project.isFavorite ? "opacity-100" : "opacity-50 hover:opacity-100"}`}
+              />
+            </Button>
+          </div>
         );
       case "name":
         return <ProjectNameCell project={project} navigate={navigate} t={t} language={i18n.language} />;
@@ -222,6 +221,10 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
           </div>
         );
       case "reservation":
+        // Só mostrar reservation se existir uma reserva válida
+        if (!project.reservationValidity || project.reservationValidity <= 0) {
+          return <span className="text-sm text-default-400">-</span>;
+        }
         const isUrgent = project.reservationValidity <= 5;
         return (
           <div className={`flex items-center gap-1 ${isUrgent ? 'text-danger-400' : 'text-default-400'}`}>
@@ -236,7 +239,7 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
       case "budget":
         return (
           <span className="text-sm font-medium text-default-500">
-            {project.budget ? `€ ${parseFloat(project.budget).toLocaleString(locale)}` : '€ 0'}
+            {project.budget ? `€ ${parseFloat(project.budget).toLocaleString(locale)}` : '-'}
           </span>
         );
       case "dates":
@@ -275,9 +278,10 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
             removeWrapper 
             aria-label="Smart Project Table"
             classNames={{
-              th: "bg-default-100/50 text-default-500 font-medium border-b border-default-200/50 rounded-none",
+              wrapper: "rounded-none",
+              th: "bg-default-100/50 text-default-500 font-medium border-b border-default-200/50 rounded-none first:rounded-none last:rounded-none",
               td: "py-3 border-b border-default-200/50 group-last:border-none rounded-none",
-              tr: "hover:bg-default-100/50 transition-colors"
+              tr: "hover:bg-default-100/50 transition-colors cursor-pointer"
             }}
             bottomContent={
               <div className="flex w-full justify-end px-4 pb-4">
@@ -297,15 +301,15 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
               </div>
             }
           >
-          <TableHeader>
-            <TableColumn key="favorite" width={50}> </TableColumn>
-            <TableColumn key="name">{t('pages.dashboard.smartProjectTable.columns.project')}</TableColumn>
-            <TableColumn key="status">{t('pages.dashboard.smartProjectTable.columns.status')}</TableColumn>
-            <TableColumn key="contract">{t('pages.dashboard.smartProjectTable.columns.contract')}</TableColumn>
-            <TableColumn key="design">{t('pages.dashboard.smartProjectTable.columns.design')}</TableColumn>
-            <TableColumn key="reservation">{t('pages.dashboard.smartProjectTable.columns.reservation')}</TableColumn>
-            <TableColumn key="budget">{t('pages.dashboard.smartProjectTable.columns.budget')}</TableColumn>
-            <TableColumn key="dates">{t('pages.dashboard.smartProjectTable.columns.timeline')}</TableColumn>
+          <TableHeader className="rounded-none">
+            <TableColumn key="favorite" width={50} className="rounded-none"> </TableColumn>
+            <TableColumn key="name" className="rounded-none">{t('pages.dashboard.smartProjectTable.columns.project')}</TableColumn>
+            <TableColumn key="status" className="rounded-none">{t('pages.dashboard.smartProjectTable.columns.status')}</TableColumn>
+            <TableColumn key="contract" className="rounded-none">{t('pages.dashboard.smartProjectTable.columns.contract')}</TableColumn>
+            <TableColumn key="design" className="rounded-none">{t('pages.dashboard.smartProjectTable.columns.design')}</TableColumn>
+            <TableColumn key="reservation" className="rounded-none">{t('pages.dashboard.smartProjectTable.columns.reservation')}</TableColumn>
+            <TableColumn key="budget" className="rounded-none">{t('pages.dashboard.smartProjectTable.columns.budget')}</TableColumn>
+            <TableColumn key="dates" className="rounded-none">{t('pages.dashboard.smartProjectTable.columns.timeline')}</TableColumn>
 
           </TableHeader>
           <TableBody 
@@ -313,7 +317,29 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
             emptyContent={!isLoading ? t('pages.dashboard.smartProjectTable.emptyState') : null}
           >
             {(item) => (
-              <TableRow key={item?.id || Math.random()}>
+              <TableRow 
+                key={item?.id || Math.random()}
+                className={!isLoading && item ? "cursor-pointer" : ""}
+                onClick={!isLoading && item ? (e) => {
+                  // Verifica se o clique foi em um elemento que deve bloquear a navegação
+                  const target = e.target;
+                  
+                  // Verifica se o elemento clicado ou algum pai tem a classe stop-propagation
+                  const hasStopPropagation = target.closest('.stop-propagation') !== null;
+                  
+                  // Verifica se é um botão real (não apenas um elemento com role="button" do HeroUI)
+                  const isRealButton = target.tagName === 'BUTTON' || 
+                                      (target.closest('button') !== null && target.closest('button')?.tagName === 'BUTTON');
+                  
+                  // Verifica se é um link real
+                  const isRealLink = target.tagName === 'A' || target.closest('a')?.tagName === 'A';
+                  
+                  // Só bloqueia se for realmente um elemento interativo que precisa bloquear
+                  if (!hasStopPropagation && !isRealButton && !isRealLink) {
+                    navigate(`/projects/${item.id}`);
+                  }
+                } : undefined}
+              >
                 {(columnKey) => (
                   <TableCell>
                     {isLoading ? (
@@ -381,7 +407,7 @@ SkeletonRow.displayName = 'SkeletonRow';
 // Extracted component for Name Cell to optimize rendering
 const ProjectNameCell = React.memo(({ project, navigate, t, language }) => {
   return (
-    <div className="cursor-pointer hover:text-primary transition-colors" onClick={() => navigate(`/projects/${project.id}`)}>
+    <div className="hover:text-primary transition-colors">
       <p className="font-bold text-sm text-foreground">{project.name}</p>
       <p className="text-xs text-default-500">{project.clientName || project.client}</p>
     </div>

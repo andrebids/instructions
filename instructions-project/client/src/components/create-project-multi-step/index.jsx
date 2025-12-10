@@ -21,6 +21,7 @@ import { StepProjectDetails } from "./steps/StepProjectDetails";
 import { StepNotes } from "./steps/StepNotes";
 import { StepProjectType } from "./steps/StepProjectType";
 import { StepAIDesigner } from "./steps/StepAIDesigner";
+import { StepRenderDefinition } from "./steps/StepRenderDefinition";
 import { StepLogoInstructions } from "./steps/StepLogoInstructions";
 import { StepConfirmDetails } from "./steps/StepConfirmDetails";
 
@@ -553,6 +554,16 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
           />
         );
 
+      case "render-definition":
+        return (
+          <StepRenderDefinition
+            formData={formState.formData}
+            onInputChange={formState.handleInputChange}
+            onNext={navigation.nextStep}
+            onBack={navigation.prevStep}
+          />
+        );
+
       case "logo-instructions":
         return (
           <StepLogoInstructions
@@ -578,6 +589,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
             onEditLogo={handleEditLogo}
             onDeleteLogo={handleDeleteLogo}
             onAddLogo={handleAddLogo}
+            onInputChange={formState.handleInputChange}
           />
         );
 
@@ -663,11 +675,13 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
           <div className="flex-shrink-0">
             {(() => {
               const currentStepId = visibleSteps[navigation.currentStep - 1]?.id;
+              const isRenderDefinition = currentStepId === "render-definition";
               const currentLogoDetails = formState.formData.logoDetails || {};
               const currentLogo = currentLogoDetails.currentLogo || currentLogoDetails; // Support both old and new structure
               const isCurrentLogoValid = isLogoValid(currentLogo);
 
               return (
+                !isRenderDefinition && (
                 <NavigationFooter
                   currentStep={navigation.currentStep}
                   totalSteps={visibleSteps.length}
@@ -834,6 +848,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
                     // If logo is not valid, do nothing - button should be disabled
                   }}
                 />
+                )
               );
             })()}
           </div>
