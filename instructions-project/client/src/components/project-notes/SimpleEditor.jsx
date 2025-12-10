@@ -1,12 +1,13 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
-import { Placeholder } from '@tiptap/extensions/placeholder';
+import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
 import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
-import { TaskList, TaskItem } from '@tiptap/extension-list';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Spinner } from '@heroui/react';
 import { Icon } from '@iconify/react';
@@ -117,10 +118,10 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
       const response = await editorAPI.uploadImage(file);
       if (response.success && response.url) {
         // Use absolute URL if needed
-        const imageUrl = response.url.startsWith('http') 
-          ? response.url 
+        const imageUrl = response.url.startsWith('http')
+          ? response.url
           : `${window.location.origin}${response.url}`;
-        
+
         editor?.chain().focus().setImage({ src: imageUrl }).run();
       } else {
         throw new Error('Upload failed');
@@ -229,9 +230,9 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
 
   const addImage = useCallback(() => {
     // Check if mobile device
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
-                     (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
-    
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+      (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+
     if (isMobile) {
       // Show modal with options on mobile
       onImageModalOpen();
@@ -267,20 +268,20 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
       const canvas = drawingCanvasRef.current;
       const ctx = canvas.getContext('2d');
       drawingContextRef.current = ctx;
-      
+
       // Set canvas size with proper scaling for retina displays
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
       ctx.scale(dpr, dpr);
-      
+
       // Set drawing style
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      
+
       // Clear canvas
       ctx.clearRect(0, 0, rect.width, rect.height);
     }
@@ -319,7 +320,7 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
     tempCanvas.width = rect.width;
     tempCanvas.height = rect.height;
     tempCtx.drawImage(drawingCanvasRef.current, 0, 0, rect.width, rect.height);
-    
+
     const dataUrl = tempCanvas.toDataURL('image/png');
     editor?.chain().focus().setImage({ src: dataUrl }).run();
     setDrawingMode(false);
@@ -338,43 +339,16 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
     const loadContent = async () => {
       try {
         const project = await projectsAPI.getById(projectId);
-        const notes = project.notes || [];
-        
-        // Buscar nota padrão no array de notas
-        let defaultNote = notes.find(note => note.id === DEFAULT_NOTE_ID);
-        
-        // Se não existe nota padrão, verificar se há conteúdo em description (migração)
-        if (!defaultNote && project?.description) {
-          // Migrar conteúdo de description para notes
-          defaultNote = {
-            id: DEFAULT_NOTE_ID,
-            topic: DEFAULT_NOTE_TOPIC,
-            title: '',
-            content: project.description,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-          
-          // Adicionar nota padrão ao array e salvar
-          const updatedNotes = [...notes, defaultNote];
-          try {
-            await projectsAPI.update(projectId, { notes: updatedNotes });
-            console.log('✅ [NOTES EDITOR] Conteúdo migrado de description para notes');
-          } catch (migrationError) {
-            console.error('❌ [NOTES EDITOR] Erro ao migrar conteúdo:', migrationError);
-          }
-        }
-        
-        // Carregar conteúdo da nota padrão ou conteúdo vazio
-        if (defaultNote?.content) {
-          editor.commands.setContent(defaultNote.content);
-          lastSavedContentRef.current = defaultNote.content;
+
+        if (project?.description) {
+          editor.commands.setContent(project.description);
+          lastSavedContentRef.current = project.description;
+          hasUnsavedChangesRef.current = false;
         } else {
           const emptyContent = editor.getHTML();
           lastSavedContentRef.current = emptyContent || '';
         }
-        
-        hasUnsavedChangesRef.current = false;
+
         hasLoadedRef.current = true;
       } catch (error) {
         console.error('❌ [NOTES EDITOR] ===== ERRO AO CARREGAR NOTAS =====');
@@ -392,51 +366,51 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
   // Constantes de configuração
   const MAX_CONTENT_SIZE = 500000; // 500KB (~500.000 caracteres) - limite prático
   const isDevelopment = import.meta.env.DEV;
-  
+
   // Função auxiliar para validar conteúdo
   const validateContent = useCallback((content) => {
     if (!content || typeof content !== 'string') {
       return { valid: false, error: 'Conteúdo inválido' };
     }
-    
+
     // Validar tamanho máximo
     if (content.length > MAX_CONTENT_SIZE) {
-      return { 
-        valid: false, 
-        error: `Conteúdo muito grande (${content.length} caracteres). Máximo permitido: ${MAX_CONTENT_SIZE.toLocaleString()} caracteres.` 
+      return {
+        valid: false,
+        error: `Conteúdo muito grande (${content.length} caracteres). Máximo permitido: ${MAX_CONTENT_SIZE.toLocaleString()} caracteres.`
       };
     }
-    
+
     // Validar estrutura HTML básica (prevenir HTML malformado)
     if (content.trim() && !content.includes('<')) {
       // Se tem conteúdo mas não tem tags HTML, pode ser texto puro - OK
       return { valid: true };
     }
-    
+
     // Verificar tags não fechadas (validação básica)
     const openTags = (content.match(/<[^/][^>]*>/g) || []).length;
     const closeTags = (content.match(/<\/[^>]+>/g) || []).length;
     const selfClosingTags = (content.match(/<[^>]+\/>/g) || []).length;
-    
+
     // Permitir diferença razoável (algumas tags podem ser self-closing)
     if (Math.abs(openTags - closeTags - selfClosingTags) > 10) {
       return { valid: false, error: 'HTML malformado detectado' };
     }
-    
+
     return { valid: true };
   }, []);
-  
+
   // Função auxiliar para calcular debounce baseado no tamanho
   const getDebounceTime = useCallback((contentLength) => {
     if (contentLength < 1000) return 1000; // 1 segundo para textos pequenos
     if (contentLength < 10000) return 2000; // 2 segundos para textos médios
     return 5000; // 5 segundos para textos grandes
   }, []);
-  
+
   // Função auxiliar para salvar conteúdo
   const saveContent = useCallback(async (contentToSave, isForced = false) => {
     if (!projectId || !contentToSave) return;
-    
+
     // Validar conteúdo antes de salvar
     const validation = validateContent(contentToSave);
     if (!validation.valid) {
@@ -445,56 +419,22 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
       alert(`Erro ao salvar: ${validation.error}`);
       return;
     }
-    
+
     try {
       setIsSaving(true);
-      
+
       // Indicar início do salvamento
       if (saveStatus) saveStatus.setSaving();
-      
-      // Buscar projeto atual para obter array de notas
-      const project = await projectsAPI.getById(projectId);
-      const notes = project.notes || [];
-      
-      // Buscar ou criar nota padrão
-      let defaultNote = notes.find(note => note.id === DEFAULT_NOTE_ID);
-      const now = new Date().toISOString();
-      
-      if (defaultNote) {
-        // Atualizar nota existente
-        defaultNote = {
-          ...defaultNote,
-          content: contentToSave,
-          updatedAt: now,
-        };
-        
-        // Substituir nota no array
-        const updatedNotes = notes.map(note => 
-          note.id === DEFAULT_NOTE_ID ? defaultNote : note
-        );
-        
-        // Salvar array atualizado
-        await projectsAPI.update(projectId, { notes: updatedNotes });
-      } else {
-        // Criar nova nota padrão
-        defaultNote = {
-          id: DEFAULT_NOTE_ID,
-          topic: DEFAULT_NOTE_TOPIC,
-          title: '',
-          content: contentToSave,
-          createdAt: now,
-          updatedAt: now,
-        };
-        
-        // Adicionar ao array
-        const updatedNotes = [...notes, defaultNote];
-        await projectsAPI.update(projectId, { notes: updatedNotes });
-      }
-      
+
+      const textToSave = editor?.getText() || '';
+
+      // Salvar no projeto
+      await projectsAPI.update(projectId, { description: contentToSave });
+
       // Atualizar referência do último conteúdo salvo
       lastSavedContentRef.current = contentToSave;
       hasUnsavedChangesRef.current = false;
-      
+
       // Indicar salvamento bem-sucedido
       if (saveStatus) saveStatus.setSaved();
     } catch (error) {
@@ -505,10 +445,10 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
       if (isDevelopment) {
         console.error('❌ [NOTES EDITOR] Stack:', error.stack);
       }
-      
+
       // Indicar erro no salvamento
       if (saveStatus) saveStatus.setError();
-      
+
       // Mostrar erro ao usuário de forma amigável
       const errorMessage = error.response?.data?.error || error.message || 'Erro ao salvar notas';
       alert(`Erro ao salvar notas: ${errorMessage}`);
@@ -526,24 +466,24 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
     const handleUpdate = () => {
       const content = editor.getHTML();
       const textContent = editor.getText();
-      
+
       // Normalizar conteúdo vazio (Tiptap pode retornar <p></p> ou <p><br></p>)
       const normalizedContent = content.trim() === '<p></p>' || content.trim() === '<p><br></p>' ? '' : content;
       const normalizedLastSaved = lastSavedContentRef.current.trim() === '<p></p>' || lastSavedContentRef.current.trim() === '<p><br></p>' ? '' : lastSavedContentRef.current;
-      
+
       // Verificar se há mudanças reais
       if (normalizedContent === normalizedLastSaved) {
         return; // Sem mudanças, não precisa salvar
       }
-      
+
       hasUnsavedChangesRef.current = true;
-      
+
       // Cancelar requisição anterior se ainda estiver em andamento
       if (saveAbortControllerRef.current) {
         saveAbortControllerRef.current.abort();
         saveAbortControllerRef.current = null;
       }
-      
+
       // Limpar timeout anterior
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -551,7 +491,7 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
 
       // Calcular debounce adaptativo baseado no tamanho do conteúdo
       const debounceTime = getDebounceTime(content.length);
-      
+
       // Criar novo timeout com debounce adaptativo
       saveTimeoutRef.current = setTimeout(async () => {
         await saveContent(content, false);
@@ -561,20 +501,20 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
     editor.on('update', handleUpdate);
 
     return () => {
-      
+
       editor.off('update', handleUpdate);
-      
+
       // Salvar conteúdo pendente antes de desmontar
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = null;
       }
-      
+
       // Se há mudanças não salvas, forçar salvamento
       if (editor && projectId) {
         const contentToSave = editor.getHTML();
         const hasChanges = contentToSave !== lastSavedContentRef.current;
-        
+
         if (hasChanges) {
           // Iniciar salvamento assíncrono (não podemos esperar no cleanup, mas podemos iniciar)
           (async () => {
@@ -665,8 +605,8 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
           className="px-2 py-1 text-xs sm:text-sm border border-divider rounded bg-background shrink-0"
           value={
             editor.isActive('heading', { level: 1 }) ? 1 :
-            editor.isActive('heading', { level: 2 }) ? 2 :
-            editor.isActive('heading', { level: 3 }) ? 3 : 0
+              editor.isActive('heading', { level: 2 }) ? 2 :
+                editor.isActive('heading', { level: 3 }) ? 3 : 0
           }
           aria-label="Text heading level"
         >
@@ -944,8 +884,8 @@ export function SimpleEditor({ projectId = null, saveStatus = null }) {
 
       {/* Editor Content */}
       <div className="relative">
-        <EditorContent 
-          editor={editor} 
+        <EditorContent
+          editor={editor}
           className="min-h-[400px] prose max-w-none"
         />
         {/* Drop zone overlay */}

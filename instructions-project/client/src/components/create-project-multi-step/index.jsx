@@ -63,7 +63,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
 
   // Estado para rastrear a página interna atual do logo-instructions (1-4)
   const [logoInstructionsPage, setLogoInstructionsPage] = React.useState(1);
-  
+
   // Refs para as funções de navegação interna do StepLogoInstructions
   const logoInstructionsHandlersRef = React.useRef({
     handleNextPage: null,
@@ -291,9 +291,9 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
       }
       return false;
     });
-    
-    const allLogos = isCurrentLogoValid && !currentLogoExistsInSaved 
-      ? [...savedLogos, currentLogo] 
+
+    const allLogos = isCurrentLogoValid && !currentLogoExistsInSaved
+      ? [...savedLogos, currentLogo]
       : savedLogos;
 
     if (isCurrent || (isCurrentLogoValid && index === allLogos.length - 1)) {
@@ -306,12 +306,12 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
       // It's a saved logo. We need to swap it into currentLogo.
       // IMPORTANTE: Usar logoData se fornecido (mais confiável que índice), senão usar índice
       let logoToEdit;
-      
+
       if (logoData) {
         // Usar o logo passado diretamente, mas encontrar a versão completa nos savedLogos ou allLogos
         console.log("=== EDITING LOGO (using logoData) ===");
         console.log("LogoData received:", { logoNumber: logoData.logoNumber, logoName: logoData.logoName, id: logoData.id });
-        
+
         // IMPORTANTE: Buscar primeiro em allLogos (que inclui savedLogos + currentLogo)
         // Isso garante que encontramos a versão mais completa do logo
         const foundInAll = allLogos.find(logo => {
@@ -325,7 +325,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
           }
           return false;
         });
-        
+
         if (foundInAll) {
           logoToEdit = foundInAll;
           console.log("Found logo in allLogos:", { logoNumber: logoToEdit.logoNumber, logoName: logoToEdit.logoName, id: logoToEdit.id });
@@ -343,13 +343,13 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
           return;
         }
       }
-      
+
       console.log("Index clicked:", index);
       console.log("AllLogos:", allLogos.map((l, i) => ({ index: i, logoNumber: l.logoNumber, logoName: l.logoName, id: l.id })));
       console.log("Logo to edit:", { logoNumber: logoToEdit?.logoNumber, logoName: logoToEdit?.logoName, id: logoToEdit?.id });
       console.log("CurrentLogo before edit:", { logoNumber: currentLogo?.logoNumber, logoName: currentLogo?.logoName, id: currentLogo?.id });
       console.log("SavedLogos:", savedLogos.map((l, i) => ({ index: i, logoNumber: l.logoNumber, logoName: l.logoName, id: l.id })));
-      
+
       if (!logoToEdit) {
         console.error("Logo to edit not found. Index:", index, "allLogos length:", allLogos.length, "logoData:", logoData);
         return;
@@ -359,10 +359,10 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
       // Caso contrário, encontrar o índice real no savedLogos usando ID ou logoNumber
       let newSavedLogos = [...savedLogos];
       const isCurrentLogoClicked = isCurrentLogoValid && index === allLogos.length - 1;
-      
+
       // Guardar a posição original do logo que está sendo editado (para restaurar depois)
       let originalLogoIndex = -1;
-      
+
       if (!isCurrentLogoClicked) {
         // Encontrar o índice real no savedLogos usando ID ou logoNumber
         const savedLogoIndex = savedLogos.findIndex(logo => {
@@ -383,7 +383,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
 
         originalLogoIndex = savedLogoIndex;
         console.log("Found logo in savedLogos at index:", savedLogoIndex, "savedLogos length:", savedLogos.length);
-        
+
         // Se encontrou o logo nos savedLogos, removê-lo
         // IMPORTANTE: Guardar o índice ANTES de remover, porque depois de remover os índices mudam
         if (savedLogoIndex >= 0) {
@@ -416,13 +416,13 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
           }
           return false;
         });
-        
+
         // Verificar se o currentLogo é diferente do logo que está sendo editado
-        const isDifferentFromLogoToEdit = 
+        const isDifferentFromLogoToEdit =
           (currentLogo.id && logoToEdit.id && currentLogo.id !== logoToEdit.id) ||
-          (!currentLogo.id && !logoToEdit.id && currentLogo.logoNumber && logoToEdit.logoNumber && 
-           currentLogo.logoNumber.trim() !== logoToEdit.logoNumber.trim());
-        
+          (!currentLogo.id && !logoToEdit.id && currentLogo.logoNumber && logoToEdit.logoNumber &&
+            currentLogo.logoNumber.trim() !== logoToEdit.logoNumber.trim());
+
         // Se o currentLogo já está nos savedLogos, atualizar no lugar (não adicionar novo)
         if (currentLogoIndexInSaved >= 0 && isDifferentFromLogoToEdit) {
           // Atualizar o logo existente no lugar
@@ -441,7 +441,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
             id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             savedAt: currentLogo.savedAt || new Date().toISOString()
           };
-          
+
           // Se sabemos a posição original, inserir lá (mas não depois de remover o logo a editar)
           // Se originalLogoIndex >= 0, inserir nessa posição (mas ajustar se necessário)
           if (originalLogoIndex >= 0 && originalLogoIndex < newSavedLogos.length) {
@@ -458,7 +458,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
       // Update state - mover logo a editar para currentLogo
       // IMPORTANTE: Garantir que estamos passando o logo correto, não uma referência que pode mudar
       // E garantir que o logo mantém seu ID original para que possa ser atualizado corretamente quando salvo
-      const logoToEditCopy = { 
+      const logoToEditCopy = {
         ...logoToEdit,
         // IMPORTANTE: Manter o ID original do logo que está sendo editado
         // Se o logo não tem ID, criar um novo (mas isso só deve acontecer se for um logo novo)
@@ -467,27 +467,27 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
         // IMPORTANTE: Guardar a posição original para restaurar quando salvar
         _originalIndex: originalLogoIndex >= 0 ? originalLogoIndex : undefined
       };
-      
+
       // Garantir que o logo tenha todas as propriedades necessárias
       if (!logoToEditCopy.savedAt && logoToEdit.savedAt) {
         logoToEditCopy.savedAt = logoToEdit.savedAt;
       }
-      
+
       console.log("=== SETTING CURRENT LOGO FOR EDITING ===");
-      console.log("Logo to edit copy:", { 
-        logoNumber: logoToEditCopy.logoNumber, 
-        logoName: logoToEditCopy.logoName, 
+      console.log("Logo to edit copy:", {
+        logoNumber: logoToEditCopy.logoNumber,
+        logoName: logoToEditCopy.logoName,
         id: logoToEditCopy.id,
         savedAt: logoToEditCopy.savedAt,
         originalIndex: logoToEditCopy._originalIndex
       });
-      console.log("New savedLogos after removing logo to edit:", newSavedLogos.map((l, i) => ({ 
-        index: i, 
-        logoNumber: l.logoNumber, 
-        logoName: l.logoName, 
-        id: l.id 
+      console.log("New savedLogos after removing logo to edit:", newSavedLogos.map((l, i) => ({
+        index: i,
+        logoNumber: l.logoNumber,
+        logoName: l.logoName,
+        id: l.id
       })));
-      
+
       formState.handleInputChange("logoDetails", {
         ...logoDetails,
         logos: newSavedLogos,
@@ -621,22 +621,22 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
             <div className="flex items-center gap-4 justify-between">
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <>
-                <Button
-                  variant="light"
-                  className="text-default-600 shrink-0"
-                  startContent={<Icon icon="lucide:arrow-left" />}
-                  as="a"
-                  href="/"
-                >
-                  {t('pages.createProject.backToDashboard')}
-                </Button>
+                  <Button
+                    variant="light"
+                    className="text-default-600 shrink-0"
+                    startContent={<Icon icon="lucide:arrow-left" />}
+                    as="a"
+                    href="/"
+                  >
+                    {t('pages.createProject.backToDashboard')}
+                  </Button>
 
-                <StepIndicator
-                  steps={visibleSteps}
-                  currentStep={navigation.currentStep}
-                  onStepClick={(stepNumber) => navigation.setCurrentStep(stepNumber)}
-                />
-                  </>
+                  <StepIndicator
+                    steps={visibleSteps}
+                    currentStep={navigation.currentStep}
+                    onStepClick={(stepNumber) => navigation.setCurrentStep(stepNumber)}
+                  />
+                </>
               </div>
 
               {/* Status de salvamento à direita */}
@@ -655,8 +655,8 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
               <Scroller
                 hideScrollbar
                 className={`flex-1 min-h-0 ${isLogoInstructionsStep ? '' : 'bg-default-100'} ${isAIDesignerStep() || isLogoInstructionsStep
-                    ? 'overflow-hidden'
-                    : 'px-4 py-6 sm:px-6 sm:py-8 lg:px-8 overflow-y-auto'
+                  ? 'overflow-hidden'
+                  : 'px-4 py-6 sm:px-6 sm:py-8 lg:px-8 overflow-y-auto'
                   }`}
               >
                 <div className={
@@ -690,7 +690,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
                   onPrev={navigation.prevStep}
                   onSubmit={formState.handleSubmit}
                   onSave={formState.handleSave}
-                  isValid={currentStepId === "logo-instructions" 
+                  isValid={currentStepId === "logo-instructions"
                     ? (logoInstructionsHandlersRef.current?.canProceedToNext ?? navigation.canProceed())
                     : navigation.canProceed()}
                   loading={formState.loading}
@@ -733,10 +733,10 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
                     if (isValidForSave) {
                       // Guardar _originalIndex antes de remover (é apenas para controle interno)
                       const originalIndex = freshCurrentLogo._originalIndex;
-                      
+
                       // Remover _originalIndex antes de salvar (é apenas para controle interno)
                       const { _originalIndex, ...logoWithoutOriginalIndex } = freshCurrentLogo;
-                      
+
                       const logoToSave = {
                         ...logoWithoutOriginalIndex,
                         id: freshCurrentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -771,7 +771,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
                         // Logo já existe - ATUALIZAR em vez de criar novo
                         updatedSavedLogos = [...savedLogos];
                         updatedSavedLogos[existingLogoIndex] = logoToSave;
-                        
+
                         console.log('✅ [onResetLogo] Atualizando logo existente nos savedLogos:', {
                           logoNumber: logoToSave.logoNumber,
                           logoName: logoToSave.logoName,
@@ -784,7 +784,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
                         // Isso acontece quando o logo foi editado (removido dos savedLogos) e agora está sendo salvo
                         updatedSavedLogos = [...savedLogos];
                         updatedSavedLogos.splice(originalIndex, 0, logoToSave);
-                        
+
                         console.log('✅ [onResetLogo] Inserindo logo editado na posição original:', {
                           logoNumber: logoToSave.logoNumber,
                           logoName: logoToSave.logoName,
@@ -795,7 +795,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
                       } else if (originalIndex !== undefined && originalIndex >= 0) {
                         // Logo tem posição original mas está fora dos limites - adicionar no final
                         updatedSavedLogos = [...savedLogos, logoToSave];
-                        
+
                         console.log('⚠️ [onResetLogo] Logo tem posição original inválida, adicionando no final:', {
                           logoNumber: logoToSave.logoNumber,
                           logoName: logoToSave.logoName,
@@ -807,7 +807,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
                       } else {
                         // Logo não existe e não tem posição original - ADICIONAR como novo no final
                         updatedSavedLogos = [...savedLogos, logoToSave];
-                        
+
                         console.log('✅ [onResetLogo] Adicionando novo logo aos savedLogos:', {
                           logoNumber: logoToSave.logoNumber,
                           logoName: logoToSave.logoName,
@@ -852,7 +852,7 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
               );
             })()}
           </div>
-          
+
         </div>
       </Card>
 
