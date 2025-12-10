@@ -94,12 +94,12 @@ export function ProjectObservations({ projectId, instructions = [], results = []
     // Poll for new messages every 10 seconds
     useEffect(() => {
         if (!projectId) return;
-        
+
         let isMounted = true; // Track if component is still mounted
 
         const pollInterval = setInterval(async () => {
             if (!isMounted) return; // Don't process if component unmounted
-            
+
             try {
                 const data = await projectsAPI.getObservations(projectId);
 
@@ -155,7 +155,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
         try {
             // Check if there's an annotated image in the attachments
             const hasAnnotatedImage = attachments.some(att => att.name.startsWith('annotated_'));
-            
+
             // If there's an annotated image, don't send the linkedResultImageId (original image)
             // Only send the annotated version in attachments
             const linkedResultId = hasAnnotatedImage ? null : selectedResultImage?.id;
@@ -170,7 +170,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
             console.log('📤 Sending observation with attachments:', attachments);
 
             const newObservation = await projectsAPI.addObservation(projectId, observationData);
-            
+
             console.log('📥 Received observation:', newObservation);
 
             // Optimistically update or wait for re-fetch. 
@@ -436,7 +436,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
     // Annotation handlers
     const handleSaveAnnotation = (blob, dataUrl, annotations) => {
         console.log('🎨 Saving annotation with data:', { annotations, imageTitle: imageToAnnotate.title });
-        
+
         // Create an attachment from the annotated image with annotations data
         const annotatedAttachment = {
             name: `annotated_${imageToAnnotate.title}.png`,
@@ -618,8 +618,8 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                             >
                                                                 {att.type.startsWith('image/') ? (
                                                                     <div className="relative group">
-                                                                        <img 
-                                                                            src={att.url} 
+                                                                        <img
+                                                                            src={att.url}
                                                                             alt={att.name}
                                                                             className="h-32 w-auto object-cover rounded-lg"
                                                                         />
@@ -787,8 +787,8 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                 {attachments.map((att, idx) => (
                                     att.type.startsWith('image/') ? (
                                         <div key={idx} className="relative group rounded-lg overflow-hidden border-2 border-default-200">
-                                            <img 
-                                                src={att.url} 
+                                            <img
+                                                src={att.url}
                                                 alt={att.name}
                                                 className="h-20 w-auto object-cover"
                                             />
@@ -1028,7 +1028,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                                 className="max-w-full max-h-[60vh] object-contain"
                                                             />
                                                         </div>
-                                                        
+
                                                         {/* Annotations Legend */}
                                                         {selectedAttachment?.annotations && selectedAttachment.annotations.length > 0 && (
                                                             <div className="lg:col-span-1 bg-content2 rounded-lg p-4 border border-default-300">
@@ -1357,10 +1357,10 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                             </h4>
                                                         </CardHeader>
                                                         <CardBody>
-                                                            <div className="grid grid-cols-2 gap-4">
+                                                            <div className="space-y-3">
                                                                 {logo.dimensions?.height?.value && (
-                                                                    <div className="bg-default-50 p-3 rounded-lg">
-                                                                        <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.height')}</span>
+                                                                    <div className="bg-default-50 p-3 rounded-lg flex items-center justify-between">
+                                                                        <span className="text-xs text-default-500 font-medium">{t('pages.projectDetails.height')}</span>
                                                                         <div className="flex items-baseline gap-1">
                                                                             <span className="font-bold text-xl">{logo.dimensions.height.value}</span>
                                                                             <span className="text-xs text-default-400">m</span>
@@ -1368,19 +1368,9 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                                         </div>
                                                                     </div>
                                                                 )}
-                                                                {logo.dimensions?.length?.value && (
-                                                                    <div className="bg-default-50 p-3 rounded-lg">
-                                                                        <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.length')}</span>
-                                                                        <div className="flex items-baseline gap-1">
-                                                                            <span className="font-bold text-xl">{logo.dimensions.length.value}</span>
-                                                                            <span className="text-xs text-default-400">m</span>
-                                                                            {logo.dimensions.length.imperative && <Icon icon="lucide:lock" className="text-warning text-xs ml-1" />}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
                                                                 {logo.dimensions?.width?.value && (
-                                                                    <div className="bg-default-50 p-3 rounded-lg">
-                                                                        <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.width')}</span>
+                                                                    <div className="bg-default-50 p-3 rounded-lg flex items-center justify-between">
+                                                                        <span className="text-xs text-default-500 font-medium">{t('pages.projectDetails.width')}</span>
                                                                         <div className="flex items-baseline gap-1">
                                                                             <span className="font-bold text-xl">{logo.dimensions.width.value}</span>
                                                                             <span className="text-xs text-default-400">m</span>
@@ -1388,9 +1378,19 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                                         </div>
                                                                     </div>
                                                                 )}
+                                                                {logo.dimensions?.length?.value && (
+                                                                    <div className="bg-default-50 p-3 rounded-lg flex items-center justify-between">
+                                                                        <span className="text-xs text-default-500 font-medium">{t('pages.projectDetails.length')}</span>
+                                                                        <div className="flex items-baseline gap-1">
+                                                                            <span className="font-bold text-xl">{logo.dimensions.length.value}</span>
+                                                                            <span className="text-xs text-default-400">m</span>
+                                                                            {logo.dimensions.length.imperative && <Icon icon="lucide:lock" className="text-warning text-xs ml-1" />}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                                 {logo.dimensions?.diameter?.value && (
-                                                                    <div className="bg-default-50 p-3 rounded-lg">
-                                                                        <span className="text-xs text-default-500 block mb-1">{t('pages.projectDetails.diameter')}</span>
+                                                                    <div className="bg-default-50 p-3 rounded-lg flex items-center justify-between">
+                                                                        <span className="text-xs text-default-500 font-medium">{t('pages.projectDetails.diameter')}</span>
                                                                         <div className="flex items-baseline gap-1">
                                                                             <span className="font-bold text-xl">{logo.dimensions.diameter.value}</span>
                                                                             <span className="text-xs text-default-400">m</span>
