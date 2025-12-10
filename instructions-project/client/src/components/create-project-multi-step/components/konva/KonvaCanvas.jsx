@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef } f
 import { Stage, Layer, Rect } from 'react-konva';
 import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
 import { URLImage } from './URLImage';
 import { DecorationItem } from './DecorationItem';
 // import { SnapZoneMarkers } from './SnapZoneMarkers'; // Zonas removidas
@@ -34,6 +35,8 @@ export const KonvaCanvas = forwardRef(({
   showSnapZones = false, // Zonas removidas
   cartoucheInfo = null // Informações do cartouche: { projectName, streetOrZone, option }
 }, ref) => {
+  // Usa keyPrefix para garantir resolução das chaves nesta área vazia
+  const { t } = useTranslation(undefined, { keyPrefix: 'components.aiDesignerEmpty' });
   const stageRef = useRef(null);
   const containerRef = useRef(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -113,7 +116,7 @@ export const KonvaCanvas = forwardRef(({
   const measureAndFit = () => {
     if (!containerRef.current) return;
     
-    // Obter largura do container
+    // Obter dimensões internas disponíveis
     const containerWidth = containerRef.current.offsetWidth;
     const containerHeight = containerRef.current.offsetHeight;
     
@@ -126,9 +129,14 @@ export const KonvaCanvas = forwardRef(({
       return;
     }
     
-    // Calcular escala baseada na largura e altura
-    const scaleX = containerWidth / sceneWidth;
-    const scaleY = containerHeight / sceneHeight;
+    // Reduzir levemente para evitar corte da borda (safe area)
+    const SAFE_MARGIN = 8;
+    const availableWidth = Math.max(containerWidth - SAFE_MARGIN, 50);
+    const availableHeight = Math.max(containerHeight - SAFE_MARGIN, 50);
+
+    // Calcular escala baseada na largura e altura disponíveis
+    const scaleX = availableWidth / sceneWidth;
+    const scaleY = availableHeight / sceneHeight;
     
     // Usar a menor escala para manter aspect ratio
     const scale = Math.min(scaleX, scaleY);
@@ -401,7 +409,7 @@ export const KonvaCanvas = forwardRef(({
   return (
     <div 
       ref={containerRef}
-      className="relative h-full w-full overflow-hidden"
+      className="relative h-full w-full overflow-hidden flex items-center justify-center"
       style={{ touchAction: 'none' }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -422,15 +430,14 @@ export const KonvaCanvas = forwardRef(({
         clipY={0}
         clipWidth={stageSize.width}
         clipHeight={stageSize.height}
-        className={`rounded-lg ${
-          canvasImages.length > 0 || dragOver
-            ? (dragOver 
-                ? 'ring-2 ring-primary bg-primary/10' 
-                : false // Zonas removidas
-                  ? 'ring-2 ring-warning bg-warning/5 cursor-crosshair'
-                  : 'bg-default-100')
-            : 'border-2 border-dashed border-default-300 bg-default-50'
+        className={`rounded-lg border-2 border-dashed border-default-300 ${
+          dragOver
+            ? 'ring-2 ring-primary bg-primary/10'
+            : canvasImages.length > 0
+              ? 'bg-default-100'
+              : 'bg-default-50'
         }`}
+        style={{ borderColor: 'rgba(255,255,255,0.25)' }}
       >
         {/* Layer 1: Source Images (não arrastáveis) */}
         <Layer>
@@ -569,17 +576,17 @@ export const KonvaCanvas = forwardRef(({
             <div className="relative z-10 flex flex-col items-center gap-2">
               <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-default-500">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary/70" />
-                Workflow de simulação
+                {t('badge')}
               </div>
               <Icon icon="lucide:image-plus" className="text-primary text-4xl" />
-              <p className="text-lg font-semibold text-default-800">Adicione a primeira imagem base</p>
+              <p className="text-lg font-semibold text-default-800">{t('title')}</p>
               <p className="text-default-600 text-sm max-w-sm">
-                Clique em “Add more images” na barra lateral ou toque no canvas vazio para abrir o upload.
+                {t('description')}
               </p>
               <div className="flex flex-col gap-2 text-xs text-default-500 mt-2">
-                <span>1) Carregue uma imagem de origem</span>
-                <span>2) Selecione-a para ativar o canvas</span>
-                <span>3) Aplique decorações e cartouche</span>
+                <span>{t('step1')}</span>
+                <span>{t('step2')}</span>
+                <span>{t('step3')}</span>
               </div>
             </div>
           </div>

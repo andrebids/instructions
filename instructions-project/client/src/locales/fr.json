@@ -813,6 +813,14 @@
     "projectObservations": {
       "annotationLegend": "Légende des Annotations",
       "noNoteAdded": "Aucune note ajoutée"
+    },
+    "aiDesignerEmpty": {
+      "badge": "Flux de simulation",
+      "title": "Ajoutez votre première image de base",
+      "description": "Utilisez « Add more images » dans la barre latérale ou touchez le canvas vide pour ouvrir l’upload.",
+      "step1": "1) Importez une image source",
+      "step2": "2) Sélectionnez-la pour activer le canvas",
+      "step3": "3) Appliquez décorations et cartouche"
     }
   },
   "errors": {
