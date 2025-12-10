@@ -33,6 +33,7 @@ export const SnapZoneMarkers = ({ zones = [], isVisible = false }) => {
               fill="rgba(59, 130, 246, 0.1)"
               listening={false}
               dash={[5, 5]}
+              perfectDrawEnabled={false}
             />
             {/* Ponto central indicando snap */}
             <Circle
@@ -43,6 +44,7 @@ export const SnapZoneMarkers = ({ zones = [], isVisible = false }) => {
               stroke="rgba(255, 255, 255, 0.9)"
               strokeWidth={1}
               listening={false}
+              perfectDrawEnabled={false}
             />
           </React.Fragment>
         );

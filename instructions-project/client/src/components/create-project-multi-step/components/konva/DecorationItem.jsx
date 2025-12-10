@@ -135,7 +135,29 @@ export const DecorationItem = ({
         trRef.current.nodes([shapeRef.current]);
         trRef.current.getLayer().batchDraw();
       }
+    } else {
+      // Limpar transformer quando não está selecionado
+      if (trRef.current) {
+        trRef.current.nodes([]);
+      }
     }
+    
+    // Cleanup: destruir transformer quando componente desmonta
+    // IMPORTANTE: Usar destroy() ao invés de remove() porque não vamos reutilizar o nó
+    // destroy() remove todas as referências internas do Konva, evitando memory leaks
+    return () => {
+      if (trRef.current) {
+        try {
+          // Remover nós do transformer antes de destruir
+          trRef.current.nodes([]);
+          // Destruir transformer para evitar memory leaks
+          // destroy() é necessário quando não vamos reutilizar o nó
+          trRef.current.destroy();
+        } catch (error) {
+          console.warn('⚠️ [DecorationItem] Erro ao destruir transformer:', error);
+        }
+      }
+    };
   }, [isSelected]);
 
   const handleDragMove = function(e) {
@@ -348,6 +370,8 @@ export const DecorationItem = ({
       offsetX: decoration.width / 2,
       offsetY: decoration.height / 2,
       rotation: decoration.rotation || 0,
+      // Otimização: desabilitar perfectDraw quando temos fill, stroke e opacity
+      perfectDrawEnabled: false,
       ...commonHandlers
     };
 
@@ -366,6 +390,7 @@ export const DecorationItem = ({
             opacity={0.3}
             stroke="#666666"
             strokeWidth={1}
+            perfectDrawEnabled={false}
           />
         )}
         {isSelected && (

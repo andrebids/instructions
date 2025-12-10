@@ -30,8 +30,6 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isDecorationDrawerOpen, setIsDecorationDrawerOpen] = useState(false);
   const [showNightUnavailableToast, setShowNightUnavailableToast] = useState(false);
-  const [isCropping, setIsCropping] = useState(false);
-  const [cropOrientation, setCropOrientation] = useState('portrait'); // portrait | landscape
   
   // Hook para detectar responsividade
   const { shouldUseDrawer, isMobile } = useResponsiveLayout();
@@ -330,67 +328,6 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
     ? cartoucheManagement.getCartoucheForImage(canvasState.selectedImage.id)
     : null;
 
-  // Atualiza crop armazenado (normalizado) e sincroniza canvas/uploadedImages
-  const updateCropForImage = useCallback((imageId, cropData) => {
-    if (!imageId) return;
-
-    canvasState.setCropByImage(prev => ({ ...prev, [imageId]: cropData || null }));
-
-    canvasState.setCanvasImages(prev => prev.map(img => 
-      img.imageId === imageId ? { ...img, crop: cropData || null } : img
-    ));
-
-    canvasState.setUploadedImages(prev => prev.map(img => 
-      img.id === imageId ? { ...img, crop: cropData || null } : img
-    ));
-  }, [canvasState]);
-
-  // Atualiza dimensão natural da imagem carregada
-  const handleImageNaturalSize = useCallback((imageId, size) => {
-    if (!imageId || !size?.width || !size?.height) return;
-    canvasState.setNaturalSizeByImage(prev => ({
-      ...prev,
-      [imageId]: { width: size.width, height: size.height }
-    }));
-
-    // Refletir no canvasImages para uso imediato
-    canvasState.setCanvasImages(prev => prev.map(img =>
-      img.imageId === imageId ? { ...img, naturalSize: { width: size.width, height: size.height } } : img
-    ));
-  }, [canvasState]);
-
-  // Iniciar modo crop
-  const handleStartCrop = useCallback(() => {
-    if (!canvasState.selectedImage) return;
-    const currentCrop = canvasState.cropByImage?.[canvasState.selectedImage.id];
-    if (currentCrop?.orientation) {
-      setCropOrientation(currentCrop.orientation);
-    }
-    setIsCropping(true);
-  }, [canvasState.selectedImage, canvasState.cropByImage]);
-
-  // Aplicar recorte vindo do Konva (valores normalizados)
-  const handleApplyCrop = useCallback((cropData) => {
-    if (!canvasState.selectedImage || !cropData) {
-      setIsCropping(false);
-      return;
-    }
-    updateCropForImage(canvasState.selectedImage.id, { ...cropData, orientation: cropOrientation });
-    setIsCropping(false);
-  }, [canvasState.selectedImage, cropOrientation, updateCropForImage]);
-
-  // Cancelar sem aplicar
-  const handleCancelCrop = useCallback(() => {
-    setIsCropping(false);
-  }, []);
-
-  // Resetar recorte e restaurar original
-  const handleResetCrop = useCallback(() => {
-    if (!canvasState.selectedImage) return;
-    updateCropForImage(canvasState.selectedImage.id, null);
-    setIsCropping(false);
-  }, [canvasState.selectedImage, updateCropForImage]);
-
   return (
     <div className="h-full flex flex-col">
       {canvasState.uploadStep === 'uploading' && (
@@ -438,16 +375,10 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                   decorationManagement.setDecorationsByImage({});
                   canvasState.setCanvasImages([]);
                   canvasState.setSelectedImage(null);
-            canvasState.setCropByImage({});
-            setIsCropping(false);
                 }}
                 canClearAll={canvasState.decorations.length > 0 || canvasState.canvasImages.length > 0}
                 onOpenDecorations={() => setIsDecorationDrawerOpen(true)}
                 shouldUseDrawer={shouldUseDrawer}
-          onStartCrop={handleStartCrop}
-          onResetCrop={handleResetCrop}
-          canCrop={!!canvasState.selectedImage && canvasState.canvasImages.length > 0}
-          isCropping={isCropping}
               />
               
               <div className="flex-1 min-h-0">
@@ -477,17 +408,6 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                   isEditingZones={false}
                   analysisComplete={imageConversion.analysisComplete}
                   showSnapZones={false}
-            isCropping={isCropping}
-            cropOrientation={cropOrientation}
-            activeCrop={
-              canvasState.selectedImage
-                ? canvasState.cropByImage?.[canvasState.selectedImage.id] || null
-                : null
-            }
-            onCropApply={handleApplyCrop}
-            onCropCancel={handleCancelCrop}
-            onCropOrientationChange={setCropOrientation}
-            onImageNaturalSize={handleImageNaturalSize}
                   cartoucheInfo={
                     canvasState.selectedImage && canvasState.canvasImages.some(img => img.isCartouche)
                       ? {

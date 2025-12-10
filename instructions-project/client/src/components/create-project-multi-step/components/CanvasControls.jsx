@@ -4,7 +4,6 @@
 import React from 'react';
 import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { useTranslation } from "react-i18next";
 
 /**
  * Controles do canvas (botões de ação)
@@ -18,10 +17,6 @@ import { useTranslation } from "react-i18next";
  * @param {boolean} props.canClearAll - Se pode limpar tudo
  * @param {Function} props.onOpenDecorations - Callback para abrir drawer de decorações (mobile)
  * @param {boolean} props.shouldUseDrawer - Se deve usar drawer (mobile)
- * @param {Function} props.onStartCrop - Callback para iniciar modo crop A4
- * @param {Function} props.onResetCrop - Callback para resetar crop
- * @param {boolean} props.canCrop - Se há imagem para recortar
- * @param {boolean} props.isCropping - Estado atual de recorte
  */
 export const CanvasControls = ({
   isDayMode,
@@ -32,40 +27,12 @@ export const CanvasControls = ({
   onClearAll,
   canClearAll,
   onOpenDecorations,
-  shouldUseDrawer = false,
-  onStartCrop,
-  onResetCrop,
-  canCrop,
-  isCropping = false
+  shouldUseDrawer = false
 }) => {
-  const { t } = useTranslation();
-
   return (
     <div className="flex items-center justify-between mb-3 md:mb-4">
       <h3 className="text-base md:text-lg font-semibold text-center flex-1">Decoration Canvas</h3>
       <div className="flex gap-2">
-        <Button
-          size="sm"
-          variant="flat"
-          color="success"
-          startContent={<Icon icon="lucide:crop" />}
-          onPress={onStartCrop}
-          isDisabled={!canCrop}
-          aria-label={t('components.canvasControls.crop', 'Crop')}
-        >
-          {t('components.canvasControls.crop', 'Crop')}
-        </Button>
-        <Button
-          size="sm"
-          variant="flat"
-          color="default"
-          startContent={<Icon icon="lucide:undo" />}
-          onPress={onResetCrop}
-          isDisabled={!canCrop || isCropping}
-          aria-label={t('components.canvasControls.resetOriginal', 'Reset original')}
-        >
-          {t('components.canvasControls.resetOriginal', 'Reset original')}
-        </Button>
         <Button
           size="sm"
           variant="flat"

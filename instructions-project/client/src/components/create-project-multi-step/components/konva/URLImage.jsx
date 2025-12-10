@@ -9,28 +9,16 @@ import { calculateImageDimensions } from '../../utils/canvasCalculations';
  * Calcula automaticamente o aspect ratio correto quando a imagem carrega
  * 
  * @param {Object} props
- * @param {string} props.imageId - ID da imagem (source)
  * @param {string} props.src - URL da imagem
  * @param {number} props.width - Largura inicial da imagem (será ajustada se necessário)
  * @param {number} props.height - Altura inicial da imagem (será ajustada se necessário)
  * @param {number} props.x - Posição X
  * @param {number} props.y - Posição Y
- * @param {Object|null} props.crop - Recorte normalizado { xNorm, yNorm, wNorm, hNorm }
- * @param {Object|null} props.naturalSize - Dimensões reais { width, height }
- * @param {Function} props.onImageNaturalSize - Callback quando dimensões reais forem conhecidas
  */
-export const URLImage = ({ imageId, src, width, height, x, y, crop = null, naturalSize = null, onImageNaturalSize = null }) => {
+export const URLImage = ({ src, width, height, x, y }) => {
   const [adjustedDimensions, setAdjustedDimensions] = useState({ width, height });
   const [hasAdjusted, setHasAdjusted] = useState(false);
   const loggedSourcesRef = useRef(new Set());
-  const naturalSizeReportedRef = useRef(false);
-
-  useEffect(() => {
-    // Resetar flags ao trocar de imagem
-    setHasAdjusted(false);
-    setAdjustedDimensions({ width, height });
-    naturalSizeReportedRef.current = false;
-  }, [imageId, src, width, height]);
   
   // Converter caminho /uploads/ para /api/uploads/ se necessário (para passar pelo proxy do Vite)
   const baseApi = (import.meta?.env?.VITE_API_URL || '').replace(/\/$/, '') || '';
@@ -112,15 +100,6 @@ export const URLImage = ({ imageId, src, width, height, x, y, crop = null, natur
     }
   }, [image, width, height, hasAdjusted]);
 
-  // Reportar dimensões naturais para o chamador
-  useEffect(() => {
-    if (!image || naturalSizeReportedRef.current) return;
-    if (onImageNaturalSize) {
-      onImageNaturalSize(imageId, { width: image.width, height: image.height });
-    }
-    naturalSizeReportedRef.current = true;
-  }, [image, onImageNaturalSize, imageId]);
-
   // Não renderizar se não houver imagem válida ou se houver erro
   // Verificar se status existe e tem propriedade error, ou se image é null/undefined
   if (!image || (status && status.error)) {
@@ -131,17 +110,6 @@ export const URLImage = ({ imageId, src, width, height, x, y, crop = null, natur
   const finalWidth = adjustedDimensions.width || width;
   const finalHeight = adjustedDimensions.height || height;
 
-  const naturalWidth = naturalSize?.width || image?.width;
-  const naturalHeight = naturalSize?.height || image?.height;
-
-  const shouldApplyCrop = crop && naturalWidth && naturalHeight && crop.wNorm && crop.hNorm;
-  const cropConfig = shouldApplyCrop ? {
-    x: crop.xNorm * naturalWidth,
-    y: crop.yNorm * naturalHeight,
-    width: crop.wNorm * naturalWidth,
-    height: crop.hNorm * naturalHeight
-  } : null;
-
   return (
     <KonvaImage
       image={image}
@@ -151,7 +119,6 @@ export const URLImage = ({ imageId, src, width, height, x, y, crop = null, natur
       height={finalHeight}
       offsetX={finalWidth / 2}
       offsetY={finalHeight / 2}
-      crop={cropConfig || undefined}
       listening={false} // Não responde a eventos (não arrastável)
     />
   );
