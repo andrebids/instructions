@@ -133,7 +133,10 @@ export const DecorationItem = ({
       // Attach transformer manualmente ao shape
       if (trRef.current && shapeRef.current) {
         trRef.current.nodes([shapeRef.current]);
-        trRef.current.getLayer().batchDraw();
+        const layer = trRef.current.getLayer();
+        if (layer) {
+          layer.batchDraw();
+        }
       }
     } else {
       // Limpar transformer quando não está selecionado
@@ -197,12 +200,7 @@ export const DecorationItem = ({
       }
     }
     
-    // Manter estado em sincronia contínua com a posição atual
-    onChange({
-      ...decoration,
-      x: nextX,
-      y: nextY
-    });
+    // Não atualiza store a cada frame para evitar renders; apenas reposiciona visualmente
   };
 
   const handleDragEnd = (e) => {
@@ -225,7 +223,7 @@ export const DecorationItem = ({
       }
     }
     
-    console.log('🔄 Decoração movida:', decoration.id, 'nova posição:', finalX, finalY);
+    console.log('[DecorationItem] dragEnd', { id: decoration.id, finalX, finalY });
     onChange({
       ...decoration,
       x: finalX,
@@ -241,7 +239,12 @@ export const DecorationItem = ({
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
     
-    console.log('🔧 Decoração transformada:', decoration.id, 'scale:', scaleX, scaleY, 'rotation:', node.rotation());
+    console.log('[DecorationItem] transformEnd', {
+      id: decoration.id,
+      scaleX,
+      scaleY,
+      rotation: node.rotation()
+    });
     
     // Resetar scale de volta para 1
     node.scaleX(1);
@@ -358,6 +361,7 @@ export const DecorationItem = ({
             // Ignorar se preventDefault não for permitido (evento passivo)
           }
         }
+        console.log('[DecorationItem] dragStart', { id: decoration.id, x: decoration.x, y: decoration.y });
         onSelect();
       },
       onDragMove: (e) => {

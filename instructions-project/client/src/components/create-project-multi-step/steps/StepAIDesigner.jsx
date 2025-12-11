@@ -19,6 +19,12 @@ import { useDecorationOrders } from '../hooks/useDecorationOrders';
 import { getDefaultStreetName } from '../utils/cartoucheUtils';
 import { getDecorationColor } from '../utils/decorationUtils';
 import { getCenterPosition } from '../utils/canvasCalculations';
+import {
+  preloadImageSize,
+  computeInitialSizeFromImageDims,
+  offsetIfColliding,
+  BASE_DECORATION_SIZE
+} from '../utils/decorationPlacement';
 
 export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externalSelectedImage }) => {
   // Ref para o canvas (para exportar imagem)
@@ -181,6 +187,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
 
   // Handlers de decoração
   const handleDecorationAdd = (decoration) => {
+    console.log('[StepAIDesigner] handleDecorationAdd', { id: decoration.id, type: decoration.type, src: decoration.src });
     decorationManagement.handleDecorationAdd(
       decoration,
       canvasState.decorations,
@@ -189,6 +196,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   };
 
   const handleDecorationRemove = (decorationId) => {
+    console.log('[StepAIDesigner] handleDecorationRemove', { id: decorationId });
     decorationManagement.handleDecorationRemove(
       decorationId,
       canvasState.decorations,
@@ -197,6 +205,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
   };
 
   const handleDecorationUpdate = (decorationId, newAttrs) => {
+    console.log('[StepAIDesigner] handleDecorationUpdate', { id: decorationId, newAttrs });
     decorationManagement.handleDecorationUpdate(
       decorationId,
       newAttrs,
@@ -432,7 +441,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
               mode="sidebar"
               isDayMode={canvasState.isDayMode}
               disabled={canvasState.canvasImages.length === 0}
-              onDecorationSelect={(decoration) => {
+              onDecorationSelect={async (decoration) => {
                 if (canvasState.canvasImages.length === 0) {
                   canvasState.setNoBgWarning(true);
                   setTimeout(() => canvasState.setNoBgWarning(false), 2000);
@@ -440,25 +449,67 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                 }
                 
                 const { centerX, centerY } = getCenterPosition(1200, 600);
-                
+
+                const preferredSrc =
+                  decoration.imageUrl ||
+                  decoration.imageUrlDay ||
+                  decoration.imageUrlNight ||
+                  decoration.thumbnailUrl ||
+                  null;
+
+                const addStart = performance.now?.() || Date.now();
+                console.log('[StepAIDesigner] onDecorationSelect start', {
+                  id: decoration.id,
+                  preferredSrc,
+                  hasDay: !!decoration.imageUrlDay,
+                  hasNight: !!decoration.imageUrlNight,
+                  hasThumb: !!decoration.thumbnailUrl
+                });
+
+                // Dimensão inicial baseada na imagem real (quando disponível)
+                let initialSize = {
+                  width: preferredSrc ? BASE_DECORATION_SIZE : 120,
+                  height: preferredSrc ? BASE_DECORATION_SIZE : 120
+                };
+
+                if (preferredSrc) {
+                  const preloadStart = performance.now?.() || Date.now();
+                  const dims = await preloadImageSize(preferredSrc);
+                  console.log('[StepAIDesigner] preloadImageSize', {
+                    src: preferredSrc,
+                    dims,
+                    durationMs: (performance.now?.() || Date.now()) - preloadStart
+                  });
+                  initialSize = computeInitialSizeFromImageDims(dims, BASE_DECORATION_SIZE);
+                }
+
+                const adjustedPos = offsetIfColliding(
+                  canvasState.decorations,
+                  centerX,
+                  centerY,
+                  10,
+                  8
+                );
+
                 const newDecoration = {
                   id: 'dec-' + Date.now(),
                   decorationId: decoration.id, // ID da decoração na BD (para orders)
-                  type: decoration.imageUrl ? 'image' : decoration.type,
+                  type: preferredSrc ? 'image' : decoration.type,
                   name: decoration.name,
                   icon: decoration.icon,
                   price: decoration.price || 0, // Preço para orders
                   dayUrl: decoration.imageUrlDay || decoration.thumbnailUrl || decoration.imageUrl || undefined,
                   nightUrl: decoration.imageUrlNight || undefined,
-                  src: decoration.imageUrl || undefined,
-                  x: centerX,
-                  y: centerY,
-                  width: decoration.imageUrl ? 200 : 120,
-                  height: decoration.imageUrl ? 200 : 120,
+                  src: preferredSrc || undefined,
+                  x: adjustedPos.x,
+                  y: adjustedPos.y,
+                  width: initialSize.width,
+                  height: initialSize.height,
                   rotation: 0,
                   color: getDecorationColor(decoration.type)
                 };
                 handleDecorationAdd(newDecoration);
+                console.log('[StepAIDesigner] onDecorationSelect done in ms', (performance.now?.() || Date.now()) - addStart);
               }}
               enableSearch={true}
               className="w-64 md:w-72 lg:w-80"

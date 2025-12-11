@@ -9,6 +9,12 @@ import { DecorationItem } from './DecorationItem';
 import { CartoucheText } from './CartoucheText';
 // import { checkSnapToZone } from '../../utils/snapZoneUtils'; // Zonas removidas
 import { getDecorationColor } from '../../utils/decorationUtils';
+import {
+  preloadImageSize,
+  computeInitialSizeFromImageDims,
+  offsetIfColliding,
+  BASE_DECORATION_SIZE
+} from '../../utils/decorationPlacement';
 import { useResponsiveProfile } from '../../../../hooks/useResponsiveProfile';
 
 /**
@@ -260,6 +266,7 @@ export const KonvaCanvas = forwardRef(({
     const stage = e.target.getStage();
     
     if (target === stage) {
+      console.log('[KonvaCanvas] stage click -> deselect');
       if (onEmptyCanvasClick && (!canvasImages || canvasImages.length === 0)) {
         onEmptyCanvasClick();
       }
@@ -306,6 +313,21 @@ export const KonvaCanvas = forwardRef(({
     }
   };
 
+  // Atalhos de remoção (Backspace/Delete)
+  useEffect(() => {
+    const handleKey = (evt) => {
+      if (!selectedId) return;
+      const key = evt.key?.toLowerCase();
+      if (key === 'delete' || key === 'backspace') {
+        evt.preventDefault();
+        onDecorationRemove(selectedId);
+        setSelectedId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [selectedId, onDecorationRemove]);
+
   // Handle drag and drop da biblioteca (HTML)
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -317,11 +339,32 @@ export const KonvaCanvas = forwardRef(({
     setDragOver(false);
   };
 
-  const handleDrop = (e) => {
+  // Escolhe o melhor URL de imagem disponível (prioriza dia/noite antes do thumbnail)
+  const resolveImageSources = (decorationData, isDay) => {
+    const dayUrl =
+      decorationData.imageUrlDay ||
+      decorationData.imageUrl ||
+      decorationData.thumbnailUrl ||
+      null;
+    const nightUrl =
+      decorationData.imageUrlNight ||
+      decorationData.imageUrlDay ||
+      decorationData.imageUrl ||
+      decorationData.thumbnailUrl ||
+      null;
+    const primary = isDay ? (dayUrl || nightUrl) : (nightUrl || dayUrl);
+    const preloadSrc = dayUrl || nightUrl || decorationData.imageUrl || decorationData.thumbnailUrl || null;
+    return { dayUrl, nightUrl, primary, preloadSrc };
+  };
+
+  const handleDrop = async (e) => {
     e.preventDefault();
     setDragOver(false);
     
     try {
+      const dropStart = performance.now?.() || Date.now();
+      console.log('[KonvaCanvas] Drop iniciado');
+
       // Verificar se há imagem de fundo
       if (canvasImages.length === 0) {
         console.warn('⚠️ Cannot add decoration without a background image!');
@@ -347,27 +390,50 @@ export const KonvaCanvas = forwardRef(({
         return;
       }
       
-      var x = (e.clientX - containerRect.left) / stageSize.scale;
-      var y = (e.clientY - containerRect.top) / stageSize.scale;
+      let x = (e.clientX - containerRect.left) / stageSize.scale;
+      let y = (e.clientY - containerRect.top) / stageSize.scale;
+
+      // Resolver URLs (preferir dia/noite ao invés de thumbnail)
+      const { dayUrl, nightUrl, primary, preloadSrc } = resolveImageSources(decorationData, isDayMode);
+      console.log('[KonvaCanvas] resolveImageSources', { dayUrl, nightUrl, primary, preloadSrc });
       
-      // Snap zones removidas - não aplicar snap
+      // Calcular tamanho inicial mantendo proporção (base 200) se imagem
+      let initialSize = {
+        width: primary ? BASE_DECORATION_SIZE : 120,
+        height: primary ? BASE_DECORATION_SIZE : 120
+      };
+
+      if (primary) {
+        const preloadStart = performance.now?.() || Date.now();
+        const dims = await preloadImageSize(preloadSrc);
+        console.log('[KonvaCanvas] preloadImageSize', { preloadSrc, dims, durationMs: (performance.now?.() || Date.now()) - preloadStart });
+        initialSize = computeInitialSizeFromImageDims(dims, BASE_DECORATION_SIZE);
+      }
+
+      // Deslocar levemente se colisão com outra decoração
+      const adjustedPos = offsetIfColliding(decorations, x, y, 10, 8);
+      x = adjustedPos.x;
+      y = adjustedPos.y;
       
       const newDecoration = {
         id: Date.now(),
-        type: decorationData.imageUrl ? 'image' : decorationData.type,
+        type: primary ? 'image' : decorationData.type,
         name: decorationData.name,
         icon: decorationData.icon,
-        src: decorationData.imageUrl || undefined,
-        x: x,
-        y: y,
-        width: decorationData.imageUrl ? 200 : 120, // 2x maior: 100->200, 60->120
-        height: decorationData.imageUrl ? 200 : 120, // 2x maior: 100->200, 60->120
+        src: primary || undefined,
+        dayUrl: dayUrl || undefined,
+        nightUrl: nightUrl || undefined,
+        x,
+        y,
+        width: initialSize.width,
+        height: initialSize.height,
         rotation: 0,
         color: getDecorationColor(decorationData.type)
       };
       
       console.log('➕ Adicionando nova decoração:', newDecoration);
       onDecorationAdd(newDecoration);
+      console.log('[KonvaCanvas] Drop concluído em ms', (performance.now?.() || Date.now()) - dropStart);
     } catch (error) {
       console.error('❌ Error handling drop:', error);
     }
@@ -427,10 +493,6 @@ export const KonvaCanvas = forwardRef(({
         // Handlers melhorados para touch
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        clipX={0}
-        clipY={0}
-        clipWidth={stageSize.width}
-        clipHeight={stageSize.height}
         className={`rounded-lg border-2 border-dashed border-default-300 ${
           dragOver
             ? 'ring-2 ring-primary bg-primary/10'
@@ -469,11 +531,12 @@ export const KonvaCanvas = forwardRef(({
               isDayMode={isDayMode}
               isTouchDevice={isTouchDevice}
               onSelect={() => {
-                console.log('✅ Decoração selecionada:', decoration.id);
+                console.log('[KonvaCanvas] select decoration', decoration.id);
                 setSelectedId(decoration.id);
               }}
               onChange={(newAttrs) => {
-                // Atualizar decoração via callback
+                console.log('[KonvaCanvas] onDecorationChange', { id: decoration.id, newAttrs });
+                // Atualizar decoração via callback (já com throttling de drag no Item)
                 if (onDecorationUpdate) {
                   onDecorationUpdate(decoration.id, newAttrs);
                 } else {

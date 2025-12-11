@@ -43,6 +43,19 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
   const formState = useProjectForm(onClose, projectId, saveStatus, logoIndex);
   const clientState = useClientManagement(formState.setFormData);
   
+  // Se o utilizador entrou via ?step=ai-designer, garantir que o fluxo é tratado como simulação
+  // para que o step do Konva fique visível mesmo que o projectType venha vazio/errado do backend.
+  useEffect(() => {
+    if (initialStep === "ai-designer") {
+      if (formState.formData.projectType !== "simu") {
+        formState.handleInputChange("projectType", "simu");
+      }
+      if (!formState.formData.simuWorkflow) {
+        formState.handleInputChange("simuWorkflow", "ai");
+      }
+    }
+  }, [initialStep, formState.formData.projectType, formState.formData.simuWorkflow]);
+
   // Detect dark mode
   const [isDark, setIsDark] = useState(() => {
     if (typeof document !== 'undefined') {
@@ -91,6 +104,16 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
   }, [initialStep, visibleSteps.length]); // Usar apenas length para evitar re-execuções
 
   const navigation = useStepNavigation(formState.formData, visibleSteps, formState.createTempProject, initialStep);
+
+  // Fallback defensivo: se o initialStep existir e o step já estiver visível,
+  // garantir que o currentStep é ajustado mesmo que o hook de navegação não tenha aplicado.
+  useEffect(() => {
+    if (!initialStep) return;
+    const stepIndex = visibleSteps.findIndex(s => s.id === initialStep);
+    if (stepIndex >= 0 && navigation.currentStep !== stepIndex + 1) {
+      navigation.setCurrentStep(stepIndex + 1);
+    }
+  }, [initialStep, visibleSteps, navigation.currentStep]);
 
   // Estado para rastrear a página interna atual do logo-instructions (1-4)
   const [logoInstructionsPage, setLogoInstructionsPage] = React.useState(1);

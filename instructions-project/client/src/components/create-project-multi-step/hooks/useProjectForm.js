@@ -73,16 +73,33 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
           const startDate = project.startDate ? parseDate(project.startDate.split('T')[0]) : null;
           const endDate = project.endDate ? parseDate(project.endDate.split('T')[0]) : null;
 
+          // Normalizar o tipo do projeto e garantir que projetos com dados de simulação
+          // sejam tratados como "simu" (mesmo que projectType venha vazio ou com outro valor)
+          const hasSimulationData = Boolean(
+            (project.canvasDecorations && project.canvasDecorations.length > 0) ||
+            (project.canvasImages && project.canvasImages.length > 0) ||
+            (project.decorationsByImage && Object.keys(project.decorationsByImage).length > 0)
+          );
+          const rawProjectType = typeof project.projectType === "string"
+            ? project.projectType.toLowerCase()
+            : project.projectType;
+          const normalizedProjectType = (() => {
+            if (rawProjectType === "simu" || rawProjectType === "simulation") return "simu";
+            if (rawProjectType === "logo") return "logo";
+            if (!rawProjectType && hasSimulationData) return "simu";
+            return rawProjectType || null;
+          })();
+
           // Determinar simuWorkflow baseado nos dados do projeto
           // Se tem dados do AI Designer (canvasDecorations, canvasImages), é workflow "ai"
           const hasAIDesignerData = !!(project.canvasDecorations?.length || project.canvasImages?.length);
-          const simuWorkflow = project.projectType === "simu" && hasAIDesignerData ? "ai" : null;
+          const simuWorkflow = normalizedProjectType === "simu" && hasAIDesignerData ? "ai" : null;
           
           // Restaurar estado completo do formulário
           setFormData({
             id: project.id,
             name: project.name || "",
-            projectType: project.projectType || null,
+            projectType: normalizedProjectType,
             simuWorkflow: simuWorkflow, // Determinar baseado nos dados do projeto
             status: project.status || "draft",
             category: project.category || "normal",
