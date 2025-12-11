@@ -236,6 +236,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
 
   // Toggle day/night mode
   const toggleDayNightMode = () => {
+    if (!canvasState.isNightModeAvailable) return;
     const newMode = !canvasState.isDayMode;
     
     if (!newMode && canvasState.selectedImage) {
@@ -396,8 +397,10 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
             <div className="h-full flex flex-col p-3 md:p-4 lg:p-6">
               <CanvasControls
                 isDayMode={canvasState.isDayMode}
+                isNightModeAvailable={canvasState.isNightModeAvailable}
                 onToggleDayNight={toggleDayNightMode}
                 canToggleDayNight={
+                  canvasState.isNightModeAvailable &&
                   canvasState.canvasImages.length > 0 && 
                   (canvasState.selectedImage 
                     ? imageConversion.conversionComplete[canvasState.selectedImage.id] || 

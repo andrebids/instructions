@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import useSourceImages from './useSourceImages';
 import { calculateImageDimensions, getCenterPosition } from '../utils/canvasCalculations';
 
+// Helper centralizado: futura troca para checar API real sem refatorar
+export const isNightModeFeatureEnabled = () => (import.meta?.env?.VITE_FEATURE_NIGHT_MODE || '') === '1';
+
 /**
  * Hook para gerenciar estados principais do canvas
  * Gerencia estados de UI, decorações, imagens, modo dia/noite
@@ -22,6 +25,8 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
   const [canvasImages, setCanvasImages] = useState([]); // Imagens adicionadas ao canvas
   const [isDayMode, setIsDayMode] = useState(true); // Controla se mostra imagem de dia ou noite
   const [uploadedImages, setUploadedImages] = useState([]); // Imagens disponíveis após upload completo
+  // Flag de feature: exibir/permitir modo noite apenas quando habilitado
+  const isNightModeAvailable = isNightModeFeatureEnabled();
   
   // Carregar Source Images da API usando hook
   const { sourceImages, loading: sourceImagesLoading, error: sourceImagesError } = useSourceImages();
@@ -433,6 +438,7 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
     setSelectedImage,
     isDayMode,
     setIsDayMode,
+    isNightModeAvailable,
     uploadStep,
     setUploadStep,
     uploadedImages,

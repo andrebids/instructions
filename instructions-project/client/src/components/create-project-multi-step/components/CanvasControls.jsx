@@ -9,6 +9,7 @@ import { Icon } from "@iconify/react";
  * Controles do canvas (botões de ação)
  * @param {Object} props
  * @param {boolean} props.isDayMode - Se está em modo dia
+ * @param {boolean} [props.isNightModeAvailable=true] - Se o toggle dia/noite está habilitado por feature flag
  * @param {Function} props.onToggleDayNight - Callback para alternar dia/noite
  * @param {boolean} props.canToggleDayNight - Se pode alternar dia/noite
  * @param {Function} props.onOpenCartouche - Callback para abrir modal de cartouche
@@ -20,6 +21,7 @@ import { Icon } from "@iconify/react";
  */
 export const CanvasControls = ({
   isDayMode,
+  isNightModeAvailable = true,
   onToggleDayNight,
   canToggleDayNight,
   onOpenCartouche,
@@ -33,22 +35,24 @@ export const CanvasControls = ({
     <div className="flex items-center justify-between mb-3 md:mb-4">
       <h3 className="text-base md:text-lg font-semibold text-center flex-1">Decoration Canvas</h3>
       <div className="flex gap-2">
-        <Button
-          size="sm"
-          variant="flat"
-          color={isDayMode ? "warning" : "primary"}
-          startContent={
-            <Icon 
-              icon={isDayMode ? "lucide:sun" : "lucide:moon"} 
-              className={isDayMode ? "text-warning" : "text-primary"}
-            />
-          }
-          onPress={onToggleDayNight}
-          isDisabled={!canToggleDayNight}
-          aria-label={isDayMode ? "Switch to night mode" : "Switch to day mode"}
-        >
-          {isDayMode ? 'Day' : 'Night'}
-        </Button>
+        {isNightModeAvailable && (
+          <Button
+            size="sm"
+            variant="flat"
+            color={isDayMode ? "warning" : "primary"}
+            startContent={
+              <Icon 
+                icon={isDayMode ? "lucide:sun" : "lucide:moon"} 
+                className={isDayMode ? "text-warning" : "text-primary"}
+              />
+            }
+            onPress={onToggleDayNight}
+            isDisabled={!canToggleDayNight}
+            aria-label={isDayMode ? "Switch to night mode" : "Switch to day mode"}
+          >
+            {isDayMode ? 'Day' : 'Night'}
+          </Button>
+        )}
         <Button
           size="sm"
           variant="flat"
