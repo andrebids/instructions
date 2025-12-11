@@ -27,6 +27,12 @@
       "signIn": "Sign in",
       "signUp": "Sign up"
     },
+    "notFound": {
+      "badge": "Error 404",
+      "title": "Page not found",
+      "description": "The page you're looking for may have been moved, deleted, or never existed.",
+      "hint": "Check the URL or return to the dashboard."
+    },
     "dashboard": {
       "title": "Dashboard",
       "subtitle": "Here's your project overview.",

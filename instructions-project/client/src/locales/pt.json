@@ -27,6 +27,12 @@
       "signIn": "Entrar",
       "signUp": "Cadastrar"
     },
+    "notFound": {
+      "badge": "Erro 404",
+      "title": "Página não encontrada",
+      "description": "A página que procuras pode ter sido movida, removida ou nunca existiu.",
+      "hint": "Verifica o URL ou regressa ao dashboard."
+    },
     "dashboard": {
       "title": "Dashboard",
       "subtitle": "Aqui está a visão geral dos seus projetos.",

@@ -17,6 +17,7 @@ const ProjectNotes = React.lazy(() => import("./pages/ProjectNotes"));
 const EditProject = React.lazy(() => import("./pages/EditProject"));
 const SignIn = React.lazy(() => import("./pages/SignIn"));
 const ProjectDetails = React.lazy(() => import("./pages/ProjectDetails"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-screen w-full bg-transparent">
@@ -136,6 +137,7 @@ function AppLayout() {
                   </ProtectedRoute>
                 }
               />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </main>
@@ -200,7 +202,7 @@ export default function App() {
                   <Route path="/" element={<Landing />} />
                   <Route path="/sign-in" element={<SignIn />} />
                   <Route path="/sign-up" element={<Navigate to="/sign-in" replace />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
             </main>

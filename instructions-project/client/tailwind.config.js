@@ -16,12 +16,14 @@ export default {
           colors: {
             background: "#ffffff",
             foreground: "#111827",
+            primary: "#2b7fff",
           },
         },
         dark: {
           colors: {
             background: "#000000",
             foreground: "#ffffff",
+            primary: "#2b7fff",
           },
         },
       },

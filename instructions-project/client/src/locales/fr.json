@@ -27,6 +27,12 @@
       "signIn": "Se connecter",
       "signUp": "S'inscrire"
     },
+    "notFound": {
+      "badge": "Erreur 404",
+      "title": "Page introuvable",
+      "description": "La page que vous recherchez a peut-être été déplacée, supprimée ou n'a jamais existé.",
+      "hint": "Vérifiez l'URL ou retournez au tableau de bord."
+    },
     "dashboard": {
       "title": "Tableau de bord",
       "subtitle": "Voici un aperçu de vos projets.",
