@@ -165,6 +165,25 @@ export const ImageThumbnailList = ({
 }) => {
   const scrollRef = React.useRef(null);
   const [hasOverflow, setHasOverflow] = React.useState(false);
+  const [removingId, setRemovingId] = React.useState(null);
+
+  const handleRemoveClick = React.useCallback(
+    async (image) => {
+      if (!onImageRemove || removingId === image.id) return;
+      setRemovingId(image.id);
+      try {
+        await Promise.resolve(onImageRemove(image.id));
+      } catch (err) {
+        console.error('❌ Erro ao remover imagem', err);
+      } finally {
+        // Manter por um curto tempo para feedback visual
+        setTimeout(() => {
+          setRemovingId((current) => (current === image.id ? null : current));
+        }, 250);
+      }
+    },
+    [onImageRemove, removingId]
+  );
 
   React.useEffect(() => {
     const el = scrollRef.current;
@@ -224,6 +243,7 @@ export const ImageThumbnailList = ({
           // Mostrar overlay apenas se não foi convertida E não está sendo convertida agora
           const showOverlay = !isConverted && !isCurrentlyConverting;
           const isDisabled = !isConverted;
+          const isRemoving = removingId === image.id;
           
           return (
             <div key={image.id} className="relative group">
@@ -257,16 +277,29 @@ export const ImageThumbnailList = ({
                     {/* Botão de remoção - aparece no hover */}
                     {onImageRemove && isConverted && (
                       <button
+                        type="button"
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           e.preventDefault();
-                          onImageRemove(image.id);
+                          handleRemoveClick(image);
                         }}
-                        className="absolute top-1 right-1 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-full p-1.5 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-danger-300 shadow-md bg-danger-500 text-white border-none"
+                        disabled={isRemoving}
+                        className={
+                          "absolute top-1 right-1 z-50 transition-opacity duration-200 rounded-full p-1.5 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-danger-300 shadow-md bg-danger-500 text-white border-none pointer-events-auto " +
+                          (isRemoving ? "opacity-100" : "opacity-0 group-hover:opacity-100")
+                        }
                         aria-label={`Remove image ${image.name}`}
                         title="Remove image"
                       >
-                        <Icon icon="lucide:trash-2" className="text-xs" />
+                        {isRemoving ? (
+                          <Spinner size="sm" color="white" className="!w-4 !h-4" />
+                        ) : (
+                          <Icon icon="lucide:trash-2" className="text-xs" />
+                        )}
                       </button>
                     )}
                     {/* Checkmark de seleção - aparece quando imagem está selecionada */}

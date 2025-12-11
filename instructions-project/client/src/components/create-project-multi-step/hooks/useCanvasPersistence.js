@@ -51,15 +51,35 @@ export const useCanvasPersistence = ({
     const uploadedImagesStr = JSON.stringify(uploadedImages);
     const simulationStateStr = JSON.stringify(simulationState);
     const cropByImageStr = JSON.stringify(cropByImage);
-    
+
+    // Comparar também com o que já está em formData para evitar setState redundante
+    const formDataDecorationsStr = JSON.stringify(formData?.canvasDecorations || []);
+    const formDataImagesStr = JSON.stringify(formData?.canvasImages || []);
+    const formDataSnapStr = JSON.stringify(formData?.snapZonesByImage || {});
+    const formDataDecorationsByImageStr = JSON.stringify(formData?.decorationsByImage || {});
+    const formDataUploadedStr = JSON.stringify(formData?.uploadedImages || []);
+    const formDataSimulationStr = JSON.stringify(formData?.simulationState || null);
+    const formDataCropStr = JSON.stringify(formData?.cropByImage || {});
+
+    const alreadySynced =
+      decorationsStr === formDataDecorationsStr &&
+      canvasImagesStr === formDataImagesStr &&
+      snapZonesStr === formDataSnapStr &&
+      decorationsByImageStr === formDataDecorationsByImageStr &&
+      uploadedImagesStr === formDataUploadedStr &&
+      simulationStateStr === formDataSimulationStr &&
+      cropByImageStr === formDataCropStr;
+
     const hasChanges = 
-      prevValuesRef.current.decorations !== decorationsStr ||
-      prevValuesRef.current.canvasImages !== canvasImagesStr ||
-      prevValuesRef.current.snapZonesByImage !== snapZonesStr ||
-      prevValuesRef.current.decorationsByImage !== decorationsByImageStr ||
-      prevValuesRef.current.uploadedImages !== uploadedImagesStr ||
-      prevValuesRef.current.simulationState !== simulationStateStr ||
-      prevValuesRef.current.cropByImage !== cropByImageStr;
+      (!alreadySynced) && (
+        prevValuesRef.current.decorations !== decorationsStr ||
+        prevValuesRef.current.canvasImages !== canvasImagesStr ||
+        prevValuesRef.current.snapZonesByImage !== snapZonesStr ||
+        prevValuesRef.current.decorationsByImage !== decorationsByImageStr ||
+        prevValuesRef.current.uploadedImages !== uploadedImagesStr ||
+        prevValuesRef.current.simulationState !== simulationStateStr ||
+        prevValuesRef.current.cropByImage !== cropByImageStr
+      );
     
     if (!hasChanges) {
       return; // Não há mudanças, não atualizar

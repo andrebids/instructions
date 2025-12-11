@@ -297,8 +297,32 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
    */
   const handleImageRemove = (imageId) => {
     console.log('🗑️ Removendo imagem:', imageId);
-    
-    // Remover da lista de uploadedImages
+    const wasSelected = selectedImage && selectedImage.id === imageId;
+
+    // Limpar seleção imediatamente se a imagem atual for removida
+    setSelectedImage((prev) => (prev && prev.id === imageId ? null : prev));
+
+    // Remover do canvas (background/cartouche) e persistir
+    setCanvasImages((prev) => {
+      const next = prev.filter((img) => img.imageId !== imageId && img.id !== imageId);
+      if (onInputChange) {
+        onInputChange('canvasImages', next);
+      }
+      return next;
+    });
+
+    // Remover decorações vinculadas à imagem se ela estava selecionada
+    if (wasSelected) {
+      setDecorations((prev) => {
+        const next = prev.filter((dec) => dec.decorationId !== imageId);
+        if (onInputChange) {
+          onInputChange('canvasDecorations', next);
+        }
+        return next;
+      });
+    }
+
+    // Remover da lista de uploadedImages e atualizar simulationState
     setUploadedImages(prev => {
       const updated = prev.filter(img => img.id !== imageId);
       
@@ -310,34 +334,13 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
         const currentSimulationState = formData?.simulationState || {};
         const updatedSimulationState = {
           ...currentSimulationState,
-          selectedImageId: selectedImage?.id === imageId ? null : currentSimulationState.selectedImageId
+          selectedImageId: wasSelected ? null : currentSimulationState.selectedImageId
         };
         onInputChange('simulationState', updatedSimulationState);
       }
       
       return updated;
     });
-    
-    // Se a imagem removida estava selecionada, remover do canvas também
-    if (selectedImage && selectedImage.id === imageId) {
-      // Remover todas as imagens do canvas relacionadas a esta imagem
-      setCanvasImages(prev => prev.filter(img => img.imageId !== imageId));
-      
-      // Limpar seleção
-      setSelectedImage(null);
-      
-      // Limpar decorações associadas a esta imagem
-      setDecorations(prev => prev.filter(dec => dec.decorationId !== imageId));
-      
-      // Atualizar estado do formulário para remover decorações e imagens do canvas
-      if (onInputChange) {
-        onInputChange('canvasImages', []);
-        onInputChange('canvasDecorations', []);
-      }
-    } else {
-      // Se não estava selecionada, apenas remover do canvas se existir
-      setCanvasImages(prev => prev.filter(img => img.imageId !== imageId));
-    }
     
     console.log('✅ Imagem removida com sucesso');
   };

@@ -310,10 +310,18 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
 
   // Carregar decorações do formData
   useEffect(() => {
-    if (formData?.decorationsByImage && Object.keys(formData.decorationsByImage).length > 0) {
-      decorationManagement.setDecorationsByImage(formData.decorationsByImage);
+    if (!formData?.decorationsByImage || Object.keys(formData.decorationsByImage).length === 0) {
+      return;
     }
-  }, [formData?.id, formData?.decorationsByImage, decorationManagement]);
+
+    decorationManagement.setDecorationsByImage((prev) => {
+      // Evitar loop: só atualizar se o objeto for realmente diferente
+      if (prev === formData.decorationsByImage) {
+        return prev;
+      }
+      return formData.decorationsByImage;
+    });
+  }, [formData?.id, formData?.decorationsByImage, decorationManagement.setDecorationsByImage]);
 
   // Restaurar conversionComplete do simulationState
   useEffect(() => {
