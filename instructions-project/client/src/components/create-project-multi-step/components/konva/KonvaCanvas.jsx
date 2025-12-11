@@ -432,6 +432,9 @@ export const KonvaCanvas = forwardRef(({
         src: primary || undefined,
         dayUrl: dayUrl || undefined,
         nightUrl: nightUrl || undefined,
+        // ligar decoração à imagem de fundo atual para permitir limpeza ao remover a imagem
+        imageId: selectedImage?.id || selectedImage?.imageId || null,
+        sourceImageId: selectedImage?.id || selectedImage?.imageId || null,
         x,
         y,
         width: initialSize.width,

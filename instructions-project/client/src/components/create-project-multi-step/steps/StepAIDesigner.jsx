@@ -214,6 +214,26 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
     );
   };
 
+  // Remover imagem e limpar decorações/cartouche vinculadas a ela
+  const handleImageRemove = (imageId) => {
+    decorationManagement.setDecorationsByImage((prev) => {
+      if (!imageId) return prev;
+      const next = { ...prev };
+      delete next[imageId];
+      return next;
+    });
+
+    // Limpar cartouche associado no formData
+    if (formData?.cartoucheByImage) {
+      const nextCartouche = { ...formData.cartoucheByImage };
+      delete nextCartouche[imageId];
+      onInputChange?.('cartoucheByImage', nextCartouche);
+    }
+
+    // Delegar remoção ao hook principal (limpa uploads, canvas e decorações correntes)
+    canvasState.handleImageRemove(imageId);
+  };
+
   // Toggle day/night mode
   const toggleDayNightMode = () => {
     const newMode = !canvasState.isDayMode;
@@ -364,7 +384,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
             uploadedImages={canvasState.uploadedImages}
             selectedImage={canvasState.selectedImage}
             onImageSelect={handleImageAddToCanvas}
-            onImageRemove={canvasState.handleImageRemove}
+            onImageRemove={handleImageRemove}
             conversionComplete={imageConversion.conversionComplete}
             activeGifIndex={imageConversion.activeGifIndex}
             onAddMore={() => canvasState.setUploadStep('uploading')}
@@ -416,7 +436,7 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                   onDecorationAdd={handleDecorationAdd}
                   onDecorationRemove={handleDecorationRemove}
                   onDecorationUpdate={handleDecorationUpdate}
-                  onImageRemove={canvasState.handleImageRemoveFromCanvas}
+                  onImageRemove={handleImageRemove}
                   decorations={canvasState.decorations}
                   canvasImages={canvasState.canvasImages}
                   selectedImage={canvasState.selectedImage}
@@ -509,6 +529,9 @@ export const StepAIDesigner = ({ formData, onInputChange, selectedImage: externa
                   dayUrl: decoration.imageUrlDay || decoration.thumbnailUrl || decoration.imageUrl || undefined,
                   nightUrl: decoration.imageUrlNight || undefined,
                   src: preferredSrc || undefined,
+                  // vincular à imagem selecionada para permitir limpeza quando a imagem for removida
+                  imageId: canvasState.selectedImage?.id || null,
+                  sourceImageId: canvasState.selectedImage?.id || null,
                   x: adjustedPos.x,
                   y: adjustedPos.y,
                   width: initialSize.width,

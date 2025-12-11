@@ -288,7 +288,21 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
    * @param {string} imageId - ID da imagem a remover
    */
   const handleImageRemoveFromCanvas = (imageId) => {
-    setCanvasImages(prev => prev.filter(img => img.id !== imageId));
+    setCanvasImages(prev => prev.filter(img => img.id !== imageId && img.imageId !== imageId));
+
+    // Remover decorações vinculadas a esta imagem (ou armazenadas no mapa)
+    const idsFromMap = (formData?.decorationsByImage?.[imageId] || []).map(d => d.id);
+    setDecorations(prev => {
+      const next = prev.filter(dec => {
+        const linkedToImage = dec.imageId === imageId || dec.sourceImageId === imageId;
+        const inMap = idsFromMap.includes(dec.id);
+        return !linkedToImage && !inMap;
+      });
+      if (onInputChange) {
+        onInputChange('canvasDecorations', next);
+      }
+      return next;
+    });
   };
 
   /**
@@ -311,15 +325,39 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
       return next;
     });
 
-    // Remover decorações vinculadas à imagem se ela estava selecionada
-    if (wasSelected) {
-      setDecorations((prev) => {
-        const next = prev.filter((dec) => dec.decorationId !== imageId);
-        if (onInputChange) {
-          onInputChange('canvasDecorations', next);
-        }
-        return next;
-      });
+    // Decorações vinculadas: remover todas associadas ou todas se era a imagem selecionada
+    const idsFromMap = (formData?.decorationsByImage?.[imageId] || []).map(d => d.id);
+    setDecorations((prev) => {
+      let next;
+      if (wasSelected) {
+        // Imagem ativa: limpar todas para garantir que nada fique órfão
+        next = [];
+      } else {
+        next = prev.filter((dec) => {
+          const linkedToImage = dec.imageId === imageId || dec.sourceImageId === imageId;
+          const inMap = idsFromMap.includes(dec.id);
+          return !linkedToImage && !inMap;
+        });
+      }
+      if (onInputChange) {
+        onInputChange('canvasDecorations', next);
+      }
+      return next;
+    });
+
+    // Remover mapeamento de decorações/cartouche dessa imagem no formData
+    if (onInputChange) {
+      const nextDecorationsByImage = { ...(formData?.decorationsByImage || {}) };
+      if (nextDecorationsByImage[imageId]) {
+        delete nextDecorationsByImage[imageId];
+        onInputChange('decorationsByImage', nextDecorationsByImage);
+      }
+
+      const nextCartoucheByImage = { ...(formData?.cartoucheByImage || {}) };
+      if (nextCartoucheByImage[imageId]) {
+        delete nextCartoucheByImage[imageId];
+        onInputChange('cartoucheByImage', nextCartoucheByImage);
+      }
     }
 
     // Remover da lista de uploadedImages e atualizar simulationState
