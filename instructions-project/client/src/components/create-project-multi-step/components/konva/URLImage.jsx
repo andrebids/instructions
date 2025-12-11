@@ -73,9 +73,9 @@ export const URLImage = ({ src, width, height, x, y }) => {
       const isAspectRatioIncorrect = aspectRatioDiff > 0.01;
       
       if (isAspectRatioIncorrect) {
-        // Canvas virtual sempre 1200x600
-        const canvasWidth = 1200;
-        const canvasHeight = 600;
+        // Canvas virtual agora 1400x900 (mesmo tamanho do Stage base)
+        const canvasWidth = 1400;
+        const canvasHeight = 900;
         
         // Recalcular dimensões mantendo aspect ratio correto
         const { imageWidth, imageHeight } = calculateImageDimensions(

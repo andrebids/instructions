@@ -14,6 +14,7 @@ import { registerSyncTag, isBackgroundSyncAvailable } from '../../../services/ba
  * @param {Object} params.decorationsByImage - Decorações por imagem
  * @param {Array} params.uploadedImages - Imagens uploadadas para o projeto
  * @param {Object} params.simulationState - Estado da simulação (uploadStep, selectedImageId, isDayMode, conversionComplete)
+ * @param {Object} params.cropByImage - Crop por imagem { imageId: { xNorm, yNorm, wNorm, hNorm, orientation } }
  * @param {Object} params.formData - Dados do formulário
  * @param {Function} params.onInputChange - Callback para atualizar formData
  * @param {Function} params.getExportImage - Função para exportar imagem do canvas
@@ -25,6 +26,7 @@ export const useCanvasPersistence = ({
   decorationsByImage,
   uploadedImages = [],
   simulationState = null,
+  cropByImage = {},
   formData,
   onInputChange,
   getExportImage = null
@@ -36,7 +38,8 @@ export const useCanvasPersistence = ({
     snapZonesByImage: null,
     decorationsByImage: null,
     uploadedImages: null,
-    simulationState: null
+    simulationState: null,
+    cropByImage: null
   });
   
   useEffect(() => {
@@ -47,6 +50,7 @@ export const useCanvasPersistence = ({
     const decorationsByImageStr = JSON.stringify(decorationsByImage);
     const uploadedImagesStr = JSON.stringify(uploadedImages);
     const simulationStateStr = JSON.stringify(simulationState);
+    const cropByImageStr = JSON.stringify(cropByImage);
     
     const hasChanges = 
       prevValuesRef.current.decorations !== decorationsStr ||
@@ -54,7 +58,8 @@ export const useCanvasPersistence = ({
       prevValuesRef.current.snapZonesByImage !== snapZonesStr ||
       prevValuesRef.current.decorationsByImage !== decorationsByImageStr ||
       prevValuesRef.current.uploadedImages !== uploadedImagesStr ||
-      prevValuesRef.current.simulationState !== simulationStateStr;
+      prevValuesRef.current.simulationState !== simulationStateStr ||
+      prevValuesRef.current.cropByImage !== cropByImageStr;
     
     if (!hasChanges) {
       return; // Não há mudanças, não atualizar
@@ -67,7 +72,8 @@ export const useCanvasPersistence = ({
       snapZonesByImage: snapZonesStr,
       decorationsByImage: decorationsByImageStr,
       uploadedImages: uploadedImagesStr,
-      simulationState: simulationStateStr
+      simulationState: simulationStateStr,
+      cropByImage: cropByImageStr
     };
     
     // Salvar no formData (sem logs excessivos)
@@ -95,12 +101,15 @@ export const useCanvasPersistence = ({
       onInputChange("cartoucheByImage", cartoucheByImage);
     }
     
-    // Salvar uploadedImages e simulationState se fornecidos
+    // Salvar uploadedImages, simulationState e cropByImage se fornecidos
     if (uploadedImages !== undefined) {
       onInputChange("uploadedImages", uploadedImages);
     }
     if (simulationState !== undefined && simulationState !== null) {
       onInputChange("simulationState", simulationState);
+    }
+    if (cropByImage !== undefined) {
+      onInputChange("cropByImage", cropByImage);
     }
     
     // Salvar também no localStorage como backup
@@ -136,6 +145,7 @@ export const useCanvasPersistence = ({
           canvasImages: canvasImages,
           decorationsByImage: decorationsByImage,
           cartoucheByImage: cartoucheByImage, // Incluir cartoucheByImage no salvamento
+          cropByImage: cropByImage || {}, // Incluir cropByImage no salvamento
           lastEditedStep: 'ai-designer', // Canvas só é usado no step ai-designer
           uploadedImages: uploadedImages || [],
           simulationState: simulationState || formData?.simulationState || {
@@ -157,6 +167,7 @@ export const useCanvasPersistence = ({
             snapZonesByImage: snapZonesByImage,
             decorationsByImage: decorationsByImage,
             cartoucheByImage: cartoucheByImage,
+            cropByImage: cropByImage || {},
             canvasPreviewImage: canvasPreviewImage,
             pendingSync: !navigator.onLine
           });
@@ -206,6 +217,6 @@ export const useCanvasPersistence = ({
         clearTimeout(timeoutId);
       };
     }
-  }, [decorations, canvasImages, snapZonesByImage, decorationsByImage, uploadedImages, simulationState, formData?.id]); // Removido onInputChange das dependências para evitar loop infinito
+  }, [decorations, canvasImages, snapZonesByImage, decorationsByImage, uploadedImages, simulationState, cropByImage, formData?.id]); // Removido onInputChange das dependências para evitar loop infinito
 };
 

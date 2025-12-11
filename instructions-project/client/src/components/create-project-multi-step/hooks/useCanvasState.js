@@ -176,14 +176,16 @@ export const useCanvasState = ({ formData, onInputChange, conversionComplete, an
       : (image.nightVersion || image.thumbnail || image.dayVersion || image.originalUrl);
     console.log('📸 URL:', imageSrc);
     
-    // Usar dimensões virtuais do canvas (sempre 1200x600)
-    const canvasWidth = 1200;
-    const canvasHeight = 600;
+    // Usar dimensões virtuais do canvas (agora 1400x900, igual ao Stage base)
+    const canvasWidth = 1400;
+    const canvasHeight = 900;
     const { centerX, centerY } = getCenterPosition(canvasWidth, canvasHeight);
     
     // Calcular dimensões da imagem para caber no canvas mantendo aspect ratio
-    // Assumindo aspect ratio 4:3 das imagens (pode ser ajustado)
-    const imageAspectRatio = 4 / 3;
+    // Tentar usar aspect ratio real se disponível, senão fallback 4:3
+    const imageAspectRatio = image?.aspectRatio && image.aspectRatio > 0
+      ? image.aspectRatio
+      : (image?.width && image?.height ? image.width / image.height : 4 / 3);
     const { imageWidth, imageHeight } = calculateImageDimensions(imageAspectRatio, canvasWidth, canvasHeight, 0.96);
     
     console.log('📐 Canvas:', canvasWidth, 'x', canvasHeight);

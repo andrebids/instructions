@@ -848,6 +848,14 @@
     "projectObservations": {
       "annotationLegend": "Annotation Legend",
       "noNoteAdded": "No note added"
+    },
+    "aiDesignerEmpty": {
+      "badge": "Simulation workflow",
+      "title": "Add your first base image",
+      "description": "Use “Add more images” in the sidebar or tap the empty canvas to open upload.",
+      "step1": "1) Upload a source image",
+      "step2": "2) Select it to activate the canvas",
+      "step3": "3) Apply decorations and cartouche"
     }
   },
   "errors": {

@@ -24,25 +24,25 @@ export function ProjectTypeCard({
       }`}
       onPress={onSelect}
     >
-      <div className="relative aspect-[16/10] overflow-hidden rounded-lg">
+      <div className="relative aspect-[3/2] overflow-hidden rounded-lg min-h-[400px]">
         <Image
           removeWrapper
           src={image}
           alt={title}
           className="z-0 w-full h-full object-cover"
         />
-        <CardFooter className="absolute bottom-0 z-10 bg-black/50 text-white flex items-center justify-between w-full gap-3">
+        <CardFooter className="absolute bottom-0 z-10 bg-black/50 text-white flex items-center justify-between w-full gap-3 p-4">
           <div className="leading-tight text-left">
-            <p className="font-semibold text-sm">{title}</p>
-            <p className="text-xs opacity-90 mt-0.5">{description}</p>
+            <p className="font-semibold text-lg">{title}</p>
+            <p className="text-sm opacity-90 mt-1">{description}</p>
           </div>
-          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+          <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center ${
             isSelected 
               ? "border-primary bg-primary/20" 
               : "border-white/50 bg-white/10"
           }`}>
             {isSelected && (
-              <Icon icon="lucide:check" className="text-primary text-sm" />
+              <Icon icon="lucide:check" className="text-primary text-base" />
             )}
           </div>
         </CardFooter>

@@ -19,7 +19,7 @@ export function StepProjectType({ formData, onInputChange }) {
 
   return (
     <div className="flex justify-center">
-      <div className="w-full max-w-4xl space-y-4">
+      <div className="w-full max-w-6xl space-y-4">
         <div className="text-center">
           <h2 className="text-xl sm:text-2xl font-bold">Project Type</h2>
           <p className="text-sm sm:text-base text-default-500 mt-1">
@@ -28,7 +28,7 @@ export function StepProjectType({ formData, onInputChange }) {
         </div>
         
         <div className="flex justify-center">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-4xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-6xl w-full">
             {projectTypes.map((projectType) => (
               <ProjectTypeCard
                 key={projectType.type}

@@ -856,6 +856,14 @@
     "projectObservations": {
       "annotationLegend": "Legenda das Anotações",
       "noNoteAdded": "Nenhuma nota adicionada"
+    },
+    "aiDesignerEmpty": {
+      "badge": "Workflow de simulação",
+      "title": "Adicione a primeira imagem base",
+      "description": "Clique em “Add more images” na barra lateral ou toque no canvas vazio para abrir o upload.",
+      "step1": "1) Carregue uma imagem de origem",
+      "step2": "2) Selecione-a para ativar o canvas",
+      "step3": "3) Aplique decorações e cartouche"
     }
   },
   "errors": {

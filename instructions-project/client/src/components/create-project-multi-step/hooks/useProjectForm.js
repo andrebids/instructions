@@ -39,6 +39,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
     snapZonesByImage: {},      // Zonas de snap por imagem (mantido vazio após remoção de zonas)
     decorationsByImage: {},   // Decorações por imagem: { 'image-id': [...] }
     cartoucheByImage: {},     // Metadados do cartouche por imagem: { 'image-id': { projectName, streetOrZone, option, hasCartouche } }
+    cropByImage: {},          // Crop por imagem: { 'image-id': { xNorm, yNorm, wNorm, hNorm, orientation } }
     uploadedImages: [],        // Lista de imagens uploadadas para o projeto
     workflowByImage: {},      // Workflow por imagem: { 'image-id': 'ai' | 'human' } (mantido para compatibilidade)
     humanDesignerInstructions: {}, // Instruções para designer humano por imagem: { 'image-id': 'instruções...' }
@@ -104,6 +105,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
             snapZonesByImage: project.snapZonesByImage || {},
             decorationsByImage: project.decorationsByImage || {},
             cartoucheByImage: project.cartoucheByImage || {},
+            cropByImage: project.cropByImage || {},
             uploadedImages: project.uploadedImages || [],
             simulationState: project.simulationState || {
               uploadStep: project.uploadedImages && project.uploadedImages.length > 0 ? 'done' : 'uploading',
@@ -475,6 +477,8 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
         decorationsByImage: formData.decorationsByImage || {},
         // Metadados do cartouche (nome da rua, projeto, opção) - IMPORTANTE: ficam associados às imagens
         cartoucheByImage: formData.cartoucheByImage || {},
+        // Crop por imagem (valores normalizados)
+        cropByImage: formData.cropByImage || {},
         // Workflow por imagem e instruções para designer humano (mantido para compatibilidade)
         workflowByImage: formData.workflowByImage || {},
         humanDesignerInstructions: formData.humanDesignerInstructions || {},
@@ -736,6 +740,7 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
         snapZonesByImage: formData.snapZonesByImage || {},
         decorationsByImage: formData.decorationsByImage || {},
         cartoucheByImage: formData.cartoucheByImage || {},
+        cropByImage: formData.cropByImage || {},
         uploadedImages: formData.uploadedImages || [],
         simulationState: formData.simulationState || {
           uploadStep: 'uploading',
