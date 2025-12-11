@@ -885,5 +885,10 @@
       "qtyMinError": "Quantity cannot be negative or zero.",
       "qtyStockError": "Quantity cannot exceed stock ({{stock}})."
     }
+  },
+  "upload": {
+    "error": {
+      "tooLargeList": "These images exceed 15MB and were skipped: {{names}}"
+    }
   }
 }

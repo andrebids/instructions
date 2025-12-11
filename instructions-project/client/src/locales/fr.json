@@ -850,5 +850,10 @@
       "qtyMinError": "La quantité ne peut pas être négative ou nulle.",
       "qtyStockError": "La quantité ne peut pas dépasser le stock ({{stock}})."
     }
+  },
+  "upload": {
+    "error": {
+      "tooLargeList": "Ces images dépassent 15 Mo et ont été ignorées : {{names}}"
+    }
   }
 }

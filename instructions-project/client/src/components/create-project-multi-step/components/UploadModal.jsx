@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, Button, Progress, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { projectsAPI } from "../../../services/api";
@@ -12,6 +13,7 @@ import { projectsAPI } from "../../../services/api";
  * @param {Function} [props.onRequestClose] - Callback para fechar o modal ao clicar fora
  */
 export const UploadModal = ({ onUploadComplete, projectId, onRequestClose = () => {} }) => {
+  const { t } = useTranslation();
   const [isPreparing, setIsPreparing] = useState(true);
   const [dragOver, setDragOver] = useState(false);
   const [files, setFiles] = useState([]);
@@ -80,11 +82,39 @@ export const UploadModal = ({ onUploadComplete, projectId, onRequestClose = () =
     }
   };
 
+  const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB por requisito do backend
+
   // Função para lidar com seleção de arquivos
   // Agora acumula novas imagens em vez de substituir as já selecionadas
   const handleFilesSelected = (selectedFiles) => {
     const fileArray = Array.from(selectedFiles);
-    const fileObjects = fileArray.map(file => {
+
+    // Separar ficheiros acima do limite para informar o utilizador
+    const oversized = fileArray.filter(file => file.size > MAX_FILE_SIZE);
+    const accepted = fileArray.filter(file => file.size <= MAX_FILE_SIZE);
+
+    if (oversized.length > 0) {
+      const names = oversized.map(f => f.name).join(', ');
+      setError(
+        t(
+          'upload.error.tooLargeList',
+          'Estas imagens ultrapassam 15MB e foram ignoradas: {{names}}',
+          { names }
+        )
+      );
+    } else {
+      setError(null);
+    }
+
+    if (accepted.length === 0) {
+      // Nada para adicionar; se não havia ficheiros antes, manter estado inicial
+      if (files.length === 0) {
+        setIsPreparing(true);
+      }
+      return;
+    }
+
+    const fileObjects = accepted.map(file => {
       const previewUrl = URL.createObjectURL(file);
       previewUrlsRef.current.push(previewUrl); // Rastrear URL para limpeza
       return {
@@ -99,7 +129,6 @@ export const UploadModal = ({ onUploadComplete, projectId, onRequestClose = () =
 
     setFiles(prev => [...prev, ...fileObjects]);
     setIsPreparing(false);
-    setError(null);
   };
 
   // Função para remover uma imagem específica
@@ -386,16 +415,9 @@ export const UploadModal = ({ onUploadComplete, projectId, onRequestClose = () =
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {fileObj.status === 'done' && <Icon icon="lucide:check-circle" className="text-2xl text-success" />}
                     {fileObj.status === 'uploading' && <Spinner size="sm" />}
-                    {fileObj.status === 'error' && (
-                      <Icon 
-                        icon="lucide:x-circle" 
-                        className="text-2xl text-danger" 
-                        title="Erro no upload"
-                      />
-                    )}
-                    {/* Botão X para remover imagem - sempre visível quando não está fazendo upload */}
+                    {fileObj.status === 'done' && <Icon icon="lucide:check-circle" className="text-2xl text-success" />}
+                    {/* Único botão de remover (ativo só quando não está a enviar) */}
                     {!uploading && (
                       <button
                         onClick={(e) => {
