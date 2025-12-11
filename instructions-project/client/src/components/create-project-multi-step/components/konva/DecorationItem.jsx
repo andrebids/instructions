@@ -160,28 +160,49 @@ export const DecorationItem = ({
     };
   }, [isSelected]);
 
-  const handleDragMove = function(e) {
-    if (!snapZones || snapZones.length === 0) {
-      return;
+  // Garantir que o Transformer acompanha mudanças de posição/tamanho/rotação
+  useEffect(() => {
+    if (!isSelected) return;
+    if (!trRef.current || !shapeRef.current) return;
+
+    trRef.current.nodes([shapeRef.current]);
+    const layer = trRef.current.getLayer();
+    if (layer) {
+      layer.batchDraw();
     }
-    
-    var node = shapeRef.current;
+  }, [
+    isSelected,
+    decoration.x,
+    decoration.y,
+    decoration.width,
+    decoration.height,
+    decoration.rotation
+  ]);
+
+  const handleDragMove = function(e) {
+    const node = shapeRef.current;
     if (!node) return;
     
-    var currentX = node.x();
-    var currentY = node.y();
+    let nextX = node.x();
+    let nextY = node.y();
     
     // Verificar snap durante movimento (funciona em ambos os modos)
-    var snapped = checkSnapToZone(currentX, currentY, snapZones);
-    
-    if (snapped.snapped) {
-      // Atualizar posição do node em tempo real
-      node.position({
-        x: snapped.x,
-        y: snapped.y
-      });
-      node.getLayer().batchDraw();
+    if (snapZones && snapZones.length > 0) {
+      const snapped = checkSnapToZone(nextX, nextY, snapZones);
+      if (snapped.snapped) {
+        nextX = snapped.x;
+        nextY = snapped.y;
+        node.position({ x: nextX, y: nextY });
+        node.getLayer().batchDraw();
+      }
     }
+    
+    // Manter estado em sincronia contínua com a posição atual
+    onChange({
+      ...decoration,
+      x: nextX,
+      y: nextY
+    });
   };
 
   const handleDragEnd = (e) => {
@@ -314,6 +335,11 @@ export const DecorationItem = ({
   // Renderizar apenas decorações tipo imagem (PNG)
   // Verificar se há URL de imagem disponível
   if (decoration.type === 'image' && imageUrl) {
+    // Se a imagem ainda não carregou, não renderizar placeholder (evita quadrado)
+    if (!image) {
+      return null;
+    }
+
     // Handlers comuns para ambos os casos
     const commonHandlers = {
       draggable: true,
@@ -377,22 +403,10 @@ export const DecorationItem = ({
 
     return (
       <>
-        {/* Renderizar imagem quando carregada, senão renderizar placeholder */}
-        {image ? (
-          <KonvaImage
-            {...commonProps}
-            image={image}
-          />
-        ) : (
-          <Rect
-            {...commonProps}
-            fill="#888888"
-            opacity={0.3}
-            stroke="#666666"
-            strokeWidth={1}
-            perfectDrawEnabled={false}
-          />
-        )}
+        <KonvaImage
+          {...commonProps}
+          image={image}
+        />
         {isSelected && (
           <Transformer
             ref={trRef}

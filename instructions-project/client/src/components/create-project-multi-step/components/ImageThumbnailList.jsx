@@ -218,7 +218,7 @@ export const ImageThumbnailList = ({
                           e.preventDefault();
                           onImageRemove(image.id);
                         }}
-                        className="absolute top-1 right-1 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-full p-1.5 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-danger-300 shadow-md bg-danger-500 text-white"
+                        className="absolute top-1 right-1 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-full p-1.5 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-danger-300 shadow-md bg-danger-500 text-white border-none"
                         aria-label={`Remove image ${image.name}`}
                         title="Remove image"
                       >

@@ -33,8 +33,7 @@ export const useImageAspectRatio = ({ image, decoration, onChange, shapeRef }) =
       return;
     }
     
-    // Pequeno delay para garantir que a imagem está totalmente carregada
-    // Isso ajuda especialmente quando a imagem já estava em cache
+    // Verificar e ajustar imediatamente quando a imagem estiver disponível
     const checkAndAdjust = () => {
     
     // Calcular dimensões reais da imagem
@@ -120,15 +119,12 @@ export const useImageAspectRatio = ({ image, decoration, onChange, shapeRef }) =
     }
     };
     
-    // Executar imediatamente se a imagem já está carregada, senão aguardar um frame
+    // Executar assim que a imagem estiver carregada/renderizável
     if (image.complete && image.naturalWidth > 0) {
-      // Imagem já está carregada, executar imediatamente
       checkAndAdjust();
     } else {
-      // Aguardar um frame para garantir que a imagem está totalmente carregada
-      requestAnimationFrame(() => {
-        setTimeout(checkAndAdjust, 50);
-      });
+      // Aguardar um frame para garantir que a imagem está pronta, sem delay extra
+      requestAnimationFrame(checkAndAdjust);
     }
   }, [image]); // Manter apenas image como dependência para evitar loops
 };

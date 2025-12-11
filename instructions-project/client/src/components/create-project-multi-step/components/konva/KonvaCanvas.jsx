@@ -77,8 +77,9 @@ export const KonvaCanvas = forwardRef(({
   }), []);
   
   // Define tamanho virtual/base da cena (dimensões de referência)
-  const sceneWidth = 1200;
-  const sceneHeight = 600;
+  // Aumentado para dar mais área útil às decorações (evita corte no topo)
+  const sceneWidth = 1400;
+  const sceneHeight = 900;
   
   // Estado para rastrear escala e dimensões atuais
   const [stageSize, setStageSize] = useState({
