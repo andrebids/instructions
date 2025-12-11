@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap');
 
 @import "tailwindcss";
-
-@custom-variant dark (&:is(.dark *));
+@import "@heroui/react/dist/style.css";
 @config "../tailwind.config.js";
+@custom-variant dark (&:is(.dark *));
 
 html,
 body {
