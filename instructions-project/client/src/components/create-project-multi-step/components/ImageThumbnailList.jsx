@@ -163,6 +163,49 @@ export const ImageThumbnailList = ({
   onAddMore,
   isMobile = false
 }) => {
+  const scrollRef = React.useRef(null);
+  const [hasOverflow, setHasOverflow] = React.useState(false);
+
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const checkOverflow = () => {
+      if (!scrollRef.current) return;
+      const { scrollHeight, clientHeight, scrollWidth, clientWidth } = scrollRef.current;
+      const hasVerticalOverflow = scrollHeight > clientHeight + 1;
+      const hasHorizontalOverflow = scrollWidth > clientWidth + 1;
+      setHasOverflow(hasVerticalOverflow || hasHorizontalOverflow);
+    };
+
+    const rafId = requestAnimationFrame(checkOverflow);
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(checkOverflow)
+      : null;
+
+    if (resizeObserver) {
+      resizeObserver.observe(el);
+    }
+
+    window.addEventListener('resize', checkOverflow);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', checkOverflow);
+      if (resizeObserver) {
+        resizeObserver.unobserve(el);
+        resizeObserver.disconnect();
+      }
+    };
+  }, [uploadedImages]);
+
+  const scrollShadowClasses = [
+    'flex-1',
+    'p-2 md:p-3 lg:p-4',
+    'space-y-2 md:space-y-3',
+    hasOverflow ? 'hover-reveal-scrollbar' : ''
+  ].join(' ').trim();
+
   return (
     <aside className={(isMobile ? 'w-24' : 'w-32') + ' sm:w-32 md:w-40 lg:w-48 border-r border-divider bg-content1/30 flex flex-col flex-shrink-0'}>
       <div className="p-3 md:p-4 border-b border-divider text-center">
@@ -170,9 +213,10 @@ export const ImageThumbnailList = ({
       </div>
       <div className="flex-1 flex flex-col min-h-0">
         <ScrollShadow
+          ref={scrollRef}
           hideScrollBar={false}
           visibility="auto"
-          className="flex-1 hover-reveal-scrollbar p-2 md:p-3 lg:p-4 space-y-2 md:space-y-3"
+          className={scrollShadowClasses}
         >
         {uploadedImages.map((image, index) => {
           const isConverted = conversionComplete[image.id] === true;
