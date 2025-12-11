@@ -102,3 +102,4 @@ export const generateLogoNumber = (projectName, currentLogoNumber = "", savedLog
   return `${baseName} -L${nextNumber}`;
 };
 
+

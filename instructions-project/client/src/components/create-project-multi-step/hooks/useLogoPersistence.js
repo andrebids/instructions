@@ -41,8 +41,9 @@ export const useLogoPersistence = ({
       logoDetails: logoDetailsStr
     };
     
-    // Salvar no formData
-    onInputChange("logoDetails", logoDetails);
+    // NÃO chamar onInputChange aqui - isso causa loops infinitos
+    // O logoDetails já está a ser atualizado pelo onChange do formik
+    // Este hook só deve salvar na API, não atualizar o formData
     
     // Se projeto já existe (tem ID), salvar automaticamente na base de dados
     const temProjectId = !!formData?.id;

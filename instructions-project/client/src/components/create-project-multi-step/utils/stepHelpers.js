@@ -1,6 +1,8 @@
 // Helper para determinar quais steps são visíveis baseado no formData
-export const getVisibleSteps = (formData, allSteps) => {
+// forceStepId permite incluir um step específico mesmo se a condição normal não passar
+export const getVisibleSteps = (formData, allSteps, forceStepId = null) => {
   return allSteps.filter(step => {
+    if (forceStepId && step.id === forceStepId) return true;
     if (!step.conditional) return true;
 
     // Steps condicionais apenas para projectos Simu
@@ -35,13 +37,13 @@ export const getVisibleSteps = (formData, allSteps) => {
 };
 
 // Calcular número total de steps visíveis
-export const getTotalVisibleSteps = (formData, allSteps) => {
-  return getVisibleSteps(formData, allSteps).length;
+export const getTotalVisibleSteps = (formData, allSteps, forceStepId = null) => {
+  return getVisibleSteps(formData, allSteps, forceStepId).length;
 };
 
 // Mapear step index para step visível
-export const getVisibleStepIndex = (currentStep, formData, allSteps) => {
-  const visibleSteps = getVisibleSteps(formData, allSteps);
+export const getVisibleStepIndex = (currentStep, formData, allSteps, forceStepId = null) => {
+  const visibleSteps = getVisibleSteps(formData, allSteps, forceStepId);
   return visibleSteps.findIndex((_, index) => index + 1 === currentStep);
 };
 

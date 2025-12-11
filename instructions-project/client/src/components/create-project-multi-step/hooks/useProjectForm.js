@@ -7,7 +7,7 @@ import { getLocalTimeZone, parseDate } from "@internationalized/date";
 // 🧪 Breakpoint de Teste 2
 export const TEST_BREAKPOINT_2 = false;
 
-export const useProjectForm = (onClose, projectId = null, saveStatus = null, logoIndex = null) => {
+export const useProjectForm = (onClose, projectId = null, saveStatus = null, logoIndex = null, logoId = null, logoNumberParam = null) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -112,8 +112,12 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
               conversionComplete: {}
             },
             logoDetails: (() => {
-              // Se logoIndex foi fornecido, carregar esse logo específico para currentLogo
-              if (logoIndex !== null && logoIndex !== undefined && project.logoDetails) {
+              // Se logoIndex, logoId ou logoNumber foram fornecidos, carregar esse logo específico para currentLogo
+              if ((logoIndex !== null && logoIndex !== undefined) || logoId || logoNumberParam) {
+                const hasLogoDetails = !!project.logoDetails;
+                if (!hasLogoDetails) {
+                  return project.logoDetails || {};
+                }
                 const savedLogos = project.logoDetails.logos || [];
                 const currentLogo = project.logoDetails.currentLogo || project.logoDetails;
                 
@@ -160,13 +164,77 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
                   allLogos: allLogos.map((l, i) => ({ index: i, logoNumber: l.logoNumber, logoName: l.logoName, id: l.id }))
                 });
                 
-                if (allLogos[logoIndex] !== undefined) {
-                  const logoToEdit = allLogos[logoIndex];
+                // Resolver logo alvo: priorizar por id, depois por logoNumber, depois por index
+                let resolvedIndex = null;
+                let logoToEdit = null;
+
+                // 1. Primeiro tentar por logoId (mais confiável)
+                if (logoId) {
+                  resolvedIndex = allLogos.findIndex((logo) => {
+                    if (logo.id && logoId) return String(logo.id) === String(logoId);
+                    return false;
+                  });
+                  if (resolvedIndex >= 0) {
+                    logoToEdit = allLogos[resolvedIndex];
+                    console.log('✅ useProjectForm: Logo found by ID', { logoId, resolvedIndex, logoNumber: logoToEdit?.logoNumber });
+                  }
+                }
+
+                // 2. Se não encontrou por ID, tentar por logoNumber
+                if (!logoToEdit && logoNumberParam) {
+                  resolvedIndex = allLogos.findIndex((logo) => {
+                    return logo.logoNumber && logo.logoNumber.trim() === String(logoNumberParam).trim();
+                  });
+                  if (resolvedIndex >= 0) {
+                    logoToEdit = allLogos[resolvedIndex];
+                    console.log('✅ useProjectForm: Logo found by logoNumber', { logoNumber: logoNumberParam, resolvedIndex, logoId: logoToEdit?.id });
+                  }
+                }
+
+                // 3. Se não encontrou por logoNumber, tentar por logoIndex
+                if (!logoToEdit && logoIndex !== null && logoIndex !== undefined) {
+                  const indexNum = typeof logoIndex === 'string' ? parseInt(logoIndex, 10) : logoIndex;
+                  if (!isNaN(indexNum) && indexNum >= 0 && indexNum < allLogos.length) {
+                    resolvedIndex = indexNum;
+                    logoToEdit = allLogos[resolvedIndex];
+                    console.log('✅ useProjectForm: Logo found by index', { logoIndex: indexNum, logoNumber: logoToEdit?.logoNumber, logoId: logoToEdit?.id });
+                  }
+                }
+
+                // 4. Se ainda não encontrou e temos logoIndex, tentar encontrar nos savedLogos diretamente
+                if (!logoToEdit && logoIndex !== null && logoIndex !== undefined) {
+                  const indexNum = typeof logoIndex === 'string' ? parseInt(logoIndex, 10) : logoIndex;
+                  if (!isNaN(indexNum) && indexNum >= 0 && indexNum < savedLogos.length) {
+                    logoToEdit = savedLogos[indexNum];
+                    // Encontrar o índice no allLogos
+                    resolvedIndex = allLogos.findIndex((logo) => {
+                      if (logoToEdit.id && logo.id) {
+                        return logo.id === logoToEdit.id;
+                      }
+                      if (logoToEdit.logoNumber && logo.logoNumber) {
+                        return logo.logoNumber.trim() === logoToEdit.logoNumber.trim();
+                      }
+                      return false;
+                    });
+                    if (resolvedIndex < 0) {
+                      // Se não encontrou no allLogos, usar o índice original
+                      resolvedIndex = indexNum;
+                    }
+                    console.log('✅ useProjectForm: Logo found in savedLogos by index', { logoIndex: indexNum, resolvedIndex, logoNumber: logoToEdit?.logoNumber, logoId: logoToEdit?.id });
+                  }
+                }
+
+                if (logoToEdit) {
                   console.log('✅ useProjectForm: Logo found for editing', {
                     logoNumber: logoToEdit.logoNumber,
                     logoName: logoToEdit.logoName,
                     id: logoToEdit.id,
-                    isCurrent: isCurrentLogoValid && logoIndex === allLogos.length - 1
+                    requestedBy: logoToEdit.requestedBy,
+                    description: logoToEdit.description,
+                    budget: logoToEdit.budget,
+                    isCurrent: isCurrentLogoValid && logoIndex === allLogos.length - 1,
+                    hasAttachmentFiles: !!(logoToEdit.attachmentFiles && logoToEdit.attachmentFiles.length > 0),
+                    hasComposition: !!(logoToEdit.composition && (logoToEdit.composition.componentes?.length > 0 || logoToEdit.composition.bolas?.length > 0))
                   });
                   
                   // Se o logo a editar é o currentLogo válido, apenas retornar os dados como estão
@@ -224,10 +292,22 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
                   });
                   
                   // IMPORTANTE: Preservar _originalIndex para que quando salvar, saiba onde substituir
+                  // IMPORTANTE: Preservar TODOS os campos do logo, incluindo attachmentFiles, composition, etc.
                   const logoToEditWithIndex = {
                     ...logoToEdit,
+                    // Garantir que campos importantes não sejam perdidos
+                    attachmentFiles: logoToEdit.attachmentFiles || [],
+                    composition: logoToEdit.composition || { componentes: [], bolas: [] },
                     _originalIndex: originalIndexInSaved >= 0 ? originalIndexInSaved : (logoToEdit._originalIndex !== undefined ? logoToEdit._originalIndex : null)
                   };
+                  
+                  console.log('📦 useProjectForm: Logo prepared for editing with all fields', {
+                    logoNumber: logoToEditWithIndex.logoNumber,
+                    logoName: logoToEditWithIndex.logoName,
+                    hasAttachmentFiles: !!(logoToEditWithIndex.attachmentFiles && logoToEditWithIndex.attachmentFiles.length > 0),
+                    hasComposition: !!(logoToEditWithIndex.composition && (logoToEditWithIndex.composition.componentes?.length > 0 || logoToEditWithIndex.composition.bolas?.length > 0)),
+                    originalIndex: logoToEditWithIndex._originalIndex
+                  });
                   
                   // Retornar logoDetails atualizado com o logo a editar como currentLogo
                   return {
@@ -236,7 +316,48 @@ export const useProjectForm = (onClose, projectId = null, saveStatus = null, log
                     currentLogo: logoToEditWithIndex
                   };
                 } else {
-                  console.warn('⚠️ useProjectForm: Logo not found at index', logoIndex, 'Available logos:', allLogos.length);
+                  console.warn('⚠️ useProjectForm: Logo not found', {
+                    logoIndex,
+                    logoId,
+                    logoNumber: logoNumberParam,
+                    availableLogos: allLogos.length,
+                    allLogos: allLogos.map((l, i) => ({ index: i, logoNumber: l.logoNumber, logoName: l.logoName, id: l.id }))
+                  });
+                  
+                  // Retornar logoDetails válido mas com currentLogo vazio (fallback)
+                  // Isso evita que o formulário fique em estado inválido
+                  return {
+                    ...project.logoDetails,
+                    logos: savedLogos,
+                    currentLogo: {
+                      logoNumber: "",
+                      logoName: "",
+                      requestedBy: "",
+                      dimensions: {},
+                      usageOutdoor: false,
+                      usageIndoor: true,
+                      fixationType: "",
+                      lacqueredStructure: false,
+                      lacquerColor: "",
+                      mastDiameter: "",
+                      maxWeightConstraint: false,
+                      maxWeight: "",
+                      ballast: false,
+                      controlReport: false,
+                      criteria: "",
+                      description: "",
+                      composition: {
+                        componentes: [],
+                        bolas: []
+                      },
+                      attachmentFiles: [],
+                      isModification: false,
+                      baseProductId: null,
+                      baseProduct: null,
+                      relatedProducts: [],
+                      productSizes: []
+                    }
+                  };
                 }
               }
               

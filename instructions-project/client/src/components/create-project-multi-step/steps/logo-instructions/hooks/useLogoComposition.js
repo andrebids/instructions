@@ -149,26 +149,6 @@ export const useLogoComposition = ({
 
     newComposition[type] = newArray;
 
-    // Verificar se o componente acabou de ficar completo (só para componentes)
-    if (type === "componentes") {
-      const componenteAtual = newArray[index];
-      const estavaCompleto = isComponenteCompleto(estadoAnterior);
-      const ficouCompleto = isComponenteCompleto(componenteAtual);
-
-      // Se acabou de ficar completo e não estava completo antes, adicionar novo componente
-      if (ficouCompleto && !estavaCompleto) {
-        newComposition.componentes.push({
-          componenteId: null,
-          componenteNome: null,
-          componenteReferencia: null,
-          corId: null,
-          corNome: null,
-          combinacaoId: null,
-          referencia: null
-        });
-      }
-    }
-
     handleUpdate("composition", newComposition);
   };
 
@@ -370,26 +350,7 @@ export const useLogoComposition = ({
       newArray[index].referencia = null;
     }
 
-    // Verificar se a bola acabou de ficar completa (só para bolas)
-    const estavaCompleta = isBolaCompleta(estadoAnterior);
-    const ficouCompleta = isBolaCompleta(newArray[index]);
-
-    // Se acabou de ficar completa e não estava completa antes, adicionar nova bola
-    if (ficouCompleta && !estavaCompleta) {
-      newComposition.bolas = newArray;
-      newComposition.bolas.push({
-        bolaId: null,
-        corId: null,
-        corNome: null,
-        acabamentoId: null,
-        acabamentoNome: null,
-        tamanhoId: null,
-        tamanhoNome: null,
-        referencia: null
-      });
-    } else {
-      newComposition.bolas = newArray;
-    }
+    newComposition.bolas = newArray;
 
     handleUpdate("composition", newComposition);
   };
@@ -416,4 +377,5 @@ export const useLogoComposition = ({
     handleBolaUpdate,
   };
 };
+
 

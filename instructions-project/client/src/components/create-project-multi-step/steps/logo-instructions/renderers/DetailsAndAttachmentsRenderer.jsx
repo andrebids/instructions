@@ -313,7 +313,6 @@ export const DetailsAndAttachmentsRenderer = ({
         <div className="flex-1 overflow-y-auto border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50/50 dark:bg-gray-700/50 hover:border-pink-300 dark:hover:border-pink-700 transition-colors">
           {(() => {
             const attachments = currentLogo.attachmentFiles || [];
-            console.log('🔄 Rendering attachments, count:', attachments.length);
             return attachments.length > 0 ? (
               <div className="space-y-2">
                 <div className="grid grid-cols-2 gap-2">

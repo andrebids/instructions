@@ -31,6 +31,7 @@ const InfoField = ({ label, value, icon }) => (
 // Component to display logo details content (reused inside Accordion)
 export const LogoDetailsContent = ({ logo }) => {
     const { t } = useTranslation();
+    const [previewAttachment, setPreviewAttachment] = useState(null);
 
     // Helper to check if section has data
     const hasDimensions = logo.dimensions?.height?.value || logo.dimensions?.length?.value || logo.dimensions?.width?.value || logo.dimensions?.diameter?.value;
@@ -67,6 +68,14 @@ export const LogoDetailsContent = ({ logo }) => {
         }
         
         return imageUrl;
+    };
+
+    const handleOpenPreview = (attachment) => {
+        setPreviewAttachment(attachment);
+    };
+
+    const handleClosePreview = () => {
+        setPreviewAttachment(null);
     };
 
     return (
@@ -381,36 +390,98 @@ export const LogoDetailsContent = ({ logo }) => {
                                     const fileUrl = buildImageUrl(attachment.url || attachment.path);
 
                                     return (
-                                        <a
-                                            key={idx}
-                                            href={fileUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="group relative w-24 h-24 rounded-lg overflow-hidden border border-default-200 hover:border-teal-500 hover:shadow-md transition-all cursor-pointer"
-                                        >
+                                        <div key={idx} className="group relative w-24 h-24 rounded-lg overflow-hidden border border-default-200 hover:border-teal-500 hover:shadow-md transition-all">
                                             {isImage ? (
-                                                <>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenPreview(attachment)}
+                                                    className="w-full h-full"
+                                                >
                                                     <img
                                                         src={fileUrl}
                                                         alt={attachment.name}
                                                         className="w-full h-full object-cover transition-transform group-hover:scale-105"
                                                     />
                                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                                                </>
+                                                </button>
                                             ) : (
-                                                <div className="w-full h-full flex flex-col items-center justify-center bg-default-50 p-2 group-hover:bg-default-100 transition-colors">
+                                                <a
+                                                    href={fileUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="w-full h-full flex flex-col items-center justify-center bg-default-50 p-2 group-hover:bg-default-100 transition-colors"
+                                                >
                                                     <Icon icon="lucide:file" className="w-6 h-6 text-default-400 mb-1 group-hover:text-teal-600 transition-colors" />
                                                     <p className="text-[9px] text-center text-default-600 truncate w-full px-1 font-medium">
                                                         {attachment.name}
                                                     </p>
-                                                </div>
+                                                </a>
                                             )}
-                                        </a>
+                                        </div>
                                     );
                                 })}
                             </div>
                         </div>
                     )}
+                    <Modal
+                        isOpen={!!previewAttachment}
+                        onOpenChange={(open) => {
+                            if (!open) handleClosePreview();
+                        }}
+                        size="xl"
+                        placement="center"
+                    >
+                        <ModalContent>
+                            {() => (
+                                <>
+                                    <ModalHeader className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-2">
+                                            <Icon icon="lucide:image" className="text-primary" />
+                                            <span>{previewAttachment?.name || t('common.preview', 'Preview')}</span>
+                                        </div>
+                                    </ModalHeader>
+                                    <ModalBody>
+                                        {previewAttachment && (
+                                            <div className="space-y-4">
+                                                <div className="w-full">
+                                                    <img
+                                                        src={buildImageUrl(previewAttachment.url || previewAttachment.path)}
+                                                        alt={previewAttachment.name}
+                                                        className="w-full h-auto max-h-[70vh] object-contain rounded-lg border border-default-200"
+                                                    />
+                                                </div>
+                                                <div className="flex items-center justify-between text-sm text-default-500">
+                                                    <span>{previewAttachment.name}</span>
+                                                    {previewAttachment.size && (
+                                                        <span>{(previewAttachment.size / 1024).toFixed(1)} KB</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </ModalBody>
+                                    <ModalFooter>
+                                        <Button
+                                            variant="flat"
+                                            onPress={handleClosePreview}
+                                        >
+                                            {t('common.close', 'Fechar')}
+                                        </Button>
+                                        {previewAttachment && (
+                                            <Button
+                                                as="a"
+                                                href={buildImageUrl(previewAttachment.url || previewAttachment.path)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                color="primary"
+                                            >
+                                                {t('common.openNewTab', 'Abrir em nova aba')}
+                                            </Button>
+                                        )}
+                                    </ModalFooter>
+                                </>
+                            )}
+                        </ModalContent>
+                    </Modal>
                 </div>
             )}
         </div>
@@ -766,6 +837,39 @@ export default function ProjectDetails() {
         loadProject(); // Recarregar projeto apenas após salvar
     }, [loadProject]);
 
+    const handleEditSimulation = React.useCallback(() => {
+        navigate(`/projects/${id}/edit?step=ai-designer`);
+    }, [id, navigate]);
+
+    const handleDeleteSimulation = React.useCallback(async () => {
+        try {
+            await projectsAPI.updateCanvas(id, {
+                canvasDecorations: [],
+                canvasImages: [],
+                decorationsByImage: {},
+                canvasPreviewImage: null,
+                snapZonesByImage: {},
+                cartoucheByImage: {},
+                simulationState: null,
+                uploadedImages: [],
+                lastEditedStep: 'ai-designer'
+            });
+
+            addNotification({
+                type: 'success',
+                message: t('pages.projectDetails.instructions.deleteSimulationSuccess', 'Simulação eliminada com sucesso'),
+            });
+
+            await loadProject();
+        } catch (error) {
+            console.error('Erro ao eliminar simulação:', error);
+            addNotification({
+                type: 'error',
+                message: t('pages.projectDetails.instructions.deleteSimulationError', 'Erro ao eliminar simulação'),
+            });
+        }
+    }, [id, loadProject, addNotification, t]);
+
     const handleDeleteLogo = React.useCallback(async (logoIndex, isCurrent) => {
         try {
             const currentProject = await projectsAPI.getById(id);
@@ -957,12 +1061,14 @@ export default function ProjectDetails() {
             });
             
             if (foundIndex >= 0) {
-                setEditingLogoIndex(foundIndex);
-                setLogoEditModalOpen(true);
+                const logoId = currentLogo.id ? `&logoId=${encodeURIComponent(currentLogo.id)}` : '';
+                const logoNumber = currentLogo.logoNumber ? `&logoNumber=${encodeURIComponent(currentLogo.logoNumber)}` : '';
+                navigate(`/projects/${project.id}/edit?step=logo-instructions&logoIndex=${foundIndex}${logoId}${logoNumber}`);
             } else {
                 // Se não encontrou, usar o último índice (onde o currentLogo deveria estar)
-                setEditingLogoIndex(logoInstructions.length - 1);
-                setLogoEditModalOpen(true);
+                const logoId = currentLogo.id ? `&logoId=${encodeURIComponent(currentLogo.id)}` : '';
+                const logoNumber = currentLogo.logoNumber ? `&logoNumber=${encodeURIComponent(currentLogo.logoNumber)}` : '';
+                navigate(`/projects/${project.id}/edit?step=logo-instructions&logoIndex=${logoInstructions.length - 1}${logoId}${logoNumber}`);
             }
         } else {
             // Se é um logo salvo, o índice já corresponde diretamente
@@ -982,12 +1088,14 @@ export default function ProjectDetails() {
                 });
                 
                 if (foundIndex >= 0) {
-                    setEditingLogoIndex(foundIndex);
-                    setLogoEditModalOpen(true);
+                    const logoId = logoToEdit.id ? `&logoId=${encodeURIComponent(logoToEdit.id)}` : '';
+                    const logoNumber = logoToEdit.logoNumber ? `&logoNumber=${encodeURIComponent(logoToEdit.logoNumber)}` : '';
+                    navigate(`/projects/${project.id}/edit?step=logo-instructions&logoIndex=${foundIndex}${logoId}${logoNumber}`);
                 } else {
                     // Se não encontrou, usar o índice original (deve ser o mesmo)
-                    setEditingLogoIndex(logoIndex);
-                    setLogoEditModalOpen(true);
+                    const logoId = logoToEdit.id ? `&logoId=${encodeURIComponent(logoToEdit.id)}` : '';
+                    const logoNumber = logoToEdit.logoNumber ? `&logoNumber=${encodeURIComponent(logoToEdit.logoNumber)}` : '';
+                    navigate(`/projects/${project.id}/edit?step=logo-instructions&logoIndex=${logoIndex}${logoId}${logoNumber}`);
                 }
             }
         }
@@ -1423,14 +1531,10 @@ export default function ProjectDetails() {
                         >
                             <InstructionsTab
                                 project={project}
-                                onEditLogo={(logoIndex, isCurrent, logo) => {
-                                    handleEditLogoFromOrders(logoIndex, isCurrent);
-                                }}
-                                onEditSimulation={() => {
-                                    setSimulationEditModalOpen(true);
-                                }}
+                                onEditLogo={handleEditLogoFromOrders}
                                 onDeleteLogo={handleDeleteLogo}
-                                onSave={loadProject}
+                                onEditSimulation={handleEditSimulation}
+                                onDeleteSimulation={handleDeleteSimulation}
                             />
                         </Tab>
 

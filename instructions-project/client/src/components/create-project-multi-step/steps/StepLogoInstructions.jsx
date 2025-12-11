@@ -44,6 +44,10 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
   // Ref para rastrear o ID do logo atual para detectar quando um novo logo é criado
   const currentLogoIdRef = React.useRef(currentLogo.id || null);
+  // Ref para rastrear se já inicializámos o formik com os dados do logo
+  const formikInitializedRef = React.useRef(false);
+  // Ref para rastrear o último logoDetails carregado
+  const lastLogoDetailsRef = React.useRef(null);
 
   // Ref para debounce do onAIStateChange e evitar loops infinitos
   const aiStateChangeTimeoutRef = React.useRef(null);
@@ -218,79 +222,25 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     }
   }, [preservedLogoNumberRef?.current]);
 
-  // Resetar refs quando um novo logo é criado (quando o ID muda ou quando o logo está vazio)
-  // E atualizar formik quando currentLogo for carregado (especialmente quando o modal abre)
+  // Detectar quando logoDetails é carregado pela primeira vez (quando a página carrega)
+  // Usar uma chave estável baseada apenas nos campos principais para evitar loops infinitos
   React.useEffect(() => {
-    const currentLogoId = currentLogo.id || null;
-    const isLogoEmpty = !currentLogo.logoNumber && !currentLogo.logoName;
-    const previousLogoId = currentLogoIdRef.current;
-
-    // Se o logo foi carregado (tem dados mas não tinha ID antes), atualizar formik
+    const currentLogoKey = `${currentLogo.id || 'no-id'}-${currentLogo.logoNumber || ''}-${currentLogo.logoName || ''}`;
+    const previousLogoKey = lastLogoDetailsRef.current;
     const hasLogoData = currentLogo.logoNumber || currentLogo.logoName || currentLogo.requestedBy;
-    if (hasLogoData && previousLogoId === null && currentLogoId !== null) {
-      // Logo foi carregado, atualizar formik com os valores
-      // Usar setTimeout para garantir que o formik esteja pronto
-      setTimeout(() => {
-        formik.setFieldValue("logoNumber", currentLogo.logoNumber || "");
-        formik.setFieldValue("logoName", currentLogo.logoName || "");
-        formik.setFieldValue("requestedBy", currentLogo.requestedBy || "");
-        formik.setFieldValue("budget", currentLogo.budget || "");
-        formik.setFieldValue("dimensions", currentLogo.dimensions || {});
-        formik.setFieldValue("usageOutdoor", currentLogo.usageOutdoor || false);
-        formik.setFieldValue("usageIndoor", currentLogo.usageIndoor !== undefined ? currentLogo.usageIndoor : true);
-        formik.setFieldValue("fixationType", currentLogo.fixationType || "");
-        formik.setFieldValue("lacqueredStructure", currentLogo.lacqueredStructure || false);
-        formik.setFieldValue("lacquerColor", currentLogo.lacquerColor || "");
-        formik.setFieldValue("mastDiameter", currentLogo.mastDiameter || "");
-        formik.setFieldValue("maxWeightConstraint", currentLogo.maxWeightConstraint || false);
-        formik.setFieldValue("maxWeight", currentLogo.maxWeight || "");
-        formik.setFieldValue("ballast", currentLogo.ballast || false);
-        formik.setFieldValue("controlReport", currentLogo.controlReport || false);
-        formik.setFieldValue("criteria", currentLogo.criteria || "");
-        formik.setFieldValue("description", currentLogo.description || "");
-        formik.setFieldValue("isModification", currentLogo.isModification || false);
-        formik.setFieldValue("baseProductId", currentLogo.baseProductId || null);
-        formik.setFieldValue("baseProduct", currentLogo.baseProduct || null);
-        formik.setFieldValue("relatedProducts", currentLogo.relatedProducts || []);
-        formik.setFieldValue("productSizes", currentLogo.productSizes || []);
-      }, 0);
-    }
-
-    // Também verificar se o logo tem dados mas o formik está vazio (caso o logo seja carregado após o componente montar)
-    if (hasLogoData && (!formik.values.logoNumber && !formik.values.logoName && !formik.values.requestedBy)) {
-      // Formik está vazio mas o logo tem dados, atualizar
-      setTimeout(() => {
-        formik.setFieldValue("logoNumber", currentLogo.logoNumber || "");
-        formik.setFieldValue("logoName", currentLogo.logoName || "");
-        formik.setFieldValue("requestedBy", currentLogo.requestedBy || "");
-        formik.setFieldValue("budget", currentLogo.budget || "");
-        formik.setFieldValue("dimensions", currentLogo.dimensions || {});
-        formik.setFieldValue("usageOutdoor", currentLogo.usageOutdoor || false);
-        formik.setFieldValue("usageIndoor", currentLogo.usageIndoor !== undefined ? currentLogo.usageIndoor : true);
-        formik.setFieldValue("fixationType", currentLogo.fixationType || "");
-        formik.setFieldValue("lacqueredStructure", currentLogo.lacqueredStructure || false);
-        formik.setFieldValue("lacquerColor", currentLogo.lacquerColor || "");
-        formik.setFieldValue("mastDiameter", currentLogo.mastDiameter || "");
-        formik.setFieldValue("maxWeightConstraint", currentLogo.maxWeightConstraint || false);
-        formik.setFieldValue("maxWeight", currentLogo.maxWeight || "");
-        formik.setFieldValue("ballast", currentLogo.ballast || false);
-        formik.setFieldValue("controlReport", currentLogo.controlReport || false);
-        formik.setFieldValue("criteria", currentLogo.criteria || "");
-        formik.setFieldValue("description", currentLogo.description || "");
-        formik.setFieldValue("isModification", currentLogo.isModification || false);
-        formik.setFieldValue("baseProductId", currentLogo.baseProductId || null);
-        formik.setFieldValue("baseProduct", currentLogo.baseProduct || null);
-        formik.setFieldValue("relatedProducts", currentLogo.relatedProducts || []);
-        formik.setFieldValue("productSizes", currentLogo.productSizes || []);
-      }, 0);
-    }
-
-    // Se o ID mudou ou o logo está vazio (novo logo), resetar refs
-    if (currentLogoId !== previousLogoId || (isLogoEmpty && previousLogoId !== null)) {
-      // IMPORTANTE: Quando o ID do logo muda (editando um logo diferente), atualizar todos os campos do formik
-      if (currentLogoId !== previousLogoId && currentLogoId !== null && previousLogoId !== null) {
-        console.log("Logo ID changed, updating formik with new logo data. Previous ID:", previousLogoId, "New ID:", currentLogoId);
-        // Atualizar todos os campos do formik com os valores do novo currentLogo
+    
+    // Só atualizar se a chave mudou (logo diferente) e tem dados e ainda não foi inicializado
+    if (currentLogoKey !== previousLogoKey && hasLogoData && !formikInitializedRef.current) {
+      console.log('🔄 StepLogoInstructions: LogoDetails carregado, atualizando formik', {
+        logoNumber: currentLogo.logoNumber,
+        logoName: currentLogo.logoName,
+        logoId: currentLogo.id,
+        currentLogoKey,
+        previousLogoKey
+      });
+      
+      // Aguardar um pouco para garantir que tudo está pronto
+      const timeoutId = setTimeout(() => {
         formik.setFieldValue("logoNumber", currentLogo.logoNumber || "");
         formik.setFieldValue("logoName", currentLogo.logoName || "");
         formik.setFieldValue("requestedBy", currentLogo.requestedBy || "");
@@ -314,12 +264,91 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
         formik.setFieldValue("baseProduct", currentLogo.baseProduct || null);
         formik.setFieldValue("relatedProducts", currentLogo.relatedProducts || []);
         formik.setFieldValue("productSizes", currentLogo.productSizes || []);
+        
+        formikInitializedRef.current = true;
+        lastLogoDetailsRef.current = currentLogoKey;
+      }, 200);
+      
+      return () => clearTimeout(timeoutId);
+    } else if (currentLogoKey !== previousLogoKey) {
+      // Atualizar a chave mesmo se não inicializarmos o formik
+      lastLogoDetailsRef.current = currentLogoKey;
+      // Se mudou de logo, resetar a flag de inicialização
+      if (currentLogoKey !== previousLogoKey && previousLogoKey !== null) {
+        formikInitializedRef.current = false;
       }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLogo.id, currentLogo.logoNumber, currentLogo.logoName]);
 
+  // Resetar refs quando um novo logo é criado (quando o ID muda ou quando o logo está vazio)
+  // E atualizar formik quando currentLogo for carregado (especialmente quando o modal abre)
+  React.useEffect(() => {
+    const currentLogoId = currentLogo.id || null;
+    const isLogoEmpty = !currentLogo.logoNumber && !currentLogo.logoName;
+    const previousLogoId = currentLogoIdRef.current;
+    const hasLogoData = currentLogo.logoNumber || currentLogo.logoName || currentLogo.requestedBy;
+
+    // Função helper para atualizar todos os campos do formik
+    const updateFormikWithLogoData = () => {
+      console.log('🔄 StepLogoInstructions: Updating formik with logo data', {
+        logoNumber: currentLogo.logoNumber,
+        logoName: currentLogo.logoName,
+        logoId: currentLogoId,
+        previousLogoId,
+        hasLogoData,
+        formikInitialized: formikInitializedRef.current
+      });
+      
+      formik.setFieldValue("logoNumber", currentLogo.logoNumber || "");
+      formik.setFieldValue("logoName", currentLogo.logoName || "");
+      formik.setFieldValue("requestedBy", currentLogo.requestedBy || "");
+      formik.setFieldValue("budget", currentLogo.budget || "");
+      formik.setFieldValue("dimensions", currentLogo.dimensions || {});
+      formik.setFieldValue("usageOutdoor", currentLogo.usageOutdoor || false);
+      formik.setFieldValue("usageIndoor", currentLogo.usageIndoor !== undefined ? currentLogo.usageIndoor : true);
+      formik.setFieldValue("fixationType", currentLogo.fixationType || "");
+      formik.setFieldValue("lacqueredStructure", currentLogo.lacqueredStructure || false);
+      formik.setFieldValue("lacquerColor", currentLogo.lacquerColor || "");
+      formik.setFieldValue("mastDiameter", currentLogo.mastDiameter || "");
+      formik.setFieldValue("maxWeightConstraint", currentLogo.maxWeightConstraint || false);
+      formik.setFieldValue("maxWeight", currentLogo.maxWeight || "");
+      formik.setFieldValue("ballast", currentLogo.ballast || false);
+      formik.setFieldValue("controlReport", currentLogo.controlReport || false);
+      formik.setFieldValue("criteria", currentLogo.criteria || "");
+      formik.setFieldValue("description", currentLogo.description || "");
+      formik.setFieldValue("composition", currentLogo.composition || { componentes: [], bolas: [] });
+      formik.setFieldValue("isModification", currentLogo.isModification || false);
+      formik.setFieldValue("baseProductId", currentLogo.baseProductId || null);
+      formik.setFieldValue("baseProduct", currentLogo.baseProduct || null);
+      formik.setFieldValue("relatedProducts", currentLogo.relatedProducts || []);
+      formik.setFieldValue("productSizes", currentLogo.productSizes || []);
+      
+      formikInitializedRef.current = true;
+    };
+
+    // Se o logo tem dados, verificar se precisa atualizar o formik
+    // Só atualizar se o ID mudou (logo diferente) e ainda não foi inicializado
+    if (hasLogoData && currentLogoId !== previousLogoId && currentLogoId !== null && !formikInitializedRef.current) {
+      // Usar setTimeout para garantir que o formik esteja pronto
+      const timeoutId = setTimeout(() => {
+        updateFormikWithLogoData();
+      }, 100);
+      
+      currentLogoIdRef.current = currentLogoId;
+      
+      return () => clearTimeout(timeoutId);
+    } else if (!hasLogoData && formikInitializedRef.current) {
+      // Se o logo não tem dados mas já inicializámos, resetar a flag
+      formikInitializedRef.current = false;
+    }
+
+    // Se o ID mudou ou o logo está vazio (novo logo), atualizar ref
+    if (currentLogoId !== previousLogoId || (isLogoEmpty && previousLogoId !== null)) {
       currentLogoIdRef.current = currentLogoId;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentLogo.id, currentLogo.logoNumber, currentLogo.logoName, savedLogos.length]);
+  }, [currentLogo.id]);
 
   const { handleFileUpload, handleRemoveAttachment } = useFileUpload({
     currentLogo,
@@ -472,7 +501,18 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
     setIsChatOpen(false);
   };
 
-  const handleAIStateChange = (aiState) => {
+  // Ref para rastrear o último estado do AI para evitar atualizações desnecessárias
+  const lastAIStateRef = React.useRef(null);
+  
+  const handleAIStateChange = React.useCallback((aiState) => {
+    // Verificar se o estado realmente mudou para evitar loops infinitos
+    const aiStateStr = JSON.stringify(aiState);
+    if (lastAIStateRef.current === aiStateStr) {
+      return; // Estado não mudou, não atualizar
+    }
+    
+    lastAIStateRef.current = aiStateStr;
+    
     // Salvar o estado do AI Assistant no currentLogo para persistência
     const updatedCurrentLogo = {
       ...currentLogo,
@@ -484,7 +524,7 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
       logos: savedLogos,
     };
     onInputChange("logoDetails", updatedLogoDetails);
-  };
+  }, [currentLogo, logoDetails, savedLogos, onInputChange]);
 
   // Persistência automática dos dados do logo (PWA)
   useLogoPersistence({

@@ -87,13 +87,10 @@ export const AttachmentItem = ({ file, index, onRemove, onEdit }) => {
   const handleRemoveClick = React.useCallback((e) => {
     e.stopPropagation();
     e.preventDefault();
-    console.log('🗑️ Remove button clicked for index:', index, 'File:', file.name);
     if (onRemove && typeof onRemove === 'function') {
-      onRemove(index);
-    } else {
-      console.error('❌ onRemove is not a function:', onRemove);
+      onRemove(index, file);
     }
-  }, [index, file.name, onRemove]);
+  }, [index, file, onRemove]);
 
   return (
     <div className="flex items-center justify-between p-2 bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm rounded-lg border border-white/20 dark:border-gray-600/30 group">
@@ -157,7 +154,7 @@ export const AttachmentItem = ({ file, index, onRemove, onEdit }) => {
           size="sm"
           variant="light"
           color="danger"
-          onPress={handleRemoveClick}
+          onClick={handleRemoveClick}
           className="opacity-70 group-hover:opacity-100 transition-opacity h-6 w-6 min-w-6 flex-shrink-0 z-10"
           aria-label={`Remove attachment ${file.name}`}
         >

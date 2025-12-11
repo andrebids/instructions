@@ -23,6 +23,42 @@ export const SummaryRenderer = ({
 }) => {
   const [componentesEditMode, setComponentesEditMode] = React.useState({});
   const [bolasEditMode, setBolasEditMode] = React.useState({});
+  const attachments = currentLogo.attachmentFiles || [];
+  const [attachmentIndex, setAttachmentIndex] = React.useState(0);
+
+  React.useEffect(() => {
+    setAttachmentIndex(0);
+  }, [attachments.length, currentLogo?.id]);
+
+  const getColorStyle = (name) => {
+    if (!name) return {};
+    const n = name.toLowerCase();
+    const palette = [
+      { keys: ["blanc", "white"], color: "#f5f5f5" },
+      { keys: ["noir", "black"], color: "#111111" },
+      { keys: ["gris", "gray", "grey"], color: "#9ca3af" },
+      { keys: ["rouge", "red"], color: "#e03131" },
+      { keys: ["vert", "green"], color: "#2f9e44" },
+      { keys: ["bleu", "blue"], color: "#228be6" },
+      { keys: ["jaune", "yellow"], color: "#f2c200" },
+      { keys: ["or", "gold"], color: "#d4a017" },
+      { keys: ["orange"], color: "#f08c00" },
+      { keys: ["violet", "purple"], color: "#9c36b5" },
+      { keys: ["rose", "pink"], color: "#e64980" },
+      { keys: ["marron", "brown", "chocolat"], color: "#8d5524" },
+      { keys: ["argent", "silver"], color: "#c0c0c0" },
+      { keys: ["cuivre", "copper"], color: "#b87333" },
+      { keys: ["beige"], color: "#d9b38c" },
+      { keys: ["nude"], color: "#d3b8ae" },
+    ];
+    const match = palette.find((p) => p.keys.some((k) => n.includes(k)));
+    return match ? { color: match.color } : {};
+  };
+
+  const getDotStyle = (name) => {
+    const style = getColorStyle(name);
+    return style.color ? { backgroundColor: style.color } : {};
+  };
 
   // Helpers for inline editing
   const updateDimension = (dim, field, value) => {
@@ -43,6 +79,16 @@ export const SummaryRenderer = ({
     } else {
       formik.updateFields({ usageIndoor: false, usageOutdoor: true });
     }
+  };
+
+  const goPrevAttachment = () => {
+    if (attachments.length < 2) return;
+    setAttachmentIndex((prev) => (prev === 0 ? attachments.length - 1 : prev - 1));
+  };
+
+  const goNextAttachment = () => {
+    if (attachments.length < 2) return;
+    setAttachmentIndex((prev) => (prev === attachments.length - 1 ? 0 : prev + 1));
   };
 
   const formatBudgetOnInput = (value) => {
@@ -118,9 +164,8 @@ export const SummaryRenderer = ({
   const componentesList = composition.componentes || [];
   const bolasList = composition.bolas || [];
 
-  // Get Attachments (use only the first one for the main preview if available)
-  const attachments = currentLogo.attachmentFiles || [];
-  const mainAttachment = attachments.length > 0 ? attachments[0] : null;
+  // Attachment carousel state
+  const mainAttachment = attachments.length > 0 ? attachments[attachmentIndex] : null;
 
   return (
     <div className="h-full overflow-y-auto p-4 bg-[#141b2d] text-gray-300 font-sans">
@@ -335,26 +380,50 @@ export const SummaryRenderer = ({
             </div>
 
             {mainAttachment ? (
-              <div className="relative w-full h-[200px] rounded-xl overflow-hidden border-2 border-dashed border-gray-700 bg-[#1f2942] group">
-                {mainAttachment.url || mainAttachment.path ? (
-                  <img
-                    src={buildImageUrl(mainAttachment.url || mainAttachment.path)}
-                    alt="Main Attachment"
-                    className="w-full h-full object-contain p-2"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-500 cursor-default">
-                    <Icon icon="lucide:image-off" className="w-6 h-6" />
-                  </div>
-                )}
+              <div className="relative w-full h-[220px] rounded-xl overflow-hidden border-2 border-dashed border-gray-700 bg-[#1f2942]">
+                <div className="w-full h-full flex items-center justify-center">
+                  {mainAttachment.mimetype?.startsWith('image/') && (mainAttachment.url || mainAttachment.path) ? (
+                    <img
+                      src={buildImageUrl(mainAttachment.url || mainAttachment.path)}
+                      alt={mainAttachment.name || "Attachment"}
+                      className="w-full h-full object-contain p-2"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 cursor-default gap-2">
+                      <Icon icon="lucide:file" className="w-6 h-6" />
+                      <span className="text-[11px]">{mainAttachment.name || "Attachment"}</span>
+                    </div>
+                  )}
+                </div>
+
                 {attachments.length > 1 && (
-                  <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded-md">
-                    +{attachments.length - 1} more
-                  </div>
+                  <>
+                    <button
+                      type="button"
+                      onClick={goPrevAttachment}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full transition-colors"
+                      aria-label="Previous attachment"
+                    >
+                      <Icon icon="lucide:chevron-left" className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={goNextAttachment}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full transition-colors"
+                      aria-label="Next attachment"
+                    >
+                      <Icon icon="lucide:chevron-right" className="w-4 h-4" />
+                    </button>
+                    <div className="absolute bottom-2 inset-x-0 flex items-center justify-center gap-2">
+                      <span className="bg-black/70 text-white text-[11px] px-3 py-1 rounded-full">
+                        {attachmentIndex + 1} / {attachments.length}
+                      </span>
+                    </div>
+                  </>
                 )}
               </div>
             ) : (
-              <div className="w-full h-[200px] rounded-xl border-2 border-dashed border-gray-700 flex items-center justify-center text-gray-600 bg-[#1f2942]/30">
+              <div className="w-full h-[220px] rounded-xl border-2 border-dashed border-gray-700 flex items-center justify-center text-gray-600 bg-[#1f2942]/30">
                 <span className="text-[10px]">No image attached</span>
               </div>
             )}
@@ -424,19 +493,23 @@ export const SummaryRenderer = ({
             <h3 className="text-sm font-bold">Composition</h3>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {/* Components Subsection */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between bg-[#1b253a] border border-gray-700 rounded-lg px-3 py-2">
+              <div className="flex items-center justify-between bg-[#0f172a] border border-[#1f2a3c] rounded-lg px-3 py-2 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <Icon icon="lucide:box" className="w-3.5 h-3.5 text-purple-400" />
-                  <span className="text-[11px] font-bold text-gray-100 uppercase tracking-wide">COMPONENTS</span>
-                  <span className="bg-purple-900/50 text-purple-200 text-[10px] px-1.5 rounded font-bold">{componentesList.length}</span>
+                  <Icon icon="lucide:box" className="w-3.5 h-3.5 text-blue-300" />
+                  <span className="text-[11px] font-bold text-slate-100 uppercase tracking-wide">COMPONENTS</span>
+                  <span className="bg-[#1f2a3c] text-slate-200 text-[10px] px-1.5 rounded font-bold border border-[#243553]">{componentesList.length}</span>
                 </div>
                 <button
                   type="button"
-                  className="flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-slate-200 text-slate-900 hover:bg-slate-100"
-                  onClick={handleAddComponente}
+                  className="flex items-center gap-1 text-[11px] px-2 py-1 rounded border border-[#243553] bg-[#1f2a3c] text-slate-100 hover:bg-[#22314d]"
+                  onClick={() => {
+                    const newIndex = componentesList.length;
+                    handleAddComponente();
+                    setComponentesEditMode(prev => ({ ...prev, [newIndex]: true }));
+                  }}
                 >
                   <Icon icon="lucide:plus" className="w-3 h-3" />
                   Add
@@ -451,7 +524,7 @@ export const SummaryRenderer = ({
                     const coresDisponiveis = componente && !componente.semCor ? getCoresByComponente(comp.componenteId) : [];
 
                     return (
-                      <div key={idx} className="bg-[#1f2942] p-3 rounded-lg border border-gray-700 flex items-start gap-3">
+                      <div key={idx} className="bg-[#0f172a] p-3 rounded-lg border border-[#1f2a3c] flex items-start gap-3 shadow-sm">
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex flex-col">
@@ -461,19 +534,29 @@ export const SummaryRenderer = ({
                               {(comp.referencia || componente?.referencia) && (
                                 <span className="text-[11px] text-gray-400">Ref: {comp.referencia || componente?.referencia}</span>
                               )}
+                              {comp.corNome && (
+                                <span className="text-[11px] font-semibold flex items-center gap-1">
+                                  <span className="inline-block w-2 h-2 rounded-full" style={getDotStyle(comp.corNome)} />
+                                  <span style={getColorStyle(comp.corNome)}>{comp.corNome}</span>
+                                </span>
+                              )}
                             </div>
                           </div>
 
                           {isEditing && (
                             <>
                               <Select
+                                selectionMode="single"
+                                disallowEmptySelection
                                 aria-label={`Component ${idx + 1}`}
                                 variant="flat"
                                 size="sm"
                                 selectedKeys={comp.componenteId ? new Set([String(comp.componenteId)]) : new Set()}
                                 onSelectionChange={(keys) => {
                                   const selected = Array.from(keys)[0];
-                                  handleCompositionUpdate("componentes", idx, "componenteId", selected ? Number(selected) : null);
+                                  if (selected !== undefined) {
+                                    handleCompositionUpdate("componentes", idx, "componenteId", selected ? Number(selected) : null);
+                                  }
                                 }}
                                 classNames={{ trigger: "h-9 text-sm bg-[#0f172a]", value: "text-sm text-white" }}
                                 placeholder="Choose component"
@@ -489,13 +572,17 @@ export const SummaryRenderer = ({
                               </Select>
                               {componente && !componente.semCor && (
                                 <Select
+                                  selectionMode="single"
+                                  disallowEmptySelection
                                   aria-label={`Component Color ${idx + 1}`}
                                   variant="flat"
                                   size="sm"
                                   selectedKeys={comp.corId ? new Set([String(comp.corId)]) : new Set()}
                                   onSelectionChange={(keys) => {
                                     const selected = Array.from(keys)[0];
-                                    handleCompositionUpdate("componentes", idx, "corId", selected ? Number(selected) : null);
+                                    if (selected !== undefined) {
+                                      handleCompositionUpdate("componentes", idx, "corId", selected ? Number(selected) : null);
+                                    }
                                   }}
                                   classNames={{ trigger: "h-9 text-sm bg-[#0f172a]", value: "text-sm text-white" }}
                                   placeholder="Choose color"
@@ -521,7 +608,7 @@ export const SummaryRenderer = ({
                           </button>
                           <button
                             type="button"
-                            className="flex items-center justify-center w-7 h-7 rounded-full bg-[#3b1b2b] hover:bg-[#4a2236] text-pink-200"
+                            className="flex items-center justify-center w-7 h-7 rounded-full bg-[#2a1b1f] hover:bg-[#3a252b] text-rose-200"
                             onClick={() => {
                               setComponentesEditMode(prev => {
                                 const next = { ...prev };
@@ -546,16 +633,20 @@ export const SummaryRenderer = ({
 
             {/* Balls Subsection */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between bg-[#1b253a] border border-gray-700 rounded-lg px-3 py-2">
+              <div className="flex items-center justify-between bg-[#0f172a] border border-[#1f2a3c] rounded-lg px-3 py-2 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <Icon icon="lucide:circle-dot" className="w-3.5 h-3.5 text-purple-400" />
-                  <span className="text-[11px] font-bold text-gray-100 uppercase tracking-wide">BALLS</span>
-                  <span className="bg-purple-900/50 text-purple-200 text-[10px] px-1.5 rounded font-bold">{bolasList.length}</span>
+                  <Icon icon="lucide:circle-dot" className="w-3.5 h-3.5 text-blue-300" />
+                  <span className="text-[11px] font-bold text-slate-100 uppercase tracking-wide">BALLS</span>
+                  <span className="bg-[#1f2a3c] text-slate-200 text-[10px] px-1.5 rounded font-bold border border-[#243553]">{bolasList.length}</span>
                 </div>
                 <button
                   type="button"
-                  className="flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-slate-200 text-slate-900 hover:bg-slate-100"
-                  onClick={handleAddBola}
+                  className="flex items-center gap-1 text-[11px] px-2 py-1 rounded border border-[#243553] bg-[#1f2a3c] text-slate-100 hover:bg-[#22314d]"
+                  onClick={() => {
+                    const newIndex = bolasList.length;
+                    handleAddBola();
+                    setBolasEditMode(prev => ({ ...prev, [newIndex]: true }));
+                  }}
                 >
                   <Icon icon="lucide:plus" className="w-3 h-3" />
                   Add
@@ -579,12 +670,20 @@ export const SummaryRenderer = ({
                       .join(" - ");
 
                     return (
-                      <div key={idx} className="bg-[#1f2942] p-3 rounded-lg border border-gray-700 flex items-start gap-3">
+                      <div key={idx} className="bg-[#0f172a] p-3 rounded-lg border border-[#1f2a3c] flex items-start gap-3 shadow-sm">
                         <div className="flex-1 space-y-2">
                           <div className="flex flex-col">
-                            <span className="text-sm font-semibold text-white truncate">
-                              {nomeDisplay || "Ball"}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              {bola.corNome && (
+                                <span className="text-sm font-semibold truncate flex items-center gap-1" style={getColorStyle(bola.corNome)}>
+                                  <span className="inline-block w-2 h-2 rounded-full" style={getDotStyle(bola.corNome)} />
+                                  {bola.corNome}
+                                </span>
+                              )}
+                              <span className="text-sm font-semibold text-white truncate">
+                                {nomeDisplay || "Ball"}
+                              </span>
+                            </div>
                             {bola.referencia && (
                               <span className="text-[11px] text-gray-400">Ref: {bola.referencia}</span>
                             )}
@@ -593,13 +692,17 @@ export const SummaryRenderer = ({
                           {isEditing && (
                             <>
                               <Select
+                                selectionMode="single"
+                                disallowEmptySelection
                                 aria-label={`Ball Color ${idx + 1}`}
                                 variant="flat"
                                 size="sm"
                                 selectedKeys={bola.corId ? new Set([String(bola.corId)]) : new Set()}
                                 onSelectionChange={(keys) => {
                                   const selected = Array.from(keys)[0];
-                                  handleCompositionUpdate("bolas", idx, "corId", selected ? Number(selected) : null);
+                                  if (selected !== undefined) {
+                                    handleCompositionUpdate("bolas", idx, "corId", selected ? Number(selected) : null);
+                                  }
                                 }}
                                 classNames={{ trigger: "h-9 text-sm bg-[#0f172a]", value: "text-sm text-white" }}
                                 placeholder="Choose color"
@@ -611,13 +714,17 @@ export const SummaryRenderer = ({
                                 ))}
                               </Select>
                               <Select
+                                selectionMode="single"
+                                disallowEmptySelection
                                 aria-label={`Ball Finish ${idx + 1}`}
                                 variant="flat"
                                 size="sm"
                                 selectedKeys={bola.acabamentoId ? new Set([String(bola.acabamentoId)]) : new Set()}
                                 onSelectionChange={(keys) => {
                                   const selected = Array.from(keys)[0];
-                                  handleCompositionUpdate("bolas", idx, "acabamentoId", selected ? Number(selected) : null);
+                                  if (selected !== undefined) {
+                                    handleCompositionUpdate("bolas", idx, "acabamentoId", selected ? Number(selected) : null);
+                                  }
                                 }}
                                 classNames={{ trigger: "h-9 text-sm bg-[#0f172a]", value: "text-sm text-white" }}
                                 placeholder="Choose finish"
@@ -629,13 +736,17 @@ export const SummaryRenderer = ({
                                 ))}
                               </Select>
                               <Select
+                                selectionMode="single"
+                                disallowEmptySelection
                                 aria-label={`Ball Size ${idx + 1}`}
                                 variant="flat"
                                 size="sm"
                                 selectedKeys={bola.tamanhoId ? new Set([String(bola.tamanhoId)]) : new Set()}
                                 onSelectionChange={(keys) => {
                                   const selected = Array.from(keys)[0];
-                                  handleCompositionUpdate("bolas", idx, "tamanhoId", selected ? Number(selected) : null);
+                                  if (selected !== undefined) {
+                                    handleCompositionUpdate("bolas", idx, "tamanhoId", selected ? Number(selected) : null);
+                                  }
                                 }}
                                 classNames={{ trigger: "h-9 text-sm bg-[#0f172a]", value: "text-sm text-white" }}
                                 placeholder="Choose size"
@@ -672,7 +783,7 @@ export const SummaryRenderer = ({
                           </button>
                           <button
                             type="button"
-                            className="flex items-center justify-center w-7 h-7 rounded-full bg-[#3b1b2b] hover:bg-[#4a2236] text-pink-200"
+                            className="flex items-center justify-center w-7 h-7 rounded-full bg-[#2a1b1f] hover:bg-[#3a252b] text-rose-200"
                             onClick={() => {
                               setBolasEditMode(prev => {
                                 const next = { ...prev };
