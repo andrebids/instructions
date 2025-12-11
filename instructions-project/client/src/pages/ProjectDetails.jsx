@@ -33,17 +33,17 @@ export const LogoDetailsContent = ({ logo }) => {
     const { t } = useTranslation();
     const [previewAttachment, setPreviewAttachment] = useState(null);
 
-    // Helper to check if section has data
     const hasDimensions = logo.dimensions?.height?.value || logo.dimensions?.length?.value || logo.dimensions?.width?.value || logo.dimensions?.diameter?.value;
     const hasSpecs = logo.fixationType || logo.mastDiameter || logo.lacqueredStructure || logo.maxWeightConstraint || logo.ballast || logo.controlReport || logo.usageOutdoor !== undefined;
-    const hasComposition = (logo.composition?.componentes?.filter(c => c.referencia).length > 0) || (logo.composition?.bolas?.length > 0);
-    const hasContent = logo.description || logo.criteria || (logo.attachmentFiles?.length > 0);
+    const componentList = (logo.composition?.componentes || []).filter(c => c.referencia);
+    const ballsList = logo.composition?.bolas || [];
+    const hasComposition = componentList.length > 0 || ballsList.length > 0;
+    const hasAttachments = logo.attachmentFiles && logo.attachmentFiles.length > 0;
+    const hasDetails = logo.description || logo.criteria;
 
-    // Helper function to build image URL
     const buildImageUrl = (imageUrl) => {
         if (!imageUrl) return '';
         
-        // Se for URL absoluta, extrair apenas o caminho
         if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
             try {
                 const urlObj = new URL(imageUrl);
@@ -54,13 +54,11 @@ export const LogoDetailsContent = ({ logo }) => {
             }
         }
         
-        // Se for caminho UNC do Windows, extrair nome do arquivo
         if (imageUrl.startsWith('\\\\') || imageUrl.startsWith('//')) {
             const filename = imageUrl.split(/[\\/]/).pop();
             if (filename) imageUrl = `/api/files/${filename}`;
         }
         
-        // Garantir que começa com /api/
         if (imageUrl && !imageUrl.startsWith('/api/') && imageUrl.startsWith('/')) {
             imageUrl = `/api${imageUrl}`;
         } else if (imageUrl && !imageUrl.startsWith('/')) {
@@ -79,411 +77,381 @@ export const LogoDetailsContent = ({ logo }) => {
     };
 
     return (
-        <div className="space-y-8 py-4">
-            {/* Identity Section */}
-            <div className="space-y-4">
-                <div className="flex items-center gap-3 text-primary">
-                    <Icon icon="lucide:hash" width={20} />
-                    <span className="text-sm font-semibold uppercase tracking-wider text-default-500">{t('pages.projectDetails.logoNumber', 'Logo Number')}</span>
-                    <span className="font-bold text-lg text-default-900">{logo.logoNumber || '—'}</span>
+        <div className="relative overflow-hidden rounded-2xl border border-default-200 dark:border-default-100/40 bg-content1 dark:bg-[#0d0f14] text-default-900 dark:text-default-200 shadow-xl">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.04),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(0,0,0,0.03),transparent_40%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.06),transparent_40%)]" />
+
+            <div className="relative space-y-8 p-6 lg:p-8">
+                <div className="grid gap-8 lg:grid-cols-12">
+                    <div className="space-y-6 lg:col-span-5">
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary-600 dark:text-primary-300">
+                                <Icon icon="lucide:hash" width={18} />
+                                <span>{t('pages.projectDetails.logoNumber', 'Logo Number')}</span>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-2xl font-bold leading-tight text-default-900 dark:text-white">{logo.logoNumber || '—'}</p>
+                                <p className="text-xl font-semibold leading-tight text-default-700 dark:text-default-100">{logo.logoName || '—'}</p>
+                                <div className="flex items-center gap-2 text-sm text-default-500 dark:text-default-400">
+                                    <Icon icon="lucide:user" width={16} />
+                                    <span>{logo.requestedBy || t('common.notInformed', 'Não informado')}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {hasDimensions && (
+                            <div className="space-y-3 rounded-xl border border-default-200/80 dark:border-white/10 bg-default-50/80 dark:bg-white/5 p-4">
+                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-200">
+                                    <Icon icon="lucide:ruler" width={18} />
+                                    <span>{t('pages.projectDetails.dimensions')}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                        { key: 'height', label: t('pages.projectDetails.height'), value: logo.dimensions?.height?.value, locked: logo.dimensions?.height?.imperative },
+                                        { key: 'length', label: t('pages.projectDetails.length'), value: logo.dimensions?.length?.value, locked: logo.dimensions?.length?.imperative },
+                                        { key: 'width', label: t('pages.projectDetails.width'), value: logo.dimensions?.width?.value, locked: logo.dimensions?.width?.imperative },
+                                        { key: 'diameter', label: t('pages.projectDetails.diameter'), value: logo.dimensions?.diameter?.value, locked: logo.dimensions?.diameter?.imperative },
+                                    ].filter(item => item.value).map(item => (
+                                        <div
+                                            key={item.key}
+                                            className="flex items-center justify-between rounded-lg border border-default-200 dark:border-white/10 bg-white dark:bg-black/40 p-3"
+                                        >
+                                            <div className="space-y-1">
+                                                <p className="text-[11px] font-semibold uppercase tracking-wider text-default-500 dark:text-default-400">{item.label}</p>
+                                                <p className="text-lg font-bold text-default-900 dark:text-white">
+                                                    {item.value}
+                                                    <span className="ml-1 text-xs font-semibold text-default-500 dark:text-default-500">m</span>
+                                                </p>
+                                            </div>
+                                            {item.locked && <Icon icon="lucide:lock" className="text-warning-300" />}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {hasSpecs && (
+                            <div className="space-y-3 rounded-xl border border-default-200/80 dark:border-white/10 bg-default-50/80 dark:bg-white/5 p-4">
+                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-purple-700 dark:text-purple-200">
+                                    <Icon icon="lucide:settings-2" width={18} />
+                                    <span>{t('pages.projectDetails.technicalSpecs')}</span>
+                                </div>
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    {[
+                                        logo.usageOutdoor !== undefined && {
+                                            key: 'usage',
+                                            icon: logo.usageOutdoor ? 'lucide:sun' : 'lucide:home',
+                                            label: t('pages.projectDetails.usage', 'Uso'),
+                                            value: logo.usageOutdoor ? t('pages.projectDetails.outdoor') : t('pages.projectDetails.indoor')
+                                        },
+                                        logo.fixationType && {
+                                            key: 'fixation',
+                                            icon: 'lucide:anchor',
+                                            label: t('pages.projectDetails.fixation', 'Fixação'),
+                                            value: t(`pages.projectDetails.fixationTypes.${logo.fixationType}`, logo.fixationType)
+                                        },
+                                        logo.maxWeightConstraint && logo.maxWeight && {
+                                            key: 'maxWeight',
+                                            icon: 'lucide:scale',
+                                            label: t('pages.projectDetails.maxWeightConstraint'),
+                                            value: `${logo.maxWeight} kg`
+                                        },
+                                        logo.controlReport && {
+                                            key: 'controlReport',
+                                            icon: 'lucide:file-check',
+                                            label: t('pages.projectDetails.controlReport'),
+                                            value: t('common.yes', 'Sim')
+                                        },
+                                        logo.lacqueredStructure && {
+                                            key: 'lacquered',
+                                            icon: 'lucide:sparkles',
+                                            label: t('pages.projectDetails.lacquered', 'Lacado'),
+                                            value: logo.lacquerColor || t('common.yes', 'Sim')
+                                        },
+                                        logo.ballast && {
+                                            key: 'ballast',
+                                            icon: 'lucide:check-circle',
+                                            label: t('pages.projectDetails.ballast', 'Balastro'),
+                                            value: t('common.yes', 'Sim')
+                                        },
+                                        logo.mastDiameter && {
+                                            key: 'mast',
+                                            icon: 'lucide:ruler',
+                                            label: t('pages.projectDetails.mastDiameter', 'Diâmetro mastro'),
+                                            value: `${logo.mastDiameter} mm`
+                                        }
+                                    ].filter(Boolean).map(item => (
+                                        <div key={item.key} className="flex items-start gap-3 rounded-lg border border-default-200 dark:border-white/10 bg-white dark:bg-black/40 p-3">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-default-100 dark:bg-white/10">
+                                                <Icon icon={item.icon} className="text-default-700 dark:text-white" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-[11px] font-semibold uppercase tracking-wider text-default-500 dark:text-default-400">{item.label}</p>
+                                                <p className="text-sm font-semibold text-default-900 dark:text-white">{item.value}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-6 lg:col-span-3">
+                        {logo.generatedImage && (
+                            <div className="space-y-3 rounded-xl border border-default-200/80 dark:border-white/10 bg-default-50/80 dark:bg-white/5 p-4">
+                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary-700 dark:text-primary-200">
+                                    <Icon icon="lucide:sparkles" width={16} />
+                                    <span>{t('pages.projectDetails.aiGeneratedImage', 'AI Generated Image')}</span>
+                                </div>
+                                <div className="relative aspect-square overflow-hidden rounded-lg border border-default-200 dark:border-white/10 bg-white dark:bg-black/40">
+                                    <img
+                                        src={buildImageUrl(logo.generatedImage)}
+                                        alt={logo.logoName || 'AI Generated Logo'}
+                                        className="h-full w-full object-cover"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-3 rounded-xl border border-default-200/80 dark:border-white/10 bg-default-50/80 dark:bg-white/5 p-4">
+                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-teal-700 dark:text-teal-200">
+                                <Icon icon="lucide:paperclip" width={16} />
+                                <span>{t('pages.projectDetails.attachments', 'Anexos')}</span>
+                                {hasAttachments && (
+                                    <span className="ml-1 rounded-full bg-default-200 px-2 py-0.5 text-[11px] font-semibold text-default-800 dark:bg-white/10 dark:text-white">
+                                        {logo.attachmentFiles.length}
+                                    </span>
+                                )}
+                            </div>
+                            {hasAttachments ? (
+                                <div className="grid grid-cols-2 gap-3">
+                                    {logo.attachmentFiles.map((attachment, idx) => {
+                                        const isImage = attachment.mimetype?.startsWith('image/');
+                                        const fileUrl = buildImageUrl(attachment.url || attachment.path);
+
+                                        return (
+                                            <div
+                                                key={idx}
+                                            className="group relative overflow-hidden rounded-lg border border-default-200 dark:border-white/10 bg-white dark:bg-black/40"
+                                            >
+                                                {isImage ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleOpenPreview(attachment)}
+                                                        className="block h-full w-full"
+                                                    >
+                                                        <img
+                                                            src={fileUrl}
+                                                            alt={attachment.name}
+                                                            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
+                                                    </button>
+                                                ) : (
+                                                    <a
+                                                        href={fileUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center text-xs text-default-600 dark:text-default-200 transition-colors hover:bg-default-100/70 dark:hover:bg-white/5"
+                                                    >
+                                                        <Icon icon="lucide:file" className="text-default-500 dark:text-default-400" />
+                                                        <span className="line-clamp-2 w-full font-medium">{attachment.name}</span>
+                                                    </a>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-default-500 dark:text-default-500">
+                                    {t('pages.projectDetails.attachmentsEmpty', 'Sem anexos adicionados')}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-6 lg:col-span-4">
+                        {hasComposition && (
+                            <div className="space-y-4 rounded-xl border border-default-200/80 dark:border-white/10 bg-default-50/80 dark:bg-white/5 p-4">
+                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-orange-700 dark:text-orange-200">
+                                    <Icon icon="lucide:layers" width={18} />
+                                    <span>{t('pages.projectDetails.composition')}</span>
+                                </div>
+
+                                {componentList.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-default-600 dark:text-default-300">
+                                            <Icon icon="lucide:box" width={14} />
+                                            <span>{t('pages.projectDetails.components', 'Componentes')}</span>
+                                            <span className="rounded-full bg-default-200 px-2 py-0.5 text-[11px] text-default-800 dark:bg-white/10 dark:text-white">
+                                                {componentList.length}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {componentList.map((comp, idx) => (
+                                                <div key={idx} className="rounded-lg border border-default-200 dark:border-white/10 bg-white dark:bg-black/40 p-3">
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-sm font-semibold text-default-900 dark:text-white">{comp.componenteNome}</span>
+                                                        {comp.referencia && (
+                                                            <span className="text-[11px] font-mono rounded-full bg-default-100 px-2 py-0.5 text-orange-700 dark:bg-white/10 dark:text-orange-200">
+                                                                {comp.referencia}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="mt-2 flex flex-wrap gap-3 text-xs text-default-500 dark:text-default-400">
+                                                        {comp.corNome && (
+                                                            <span className="flex items-center gap-1">
+                                                                <span className="h-2 w-2 rounded-full bg-orange-500 dark:bg-orange-400" />
+                                                                <span>{comp.corNome}</span>
+                                                            </span>
+                                                        )}
+                                                        {comp.acabamentoNome && (
+                                                            <span className="flex items-center gap-1">
+                                                                <span className="h-2 w-2 rounded-full bg-orange-400 dark:bg-orange-300" />
+                                                                <span>{comp.acabamentoNome}</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {ballsList.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-default-600 dark:text-default-300">
+                                            <Icon icon="lucide:circle-dot" width={14} />
+                                            <span>{t('pages.projectDetails.balls', 'Bolas')}</span>
+                                            <span className="rounded-full bg-default-200 px-2 py-0.5 text-[11px] text-default-800 dark:bg-white/10 dark:text-white">
+                                                {ballsList.length}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {ballsList.map((bola, idx) => (
+                                                <div key={idx} className="rounded-lg border border-default-200 dark:border-white/10 bg-white dark:bg-black/40 p-3">
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-sm font-semibold text-default-900 dark:text-white">{bola.bolaName}</span>
+                                                        {bola.reference && (
+                                                            <span className="text-[11px] font-mono rounded-full bg-default-100 px-2 py-0.5 text-orange-700 dark:bg-white/10 dark:text-orange-200">
+                                                                {bola.reference}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="mt-2 flex flex-wrap gap-3 text-xs text-default-500 dark:text-default-400">
+                                                        {bola.corNome && (
+                                                            <span className="flex items-center gap-1">
+                                                                <span className="h-2 w-2 rounded-full bg-orange-500 dark:bg-orange-400" />
+                                                                <span>{bola.corNome}</span>
+                                                            </span>
+                                                        )}
+                                                        {bola.acabamentoNome && (
+                                                            <span className="flex items-center gap-1">
+                                                                <span className="h-2 w-2 rounded-full bg-orange-400 dark:bg-orange-300" />
+                                                                <span>{bola.acabamentoNome}</span>
+                                                            </span>
+                                                        )}
+                                                        {bola.tamanhoName && (
+                                                            <span className="flex items-center gap-1">
+                                                                <span className="h-2 w-2 rounded-full bg-orange-300 dark:bg-orange-200" />
+                                                                <span>{bola.tamanhoName}</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <div className="flex items-center gap-3 text-primary">
-                    <Icon icon="lucide:type" width={20} />
-                    <span className="text-sm font-semibold uppercase tracking-wider text-default-500">{t('pages.projectDetails.logoName', 'Logo Name')}</span>
-                    <span className="font-bold text-lg text-default-900">{logo.logoName || '—'}</span>
-                </div>
-                <div className="flex items-center gap-3 text-primary">
-                    <Icon icon="lucide:user" width={20} />
-                    <span className="text-sm font-semibold uppercase tracking-wider text-default-500">{t('pages.projectDetails.requestedBy', 'Requested By')}</span>
-                    <span className="font-bold text-lg text-default-900">{logo.requestedBy || '—'}</span>
-                </div>
+
+                {hasDetails && (
+                    <div className="space-y-4 rounded-xl border border-default-200/80 dark:border-white/10 bg-default-50/80 dark:bg-white/5 p-5">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-teal-700 dark:text-teal-200">
+                            <Icon icon="lucide:file-text" width={16} />
+                            <span>{t('pages.projectDetails.details')}</span>
+                        </div>
+                        {logo.description && (
+                            <div className="space-y-1">
+                                <p className="text-[11px] font-semibold uppercase tracking-wider text-default-600 dark:text-default-400">
+                                    {t('pages.projectDetails.description')}
+                                </p>
+                                <p className="text-sm leading-relaxed text-default-800 dark:text-default-100 whitespace-pre-wrap">{logo.description}</p>
+                            </div>
+                        )}
+                        {logo.criteria && (
+                            <div className="space-y-1">
+                                <p className="text-[11px] font-semibold uppercase tracking-wider text-default-600 dark:text-default-400">
+                                    {t('pages.projectDetails.criteria')}
+                                </p>
+                                <p className="text-sm leading-relaxed text-default-800 dark:text-default-100 whitespace-pre-wrap">{logo.criteria}</p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
-            {/* AI Generated Image */}
-            {logo.generatedImage && (
-                <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                        <Icon icon="lucide:sparkles" width={20} className="text-primary-600" />
-                        <h4 className="text-base font-bold text-default-700 uppercase tracking-wider">
-                            {t('pages.projectDetails.aiGeneratedImage', 'AI Generated Image')}
-                        </h4>
-                    </div>
-                    <div className="relative aspect-video max-w-2xl rounded-lg overflow-hidden bg-gradient-to-br from-primary-50 to-secondary-50 border border-default-200">
-                        <img
-                            src={buildImageUrl(logo.generatedImage)}
-                            alt={logo.logoName || 'AI Generated Logo'}
-                            className="w-full h-full object-contain"
-                        />
-                    </div>
-                </div>
-            )}
-
-            {hasDimensions && <Divider />}
-
-            {/* Dimensions */}
-            {hasDimensions && (
-                <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                        <Icon icon="lucide:ruler" width={20} className="text-blue-600" />
-                        <h4 className="text-base font-bold text-blue-600 uppercase tracking-wider">
-                            {t('pages.projectDetails.dimensions')}
-                        </h4>
-                    </div>
-                    <div className="flex flex-wrap gap-6">
-                        {logo.dimensions?.height?.value && (
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-sm font-semibold text-default-600 uppercase tracking-wider">{t('pages.projectDetails.height')}:</span>
-                                <span className="font-bold text-xl text-blue-600">{logo.dimensions.height.value}</span>
-                                <span className="text-sm text-default-500">m</span>
-                                {logo.dimensions.height.imperative && <Icon icon="lucide:lock" className="text-warning text-sm" />}
-                            </div>
-                        )}
-                        {logo.dimensions?.length?.value && (
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-sm font-semibold text-default-600 uppercase tracking-wider">{t('pages.projectDetails.length')}:</span>
-                                <span className="font-bold text-xl text-blue-600">{logo.dimensions.length.value}</span>
-                                <span className="text-sm text-default-500">m</span>
-                                {logo.dimensions.length.imperative && <Icon icon="lucide:lock" className="text-warning text-sm" />}
-                            </div>
-                        )}
-                        {logo.dimensions?.width?.value && (
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-sm font-semibold text-default-600 uppercase tracking-wider">{t('pages.projectDetails.width')}:</span>
-                                <span className="font-bold text-xl text-blue-600">{logo.dimensions.width.value}</span>
-                                <span className="text-sm text-default-500">m</span>
-                                {logo.dimensions.width.imperative && <Icon icon="lucide:lock" className="text-warning text-sm" />}
-                            </div>
-                        )}
-                        {logo.dimensions?.diameter?.value && (
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-sm font-semibold text-default-600 uppercase tracking-wider">{t('pages.projectDetails.diameter')}:</span>
-                                <span className="font-bold text-xl text-blue-600">{logo.dimensions.diameter.value}</span>
-                                <span className="text-sm text-default-500">m</span>
-                                {logo.dimensions.diameter.imperative && <Icon icon="lucide:lock" className="text-warning text-sm" />}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {hasSpecs && <Divider />}
-
-            {/* Technical Specs */}
-            {hasSpecs && (
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                        <Icon icon="lucide:settings-2" width={20} className="text-purple-600" />
-                        <h4 className="text-base font-bold text-purple-600 uppercase tracking-wider">
-                            {t('pages.projectDetails.technicalSpecs')}
-                        </h4>
-                    </div>
-                    <div className="flex flex-wrap gap-6">
-                        {logo.usageOutdoor !== undefined && (
-                            <div className="flex items-center gap-2">
-                                <Icon icon={logo.usageOutdoor ? "lucide:sun" : "lucide:home"} className="text-purple-600" width={18} />
-                                <span className="text-sm font-semibold text-default-600 uppercase tracking-wider">{t('pages.projectDetails.usage', 'Usage')}:</span>
-                                <span className="font-bold text-base text-purple-600">{logo.usageOutdoor ? t('pages.projectDetails.outdoor') : t('pages.projectDetails.indoor')}</span>
-                            </div>
-                        )}
-                        {logo.fixationType && (
-                            <div className="flex items-center gap-2">
-                                <Icon icon="lucide:anchor" className="text-purple-600" width={18} />
-                                <span className="text-sm font-semibold text-default-600 uppercase tracking-wider">{t('pages.projectDetails.fixation', 'Fixation')}:</span>
-                                <span className="font-bold text-base text-purple-600 capitalize">{logo.fixationType ? t(`pages.projectDetails.fixationTypes.${logo.fixationType}`) : ''}</span>
-                            </div>
-                        )}
-                        {logo.mastDiameter && (
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-default-600 uppercase tracking-wider">{t('pages.projectDetails.mastDiameter')}:</span>
-                                <span className="font-bold text-base text-purple-600">{logo.mastDiameter} mm</span>
-                            </div>
-                        )}
-                        {logo.maxWeightConstraint && logo.maxWeight && (
-                            <div className="flex items-center gap-2">
-                                <Icon icon="lucide:scale" className="text-warning-600" width={18} />
-                                <span className="text-sm font-semibold text-default-600 uppercase tracking-wider">{t('pages.projectDetails.maxWeightConstraint')}:</span>
-                                <span className="font-bold text-base text-warning-600">{logo.maxWeight} kg</span>
-                            </div>
-                        )}
-                        {logo.lacqueredStructure && (
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-default-600 uppercase tracking-wider">{t('pages.projectDetails.lacquered')}:</span>
-                                <span className="inline-block text-xs bg-success/10 text-success px-2 py-1 rounded-full font-semibold">
-                                    {logo.lacquerColor || t('common.yes')}
-                                </span>
-                            </div>
-                        )}
-                        {logo.ballast && (
-                            <div className="flex items-center gap-2">
-                                <Icon icon="lucide:check-circle" className="text-success" width={18} />
-                                <span className="text-sm font-semibold text-default-600 uppercase tracking-wider">{t('pages.projectDetails.ballast')}:</span>
-                                <span className="font-bold text-base text-success">{t('common.yes', 'Yes')}</span>
-                            </div>
-                        )}
-                        {logo.controlReport && (
-                            <div className="flex items-center gap-2">
-                                <Icon icon="lucide:file-check" className="text-success" width={18} />
-                                <span className="text-sm font-semibold text-default-600 uppercase tracking-wider">{t('pages.projectDetails.controlReport')}:</span>
-                                <span className="font-bold text-base text-success">{t('common.yes', 'Yes')}</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {hasComposition && <Divider />}
-
-            {/* Composition */}
-            {hasComposition && (
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                        <Icon icon="lucide:layers" width={20} className="text-orange-600" />
-                        <h4 className="text-base font-bold text-orange-600 uppercase tracking-wider">
-                            {t('pages.projectDetails.composition')}
-                        </h4>
-                    </div>
-                    
-                    <div className="space-y-6">
-                        {/* Components List */}
-                        {logo.composition.componentes && logo.composition.componentes.filter(c => c.referencia).length > 0 && (
-                            <div className="space-y-3">
+            <Modal
+                isOpen={!!previewAttachment}
+                onOpenChange={(open) => {
+                    if (!open) handleClosePreview();
+                }}
+                size="xl"
+                placement="center"
+            >
+                <ModalContent>
+                    {() => (
+                        <>
+                            <ModalHeader className="flex flex-col gap-1">
                                 <div className="flex items-center gap-2">
-                                    <Icon icon="lucide:box" width={16} className="text-orange-600" />
-                                    <h5 className="text-sm font-bold text-default-600 uppercase tracking-wider">
-                                        {t('pages.projectDetails.components', 'Components')}
-                                    </h5>
-                                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded font-semibold">
-                                        {logo.composition.componentes.filter(c => c.referencia).length}
-                                    </span>
+                                    <Icon icon="lucide:image" className="text-primary" />
+                                    <span>{previewAttachment?.name || t('common.preview', 'Preview')}</span>
                                 </div>
-                                <div className="space-y-2 pl-6">
-                                    {logo.composition.componentes.filter(c => c.referencia).map((comp, idx) => (
-                                        <div key={idx} className="space-y-1">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="font-bold text-base text-default-900">{comp.componenteNome}</span>
-                                                {comp.referencia && (
-                                                    <span className="text-xs font-mono bg-default-100 text-default-600 px-2 py-0.5 rounded">
-                                                        {comp.referencia}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="flex flex-wrap gap-3 text-sm text-default-600 pl-2">
-                                                {comp.corNome && (
-                                                    <span className="flex items-center gap-1.5">
-                                                        <div className="w-2.5 h-2.5 rounded-full bg-default-400"></div>
-                                                        <span>{comp.corNome}</span>
-                                                    </span>
-                                                )}
-                                                {comp.acabamentoNome && (
-                                                    <span className="flex items-center gap-1.5">
-                                                        <div className="w-2.5 h-2.5 rounded-full bg-default-400"></div>
-                                                        <span>{comp.acabamentoNome}</span>
-                                                    </span>
-                                                )}
-                                            </div>
+                            </ModalHeader>
+                            <ModalBody>
+                                {previewAttachment && (
+                                    <div className="space-y-4">
+                                        <div className="w-full">
+                                            <img
+                                                src={buildImageUrl(previewAttachment.url || previewAttachment.path)}
+                                                alt={previewAttachment.name}
+                                                className="h-auto w-full max-h-[70vh] rounded-lg border border-default-200 object-contain"
+                                            />
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Balls List */}
-                        {logo.composition.bolas && logo.composition.bolas.length > 0 && (
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <Icon icon="lucide:circle-dot" width={16} className="text-orange-600" />
-                                    <h5 className="text-sm font-bold text-default-600 uppercase tracking-wider">
-                                        {t('pages.projectDetails.balls', 'Balls')}
-                                    </h5>
-                                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded font-semibold">
-                                        {logo.composition.bolas.length}
-                                    </span>
-                                </div>
-                                <div className="space-y-2 pl-6">
-                                    {logo.composition.bolas.map((bola, idx) => (
-                                        <div key={idx} className="space-y-1">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="font-bold text-base text-default-900">{bola.bolaName}</span>
-                                                {bola.reference && (
-                                                    <span className="text-xs font-mono bg-default-100 text-default-600 px-2 py-0.5 rounded">
-                                                        {bola.reference}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="flex flex-wrap gap-3 text-sm text-default-600 pl-2">
-                                                {bola.corNome && (
-                                                    <span className="flex items-center gap-1.5">
-                                                        <div className="w-2.5 h-2.5 rounded-full bg-default-400"></div>
-                                                        <span>{bola.corNome}</span>
-                                                    </span>
-                                                )}
-                                                {bola.acabamentoNome && (
-                                                    <span className="flex items-center gap-1.5">
-                                                        <div className="w-2.5 h-2.5 rounded-full bg-default-400"></div>
-                                                        <span>{bola.acabamentoNome}</span>
-                                                    </span>
-                                                )}
-                                                {bola.tamanhoName && (
-                                                    <span className="flex items-center gap-1.5">
-                                                        <div className="w-2.5 h-2.5 rounded-full bg-default-400"></div>
-                                                        <span>{bola.tamanhoName}</span>
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {hasContent && <Divider />}
-
-            {/* Details & Attachments */}
-            {hasContent && (
-                <div className="space-y-6">
-                    {/* Description & Criteria */}
-                    {(logo.description || logo.criteria) && (
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <Icon icon="lucide:file-text" width={20} className="text-teal-600" />
-                                <h4 className="text-base font-bold text-teal-600 uppercase tracking-wider">
-                                    {t('pages.projectDetails.details')}
-                                </h4>
-                            </div>
-                            <div className="space-y-4 pl-6">
-                                {logo.description && (
-                                    <div>
-                                        <h5 className="text-sm font-semibold text-default-600 uppercase tracking-wider mb-2">{t('pages.projectDetails.description')}</h5>
-                                        <p className="text-sm text-default-700 leading-relaxed whitespace-pre-wrap">
-                                            {logo.description}
-                                        </p>
-                                    </div>
-                                )}
-                                {logo.criteria && (
-                                    <div>
-                                        <h5 className="text-sm font-semibold text-default-600 uppercase tracking-wider mb-2">{t('pages.projectDetails.criteria')}</h5>
-                                        <p className="text-sm text-default-700 leading-relaxed whitespace-pre-wrap">
-                                            {logo.criteria}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Attachments */}
-                    {logo.attachmentFiles && logo.attachmentFiles.length > 0 && (
-                        <div className="space-y-3">
-                            {(logo.description || logo.criteria) && <Divider />}
-                            <div className="flex items-center gap-3">
-                                <Icon icon="lucide:paperclip" width={20} className="text-teal-600" />
-                                <h4 className="text-base font-bold text-teal-600 uppercase tracking-wider">
-                                    {t('pages.projectDetails.attachments')}
-                                </h4>
-                            </div>
-                            <div className="flex flex-wrap gap-3 pl-6">
-                                {logo.attachmentFiles.map((attachment, idx) => {
-                                    const isImage = attachment.mimetype?.startsWith('image/');
-                                    const fileUrl = buildImageUrl(attachment.url || attachment.path);
-
-                                    return (
-                                        <div key={idx} className="group relative w-24 h-24 rounded-lg overflow-hidden border border-default-200 hover:border-teal-500 hover:shadow-md transition-all">
-                                            {isImage ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleOpenPreview(attachment)}
-                                                    className="w-full h-full"
-                                                >
-                                                    <img
-                                                        src={fileUrl}
-                                                        alt={attachment.name}
-                                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                                    />
-                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                                                </button>
-                                            ) : (
-                                                <a
-                                                    href={fileUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="w-full h-full flex flex-col items-center justify-center bg-default-50 p-2 group-hover:bg-default-100 transition-colors"
-                                                >
-                                                    <Icon icon="lucide:file" className="w-6 h-6 text-default-400 mb-1 group-hover:text-teal-600 transition-colors" />
-                                                    <p className="text-[9px] text-center text-default-600 truncate w-full px-1 font-medium">
-                                                        {attachment.name}
-                                                    </p>
-                                                </a>
+                                        <div className="flex items-center justify-between text-sm text-default-500">
+                                            <span>{previewAttachment.name}</span>
+                                            {previewAttachment.size && (
+                                                <span>{(previewAttachment.size / 1024).toFixed(1)} KB</span>
                                             )}
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                                    </div>
+                                )}
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button
+                                    variant="flat"
+                                    onPress={handleClosePreview}
+                                >
+                                    {t('common.close', 'Fechar')}
+                                </Button>
+                                {previewAttachment && (
+                                    <Button
+                                        as="a"
+                                        href={buildImageUrl(previewAttachment.url || previewAttachment.path)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        color="primary"
+                                    >
+                                        {t('common.openNewTab', 'Abrir em nova aba')}
+                                    </Button>
+                                )}
+                            </ModalFooter>
+                        </>
                     )}
-                    <Modal
-                        isOpen={!!previewAttachment}
-                        onOpenChange={(open) => {
-                            if (!open) handleClosePreview();
-                        }}
-                        size="xl"
-                        placement="center"
-                    >
-                        <ModalContent>
-                            {() => (
-                                <>
-                                    <ModalHeader className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-2">
-                                            <Icon icon="lucide:image" className="text-primary" />
-                                            <span>{previewAttachment?.name || t('common.preview', 'Preview')}</span>
-                                        </div>
-                                    </ModalHeader>
-                                    <ModalBody>
-                                        {previewAttachment && (
-                                            <div className="space-y-4">
-                                                <div className="w-full">
-                                                    <img
-                                                        src={buildImageUrl(previewAttachment.url || previewAttachment.path)}
-                                                        alt={previewAttachment.name}
-                                                        className="w-full h-auto max-h-[70vh] object-contain rounded-lg border border-default-200"
-                                                    />
-                                                </div>
-                                                <div className="flex items-center justify-between text-sm text-default-500">
-                                                    <span>{previewAttachment.name}</span>
-                                                    {previewAttachment.size && (
-                                                        <span>{(previewAttachment.size / 1024).toFixed(1)} KB</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </ModalBody>
-                                    <ModalFooter>
-                                        <Button
-                                            variant="flat"
-                                            onPress={handleClosePreview}
-                                        >
-                                            {t('common.close', 'Fechar')}
-                                        </Button>
-                                        {previewAttachment && (
-                                            <Button
-                                                as="a"
-                                                href={buildImageUrl(previewAttachment.url || previewAttachment.path)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                color="primary"
-                                            >
-                                                {t('common.openNewTab', 'Abrir em nova aba')}
-                                            </Button>
-                                        )}
-                                    </ModalFooter>
-                                </>
-                            )}
-                        </ModalContent>
-                    </Modal>
-                </div>
-            )}
+                </ModalContent>
+            </Modal>
         </div>
     );
 };

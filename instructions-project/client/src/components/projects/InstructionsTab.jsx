@@ -334,8 +334,8 @@ export default function InstructionsTab({
 
             {/* Selected Instruction Details */}
             {selectedInstruction && (
-                <Card>
-                    <CardBody>
+                <Card className="border-none bg-transparent p-0 shadow-none">
+                    <CardBody className="p-0">
                         {selectedInstruction.isSimulation ? (
                             <SimulationContent
                                 simulation={selectedInstruction}
