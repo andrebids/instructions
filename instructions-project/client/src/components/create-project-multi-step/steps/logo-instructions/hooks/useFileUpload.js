@@ -130,8 +130,7 @@ export const useFileUpload = ({
       }
   }, [currentLogo, logoDetails, savedLogos, onInputChange]);
 
-  const handleRemoveAttachment = React.useCallback((indexToRemove) => {
-    console.log('🔴 handleRemoveAttachment called with index:', indexToRemove);
+  const handleRemoveAttachment = React.useCallback((indexToRemove, fileToRemove) => {
     
     // Obter valores mais recentes diretamente de formData
     const latestLogoDetails = formData.logoDetails || {};
@@ -144,7 +143,21 @@ export const useFileUpload = ({
     
     // Obter attachments atuais
     const currentAttachments = [...(currentLogoToUpdate.attachmentFiles || [])];
-    console.log('📎 Current attachments count:', currentAttachments.length, 'Removing index:', indexToRemove);
+    // Se o index for inválido, tentar encontrar pelo nome/preview/url
+    let resolvedIndex = indexToRemove;
+    if (resolvedIndex === undefined || resolvedIndex < 0 || resolvedIndex >= currentAttachments.length) {
+      if (fileToRemove) {
+        resolvedIndex = currentAttachments.findIndex((f) =>
+          (fileToRemove.name && f.name === fileToRemove.name) ||
+          (fileToRemove.url && f.url === fileToRemove.url) ||
+          (fileToRemove.path && f.path === fileToRemove.path) ||
+          (fileToRemove.previewUrl && f.previewUrl === fileToRemove.previewUrl)
+        );
+      }
+    }
+    if (resolvedIndex === undefined || resolvedIndex < 0 || resolvedIndex >= currentAttachments.length) {
+      return;
+    }
     
     // Verificar se o índice é válido
     if (indexToRemove < 0 || indexToRemove >= currentAttachments.length) {
@@ -153,15 +166,14 @@ export const useFileUpload = ({
     }
     
     // Limpar preview URL se existir antes de remover
-    const attachmentToRemove = currentAttachments[indexToRemove];
+    const attachmentToRemove = currentAttachments[resolvedIndex];
     if (attachmentToRemove?.previewUrl) {
       console.log('🗑️ Revoking preview URL for:', attachmentToRemove.name);
       URL.revokeObjectURL(attachmentToRemove.previewUrl);
     }
     
     // Criar novo array sem o attachment removido
-    const newAttachments = currentAttachments.filter((_, i) => i !== indexToRemove);
-    console.log('✅ New attachments count:', newAttachments.length);
+    const newAttachments = currentAttachments.filter((_, i) => i !== resolvedIndex);
 
     // Criar novo currentLogo com attachments atualizados
     const updatedCurrentLogo = {

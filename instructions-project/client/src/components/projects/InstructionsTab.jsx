@@ -1,10 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Card, CardBody, Select, SelectItem, Button, Spinner } from '@heroui/react';
+import { Card, CardBody, Select, SelectItem, Spinner, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { LogoDetailsContent, SimulationContent } from '../../pages/ProjectDetails';
-import { DeleteConfirmDialog } from '../ui/DeleteConfirmDialog';
 
 // Helper function to get unique decorations count
 const getUniqueDecorationsCount = (decorations) => {
@@ -19,20 +17,29 @@ const getTotalDecorationsQuantity = (decorations) => {
     return decorations.reduce((sum, dec) => sum + (dec.quantity || 1), 0);
 };
 
-export default function InstructionsTab({ project, onEditLogo, onEditSimulation, onDeleteLogo, onSave }) {
+export default function InstructionsTab({
+    project,
+    onEditLogo,
+    onDeleteLogo,
+    onEditSimulation,
+    onDeleteSimulation
+}) {
     const { t } = useTranslation();
-    const navigate = useNavigate();
     const [selectedInstructionKey, setSelectedInstructionKey] = useState(null);
-    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-    const [pendingDelete, setPendingDelete] = useState(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [actionLoading, setActionLoading] = useState(false);
 
     // Combine and sort instructions
     const allInstructions = useMemo(() => {
         if (!project) return [];
 
         const logoDetails = project.logoDetails || {};
-        const savedLogos = logoDetails.logos || [];
-        const currentLogo = logoDetails.currentLogo || logoDetails;
+        const savedLogos = (logoDetails.logos || []).map((logo, idx) => ({
+            ...logo,
+            _originalIndex: idx,
+            isCurrent: false
+        }));
+        const currentLogo = { ...(logoDetails.currentLogo || logoDetails) };
 
         // Check if currentLogo is valid
         const hasLogoNumber = currentLogo?.logoNumber?.trim() !== "";
@@ -55,13 +62,21 @@ export default function InstructionsTab({ project, onEditLogo, onEditSimulation,
             );
 
             if (!alreadyInSaved) {
-                logoInstructions.push(currentLogo);
+                logoInstructions.push({
+                    ...currentLogo,
+                    _originalIndex: savedLogos.length, // current ficará no fim
+                    isCurrent: true
+                });
             }
         }
 
         // Fallback: if no saved logos and no valid currentLogo, but currentLogo has data, show it
         if (logoInstructions.length === 0 && currentLogo && (currentLogo.logoNumber || currentLogo.logoName)) {
-            logoInstructions = [currentLogo];
+            logoInstructions = [{
+                ...currentLogo,
+                _originalIndex: 0,
+                isCurrent: true
+            }];
         }
 
         // Check for simulation data
@@ -105,10 +120,15 @@ export default function InstructionsTab({ project, onEditLogo, onEditSimulation,
                     index: sortedLogos.length + sortedSimulations.indexOf(instruction)
                 };
             } else {
+                const idx = typeof instruction._originalIndex === 'number'
+                    ? instruction._originalIndex
+                    : sortedLogos.indexOf(instruction);
                 return {
                     ...instruction,
-                    key: `logo-${sortedLogos.indexOf(instruction)}`,
-                    index: sortedLogos.indexOf(instruction)
+                    key: `logo-${idx}`,
+                    index: idx,
+                    _originalIndex: idx,
+                    isCurrent: instruction.isCurrent || false
                 };
             }
         });
@@ -126,6 +146,14 @@ export default function InstructionsTab({ project, onEditLogo, onEditSimulation,
         if (!selectedInstructionKey) return null;
         return allInstructions.find(inst => inst.key === selectedInstructionKey) || null;
     }, [selectedInstructionKey, allInstructions]);
+
+    const getLogoIndexInfo = (instruction) => {
+        if (!instruction) return { index: null, isCurrent: false };
+        const index = typeof instruction._originalIndex === 'number'
+            ? instruction._originalIndex
+            : (typeof instruction.index === 'number' ? instruction.index : null);
+        return { index, isCurrent: !!instruction.isCurrent };
+    };
 
     // Format instruction display text for dropdown
     const getInstructionDisplayText = (instruction) => {
@@ -145,90 +173,38 @@ export default function InstructionsTab({ project, onEditLogo, onEditSimulation,
         }
     };
 
-    // Handle edit button click
     const handleEdit = () => {
-        if (!selectedInstruction || !project?.id) return;
-
+        if (!selectedInstruction) return;
         if (selectedInstruction.isSimulation) {
-            // For simulations, navigate to AI Designer step
-            navigate(`/projects/${project.id}/edit?step=ai-designer`);
-        } else {
-            // For logos, navigate to logo instructions step with the correct logoIndex
-            const logoDetails = project.logoDetails || {};
-            const savedLogos = logoDetails.logos || [];
-            const currentLogo = logoDetails.currentLogo || {};
-            
-            // Build logoInstructions the same way as in display
-            let logoInstructions = [...savedLogos];
-            const isCurrentLogoValid = currentLogo?.logoNumber?.trim() && currentLogo?.logoName?.trim();
-            if (isCurrentLogoValid && currentLogo) {
-                const alreadyInSaved = savedLogos.some(logo => 
-                    (logo.id && currentLogo.id && logo.id === currentLogo.id) ||
-                    (logo.logoNumber && currentLogo.logoNumber && logo.logoNumber === currentLogo.logoNumber)
-                );
-                if (!alreadyInSaved) {
-                    logoInstructions.push(currentLogo);
-                }
-            }
-            
-            // Check if selected instruction is the current logo
-            const isCurrent = (selectedInstruction.id && currentLogo.id && selectedInstruction.id === currentLogo.id) ||
-                (selectedInstruction.logoNumber && currentLogo.logoNumber && 
-                 selectedInstruction.logoNumber.trim() === currentLogo.logoNumber.trim());
-            
-            let logoIndex = null;
-            
-            if (isCurrent) {
-                // It's the current logo - find its index in logoInstructions
-                const foundIndex = logoInstructions.findIndex((logo) => {
-                    // Compare by ID first (more reliable)
-                    if (logo.id && currentLogo.id) {
-                        return logo.id === currentLogo.id;
-                    }
-                    // Compare by logoNumber
-                    if (logo.logoNumber && currentLogo.logoNumber) {
-                        return logo.logoNumber.trim() === currentLogo.logoNumber.trim();
-                    }
-                    return false;
-                });
-                
-                logoIndex = foundIndex >= 0 ? foundIndex : logoInstructions.length - 1;
-            } else {
-                // It's a saved logo - find its index in savedLogos first
-                const savedLogoIndex = savedLogos.findIndex(logo =>
-                    (logo.id && selectedInstruction.id && logo.id === selectedInstruction.id) ||
-                    (logo.logoNumber && selectedInstruction.logoNumber && 
-                     logo.logoNumber.trim() === selectedInstruction.logoNumber.trim())
-                );
-                
-                if (savedLogoIndex >= 0) {
-                    // Find the index in logoInstructions
-                    const logoToEdit = savedLogos[savedLogoIndex];
-                    const foundIndex = logoInstructions.findIndex((logo) => {
-                        // Compare by ID first (more reliable)
-                        if (logo.id && logoToEdit.id) {
-                            return logo.id === logoToEdit.id;
-                        }
-                        // Compare by logoNumber
-                        if (logo.logoNumber && logoToEdit.logoNumber) {
-                            return logo.logoNumber.trim() === logoToEdit.logoNumber.trim();
-                        }
-                        return false;
-                    });
-                    
-                    logoIndex = foundIndex >= 0 ? foundIndex : savedLogoIndex;
-                }
-            }
-            
-            // Navigate to logo instructions step with the logoIndex
-            if (logoIndex !== null) {
-                navigate(`/projects/${project.id}/edit?step=logo-instructions&logoIndex=${logoIndex}`);
-            } else {
-                // Fallback: navigate without logoIndex
-                navigate(`/projects/${project.id}/edit?step=logo-instructions`);
-            }
+            onEditSimulation?.();
+            return;
+        }
+
+        const { index, isCurrent } = getLogoIndexInfo(selectedInstruction);
+        if (index !== null) {
+            onEditLogo?.(index, isCurrent);
         }
     };
+
+    const handleDelete = async () => {
+        if (!selectedInstruction) return;
+        setActionLoading(true);
+        try {
+            if (selectedInstruction.isSimulation) {
+                await onDeleteSimulation?.();
+            } else {
+                const { index, isCurrent } = getLogoIndexInfo(selectedInstruction);
+                if (index !== null) {
+                    await onDeleteLogo?.(index, isCurrent);
+                }
+            }
+            setIsDeleteModalOpen(false);
+            setSelectedInstructionKey(null);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
 
     if (!project) {
         return (
@@ -261,98 +237,97 @@ export default function InstructionsTab({ project, onEditLogo, onEditSimulation,
             {/* Dropdown Selector */}
             <Card>
                 <CardBody className="space-y-4">
-                    <div className="flex items-center gap-4">
-                        <div className="flex-1">
-                            <Select
-                                label={t('pages.projectDetails.instructions.selectInstruction', 'Selecionar Instrução')}
-                                placeholder={t('pages.projectDetails.instructions.selectInstructionPlaceholder', 'Escolha uma instrução')}
-                                selectedKeys={selectedInstructionKey ? [selectedInstructionKey] : []}
-                                onSelectionChange={(keys) => {
-                                    const selected = Array.from(keys)[0];
-                                    if (selected) {
-                                        setSelectedInstructionKey(selected);
-                                    }
-                                }}
-                                classNames={{
-                                    trigger: "h-14",
-                                }}
-                            >
-                                {allInstructions.map((instruction) => (
-                                    <SelectItem
-                                        key={instruction.key}
-                                        value={instruction.key}
-                                        textValue={getInstructionDisplayText(instruction)}
-                                    >
-                                        <div className="flex flex-col gap-1">
-                                            <div className="flex items-center gap-2">
-                                                <Icon
-                                                    icon={instruction.isSimulation ? "lucide:sparkles" : "lucide:package"}
-                                                    className="text-primary"
-                                                />
-                                                <span className="font-semibold">
-                                                    {instruction.isSimulation
-                                                        ? instruction.logoName
-                                                        : `${instruction.logoNumber || 'N/A'} - ${instruction.logoName || 'Sem nome'}`}
-                                                </span>
+                    <div className="flex flex-col gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex-1 min-w-[260px]">
+                                <Select
+                                    label={t('pages.projectDetails.instructions.selectInstruction', 'Selecionar Instrução')}
+                                    placeholder={t('pages.projectDetails.instructions.selectInstructionPlaceholder', 'Escolha uma instrução')}
+                                    selectedKeys={selectedInstructionKey ? [selectedInstructionKey] : []}
+                                    onSelectionChange={(keys) => {
+                                        const selected = Array.from(keys)[0];
+                                        if (selected) {
+                                            setSelectedInstructionKey(selected);
+                                        }
+                                    }}
+                                    classNames={{
+                                        trigger: "h-14",
+                                    }}
+                                >
+                                    {allInstructions.map((instruction) => (
+                                        <SelectItem
+                                            key={instruction.key}
+                                            value={instruction.key}
+                                            textValue={getInstructionDisplayText(instruction)}
+                                        >
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <Icon
+                                                        icon={instruction.isSimulation ? "lucide:sparkles" : "lucide:package"}
+                                                        className="text-primary"
+                                                    />
+                                                    <span className="font-semibold">
+                                                        {instruction.isSimulation
+                                                            ? instruction.logoName
+                                                            : `${instruction.logoNumber || 'N/A'} - ${instruction.logoName || 'Sem nome'}`}
+                                                    </span>
+                                                </div>
+                                                <div className="text-xs text-default-500 pl-6">
+                                                    {instruction.isSimulation ? (
+                                                        <>
+                                                            {getUniqueDecorationsCount(instruction.canvasDecorations)} decorações •{' '}
+                                                            {instruction.canvasImages?.length || 0} imagens
+                                                            {instruction.savedAt && (
+                                                                <> • {new Date(instruction.savedAt).toLocaleDateString()}</>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            {instruction.requestedBy && (
+                                                                <>Solicitado por: {instruction.requestedBy} • </>
+                                                            )}
+                                                            {instruction.dimensions && (
+                                                                <>
+                                                                    {[
+                                                                        instruction.dimensions.height?.value && `Alt: ${instruction.dimensions.height.value}m`,
+                                                                        instruction.dimensions.length?.value && `Comp: ${instruction.dimensions.length.value}m`,
+                                                                        instruction.dimensions.width?.value && `Larg: ${instruction.dimensions.width.value}m`,
+                                                                        instruction.dimensions.diameter?.value && `Diam: ${instruction.dimensions.diameter.value}m`
+                                                                    ].filter(Boolean).join(' • ')}
+                                                                </>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="text-xs text-default-500 pl-6">
-                                                {instruction.isSimulation ? (
-                                                    <>
-                                                        {getUniqueDecorationsCount(instruction.canvasDecorations)} decorações •{' '}
-                                                        {instruction.canvasImages?.length || 0} imagens
-                                                        {instruction.savedAt && (
-                                                            <> • {new Date(instruction.savedAt).toLocaleDateString()}</>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        {instruction.requestedBy && (
-                                                            <>Solicitado por: {instruction.requestedBy} • </>
-                                                        )}
-                                                        {instruction.dimensions && (
-                                                            <>
-                                                                {[
-                                                                    instruction.dimensions.height?.value && `Alt: ${instruction.dimensions.height.value}m`,
-                                                                    instruction.dimensions.length?.value && `Comp: ${instruction.dimensions.length.value}m`,
-                                                                    instruction.dimensions.width?.value && `Larg: ${instruction.dimensions.width.value}m`,
-                                                                    instruction.dimensions.diameter?.value && `Diam: ${instruction.dimensions.diameter.value}m`
-                                                                ].filter(Boolean).join(' • ')}
-                                                            </>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </SelectItem>
-                                ))}
-                            </Select>
-                        </div>
-                        {selectedInstruction && (
-                            <div className="flex gap-2">
+                                        </SelectItem>
+                                    ))}
+                                </Select>
+                            </div>
+
+                            <div className="flex items-center gap-2">
                                 <Button
-                                    color="primary"
+                                    size="md"
                                     variant="flat"
-                                    startContent={<Icon icon="lucide:edit-2" />}
+                                    color="secondary"
+                                    startContent={<Icon icon="lucide:edit-2" className="w-4 h-4" />}
                                     onPress={handleEdit}
+                                    isDisabled={!selectedInstruction}
                                 >
                                     {t('common.edit', 'Editar')}
                                 </Button>
-                                {!selectedInstruction.isSimulation && (
-                                    <Button
-                                        color="danger"
-                                        variant="flat"
-                                        startContent={<Icon icon="lucide:trash-2" />}
-                                        onPress={() => {
-                                            const logoName = selectedInstruction.logoName || selectedInstruction.logoNumber || t('pages.projectDetails.instructions.thisInstruction', 'esta instrução');
-                                            setPendingDelete({ instruction: selectedInstruction, logoName });
-                                            setDeleteConfirmOpen(true);
-                                        }}
-                                    >
-                                        {t('common.delete', 'Eliminar')}
-                                    </Button>
-                                )}
+                                <Button
+                                    size="md"
+                                    variant="flat"
+                                    color="danger"
+                                    startContent={<Icon icon="lucide:trash-2" className="w-4 h-4" />}
+                                    onPress={() => setIsDeleteModalOpen(true)}
+                                    isDisabled={!selectedInstruction}
+                                >
+                                    {t('common.delete', 'Eliminar')}
+                                </Button>
                             </div>
-                        )}
+                        </div>
                     </div>
                 </CardBody>
             </Card>
@@ -373,62 +348,48 @@ export default function InstructionsTab({ project, onEditLogo, onEditSimulation,
                 </Card>
             )}
 
-            {/* Delete Confirmation Dialog */}
-            <DeleteConfirmDialog
-                isOpen={deleteConfirmOpen}
-                onClose={() => {
-                    setDeleteConfirmOpen(false);
-                    setPendingDelete(null);
-                }}
-                onConfirm={async () => {
-                    if (!pendingDelete || !onDeleteLogo) return;
-                    
-                    const { instruction } = pendingDelete;
-                    const logoDetails = project.logoDetails || {};
-                    const savedLogos = logoDetails.logos || [];
-                    const currentLogo = logoDetails.currentLogo || {};
-                    
-                    // Check if it's the current logo
-                    const isCurrent = (instruction.id && currentLogo.id && instruction.id === currentLogo.id) ||
-                        (instruction.logoNumber && currentLogo.logoNumber && 
-                         instruction.logoNumber.trim() === currentLogo.logoNumber.trim());
-                    
-                    if (isCurrent) {
-                        // For current logo, find index in savedLogos or use -1
-                        const foundIndex = savedLogos.findIndex(logo =>
-                            (logo.id && instruction.id && logo.id === instruction.id) ||
-                            (logo.logoNumber && instruction.logoNumber && 
-                             logo.logoNumber.trim() === instruction.logoNumber.trim())
-                        );
-                        await onDeleteLogo(foundIndex >= 0 ? foundIndex : -1, true);
-                    } else {
-                        // It's a saved logo
-                        const logoIndex = savedLogos.findIndex(logo =>
-                            (logo.id && instruction.id && logo.id === instruction.id) ||
-                            (logo.logoNumber && instruction.logoNumber && 
-                             logo.logoNumber.trim() === instruction.logoNumber.trim())
-                        );
-                        if (logoIndex >= 0) {
-                            await onDeleteLogo(logoIndex, false);
-                        }
-                    }
-                    
-                    // Reset selection after delete
-                    setSelectedInstructionKey(null);
-                    
-                    // Reload project to update instructions list
-                    if (onSave) {
-                        await onSave();
-                    }
-                }}
-                title={t('pages.projectDetails.confirmDeleteLogo', 'Confirmar eliminação')}
-                message={pendingDelete 
-                    ? t('pages.projectDetails.instructions.confirmDelete', 'Tem certeza que deseja eliminar "{{name}}"?', { name: pendingDelete.logoName })
-                    : t('pages.projectDetails.confirmDeleteLogo', 'Tem certeza que deseja eliminar este logo?')
-                }
-                confirmText={t('common.ok', 'OK')}
-                cancelText={t('common.cancel', 'Cancelar')}
-            />
+            <Modal
+                isOpen={isDeleteModalOpen}
+                onOpenChange={setIsDeleteModalOpen}
+                placement="center"
+                size="md"
+            >
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <ModalHeader className="flex items-center gap-2">
+                                <Icon icon="lucide:alert-triangle" className="text-danger" />
+                                <span>{t('pages.projectDetails.instructions.confirmDelete', 'Confirmar eliminação')}</span>
+                            </ModalHeader>
+                            <ModalBody>
+                                <p className="text-default-600">
+                                    {selectedInstruction?.isSimulation
+                                        ? t('pages.projectDetails.instructions.confirmDeleteSimulation', 'Deseja eliminar esta simulação? Esta ação não pode ser desfeita.')
+                                        : t('pages.projectDetails.instructions.confirmDeleteLogo', 'Deseja eliminar esta instrução de logo? Esta ação não pode ser desfeita.')}
+                                </p>
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button
+                                    variant="flat"
+                                    onPress={onClose}
+                                    isDisabled={actionLoading}
+                                >
+                                    {t('common.cancel', 'Cancelar')}
+                                </Button>
+                                <Button
+                                    color="danger"
+                                    onPress={handleDelete}
+                                    isLoading={actionLoading}
+                                    startContent={<Icon icon="lucide:trash-2" />}
+                                >
+                                    {t('common.delete', 'Eliminar')}
+                                </Button>
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
+
         </div>
     );
 }

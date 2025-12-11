@@ -32,6 +32,36 @@ export const CompositionRenderer = ({
   handleToggleEditBola,
   handleBolaUpdate,
 }) => {
+  const getColorStyle = (name) => {
+    if (!name) return {};
+    const n = name.toLowerCase();
+    const palette = [
+      { keys: ["blanc", "white"], color: "#f5f5f5" },
+      { keys: ["noir", "black"], color: "#111111" },
+      { keys: ["gris", "gray", "grey"], color: "#9ca3af" },
+      { keys: ["rouge", "red"], color: "#e03131" },
+      { keys: ["vert", "green"], color: "#2f9e44" },
+      { keys: ["bleu", "blue"], color: "#228be6" },
+      { keys: ["jaune", "yellow"], color: "#f2c200" },
+      { keys: ["or", "gold"], color: "#d4a017" },
+      { keys: ["orange"], color: "#f08c00" },
+      { keys: ["violet", "purple"], color: "#9c36b5" },
+      { keys: ["rose", "pink"], color: "#e64980" },
+      { keys: ["marron", "brown", "chocolat"], color: "#8d5524" },
+      { keys: ["argent", "silver"], color: "#c0c0c0" },
+      { keys: ["cuivre", "copper"], color: "#b87333" },
+      { keys: ["beige"], color: "#d9b38c" },
+      { keys: ["nude"], color: "#d3b8ae" },
+    ];
+    const match = palette.find((p) => p.keys.some((k) => n.includes(k)));
+    return match ? { color: match.color } : {};
+  };
+
+  const getDotStyle = (name) => {
+    const style = getColorStyle(name);
+    return style.color ? { backgroundColor: style.color } : {};
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       {/* Components Section */}
@@ -95,6 +125,12 @@ export const CompositionRenderer = ({
                           <div className="text-xs md:text-sm lg:text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
                             Ref: <span className="font-mono bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded text-xs md:text-sm lg:text-xs">{comp.referencia}</span>
                           </div>
+                          {comp.corNome && (
+                            <div className="text-xs md:text-sm lg:text-xs font-semibold flex items-center gap-1">
+                              <span className="inline-block w-2 h-2 rounded-full" style={getDotStyle(comp.corNome)} />
+                              <span style={getColorStyle(comp.corNome)}>{comp.corNome}</span>
+                            </div>
+                          )}
                         </div>
                         <div className="flex gap-1">
                           <Button
@@ -257,16 +293,22 @@ export const CompositionRenderer = ({
                 const mostrarApenasReferencia = completa && !editando;
 
                 if (mostrarApenasReferencia) {
-                  const nomeBola = [bola.corNome, bola.acabamentoNome, bola.tamanhoNome]
-                    .filter(Boolean)
-                    .join(" - ");
+                  const nomeBola = [bola.acabamentoNome, bola.tamanhoNome].filter(Boolean).join(" - ");
 
                   return (
                     <div key={index} className="p-1.5 border border-white/20 dark:border-gray-600/30 rounded-lg bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 mb-0">
-                            <div className="text-xs font-bold truncate text-gray-900 dark:text-white">{nomeBola}</div>
+                            {bola.corNome && (
+                              <span className="inline-flex items-center gap-1 text-xs font-bold truncate" style={getColorStyle(bola.corNome)}>
+                                <span className="inline-block w-2 h-2 rounded-full" style={getDotStyle(bola.corNome)} />
+                                {bola.corNome}
+                              </span>
+                            )}
+                            {nomeBola && (
+                              <div className="text-xs font-bold truncate text-gray-900 dark:text-white">{nomeBola}</div>
+                            )}
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
                             Ref: <span className="font-mono bg-gray-100 dark:bg-gray-600 px-1 py-0.5 rounded text-xs">{bola.referencia}</span>
@@ -404,4 +446,5 @@ export const CompositionRenderer = ({
     </div>
   );
 };
+
 

@@ -35,12 +35,12 @@ import { Scroller } from "../ui/scroller";
 // 🧪 Breakpoint de Teste 5 (Componente Principal)
 const TEST_BREAKPOINT_5 = false;
 
-export function CreateProjectMultiStep({ onClose, selectedImage, projectId, initialStep, logoIndex }) {
+export function CreateProjectMultiStep({ onClose, selectedImage, projectId, initialStep, logoIndex, logoId, logoNumber }) {
   // Initialize hooks
   const { t } = useTranslation();
   const { theme } = useTheme();
   const saveStatus = useSaveStatus();
-  const formState = useProjectForm(onClose, projectId, saveStatus, logoIndex);
+  const formState = useProjectForm(onClose, projectId, saveStatus, logoIndex, logoId, logoNumber);
   const clientState = useClientManagement(formState.setFormData);
   
   // Se o utilizador entrou via ?step=ai-designer, garantir que o fluxo é tratado como simulação
@@ -86,10 +86,10 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
   }, [theme]);
 
   // Get visible steps based on project type
-  // Sempre mostrar todos os steps visíveis (não filtrar mesmo quando há logoIndex)
+  // Sempre mostrar todos os steps visíveis; se vier initialStep via URL, forçar inclusão
   const visibleSteps = useMemo(() => {
-    return getVisibleSteps(formState.formData, STEPS);
-  }, [formState.formData]);
+    return getVisibleSteps(formState.formData, STEPS, initialStep || null);
+  }, [formState.formData, initialStep]);
 
   // Debug: verificar initialStep e visibleSteps (apenas uma vez quando initialStep é fornecido)
   const initialStepCheckedRef = useRef(false);
@@ -160,6 +160,108 @@ export function CreateProjectMultiStep({ onClose, selectedImage, projectId, init
       formState.handleInputChange("endDate", base.add({ days: 7 }));
     }
   }, []);
+
+  // Mover logo editado de volta para savedLogos quando sair do step de logo-instructions
+  const prevStepRef = React.useRef(navigation.currentStep);
+  useEffect(() => {
+    const currentVisibleStep = visibleSteps[navigation.currentStep - 1];
+    const prevVisibleStep = visibleSteps[prevStepRef.current - 1];
+    const wasOnLogoStep = prevVisibleStep?.id === 'logo-instructions';
+    const isLeavingLogoStep = wasOnLogoStep && currentVisibleStep?.id !== 'logo-instructions';
+    
+    if (isLeavingLogoStep) {
+      const logoDetails = formState.formData.logoDetails || {};
+      const savedLogos = logoDetails.logos || [];
+      const currentLogo = logoDetails.currentLogo || {};
+      
+      // Se o currentLogo tem _originalIndex, significa que é um logo editado que precisa ser movido de volta
+      if (currentLogo._originalIndex !== undefined && isLogoValid(currentLogo)) {
+        const originalIndex = currentLogo._originalIndex;
+        
+        // Remover _originalIndex antes de salvar
+        const { _originalIndex, ...logoWithoutOriginalIndex } = currentLogo;
+        
+        const logoToSave = {
+          ...logoWithoutOriginalIndex,
+          id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          savedAt: currentLogo.savedAt || new Date().toISOString()
+        };
+        
+        // Verificar se o logo já existe nos savedLogos (por ID ou logoNumber)
+        const existingLogoIndex = savedLogos.findIndex(logo => {
+          if (logoToSave.id && logo.id) {
+            return logo.id === logoToSave.id;
+          }
+          if (logo.logoNumber && logoToSave.logoNumber) {
+            return logo.logoNumber.trim() === logoToSave.logoNumber.trim();
+          }
+          return false;
+        });
+        
+        let updatedSavedLogos;
+        
+        if (existingLogoIndex >= 0) {
+          // Logo já existe - ATUALIZAR em vez de criar novo
+          updatedSavedLogos = [...savedLogos];
+          updatedSavedLogos[existingLogoIndex] = logoToSave;
+        } else if (originalIndex >= 0 && originalIndex < savedLogos.length) {
+          // Logo não existe mas tem posição original válida - INSERIR na posição original
+          updatedSavedLogos = [...savedLogos];
+          updatedSavedLogos.splice(originalIndex, 0, logoToSave);
+        } else if (originalIndex >= 0) {
+          // Logo tem posição original mas está fora dos limites - adicionar no final
+          updatedSavedLogos = [...savedLogos, logoToSave];
+        } else {
+          // Logo não tem posição original - ADICIONAR como novo no final
+          updatedSavedLogos = [...savedLogos, logoToSave];
+        }
+        
+        // Atualizar logoDetails com o logo movido de volta para savedLogos e limpar currentLogo
+        formState.handleInputChange("logoDetails", {
+          ...logoDetails,
+          logos: updatedSavedLogos,
+          currentLogo: {
+            logoNumber: "",
+            logoName: "",
+            requestedBy: "",
+            dimensions: {},
+            usageOutdoor: false,
+            usageIndoor: true,
+            fixationType: "",
+            lacqueredStructure: false,
+            lacquerColor: "",
+            mastDiameter: "",
+            maxWeightConstraint: false,
+            maxWeight: "",
+            ballast: false,
+            controlReport: false,
+            criteria: "",
+            description: "",
+            composition: {
+              componentes: [],
+              bolas: []
+            },
+            attachmentFiles: [],
+            isModification: false,
+            baseProductId: null,
+            baseProduct: null,
+            relatedProducts: [],
+            productSizes: []
+          }
+        });
+        
+        console.log('✅ Logo editado movido de volta para savedLogos ao sair do step:', {
+          logoNumber: logoToSave.logoNumber,
+          logoName: logoToSave.logoName,
+          originalIndex: originalIndex,
+          finalIndex: existingLogoIndex >= 0 ? existingLogoIndex : (originalIndex >= 0 && originalIndex < savedLogos.length ? originalIndex : updatedSavedLogos.length - 1)
+        });
+      }
+    }
+    
+    // Atualizar ref do step anterior
+    prevStepRef.current = navigation.currentStep;
+  }, [navigation.currentStep, visibleSteps]);
 
   // Check if current step is AI Designer
   const isAIDesignerStep = () => {

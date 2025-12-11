@@ -2,6 +2,7 @@ import React, { useMemo, useCallback, useRef } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, Button, Spinner } from '@heroui/react';
 import { Icon } from '@iconify/react';
 import { StepLogoInstructions } from '../create-project-multi-step/steps/StepLogoInstructions';
+import { StepIndicator } from '../create-project-multi-step/components/StepIndicator';
 import { useProjectForm } from '../create-project-multi-step/hooks/useProjectForm';
 import { useSaveStatus } from '../create-project-multi-step/hooks/useSaveStatus';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +23,16 @@ export default React.memo(function LogoEditModal({
     const autosaveTimeoutRef = useRef(null);
     const lastLogoDetailsRef = useRef(null);
     const reloadTriggerRef = useRef(0);
+    const logoInstructionsHandlersRef = useRef({
+        handleNextPage: null,
+        handlePrevPage: null,
+        handleNewLogo: null,
+        handleFinish: null,
+        canProceedToNext: null,
+        isCurrentLogoValid: null,
+        isFinishing: false,
+    });
+    const [currentPage, setCurrentPage] = React.useState(1);
 
     // Usar useProjectForm para gerenciar o formulário - ele já carrega o logo específico automaticamente
     const formState = useProjectForm(
@@ -375,9 +386,12 @@ export default React.memo(function LogoEditModal({
                 onInputChange={handleInputChangeOptimized}
                 saveStatus={saveStatus}
                 isCompact={true}
+                projectId={projectId}
+                handlersRef={logoInstructionsHandlersRef}
+                onInternalPageChange={setCurrentPage}
             />
         );
-    }, [isLoading, formState.formData, handleInputChangeOptimized, saveStatus, t]);
+    }, [isLoading, formState.formData, handleInputChangeOptimized, saveStatus, t, projectId]);
 
     return (
         <Modal
@@ -426,8 +440,165 @@ export default React.memo(function LogoEditModal({
                                 <Icon icon="lucide:x" className="text-lg" />
                             </Button>
                         </ModalHeader>
-                        <ModalBody className="bg-transparent">
-                            {modalContent}
+                        <ModalBody className="bg-transparent flex flex-col relative">
+                            {/* Step Indicator Vertical - Right Side */}
+                            <div className="hidden lg:block absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-transparent" style={{ position: 'absolute' }}>
+                                <div className="flex flex-col items-end">
+                                    <ol className="flex flex-col items-end">
+                                        {[
+                                            { id: 'details-attachments', label: 'Details & Attachments', number: 1 },
+                                            { id: 'dimensions', label: 'Dimensions', number: 2 },
+                                            { id: 'composition', label: 'Composition', number: 3 },
+                                            { id: 'summary', label: 'Summary', number: 4 }
+                                        ].map((step, index) => {
+                                            const stepNumber = index + 1;
+                                            const isCompleted = stepNumber < currentPage;
+                                            const isActive = stepNumber === currentPage;
+                                            const isLast = stepNumber === 4;
+
+                                            return (
+                                                <React.Fragment key={step.id}>
+                                                    <li className="flex items-center gap-3 relative py-1">
+                                                        <button
+                                                            onClick={() => {
+                                                                // Permitir navegar apenas para steps anteriores ou o atual
+                                                                if (stepNumber <= currentPage) {
+                                                                    const diff = stepNumber - currentPage;
+                                                                    if (diff < 0) {
+                                                                        // Voltar páginas
+                                                                        for (let i = 0; i < Math.abs(diff); i++) {
+                                                                            logoInstructionsHandlersRef.current?.handlePrevPage?.();
+                                                                        }
+                                                                    }
+                                                                } else if (stepNumber === currentPage + 1 && logoInstructionsHandlersRef.current?.canProceedToNext) {
+                                                                    // Avançar apenas se a página atual for válida
+                                                                    logoInstructionsHandlersRef.current?.handleNextPage?.();
+                                                                }
+                                                            }}
+                                                            className="flex items-center gap-3 transition-all cursor-pointer hover:opacity-80 group flex-row-reverse text-right"
+                                                        >
+                                                            <div
+                                                                className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${
+                                                                    isActive
+                                                                        ? 'bg-primary border-primary text-white'
+                                                                        : isCompleted
+                                                                        ? 'bg-success border-success text-white'
+                                                                        : 'bg-default-200 border-default-300 text-default-500'
+                                                                }`}
+                                                            >
+                                                                {isCompleted ? (
+                                                                    <Icon icon="lucide:check" className="w-5 h-5" />
+                                                                ) : (
+                                                                    <span className="text-sm font-semibold">{stepNumber}</span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex flex-col items-end max-w-0 opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-300 overflow-hidden">
+                                                                <span
+                                                                    className={`whitespace-nowrap text-sm font-medium transition-colors ${
+                                                                        isActive
+                                                                            ? 'text-foreground font-semibold'
+                                                                            : isCompleted
+                                                                            ? 'text-white/90'
+                                                                            : 'text-gray-300'
+                                                                    }`}
+                                                                >
+                                                                    {step.label}
+                                                                </span>
+                                                                {isActive && (
+                                                                    <span className="text-xs text-primary/90 font-medium whitespace-nowrap">
+                                                                        {t('common.currentStep', 'Current Step')}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </button>
+                                                    </li>
+                                                    {!isLast && (
+                                                        <li className="flex justify-center py-1">
+                                                            <div
+                                                                className={`w-0.5 h-6 transition-colors ${
+                                                                    isCompleted ? 'bg-success' : 'bg-default-300'
+                                                                }`}
+                                                            />
+                                                        </li>
+                                                    )}
+                                                </React.Fragment>
+                                            );
+                                        })}
+                                    </ol>
+                                </div>
+                            </div>
+                            
+                            {/* Step Indicator Horizontal - Mobile */}
+                            <div className="lg:hidden w-full bg-content1/50 px-3 py-2 border-b border-divider flex-shrink-0 mb-2">
+                                <StepIndicator
+                                    steps={[
+                                        { id: 'details-attachments', label: 'Details & Attachments' },
+                                        { id: 'dimensions', label: 'Dimensions' },
+                                        { id: 'composition', label: 'Composition' },
+                                        { id: 'summary', label: 'Summary' }
+                                    ]}
+                                    currentStep={currentPage}
+                                    onStepClick={(stepNumber) => {
+                                        // Permitir navegar apenas para steps anteriores ou o atual
+                                        if (stepNumber <= currentPage) {
+                                            const diff = stepNumber - currentPage;
+                                            if (diff < 0) {
+                                                // Voltar páginas
+                                                for (let i = 0; i < Math.abs(diff); i++) {
+                                                    logoInstructionsHandlersRef.current?.handlePrevPage?.();
+                                                }
+                                            }
+                                        } else if (stepNumber === currentPage + 1 && logoInstructionsHandlersRef.current?.canProceedToNext) {
+                                            // Avançar apenas se a página atual for válida
+                                            logoInstructionsHandlersRef.current?.handleNextPage?.();
+                                        }
+                                    }}
+                                />
+                            </div>
+                            
+                            {/* Content */}
+                            <div className="flex-1 overflow-auto lg:pr-20">
+                                {modalContent}
+                            </div>
+                            
+                            {/* Navigation Footer */}
+                            <div className="w-full bg-content1/50 border-t border-divider px-4 py-3 flex-shrink-0 flex items-center justify-between mt-2">
+                                <Button
+                                    variant="flat"
+                                    onPress={() => {
+                                        logoInstructionsHandlersRef.current?.handlePrevPage?.();
+                                    }}
+                                    isDisabled={currentPage === 1}
+                                    startContent={<Icon icon="lucide:arrow-left" />}
+                                >
+                                    {t('common.back', 'Back')}
+                                </Button>
+                                
+                                <div className="flex items-center gap-2 text-sm text-default-500">
+                                    {t('common.page', 'Page')} {currentPage} / 4
+                                </div>
+                                
+                                <Button
+                                    color="primary"
+                                    variant="flat"
+                                    onPress={() => {
+                                        if (currentPage < 4) {
+                                            logoInstructionsHandlersRef.current?.handleNextPage?.();
+                                        } else {
+                                            // Na última página, salvar e fechar
+                                            handleClose();
+                                        }
+                                    }}
+                                    isDisabled={
+                                        currentPage < 4 && 
+                                        logoInstructionsHandlersRef.current && 
+                                        !logoInstructionsHandlersRef.current.canProceedToNext
+                                    }
+                                    endContent={currentPage < 4 ? <Icon icon="lucide:arrow-right" /> : <Icon icon="lucide:check" />}
+                                >
+                                    {currentPage < 4 ? t('common.next', 'Next') : t('common.finish', 'Finish')}
+                                </Button>
+                            </div>
                         </ModalBody>
                     </>
                 )}

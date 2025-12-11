@@ -11,6 +11,8 @@ export default function EditProject() {
   let initialStep = searchParams.get('step');
   // Obter logoIndex do URL (ex: ?logoIndex=0)
   const logoIndex = searchParams.get('logoIndex');
+  const logoId = searchParams.get('logoId');
+  const logoNumber = searchParams.get('logoNumber');
   
   // Se há logoIndex mas não há initialStep, definir initialStep para logo-instructions
   if (logoIndex && !initialStep) {
@@ -38,6 +40,8 @@ export default function EditProject() {
         onClose={handleClose}
         initialStep={initialStep}
         logoIndex={logoIndex ? parseInt(logoIndex, 10) : null}
+        logoId={logoId || null}
+        logoNumber={logoNumber || null}
       />
     </div>
   );
