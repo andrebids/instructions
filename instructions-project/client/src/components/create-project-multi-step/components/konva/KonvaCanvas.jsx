@@ -328,6 +328,15 @@ export const KonvaCanvas = forwardRef(({
     return () => window.removeEventListener('keydown', handleKey);
   }, [selectedId, onDecorationRemove]);
 
+  // Garantir que o selectedId referencia uma decoração existente
+  useEffect(() => {
+    if (!selectedId) return;
+    const exists = decorations.some((d) => d.id === selectedId);
+    if (!exists) {
+      setSelectedId(null);
+    }
+  }, [decorations, selectedId]);
+
   // Handle drag and drop da biblioteca (HTML)
   const handleDragOver = (e) => {
     e.preventDefault();

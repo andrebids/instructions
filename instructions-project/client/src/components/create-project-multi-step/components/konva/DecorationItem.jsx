@@ -146,16 +146,16 @@ export const DecorationItem = ({
     }
     
     // Cleanup: destruir transformer quando componente desmonta
-    // IMPORTANTE: Usar destroy() ao invés de remove() porque não vamos reutilizar o nó
-    // destroy() remove todas as referências internas do Konva, evitando memory leaks
+    // IMPORTANTE: não destruir o nó manualmente, deixar o React-Konva gerir o ciclo
+    // Apenas desanexar nós para evitar referências pendentes
     return () => {
       if (trRef.current) {
         try {
-          // Remover nós do transformer antes de destruir
           trRef.current.nodes([]);
-          // Destruir transformer para evitar memory leaks
-          // destroy() é necessário quando não vamos reutilizar o nó
-          trRef.current.destroy();
+          const layer = trRef.current.getLayer?.();
+          if (layer) {
+            layer.batchDraw();
+          }
         } catch (error) {
           console.warn('⚠️ [DecorationItem] Erro ao destruir transformer:', error);
         }
