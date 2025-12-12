@@ -76,119 +76,177 @@ export const LogoDetailsContent = ({ logo }) => {
         setPreviewAttachment(null);
     };
 
+    // Helper functions to get color styles based on color name
+    const getColorStyle = (name) => {
+        if (!name) return {};
+        const n = name.toLowerCase();
+        const palette = [
+            { keys: ["blanc", "white"], color: "#f5f5f5" },
+            { keys: ["noir", "black"], color: "#111111" },
+            { keys: ["gris", "gray", "grey"], color: "#9ca3af" },
+            { keys: ["rouge", "red"], color: "#e03131" },
+            { keys: ["vert", "green"], color: "#2f9e44" },
+            { keys: ["bleu", "blue"], color: "#228be6" },
+            { keys: ["jaune", "yellow"], color: "#f2c200" },
+            { keys: ["or", "gold"], color: "#d4a017" },
+            { keys: ["orange"], color: "#f08c00" },
+            { keys: ["violet", "purple"], color: "#9c36b5" },
+            { keys: ["rose", "pink"], color: "#e64980" },
+            { keys: ["marron", "brown", "chocolat"], color: "#8d5524" },
+            { keys: ["argent", "silver"], color: "#c0c0c0" },
+            { keys: ["cuivre", "copper"], color: "#b87333" },
+            { keys: ["beige"], color: "#d9b38c" },
+            { keys: ["nude"], color: "#d3b8ae" },
+        ];
+        const match = palette.find((p) => p.keys.some((k) => n.includes(k)));
+        return match ? { color: match.color } : { color: "#9ca3af" }; // Default to grey if no match
+    };
+
+    const getDotStyle = (name) => {
+        const style = getColorStyle(name);
+        return style.color ? { backgroundColor: style.color } : { backgroundColor: "#9ca3af" };
+    };
+
+    // Get a lighter/more muted version of the color for reference badges
+    const getLightColorStyle = (name) => {
+        if (!name) return { backgroundColor: "#6b7280" }; // Default grey
+        const n = name.toLowerCase();
+        const palette = [
+            { keys: ["blanc", "white"], color: "#d1d5db" },
+            { keys: ["noir", "black"], color: "#4b5563" },
+            { keys: ["gris", "gray", "grey"], color: "#6b7280" },
+            { keys: ["rouge", "red"], color: "#dc2626" },
+            { keys: ["vert", "green"], color: "#16a34a" },
+            { keys: ["bleu", "blue"], color: "#2563eb" },
+            { keys: ["jaune", "yellow"], color: "#ca8a04" },
+            { keys: ["or", "gold"], color: "#a16207" },
+            { keys: ["orange"], color: "#ea580c" },
+            { keys: ["violet", "purple"], color: "#9333ea" },
+            { keys: ["rose", "pink"], color: "#db2777" },
+            { keys: ["marron", "brown", "chocolat"], color: "#78350f" },
+            { keys: ["argent", "silver"], color: "#9ca3af" },
+            { keys: ["cuivre", "copper"], color: "#92400e" },
+            { keys: ["beige"], color: "#a78b5b" },
+            { keys: ["nude"], color: "#a78b5b" },
+        ];
+        const match = palette.find((p) => p.keys.some((k) => n.includes(k)));
+        return { backgroundColor: match ? match.color : "#6b7280" };
+    };
+
     return (
         <div className="relative overflow-hidden rounded-2xl border border-default-200 dark:border-default-100/40 bg-content1 dark:bg-[#0d0f14] text-default-900 dark:text-default-200 shadow-xl">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.04),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(0,0,0,0.03),transparent_40%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.06),transparent_40%)]" />
 
-            <div className="relative space-y-8 p-6 lg:p-8">
-                {/* Top row: Logo Number, Logo Name on left, Requested By on right */}
-                <div className="flex flex-wrap items-center justify-between gap-6 pb-4 border-b border-default-200 dark:border-white/10">
-                    <div className="flex flex-wrap items-center gap-6">
-                        <div className="flex items-center gap-2">
-                            <p className="text-2xl font-bold leading-tight text-default-900 dark:text-white">{logo.logoNumber || '—'}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <p className="text-xl font-semibold leading-tight text-default-900 dark:text-white">{logo.logoName || '—'}</p>
-                        </div>
+            <div className="relative p-6 lg:p-8">
+                {/* Header - Compact and scannable */}
+                <div className="flex flex-wrap items-baseline justify-between gap-4 pb-4 mb-6 border-b-2 border-default-200 dark:border-white/20">
+                    <div className="flex flex-wrap items-baseline gap-4">
+                        <span className="text-2xl font-bold text-default-900 dark:text-white">{logo.logoNumber || '—'}</span>
+                        <span className="text-xl font-semibold text-default-900 dark:text-white">{logo.logoName || '—'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-default-500 dark:text-default-400">
-                        <Icon icon="lucide:user" width={16} />
+                    <div className="flex items-center gap-2 text-sm text-default-600 dark:text-default-400">
+                        <Icon icon="lucide:user" width={14} />
                         <span>{logo.requestedBy || t('common.notInformed', 'Não informado')}</span>
                     </div>
                 </div>
 
-                <div className="grid gap-8 lg:grid-cols-12">
-                    <div className="space-y-6 lg:col-span-5">
-
+                {/* Main content - Grid 2 columns: Left (Dimensions + Specs), Right (Attachments full height) */}
+                <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
+                    {/* Left column - Dimensions & Specs stacked */}
+                    <div className="space-y-6">
+                        {/* Dimensions - Table format for quick scanning */}
                         {hasDimensions && (
-                            <div className="space-y-3 rounded-xl border border-default-200/80 dark:border-white/10 bg-default-50/80 dark:bg-white/5 p-4">
-                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-200">
-                                    <Icon icon="lucide:ruler" width={18} />
-                                    <span>{t('pages.projectDetails.dimensions')}</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300 mb-3">
+                                    <Icon icon="lucide:ruler" width={14} />
+                                    {t('pages.projectDetails.dimensions')}
+                                </h3>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     {[
                                         { key: 'height', label: t('pages.projectDetails.height'), value: logo.dimensions?.height?.value, locked: logo.dimensions?.height?.imperative },
                                         { key: 'length', label: t('pages.projectDetails.length'), value: logo.dimensions?.length?.value, locked: logo.dimensions?.length?.imperative },
                                         { key: 'width', label: t('pages.projectDetails.width'), value: logo.dimensions?.width?.value, locked: logo.dimensions?.width?.imperative },
                                         { key: 'diameter', label: t('pages.projectDetails.diameter'), value: logo.dimensions?.diameter?.value, locked: logo.dimensions?.diameter?.imperative },
                                     ].filter(item => item.value).map(item => (
-                                        <div
-                                            key={item.key}
-                                            className="flex items-center justify-between rounded-lg border border-default-200 dark:border-white/10 bg-white dark:bg-black/40 p-3"
-                                        >
-                                            <div className="space-y-1">
-                                                <p className="text-[11px] font-semibold uppercase tracking-wider text-default-500 dark:text-default-400">{item.label}</p>
-                                                <p className="text-lg font-bold text-default-900 dark:text-white">
-                                                    {item.value}
-                                                    <span className="ml-1 text-xs font-semibold text-default-500 dark:text-default-500">m</span>
-                                                </p>
+                                        <div key={item.key} className="flex items-center justify-between p-2.5 rounded border border-default-200/40 dark:border-white/10 bg-default-50/50 dark:bg-white/5">
+                                            <div>
+                                                <div className="text-xs uppercase tracking-wide text-amber-700 dark:text-amber-300 font-medium mb-0.5">{item.label}</div>
+                                                <div className="text-base font-bold text-default-900 dark:text-white">
+                                                    {item.value}<span className="text-xs font-normal text-default-500 dark:text-default-300 ml-0.5">m</span>
+                                                </div>
                                             </div>
-                                            {item.locked && <Icon icon="lucide:lock" className="text-warning-300" />}
+                                            {item.locked && <Icon icon="lucide:lock" className="text-red-500 dark:text-red-400" width={16} />}
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         )}
 
+                        {/* Technical Specs - Compact list format, prioritizing: Uso, Fixação, Lacado */}
                         {hasSpecs && (
-                            <div className="space-y-3 rounded-xl border border-default-200/80 dark:border-white/10 bg-default-50/80 dark:bg-white/5 p-4">
-                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-purple-700 dark:text-purple-200">
-                                    <Icon icon="lucide:settings-2" width={18} />
-                                    <span>{t('pages.projectDetails.technicalSpecs')}</span>
-                                </div>
-                                <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                                <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-purple-700 dark:text-purple-300 mb-3">
+                                    <Icon icon="lucide:settings-2" width={14} />
+                                    {t('pages.projectDetails.technicalSpecs')}
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                                     {[
+                                        // Priority 1: Most important specs first
                                         logo.usageOutdoor !== undefined && {
                                             key: 'usage',
                                             icon: logo.usageOutdoor ? 'lucide:sun' : 'lucide:home',
                                             label: t('pages.projectDetails.usage', 'Uso'),
-                                            value: logo.usageOutdoor ? t('pages.projectDetails.outdoor') : t('pages.projectDetails.indoor')
+                                            value: logo.usageOutdoor ? t('pages.projectDetails.outdoor') : t('pages.projectDetails.indoor'),
+                                            priority: 1
                                         },
                                         logo.fixationType && {
                                             key: 'fixation',
                                             icon: 'lucide:anchor',
                                             label: t('pages.projectDetails.fixation', 'Fixação'),
-                                            value: t(`pages.projectDetails.fixationTypes.${logo.fixationType}`, logo.fixationType)
-                                        },
-                                        logo.maxWeightConstraint && logo.maxWeight && {
-                                            key: 'maxWeight',
-                                            icon: 'lucide:scale',
-                                            label: t('pages.projectDetails.maxWeightConstraint'),
-                                            value: `${logo.maxWeight} kg`
-                                        },
-                                        logo.controlReport && {
-                                            key: 'controlReport',
-                                            icon: 'lucide:file-check',
-                                            label: t('pages.projectDetails.controlReport'),
-                                            value: t('common.yes', 'Sim')
+                                            value: t(`pages.projectDetails.fixationTypes.${logo.fixationType}`, logo.fixationType),
+                                            priority: 1
                                         },
                                         logo.lacqueredStructure && {
                                             key: 'lacquered',
                                             icon: 'lucide:sparkles',
                                             label: t('pages.projectDetails.lacquered', 'Lacado'),
-                                            value: logo.lacquerColor || t('common.yes', 'Sim')
+                                            value: logo.lacquerColor || t('common.yes', 'Sim'),
+                                            priority: 1
+                                        },
+                                        // Priority 2: Other specs
+                                        logo.maxWeightConstraint && logo.maxWeight && {
+                                            key: 'maxWeight',
+                                            icon: 'lucide:scale',
+                                            label: t('pages.projectDetails.maxWeightConstraint'),
+                                            value: `${logo.maxWeight} kg`,
+                                            priority: 2
+                                        },
+                                        logo.controlReport && {
+                                            key: 'controlReport',
+                                            icon: 'lucide:file-check',
+                                            label: t('pages.projectDetails.controlReport'),
+                                            value: t('common.yes', 'Sim'),
+                                            priority: 2
                                         },
                                         logo.ballast && {
                                             key: 'ballast',
                                             icon: 'lucide:check-circle',
                                             label: t('pages.projectDetails.ballast', 'Balastro'),
-                                            value: t('common.yes', 'Sim')
+                                            value: t('common.yes', 'Sim'),
+                                            priority: 2
                                         },
                                         logo.mastDiameter && {
                                             key: 'mast',
                                             icon: 'lucide:ruler',
                                             label: t('pages.projectDetails.mastDiameter', 'Diâmetro mastro'),
-                                            value: `${logo.mastDiameter} mm`
+                                            value: `${logo.mastDiameter} mm`,
+                                            priority: 2
                                         }
-                                    ].filter(Boolean).map(item => (
-                                        <div key={item.key} className="flex items-start gap-3 rounded-lg border border-default-200 dark:border-white/10 bg-white dark:bg-black/40 p-3">
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-default-100 dark:bg-white/10">
-                                                <Icon icon={item.icon} className="text-default-700 dark:text-white" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <p className="text-[11px] font-semibold uppercase tracking-wider text-default-500 dark:text-default-400">{item.label}</p>
-                                                <p className="text-sm font-semibold text-default-900 dark:text-white">{item.value}</p>
+                                    ].filter(Boolean).sort((a, b) => (a.priority || 2) - (b.priority || 2)).map(item => (
+                                        <div key={item.key} className="flex items-center justify-between p-2.5 rounded border border-default-200/40 dark:border-white/10 bg-default-50/50 dark:bg-white/5">
+                                            <div>
+                                                <div className="text-xs uppercase tracking-wide text-purple-700 dark:text-purple-300 font-bold mb-0.5">{item.label}</div>
+                                                <div className="text-base font-normal text-default-900 dark:text-white break-words">{item.value}</div>
                                             </div>
                                         </div>
                                     ))}
@@ -197,200 +255,168 @@ export const LogoDetailsContent = ({ logo }) => {
                         )}
                     </div>
 
-                    <div className="space-y-6 lg:col-span-3">
-                        {logo.generatedImage && (
-                            <div className="space-y-3 rounded-xl border border-default-200/80 dark:border-white/10 bg-default-50/80 dark:bg-white/5 p-4">
-                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary-700 dark:text-primary-200">
-                                    <Icon icon="lucide:sparkles" width={16} />
-                                    <span>{t('pages.projectDetails.aiGeneratedImage', 'AI Generated Image')}</span>
-                                </div>
-                                <div className="relative aspect-square overflow-hidden rounded-lg border border-default-200 dark:border-white/10 bg-white dark:bg-black/40">
-                                    <img
-                                        src={buildImageUrl(logo.generatedImage)}
-                                        alt={logo.logoName || 'AI Generated Logo'}
-                                        className="h-full w-full object-cover"
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="space-y-3 rounded-xl border border-default-200/80 dark:border-white/10 bg-default-50/80 dark:bg-white/5 p-4">
-                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-teal-700 dark:text-teal-200">
-                                <Icon icon="lucide:paperclip" width={16} />
-                                <span>{t('pages.projectDetails.attachments', 'Anexos')}</span>
-                                {hasAttachments && (
-                                    <span className="ml-1 rounded-full bg-default-200 px-2 py-0.5 text-[11px] font-semibold text-default-800 dark:bg-white/10 dark:text-white">
-                                        {logo.attachmentFiles.length}
-                                    </span>
+                    {/* Right column - Attachments (full height) */}
+                    {(logo.generatedImage || hasAttachments) && (
+                        <div className="flex flex-col lg:h-full">
+                            <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-teal-700 dark:text-teal-300 mb-3 flex-shrink-0">
+                                <Icon icon="lucide:image" width={14} />
+                                {t('pages.projectDetails.attachments', 'Anexos')}
+                                {hasAttachments && <span className="text-xs font-normal">({logo.attachmentFiles.length})</span>}
+                            </h3>
+                            <div className="grid grid-cols-2 gap-2.5 flex-1 auto-rows-max content-start">
+                                {logo.generatedImage && (
+                                    <div className="relative aspect-square overflow-hidden rounded border border-default-200/40 dark:border-white/10 bg-default-50/50 dark:bg-white/5">
+                                        <img
+                                            src={buildImageUrl(logo.generatedImage)}
+                                            alt={logo.logoName || 'AI Generated Logo'}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    </div>
                                 )}
+                                {hasAttachments && logo.attachmentFiles.slice(0, logo.generatedImage ? 3 : 4).map((attachment, idx) => {
+                                    const isImage = attachment.mimetype?.startsWith('image/');
+                                    const fileUrl = buildImageUrl(attachment.url || attachment.path);
+                                    return (
+                                        <div key={idx} className="group relative aspect-square overflow-hidden rounded border border-default-200/40 dark:border-white/10 bg-default-50/50 dark:bg-white/5">
+                                            {isImage ? (
+                                                <button type="button" onClick={() => handleOpenPreview(attachment)} className="block h-full w-full">
+                                                    <img src={fileUrl} alt={attachment.name} className="h-full w-full object-cover transition-opacity group-hover:opacity-80" />
+                                                </button>
+                                            ) : (
+                                                <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="flex h-full items-center justify-center p-2">
+                                                    <Icon icon="lucide:file" className="text-default-400" width={20} />
+                                                </a>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
-                            {hasAttachments ? (
-                                <div className="grid grid-cols-2 gap-3">
-                                    {logo.attachmentFiles.map((attachment, idx) => {
-                                        const isImage = attachment.mimetype?.startsWith('image/');
-                                        const fileUrl = buildImageUrl(attachment.url || attachment.path);
+                        </div>
+                    )}
+                </div>
 
-                                        return (
-                                            <div
-                                                key={idx}
-                                            className="group relative overflow-hidden rounded-lg border border-default-200 dark:border-white/10 bg-white dark:bg-black/40"
-                                            >
-                                                {isImage ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleOpenPreview(attachment)}
-                                                        className="block h-full w-full"
-                                                    >
-                                                        <img
-                                                            src={fileUrl}
-                                                            alt={attachment.name}
-                                                            className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                                                        />
-                                                        <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
-                                                    </button>
-                                                ) : (
-                                                    <a
-                                                        href={fileUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center text-xs text-default-600 dark:text-default-200 transition-colors hover:bg-default-100/70 dark:hover:bg-white/5"
-                                                    >
-                                                        <Icon icon="lucide:file" className="text-default-500 dark:text-default-400" />
-                                                        <span className="line-clamp-2 w-full font-medium">{attachment.name}</span>
-                                                    </a>
-                                                )}
+                {/* Composition - Full width, split in 2 equal columns */}
+                {hasComposition && (
+                    <div className="mt-6">
+                        <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-orange-700 dark:text-orange-300 mb-3">
+                            <Icon icon="lucide:layers" width={14} />
+                            {t('pages.projectDetails.composition')}
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Components - Left column */}
+                            {componentList.length > 0 && (
+                                <div>
+                                    <div className="text-xs font-semibold text-orange-700 dark:text-orange-300 mb-2">
+                                        {t('pages.projectDetails.components', 'Componentes')} ({componentList.length})
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {componentList.map((comp, idx) => (
+                                            <div key={idx} className="p-2 rounded border border-default-200/40 dark:border-white/10 bg-default-50/50 dark:bg-white/5 min-h-[4rem]">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-sm font-semibold text-default-900 dark:text-white">{comp.componenteNome}</span>
+                                                    {comp.referencia && (
+                                                        <span 
+                                                            className="text-[10px] font-mono px-1.5 py-0.5 rounded text-white"
+                                                            style={comp.corNome ? getLightColorStyle(comp.corNome) : { backgroundColor: "#6b7280" }}
+                                                        >
+                                                            {comp.referencia}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col gap-1.5 text-xs text-default-600 dark:text-white">
+                                                    {comp.corNome && (
+                                                        <span className="flex items-center gap-1">
+                                                            <span className="h-2 w-2 rounded-full" style={getDotStyle(comp.corNome)} />
+                                                            {comp.corNome}
+                                                        </span>
+                                                    )}
+                                                    {comp.acabamentoNome && (
+                                                        <span className="flex items-center gap-1">
+                                                            <span className="h-2 w-2 rounded-full" style={comp.corNome ? getDotStyle(comp.corNome) : { backgroundColor: "#9ca3af" }} />
+                                                            {comp.acabamentoNome}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
-                                        );
-                                    })}
+                                        ))}
+                                    </div>
                                 </div>
-                            ) : (
-                                <p className="text-sm text-default-500 dark:text-default-500">
-                                    {t('pages.projectDetails.attachmentsEmpty', 'Sem anexos adicionados')}
-                                </p>
+                            )}
+
+                            {/* Balls - Right column */}
+                            {ballsList.length > 0 && (
+                                <div>
+                                    <div className="text-xs font-semibold text-orange-700 dark:text-orange-300 mb-2">
+                                        {t('pages.projectDetails.balls', 'Bolas')} ({ballsList.length})
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {ballsList.map((bola, idx) => (
+                                            <div key={idx} className="p-2 rounded border border-default-200/40 dark:border-white/10 bg-default-50/50 dark:bg-white/5 min-h-[4rem]">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-sm font-semibold text-default-900 dark:text-white">{bola.bolaName}</span>
+                                                    {bola.reference && (
+                                                        <span 
+                                                            className="text-[10px] font-mono px-1.5 py-0.5 rounded text-white"
+                                                            style={bola.corNome ? getLightColorStyle(bola.corNome) : { backgroundColor: "#6b7280" }}
+                                                        >
+                                                            {bola.reference}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col gap-1.5 text-xs text-default-600 dark:text-white">
+                                                    {bola.corNome && (
+                                                        <span className="flex items-center gap-1">
+                                                            <span className="h-2 w-2 rounded-full" style={getDotStyle(bola.corNome)} />
+                                                            {bola.corNome}
+                                                        </span>
+                                                    )}
+                                                    {bola.acabamentoNome && (
+                                                        <span className="flex items-center gap-1">
+                                                            <span className="h-2 w-2 rounded-full" style={bola.corNome ? getDotStyle(bola.corNome) : { backgroundColor: "#9ca3af" }} />
+                                                            {bola.acabamentoNome}
+                                                        </span>
+                                                    )}
+                                                    {bola.tamanhoName && (
+                                                        <span className="flex items-center gap-1">
+                                                            <span className="h-2 w-2 rounded-full" style={bola.corNome ? getDotStyle(bola.corNome) : { backgroundColor: "#9ca3af" }} />
+                                                            {bola.tamanhoName}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>
+                )}
 
-                    <div className="space-y-6 lg:col-span-4">
-                        {hasComposition && (
-                            <div className="space-y-4 rounded-xl border border-default-200/80 dark:border-white/10 bg-default-50/80 dark:bg-white/5 p-4">
-                                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-orange-700 dark:text-orange-200">
-                                    <Icon icon="lucide:layers" width={18} />
-                                    <span>{t('pages.projectDetails.composition')}</span>
-                                </div>
-
-                                {componentList.length > 0 && (
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-default-600 dark:text-default-300">
-                                            <Icon icon="lucide:box" width={14} />
-                                            <span>{t('pages.projectDetails.components', 'Componentes')}</span>
-                                            <span className="rounded-full bg-default-200 px-2 py-0.5 text-[11px] text-default-800 dark:bg-white/10 dark:text-white">
-                                                {componentList.length}
-                                            </span>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {componentList.map((comp, idx) => (
-                                                <div key={idx} className="rounded-lg border border-default-200 dark:border-white/10 bg-white dark:bg-black/40 p-3">
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="text-sm font-semibold text-default-900 dark:text-white">{comp.componenteNome}</span>
-                                                        {comp.referencia && (
-                                                            <span className="text-[11px] font-mono rounded-full bg-default-100 px-2 py-0.5 text-orange-700 dark:bg-white/10 dark:text-orange-200">
-                                                                {comp.referencia}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="mt-2 flex flex-wrap gap-3 text-xs text-default-500 dark:text-default-400">
-                                                        {comp.corNome && (
-                                                            <span className="flex items-center gap-1">
-                                                                <span className="h-2 w-2 rounded-full bg-orange-500 dark:bg-orange-400" />
-                                                                <span>{comp.corNome}</span>
-                                                            </span>
-                                                        )}
-                                                        {comp.acabamentoNome && (
-                                                            <span className="flex items-center gap-1">
-                                                                <span className="h-2 w-2 rounded-full bg-orange-400 dark:bg-orange-300" />
-                                                                <span>{comp.acabamentoNome}</span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {ballsList.length > 0 && (
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-default-600 dark:text-default-300">
-                                            <Icon icon="lucide:circle-dot" width={14} />
-                                            <span>{t('pages.projectDetails.balls', 'Bolas')}</span>
-                                            <span className="rounded-full bg-default-200 px-2 py-0.5 text-[11px] text-default-800 dark:bg-white/10 dark:text-white">
-                                                {ballsList.length}
-                                            </span>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {ballsList.map((bola, idx) => (
-                                                <div key={idx} className="rounded-lg border border-default-200 dark:border-white/10 bg-white dark:bg-black/40 p-3">
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="text-sm font-semibold text-default-900 dark:text-white">{bola.bolaName}</span>
-                                                        {bola.reference && (
-                                                            <span className="text-[11px] font-mono rounded-full bg-default-100 px-2 py-0.5 text-orange-700 dark:bg-white/10 dark:text-orange-200">
-                                                                {bola.reference}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="mt-2 flex flex-wrap gap-3 text-xs text-default-500 dark:text-default-400">
-                                                        {bola.corNome && (
-                                                            <span className="flex items-center gap-1">
-                                                                <span className="h-2 w-2 rounded-full bg-orange-500 dark:bg-orange-400" />
-                                                                <span>{bola.corNome}</span>
-                                                            </span>
-                                                        )}
-                                                        {bola.acabamentoNome && (
-                                                            <span className="flex items-center gap-1">
-                                                                <span className="h-2 w-2 rounded-full bg-orange-400 dark:bg-orange-300" />
-                                                                <span>{bola.acabamentoNome}</span>
-                                                            </span>
-                                                        )}
-                                                        {bola.tamanhoName && (
-                                                            <span className="flex items-center gap-1">
-                                                                <span className="h-2 w-2 rounded-full bg-orange-300 dark:bg-orange-200" />
-                                                                <span>{bola.tamanhoName}</span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
+                {/* Details - Bottom section for longer text */}
                 {hasDetails && (
-                    <div className="space-y-4 rounded-xl border border-default-200/80 dark:border-white/10 bg-default-50/80 dark:bg-white/5 p-5">
-                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-teal-700 dark:text-teal-200">
-                            <Icon icon="lucide:file-text" width={16} />
-                            <span>{t('pages.projectDetails.details')}</span>
+                    <div className="mt-6 pt-6 border-t border-default-200/60 dark:border-white/10">
+                        <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-teal-700 dark:text-teal-300 mb-4">
+                            <Icon icon="lucide:file-text" width={14} />
+                            {t('pages.projectDetails.details')}
+                        </h3>
+                        <div className="space-y-4">
+                            {logo.description && (
+                                <div>
+                                    <div className="text-xs font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300 mb-1.5">
+                                        {t('pages.projectDetails.description')}
+                                    </div>
+                                    <p className="text-sm leading-relaxed text-default-800 dark:text-white whitespace-pre-wrap">{logo.description}</p>
+                                </div>
+                            )}
+                            {logo.criteria && (
+                                <div>
+                                    <div className="text-xs font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300 mb-1.5">
+                                        {t('pages.projectDetails.criteria')}
+                                    </div>
+                                    <p className="text-sm leading-relaxed text-default-800 dark:text-white whitespace-pre-wrap">{logo.criteria}</p>
+                                </div>
+                            )}
                         </div>
-                        {logo.description && (
-                            <div className="space-y-1">
-                                <p className="text-[11px] font-semibold uppercase tracking-wider text-default-600 dark:text-default-400">
-                                    {t('pages.projectDetails.description')}
-                                </p>
-                                <p className="text-sm leading-relaxed text-default-800 dark:text-white whitespace-pre-wrap">{logo.description}</p>
-                            </div>
-                        )}
-                        {logo.criteria && (
-                            <div className="space-y-1">
-                                <p className="text-[11px] font-semibold uppercase tracking-wider text-default-600 dark:text-default-400">
-                                    {t('pages.projectDetails.criteria')}
-                                </p>
-                                <p className="text-sm leading-relaxed text-default-800 dark:text-white whitespace-pre-wrap">{logo.criteria}</p>
-                            </div>
-                        )}
                     </div>
                 )}
             </div>
