@@ -17,15 +17,15 @@ const translations = {
             subtitle: "Stop managing dead stock. Start selling what you have.",
             list1: {
                 title: "Better Stock Rotation",
-                desc: "Algoritmos garantem que o stock antigo sai primeiro."
+                desc: "Algorithms ensure old stock is sold first."
             },
             list2: {
                 title: "Proactive Sales Suggestions",
-                desc: "\"Temos 50 Motivos Estrela livres, vende isto agora!\""
+                desc: "We have 50 Star Motifs available. Take advantage of this unique opportunity with reduced prices - it's the perfect time to make an excellent deal and secure quality products with special discount!"
             },
             list3: {
                 title: "Motif Reservation",
-                desc: "Funcionalidade \"Add to Cart\" instantânea para equipas internas."
+                desc: "Instant reservations with a simple click or by voice! Quick and seamless functionality."
             },
             badge1: "Web Version",
             badge2: "Mobile App",
@@ -295,11 +295,11 @@ const translations = {
             },
             list2: {
                 title: "Suggestions de Vente Proactives",
-                desc: "\"Nous avons 50 Motifs Étoile libres, vendez-les maintenant !\""
+                desc: "Nous avons 50 Motifs Étoile disponibles. Profitez de cette opportunité unique avec des prix réduits - c'est le moment idéal pour faire une excellente affaire et garantir des produits de qualité avec un rabais spécial !"
             },
             list3: {
                 title: "Réservation de Motifs",
-                desc: "Fonctionnalité \"Ajouter au Panier\" instantanée pour les équipes internes."
+                desc: "Réservations instantanées d'un simple clic ou par la voix ! Fonctionnalité rapide et fluide."
             },
             badge1: "Version Web",
             badge2: "App Mobile",
