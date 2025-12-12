@@ -3,27 +3,30 @@ import { Button, Snippet, Card, CardBody, CardHeader } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 const ActionCard = ({ title, button, code }) => {
+  const [copied, setCopied] = React.useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <Card className="shadow-sm border border-default-200 dark:border-default-100 h-full">
-      <CardHeader className="bg-default-50 dark:bg-default-50/50 border-b border-default-200 dark:border-default-100 px-3 py-2">
+      <CardHeader className="bg-default-50 dark:bg-default-50/50 border-b border-default-200 dark:border-default-100 px-3 py-2 flex justify-between items-center">
         <h3 className="text-xs font-semibold text-default-700 uppercase tracking-wider">{title}</h3>
-      </CardHeader>
-      <CardBody className="p-2 flex flex-col items-center justify-between gap-2">
-        <div className="flex-grow flex items-center justify-center py-2 w-full border border-dashed border-default-200 rounded-lg bg-content1/50 min-h-[60px]">
-          {button}
-        </div>
-        <Snippet
-          hideSymbol
-          variant="flat"
-          color="default"
+        <Button
+          isIconOnly
           size="sm"
-          codeString={code}
-          className="w-full max-w-full"
-          classNames={{
-            pre: "truncate text-[10px]",
-            base: "p-1.5 w-full min-h-0"
-          }}
-        />
+          variant="light"
+          onPress={handleCopy}
+          className="min-w-6 w-6 h-6 text-default-400 hover:text-primary-500"
+        >
+          {copied ? <Icon icon="lucide:check" width={14} /> : <Icon icon="lucide:copy" width={14} />}
+        </Button>
+      </CardHeader>
+      <CardBody className="p-4 flex items-center justify-center min-h-[100px]">
+        {button}
       </CardBody>
     </Card>
   );
