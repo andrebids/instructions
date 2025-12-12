@@ -144,7 +144,7 @@ export const AIAssistantChat = ({ onClose, initialMessages }) => {
               <div
                 className={`max-w-[80%] px-4 py-2 rounded-xl ${
                   message.isUser
-                    ? "bg-primary text-white rounded-tr-none"
+                    ? "bg-primary-500 text-white rounded-tr-none"
                     : "bg-content2 rounded-tl-none"
                 }`}
               >

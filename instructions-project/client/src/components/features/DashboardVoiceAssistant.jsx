@@ -41,7 +41,7 @@ export const DashboardVoiceAssistant = () => {
       <Button
         isIconOnly
         color="primary"
-        className={`fixed bottom-6 right-6 shadow-lg w-14 h-14 rounded-full transition-transform duration-200 hover:scale-105 z-50 bg-blue-600 text-white ${listening ? 'animate-pulse ring-4 ring-primary/30' : ''}`}
+        className={`fixed bottom-6 right-6 shadow-lg w-14 h-14 rounded-full transition-transform duration-200 hover:scale-105 z-50 bg-primary-500 text-white ${listening ? 'animate-pulse ring-4 ring-primary/30' : ''}`}
         onPress={toggleOpen}
         aria-label={isOpen ? t('common.close') : t('pages.dashboard.voiceAssistant.title')}
       >
@@ -77,7 +77,7 @@ export const DashboardVoiceAssistant = () => {
                   {[1, 2, 3].map(i => (
                     <motion.div
                       key={i}
-                      className="w-1 bg-primary rounded-full"
+                      className="w-1 bg-primary-500 rounded-full"
                       animate={{ height: [4, 12, 4] }}
                       transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.1 }}
                     />
@@ -95,7 +95,7 @@ export const DashboardVoiceAssistant = () => {
                 >
                   <div
                     className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.sender === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-tr-none'
+                      ? 'bg-primary-500 text-primary-foreground rounded-tr-none'
                       : 'bg-default-100 text-foreground rounded-tl-none'
                       }`}
                   >

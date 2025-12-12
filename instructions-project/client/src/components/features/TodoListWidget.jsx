@@ -264,7 +264,7 @@ export const TodoListWidget = React.memo(() => {
                     onPress={handleCreateTask}
                     isLoading={creating}
                     isDisabled={!newTaskTitle.trim() || creating}
-                    className="h-8 px-4 font-medium bg-blue-600 text-white"
+                    className="h-8 px-4 font-medium bg-primary-500 text-white"
                   >
                     {t('pages.dashboard.todoListWidget.create')}
                   </Button>

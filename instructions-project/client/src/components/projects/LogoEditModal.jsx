@@ -480,7 +480,7 @@ export default React.memo(function LogoEditModal({
                                                             <div
                                                                 className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${
                                                                     isActive
-                                                                        ? 'bg-primary border-primary text-white'
+                                                                        ? 'bg-primary-500 border-primary text-white'
                                                                         : isCompleted
                                                                         ? 'bg-success border-success text-white'
                                                                         : 'bg-default-200 border-default-300 text-default-500'

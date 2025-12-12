@@ -205,7 +205,7 @@ export default function AdminUsers() {
             setSearchQuery('');
             onCreateOpen();
           }}
-          className="bg-blue-600 text-white"
+          className="bg-primary-500 text-white"
         >
           {t('pages.dashboard.adminUsers.addUser')}
         </Button>

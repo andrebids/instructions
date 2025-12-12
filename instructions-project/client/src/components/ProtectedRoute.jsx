@@ -62,7 +62,7 @@ export default function ProtectedRoute({
             </p>
             <button
               onClick={() => window.location.href = redirectTo}
-              className="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+              className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-500/90"
             >
               Voltar
             </button>

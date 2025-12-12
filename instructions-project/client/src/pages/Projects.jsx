@@ -8,6 +8,7 @@ import ProjectAddPieceModal from "../components/orders/ProjectAddPieceModal";
 import { Icon } from "@iconify/react";
 import { useResponsiveProfile } from "../hooks/useResponsiveProfile";
 import { Scroller } from "../components/ui/scroller";
+import { HeroUIDebug } from "../components/debug/HeroUIDebug";
 
 export default function Projects() {
   const { userName } = useUser();
@@ -45,6 +46,7 @@ export default function Projects() {
 
   return (
     <Scroller className={`flex-1 min-h-0 p-6 ${isHandheld ? "pb-24" : "pb-6"}`} hideScrollbar>
+      <HeroUIDebug />
       <PageTitle title="Projects" userName={userName} lead={`Manage your projects, ${userName}`} subtitle="Review projects and budgets." className="mb-6" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

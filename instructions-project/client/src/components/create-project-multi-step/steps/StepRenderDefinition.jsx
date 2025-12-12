@@ -224,7 +224,7 @@ export function StepRenderDefinition({ formData, onInputChange, onNext, onBack }
               isDisabled={!summary.canConfirm || isProcessing}
               isLoading={isProcessing}
               endContent={!isProcessing && <Icon icon="lucide:arrow-right" />}
-              className="bg-blue-600 text-white"
+              className="bg-primary-500 text-white"
             >
               {isProcessing
                 ? t('pages.createProject.renderDefinition.summary.processing')

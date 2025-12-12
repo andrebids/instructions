@@ -295,7 +295,7 @@ export const SmartProjectTable = React.memo(({ projects = [], onProjectsUpdate, 
                   classNames={{
                     wrapper: "gap-0",
                     item: "bg-transparent text-default-600 hover:bg-default-100/10 dark:hover:bg-default-800/10 min-w-8 w-8 h-8",
-                    cursor: "bg-blue-600 text-white font-medium"
+                    cursor: "bg-primary-500 text-white font-medium"
                   }}
                 />
               </div>

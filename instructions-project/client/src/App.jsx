@@ -13,6 +13,7 @@ const Favorites = React.lazy(() => import("./pages/Favorites"));
 const Landing = React.lazy(() => import("./pages/Landing"));
 const AdminProducts = React.lazy(() => import("./pages/AdminProducts"));
 const AdminUsers = React.lazy(() => import("./pages/AdminUsers"));
+const DebugUI = React.lazy(() => import("./pages/DebugUI"));
 const ProjectNotes = React.lazy(() => import("./pages/ProjectNotes"));
 const EditProject = React.lazy(() => import("./pages/EditProject"));
 const SignIn = React.lazy(() => import("./pages/SignIn"));
@@ -36,6 +37,7 @@ import { NotificationContainer } from "./components/notifications/NotificationCo
 import { useTheme } from "@heroui/use-theme";
 import Aurora from "./components/ui/Aurora";
 import { LayoutProvider, useLayout } from "./context/LayoutContext";
+import { HeroUIDebug } from "./components/debug/HeroUIDebug";
 
 function AppLayout() {
   const { isHandheld } = useResponsiveProfile();
@@ -92,6 +94,7 @@ function AppLayout() {
 
   return (
     <div className="bg-transparent text-foreground flex h-screen relative">
+      <HeroUIDebug />
       {isDark && !showCreateProjectForm && (
         <div className="fixed inset-0 z-0 pointer-events-none">
           <Aurora
@@ -134,6 +137,14 @@ function AppLayout() {
                 element={
                   <ProtectedRoute requireRole={['admin']}>
                     <AdminUsers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/debug-ui"
+                element={
+                  <ProtectedRoute requireRole={['admin']}>
+                    <DebugUI />
                   </ProtectedRoute>
                 }
               />

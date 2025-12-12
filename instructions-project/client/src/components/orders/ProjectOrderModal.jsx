@@ -99,7 +99,7 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
                 showValueLabel
               />
               <div className="mb-3 flex items-center justify-end">
-                <Button color="primary" variant="solid" size="sm" onPress={onAddPiece} isDisabled={isOrdered}>Add item</Button>
+                <Button color="primary" variant="solid" size="sm" className="bg-primary-500 text-white" onPress={onAddPiece} isDisabled={isOrdered}>Add item</Button>
               </div>
               {(!items || items.length === 0) ? (
                 <div className="text-default-500 text-sm">No items in this project.</div>
@@ -182,7 +182,7 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
                 <div className="text-sm text-default-500">{items?.length || 0} lines • {piecesCount} pieces</div>
                 <div className="flex items-center gap-2">
                   {(project && (projectStatusById?.[project.id] === 'to_order')) && (
-                    <Button color="primary" onPress={()=> setConfirmOpen(true)}>Order</Button>
+                    <Button color="primary" className="bg-primary-500 text-white" onPress={()=> setConfirmOpen(true)}>Order</Button>
                   )}
                   <Button 
                     variant="flat" 
@@ -207,7 +207,7 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
               Are you sure you want to order this project's items? You can review and edit items before confirming.
             </ModalBody>
             <ModalFooter>
-              <Button color="primary" onPress={()=> { setProjectStatus(project.id, 'ordered'); close(); }}>Confirm order</Button>
+              <Button color="primary" className="bg-primary-500 text-white" onPress={()=> { setProjectStatus(project.id, 'ordered'); close(); }}>Confirm order</Button>
               <Button 
                 variant="flat" 
                 onPress={close}
@@ -229,7 +229,7 @@ export default function ProjectOrderModal({ isOpen, onOpenChange, project, items
               <Input type="number" aria-label="Project budget" value={String(budgetInput)} onChange={(e)=> setBudgetInput(Number(e.target.value))} />
             </ModalBody>
             <ModalFooter>
-              <Button color="primary" onPress={()=> { setProjectBudget(project.id, budgetInput); close(); }}>Save</Button>
+              <Button color="primary" className="bg-primary-500 text-white" onPress={()=> { setProjectBudget(project.id, budgetInput); close(); }}>Save</Button>
               <Button 
                 variant="flat" 
                 onPress={close}

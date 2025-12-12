@@ -566,7 +566,7 @@ export function Header() {
                 </div>
 
                 <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-default-100/30 transition-colors cursor-pointer">
-                  <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></div>
+                  <div className="flex-shrink-0 w-2 h-2 bg-primary-500 rounded-full mt-2"></div>
                   <div className="flex-1">
                     <div className="font-medium text-sm">{t('components.header.notifications.newRevision')}</div>
                     <div className="text-xs text-default-500 mt-1">{t('components.header.notifications.newRevisionDescription')}</div>
@@ -846,7 +846,7 @@ export function Header() {
                       isLoading={isSaving}
                       size="sm"
                       startContent={!isSaving && <Icon icon="lucide:save" className="text-sm" />}
-                      className="flex-1 sm:flex-initial bg-blue-600 text-white"
+                      className="flex-1 sm:flex-initial bg-primary-500 text-white"
                     >
                       Salvar
                     </Button>

@@ -23,7 +23,7 @@ export function NotificationToast({ notification, onClose }) {
         success: 'bg-green-500',
         error: 'bg-red-500',
         info: 'bg-blue-400',
-        default: 'bg-primary'
+        default: 'bg-primary-500'
     };
 
     const handleClick = () => {

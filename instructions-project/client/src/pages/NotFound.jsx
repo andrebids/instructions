@@ -12,7 +12,7 @@ export default function NotFound() {
         <div className="grid w-full items-center gap-12 md:grid-cols-2">
           <div className="space-y-6">
             <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-              <span className="h-2 w-2 rounded-full bg-primary" aria-hidden />
+              <span className="h-2 w-2 rounded-full bg-primary-500" aria-hidden />
               {t("pages.notFound.badge")}
             </span>
             <div className="space-y-3">
@@ -33,7 +33,7 @@ export default function NotFound() {
               variant="solid"
               size="lg"
               radius="full"
-              className="w-fit bg-primary text-white shadow-lg shadow-primary/30 hover:brightness-110"
+              className="w-fit bg-primary-500 text-white"
             >
               {t("common.backToDashboard")}
             </Button>
