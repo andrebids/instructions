@@ -677,6 +677,22 @@
         "decorations": "décorations",
         "fromAIDesigner": "Du AI Designer"
       },
+      "observations": {
+        "activeParticipants": "Participants Actifs",
+        "quickActions": "Actions Rapides",
+        "projectCreator": "Créateur du Projet",
+        "referenceResultImage": "Référencer l'Image de Résultat",
+        "referenceInstruction": "Référencer l'Instruction",
+        "linkResultImage": "Lier l'Image de Résultat",
+        "linkInstruction": "Lier l'Instruction",
+        "noResultImagesAvailable": "Aucune image de résultat disponible pour le moment",
+        "noResultImagesAvailableShort": "Aucune image de résultat disponible",
+        "referenceGeneratedDesign": "Référencer un design généré",
+        "noInstructionsAvailable": "Aucune instruction disponible dans ce projet",
+        "referenceSpecificInstruction": "Référencer une instruction spécifique",
+        "referenceSpecificRequirement": "Référencer une exigence spécifique",
+        "designersHaventGeneratedResults": "Les designers n'ont pas encore généré de résultats."
+      },
       "projectProgress": "Progression du Projet",
       "projectStatus": "Statut du Projet",
       "deadline": "Date limite",

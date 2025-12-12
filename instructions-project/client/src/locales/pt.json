@@ -707,6 +707,22 @@
         "decorations": "decorações",
         "fromAIDesigner": "Do AI Designer"
       },
+      "observations": {
+        "activeParticipants": "Participantes Ativos",
+        "quickActions": "Ações Rápidas",
+        "projectCreator": "Criador do Projeto",
+        "referenceResultImage": "Referenciar Imagem de Resultado",
+        "referenceInstruction": "Referenciar Instrução",
+        "linkResultImage": "Vincular Imagem de Resultado",
+        "linkInstruction": "Vincular Instrução",
+        "noResultImagesAvailable": "Ainda não há imagens de resultado disponíveis",
+        "noResultImagesAvailableShort": "Nenhuma imagem de resultado disponível",
+        "referenceGeneratedDesign": "Referenciar um design gerado",
+        "noInstructionsAvailable": "Não há instruções disponíveis neste projeto",
+        "referenceSpecificInstruction": "Referenciar uma instrução específica",
+        "referenceSpecificRequirement": "Referenciar um requisito específico",
+        "designersHaventGeneratedResults": "Os designers ainda não geraram resultados."
+      },
       "logoDefaultName": "Logo {{index}}",
       "projectProgress": "Progresso do Projeto",
       "projectStatus": "Estado do Projeto",

@@ -699,6 +699,22 @@
         "decorations": "decorations",
         "fromAIDesigner": "From AI Designer"
       },
+      "observations": {
+        "activeParticipants": "Active Participants",
+        "quickActions": "Quick Actions",
+        "projectCreator": "Project Creator",
+        "referenceResultImage": "Reference Result Image",
+        "referenceInstruction": "Reference Instruction",
+        "linkResultImage": "Link Result Image",
+        "linkInstruction": "Link Instruction",
+        "noResultImagesAvailable": "No result images available yet",
+        "noResultImagesAvailableShort": "No result images available",
+        "referenceGeneratedDesign": "Reference a generated design",
+        "noInstructionsAvailable": "No instructions available in this project",
+        "referenceSpecificInstruction": "Reference a specific instruction",
+        "referenceSpecificRequirement": "Reference a specific requirement",
+        "designersHaventGeneratedResults": "Designers haven't generated any results yet."
+      },
       "logoDefaultName": "Logo {{index}}",
       "projectProgress": "Project Progress",
       "projectStatus": "Project Status",

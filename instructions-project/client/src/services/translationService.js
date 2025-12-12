@@ -3,6 +3,8 @@
  * Uses MyMemory Translation API for automatic text translation
  */
 
+import { detectLanguage as detectLanguageLocal } from '../utils/nlp/languageDetector';
+
 const TRANSLATION_API_URL = 'https://api.mymemory.translated.net/get';
 
 // Language codes mapping
@@ -29,9 +31,25 @@ export async function translateText(text, targetLang, sourceLang = null) {
     }
 
     try {
+        // Detect source language if not provided
+        let detectedSourceLang = sourceLang;
+        if (!detectedSourceLang) {
+            const detection = detectLanguageLocal(text, 'en');
+            detectedSourceLang = detection.language;
+            console.log(`🔍 [Translation] Detected source language: ${detectedSourceLang} (confidence: ${detection.confidence})`);
+        }
+
+        // Validate that source and target languages are different
+        if (detectedSourceLang === targetLang) {
+            console.warn(`⚠️ [Translation] Source and target languages are the same (${detectedSourceLang}), returning original text.`);
+            return {
+                translatedText: text,
+                detectedSourceLang: detectedSourceLang
+            };
+        }
+
         // Build language pair - MyMemory requires source|target format
-        // Default to 'en' as source if not provided, as most content is English
-        const langPair = sourceLang ? `${sourceLang}|${targetLang}` : `en|${targetLang}`;
+        const langPair = `${detectedSourceLang}|${targetLang}`;
 
         // Encode text for URL
         const encodedText = encodeURIComponent(text);
@@ -56,33 +74,40 @@ export async function translateText(text, targetLang, sourceLang = null) {
         if (data.responseStatus !== 200) {
             // Handle "same language" or invalid pair errors gracefully
             // If the API complains about the pair (e.g. en|en), just return original text
-            if (data.responseDetails && (
-                data.responseDetails.includes('INVALID TARGET LANGUAGE') ||
-                data.responseDetails.includes('same language') ||
-                data.responseDetails.includes('IS AN INVALID')
+            const errorDetails = data.responseDetails || '';
+            if (errorDetails && (
+                errorDetails.includes('INVALID TARGET LANGUAGE') ||
+                errorDetails.includes('same language') ||
+                errorDetails.includes('IS AN INVALID') ||
+                errorDetails.includes('PLEASE SELECT TWO DISTINCT LANGUAGES') ||
+                errorDetails.toUpperCase().includes('DISTINCT LANGUAGES')
             )) {
                 console.warn('⚠️ [Translation] Same language or invalid pair detected, returning original text.');
                 return {
                     translatedText: text,
-                    detectedSourceLang: sourceLang || 'en'
+                    detectedSourceLang: detectedSourceLang
                 };
             }
 
-            console.error('❌ [Translation] API error:', data.responseStatus, data.responseDetails);
-            throw new Error(data.responseDetails || 'Translation failed');
+            console.error('❌ [Translation] API error:', data.responseStatus, errorDetails);
+            throw new Error(errorDetails || 'Translation failed');
         }
 
         console.log('✅ [Translation] Success:', data.responseData.translatedText);
 
-        // Extract source language from match field
-        let detectedLang = sourceLang || 'unknown';
+        // Extract source language from match field (use detected if available, otherwise from API)
+        let finalDetectedLang = detectedSourceLang;
         if (data.responseData.match && typeof data.responseData.match === 'string') {
-            detectedLang = data.responseData.match.split('|')[0];
+            const apiDetectedLang = data.responseData.match.split('|')[0];
+            // Prefer API detection if it's different from our detection (API might be more accurate)
+            if (apiDetectedLang && apiDetectedLang !== 'unknown') {
+                finalDetectedLang = apiDetectedLang;
+            }
         }
 
         return {
             translatedText: data.responseData.translatedText,
-            detectedSourceLang: detectedLang,
+            detectedSourceLang: finalDetectedLang,
         };
     } catch (error) {
         console.error('❌ [Translation] Error:', error);

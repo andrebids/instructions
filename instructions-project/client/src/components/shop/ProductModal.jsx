@@ -490,8 +490,6 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                       </div>
                     </div>
 
-                    </div>
-
                     {/* Tabs para alternar entre NEW e USED */}
                     {(usedPrice || usedStock) && (
                       <div className="mt-3 flex gap-2 border-b border-default-200 pb-2 flex-shrink-0">
