@@ -26,7 +26,7 @@ export function SidebarNavigation() {
       }
 
       // Users apenas para admin
-      if (item.href === '/admin/users') {
+      if (item.href === '/admin/users' || item.href === '/admin/debug-ui') {
         return isAdmin;
       }
 

@@ -13,6 +13,7 @@ const Favorites = React.lazy(() => import("./pages/Favorites"));
 const Landing = React.lazy(() => import("./pages/Landing"));
 const AdminProducts = React.lazy(() => import("./pages/AdminProducts"));
 const AdminUsers = React.lazy(() => import("./pages/AdminUsers"));
+const DebugUI = React.lazy(() => import("./pages/DebugUI"));
 const ProjectNotes = React.lazy(() => import("./pages/ProjectNotes"));
 const EditProject = React.lazy(() => import("./pages/EditProject"));
 const SignIn = React.lazy(() => import("./pages/SignIn"));
@@ -136,6 +137,14 @@ function AppLayout() {
                 element={
                   <ProtectedRoute requireRole={['admin']}>
                     <AdminUsers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/debug-ui"
+                element={
+                  <ProtectedRoute requireRole={['admin']}>
+                    <DebugUI />
                   </ProtectedRoute>
                 }
               />

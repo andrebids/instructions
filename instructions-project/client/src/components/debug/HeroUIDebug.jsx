@@ -21,12 +21,8 @@ export function HeroUIDebug() {
       return value && value.trim() !== '';
     });
     
-    console.log('🔍 [HeroUI Debug] Verificando variáveis CSS...');
-    console.log(`✅ Variáveis encontradas: ${foundVars.length}/${primaryVars.length}`);
-    
     primaryVars.forEach(varName => {
       const value = computedStyle.getPropertyValue(varName);
-      console.log(`  ${varName}: ${value || '❌ NÃO ENCONTRADA'}`);
     });
     
     // Verificar se bg-primary está disponível
@@ -36,7 +32,6 @@ export function HeroUIDebug() {
     document.body.appendChild(testElement1);
     
     const bgColor1 = getComputedStyle(testElement1).backgroundColor;
-    console.log(`🎨 bg-primary background-color: ${bgColor1}`);
     
     document.body.removeChild(testElement1);
     
@@ -47,13 +42,11 @@ export function HeroUIDebug() {
     document.body.appendChild(testElement2);
     
     const bgColor2 = getComputedStyle(testElement2).backgroundColor;
-    console.log(`🎨 bg-primary-500 background-color: ${bgColor2}`);
     
     document.body.removeChild(testElement2);
     
     // Verificar classes Tailwind geradas no DOM
     const hasPrimaryClasses = document.querySelector('[class*="bg-primary"]');
-    console.log(`📦 Elementos com bg-primary no DOM: ${hasPrimaryClasses ? '✅ Encontrados' : '❌ Não encontrados'}`);
     
     // Verificar se as classes estão no stylesheet
     const stylesheets = Array.from(document.styleSheets);
@@ -64,14 +57,12 @@ export function HeroUIDebug() {
         rules.forEach(rule => {
           if (rule.selectorText && (rule.selectorText.includes('.bg-primary') || rule.selectorText.includes('bg-primary'))) {
             foundPrimaryClass = true;
-            console.log(`📋 Classe encontrada no stylesheet: ${rule.selectorText}`);
           }
         });
       } catch (e) {
         // Ignorar erros de CORS em stylesheets externos
       }
     });
-    console.log(`📋 Classes bg-primary no stylesheet: ${foundPrimaryClass ? '✅ Encontradas' : '❌ Não encontradas'}`);
     
   }, []);
   
