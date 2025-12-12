@@ -216,7 +216,8 @@ app.use('/api/uploads/products', (req, res, next) => {
       }
       
       // Servir arquivo diretamente com sendFile
-      if (process.env.NODE_ENV !== 'production') {
+      const enableDebugLogs = process.env.ENABLE_DEBUG_LOGS !== 'false';
+      if (process.env.NODE_ENV !== 'production' && enableDebugLogs) {
         console.log(`📤 [APP] Servindo arquivo de produto: ${fullPath}`);
       }
       
