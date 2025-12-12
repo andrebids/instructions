@@ -833,6 +833,24 @@ export default function ProjectDetails() {
         loadProject(); // Recarregar projeto apenas após salvar
     }, [loadProject]);
 
+    const handleLogoEditModalFinish = React.useCallback(() => {
+        // Fechar o modal primeiro
+        setLogoEditModalOpen(false);
+        setEditingLogoIndex(null);
+        
+        // Navegar imediatamente para a página de detalhes do projeto (não a página de edição) com a aba de instruções
+        // Usar replace: true para garantir que substituímos qualquer entrada de edição no histórico
+        setActiveTab('instructions');
+        // Forçar navegação para a página de detalhes (não /edit)
+        navigate(`/projects/${id}?tab=instructions`, { replace: true });
+        
+        // Recarregar o projeto após navegar para garantir que temos os dados mais recentes
+        // Usar um pequeno delay para garantir que a navegação foi completada
+        setTimeout(() => {
+            loadProject();
+        }, 100);
+    }, [id, navigate, loadProject]);
+
     const handleEditSimulation = React.useCallback(() => {
         navigate(`/projects/${id}/edit?step=ai-designer`);
     }, [id, navigate]);
@@ -1615,6 +1633,7 @@ export default function ProjectDetails() {
                     projectId={id}
                     logoIndex={editingLogoIndex}
                     onSave={handleLogoEditModalSave}
+                    onFinish={handleLogoEditModalFinish}
                 />
 
                 {/* Simulation Edit Modal */}

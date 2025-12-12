@@ -340,21 +340,31 @@ export function ProjectObservations({ projectId, instructions = [], results = []
         try {
             const result = await translateText(observation.content, targetLang);
 
-            // Cache the translation
-            setTranslations(prev => ({
-                ...prev,
-                [messageId]: {
-                    ...prev[messageId],
-                    [targetLang]: result.translatedText
-                }
-            }));
+            // If translation returned the same text (same language), don't cache it
+            // but still allow the UI to show it as "translated" to avoid confusion
+            if (result.translatedText === observation.content) {
+                console.log(`ℹ️ [Translation] Text is already in target language (${targetLang}), skipping cache.`);
+            } else {
+                // Cache the translation
+                setTranslations(prev => ({
+                    ...prev,
+                    [messageId]: {
+                        ...prev[messageId],
+                        [targetLang]: result.translatedText
+                    }
+                }));
+            }
 
-            // Set as active translation
+            // Set as active translation (even if same text, to show user it's already in that language)
             setActiveTranslations(prev => ({ ...prev, [messageId]: targetLang }));
         } catch (error) {
             console.error('Translation error:', error);
             // Don't alert for auto-translation or if it's likely a same-language issue
-            if (!globalTranslationLang && !error.message?.includes('same language')) {
+            const isSameLanguageError = error.message?.includes('same language') || 
+                                       error.message?.includes('PLEASE SELECT TWO DISTINCT LANGUAGES') ||
+                                       error.message?.includes('DISTINCT LANGUAGES');
+            
+            if (!globalTranslationLang && !isSameLanguageError) {
                 // Only alert if it's a manual action and a real error
                 // alert('Failed to translate message. Please try again.'); 
                 // Silently fail for now to avoid disrupting the user experience
@@ -844,8 +854,8 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                             onPress={onResultModalOpen}
                                         >
                                             <div className="text-left">
-                                                <span className="block text-sm font-medium">Link Result Image</span>
-                                                <span className="block text-[10px] text-default-400">Reference a generated design</span>
+                                                <span className="block text-sm font-medium">{t('pages.projectDetails.observations.linkResultImage', 'Link Result Image')}</span>
+                                                <span className="block text-[10px] text-default-400">{t('pages.projectDetails.observations.referenceGeneratedDesign', 'Reference a generated design')}</span>
                                             </div>
                                         </Button>
                                         <Button
@@ -855,8 +865,8 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                             onPress={onInstructionModalOpen}
                                         >
                                             <div className="text-left">
-                                                <span className="block text-sm font-medium">Link Instruction</span>
-                                                <span className="block text-[10px] text-default-400">Reference a specific requirement</span>
+                                                <span className="block text-sm font-medium">{t('pages.projectDetails.observations.linkInstruction', 'Link Instruction')}</span>
+                                                <span className="block text-[10px] text-default-400">{t('pages.projectDetails.observations.referenceSpecificRequirement', 'Reference a specific requirement')}</span>
                                             </div>
                                         </Button>
                                         <Button
@@ -939,8 +949,8 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                     ) : (
                                                         <div className="col-span-2 flex flex-col items-center justify-center py-12 text-center">
                                                             <Icon icon="lucide:image-off" className="text-6xl text-default-300 mb-4" />
-                                                            <p className="text-sm font-medium text-default-600 mb-1">No result images available</p>
-                                                            <p className="text-xs text-default-400">Designers haven't generated any results yet.</p>
+                                                            <p className="text-sm font-medium text-default-600 mb-1">{t('pages.projectDetails.observations.noResultImagesAvailableShort', 'No result images available')}</p>
+                                                            <p className="text-xs text-default-400">{t('pages.projectDetails.observations.designersHaventGeneratedResults', "Designers haven't generated any results yet.")}</p>
                                                         </div>
                                                     )}
                                                 </div>
@@ -1180,7 +1190,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
             <div className="lg:col-span-1 hidden lg:flex flex-col gap-6 h-full overflow-y-auto">
                 <Card className="shadow-sm border border-default-200 flex-shrink-0">
                     <CardHeader className="px-6 py-4 border-b border-divider">
-                        <h3 className="text-base font-semibold">Active Participants</h3>
+                        <h3 className="text-base font-semibold">{t('pages.projectDetails.observations.activeParticipants', 'Active Participants')}</h3>
                     </CardHeader>
                     <CardBody className="p-4">
                         <div className="flex flex-col gap-3">
@@ -1188,7 +1198,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                 <Avatar src={user?.avatar} name={user?.name} size="sm" />
                                 <div>
                                     <p className="text-sm font-medium">{user?.name} (You)</p>
-                                    <p className="text-xs text-default-500">Project Creator</p>
+                                    <p className="text-xs text-default-500">{t('pages.projectDetails.observations.projectCreator', 'Project Creator')}</p>
                                 </div>
                             </div>
 
@@ -1219,11 +1229,11 @@ export function ProjectObservations({ projectId, instructions = [], results = []
 
                 <Card className="shadow-sm border border-default-200 flex-shrink-0">
                     <CardHeader className="px-6 py-4 border-b border-divider">
-                        <h3 className="text-base font-semibold">Quick Actions</h3>
+                        <h3 className="text-base font-semibold">{t('pages.projectDetails.observations.quickActions', 'Quick Actions')}</h3>
                     </CardHeader>
                     <CardBody className="p-4 space-y-3">
                         <Tooltip
-                            content={results.length === 0 ? "No result images available yet" : "Reference a generated design"}
+                            content={results.length === 0 ? t('pages.projectDetails.observations.noResultImagesAvailable', 'No result images available yet') : t('pages.projectDetails.observations.referenceGeneratedDesign', 'Reference a generated design')}
                             placement="left"
                         >
                             <Button
@@ -1233,21 +1243,21 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                 onPress={onResultModalOpen}
                                 isDisabled={results.length === 0}
                             >
-                                Reference Result Image
+                                {t('pages.projectDetails.observations.referenceResultImage', 'Reference Result Image')}
                             </Button>
                         </Tooltip>
                         <Tooltip
-                            content={instructions.length === 0 ? "No instructions available in this project" : "Reference a specific instruction"}
+                            content={instructions.length === 0 ? t('pages.projectDetails.observations.noInstructionsAvailable', 'No instructions available in this project') : t('pages.projectDetails.observations.referenceSpecificInstruction', 'Reference a specific instruction')}
                             placement="left"
                         >
                             <Button
                                 variant="flat"
                                 className="w-full justify-start"
-                                startContent={<Icon icon="lucide:file-text" className="text-secondary" />}
+                                startContent={<Icon icon="lucide:clipboard-list" className="text-blue-500" />}
                                 onPress={onInstructionModalOpen}
                                 isDisabled={instructions.length === 0}
                             >
-                                Reference Instruction
+                                {t('pages.projectDetails.observations.referenceInstruction', 'Reference Instruction')}
                             </Button>
                         </Tooltip>
                     </CardBody>

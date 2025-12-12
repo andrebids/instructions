@@ -19,6 +19,7 @@ export const useProductModification = ({
   const [selectedRelatedProductId, setSelectedRelatedProductId] = React.useState(null);
   const productSearchTimeoutRef = React.useRef(null);
   const hasGeneratedRelatedProductsRef = React.useRef(new Map());
+  const lastProcessedProductIdRef = React.useRef(null);
 
   // Função para buscar produtos do Stock Catalogue com debounce
   const searchProducts = React.useCallback(async (query) => {
@@ -281,105 +282,132 @@ export const useProductModification = ({
   // Sincronizar estados locais com currentLogo quando produto é carregado
   // E gerar produtos relacionados de demo se necessário
   React.useEffect(() => {
-    if (currentLogo.baseProduct) {
-      const productId = currentLogo.baseProduct.id;
-      const hasGenerated = hasGeneratedRelatedProductsRef.current.get(productId) || false;
+    const currentProductId = currentLogo.baseProduct?.id;
+    
+    // Se não há produto base, limpar estados
+    if (!currentProductId) {
+      if (lastProcessedProductIdRef.current !== null) {
+        setRelatedProducts([]);
+        setProductSizes([]);
+        setSelectedRelatedProductId(null);
+        lastProcessedProductIdRef.current = null;
+      }
+      return;
+    }
 
-      // Se já tem produtos relacionados, usar eles
+    // Se o produto não mudou, apenas sincronizar estados se necessário
+    if (lastProcessedProductIdRef.current === currentProductId) {
+      // Sincronizar estados locais com currentLogo
       if (currentLogo.relatedProducts && currentLogo.relatedProducts.length > 0) {
         setRelatedProducts(currentLogo.relatedProducts);
-        // Restaurar seleção se houver um produto relacionado selecionado
-        if (currentLogo.selectedRelatedProductId) {
-          setSelectedRelatedProductId(currentLogo.selectedRelatedProductId);
-        }
-        hasGeneratedRelatedProductsRef.current.set(productId, true);
-      } else if (!hasGenerated) {
-        // Se não tem produtos relacionados mas tem produto base, gerar demo apenas uma vez por produto
-        const selectedProduct = currentLogo.baseProduct;
-        // Usar as dimensões do produto base como referência
-        const baseHeight = parseFloat(selectedProduct.height) || 0;
-        const baseWidth = parseFloat(selectedProduct.width) || 0;
-        const baseDepth = parseFloat(selectedProduct.depth) || 0;
-        const baseDiameter = parseFloat(selectedProduct.diameter) || 0;
-
-        const demoRelatedProducts = [
-          {
-            id: `${selectedProduct.id}-size-1`,
-            name: selectedProduct.name,
-            size: "1.5m",
-            height: baseHeight ? (baseHeight * 1.5).toFixed(2) : null,
-            width: baseWidth ? (baseWidth * 1.5).toFixed(2) : null,
-            depth: baseDepth ? (baseDepth * 1.5).toFixed(2) : null,
-            diameter: baseDiameter ? (baseDiameter * 1.5).toFixed(2) : null,
-            imageUrl: (() => {
-              const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
-              // Filtrar URLs temporárias (não existem no servidor)
-              if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
-                return null;
-              }
-              return url;
-            })(),
-            baseProductId: selectedProduct.id,
-          },
-          {
-            id: `${selectedProduct.id}-size-2`,
-            name: selectedProduct.name,
-            size: "2.0m",
-            height: baseHeight ? (baseHeight * 2.0).toFixed(2) : null,
-            width: baseWidth ? (baseWidth * 2.0).toFixed(2) : null,
-            depth: baseDepth ? (baseDepth * 2.0).toFixed(2) : null,
-            diameter: baseDiameter ? (baseDiameter * 2.0).toFixed(2) : null,
-            imageUrl: (() => {
-              const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
-              // Filtrar URLs temporárias (não existem no servidor)
-              if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
-                return null;
-              }
-              return url;
-            })(),
-            baseProductId: selectedProduct.id,
-          },
-          {
-            id: `${selectedProduct.id}-size-3`,
-            name: selectedProduct.name,
-            size: "2.5m",
-            height: baseHeight ? (baseHeight * 2.5).toFixed(2) : null,
-            width: baseWidth ? (baseWidth * 2.5).toFixed(2) : null,
-            depth: baseDepth ? (baseDepth * 2.5).toFixed(2) : null,
-            diameter: baseDiameter ? (baseDiameter * 2.5).toFixed(2) : null,
-            imageUrl: (() => {
-              const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
-              // Filtrar URLs temporárias (não existem no servidor)
-              if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
-                return null;
-              }
-              return url;
-            })(),
-            baseProductId: selectedProduct.id,
-          },
-        ];
-        setRelatedProducts(demoRelatedProducts);
-        hasGeneratedRelatedProductsRef.current.set(productId, true);
-
-        // Atualizar currentLogo com os produtos relacionados gerados
-        const updatedCurrentLogo = {
-          ...currentLogo,
-          relatedProducts: demoRelatedProducts,
-        };
-        const updatedLogoDetails = {
-          ...logoDetails,
-          currentLogo: updatedCurrentLogo,
-          logos: savedLogos,
-        };
-        onInputChange("logoDetails", updatedLogoDetails);
       }
-      setProductSizes(currentLogo.productSizes || []);
-    } else {
-      setRelatedProducts([]);
-      setProductSizes([]);
-      setSelectedRelatedProductId(null);
+      if (currentLogo.selectedRelatedProductId) {
+        setSelectedRelatedProductId(currentLogo.selectedRelatedProductId);
+      }
+      if (currentLogo.productSizes) {
+        setProductSizes(currentLogo.productSizes);
+      }
+      return;
     }
-  }, [currentLogo.baseProduct?.id, currentLogo.relatedProducts?.length, currentLogo, logoDetails, savedLogos, onInputChange]);
+
+    // Produto mudou - processar novo produto
+    lastProcessedProductIdRef.current = currentProductId;
+    const hasGenerated = hasGeneratedRelatedProductsRef.current.get(currentProductId) || false;
+
+    // Se já tem produtos relacionados, usar eles
+    if (currentLogo.relatedProducts && currentLogo.relatedProducts.length > 0) {
+      setRelatedProducts(currentLogo.relatedProducts);
+      // Restaurar seleção se houver um produto relacionado selecionado
+      if (currentLogo.selectedRelatedProductId) {
+        setSelectedRelatedProductId(currentLogo.selectedRelatedProductId);
+      }
+      hasGeneratedRelatedProductsRef.current.set(currentProductId, true);
+      setProductSizes(currentLogo.productSizes || []);
+    } else if (!hasGenerated) {
+      // Se não tem produtos relacionados mas tem produto base, gerar demo apenas uma vez por produto
+      const selectedProduct = currentLogo.baseProduct;
+      // Usar as dimensões do produto base como referência
+      const baseHeight = parseFloat(selectedProduct.height) || 0;
+      const baseWidth = parseFloat(selectedProduct.width) || 0;
+      const baseDepth = parseFloat(selectedProduct.depth) || 0;
+      const baseDiameter = parseFloat(selectedProduct.diameter) || 0;
+
+      const demoRelatedProducts = [
+        {
+          id: `${selectedProduct.id}-size-1`,
+          name: selectedProduct.name,
+          size: "1.5m",
+          height: baseHeight ? (baseHeight * 1.5).toFixed(2) : null,
+          width: baseWidth ? (baseWidth * 1.5).toFixed(2) : null,
+          depth: baseDepth ? (baseDepth * 1.5).toFixed(2) : null,
+          diameter: baseDiameter ? (baseDiameter * 1.5).toFixed(2) : null,
+          imageUrl: (() => {
+            const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
+            // Filtrar URLs temporárias (não existem no servidor)
+            if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
+              return null;
+            }
+            return url;
+          })(),
+          baseProductId: selectedProduct.id,
+        },
+        {
+          id: `${selectedProduct.id}-size-2`,
+          name: selectedProduct.name,
+          size: "2.0m",
+          height: baseHeight ? (baseHeight * 2.0).toFixed(2) : null,
+          width: baseWidth ? (baseWidth * 2.0).toFixed(2) : null,
+          depth: baseDepth ? (baseDepth * 2.0).toFixed(2) : null,
+          diameter: baseDiameter ? (baseDiameter * 2.0).toFixed(2) : null,
+          imageUrl: (() => {
+            const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
+            // Filtrar URLs temporárias (não existem no servidor)
+            if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
+              return null;
+            }
+            return url;
+          })(),
+          baseProductId: selectedProduct.id,
+        },
+        {
+          id: `${selectedProduct.id}-size-3`,
+          name: selectedProduct.name,
+          size: "2.5m",
+          height: baseHeight ? (baseHeight * 2.5).toFixed(2) : null,
+          width: baseWidth ? (baseWidth * 2.5).toFixed(2) : null,
+          depth: baseDepth ? (baseDepth * 2.5).toFixed(2) : null,
+          diameter: baseDiameter ? (baseDiameter * 2.5).toFixed(2) : null,
+          imageUrl: (() => {
+            const url = selectedProduct.thumbnailUrl || selectedProduct.imagesDayUrl || selectedProduct.imagesNightUrl;
+            // Filtrar URLs temporárias (não existem no servidor)
+            if (url && (url.includes('thumb_temp_') || url.includes('temp_dayImage_') || url.includes('temp_nightImage_'))) {
+              return null;
+            }
+            return url;
+          })(),
+          baseProductId: selectedProduct.id,
+        },
+      ];
+      setRelatedProducts(demoRelatedProducts);
+      hasGeneratedRelatedProductsRef.current.set(currentProductId, true);
+      setProductSizes(currentLogo.productSizes || []);
+
+      // Atualizar currentLogo com os produtos relacionados gerados
+      const updatedCurrentLogo = {
+        ...currentLogo,
+        relatedProducts: demoRelatedProducts,
+      };
+      const updatedLogoDetails = {
+        ...logoDetails,
+        currentLogo: updatedCurrentLogo,
+        logos: savedLogos,
+      };
+      onInputChange("logoDetails", updatedLogoDetails);
+    } else {
+      setProductSizes(currentLogo.productSizes || []);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLogo.baseProduct?.id]);
 
   return {
     productSearchValue,

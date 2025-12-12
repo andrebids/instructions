@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback, useRef } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, Button, Spinner } from '@heroui/react';
 import { Icon } from '@iconify/react';
+import { useNavigate } from 'react-router-dom';
 import { StepLogoInstructions } from '../create-project-multi-step/steps/StepLogoInstructions';
 import { StepIndicator } from '../create-project-multi-step/components/StepIndicator';
 import { useProjectForm } from '../create-project-multi-step/hooks/useProjectForm';
@@ -13,9 +14,11 @@ export default React.memo(function LogoEditModal({
     onClose, 
     projectId, 
     logoIndex,
-    onSave 
+    onSave,
+    onFinish 
 }) {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const saveStatus = useSaveStatus();
     const hasUnsavedChangesRef = useRef(false);
     const savedFormDataRef = useRef(null);
@@ -322,6 +325,174 @@ export default React.memo(function LogoEditModal({
         onClose();
     }, [formState, projectId, onSave, onClose, saveStatus, isOpen, forceSyncFormikValues, forceReloadProject]);
 
+    // Função para lidar com o Finish na página 4 (summary)
+    const handleFinish = useCallback(async () => {
+        // Limpar timeout de autosave pendente
+        if (autosaveTimeoutRef.current) {
+            clearTimeout(autosaveTimeoutRef.current);
+            autosaveTimeoutRef.current = null;
+        }
+        
+        // Sempre salvar ao finalizar para garantir que todas as alterações sejam persistidas
+        if (formState.formData && projectId && isOpen) {
+            // Se há um autosave em andamento, aguardar um pouco
+            if (isSavingRef.current) {
+                let attempts = 0;
+                while (isSavingRef.current && attempts < 10) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    attempts++;
+                }
+            }
+            
+            // Sempre salvar ao finalizar, mesmo que não haja mudanças não salvas
+            // Isso garante que o logo editado seja salvo corretamente
+            if (!isSavingRef.current) {
+                try {
+                    isSavingRef.current = true;
+                    saveStatus.setSaving();
+                    
+                    // Forçar sincronização final dos valores do formik
+                    forceSyncFormikValues();
+                    
+                    // Aguardar um pequeno delay para garantir que todas as atualizações foram processadas
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                    // Garantir que logoDetails está atualizado antes de salvar
+                    // Usar lastLogoDetailsRef que tem os dados mais recentes
+                    let logoDetails = lastLogoDetailsRef.current || formState.formData.logoDetails || {};
+                    
+                    // Se estamos editando um logo existente, garantir que ele seja salvo nos savedLogos
+                    // e que o currentLogo seja limpo para evitar criar um novo logo
+                    if (logoDetails && logoDetails.currentLogo) {
+                        const currentLogo = logoDetails.currentLogo;
+                        const savedLogos = logoDetails.logos || [];
+                        
+                        // Verificar se o currentLogo é válido e deve ser salvo
+                        const hasLogoNumber = currentLogo.logoNumber?.trim() !== "";
+                        const hasLogoName = currentLogo.logoName?.trim() !== "";
+                        const hasRequestedBy = currentLogo.requestedBy?.trim() !== "";
+                        const dimensions = currentLogo.dimensions || {};
+                        const hasHeight = dimensions.height?.value != null && dimensions.height.value !== "";
+                        const hasLength = dimensions.length?.value != null && dimensions.length.value !== "";
+                        const hasWidth = dimensions.width?.value != null && dimensions.width.value !== "";
+                        const hasDiameter = dimensions.diameter?.value != null && dimensions.diameter.value !== "";
+                        const hasAtLeastOneDimension = hasHeight || hasLength || hasWidth || hasDiameter;
+                        const isCurrentLogoValid = hasLogoNumber && hasLogoName && hasRequestedBy && hasAtLeastOneDimension;
+                        
+                        if (isCurrentLogoValid) {
+                            // Remover _originalIndex antes de salvar (é apenas para controle interno)
+                            const { _originalIndex, ...logoWithoutOriginalIndex } = currentLogo;
+                            
+                            const logoToSave = {
+                                ...logoWithoutOriginalIndex,
+                                id: currentLogo.id || `logo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                savedAt: currentLogo.savedAt || new Date().toISOString()
+                            };
+                            
+                            // Verificar se o logo já existe nos savedLogos (por ID ou logoNumber)
+                            const existingLogoIndex = savedLogos.findIndex(logo => {
+                                if (logoToSave.id && logo.id) {
+                                    return logo.id === logoToSave.id;
+                                }
+                                if (logo.logoNumber && logoToSave.logoNumber) {
+                                    return logo.logoNumber.trim() === logoToSave.logoNumber.trim();
+                                }
+                                return false;
+                            });
+                            
+                            let updatedSavedLogos;
+                            if (existingLogoIndex >= 0) {
+                                // Logo já existe - ATUALIZAR em vez de criar novo
+                                updatedSavedLogos = [...savedLogos];
+                                updatedSavedLogos[existingLogoIndex] = logoToSave;
+                            } else {
+                                // Logo não existe - ADICIONAR como novo
+                                updatedSavedLogos = [...savedLogos, logoToSave];
+                            }
+                            
+                            // Atualizar logoDetails com o logo salvo e limpar currentLogo
+                            logoDetails = {
+                                ...logoDetails,
+                                logos: updatedSavedLogos,
+                                currentLogo: {
+                                    logoNumber: "",
+                                    logoName: "",
+                                    requestedBy: "",
+                                    dimensions: {},
+                                    usageOutdoor: false,
+                                    usageIndoor: true,
+                                    fixationType: "",
+                                    lacqueredStructure: false,
+                                    lacquerColor: "",
+                                    mastDiameter: "",
+                                    maxWeightConstraint: false,
+                                    maxWeight: "",
+                                    ballast: false,
+                                    controlReport: false,
+                                    criteria: "",
+                                    description: "",
+                                    composition: {
+                                        componentes: [],
+                                        bolas: []
+                                    },
+                                    attachmentFiles: []
+                                }
+                            };
+                        }
+                    }
+                    
+                    // Validar que logoDetails não está vazio
+                    if (logoDetails && Object.keys(logoDetails).length > 0) {
+                        // Salvar diretamente usando updateCanvas
+                        await projectsAPI.updateCanvas(projectId, {
+                            logoDetails: logoDetails,
+                            lastEditedStep: 'logo-instructions'
+                        });
+                        
+                        hasUnsavedChangesRef.current = false;
+                        saveStatus.setSaved();
+                        
+                        // Aguardar um pouco para garantir que o save foi completado no servidor
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                    } else {
+                        console.warn('LogoEditModal: logoDetails está vazio ao finalizar, pulando salvamento');
+                    }
+                    
+                    // Recarregar projeto após salvar para garantir sincronização completa
+                    if (onSave) {
+                        await onSave();
+                    }
+                } catch (error) {
+                    console.error('Error saving logo on finish:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        response: error.response?.data,
+                        projectId,
+                        logoDetails: formState.formData?.logoDetails
+                    });
+                    saveStatus.setError();
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                } finally {
+                    isSavingRef.current = false;
+                }
+            }
+        }
+        
+        // Se onFinish foi fornecido, chamá-lo ANTES de fechar o modal
+        // Isso garante que a navegação aconteça antes do modal fechar
+        if (onFinish) {
+            // Chamar onFinish que vai fechar o modal e navegar
+            onFinish();
+        } else {
+            // Se não há onFinish, fechar o modal e navegar
+            onClose();
+            if (projectId) {
+                // Navegar para a página do projeto com a aba de instruções aberta
+                navigate(`/projects/${projectId}?tab=instructions`);
+            }
+        }
+    }, [formState, projectId, onSave, onClose, onFinish, navigate, saveStatus, isOpen, forceSyncFormikValues]);
+
     const isLoading = useMemo(() => {
         return formState.isLoadingProject || !formState.formData?.logoDetails;
     }, [formState.isLoadingProject, formState.formData?.logoDetails]);
@@ -409,7 +580,7 @@ export default React.memo(function LogoEditModal({
                     <>
                         <ModalHeader className="flex items-center justify-between bg-white/15 dark:bg-white/10 backdrop-blur-md rounded-t-lg border-b border-white/30 dark:border-white/20">
                             <div className="flex items-center gap-3">
-                                <span className="text-xl font-semibold text-foreground">Logo Instructions</span>
+                                <span className="text-xl font-semibold text-foreground">{t('pages.createProject.steps.logoInstructions')}</span>
                                 {/* Indicador de status de autosave */}
                                 {saveStatus.status === 'saving' && (
                                     <div className="flex items-center gap-2 text-xs text-yellow-500">
@@ -585,8 +756,8 @@ export default React.memo(function LogoEditModal({
                                         if (currentPage < 4) {
                                             logoInstructionsHandlersRef.current?.handleNextPage?.();
                                         } else {
-                                            // Na última página, salvar e fechar
-                                            handleClose();
+                                            // Na última página (summary), usar handleFinish para navegar para a aba de instruções
+                                            handleFinish();
                                         }
                                     }}
                                     isDisabled={

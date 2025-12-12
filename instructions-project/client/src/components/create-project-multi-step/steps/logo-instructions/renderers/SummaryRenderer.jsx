@@ -1,6 +1,7 @@
 import React from "react";
 import { Icon } from "@iconify/react";
 import { Input, Textarea, Switch, Tabs, Tab, Select, SelectItem, Checkbox } from "@heroui/react";
+import { useTranslation } from "react-i18next";
 import { materialsData } from "../../../data/materialsData.js";
 import {
   getComponenteById,
@@ -21,6 +22,7 @@ export const SummaryRenderer = ({
   handleAddBola,
   handleRemoveBola,
 }) => {
+  const { t } = useTranslation();
   const [componentesEditMode, setComponentesEditMode] = React.useState({});
   const [bolasEditMode, setBolasEditMode] = React.useState({});
   const attachments = currentLogo.attachmentFiles || [];
@@ -154,10 +156,10 @@ export const SummaryRenderer = ({
   // Get dimensions in correct order: HEIGHT, WIDTH, LENGTH, DIAMETER
   const dimensionOrder = ['height', 'width', 'length', 'diameter'];
   const dimensionLabels = {
-    height: 'HEIGHT',
-    width: 'WIDTH',
-    length: 'LENGTH',
-    diameter: 'DIAMETER'
+    height: t('pages.createProject.logoInstructions.summary.height'),
+    width: t('pages.createProject.logoInstructions.summary.width'),
+    length: t('pages.createProject.logoInstructions.summary.length'),
+    diameter: t('pages.createProject.logoInstructions.summary.diameter')
   };
 
   // Lists for composition (allow editing even if incomplete)
@@ -179,18 +181,18 @@ export const SummaryRenderer = ({
 
             <div className="flex items-center gap-2 text-blue-500 mb-2">
               <Icon icon="lucide:file-text" className="w-4 h-4" />
-              <h3 className="text-sm font-bold">Details</h3>
+              <h3 className="text-sm font-bold">{t('pages.createProject.logoInstructions.summary.details')}</h3>
             </div>
 
             <div className="space-y-3">
               {/* Row 1: Logo Number + Logo Name */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1">Logo Number</label>
+                  <label className="text-[10px] text-gray-400 block mb-1">{t('pages.createProject.logoInstructions.summary.logoNumber')}</label>
                   <div className="text-xs font-medium text-white break-words">{formik.values.logoNumber || "---"}</div>
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1">Logo Name</label>
+                  <label className="text-[10px] text-gray-400 block mb-1">{t('pages.createProject.logoInstructions.summary.logoName')}</label>
                   <Input
                     aria-label="Logo Name"
                     variant="bordered"
@@ -205,7 +207,7 @@ export const SummaryRenderer = ({
               {/* Row 2: Budget + Requested By */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1">Budget (EUR)</label>
+                  <label className="text-[10px] text-gray-400 block mb-1">{t('pages.createProject.logoInstructions.summary.budget')}</label>
                   <Input
                     aria-label="Budget (EUR)"
                     startContent={<span className="text-gray-400 text-xs font-semibold">&euro;</span>}
@@ -218,23 +220,23 @@ export const SummaryRenderer = ({
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-400 block mb-1">Requested By</label>
+                  <label className="text-[10px] text-gray-400 block mb-1">{t('pages.createProject.logoInstructions.summary.requestedBy')}</label>
                   <div className="text-xs font-medium text-white break-words">{formik.values.requestedBy || "---"}</div>
                 </div>
               </div>
 
               {/* Description - now takes more vertical space */}
               <div>
-                <label className="text-[10px] text-gray-400 block mb-1">Description</label>
+                <label className="text-[10px] text-gray-400 block mb-1">{t('pages.createProject.logoInstructions.summary.description')}</label>
                 <Textarea
-                  aria-label="Description"
+                  aria-label={t('pages.createProject.logoInstructions.summary.description')}
                   minRows={4}
                   variant="bordered"
                   size="sm"
                   classNames={{ input: "text-xs bg-[#0f172a]" }}
                   value={formik.values.description || ""}
                   onValueChange={(v) => formik.updateField("description", v)}
-                  placeholder="Add a description..."
+                  placeholder={t('pages.createProject.logoInstructions.summary.descriptionPlaceholder')}
                 />
               </div>
             </div>
@@ -245,12 +247,12 @@ export const SummaryRenderer = ({
           <div className="col-span-12 lg:col-span-3 space-y-4">
             <div className="flex items-center gap-2 text-orange-500 mb-2">
               <Icon icon="lucide:hammer" className="w-4 h-4" />
-              <h3 className="text-sm font-bold">Fixation & Technical</h3>
+              <h3 className="text-sm font-bold">{t('pages.createProject.logoInstructions.summary.fixationTechnical')}</h3>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="text-[10px] text-gray-400 block mb-1">Usage</label>
+                <label className="text-[10px] text-gray-400 block mb-1">{t('pages.createProject.logoInstructions.summary.usage')}</label>
                 <Tabs
                   size="sm"
                   color="primary"
@@ -262,12 +264,12 @@ export const SummaryRenderer = ({
                     cursor: "bg-primary-500"
                   }}
                 >
-                  <Tab key="indoor" title={<div className="flex items-center gap-1"><Icon icon="lucide:home" className="w-3 h-3" /> Indoor</div>} />
-                  <Tab key="outdoor" title={<div className="flex items-center gap-1"><Icon icon="lucide:trees" className="w-3 h-3" /> Outdoor</div>} />
+                  <Tab key="indoor" title={<div className="flex items-center gap-1"><Icon icon="lucide:home" className="w-3 h-3" /> {t('pages.createProject.logoInstructions.summary.indoor')}</div>} />
+                  <Tab key="outdoor" title={<div className="flex items-center gap-1"><Icon icon="lucide:trees" className="w-3 h-3" /> {t('pages.createProject.logoInstructions.summary.outdoor')}</div>} />
                 </Tabs>
               </div>
               <div>
-                <label className="text-[10px] text-gray-400 block mb-1">Structure Finish</label>
+                <label className="text-[10px] text-gray-400 block mb-1">{t('pages.createProject.logoInstructions.summary.structureFinish')}</label>
                 <div className="flex flex-col gap-2 bg-[#1f2942] border border-gray-700 rounded-lg p-2">
                   <div className="flex items-center gap-2">
                     <Switch
@@ -276,35 +278,63 @@ export const SummaryRenderer = ({
                       isSelected={formik.values.lacqueredStructure}
                       onValueChange={(v) => formik.updateField("lacqueredStructure", v)}
                     />
-                    <span className="text-xs text-white font-semibold">Lacquered</span>
+                    <span className="text-xs text-white font-semibold">{t('pages.projectDetails.lacquered', 'Lacquered')}</span>
                   </div>
                   {formik.values.lacqueredStructure ? (
                     <Select
-                      aria-label="Lacquer Color"
+                      aria-label={t('pages.projectDetails.lacquerColor', 'Lacquer Color')}
                       variant="flat"
                       size="sm"
-                      selectedKeys={formik.values.lacquerColor ? new Set([formik.values.lacquerColor]) : new Set()}
+                      selectedKeys={(() => {
+                        const colorKeys = ['white', 'gold', 'red', 'blue', 'green', 'pink', 'black'];
+                        const savedValue = formik.values.lacquerColor || '';
+                        const matchingKey = colorKeys.find(key => {
+                          const translatedValue = t(`pages.projectDetails.lacquerColors.${key}`, '');
+                          return translatedValue === savedValue || key === savedValue;
+                        });
+                        return matchingKey ? new Set([matchingKey]) : new Set();
+                      })()}
                       onSelectionChange={(keys) => {
                         const selected = Array.from(keys)[0];
-                        formik.updateField("lacquerColor", selected || "");
+                        if (selected) {
+                          const translatedValue = t(`pages.projectDetails.lacquerColors.${selected}`, '');
+                          formik.updateField("lacquerColor", translatedValue || selected);
+                        } else {
+                          formik.updateField("lacquerColor", "");
+                        }
                       }}
                       classNames={{ trigger: "text-xs h-8", value: "text-xs text-white" }}
+                      placeholder={t('pages.projectDetails.lacquerColor', 'Select color')}
                     >
-                      <SelectItem key="WHITE RAL 9010">WHITE RAL 9010</SelectItem>
-                      <SelectItem key="GOLD PANTONE 131C">GOLD PANTONE 131C</SelectItem>
-                      <SelectItem key="RED RAL 3000">RED RAL 3000</SelectItem>
-                      <SelectItem key="BLUE RAL 5005">BLUE RAL 5005</SelectItem>
-                      <SelectItem key="GREEN RAL 6029">GREEN RAL 6029</SelectItem>
-                      <SelectItem key="PINK RAL 3015">PINK RAL 3015</SelectItem>
-                      <SelectItem key="BLACK RAL 9011">BLACK RAL 9011</SelectItem>
+                      <SelectItem key="white" value="white">
+                        {t('pages.projectDetails.lacquerColors.white', 'WHITE RAL 9010')}
+                      </SelectItem>
+                      <SelectItem key="gold" value="gold">
+                        {t('pages.projectDetails.lacquerColors.gold', 'GOLD PANTONE 131C')}
+                      </SelectItem>
+                      <SelectItem key="red" value="red">
+                        {t('pages.projectDetails.lacquerColors.red', 'RED RAL 3000')}
+                      </SelectItem>
+                      <SelectItem key="blue" value="blue">
+                        {t('pages.projectDetails.lacquerColors.blue', 'BLUE RAL 5005')}
+                      </SelectItem>
+                      <SelectItem key="green" value="green">
+                        {t('pages.projectDetails.lacquerColors.green', 'GREEN RAL 6029')}
+                      </SelectItem>
+                      <SelectItem key="pink" value="pink">
+                        {t('pages.projectDetails.lacquerColors.pink', 'PINK RAL 3015')}
+                      </SelectItem>
+                      <SelectItem key="black" value="black">
+                        {t('pages.projectDetails.lacquerColors.black', 'BLACK RAL 9011')}
+                      </SelectItem>
                     </Select>
                   ) : (
-                    <div className="text-[10px] font-medium text-gray-400 italic">Standard</div>
+                    <div className="text-[10px] font-medium text-gray-400 italic">{t('pages.createProject.logoInstructions.summary.standard')}</div>
                   )}
                 </div>
               </div>
               <div>
-                <label className="text-[10px] text-gray-400 block mb-1">Fixation Type</label>
+                <label className="text-[10px] text-gray-400 block mb-1">{t('pages.createProject.logoInstructions.summary.fixationType')}</label>
                 <Select
                   aria-label="Fixation Type"
                   variant="flat"
@@ -316,17 +346,17 @@ export const SummaryRenderer = ({
                     formik.updateField("fixationType", selected);
                   }}
                 >
-                  <SelectItem key="ground">Ground</SelectItem>
-                  <SelectItem key="wall">Wall</SelectItem>
-                  <SelectItem key="suspended">Suspended</SelectItem>
-                  <SelectItem key="none">None</SelectItem>
-                  <SelectItem key="pole_side">Pole (Side)</SelectItem>
-                  <SelectItem key="pole_central">Pole (Central)</SelectItem>
-                  <SelectItem key="special">Special</SelectItem>
+                  <SelectItem key="ground">{t('pages.createProject.logoInstructions.dimensions.ground')}</SelectItem>
+                  <SelectItem key="wall">{t('pages.createProject.logoInstructions.dimensions.wall')}</SelectItem>
+                  <SelectItem key="suspended">{t('pages.createProject.logoInstructions.dimensions.suspended')}</SelectItem>
+                  <SelectItem key="none">{t('pages.createProject.logoInstructions.dimensions.none')}</SelectItem>
+                  <SelectItem key="pole_side">{t('pages.createProject.logoInstructions.dimensions.poleSide')}</SelectItem>
+                  <SelectItem key="pole_central">{t('pages.createProject.logoInstructions.dimensions.poleCentral')}</SelectItem>
+                  <SelectItem key="special">{t('pages.createProject.logoInstructions.dimensions.special')}</SelectItem>
                 </Select>
               </div>
               <div>
-                <label className="text-[10px] text-gray-400 block mb-1">Technical Constraints</label>
+                <label className="text-[10px] text-gray-400 block mb-1">{t('pages.createProject.logoInstructions.summary.technicalConstraints')}</label>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 bg-[#1f2942] border border-gray-700 rounded-lg p-2">
                     <Switch
@@ -335,7 +365,7 @@ export const SummaryRenderer = ({
                       isSelected={formik.values.maxWeightConstraint}
                       onValueChange={(v) => formik.updateField("maxWeightConstraint", v)}
                     />
-                    <span className="text-xs text-white font-semibold">Max Weight</span>
+                    <span className="text-xs text-white font-semibold">{t('pages.createProject.logoInstructions.summary.maxWeight')}</span>
                     {formik.values.maxWeightConstraint && (
                       <Input
                         aria-label="Max Weight"
@@ -356,7 +386,7 @@ export const SummaryRenderer = ({
                       isSelected={formik.values.ballast}
                       onValueChange={(v) => formik.updateField("ballast", v)}
                     >
-                      Ballast
+                      {t('pages.createProject.logoInstructions.summary.ballast')}
                     </Checkbox>
                     <Checkbox
                       size="sm"
@@ -364,7 +394,7 @@ export const SummaryRenderer = ({
                       isSelected={formik.values.controlReport}
                       onValueChange={(v) => formik.updateField("controlReport", v)}
                     >
-                      Control Report
+                      {t('pages.createProject.logoInstructions.summary.controlReport')}
                     </Checkbox>
                   </div>
                 </div>
@@ -376,7 +406,7 @@ export const SummaryRenderer = ({
           <div className="col-span-12 lg:col-span-3 space-y-4">
             <div className="flex items-center gap-2 text-pink-500 mb-2">
               <Icon icon="lucide:paperclip" className="w-4 h-4" />
-              <h4 className="text-sm font-bold">Attachments</h4>
+              <h4 className="text-sm font-bold">{t('pages.createProject.logoInstructions.summary.attachments')}</h4>
             </div>
 
             {mainAttachment ? (
@@ -424,7 +454,7 @@ export const SummaryRenderer = ({
               </div>
             ) : (
               <div className="w-full h-[220px] rounded-xl border-2 border-dashed border-gray-700 flex items-center justify-center text-gray-600 bg-[#1f2942]/30">
-                <span className="text-[10px]">No image attached</span>
+                <span className="text-[10px]">{t('pages.createProject.logoInstructions.summary.noImageAttached')}</span>
               </div>
             )}
           </div>
@@ -433,7 +463,7 @@ export const SummaryRenderer = ({
           <div className="col-span-12 lg:col-span-3 space-y-4">
             <div className="flex items-center gap-2 text-emerald-500 mb-2">
               <Icon icon="lucide:ruler" className="w-4 h-4" />
-              <h3 className="text-sm font-bold">Dimensions</h3>
+              <h3 className="text-sm font-bold">{t('pages.createProject.logoInstructions.summary.dimensions')}</h3>
             </div>
 
             <div className="space-y-2">
@@ -454,7 +484,7 @@ export const SummaryRenderer = ({
                           isSelected={!!isImperative}
                           onValueChange={(v) => updateDimension(key, "imperative", v)}
                         >
-                          Imperative
+                          {t('pages.createProject.logoInstructions.summary.imperative')}
                         </Checkbox>
                       </div>
                       <Input
@@ -490,7 +520,7 @@ export const SummaryRenderer = ({
         <div className="space-y-2 mt-1">
           <div className="flex items-center gap-2 text-purple-500 mb-2">
             <Icon icon="lucide:layers" className="w-4 h-4" />
-            <h3 className="text-sm font-bold">Composition</h3>
+            <h3 className="text-sm font-bold">{t('pages.createProject.logoInstructions.summary.composition')}</h3>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -499,7 +529,7 @@ export const SummaryRenderer = ({
               <div className="flex items-center justify-between bg-[#0f172a] border border-[#1f2a3c] rounded-lg px-3 py-2 shadow-sm">
                 <div className="flex items-center gap-2">
                   <Icon icon="lucide:box" className="w-3.5 h-3.5 text-blue-300" />
-                  <span className="text-[11px] font-bold text-slate-100 uppercase tracking-wide">COMPONENTS</span>
+                  <span className="text-[11px] font-bold text-slate-100 uppercase tracking-wide">{t('pages.createProject.logoInstructions.summary.components')}</span>
                   <span className="bg-[#1f2a3c] text-slate-200 text-[10px] px-1.5 rounded font-bold border border-[#243553]">{componentesList.length}</span>
                 </div>
                 <button
@@ -529,10 +559,10 @@ export const SummaryRenderer = ({
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex flex-col">
                               <span className="text-sm font-semibold text-white truncate">
-                                {componente?.nome || comp.componenteNome || "Component"}
+                                {componente?.nome || comp.componenteNome || t('pages.createProject.logoInstructions.summary.component')}
                               </span>
                               {(comp.referencia || componente?.referencia) && (
-                                <span className="text-[11px] text-gray-400">Ref: {comp.referencia || componente?.referencia}</span>
+                                <span className="text-[11px] text-gray-400">{t('pages.createProject.logoInstructions.summary.reference')} {comp.referencia || componente?.referencia}</span>
                               )}
                               {comp.corNome && (
                                 <span className="text-[11px] font-semibold flex items-center gap-1">
@@ -559,13 +589,13 @@ export const SummaryRenderer = ({
                                   }
                                 }}
                                 classNames={{ trigger: "h-9 text-sm bg-[#0f172a]", value: "text-sm text-white" }}
-                                placeholder="Choose component"
+                                placeholder={t('pages.createProject.logoInstructions.summary.chooseComponent')}
                               >
                                 {materialsData.componentes.map((c) => (
                                   <SelectItem key={String(c.id)} textValue={c.nome}>
                                     <div className="flex flex-col">
                                       <span className="text-sm">{c.nome}</span>
-                                      {c.referencia && <span className="text-[11px] text-gray-500">Ref: {c.referencia}</span>}
+                                      {c.referencia && <span className="text-[11px] text-gray-500">{t('pages.createProject.logoInstructions.summary.reference')} {c.referencia}</span>}
                                     </div>
                                   </SelectItem>
                                 ))}
@@ -585,7 +615,7 @@ export const SummaryRenderer = ({
                                     }
                                   }}
                                   classNames={{ trigger: "h-9 text-sm bg-[#0f172a]", value: "text-sm text-white" }}
-                                  placeholder="Choose color"
+                                  placeholder={t('pages.createProject.logoInstructions.summary.chooseColor')}
                                 >
                                   {coresDisponiveis.map((cor) => (
                                     <SelectItem key={String(cor.id)} textValue={cor.nome}>
@@ -626,7 +656,7 @@ export const SummaryRenderer = ({
                     );
                   })
                 ) : (
-                  <div className="text-[10px] text-gray-500 italic px-2">No components added.</div>
+                  <div className="text-[10px] text-gray-500 italic px-2">{t('pages.createProject.logoInstructions.summary.noComponents')}</div>
                 )}
               </div>
             </div>
@@ -636,7 +666,7 @@ export const SummaryRenderer = ({
               <div className="flex items-center justify-between bg-[#0f172a] border border-[#1f2a3c] rounded-lg px-3 py-2 shadow-sm">
                 <div className="flex items-center gap-2">
                   <Icon icon="lucide:circle-dot" className="w-3.5 h-3.5 text-blue-300" />
-                  <span className="text-[11px] font-bold text-slate-100 uppercase tracking-wide">BALLS</span>
+                  <span className="text-[11px] font-bold text-slate-100 uppercase tracking-wide">{t('pages.createProject.logoInstructions.summary.balls')}</span>
                   <span className="bg-[#1f2a3c] text-slate-200 text-[10px] px-1.5 rounded font-bold border border-[#243553]">{bolasList.length}</span>
                 </div>
                 <button
@@ -681,11 +711,11 @@ export const SummaryRenderer = ({
                                 </span>
                               )}
                               <span className="text-sm font-semibold text-white truncate">
-                                {nomeDisplay || "Ball"}
+                                {nomeDisplay || t('pages.createProject.logoInstructions.summary.ball')}
                               </span>
                             </div>
                             {bola.referencia && (
-                              <span className="text-[11px] text-gray-400">Ref: {bola.referencia}</span>
+                              <span className="text-[11px] text-gray-400">{t('pages.createProject.logoInstructions.summary.reference')} {bola.referencia}</span>
                             )}
                           </div>
 
@@ -705,7 +735,7 @@ export const SummaryRenderer = ({
                                   }
                                 }}
                                 classNames={{ trigger: "h-9 text-sm bg-[#0f172a]", value: "text-sm text-white" }}
-                                placeholder="Choose color"
+                                placeholder={t('pages.createProject.logoInstructions.summary.chooseColor')}
                               >
                                 {coresDisponiveis.map((cor) => (
                                   <SelectItem key={String(cor.id)} textValue={cor.nome}>
@@ -727,7 +757,7 @@ export const SummaryRenderer = ({
                                   }
                                 }}
                                 classNames={{ trigger: "h-9 text-sm bg-[#0f172a]", value: "text-sm text-white" }}
-                                placeholder="Choose finish"
+                                placeholder={t('pages.createProject.logoInstructions.summary.chooseFinish')}
                               >
                                 {acabamentosDisponiveis.map((acab) => (
                                   <SelectItem key={String(acab.id)} textValue={acab.nome}>
@@ -749,7 +779,7 @@ export const SummaryRenderer = ({
                                   }
                                 }}
                                 classNames={{ trigger: "h-9 text-sm bg-[#0f172a]", value: "text-sm text-white" }}
-                                placeholder="Choose size"
+                                placeholder={t('pages.createProject.logoInstructions.summary.chooseSize')}
                               >
                                 {tamanhosDisponiveis.map((t) => (
                                   <SelectItem key={String(t.id)} textValue={t.nome || t.medida}>
@@ -758,7 +788,7 @@ export const SummaryRenderer = ({
                                 ))}
                               </Select>
                               <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-gray-400">Ref:</span>
+                                <span className="text-[11px] text-gray-400">{t('pages.createProject.logoInstructions.summary.reference')}</span>
                                 <Input
                                   aria-label={`Ball Reference ${idx + 1}`}
                                   size="sm"
@@ -801,7 +831,7 @@ export const SummaryRenderer = ({
                     );
                   })
                 ) : (
-                  <div className="text-[10px] text-gray-500 italic px-2">No balls added.</div>
+                  <div className="text-[10px] text-gray-500 italic px-2">{t('pages.createProject.logoInstructions.summary.noBalls')}</div>
                 )}
               </div>
             </div>

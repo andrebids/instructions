@@ -17,13 +17,17 @@ export const DimensionsRenderer = ({
           <div className="p-1 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
             <Icon icon="lucide:ruler" className="w-3.5 h-3.5" />
           </div>
-          <h2 className="text-xs sm:text-sm font-bold">Dimensions</h2>
+          <h2 className="text-xs sm:text-sm font-bold">{t('pages.createProject.logoInstructions.dimensions.title')}</h2>
         </div>
 
         <div className="overflow-x-hidden">
           <div className="grid grid-cols-2 gap-2 min-w-0">
-            {['Height', 'Length', 'Width', 'Diameter'].map((dim) => {
-              const key = dim.toLowerCase();
+            {[
+              { key: 'height', label: t('pages.createProject.logoInstructions.dimensions.height') },
+              { key: 'length', label: t('pages.createProject.logoInstructions.dimensions.length') },
+              { key: 'width', label: t('pages.createProject.logoInstructions.dimensions.width') },
+              { key: 'diameter', label: t('pages.createProject.logoInstructions.dimensions.diameter') }
+            ].map(({ key, label: dim }) => {
               const dimensionValue = formik.values.dimensions?.[key]?.value || "";
               const dimensionError = formik.errors.dimensions?.[key]?.value;
               const isTouched = formik.touched.dimensions?.[key]?.value;
@@ -43,7 +47,7 @@ export const DimensionsRenderer = ({
                       isSelected={formik.values.dimensions?.[key]?.imperative || false}
                       onValueChange={(v) => handleDimensionUpdate(key, "imperative", v)}
                     >
-                      <span className="text-xs">Imperative</span>
+                      <span className="text-xs">{t('pages.createProject.logoInstructions.dimensions.imperative')}</span>
                     </Checkbox>
                   </div>
                   <Input
@@ -90,12 +94,12 @@ export const DimensionsRenderer = ({
           <div className="p-1 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
             <Icon icon="lucide:hammer" className="w-3.5 h-3.5" />
           </div>
-          <h2 className="text-xs sm:text-sm font-bold">Fixation</h2>
+          <h2 className="text-xs sm:text-sm font-bold">{t('pages.createProject.logoInstructions.dimensions.fixation')}</h2>
         </div>
 
         <div className="space-y-1.5">
           <div>
-            <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Usage</label>
+            <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">{t('pages.createProject.logoInstructions.dimensions.usage')}</label>
             <Tabs
               fullWidth
               size="sm"
@@ -120,7 +124,7 @@ export const DimensionsRenderer = ({
                 title={
                   <div className="flex items-center gap-1 py-0.5">
                     <Icon icon="lucide:home" className="w-3 h-3" />
-                    <span className="text-xs">Indoor</span>
+                    <span className="text-xs">{t('pages.createProject.logoInstructions.dimensions.indoor')}</span>
                   </div>
                 }
               />
@@ -129,7 +133,7 @@ export const DimensionsRenderer = ({
                 title={
                   <div className="flex items-center gap-1 py-0.5">
                     <Icon icon="lucide:trees" className="w-3 h-3" />
-                    <span className="text-xs">Outdoor</span>
+                    <span className="text-xs">{t('pages.createProject.logoInstructions.dimensions.outdoor')}</span>
                   </div>
                 }
               />
@@ -137,9 +141,9 @@ export const DimensionsRenderer = ({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Fixation Type</label>
+            <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">{t('pages.createProject.logoInstructions.dimensions.fixationType')}</label>
             <Select
-              placeholder="Select fixation type"
+              placeholder={t('pages.createProject.logoInstructions.dimensions.fixationTypePlaceholder')}
               isRequired
               size="sm"
               variant="bordered"
@@ -152,22 +156,22 @@ export const DimensionsRenderer = ({
               }}
               onBlur={() => formik.setFieldTouched("fixationType", true)}
               isInvalid={formik.touched.fixationType && (!formik.values.fixationType || formik.values.fixationType.trim() === "")}
-              errorMessage={formik.touched.fixationType && (!formik.values.fixationType || formik.values.fixationType.trim() === "") ? "Fixation type is required" : undefined}
+              errorMessage={formik.touched.fixationType && (!formik.values.fixationType || formik.values.fixationType.trim() === "") ? t('pages.createProject.logoInstructions.dimensions.fixationTypeRequired') : undefined}
               startContent={<Icon icon="lucide:settings-2" className="w-3 h-3 text-gray-500" />}
               classNames={{ trigger: "text-xs h-8" }}
             >
-              <SelectItem key="ground" startContent={<Icon icon="lucide:arrow-down-to-line" className="w-3 h-3" />}>Ground</SelectItem>
-              <SelectItem key="wall" startContent={<Icon icon="lucide:brick-wall" className="w-3 h-3" />}>Wall</SelectItem>
-              <SelectItem key="suspended" startContent={<Icon icon="lucide:arrow-up-to-line" className="w-3 h-3" />}>Suspended</SelectItem>
-              <SelectItem key="none" startContent={<Icon icon="lucide:ban" className="w-3 h-3" />}>None</SelectItem>
-              <SelectItem key="pole_side">Pole (Side)</SelectItem>
-              <SelectItem key="pole_central">Pole (Central)</SelectItem>
-              <SelectItem key="special">Special</SelectItem>
+              <SelectItem key="ground" startContent={<Icon icon="lucide:arrow-down-to-line" className="w-3 h-3" />}>{t('pages.createProject.logoInstructions.dimensions.ground')}</SelectItem>
+              <SelectItem key="wall" startContent={<Icon icon="lucide:brick-wall" className="w-3 h-3" />}>{t('pages.createProject.logoInstructions.dimensions.wall')}</SelectItem>
+              <SelectItem key="suspended" startContent={<Icon icon="lucide:arrow-up-to-line" className="w-3 h-3" />}>{t('pages.createProject.logoInstructions.dimensions.suspended')}</SelectItem>
+              <SelectItem key="none" startContent={<Icon icon="lucide:ban" className="w-3 h-3" />}>{t('pages.createProject.logoInstructions.dimensions.none')}</SelectItem>
+              <SelectItem key="pole_side">{t('pages.createProject.logoInstructions.dimensions.poleSide')}</SelectItem>
+              <SelectItem key="pole_central">{t('pages.createProject.logoInstructions.dimensions.poleCentral')}</SelectItem>
+              <SelectItem key="special">{t('pages.createProject.logoInstructions.dimensions.special')}</SelectItem>
             </Select>
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Structure Finish</label>
+            <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">{t('pages.createProject.logoInstructions.dimensions.structureFinish')}</label>
             <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 p-1.5 bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-lg border border-white/20 dark:border-gray-600/30">
               <div className="flex items-center gap-1.5">
                 <Switch
@@ -234,7 +238,7 @@ export const DimensionsRenderer = ({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">Technical Constraints</label>
+            <label className="text-xs font-semibold text-gray-700 dark:text-gray-200 block mb-0.5">{t('pages.createProject.logoInstructions.dimensions.technicalConstraints')}</label>
             <div className="grid grid-cols-1 gap-1">
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 p-1.5 bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-lg border border-white/20 dark:border-gray-600/30">
@@ -271,7 +275,7 @@ export const DimensionsRenderer = ({
                   isSelected={formik.values.ballast}
                   onValueChange={(v) => formik.updateField("ballast", v)}
                 >
-                  Ballast Required
+                  {t('pages.createProject.logoInstructions.dimensions.ballastRequired')}
                 </Checkbox>
               </div>
               <div className={`p-1 rounded-lg border-2 transition-all ${formik.values.controlReport ? 'bg-primary-50/80 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800' : 'bg-white/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-700/50'}`}>
@@ -281,7 +285,7 @@ export const DimensionsRenderer = ({
                   isSelected={formik.values.controlReport}
                   onValueChange={(v) => formik.updateField("controlReport", v)}
                 >
-                  Control Report Needed
+                  {t('pages.createProject.logoInstructions.dimensions.controlReportNeeded')}
                 </Checkbox>
               </div>
             </div>
