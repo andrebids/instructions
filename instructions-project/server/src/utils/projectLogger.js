@@ -4,12 +4,13 @@
  */
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
+const enableDebugLogs = process.env.ENABLE_DEBUG_LOGS !== 'false'; // Por padrão, logs habilitados em desenvolvimento
 
 /**
  * Log de informação geral (apenas em desenvolvimento)
  */
 export function logInfo(message, data = null) {
-  if (isDevelopment) {
+  if (isDevelopment && enableDebugLogs) {
     console.log(`📋 [PROJECTS API] ${message}`, data || '');
   }
 }
@@ -18,7 +19,7 @@ export function logInfo(message, data = null) {
  * Log de sucesso (apenas em desenvolvimento)
  */
 export function logSuccess(message, data = null) {
-  if (isDevelopment) {
+  if (isDevelopment && enableDebugLogs) {
     console.log(`✅ [PROJECTS API] ${message}`, data || '');
   }
 }
@@ -99,7 +100,7 @@ export function logError(message, error = null) {
  * Log de operação de servidor (criação, atualização, etc)
  */
 export function logServerOperation(operation, data = {}) {
-  if (isDevelopment) {
+  if (isDevelopment && enableDebugLogs) {
     console.log(`💾 [SERVER] ===== ${operation} =====`);
     if (Object.keys(data).length > 0) {
       console.log(`💾 [SERVER]`, data);
@@ -111,14 +112,16 @@ export function logServerOperation(operation, data = {}) {
  * Log de upload
  */
 export function logUpload(message, data = null) {
-  console.log(`📁 [PROJECT UPLOAD] ${message}`, data || '');
+  if (enableDebugLogs) {
+    console.log(`📁 [PROJECT UPLOAD] ${message}`, data || '');
+  }
 }
 
 /**
  * Log de debug
  */
 export function logDebug(message, data = null) {
-  if (isDevelopment) {
+  if (isDevelopment && enableDebugLogs) {
     console.log(`🔍 [PROJECT UPLOAD] ${message}`, data || '');
   }
 }
@@ -127,7 +130,7 @@ export function logDebug(message, data = null) {
  * Log de estatísticas (apenas em desenvolvimento)
  */
 export function logStats(message, data = null) {
-  if (isDevelopment) {
+  if (isDevelopment && enableDebugLogs) {
     console.log(`📊 [PROJECTS API] ${message}`, data || '');
   }
 }
@@ -136,17 +139,21 @@ export function logStats(message, data = null) {
  * Log de deleção
  */
 export function logDelete(message, data = null) {
-  console.log(`🗑️  [PROJECTS API] ${message}`, data || '');
+  if (enableDebugLogs) {
+    console.log(`🗑️  [PROJECTS API] ${message}`, data || '');
+  }
 }
 
 /**
  * Log de conversão night
  */
 export function logNightConversion(message, data = null) {
-  if (message.includes('falhada') || message.includes('failed')) {
-    console.log(`⚠️ [NIGHT CONVERSION] ${message}`, data || '');
-  } else {
-    console.log(`✅ [NIGHT VERSION] ${message}`, data || '');
+  if (enableDebugLogs) {
+    if (message.includes('falhada') || message.includes('failed')) {
+      console.log(`⚠️ [NIGHT CONVERSION] ${message}`, data || '');
+    } else {
+      console.log(`✅ [NIGHT VERSION] ${message}`, data || '');
+    }
   }
 }
 

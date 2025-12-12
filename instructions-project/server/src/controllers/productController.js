@@ -89,6 +89,7 @@ async function updateNewTagForProducts() {
 export async function getAll(req, res) {
   try {
     const isDevelopment = process.env.NODE_ENV !== 'production';
+    const enableDebugLogs = process.env.ENABLE_DEBUG_LOGS !== 'false';
 
     var where = {};
     var query = req.query;
@@ -291,7 +292,7 @@ export async function getAll(req, res) {
     var productsData = [];
     
     // Log antes de validar imagens
-    if (process.env.NODE_ENV !== 'production') {
+    if (isDevelopment && enableDebugLogs) {
       console.log(`🔍 [PRODUCTS API] Processando ${products.length} produtos para validação de imagens...`);
     }
     
@@ -565,11 +566,14 @@ export function clearTrendingCache() {
 export async function getTrending(req, res) {
   try {
     const isDevelopment = process.env.NODE_ENV !== 'production';
+    const enableDebugLogs = process.env.ENABLE_DEBUG_LOGS !== 'false';
     
     // Check cache first
     const now = Date.now();
     if (trendingCache.data && trendingCache.timestamp && (now - trendingCache.timestamp < trendingCache.ttl)) {
-      console.log('📦 [TRENDING API] Retornando dados do cache');
+      if (enableDebugLogs) {
+        console.log('📦 [TRENDING API] Retornando dados do cache');
+      }
       return res.json(trendingCache.data);
     }
 
@@ -577,7 +581,9 @@ export async function getTrending(req, res) {
     
     // Tentativa 1: Buscar produtos trending com qualquer imagem válida
     try {
-      console.log('🔍 [TRENDING API] Buscando produtos trending...');
+      if (enableDebugLogs) {
+        console.log('🔍 [TRENDING API] Buscando produtos trending...');
+      }
       products = await Product.findAll({
         where: {
           isActive: true,
@@ -597,9 +603,13 @@ export async function getTrending(req, res) {
           'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
         ]
       });
-      console.log(`✅ [TRENDING API] Encontrados ${products.length} produtos trending com imagens`);
+      if (enableDebugLogs) {
+        console.log(`✅ [TRENDING API] Encontrados ${products.length} produtos trending com imagens`);
+      }
     } catch (queryError) {
-      console.warn('⚠️ [TRENDING API] Erro na query otimizada, tentando fallback simples:', queryError.message);
+      if (enableDebugLogs) {
+        console.warn('⚠️ [TRENDING API] Erro na query otimizada, tentando fallback simples:', queryError.message);
+      }
       // Tentativa 2: Query simples sem filtro de imagem (mas ainda apenas trending)
       try {
         products = await Product.findAll({
@@ -613,14 +623,16 @@ export async function getTrending(req, res) {
             'imagesNightUrl', 'imagesDayUrl', 'thumbnailUrl', 'isTrending'
           ]
         });
-        console.log(`✅ [TRENDING API] Fallback: encontrados ${products.length} produtos trending`);
+        if (enableDebugLogs) {
+          console.log(`✅ [TRENDING API] Fallback: encontrados ${products.length} produtos trending`);
+        }
       } catch (fallbackError) {
         console.error('❌ [TRENDING API] Erro no fallback:', fallbackError.message);
       }
     }
 
     // Log antes de validar imagens
-    if (process.env.NODE_ENV !== 'production') {
+    if (isDevelopment && enableDebugLogs) {
       console.log(`🔍 [TRENDING API] Processando ${products.length} produtos trending para validação de imagens...`);
     }
     
@@ -668,7 +680,7 @@ export async function getTrending(req, res) {
       
       if (hadImagesBefore && !hasImagesAfter) {
         stats.noImages++;
-        if (process.env.NODE_ENV !== 'production') {
+        if (isDevelopment && enableDebugLogs) {
           console.warn(`⚠️ [TRENDING API] Produto trending ${plainProduct.id} perdeu todas as imagens após validação física`);
         }
       } else if (hadImagesBefore && (originalImages.imagesNightUrl !== validatedImages.imagesNightUrl || 
@@ -697,7 +709,9 @@ export async function getTrending(req, res) {
 
     // Fallback: Se não houver produtos trending com imagens, buscar produtos ativos com imagens
     if (productsData.length === 0) {
-      console.log('⚠️ [TRENDING API] Nenhum produto trending encontrado, buscando produtos ativos com imagens como fallback...');
+      if (enableDebugLogs) {
+        console.log('⚠️ [TRENDING API] Nenhum produto trending encontrado, buscando produtos ativos com imagens como fallback...');
+      }
       try {
         const fallbackProducts = await Product.findAll({
           where: {
@@ -756,13 +770,17 @@ export async function getTrending(req, res) {
           return p.imagesNightUrl !== null || p.imagesDayUrl !== null || p.thumbnailUrl !== null;
         });
 
-        console.log(`✅ [TRENDING API] Fallback: encontrados ${productsData.length} produtos ativos com imagens`);
+        if (enableDebugLogs) {
+          console.log(`✅ [TRENDING API] Fallback: encontrados ${productsData.length} produtos ativos com imagens`);
+        }
       } catch (fallbackError) {
         console.error('❌ [TRENDING API] Erro no fallback de produtos ativos:', fallbackError.message);
       }
     }
 
-    console.log(`📊 [TRENDING API] Retornando ${productsData.length} produtos para o widget`);
+    if (enableDebugLogs) {
+      console.log(`📊 [TRENDING API] Retornando ${productsData.length} produtos para o widget`);
+    }
 
     // Update cache
     trendingCache.data = productsData;
