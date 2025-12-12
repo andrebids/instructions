@@ -580,7 +580,7 @@ export default React.memo(function LogoEditModal({
                     <>
                         <ModalHeader className="flex items-center justify-between bg-white/15 dark:bg-white/10 backdrop-blur-md rounded-t-lg border-b border-white/30 dark:border-white/20">
                             <div className="flex items-center gap-3">
-                                <span className="text-xl font-semibold text-foreground">Logo Instructions</span>
+                                <span className="text-xl font-semibold text-foreground">{t('pages.createProject.steps.logoInstructions')}</span>
                                 {/* Indicador de status de autosave */}
                                 {saveStatus.status === 'saving' && (
                                     <div className="flex items-center gap-2 text-xs text-yellow-500">

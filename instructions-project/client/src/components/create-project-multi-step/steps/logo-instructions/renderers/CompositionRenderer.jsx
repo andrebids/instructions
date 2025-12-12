@@ -1,6 +1,7 @@
 import React from "react";
 import { Button, Select, SelectItem, AutocompleteItem } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
 import { materialsData } from "../../../data/materialsData.js";
 import {
   getComponenteById,
@@ -32,6 +33,7 @@ export const CompositionRenderer = ({
   handleToggleEditBola,
   handleBolaUpdate,
 }) => {
+  const { t } = useTranslation();
   const getColorStyle = (name) => {
     if (!name) return {};
     const n = name.toLowerCase();
@@ -70,7 +72,7 @@ export const CompositionRenderer = ({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm p-2 rounded-lg border border-white/20 dark:border-gray-600/30 shadow-md gap-2 sm:gap-0 flex-shrink-0">
             <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
               <Icon icon="lucide:box" className="w-3.5 h-3.5" />
-              <h4 className="text-xs font-bold uppercase tracking-wide">Components</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wide">{t('pages.createProject.logoInstructions.composition.components')}</h4>
             </div>
             <div className="flex gap-1.5 w-full sm:w-auto">
               {composition.componentes && composition.componentes.length > 0 && (
@@ -81,7 +83,7 @@ export const CompositionRenderer = ({
                   isIconOnly
                   onPress={handleClearAllComponentes}
                   className="bg-white dark:bg-gray-800 h-7 w-7 min-w-7"
-                  aria-label="Clear all components"
+                  aria-label={t('pages.createProject.logoInstructions.composition.clearAll')}
                 >
                   <Icon icon="lucide:trash-2" className="w-3 h-3" />
                 </Button>
@@ -93,7 +95,7 @@ export const CompositionRenderer = ({
                 startContent={<Icon icon="lucide:plus" className="w-3 h-3" />}
                 onPress={handleAddComponente}
               >
-                Add
+                {t('pages.createProject.logoInstructions.composition.add')}
               </Button>
             </div>
           </div>
@@ -163,9 +165,9 @@ export const CompositionRenderer = ({
                 return (
                   <div key={index} className="p-1.5 border border-white/20 dark:border-gray-600/30 rounded-lg bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm space-y-1.5 shadow-md">
                     <AutocompleteWithMarquee
-                      label="Component"
-                      aria-label="Search component"
-                      placeholder="Search component"
+                      label={t('pages.createProject.logoInstructions.composition.component')}
+                      aria-label={t('pages.createProject.logoInstructions.composition.searchComponent')}
+                      placeholder={t('pages.createProject.logoInstructions.composition.searchComponentPlaceholder')}
                       size="sm"
                       variant="bordered"
                       selectedKey={comp.componenteId ? String(comp.componenteId) : null}
@@ -201,8 +203,8 @@ export const CompositionRenderer = ({
 
                     {componente && !componente.semCor && (
                       <SelectWithMarquee
-                        label="Color"
-                        placeholder="Select color"
+                        label={t('pages.createProject.logoInstructions.composition.color')}
+                        placeholder={t('pages.createProject.logoInstructions.composition.selectColor')}
                         size="sm"
                         variant="bordered"
                         selectedKeys={comp.corId ? new Set([String(comp.corId)]) : new Set()}
@@ -252,7 +254,7 @@ export const CompositionRenderer = ({
             ) : (
               <div className="flex flex-col items-center justify-center py-4 border-2 border-dashed border-white/30 dark:border-gray-600/40 rounded-lg bg-white/30 dark:bg-gray-700/30 backdrop-blur-sm">
                 <Icon icon="lucide:box" className="w-8 h-8 text-gray-300 mb-1" />
-                <p className="text-xs text-gray-400">No components added yet</p>
+                <p className="text-xs text-gray-400">{t('pages.createProject.logoInstructions.composition.noComponents')}</p>
               </div>
             )}
           </div>
@@ -265,7 +267,7 @@ export const CompositionRenderer = ({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm p-2 rounded-lg border border-white/20 dark:border-gray-600/30 shadow-md gap-2 sm:gap-0 flex-shrink-0">
             <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
               <Icon icon="lucide:circle-dot" className="w-3.5 h-3.5" />
-              <h4 className="text-xs font-bold uppercase tracking-wide">Balls</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wide">{t('pages.createProject.logoInstructions.composition.balls')}</h4>
             </div>
             <Button
               size="sm"
@@ -274,7 +276,7 @@ export const CompositionRenderer = ({
               startContent={<Icon icon="lucide:plus" className="w-3 h-3" />}
               onPress={handleAddBola}
             >
-              Add
+              {t('pages.createProject.logoInstructions.composition.add')}
             </Button>
           </div>
 
@@ -348,12 +350,12 @@ export const CompositionRenderer = ({
                       <div className="w-4 h-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300 ring-2 ring-white dark:ring-gray-700">
                         {index + 1}
                       </div>
-                      <span className="text-xs font-bold text-gray-600 dark:text-gray-300">Ball Configuration</span>
+                      <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{t('pages.createProject.logoInstructions.composition.ballConfiguration')}</span>
                     </div>
 
                     <Select
-                      label="Color"
-                      placeholder="Select color"
+                      label={t('pages.createProject.logoInstructions.composition.color')}
+                      placeholder={t('pages.createProject.logoInstructions.composition.selectColor')}
                       size="sm"
                       variant="bordered"
                       selectedKeys={bola.corId ? [String(bola.corId)] : []}
@@ -370,8 +372,8 @@ export const CompositionRenderer = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                       <Select
-                        label="Finish"
-                        placeholder="Finish"
+                        label={t('pages.createProject.logoInstructions.composition.finish')}
+                        placeholder={t('pages.createProject.logoInstructions.composition.finish')}
                         size="sm"
                         variant="bordered"
                         selectedKeys={bola.acabamentoId ? [String(bola.acabamentoId)] : []}
@@ -388,8 +390,8 @@ export const CompositionRenderer = ({
                       </Select>
 
                       <Select
-                        label="Size"
-                        placeholder="Size"
+                        label={t('pages.createProject.logoInstructions.composition.size')}
+                        placeholder={t('pages.createProject.logoInstructions.composition.size')}
                         size="sm"
                         variant="bordered"
                         selectedKeys={bola.tamanhoId ? [String(bola.tamanhoId)] : []}
@@ -437,7 +439,7 @@ export const CompositionRenderer = ({
             ) : (
               <div className="flex flex-col items-center justify-center py-4 border-2 border-dashed border-white/30 dark:border-gray-600/40 rounded-lg bg-white/30 dark:bg-gray-700/30 backdrop-blur-sm">
                 <Icon icon="lucide:circle-dashed" className="w-8 h-8 text-gray-300 mb-1" />
-                <p className="text-xs text-gray-400">No balls added yet</p>
+                <p className="text-xs text-gray-400">{t('pages.createProject.logoInstructions.composition.noBalls')}</p>
               </div>
             )}
           </div>

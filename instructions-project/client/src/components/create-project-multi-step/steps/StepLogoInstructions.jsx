@@ -63,10 +63,10 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
   }, [currentPage, onInternalPageChange]);
 
   const logoSteps = [
-    { id: 'details-attachments', label: 'Details & Attachments' },
-    { id: 'dimensions', label: 'Dimensions' },
-    { id: 'composition', label: 'Composition' },
-    { id: 'summary', label: 'Summary' }
+    { id: 'details-attachments', label: t('pages.createProject.logoInstructions.steps.detailsAttachments') },
+    { id: 'dimensions', label: t('pages.createProject.logoInstructions.steps.dimensions') },
+    { id: 'composition', label: t('pages.createProject.logoInstructions.steps.composition') },
+    { id: 'summary', label: t('pages.createProject.logoInstructions.steps.summary') }
   ];
 
   // Cleanup do timeout quando o componente for desmontado ou o chat fechar
