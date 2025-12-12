@@ -548,7 +548,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
 
                                         <div className="flex items-start gap-2">
                                             <div className={`flex-1 p-4 pb-8 rounded-2xl shadow-sm relative ${obs.author.name === user?.name
-                                                ? 'bg-primary text-primary-foreground rounded-tr-none'
+                                                ? 'bg-primary-500 text-primary-foreground rounded-tr-none'
                                                 : 'bg-content2 text-foreground border border-divider rounded-tl-none'
                                                 }`}>
                                                 {/* Context: Linked Instruction */}
@@ -624,7 +624,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                                             className="h-32 w-auto object-cover rounded-lg"
                                                                         />
                                                                         {att.annotations && att.annotations.length > 0 && (
-                                                                            <div className="absolute top-2 left-2 bg-primary text-white text-xs px-2 py-1 rounded-full font-semibold shadow-lg flex items-center gap-1">
+                                                                            <div className="absolute top-2 left-2 bg-primary-500 text-white text-xs px-2 py-1 rounded-full font-semibold shadow-lg flex items-center gap-1">
                                                                                 <Icon icon="lucide:message-square-text" className="text-xs" />
                                                                                 {att.annotations.filter(a => a.text).length || att.annotations.length}
                                                                             </div>
@@ -793,7 +793,7 @@ export function ProjectObservations({ projectId, instructions = [], results = []
                                                 className="h-20 w-auto object-cover"
                                             />
                                             {att.annotations && att.annotations.length > 0 && (
-                                                <div className="absolute top-1 left-1 bg-primary text-white text-xs px-2 py-0.5 rounded-full font-semibold shadow-lg">
+                                                <div className="absolute top-1 left-1 bg-primary-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold shadow-lg">
                                                     {att.annotations.length} notes
                                                 </div>
                                             )}

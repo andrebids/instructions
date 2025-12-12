@@ -465,8 +465,8 @@ export default function TrendingFiltersSidebar({
         {mountOptions.map((opt) => {
           const isSelected = filters.mount === opt.value;
           const selectedClass = isDark
-            ? "border-primary bg-primary text-white"
-            : "border-primary bg-primary text-white";
+            ? "border-primary bg-primary-500 text-white"
+            : "border-primary bg-primary-500 text-white";
           const idleClass = isDark
             ? "border-white/20 bg-white/[0.05] hover:border-white/30 hover:bg-white/[0.08] text-white"
             : "border-black/10 bg-white hover:border-black/20 hover:bg-default-50 text-default-700";
@@ -570,7 +570,7 @@ export default function TrendingFiltersSidebar({
               <div className="space-y-2">
                 <div className="relative h-2 rounded-full bg-default-200">
                   <div
-                    className="absolute top-0 h-2 rounded-full bg-primary"
+                    className="absolute top-0 h-2 rounded-full bg-primary-500"
                     style={{
                       left: `${((priceRange[0] - effectiveMin) / (effectiveMax - effectiveMin || 1)) * 100}%`,
                       width: `${((priceRange[1] - priceRange[0]) / (effectiveMax - effectiveMin || 1)) * 100}%`,
@@ -858,7 +858,7 @@ export default function TrendingFiltersSidebar({
               <div className="space-y-2">
                 <div className="relative h-2 rounded-full bg-default-200">
                   <div
-                    className="absolute top-0 h-2 rounded-full bg-primary"
+                    className="absolute top-0 h-2 rounded-full bg-primary-500"
                     style={{
                       left: `${((stockRange[0] - effectiveStockMin) / (effectiveStockMax - effectiveStockMin || 1)) * 100}%`,
                       width: `${((stockRange[1] - stockRange[0]) / (effectiveStockMax - effectiveStockMin || 1)) * 100}%`,

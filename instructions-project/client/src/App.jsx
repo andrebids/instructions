@@ -36,6 +36,7 @@ import { NotificationContainer } from "./components/notifications/NotificationCo
 import { useTheme } from "@heroui/use-theme";
 import Aurora from "./components/ui/Aurora";
 import { LayoutProvider, useLayout } from "./context/LayoutContext";
+import { HeroUIDebug } from "./components/debug/HeroUIDebug";
 
 function AppLayout() {
   const { isHandheld } = useResponsiveProfile();
@@ -92,6 +93,7 @@ function AppLayout() {
 
   return (
     <div className="bg-transparent text-foreground flex h-screen relative">
+      <HeroUIDebug />
       {isDark && !showCreateProjectForm && (
         <div className="fixed inset-0 z-0 pointer-events-none">
           <Aurora

@@ -73,7 +73,7 @@ export function StepIndicator({ steps, currentStep, onStepClick, vertical = fals
                         : isActive
                           ? isDark
                             ? "bg-blue-600 text-white shadow-md"
-                            : "bg-primary text-white shadow-md"
+                            : "bg-primary-500 text-white shadow-md"
                           : isDark
                             ? "bg-default-50 border-2 border-default-200 text-default-400 group-hover:border-default-300"
                             : "bg-gray-100 border-2 border-gray-300 text-gray-500 group-hover:border-gray-400"

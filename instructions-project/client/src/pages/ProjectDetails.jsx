@@ -1360,7 +1360,7 @@ export default function ProjectDetails() {
                         variant="underlined"
                         classNames={{
                             tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
-                            cursor: "w-full bg-primary",
+                            cursor: "w-full bg-primary-500",
                             tab: "max-w-fit px-0 h-12",
                             tabContent: "group-data-[selected=true]:text-primary font-medium text-default-500"
                         }}

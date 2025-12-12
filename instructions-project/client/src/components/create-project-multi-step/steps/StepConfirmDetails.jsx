@@ -617,7 +617,7 @@ export function StepConfirmDetails({ formData, error, onEditLogo, onDeleteLogo, 
                                   alt="AI Generated"
                                   className="w-full h-full object-cover"
                                 />
-                                <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
+                                <div className="absolute top-2 left-2 bg-primary-500 text-primary-foreground text-xs px-2 py-1 rounded-full">
                                   AI Generated
                                 </div>
                               </div>

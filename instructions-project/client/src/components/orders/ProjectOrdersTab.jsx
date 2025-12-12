@@ -756,6 +756,7 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
               color="primary"
               variant="solid"
               size="sm"
+              className="bg-primary-500 text-white"
               startContent={<Icon icon="lucide:plus" />}
               onPress={() => setIsAddModalOpen(true)}
             >
@@ -1011,6 +1012,7 @@ export default function ProjectOrdersTab({ projectId, budget = 0, canvasDecorati
               <Button
                 color="primary"
                 variant="solid"
+                className="bg-primary-500 text-white"
                 startContent={<Icon icon="lucide:send" />}
                 onPress={() => handleStatusChange('to_order')}
               >

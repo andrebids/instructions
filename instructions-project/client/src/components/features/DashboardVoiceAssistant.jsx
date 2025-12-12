@@ -77,7 +77,7 @@ export const DashboardVoiceAssistant = () => {
                   {[1, 2, 3].map(i => (
                     <motion.div
                       key={i}
-                      className="w-1 bg-primary rounded-full"
+                      className="w-1 bg-primary-500 rounded-full"
                       animate={{ height: [4, 12, 4] }}
                       transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.1 }}
                     />
@@ -95,7 +95,7 @@ export const DashboardVoiceAssistant = () => {
                 >
                   <div
                     className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.sender === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-tr-none'
+                      ? 'bg-primary-500 text-primary-foreground rounded-tr-none'
                       : 'bg-default-100 text-foreground rounded-tl-none'
                       }`}
                   >

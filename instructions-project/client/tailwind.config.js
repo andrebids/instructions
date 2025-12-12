@@ -12,7 +12,6 @@ export default {
     heroui({
       addCommonColors: true,
       themes: {
-        // Align with HeroUI defaults for a clean light mode
         light: {
           colors: {
             background: "#ffffff",
@@ -33,7 +32,6 @@ export default {
             },
           },
         },
-        // Restore default HeroUI dark palette (no overrides)
         dark: {
           extend: "dark",
         },
@@ -49,6 +47,20 @@ export default {
         sans: ["Outfit", "Urbanist", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Arial", "Noto Sans", "sans-serif"],
       },
       colors: {
+        primary: {
+          50: "#e7f0ff",
+          100: "#c7d8ff",
+          200: "#a3c1ff",
+          300: "#7faaff",
+          400: "#5b92ff",
+          500: "#2b7fff",
+          600: "#1f64cc",
+          700: "#164c99",
+          800: "#0d3366",
+          900: "#061933",
+          DEFAULT: "#2b7fff",
+          foreground: "#ffffff",
+        },
         'brand-violet': '#A19AFE',
         'brand-peach': '#F9D7AO',
         'brand-black': '#242424',
