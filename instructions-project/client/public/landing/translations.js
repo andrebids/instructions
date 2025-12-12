@@ -231,10 +231,10 @@ const translations = {
                 names: "Leandro & André",
                 tag: "Fastest to Market",
                 warning: "*These designers must be focused on this project most of the time to deliver on time.",
-                price: "€250",
+                price: "€200",
                 cost_desc: "Total Operational Costs",
-                cost_item1: "€120 Cursor Pro+ Plan (AI Code Editor)",
-                cost_item2: "€130 fal.ai credits (testing & implementation)",
+                cost_item1: "€60 Cursor Pro+ Plan (AI Code Editor)",
+                cost_item2: "€140 fal.ai credits (testing & implementation)",
                 strat: {
                     title: "Platform Strategy",
                     desc: "<strong>Universal Web App (PWA)</strong> with frictionless browser-based installation. Bypasses app store delays for immediate updates."
@@ -513,10 +513,10 @@ const translations = {
                 names: "Leandro & André",
                 tag: "Le Plus Rapide",
                 warning: "*Ces designers doivent consacrer la majeure partie de leur temps à ce projet pour livrer dans les délais.",
-                price: "250 €",
+                price: "200 €",
                 cost_desc: "Coûts Opérationnels Totaux",
-                cost_item1: "120 € Plan Cursor Pro+ (Éditeur de Code IA)",
-                cost_item2: "130 € crédits fal.ai (tests & implémentation)",
+                cost_item1: "60 € Plan Cursor Pro+ (Éditeur de Code IA)",
+                cost_item2: "140 € crédits fal.ai (tests & implémentation)",
                 strat: {
                     title: "Stratégie Plateforme",
                     desc: "<strong>App Web Universelle (PWA)</strong> avec installation sans friction via navigateur. Contourne les délais des stores pour des mises à jour immédiates."
