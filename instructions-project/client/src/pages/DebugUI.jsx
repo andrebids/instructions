@@ -1,6 +1,8 @@
 import React from 'react';
 import { Button, Snippet, Card, CardBody, CardHeader } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { motion } from "framer-motion";
+import { Ripple, useRipple } from "../components/ui/Ripple";
 
 const ActionCard = ({ title, button, code }) => {
   const [copied, setCopied] = React.useState(false);
@@ -32,6 +34,23 @@ const ActionCard = ({ title, button, code }) => {
   );
 };
 
+const HeroButton = ({ children, className, ...props }) => {
+  const { ripples, onRippleClickHandler, onClearRipple } = useRipple();
+
+  return (
+    <motion.button
+      className={`relative overflow-hidden ${className}`}
+      onMouseDown={onRippleClickHandler}
+      whileTap={{ scale: 0.95 }}
+      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+      {...props}
+    >
+      {children}
+      <Ripple ripples={ripples} onClear={onClearRipple} />
+    </motion.button>
+  );
+};
+
 export default function DebugUI() {
   const actions = [
     {
@@ -55,9 +74,9 @@ export default function DebugUI() {
     {
       title: "Edit",
       button: (
-        <button className="h-10 text-small px-4 z-0 group relative inline-flex items-center justify-center box-border appearance-none select-none whitespace-nowrap subpixel-antialiased overflow-hidden tap-highlight-transparent transform-gpu active:scale-[0.97] cursor-pointer outline-none focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 min-w-20 gap-2 rounded-medium [&>svg]:max-w-[theme(spacing.8)] bg-[oklch(82.03%_0.1388_76.34)]/10 backdrop-blur-md border border-[oklch(82.03%_0.1388_76.34)]/20 text-[oklch(82.03%_0.1388_76.34)] font-medium hover:bg-[oklch(82.03%_0.1388_76.34)]/20 transition-all duration-300 group/btn">
+        <HeroButton className="h-10 text-small px-4 z-0 group relative inline-flex items-center justify-center box-border appearance-none select-none whitespace-nowrap subpixel-antialiased overflow-hidden tap-highlight-transparent cursor-pointer outline-none focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 min-w-20 gap-2 rounded-medium [&>svg]:max-w-[theme(spacing.8)] bg-[oklch(82.03%_0.1388_76.34)]/10 backdrop-blur-md border border-[oklch(82.03%_0.1388_76.34)]/20 text-[oklch(82.03%_0.1388_76.34)] font-medium hover:bg-[oklch(82.03%_0.1388_76.34)]/20 transition-colors duration-300 group/btn">
           <Icon icon="lucide:pencil" width={18} className="group-hover/btn:scale-110 transition-transform mr-1" /> Edit
-        </button>
+        </HeroButton>
       ),
       code: `<button className="z-0 group relative inline-flex items-center justify-center box-border appearance-none select-none whitespace-nowrap subpixel-antialiased overflow-hidden tap-highlight-transparent transform-gpu active:scale-[0.97] cursor-pointer outline-none focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 px-4 min-w-20 h-10 text-small gap-2 rounded-medium [&>svg]:max-w-[theme(spacing.8)] bg-[oklch(82.03%_0.1388_76.34)]/10 backdrop-blur-md border border-[oklch(82.03%_0.1388_76.34)]/20 text-[oklch(82.03%_0.1388_76.34)] font-medium hover:bg-[oklch(82.03%_0.1388_76.34)]/20 transition-all duration-300 group/btn">\n  <Icon icon="lucide:pencil" width={18} className="group-hover/btn:scale-110 transition-transform mr-2" /> Edit\n</button>`
     },
@@ -127,9 +146,9 @@ export default function DebugUI() {
     {
       title: "Add",
       button: (
-        <button className="h-10 text-small px-4 z-0 group relative inline-flex items-center justify-center box-border appearance-none select-none whitespace-nowrap subpixel-antialiased overflow-hidden tap-highlight-transparent transform-gpu active:scale-[0.97] cursor-pointer outline-none focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 min-w-20 gap-2 rounded-medium [&>svg]:max-w-[theme(spacing.8)] bg-primary-500/10 backdrop-blur-md border border-primary-500/20 text-primary-500 font-medium hover:bg-primary-500/20 transition-all duration-300 group/btn">
+        <HeroButton className="h-10 text-small px-4 z-0 group relative inline-flex items-center justify-center box-border appearance-none select-none whitespace-nowrap subpixel-antialiased overflow-hidden tap-highlight-transparent cursor-pointer outline-none focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 min-w-20 gap-2 rounded-medium [&>svg]:max-w-[theme(spacing.8)] bg-primary-500/10 backdrop-blur-md border border-primary-500/20 text-primary-500 font-medium hover:bg-primary-500/20 transition-colors duration-300 group/btn">
           <Icon icon="lucide:plus-circle" width={18} className="group-hover/btn:rotate-90 transition-transform mr-1" /> Add
-        </button>
+        </HeroButton>
       ),
       code: `<button className="z-0 group relative inline-flex items-center justify-center box-border appearance-none select-none whitespace-nowrap subpixel-antialiased overflow-hidden tap-highlight-transparent transform-gpu active:scale-[0.97] cursor-pointer outline-none focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 px-4 min-w-20 h-10 text-small gap-2 rounded-medium [&>svg]:max-w-[theme(spacing.8)] bg-primary-500/10 backdrop-blur-md border border-primary-500/20 text-primary-500 font-medium hover:bg-primary-500/20 transition-all duration-300 group/btn">\n  <Icon icon="lucide:plus-circle" width={18} className="group-hover/btn:rotate-90 transition-transform mr-2" /> Add\n</button>`
     },
@@ -154,9 +173,9 @@ export default function DebugUI() {
     {
       title: "Search",
       button: (
-        <button className="h-10 text-small px-4 z-0 group relative inline-flex items-center justify-center box-border appearance-none select-none whitespace-nowrap subpixel-antialiased overflow-hidden tap-highlight-transparent transform-gpu active:scale-[0.97] cursor-pointer outline-none focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 min-w-20 gap-2 rounded-medium [&>svg]:max-w-[theme(spacing.8)] bg-default-100/50 backdrop-blur-md border border-default-200/50 text-default-600 font-medium hover:bg-default-200/50 transition-all duration-300 group/btn">
+        <HeroButton className="h-10 text-small px-4 z-0 group relative inline-flex items-center justify-center box-border appearance-none select-none whitespace-nowrap subpixel-antialiased overflow-hidden tap-highlight-transparent cursor-pointer outline-none focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 min-w-20 gap-2 rounded-medium [&>svg]:max-w-[theme(spacing.8)] bg-default-100/50 backdrop-blur-md border border-default-200/50 text-default-600 font-medium hover:bg-default-200/50 transition-colors duration-300 group/btn">
           Search <Icon icon="lucide:search" width={18} className="ml-1" />
-        </button>
+        </HeroButton>
       ),
       code: `<button className="z-0 group relative inline-flex items-center justify-center box-border appearance-none select-none whitespace-nowrap subpixel-antialiased overflow-hidden tap-highlight-transparent transform-gpu active:scale-[0.97] cursor-pointer outline-none focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 px-4 min-w-20 h-10 text-small gap-2 rounded-medium [&>svg]:max-w-[theme(spacing.8)] bg-default-100/50 backdrop-blur-md border border-default-200/50 text-default-600 font-medium hover:bg-default-200/50 transition-all duration-300 group/btn">\n  Search <Icon icon="lucide:search" width={18} className="ml-2" />\n</button>`
     }

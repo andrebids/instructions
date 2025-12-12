@@ -41,7 +41,6 @@ export function ClientAutocomplete({
         size="md"
         radius="lg"
         startContent={<Icon icon="lucide:user" className="text-default-400" />}
-        menuTrigger="input"
         defaultItems={clients}
         selectedKey={selectedKey}
         inputValue={inputValue}

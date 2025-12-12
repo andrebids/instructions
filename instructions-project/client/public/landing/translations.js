@@ -17,22 +17,22 @@ const translations = {
             subtitle: "Stop managing dead stock. Start selling what you have.",
             list1: {
                 title: "Better Stock Rotation",
-                desc: "Algoritmos garantem que o stock antigo sai primeiro."
+                desc: "Algorithms ensure strategic stock is reserved first."
             },
             list2: {
                 title: "Proactive Sales Suggestions",
-                desc: "\"Temos 50 Motivos Estrela livres, vende isto agora!\""
+                desc: "We have 50 Star Motifs available. Take advantage of this unique opportunity with reduced prices - it's the perfect time to make an excellent deal and secure quality products with special discount!"
             },
             list3: {
                 title: "Motif Reservation",
-                desc: "Funcionalidade \"Add to Cart\" instantânea para equipas internas."
+                desc: "Instant reservations with a simple click or by voice! Quick and seamless functionality."
             },
             badge1: "Web Version",
             badge2: "Mobile App",
             badge3: "Easy to use",
             notification: {
                 title: "Opportunity",
-                desc: "Excess Stock! Sell this item now."
+                desc: "Excess Stock! Push the reservation for this product."
             },
             mockup: {
                 motif: "Star Motif 50cm",
@@ -47,12 +47,12 @@ const translations = {
             subtitle: "Manage your inventory with military-grade precision and speed.",
             features: {
                 comparator: {
-                    title: "Parts Comparator",
-                    desc: "Side-by-side specs comparison."
+                    title: "Motifs Comparator",
+                    desc: "Side-by-side specs and stock comparison."
                 },
                 budgeting: {
                     title: "Project Budgeting",
-                    desc: "Add parts to projects with auto-budget calculation."
+                    desc: "Add motifs to projects with auto-budget calculation."
                 },
                 live: {
                     title: "Live Stock Management",
@@ -60,7 +60,15 @@ const translations = {
                 },
                 reservations: {
                     title: "Smart Reservations",
-                    desc: "Lock, Confirm, and Release workflow with automated expiration warnings."
+                    desc: "Lock, Confirm, and Release reservations with automated expiration warnings."
+                },
+                favorites: {
+                    title: "Favorites",
+                    desc: "Create custom lists for quick access."
+                },
+                quick_add: {
+                    title: "Quick Add",
+                    desc: "Rapid inventory entry system."
                 }
             },
             actions: {
@@ -291,22 +299,22 @@ const translations = {
             subtitle: "Arrêtez de gérer le stock dormant. Vendez ce que vous avez.",
             list1: {
                 title: "Meilleure Rotation des Stocks",
-                desc: "Les algorithmes garantissent que l'ancien stock part en premier."
+                desc: "Les algorithmes garantissent que le stock stratégique est réservé en premier."
             },
             list2: {
                 title: "Suggestions de Vente Proactives",
-                desc: "\"Nous avons 50 Motifs Étoile libres, vendez-les maintenant !\""
+                desc: "Nous avons 50 Motifs Étoile disponibles. Profitez de cette opportunité unique avec des prix réduits - c'est le moment idéal pour faire une excellente affaire et garantir des produits de qualité avec un rabais spécial !"
             },
             list3: {
                 title: "Réservation de Motifs",
-                desc: "Fonctionnalité \"Ajouter au Panier\" instantanée pour les équipes internes."
+                desc: "Réservations instantanées d'un simple clic ou par la voix ! Fonctionnalité rapide et fluide."
             },
             badge1: "Version Web",
             badge2: "App Mobile",
             badge3: "Facile à utiliser",
             notification: {
                 title: "Opportunité",
-                desc: "Surstock ! Vendez cet article maintenant."
+                desc: "Surstock ! Poussez la réservation pour ce produit."
             },
             mockup: {
                 motif: "Motif Étoile 50cm",
@@ -321,12 +329,12 @@ const translations = {
             subtitle: "Gérez votre inventaire avec une précision et une rapidité militaires.",
             features: {
                 comparator: {
-                    title: "Comparateur de Pièces",
-                    desc: "Comparaison des spécifications côte à côte."
+                    title: "Comparateur de Motifs",
+                    desc: "Comparaison côte à côte des spécifications et du stock."
                 },
                 budgeting: {
                     title: "Budgétisation de Projet",
-                    desc: "Ajoutez des pièces aux projets avec calcul automatique du budget."
+                    desc: "Ajoutez des motifs aux projets avec calcul automatique du budget."
                 },
                 live: {
                     title: "Gestion de Stock en Direct",
@@ -334,7 +342,15 @@ const translations = {
                 },
                 reservations: {
                     title: "Réservations Intelligentes",
-                    desc: "Flux de travail Verrouiller, Confirmer et Libérer avec avertissements d'expiration automatiques."
+                    desc: "Verrouiller, Confirmer et Libérer les réservations avec avertissements d'expiration automatiques."
+                },
+                favorites: {
+                    title: "Favoris",
+                    desc: "Créez des listes personnalisées pour un accès rapide."
+                },
+                quick_add: {
+                    title: "Ajout Rapide",
+                    desc: "Système d'entrée d'inventaire rapide."
                 }
             },
             actions: {
