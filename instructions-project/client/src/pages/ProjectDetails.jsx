@@ -81,22 +81,24 @@ export const LogoDetailsContent = ({ logo }) => {
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.04),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(0,0,0,0.03),transparent_40%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.06),transparent_40%)]" />
 
             <div className="relative space-y-8 p-6 lg:p-8">
+                {/* Top row: Logo Number, Logo Name on left, Requested By on right */}
+                <div className="flex flex-wrap items-center justify-between gap-6 pb-4 border-b border-default-200 dark:border-white/10">
+                    <div className="flex flex-wrap items-center gap-6">
+                        <div className="flex items-center gap-2">
+                            <p className="text-2xl font-bold leading-tight text-default-900 dark:text-white">{logo.logoNumber || '—'}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <p className="text-xl font-semibold leading-tight text-default-900 dark:text-white">{logo.logoName || '—'}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-default-500 dark:text-default-400">
+                        <Icon icon="lucide:user" width={16} />
+                        <span>{logo.requestedBy || t('common.notInformed', 'Não informado')}</span>
+                    </div>
+                </div>
+
                 <div className="grid gap-8 lg:grid-cols-12">
                     <div className="space-y-6 lg:col-span-5">
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary-600 dark:text-primary-300">
-                                <Icon icon="lucide:hash" width={18} />
-                                <span>{t('pages.projectDetails.logoNumber', 'Logo Number')}</span>
-                            </div>
-                            <div className="space-y-2">
-                                <p className="text-2xl font-bold leading-tight text-default-900 dark:text-white">{logo.logoNumber || '—'}</p>
-                                <p className="text-xl font-semibold leading-tight text-default-700 dark:text-default-100">{logo.logoName || '—'}</p>
-                                <div className="flex items-center gap-2 text-sm text-default-500 dark:text-default-400">
-                                    <Icon icon="lucide:user" width={16} />
-                                    <span>{logo.requestedBy || t('common.notInformed', 'Não informado')}</span>
-                                </div>
-                            </div>
-                        </div>
 
                         {hasDimensions && (
                             <div className="space-y-3 rounded-xl border border-default-200/80 dark:border-white/10 bg-default-50/80 dark:bg-white/5 p-4">
@@ -378,7 +380,7 @@ export const LogoDetailsContent = ({ logo }) => {
                                 <p className="text-[11px] font-semibold uppercase tracking-wider text-default-600 dark:text-default-400">
                                     {t('pages.projectDetails.description')}
                                 </p>
-                                <p className="text-sm leading-relaxed text-default-800 dark:text-default-100 whitespace-pre-wrap">{logo.description}</p>
+                                <p className="text-sm leading-relaxed text-default-800 dark:text-white whitespace-pre-wrap">{logo.description}</p>
                             </div>
                         )}
                         {logo.criteria && (
@@ -386,7 +388,7 @@ export const LogoDetailsContent = ({ logo }) => {
                                 <p className="text-[11px] font-semibold uppercase tracking-wider text-default-600 dark:text-default-400">
                                     {t('pages.projectDetails.criteria')}
                                 </p>
-                                <p className="text-sm leading-relaxed text-default-800 dark:text-default-100 whitespace-pre-wrap">{logo.criteria}</p>
+                                <p className="text-sm leading-relaxed text-default-800 dark:text-white whitespace-pre-wrap">{logo.criteria}</p>
                             </div>
                         )}
                     </div>
