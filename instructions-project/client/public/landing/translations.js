@@ -17,7 +17,7 @@ const translations = {
             subtitle: "Stop managing dead stock. Start selling what you have.",
             list1: {
                 title: "Better Stock Rotation",
-                desc: "Algorithms ensure old stock is sold first."
+                desc: "Algorithms ensure strategic stock is reserved first."
             },
             list2: {
                 title: "Proactive Sales Suggestions",
@@ -32,7 +32,7 @@ const translations = {
             badge3: "Easy to use",
             notification: {
                 title: "Opportunity",
-                desc: "Excess Stock! Sell this item now."
+                desc: "Excess Stock! Push the reservation for this product."
             },
             mockup: {
                 motif: "Star Motif 50cm",
@@ -47,12 +47,12 @@ const translations = {
             subtitle: "Manage your inventory with military-grade precision and speed.",
             features: {
                 comparator: {
-                    title: "Parts Comparator",
-                    desc: "Side-by-side specs comparison."
+                    title: "Motifs Comparator",
+                    desc: "Side-by-side specs and stock comparison."
                 },
                 budgeting: {
                     title: "Project Budgeting",
-                    desc: "Add parts to projects with auto-budget calculation."
+                    desc: "Add motifs to projects with auto-budget calculation."
                 },
                 live: {
                     title: "Live Stock Management",
@@ -60,7 +60,15 @@ const translations = {
                 },
                 reservations: {
                     title: "Smart Reservations",
-                    desc: "Lock, Confirm, and Release workflow with automated expiration warnings."
+                    desc: "Lock, Confirm, and Release reservations with automated expiration warnings."
+                },
+                favorites: {
+                    title: "Favorites",
+                    desc: "Create custom lists for quick access."
+                },
+                quick_add: {
+                    title: "Quick Add",
+                    desc: "Rapid inventory entry system."
                 }
             },
             actions: {
@@ -291,7 +299,7 @@ const translations = {
             subtitle: "Arrêtez de gérer le stock dormant. Vendez ce que vous avez.",
             list1: {
                 title: "Meilleure Rotation des Stocks",
-                desc: "Les algorithmes garantissent que l'ancien stock part en premier."
+                desc: "Les algorithmes garantissent que le stock stratégique est réservé en premier."
             },
             list2: {
                 title: "Suggestions de Vente Proactives",
@@ -306,7 +314,7 @@ const translations = {
             badge3: "Facile à utiliser",
             notification: {
                 title: "Opportunité",
-                desc: "Surstock ! Vendez cet article maintenant."
+                desc: "Surstock ! Poussez la réservation pour ce produit."
             },
             mockup: {
                 motif: "Motif Étoile 50cm",
@@ -321,12 +329,12 @@ const translations = {
             subtitle: "Gérez votre inventaire avec une précision et une rapidité militaires.",
             features: {
                 comparator: {
-                    title: "Comparateur de Pièces",
-                    desc: "Comparaison des spécifications côte à côte."
+                    title: "Comparateur de Motifs",
+                    desc: "Comparaison côte à côte des spécifications et du stock."
                 },
                 budgeting: {
                     title: "Budgétisation de Projet",
-                    desc: "Ajoutez des pièces aux projets avec calcul automatique du budget."
+                    desc: "Ajoutez des motifs aux projets avec calcul automatique du budget."
                 },
                 live: {
                     title: "Gestion de Stock en Direct",
@@ -334,7 +342,15 @@ const translations = {
                 },
                 reservations: {
                     title: "Réservations Intelligentes",
-                    desc: "Flux de travail Verrouiller, Confirmer et Libérer avec avertissements d'expiration automatiques."
+                    desc: "Verrouiller, Confirmer et Libérer les réservations avec avertissements d'expiration automatiques."
+                },
+                favorites: {
+                    title: "Favoris",
+                    desc: "Créez des listes personnalisées pour un accès rapide."
+                },
+                quick_add: {
+                    title: "Ajout Rapide",
+                    desc: "Système d'entrée d'inventaire rapide."
                 }
             },
             actions: {
