@@ -1,6 +1,7 @@
 import React from "react";
 import { Icon } from "@iconify/react";
 import { Input, Textarea, Switch, Tabs, Tab, Select, SelectItem, Checkbox } from "@heroui/react";
+import { useTranslation } from "react-i18next";
 import { materialsData } from "../../../data/materialsData.js";
 import {
   getComponenteById,
@@ -21,6 +22,7 @@ export const SummaryRenderer = ({
   handleAddBola,
   handleRemoveBola,
 }) => {
+  const { t } = useTranslation();
   const [componentesEditMode, setComponentesEditMode] = React.useState({});
   const [bolasEditMode, setBolasEditMode] = React.useState({});
   const attachments = currentLogo.attachmentFiles || [];
@@ -283,20 +285,48 @@ export const SummaryRenderer = ({
                       aria-label="Lacquer Color"
                       variant="flat"
                       size="sm"
-                      selectedKeys={formik.values.lacquerColor ? new Set([formik.values.lacquerColor]) : new Set()}
+                      selectedKeys={(() => {
+                        const colorKeys = ['white', 'gold', 'red', 'blue', 'green', 'pink', 'black'];
+                        const savedValue = formik.values.lacquerColor || '';
+                        const matchingKey = colorKeys.find(key => {
+                          const translatedValue = t(`pages.projectDetails.lacquerColors.${key}`, '');
+                          return translatedValue === savedValue || key === savedValue;
+                        });
+                        return matchingKey ? new Set([matchingKey]) : new Set();
+                      })()}
                       onSelectionChange={(keys) => {
                         const selected = Array.from(keys)[0];
-                        formik.updateField("lacquerColor", selected || "");
+                        if (selected) {
+                          const translatedValue = t(`pages.projectDetails.lacquerColors.${selected}`, '');
+                          formik.updateField("lacquerColor", translatedValue || selected);
+                        } else {
+                          formik.updateField("lacquerColor", "");
+                        }
                       }}
                       classNames={{ trigger: "text-xs h-8", value: "text-xs text-white" }}
+                      placeholder={t('pages.projectDetails.lacquerColor', 'Select color')}
                     >
-                      <SelectItem key="WHITE RAL 9010">WHITE RAL 9010</SelectItem>
-                      <SelectItem key="GOLD PANTONE 131C">GOLD PANTONE 131C</SelectItem>
-                      <SelectItem key="RED RAL 3000">RED RAL 3000</SelectItem>
-                      <SelectItem key="BLUE RAL 5005">BLUE RAL 5005</SelectItem>
-                      <SelectItem key="GREEN RAL 6029">GREEN RAL 6029</SelectItem>
-                      <SelectItem key="PINK RAL 3015">PINK RAL 3015</SelectItem>
-                      <SelectItem key="BLACK RAL 9011">BLACK RAL 9011</SelectItem>
+                      <SelectItem key="white" value="white">
+                        {t('pages.projectDetails.lacquerColors.white', 'WHITE RAL 9010')}
+                      </SelectItem>
+                      <SelectItem key="gold" value="gold">
+                        {t('pages.projectDetails.lacquerColors.gold', 'GOLD PANTONE 131C')}
+                      </SelectItem>
+                      <SelectItem key="red" value="red">
+                        {t('pages.projectDetails.lacquerColors.red', 'RED RAL 3000')}
+                      </SelectItem>
+                      <SelectItem key="blue" value="blue">
+                        {t('pages.projectDetails.lacquerColors.blue', 'BLUE RAL 5005')}
+                      </SelectItem>
+                      <SelectItem key="green" value="green">
+                        {t('pages.projectDetails.lacquerColors.green', 'GREEN RAL 6029')}
+                      </SelectItem>
+                      <SelectItem key="pink" value="pink">
+                        {t('pages.projectDetails.lacquerColors.pink', 'PINK RAL 3015')}
+                      </SelectItem>
+                      <SelectItem key="black" value="black">
+                        {t('pages.projectDetails.lacquerColors.black', 'BLACK RAL 9011')}
+                      </SelectItem>
                     </Select>
                   ) : (
                     <div className="text-[10px] font-medium text-gray-400 italic">Standard</div>

@@ -894,20 +894,18 @@
                                 data-i18n="advanced_stock.mockup.header">thecore.app/stock</div>
                         </div>
 
-                        <!-- Video/Content Placeholder -->
+                        <!-- Video/Content -->
                         <div
                             class="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center relative group cursor-pointer overflow-hidden">
-                            <!-- Placeholder for video -->
-                            <div
-                                class="absolute inset-0 opacity-30 bg-[url('https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&q=80')] bg-cover bg-center">
-                            </div>
-
-                            <div
-                                class="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform z-10">
-                                <div
-                                    class="w-0 h-0 border-t-[10px] border-t-transparent border-l-[18px] border-l-white border-b-[10px] border-b-transparent ml-1">
-                                </div>
-                            </div>
+                            <!-- Video -->
+                            <video
+                                autoplay
+                                loop
+                                muted
+                                playsinline
+                                class="absolute inset-0 w-full h-full object-cover">
+                                <source src="images/LOGO_COMPARE.webm" type="video/webm">
+                            </video>
 
                             <!-- Simulated UI Overlay -->
                             <div class="absolute bottom-4 left-4 right-4 flex justify-between items-end z-10">

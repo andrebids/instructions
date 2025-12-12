@@ -1,5 +1,6 @@
 ﻿import React from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { useFormikStep } from "../hooks/useFormikStep";
 import { useLogoPersistence } from "../hooks/useLogoPersistence";
 import { useUser } from "../../../context/UserContext";
@@ -18,6 +19,7 @@ import { SummaryRenderer } from "./logo-instructions/renderers/SummaryRenderer";
 
 export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCompact = false, onBack, onNext, onSave, projectId, currentStep, totalSteps, onInternalPageChange, handlersRef }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const logoDetails = formData.logoDetails || {};
   // Support both old structure (direct logoDetails) and new structure (with currentLogo)
   const rawCurrentLogo = logoDetails.currentLogo || logoDetails;
@@ -616,20 +618,28 @@ export function StepLogoInstructions({ formData, onInputChange, saveStatus, isCo
 
     setIsFinishing(true);
     try {
-      // Salvar antes de avançar se estiver editando um projeto existente
-      if (projectId && onSave) {
+      // Obter projectId (pode vir da prop ou do formData)
+      const finalProjectId = projectId || formData.id || formData.tempProjectId;
+
+      // Salvar antes de navegar
+      if (finalProjectId && onSave) {
         try {
           await onSave();
         } catch (saveError) {
-          console.error('❌ Erro ao salvar antes de avançar:', saveError);
+          console.error('❌ Erro ao salvar antes de navegar:', saveError);
           // Continuar mesmo se houver erro no save (pode ser um problema temporário)
           // O erro já foi mostrado no saveStatus
         }
       }
 
-      // Navegar para o próximo passo
-      if (onNext) {
-        onNext();
+      // Navegar para a página do projeto
+      if (finalProjectId) {
+        navigate(`/projects/${finalProjectId}`);
+      } else {
+        // Se não houver projectId, usar o comportamento antigo (navegar para próximo passo)
+        if (onNext) {
+          onNext();
+        }
       }
     } catch (error) {
       console.error('❌ Erro ao processar Finish:', error);

@@ -42,9 +42,6 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
   const [videoSrc, setVideoSrc] = React.useState(null);
   const [isLoadingVideo, setIsLoadingVideo] = React.useState(false);
   const videoRef = React.useRef(null);
-  // Image zoom state
-  const [zoom, setZoom] = React.useState(1);
-  const [zoomOrigin, setZoomOrigin] = React.useState({ xPct: 50, yPct: 50 });
 
   // Estado para controlar se mostra NEW ou USED
   const [productType, setProductType] = React.useState("new"); // "new" ou "used"
@@ -264,12 +261,12 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
         onOpenChange={onOpenChange}
         size="4xl"
         placement="center"
-        scrollBehavior="inside"
+        scrollBehavior="normal"
         hideCloseButton
         classNames={{
           wrapper: "items-center justify-center",
           base: "max-w-[1400px] w-[96vw] max-h-[90vh] my-4 bg-[#e4e3e8] dark:bg-content1",
-          body: "py-2",
+          body: "py-2 overflow-hidden flex flex-col",
         }}
       >
         <ModalContent>
@@ -284,38 +281,19 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                 </div>
                 {/* price moved to footer */}
               </ModalHeader>
-              <ModalBody>
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+              <ModalBody className="flex-1 min-h-0">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 h-full">
                   {/* Left: Media viewer (image/video) with nav arrows */}
-                  <div className="relative md:col-span-3 flex flex-col">
+                  <div className="relative md:col-span-3 flex flex-col min-h-0">
                     {/* Media wrapper to correctly center arrows relative to image/video */}
                     <div
-                      className="relative w-full h-[40vh] md:h-[42vh] lg:h-[44vh] rounded-lg overflow-hidden bg-[#1f2937] dark:bg-content2"
-                      onMouseMove={(e) => {
-                        if (mediaIndex !== 0) return;
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const xPct = Math.min(100, Math.max(0, ((e.clientX - rect.left) / rect.width) * 100));
-                        const yPct = Math.min(100, Math.max(0, ((e.clientY - rect.top) / rect.height) * 100));
-                        setZoomOrigin({ xPct, yPct });
-                      }}
-                      onWheel={(e) => {
-                        if (mediaIndex !== 0) return;
-                        e.preventDefault();
-                        const next = Math.min(3, Math.max(1, zoom + (e.deltaY < 0 ? 0.2 : -0.2)));
-                        setZoom(next);
-                      }}
-                      onDoubleClick={() => {
-                        if (mediaIndex !== 0) return;
-                        setZoom((z) => (z > 1 ? 1 : 2));
-                      }}
-                      onMouseLeave={() => setZoom(1)}
+                      className="relative w-full flex-1 min-h-0 rounded-lg overflow-hidden bg-[#0b1b3a] dark:bg-content2"
                     >
                       {mediaIndex === 0 && (
                         <img
                           src={imageSrcWithBuster || "/demo-images/placeholder.png"}
                           alt={product.name}
                           className="absolute inset-0 w-full h-full object-contain select-none"
-                          style={{ transform: `scale(${zoom})`, transformOrigin: `${zoomOrigin.xPct}% ${zoomOrigin.yPct}%` }}
                           draggable={false}
                           onError={(e) => {
                             if (e.target.dataset.fb === '1') return;
@@ -411,7 +389,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                         type="button"
                         aria-label="Imagem"
                         onClick={() => setMediaIndex(0)}
-                        className={`group relative w-28 h-16 rounded-md overflow-hidden border ${mediaIndex === 0 ? 'border-white ring-2 ring-white' : 'border-white/40'} bg-[#1f2937] bg-center bg-cover`}
+                        className={`group relative w-28 h-16 rounded-md overflow-hidden border ${mediaIndex === 0 ? 'border-white ring-2 ring-white' : 'border-white/40'} bg-[#0b1b3a] bg-center bg-cover`}
                         style={{ backgroundImage: `url(${imageSrc})` }}
                       >
                         {/* caption removed */}
@@ -421,7 +399,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                           type="button"
                           aria-label="Vídeo"
                           onClick={() => setMediaIndex(1)}
-                          className={`group relative w-28 h-16 rounded-md overflow-hidden border ${mediaIndex === 1 ? 'border-white ring-2 ring-white' : 'border-white/40'} bg-[#1f2937] bg-center bg-cover`}
+                          className={`group relative w-28 h-16 rounded-md overflow-hidden border ${mediaIndex === 1 ? 'border-white ring-2 ring-white' : 'border-white/40'} bg-[#0b1b3a] bg-center bg-cover`}
                           style={{ backgroundImage: `url(${activeProduct.images?.day || imageSrc})` }}
                         >
                           <div className="absolute inset-0 flex items-center justify-center">
@@ -456,10 +434,10 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                   </div>
 
                   {/* Right: Details */}
-                  <div className="md:col-span-2 overflow-auto">
-                    <div className="grid grid-cols-1 gap-y-3 text-base text-default-600">
+                  <div className="md:col-span-2 flex flex-col pr-2 min-h-0 justify-between">
+                    <div className="grid grid-cols-1 gap-y-2 text-base text-default-600 flex-shrink-0">
                       <div className="flex items-start gap-2">
-                        <Icon icon="lucide:ruler" className="text-default-500 text-lg mt-0.5" />
+                        <Icon icon="lucide:ruler" className="text-default-500 text-lg mt-0.5 flex-shrink-0" />
                         <div>
                           <div className="text-default-500 text-sm">Dimensions</div>
                           <div>{formatDimensions(activeProduct.specs, activeProduct)}</div>
@@ -467,11 +445,11 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                       </div>
 
                       <div className="flex items-start gap-2">
-                        <Icon icon="lucide:layers" className="text-default-500 text-lg mt-0.5" />
-                        <div className="flex-1 min-w-0 space-y-3">
+                        <Icon icon="lucide:layers" className="text-default-500 text-lg mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0 space-y-2">
                           <div>
-                            <div className="text-default-500 text-sm mb-3">Materials</div>
-                            <div className="space-y-3">
+                            <div className="text-default-500 text-sm mb-2">Materials</div>
+                            <div className="space-y-2">
                               {(() => {
                                 return null;
                               })()}
@@ -487,7 +465,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
 
                       {activeProduct.specs?.weight && (
                         <div className="flex items-start gap-2">
-                          <Icon icon="lucide:scale" className="text-default-500 text-lg mt-0.5" />
+                          <Icon icon="lucide:scale" className="text-default-500 text-lg mt-0.5 flex-shrink-0" />
                           <div>
                             <div className="text-default-500 text-sm">Weight</div>
                             <div>{activeProduct.specs.weight} kg</div>
@@ -496,7 +474,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                       )}
 
                       <div className="flex items-start gap-2">
-                        <Icon icon="lucide:file-text" className="text-default-500 text-lg mt-0.5" />
+                        <Icon icon="lucide:file-text" className="text-default-500 text-lg mt-0.5 flex-shrink-0" />
                         <div>
                           <div className="text-default-500 text-sm">Description</div>
                           <div>{activeProduct.specs?.descricao}</div>
@@ -504,7 +482,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                       </div>
 
                       <div className="flex items-start gap-2">
-                        <Icon icon="lucide:cpu" className="text-default-500 text-lg mt-0.5" />
+                        <Icon icon="lucide:cpu" className="text-default-500 text-lg mt-0.5 flex-shrink-0" />
                         <div>
                           <div className="text-default-500 text-sm">Technical</div>
                           <div>{activeProduct.specs?.tecnicas}</div>
@@ -512,9 +490,11 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                       </div>
                     </div>
 
+                    </div>
+
                     {/* Tabs para alternar entre NEW e USED */}
                     {(usedPrice || usedStock) && (
-                      <div className="mt-5 flex gap-2 border-b border-default-200 pb-2">
+                      <div className="mt-3 flex gap-2 border-b border-default-200 pb-2 flex-shrink-0">
                         <button
                           onClick={() => setProductType("new")}
                           className={`px-4 py-2 text-sm font-medium transition-colors ${productType === "new"
@@ -537,7 +517,7 @@ export default function ProductModal({ isOpen, onOpenChange, product, onOrder, e
                     )}
 
                     {/* Price and stock stacked */}
-                    <div className="mt-5">
+                    <div className="mt-3 flex-shrink-0">
                       {displayPrice && (
                         <div className="space-y-1">
                           <div className="text-2xl font-bold text-primary">€{displayPrice.toFixed(2)}</div>

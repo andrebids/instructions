@@ -334,16 +334,18 @@ export const DetailsAndAttachmentsRenderer = ({
                   className="hidden"
                   onChange={(e) => handleFileUpload(Array.from(e.target.files))}
                 />
-                <Button
-                  size="sm"
-                  variant="flat"
-                  color="primary"
-                  className="font-medium px-3 py-1 w-full"
-                  startContent={<Icon icon="lucide:upload" className="w-4 h-4" />}
-                  onPress={() => document.getElementById('file-upload-more').click()}
-                >
-                  Add More Files
-                </Button>
+                <div className="flex justify-center">
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="primary"
+                    className="font-medium px-3 py-1"
+                    startContent={<Icon icon="lucide:upload" className="w-4 h-4" />}
+                    onPress={() => document.getElementById('file-upload-more').click()}
+                  >
+                    Add More Files
+                  </Button>
+                </div>
               </div>
             ) : null;
           })()}
